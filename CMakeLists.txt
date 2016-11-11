@@ -140,7 +140,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 cuda_add_library(
-	cuda_api_wrappers
+	cuda-api-wrappers
 	src/cuda/api/types.cpp
 	src/cuda/api/profiling.cpp
 	src/cuda/api/device.cpp
@@ -155,9 +155,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "examples/bin")
 cuda_add_executable(vectorAdd EXCLUDE_FROM_ALL examples/modified_cuda_samples/vectorAdd/vectorAdd.cu)
 cuda_add_executable(inlinePTX EXCLUDE_FROM_ALL examples/modified_cuda_samples/inlinePTX/inlinePTX.cu)
 cuda_add_executable(simpleStreams EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleStreams/simpleStreams.cu)
-target_link_libraries(simpleStreams cuda_api_wrappers)
+target_link_libraries(simpleStreams cuda-api-wrappers)
 cuda_add_executable(simpleIPC EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleIPC/simpleIPC.cu)
-target_link_libraries(simpleIPC cuda_api_wrappers)
+target_link_libraries(simpleIPC cuda-api-wrappers)
 
 add_custom_target(examples)
 add_dependencies(examples vectorAdd inlinePTX simpleStreams simpleIPC)
