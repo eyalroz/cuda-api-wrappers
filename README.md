@@ -12,6 +12,12 @@ These wrappers are intended to allow us to embrace many of the features of C++ (
 - Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators**.
 - Avoidance of obscure parameters which require you to go read the official documentation to get right; everything is as clear and understandable as I could make it.
 
+## Requirements
+
+- CUDA v8.0 is recommended and v7.5 is supported (but not tested as frequently). CUDA 6.x should probably be ok as well.
+- A C++11-capable compiler compatible with your version of CUDA.
+- CMake version 2.8 or later - although you don't really need it, you can just copy the `src/` directory into your own project and just make sure to compile the non-header-only parts.
+
 ## Coverage of the Runtime API
 
 Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), the library currently has the following:
@@ -39,19 +45,26 @@ is a valid comparison, true for all devices with a Maxwell-or-later micro-archit
 #### Meaningful naming
 Instead of using 
 ```
-cudaError_t cudaEventCreateWithFlags (* my_event_id, my_flags )
+cudaError_t cudaEventCreateWithFlags(
+    cudaEvent_t* event, 
+    unsigned int flags) 
 ```
 which requires you remember what you need to specify as flags and how, you construct a `cuda::event_t` proxy objecty, using the constructor 
 ```
-event_t(bool uses_blocking_sync,
-        bool records_timing = event::do_record_timing,
-	bool interprocess = event::not_interprocess)
+cuda::event_t::event_t(
+    bool uses_blocking_sync,
+    bool records_timing      = event::do_record_timing,
+    bool interprocess        = event::not_interprocess)
 ```
 The default values here are `enum : bool`'s, which you should also use when constructing an `event_t` with non-default parameters. There is also the no-arguments `event_t()` constructor which calls `cudaEventCreate` without flags.
 
 #### Modified CUDA samples
 
 More detailed documentation / feature walk-through is forthcoming. For now, have a look at the [modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples) example folder, which adapts some of the CUDA sample code to use the runtime API only via this wrappers library.
+
+To build and run the samples, do:
+
+    [user@host:/path/to/cuda-api-wrappers/]$ cmake . && make examples && examples/scripts/run-all-examples
 
 ## Bugs, suggestions, feedback
 
