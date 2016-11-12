@@ -37,7 +37,7 @@ Since the (main) developer is not currently working on anything graphics-related
 ## Examples
 
 #### Use of namespaces (and internal classes)
-With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function, so an actual call would look like `cuda::device::get(my_device_id).memory::allocate(my_size)`.
+With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of `cudaSetDevice()` and `cudaMalloc()` calls.
 
 #### Adorning POD structs with convenience methods
 The expression 
