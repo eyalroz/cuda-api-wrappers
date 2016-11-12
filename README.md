@@ -26,14 +26,32 @@ Since the (main) developer is not currently working on anything graphics-related
 
 ## Examples
 
-**Use of namespaces (and internal classes):** `cuda::memory::host::allocate(my_size)` instead of `cudaMallocHost()` and `cuda::device::get(my_device_id).memory.allocate(my_size)` instead of setting the current device and then `cudaMalloc()`.
+#### Use of namespaces (and internal classes)
+With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function, so an actual call would look like `cuda::device::get(my_device_id).memory::allocate(my_size)`.
 
-**Adorning POD structs with convenience methods:** The expression `my_device_properties.compute_capability() >= cuda::make_compute_capability(50)` is a valid comparison, true for all devices with a Maxwell-or-later micro-architecture. The expression is valid despite the fact that `struct compute_capability_t` is a POD type with 2 unsigned integer fields, and that `cudaDeviceProp` doesn't have the compute capability as a single field.
+#### Adorning POD structs with convenience methods
+The expression 
+```
+my_device_properties.compute_capability() >= cuda::make_compute_capability(50)
+```
+is a valid comparison, true for all devices with a Maxwell-or-later micro-architecture. This, despite the fact that `struct cuda::compute_capability_t` is a POD type with two unsigned integer fields, not a scalar. Note that `struct cuda::device::properties_t` (which is really basically a `struct cudaDeviceProp` of the Runtime API itself) does not have a `compute_capability` field.
 
-**Meaningful naming:** Instead of using `cudaError_t cudaEventCreateWithFlags (* my_event_id, my_flags )`, which requires you remember what you need to specify as flags and how, you construct an `event_t` proxy objecty, using the constructor ```event_t(
-		bool uses_blocking_sync, bool records_timing = do_record_timing, bool interprocess = not_interprocess)```. The default values are `enum : bool`'s, which are clearer to use also in your code as opposed to `event_t(true, false, false)`. There is also the no-arguments `event_t()` constructor which calls `cudaEventCreate` without flags.
+#### Meaningful naming
+Instead of using 
+```
+cudaError_t cudaEventCreateWithFlags (* my_event_id, my_flags )
+```
+which requires you remember what you need to specify as flags and how, you construct a `cuda::event_t` proxy objecty, using the constructor 
+```
+event_t(bool uses_blocking_sync,
+        bool records_timing = event::do_record_timing,
+	bool interprocess = event::not_interprocess)
+```
+The default values here are `enum : bool`'s, which you should also use when constructing an `event_t` with non-default parameters. There is also the no-arguments `event_t()` constructor which calls `cudaEventCreate` without flags.
 
-More detailed documentation / feature walk-through is forthcoming. For now, have a look at the [Modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples) example folder, which adapts some of the CUDA sample code to use the runtime API only via this wrappers library.
+#### Modified CUDA samples
+
+More detailed documentation / feature walk-through is forthcoming. For now, have a look at the [modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples) example folder, which adapts some of the CUDA sample code to use the runtime API only via this wrappers library.
 
 ## Bugs, suggestions, feedback
 
