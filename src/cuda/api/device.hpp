@@ -37,6 +37,7 @@ inline bool can_access_peer(id_t accessor_id, id_t peer_id)
 	return (result == 1);
 }
 
+
 } // namespace device
 
 // TODO: Consider making this a multiton, with one possible instance per device_id
@@ -59,7 +60,7 @@ public: // types
 
 	class memory_t {
 	protected:
-		const device::id_t  device_id;
+		const device::id_t& device_id;
 
 	public:
 		memory_t(device::id_t  device_id) : device_id(device_id) {}
@@ -165,6 +166,39 @@ public: // types
 		}
 	}; // class memory_t
 
+	class peer_access_t {
+	protected:
+		const device::id_t& device_id;
+
+	public:
+		peer_access_t(device::id_t  device_id) : device_id(device_id) {}
+
+		bool can_access(id_t peer_id) const
+		{
+			device_setter set_device_for_this_scope(device_id);
+			return device::can_access_peer(device_id, peer_id);
+		}
+
+		void enable_to(id_t peer_id) {
+			device_setter set_device_for_this_scope(device_id);
+			enum : unsigned { fixed_flags = 0}; // No flags are supported as of CUDA 8.0
+			auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
+			throw_if_error(status,
+				"Failed enabling access of device " + std::to_string(device_id)
+				+ " to device " + std::to_string(peer_id));
+		}
+
+		void disable_to(id_t peer_id) {
+			device_setter set_device_for_this_scope(device_id);
+			auto status = cudaDeviceDisablePeerAccess(peer_id);
+			throw_if_error(status,
+				"Failed disabling access of device " + std::to_string(id_)
+				+ " to device " + std::to_string(peer_id));
+
+		}
+	}; // class peer_access_t
+
+
 protected:
 	/**
 	 * Code using the device_t class should use
@@ -209,7 +243,6 @@ public: // methods
 		return attribute_value;
 	}
 
-
 	resource_limit_t resource_limit(resource_id_t resource) const
 	{
 		resource_limit_t limit;
@@ -225,7 +258,6 @@ public: // methods
 		throw_if_error(status, std::string("Failed setting a resource limit "
 			"for CUDA device ") + std::to_string(id_));
 	}
-
 
 	inline void synchronize()
 	{
@@ -410,9 +442,6 @@ public: // methods
 		device::current::set(id_);
 	}
 
-	bool can_access_peer(id_t peer_id) const { return device::can_access_peer(id_, peer_id); }
-
-
 	device_t& operator=(const device_t& other) = delete;
 	// TODO: Consider limiting the copy ctor acess to prevent users from
 	// messing up stuff; problem is, removing it prevents the device::get()
@@ -422,19 +451,19 @@ public: // methods
 public: // constructors and destructor
 
 	// TODO: Consider making the ctor accessible only by the device::get() function,
-	device_t(device::id_t  device_id) : id_(device_id), memory(device_id) { };
+	device_t(device::id_t  device_id) : id_(device_id), memory(device_id), peer_access(device_id) { };
 	// TODO: How safe is it that we allow copy construction?
 	~device_t() { };
 
 protected: // data members
-	device::id_t  id_;
+	const device::id_t   id_;
 
-public: // data members
-	memory_t     memory;
+public: // faux data members (used as surrogates for internal namespaces)
+	memory_t             memory;
+	peer_access_t        peer_access;
 };
 
 namespace device {
-
 namespace current {
 
 /**
