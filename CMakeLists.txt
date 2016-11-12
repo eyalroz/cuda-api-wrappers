@@ -70,8 +70,6 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
 # ----------------------------
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++11 -g" )
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -O0" )
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3" )
 include_directories( "src/" )
 
 # -------------
@@ -85,16 +83,16 @@ if("$ENV{CUDA_SM}" STREQUAL "")
 	set(CUDA_TARGET_COMPUTE_CAPABILITY "30")
 else("$ENV{CUDA_SM}" STREQUAL "")
 	set(CUDA_TARGET_COMPUTE_CAPABILITY $ENV{CUDA_SM})
-	execute_process(COMMAND bash "-c" "echo ${CUDA_TARGET_COMPUTE_CAPABILITY} | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n" OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY) 
+	execute_process(COMMAND sh "-c" "echo ${CUDA_TARGET_COMPUTE_CAPABILITY} | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n" OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY) 
 	message("Building for Compute Capability ${FORMATTED_COMPUTE_CAPABILITY}.")
 endif("$ENV{CUDA_SM}" STREQUAL "")
 
 set(CUDA_GENCODE "arch=compute_${CUDA_TARGET_COMPUTE_CAPABILITY},code=compute_${CUDA_TARGET_COMPUTE_CAPABILITY}")
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Xcompiler" "-D__CORRECT_ISO_CPP11_MATH_H_PROTO")
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -gencode ${CUDA_GENCODE} "-Xcompiler" "-D__CORRECT_ISO_CPP11_MATH_H_PROTO")
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --keep  --generate-line-info --source-in-ptx)
 # We would like to add "-G" to the next line, but for some reason that causes segmentation faults in the driver when linking with libcub (on FC 23 with CUDA 7.5)
-set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS} -gencode ${CUDA_GENCODE}  -g)
+set(CUDA_NVCC_FLAGS_DEBUG -g)
 set(CUDA_NVCC_FLAGS_RELEASE -O3 --use_fast_math)
 #
 # have a look at http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/
@@ -141,7 +139,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 cuda_add_library(
 	cuda-api-wrappers
-	src/cuda/api/types.cpp
+	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
 	src/cuda/api/device.cpp
 )
