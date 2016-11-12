@@ -28,9 +28,9 @@ Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-r
 
 | Coverage level  | Modules                                                                 | 
 |-----------------|-------------------------------------------------------------------------| 
-| full            | Device Management, Error Handling, Stream Management, Event Management, Execution Control, Memory Management, |
-| (very) partial  | Peer Device Memory Access                                               |
-| no coverage     |  Occupancy, Unified Addressing, OpenGL Interoperability, Direct3D 9 Interoperability, Direct3D 10 Interoperability, Direct3D 11 Interoperability, VDPAU Interoperability, EGL Interoperability, Graphics Interoperability, Texture Reference Management, Surface Reference Management, Texture Object Management, Surface Object Management, Version Management   |
+| full            | Device Management, Error Handling, Stream Management, Event Management, Execution Control, Memory Management, Version Management |
+| partial         | Peer Device Memory Access                                               |
+| no coverage     | Occupancy, Unified Addressing, OpenGL Interoperability, Direct3D 9 Interoperability, Direct3D 10 Interoperability, Direct3D 11 Interoperability, VDPAU Interoperability, EGL Interoperability, Graphics Interoperability, Texture Reference Management, Surface Reference Management, Texture Object Management, Surface Object Management   |
 
 Since the (main) developer is not currently working on anything graphics-related, there are no short-term plans to extend coverage to any of the graphics related modules. Other modules may well become supported.
 
