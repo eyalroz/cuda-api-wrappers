@@ -1,4 +1,4 @@
-#include "cuda/api/types.h"
+#include "cuda/api/device_properties.hpp"
 
 #include <string>
 #include <sstream>
@@ -8,13 +8,13 @@
 #include <climits>
 
 namespace cuda {
+namespace device {
 
 using std::setw;
 using std::left;
 using std::setprecision;
 using std::setw;
 using std::setprecision;
-
 
 const char* architecture_name(unsigned major_compute_capability_version)
 {
@@ -29,12 +29,7 @@ const char* architecture_name(unsigned major_compute_capability_version)
 	return arch_names.at(major_compute_capability_version).c_str();
 }
 
-const char* compute_capability_t::architecture_name()
-{
-	return cuda::architecture_name(major);
-}
-
-shared_memory_size_t compute_capability_t::max_shared_memory_per_block()
+shared_memory_size_t compute_capability_t::max_shared_memory_per_block() const
 {
 	using namespace std;
 	// On Kepler, you need to actually set the shared memory / L1 balance to get this.
@@ -54,7 +49,7 @@ shared_memory_size_t compute_capability_t::max_shared_memory_per_block()
 	return smem_arch_defaults.at(cc - cc % 10);
 }
 
-unsigned compute_capability_t::max_resident_warps_per_processor() {
+unsigned compute_capability_t::max_resident_warps_per_processor() const {
 	using namespace std;
 	static unordered_map<unsigned, unsigned> data =
 	{
@@ -74,7 +69,7 @@ unsigned compute_capability_t::max_resident_warps_per_processor() {
 
 }
 
-unsigned compute_capability_t::max_warp_schedulings_per_processor_cycle() {
+unsigned compute_capability_t::max_warp_schedulings_per_processor_cycle() const {
 	using namespace std;
 	static unordered_map<unsigned, unsigned> data =
 	{
@@ -95,7 +90,7 @@ unsigned compute_capability_t::max_warp_schedulings_per_processor_cycle() {
 	return data.at(cc - cc % 10);
 }
 
-unsigned compute_capability_t::max_in_flight_threads_per_processor() {
+unsigned compute_capability_t::max_in_flight_threads_per_processor() const {
 	using namespace std;
 	static unordered_map<unsigned, unsigned> data =
 	{
@@ -116,4 +111,5 @@ unsigned compute_capability_t::max_in_flight_threads_per_processor() {
 	return data.at(cc - cc % 10);
 }
 
+} // namespace device
 } // namespace cuda

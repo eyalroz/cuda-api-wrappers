@@ -53,70 +53,10 @@
 	exit(exit_value);
 }
 
-inline std::ostream& operator<< (std::ostream& os, const cuda::compute_capability_t& cc)
+inline std::ostream& operator<< (std::ostream& os, const cuda::device::compute_capability_t& cc)
 {
 	return os << cc.major << '.' << cc.minor;
 }
-
-/*
-template< typename T >
-void check(T result, char const *const func, const char *const file, int const line)
-{
-	if (result)
-	{
-		fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \"%s\" \n",
-				file, line, static_cast<unsigned int>(result), _cudaGetErrorEnum(result), func);
-		DEVICE_RESET
-		// Make sure we call CUDA Device Reset before exiting
-		exit(EXIT_FAILURE);
-	}
-}
-
-#ifdef __DRIVER_TYPES_H__
-// This will output the proper CUDA error strings in the event that a CUDA host call returns an error
-#define checkCudaErrors(val)           check ( (val), #val, __FILE__, __LINE__ )
-
-// This will output the proper error string when calling cudaGetLastError
-#define getLastCudaError(msg)      __getLastCudaError (msg, __FILE__, __LINE__)
-
-inline void __getLastCudaError(const char *errorMessage, const char *file, const int line)
-{
-	cudaError_t err = cudaGetLastError();
-
-	if (cudaSuccess != err)
-	{
-		fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",
-				file, line, errorMessage, (int)err, cudaGetErrorString(err));
-		DEVICE_RESET
-		exit(EXIT_FAILURE);
-	}
-}
-#endif
-
-#ifndef MAX
-#define MAX(a,b) (a > b ? a : b)
-#endif
-
-// Float To Int conversion
-inline int ftoi(float value)
-{
-	return (value >= 0 ? (int)(value + 0.5) : (int)(value - 0.5));
-}
-
-// Beginning of GPU Architecture definitions
-inline int _ConvertSMVer2Cores(int major, int minor)
-{
-	auto cc = cuda::make_compute_capability(major, minor);
-	try { return cc.max_in_flight_threads_per_processor(); }
-	catch(std::exception&) {
-		auto cores = cuda::make_compute_capability(6, 2).max_in_flight_threads_per_processor();
-		std::cout << "MapSMtoCores for SM " << cc << " is undefined. "
-			<< "Default to use " << cores << " Cores/SM\n";
-		return cores;
-	}
-}
-// end of GPU Architecture definitions
-*/
 
 #ifdef __CUDA_RUNTIME_H__
 // General GPU Device CUDA Initialization
@@ -241,7 +181,7 @@ inline int findCudaDevice(int argc, const char **argv)
 // General check for CUDA GPU SM Capabilities
 inline bool checkCudaCapabilities(int major_version, int minor_version)
 {
-	auto minimum_cc = cuda::make_compute_capability(major_version, minor_version);
+	auto minimum_cc = cuda::device::make_compute_capability(major_version, minor_version);
 	auto device = cuda::device::current::get();
 	auto cc = device.properties().compute_capability();
 	if (cc >= minimum_cc) {

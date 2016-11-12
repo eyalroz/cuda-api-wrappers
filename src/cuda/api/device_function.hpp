@@ -3,6 +3,7 @@
 #define CUDA_DEVICE_FUNCTIONS_HPP_
 
 #include "cuda/api/types.h"
+#include "cuda/api/device_properties.hpp"
 #include "cuda/api/error.hpp"
 
 #include <cuda_runtime_api.h>
@@ -19,7 +20,7 @@ public: // type definitions
 public: // statics
 
 	static shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-		attributes_t attributes, compute_capability_t compute_capability)
+		attributes_t attributes, device::compute_capability_t compute_capability)
 	{
 
 		auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
@@ -64,7 +65,7 @@ public: // non-mutators
 	 * function can require
 	 */
 	shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-		compute_capability_t compute_capability) const
+		device::compute_capability_t compute_capability) const
 	{
 		return maximum_dynamic_shared_memory_per_block(attributes(), compute_capability);
 	}

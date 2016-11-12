@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 	auto properties = current_device.properties();
 	auto compute_capability = properties.compute_capability();
 
-	if (compute_capability < cuda::compute_capability_t({1, 1}) ) {
+	if (compute_capability < cuda::device::compute_capability_t({1, 1}) ) {
 		std::cout << properties.name << " does not have Compute Capability 1.1 or newer.  Reducing workload.\n";
 	}
 
