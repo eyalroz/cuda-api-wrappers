@@ -1,8 +1,8 @@
 # cuda-api-wrappers:<br> Thin C++-flavored wrappers for the CUDA runtime API
 
-nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for CUDA is intended for use both in C and C++ code. As such, it uses a C-style API, the lower common denominator (with a few [notable exceptions](docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
+nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for [CUDA](http://www.nvidia.com/object/cuda_home_new.html) is intended for use both in C and C++ code. As such, it uses a C-style API, the lower common denominator (with a few [notable exceptions](docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
 
-These wrappers are intended to allow us to embrace many of the features of C++ (including some C++11) for using the runtime API - but without reducing expressivity or increasing the level of abstraction (as in, e.g., the [Thrust](https://thrust.github.io/) library). Using cuda-api-wrappers, you would still have your devices, streams, events, device properties etc. - but they will be more convenient to work with and better-compatible with other 'heavily C++-ish' code.
+This library of wrappers around the Runtime API is intended to allow us to embrace many of the features of C++ (including some C++11) for using the runtime API - but without reducing expressivity or increasing the level of abstraction (as in, e.g., the [Thrust](https://thrust.github.io/) library). Using cuda-api-wrappers, you still have your devices, streams, events and so on - but they will be more convenient to work with in more C++-idiomatic ways.
 
 ## Key features
 
@@ -28,8 +28,8 @@ Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-r
 
 | Coverage level  | Modules                                                                 | 
 |-----------------|-------------------------------------------------------------------------| 
-| full            | Device Management, Error Handling, Stream Management, Event Management, Execution Control, Memory Management, Version Management |
-| partial         | Peer Device Memory Access                                               |
+| full            | Device Management, Error Handling, Stream Management, Event Management, Execution Control, Memory Management, Version Management, Peer Device Memory Access |
+| partial         | (none at the moment)
 | no coverage     | Occupancy, Unified Addressing, OpenGL Interoperability, Direct3D 9 Interoperability, Direct3D 10 Interoperability, Direct3D 11 Interoperability, VDPAU Interoperability, EGL Interoperability, Graphics Interoperability, Texture Reference Management, Surface Reference Management, Texture Object Management, Surface Object Management   |
 
 Since the (main) developer is not currently working on anything graphics-related, there are no short-term plans to extend coverage to any of the graphics related modules. Other modules may well become supported.
