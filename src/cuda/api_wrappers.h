@@ -10,7 +10,6 @@
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
 #include "cuda/api/error.hpp"
-#include "cuda/api/versions.hpp"
 #include "cuda/api/kernel_launch.cuh"
 #include "cuda/api/profiling.h"
 #include "cuda/api/device_properties.hpp"
