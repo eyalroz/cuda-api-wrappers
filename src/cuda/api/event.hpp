@@ -32,9 +32,11 @@ public: // constructors and destructor
 		throw_if_error(status, "failed creating a CUDA event");
 	}
 	event_t(
-		bool uses_blocking_sync = false,
-		bool records_timing = true,
-		bool interprocess = false)
+		bool uses_blocking_sync, 
+			// I would have liked to default to false, but this would
+			// occlude the trivial (argument-less) constructor)
+		bool records_timing = event::do_record_timings,
+		bool interprocess = event::not_interprocess)
 	:
 		owning(true), uses_blocking_sync_(uses_blocking_sync),
 		records_timing_(records_timing), interprocess_(interprocess)
