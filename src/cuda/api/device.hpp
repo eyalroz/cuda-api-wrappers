@@ -63,7 +63,7 @@ public: // types
 		const device::id_t& device_id;
 
 	public:
-		memory_t(device::id_t  device_id) : device_id(device_id) {}
+		memory_t(const device::id_t& device_id) : device_id(device_id) {}
 
 		template <typename T = void>
 		__host__ T* allocate(size_t size_in_bytes)
@@ -171,7 +171,7 @@ public: // types
 		const device::id_t& device_id;
 
 	public:
-		peer_access_t(device::id_t  device_id) : device_id(device_id) {}
+		peer_access_t(const device::id_t& device_id) : device_id(device_id) {}
 
 		bool can_access(id_t peer_id) const
 		{
@@ -443,24 +443,20 @@ public: // methods
 	}
 
 	device_t& operator=(const device_t& other) = delete;
-	// TODO: Consider limiting the copy ctor acess to prevent users from
-	// messing up stuff; problem is, removing it prevents the device::get()
-	// function from working and friend'ing it doesn't seem to work.
-	// device_t(const device_t& other) = default;
 
 public: // constructors and destructor
 
-	// TODO: Consider making the ctor accessible only by the device::get() function,
-	device_t(device::id_t  device_id) : id_(device_id), memory(device_id), peer_access(device_id) { };
-	// TODO: How safe is it that we allow copy construction?
+	// TODO: Consider making the ctor accessible only by the device::get()
+	// and device::current::get() functions
+	device_t(device::id_t  device_id) : id_(device_id) { }
 	~device_t() { };
 
 protected: // data members
 	const device::id_t   id_;
 
 public: // faux data members (used as surrogates for internal namespaces)
-	memory_t             memory;
-	peer_access_t        peer_access;
+	memory_t             memory { id_ };
+	peer_access_t        peer_access { id_ };
 };
 
 namespace device {
