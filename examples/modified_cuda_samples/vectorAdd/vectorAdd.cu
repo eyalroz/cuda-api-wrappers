@@ -51,8 +51,7 @@ int main(void)
 		<< "CUDA kernel launch with " << blocksPerGrid
 		<< " blocks of " << threadsPerBlock << " threads\n";
 
-	auto current_device = cuda::device::current::get();
-	current_device.launch(
+	cuda::launch(
 		vectorAdd,
 		{ blocksPerGrid, threadsPerBlock },
 		d_A.get(), d_B.get(), d_C.get(), numElements
