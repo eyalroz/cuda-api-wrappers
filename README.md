@@ -1,16 +1,20 @@
-# cuda-api-wrappers:<br> C++-flavored wrappers for the CUDA runtime API
+# cuda-api-wrappers:<br> Thin C++-flavored wrappers for the CUDA runtime API
 
 nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for CUDA is intended for use both in C and C++ code. As such, it uses a C-style API, the lower common denominator (with a few [notable exceptions](docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
 
 These wrappers are intended to allow us to embrace many of the features of C++ (including some C++11) for using the runtime API - but without reducing expressivity or increasing the level of abstraction (as in, e.g., the [Thrust](https://thrust.github.io/) library). Using cuda-api-wrappers, you would still have your devices, streams, events, device properties etc. - but they will be more convenient to work with and better-compatible with other 'heavily C++-ish' code.
 
-## Key overall features
+## Key features
 
 - All functions and methods throw **exceptions** on failure - no need to check return values (the exceptions carry the status information).
 - Judicious **namespacing** (and some internal namespace-like classes) for better clarity and for semantically grouping related functionality together.
 - There are **proxy objects** for devices, streams, events and so on, using [RAII](http://en.cppreference.com/w/cpp/language/raii) to relieve you of remembering to free or destroy resources.
 - Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators**.
-- Avoidance of obscure parameters which require you to go read the official documentation to get right; everything is as clear and understandable as I could make it.
+- Aims for **clarity and straightforwardness** in naming and semantics, so that you don't need to refer to the official documentation to understand what each class and function do.
+- Thin and **lightweight**: 
+    - No work done behind your back, no caches or indices or any such thing.
+    - No costly inheritance structure, vtables, virtual methods and so on - vanishes almost entirely on compilation
+    - Doesn't "hide" any of CUDA's complexity or functionality; it only simplifies _use_ of the Runtime API.
 
 ## Requirements
 
