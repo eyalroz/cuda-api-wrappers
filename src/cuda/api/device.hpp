@@ -45,7 +45,7 @@ template <bool AssumedCurrent = detail::do_not_assume_device_is_current>
 class device_t {
 
 protected: // types
-	using device_setter              = device::current::ScopedDeviceOverride<AssumedCurrent>;
+	using device_setter              = device::current::scoped_override_t<AssumedCurrent>;
 	using properties_t               = device::properties_t;
 	using attribute_t                = device::attribute_t;
 	using attribute_value_t          = device::attribute_value_t;

@@ -51,7 +51,7 @@ inline id_t create(
 	priority_t    priority = default_priority,
 	bool          synchronizes_with_default_stream = true)
 {
-	device::current::ScopedDeviceOverride<> set_device_for_this_scope(device_id);
+	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	return create(priority, synchronizes_with_default_stream);
 }
 
@@ -72,7 +72,7 @@ inline id_t create(
  */
 inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
-	device::current::ScopedDeviceOverride<detail::do_not_assume_device_is_current>
+	device::current::scoped_override_t<detail::do_not_assume_device_is_current>
 		set_device_for_this_scope(device_id);
 	auto result = cudaStreamQuery(stream_id);
 	switch(result) {
@@ -122,7 +122,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using DeviceSetter = ::cuda::device::current::ScopedDeviceOverride<AssumesDeviceIsCurrent>;
+	using DeviceSetter = ::cuda::device::current::scoped_override_t<AssumesDeviceIsCurrent>;
 
 
 public: // const getters

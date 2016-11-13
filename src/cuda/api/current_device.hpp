@@ -27,10 +27,10 @@ inline __host__ void set(device::id_t  device)
 
 inline __host__ void set_to_default() { return set(device::default_device_id); }
 
-template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class ScopedDeviceOverride;
+template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class scoped_override_t;
 
 template <>
-class ScopedDeviceOverride<detail::do_not_assume_device_is_current> {
+class scoped_override_t<detail::do_not_assume_device_is_current> {
 protected:
 	// Note the previous device and the current one might be one and the same;
 	// in that case, the push is idempotent (but who guarantees this? Hmm.)
@@ -43,23 +43,23 @@ protected:
 	static inline __host__ void pop(device::id_t  old_device) { device::current::set(old_device); }
 
 public:
-	ScopedDeviceOverride(device::id_t  device) { previous_device = push(device); }
-	~ScopedDeviceOverride() { pop(previous_device); }
+	scoped_override_t(device::id_t  device) { previous_device = push(device); }
+	~scoped_override_t() { pop(previous_device); }
 private:
 	device::id_t  previous_device;
 };
 
 template <>
-class ScopedDeviceOverride<detail::assume_device_is_current> {
+class scoped_override_t<detail::assume_device_is_current> {
 public:
-	ScopedDeviceOverride(device::id_t  device) { }
-	~ScopedDeviceOverride() { }
+	scoped_override_t(device::id_t  device) { }
+	~scoped_override_t() { }
 };
 
 
 // In user code, this could be useful. Maybe.
 #define CUDA_DEVICE_FOR_THIS_SCOPE(_device_id) \
-	::cuda::device::current::ScopedDeviceOverride<::cuda::detail::do_not_assume_device_is_current> scoped_device_override(_device_id)
+	::cuda::device::current::scoped_override_t<::cuda::detail::do_not_assume_device_is_current> scoped_device_override(_device_id)
 
 
 } // namespace current

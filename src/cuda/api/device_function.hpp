@@ -105,7 +105,7 @@ public: // mutators
 	void cache_preference(
 		device::id_t  device_id, multiprocessor_cache_preference_t preference)
 	{
-		// Not using device::current::ScopedDeviceOverride here
+		// Not using device::current::scoped_override_t here
 		// to minimize dependecies
 		device::id_t  old_device;
 		auto result = cudaGetDevice(&old_device);
