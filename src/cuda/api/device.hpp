@@ -12,8 +12,9 @@
 #include <string>
 
 namespace cuda {
-
 namespace device {
+
+template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class device_t;
 
 struct pci_id_t {
 	// This is simply what we get in CUDA's cudaDeviceProp structure
@@ -37,6 +38,16 @@ inline bool can_access_peer(id_t accessor_id, id_t peer_id)
 	return (result == 1);
 }
 
+namespace current {
+
+/**
+ * Returns the current device in a wrapper which assumes it is indeed
+ * current, i.e. which will not set the current device before performing any
+ * other actions.
+ */
+inline device_t<detail::do_not_assume_device_is_current> get(device::id_t device_id);
+
+} // namespace current
 
 } // namespace device
 
@@ -56,14 +67,45 @@ protected: // types
 	using shared_memory_bank_size_t  = cudaSharedMemConfig;
 	using priority_range_t           = std::pair<stream::priority_t, stream::priority_t>;
 
+	// This relies on valid CUDA device IDs being non-negative, which is indeed
+	// always the case for CUDA <= 8.0 and unlikely to change; however, it's
+	// a bit underhanded to make that assumption just to twist this class to do
+	// our bidding (see below)
+	enum : device::id_t { invalid_id = -1 };
+
+	struct immutable_id_holder {
+		operator const device::id_t&() const { return id; }
+		void set(device::id_t) const { };
+		device::id_t id;
+	};
+	struct mutable_id_holder {
+		operator const device::id_t&() const { return id; }
+		void set(device::id_t new_id) const { id = new_id; };
+		mutable device::id_t id { invalid_id };
+	};
+
+	using id_holder_type              = typename std::conditional<
+		AssumedCurrent, mutable_id_holder, immutable_id_holder>::type;
+		// class device_t has a field with the device's id; when assuming the device is the
+		// current one, we want to be able to set the device_id after construction; but
+		// when not making that assumption, we need a const field, initialized on construction;
+		// this hack allows both the options to coexist without the compiler complaining
+		// about assigning to a const lvalue (we use it since std::conditional can't
+		// be used to select between making a field mutable or not).
+
 public: // types
 
 	class memory_t {
 	protected:
-		const device::id_t& device_id;
+		const id_holder_type& device_id;
+
+		std::string device_id_as_str() const
+		{
+			return device_t::device_id_as_str(device_id);
+		}
 
 	public:
-		memory_t(const device::id_t& device_id) : device_id(device_id) {}
+		memory_t(const device_t::id_holder_type& id) : device_id(id) {}
 
 		template <typename T = void>
 		__host__ T* allocate(size_t size_in_bytes)
@@ -110,7 +152,7 @@ public: // types
 			}
 			throw_if_error(status,
 				"Failed allocating " + std::to_string(size_in_bytes) +
-				" bytes of global memory on CUDA device " + std::to_string(device_id));
+				" bytes of global memory on " + device_id_as_str());
 			return allocated;
 		}
 
@@ -138,8 +180,8 @@ public: // types
 			}
 			throw_if_error(status,
 				"Failed allocating a mapped pair of memory regions of size " +
-				std::to_string(size_in_bytes) +
-				" bytes of global memory on CUDA device " + std::to_string(device_id));
+				std::to_string(size_in_bytes) + " bytes of global memory on " +
+				device_id_as_str());
 			return allocated;
 		}
 
@@ -160,18 +202,23 @@ public: // types
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
 			throw_if_error(status,
-				std::string("Failed determining amount of free memory for CUDA device ") +
-				std::to_string(device_id));
+				"Failed determining amount of free memory for " +
+				device_id_as_str());
 			return free_mem_in_bytes;
 		}
 	}; // class memory_t
 
 	class peer_access_t {
 	protected:
-		const device::id_t& device_id;
+		const device_t::id_holder_type& device_id;
+
+		std::string device_id_as_str() const
+		{
+			return device_t::device_id_as_str(device_id);
+		}
 
 	public:
-		peer_access_t(const device::id_t& device_id) : device_id(device_id) {}
+		peer_access_t(const device_t::id_holder_type& holder) : device_id(holder) {}
 
 		bool can_access(id_t peer_id) const
 		{
@@ -184,16 +231,16 @@ public: // types
 			enum : unsigned { fixed_flags = 0}; // No flags are supported as of CUDA 8.0
 			auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
 			throw_if_error(status,
-				"Failed enabling access of device " + std::to_string(device_id)
-				+ " to device " + std::to_string(peer_id));
+				"Failed enabling access of " + device_id_as_str() +
+				" to device " + std::to_string(peer_id));
 		}
 
 		void disable_to(id_t peer_id) {
 			device_setter set_device_for_this_scope(device_id);
 			auto status = cudaDeviceDisablePeerAccess(peer_id);
 			throw_if_error(status,
-				"Failed disabling access of device " + std::to_string(id_)
-				+ " to device " + std::to_string(peer_id));
+				"Failed disabling access of " + device_id_as_str() +
+				" to device " + std::to_string(peer_id));
 
 		}
 	}; // class peer_access_t
@@ -208,7 +255,17 @@ protected:
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaSetDeviceFlags(new_flags);
 		throw_if_error(status,
-			"Failed setting the flags for CUDA device " + std::to_string(id_));
+			"Failed setting the flags for " + device_id_as_str());
+	}
+
+	static std::string device_id_as_str(device::id_t id)
+	{
+		return AssumedCurrent ? "current device" : "device " + std::to_string(id);
+	}
+
+	std::string device_id_as_str() const
+	{
+		return device_id_as_str(id_);
 	}
 
 public: // methods
@@ -217,9 +274,9 @@ public: // methods
 	properties_t properties() const
 	{
 		properties_t properties;
-		auto status = cudaGetDeviceProperties(&properties, id_);
+		auto status = cudaGetDeviceProperties(&properties, id());
 		throw_if_error(status,
-			std::string("Failed obtaining device properties for CUDA device ") + std::to_string(id_));
+			"Failed obtaining device properties for " + device_id_as_str());
 		return properties;
 	}
 
@@ -237,9 +294,9 @@ public: // methods
 	attribute_value_t get_attribute(attribute_t attribute) const
 	{
 		attribute_value_t attribute_value;
-		auto ret = cudaDeviceGetAttribute(&attribute_value, attribute, id_);
+		auto ret = cudaDeviceGetAttribute(&attribute_value, attribute, id());
 		throw_if_error(ret,
-			std::string("Failed obtaining device properties for CUDA device ") + std::to_string(id_));
+			"Failed obtaining device properties for " + device_id_as_str());
 		return attribute_value;
 	}
 
@@ -247,52 +304,51 @@ public: // methods
 	{
 		resource_limit_t limit;
 		auto status = cudaDeviceGetLimit(&limit, resource);
-		throw_if_error(status, std::string("Failed obtaining a resource limit "
-			"for CUDA device ") + std::to_string(id_));
+		throw_if_error(status,
+			"Failed obtaining a resource limit for " + device_id_as_str());
 		return limit;
 	}
 
 	void set_resource_limit(resource_id_t resource, resource_limit_t new_limit)
 	{
 		auto status = cudaDeviceSetLimit(resource, new_limit);
-		throw_if_error(status, std::string("Failed setting a resource limit "
-			"for CUDA device ") + std::to_string(id_));
+		throw_if_error(status,
+			"Failed setting a resource limit for  " + device_id_as_str());
 	}
 
 	inline void synchronize()
 	{
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSynchronize();
-		throw_if_error(status,
-			std::string("Failed synchronizing CUDA device ") + std::to_string(id_));
+		throw_if_error(status, "Failed synchronizing " + device_id_as_str());
 	}
 	inline void synchronize_stream(stream::id_t stream_id)
 	{
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaStreamSynchronize(stream_id);
-		throw_if_error(status, "Failed synchronizing a stream  on CUDA device " + std::to_string(id_));
+		throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
 	}
 
 	inline void synchronize_event(event::id_t event_id)
 	{
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaEventSynchronize(event_id);
-		throw_if_error(status, "Failed synchronizing an event on CUDA device " + std::to_string(id_));
+		throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
 	}
 
 	inline void reset()
 	{
 		device_setter set_device_for_this_scope(id_);
 		status_t status = cudaDeviceReset();
-		throw_if_error(status, "Resetting CUDA device " + std::to_string(id_));
+		throw_if_error(status, "Resetting  " + device_id_as_str());
 	}
 
 	inline void set_cache_preference(multiprocessor_cache_preference_t preference) {
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetCacheConfig((cudaFuncCache) preference);
 		throw_if_error(status,
-			"Setting the multiprocessor L1/Shared Memory cache distribution preference for device " +
-			std::to_string(id_));
+			"Setting the multiprocessor L1/Shared Memory cache distribution preference for " +
+			 device_id_as_str());
 	}
 
 	inline multiprocessor_cache_preference_t cache_preference() const {
@@ -300,8 +356,8 @@ public: // methods
 		cudaFuncCache raw_preference;
 		auto status = cudaDeviceGetCacheConfig(&raw_preference);
 		throw_if_error(status,
-			"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for device " +
-			std::to_string(id_));
+			"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " +
+			 device_id_as_str());
 		return (multiprocessor_cache_preference_t) raw_preference;
 	}
 
@@ -309,8 +365,7 @@ public: // methods
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
 		throw_if_error(status,
-			"Setting the multiprocessor shared memory bank size for device " +
-			std::to_string(id_));
+			"Setting the multiprocessor shared memory bank size for " + device_id_as_str());
 	}
 
 	inline shared_memory_bank_size_t shared_memory_bank_size() const {
@@ -318,8 +373,7 @@ public: // methods
 		shared_memory_bank_size_t bank_size;
 		auto status = cudaDeviceGetSharedMemConfig(&bank_size);
 		throw_if_error(status,
-			"Obtaining the multiprocessor shared memory bank size for device " +
-			std::to_string(id_));
+			"Obtaining the multiprocessor shared memory bank size for  " + device_id_as_str());
 		return bank_size;
 	}
 
@@ -329,14 +383,21 @@ public: // methods
 	// inline multiprocessor_cache_preference_t kernel_cache_preference(
 	// 	const KernelFunction* kernel, multiprocessor_cache_preference_t preference);
 
-	device::id_t  id() const { return id_; }
-	// Note: There is _no_ method to make this device the current one,
-	// since I do not want users to hang on to these objects and
-	// manipulate them this way or that
+	device::id_t id() const
+	{
+		if (AssumedCurrent) {
+			// This is the first time in which we need to get the device ID
+			// for the current device - as we've constructed this instance of
+			// device_t<assume_device_is_current> without the ID
+			if (id_.id == invalid_id) { id_.set(device::current::get_id()); }
+		}
+		return id_.id;
+	}
 
 	stream_t<AssumedCurrent> default_stream()
 	{
-		return stream_t<AssumedCurrent>(id_, stream::default_stream_id);
+		// TODO: Perhaps support not-knowing our ID here as well?
+		return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
 	}
 
 	stream::id_t create_stream(
@@ -345,14 +406,14 @@ public: // methods
 	{
 		return AssumedCurrent ?
 			stream::create(priority, synchronizes_with_default_stream) :
-			stream::create(id_, priority, synchronizes_with_default_stream);
+			stream::create(id(), priority, synchronizes_with_default_stream);
 	}
 
 	stream_t<detail::do_not_assume_device_is_current> create_stream_proxy(
 		stream::priority_t  priority = stream::default_priority,
 		bool                synchronizes_with_default_stream = true)
 	{
-		return stream_t<AssumedCurrent>::create(id_, priority, synchronizes_with_default_stream);
+		return stream_t<AssumedCurrent>::create(id(), priority, synchronizes_with_default_stream);
 	}
 
 	template<typename KernelFunction, typename... KernelParameters>
@@ -370,7 +431,7 @@ public: // methods
 		stream::priority_t least, greatest;
 		auto status = cudaDeviceGetStreamPriorityRange(&least, &greatest);
 		throw_if_error(status,
-			"Failed obtaining stream priority range for CUDA device " + std::to_string(id_));
+			"Failed obtaining stream priority range for " + device_id_as_str());
 		return { least, greatest };
 	}
 
@@ -380,7 +441,7 @@ public: // methods
 		flags_t flags;
 		auto status = cudaGetDeviceFlags(&flags);
 		throw_if_error(status,
-			"Failed obtaining the flags for CUDA device " + std::to_string(id_));
+			"Failed obtaining the flags for  " + device_id_as_str());
 		return flags;
 	}
 
@@ -429,17 +490,22 @@ public: // methods
 		bool keep_local_mem_allocation_after_launch,
 		bool allow_pinned_mapped_memory_allocation)
 	{
-		return set_flags((flags_t)
+		set_flags((flags_t)
 			  synch_scheduling_policy // this enum value is also a valid flags value
 			| (keep_local_mem_allocation_after_launch ? cudaDeviceLmemResizeToMax : 0)
 			| (allow_pinned_mapped_memory_allocation  ? cudaDeviceMapHost         : 0)
 		);
 	}
 
+	// I'm of two minds regarding whether or not we should have this method at all;
+	// I'm worried people might assume the proxy object will start behaving like
+	// what they get with cuda::device::current::get(), i.e. a device_t<AssumedCurrent>.
 	void make_current() {
 		static_assert(AssumedCurrent == false,
 			"Attempt to manipulate current device from a device proxy assumed to be current");
-		device::current::set(id_);
+		device::current::set(id());
+		// But note this change will not make methods of this device_t forego their
+		// cudaSetDevice()'ing !
 	}
 
 	device_t& operator=(const device_t& other) = delete;
@@ -448,28 +514,38 @@ public: // constructors and destructor
 
 	// TODO: Consider making the ctor accessible only by the device::get()
 	// and device::current::get() functions
-	device_t(device::id_t  device_id) : id_(device_id) { }
+	device_t(device::id_t  device_id) : id_({device_id}) { }
 	~device_t() { };
 
+protected: // constructors
+	/**
+	 * @note Have a look at how mutable_id_holder is default-constructed.
+	 */
+	device_t() : id_()
+	{
+		static_assert(AssumedCurrent,
+			"Attempt to instantiate a device proxy for a device not known to be "
+			"current, without a specific device id");
+	}
+
+	friend device_t<detail::assume_device_is_current> device::current::get();
+
 protected: // data members
-	const device::id_t   id_;
+	const id_holder_type id_;
 
 public: // faux data members (used as surrogates for internal namespaces)
 	memory_t             memory { id_ };
 	peer_access_t        peer_access { id_ };
+		// don't worry, these two will not actually use the id_ value
+		// without making sure it's been correctly determined
 };
 
 namespace device {
 namespace current {
 
-/**
- * Returns the current device in a wrapper which assumes it is indeed
- * current, i.e. which will not set the device before performing any
- * other actions.
- */
-inline device_t<detail::assume_device_is_current> get()
+inline cuda::device_t<detail::assume_device_is_current> get()
 {
-	return device_t<detail::assume_device_is_current>(current::get_id());
+	return cuda::device_t<detail::assume_device_is_current>();
 }
 
 } // namespace current
@@ -484,9 +560,9 @@ inline device_t<detail::assume_device_is_current> get()
  *   cuda::device_t(my_favorite_device_id).synchronize();
  *
  */
-inline device_t<detail::do_not_assume_device_is_current> get(device::id_t device_id)
+inline cuda::device_t<detail::do_not_assume_device_is_current> get(device::id_t device_id)
 {
-	return device_t<detail::do_not_assume_device_is_current>(device_id);
+	return cuda::device_t<detail::do_not_assume_device_is_current>(device_id);
 }
 
 } // namespace device
