@@ -20,6 +20,8 @@ namespace stream {
 /**
  * Creates a new stream on the current device.
  *
+ * @note stream_t construction _never_ creates a stream!
+ *
  * @return the created stream's id
  */
 inline id_t create(
@@ -40,6 +42,8 @@ inline id_t create(
  * Creates a new stream on an artibrary device
  * (which may or may not be the current one)
  *
+ * @note stream_t construction _never_ creates a stream!
+ *
  * @return the created stream's id
  */
 inline id_t create(
@@ -49,6 +53,57 @@ inline id_t create(
 {
 	device::current::ScopedDeviceOverride<> set_device_for_this_scope(device_id);
 	return create(priority, synchronizes_with_default_stream);
+}
+
+
+/**
+ * Check whether a certain stream is associated with a specific device.
+ *
+ * @note the stream_t class includes information regarding a stream's
+ * device association, so this function only makes sense for CUDA stream
+ * identifiers
+ *
+ * @param stream_id the CUDA runtime API identifier for the stream whose
+ * association is to be checked
+ * @param device_id a CUDA device identifier
+ * @return true if the specified stream is associated with the specified
+ * device, false if they are unassociated
+ * @throws if the association check returns anything weird
+ */
+inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
+{
+	device::current::ScopedDeviceOverride<detail::do_not_assume_device_is_current>
+		set_device_for_this_scope(device_id);
+	auto result = cudaStreamQuery(stream_id);
+	switch(result) {
+	case cudaSuccess:
+	case cudaErrorNotReady:
+		return true;
+	case cudaErrorInvalidResourceHandle:
+		return false;
+	default:
+		throw(std::logic_error("unexpected status returned from cudaStreamQuery()"));
+	}
+}
+
+/**
+ * Strangely enough, CUDA won't tell you which device a stream is associated with,
+ * while it can - supposedly - tell this itself when querying stream status. So,
+ * let's use that. This is ugly and possibly buggy, but it _might_ just work.
+ *
+ * @param stream_id a stream identifier
+ * @return the identifier of the device for which the stream was created.
+ */
+inline device::id_t associated_device(stream::id_t stream_id)
+{
+	if (stream_id == cuda::stream::default_stream_id) {
+		throw std::invalid_argument("Cannot determine device association for the default/null stream");
+	}
+	for(device::id_t device_index = 0; device_index < device::count(); device_index++) {
+		if (is_associated_with(stream_id, device_index)) { return device_index; }
+	}
+	throw std::runtime_error(
+		"Could not find any device associated with stream " + detail::as_hex((size_t) stream_id));
 }
 
 } // namespace stream
@@ -69,36 +124,6 @@ public: // type definitions
 protected: // type definitions
 	using DeviceSetter = ::cuda::device::current::ScopedDeviceOverride<AssumesDeviceIsCurrent>;
 
-public: // statics
-
-	/**
-	 * Check whethers a certain stream is associated with a specific device.
-	 *
-	 * @note the stream_t class includes information regarding a stream's
-	 * device association, so this function only makes sense for CUDA stream
-	 * identifiers
-	 *
-	 * @param stream_id the CUDA runtime API identifier for the stream whose
-	 * association is to be checked
-	 * @param device_id a CUDA device identifier
-	 * @return true if the specified stream is associated with the specified
-	 * device, false if they are unassociated
-	 * @throws if the association check returns anything weird
-	 */
-	static bool associated_with(stream::id_t stream_id, device::id_t device_id)
-	{
-		DeviceSetter set_device_for_this_scope(device_id);
-		auto result = cudaStreamQuery(stream_id);
-		switch(result) {
-		case cudaSuccess:
-		case cudaErrorNotReady:
-			return true;
-		case cudaErrorInvalidResourceHandle:
-			return false;
-		default:
-			throw(std::logic_error("unexpected status returned from cudaStreamQuery()"));
-		}
-	}
 
 public: // const getters
 	stream::id_t id() const { return id_; }
@@ -106,24 +131,6 @@ public: // const getters
 
 public: // other non-mutators
 
-	/**
-	 * Strangely enough, CUDA won't tell you which device a stream is associated with,
-	 * while it can - supposedly - tell this itself when querying stream status. So,
-	 * let's use that. This is ugly and possibly buggy, but it _might_ just work.
-	 *
-	 * @param stream_id a stream identifier
-	 * @return the identifier of the device for which the stream was created.
-	 */
-	device::id_t  get_associated_device(stream::id_t stream_id) const
-	{
-		if (stream_id == cuda::stream::default_stream_id) {
-			throw std::invalid_argument("Cannot determine device association The default/null stream");
-		}
-		for(device::id_t  d = 0; d < device::count(); d++) {
-			if (associated_with(stream_id, d)) { return d; }
-		}
-		throw std::runtime_error("Could not find any device associated with a specified stream");
-	}
 
 	/**
 	 * When true, work running in the created stream may run concurrently with
