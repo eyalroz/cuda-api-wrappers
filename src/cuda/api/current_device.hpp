@@ -25,7 +25,7 @@ inline __host__ void set(device::id_t  device)
 	throw_if_error(result, "Failure setting device to " + std::to_string(device));
 }
 
-inline __host__ void set_default() { return set(device::default_device_id); }
+inline __host__ void set_to_default() { return set(device::default_device_id); }
 
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class ScopedDeviceOverride;
 

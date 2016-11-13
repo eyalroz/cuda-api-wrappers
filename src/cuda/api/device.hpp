@@ -475,34 +475,14 @@ inline device_t<detail::assume_device_is_current> get()
 } // namespace current
 
 /**
- * A convenience method to avoid explicitly constructing a device_t object
- * just for using it once. Thus, you could write:
+ * A convenience method to avoid "knowing" about device_t's, so you can write:
  *
  *   cuda::device::get(my_favorite_device_id).synchronize();
  *
  * instead of
  *
- *   cuda::device_t d(my_favorite_device_id);
- *   d.synchronize();
+ *   cuda::device_t(my_favorite_device_id).synchronize();
  *
- * and instead of the non-wrapped-API equivalent:
- *
- *   cudaError_t status;
- *   int prev_device;
- *   status = cudaGetDevice();
- *   if (status != cudaSuccess) // error handling
- *   status cudaSetDevice(my_favorite_device_id);
- *   if (status != cudaSuccess) // error handling
- *   status = cudaDeviceSynchronize();
- *   if (status != cudaSuccess) // error handling
- *   status cudaSetDevice(prev_device);
- *   if (status != cudaSuccess) // error handling
- *
- * with the API directly.
- *
- * @param device_id Which device to "get"
- * @return a devie device_t object, which is only intended to call methods for,
- * not for manipulation/passing arround etc.
  */
 inline device_t<detail::do_not_assume_device_is_current> get(device::id_t device_id)
 {

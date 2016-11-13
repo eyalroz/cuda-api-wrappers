@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
     const int N = 1000;
 
-    cuda::device::current::set_default();
+    cuda::device::current::set_to_default();
     auto current_device = cuda::device::current::get();
 
 	auto d_ptr = cuda::memory::device::make_unique<int[]>(N);
