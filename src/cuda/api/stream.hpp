@@ -103,7 +103,7 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		if (is_associated_with(stream_id, device_index)) { return device_index; }
 	}
 	throw std::runtime_error(
-		"Could not find any device associated with stream " + detail::as_hex((size_t) stream_id));
+		"Could not find any device associated with stream " + detail::ptr_as_hex(stream_id));
 }
 
 } // namespace stream

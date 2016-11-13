@@ -46,6 +46,14 @@ std::string as_hex(I x, unsigned hex_string_length = 2*sizeof(I) )
     return result;
 }
 
+// TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
+// be called for pointer types as well? Would be easier with boost's uint<T>...
+template <typename I, bool UpperCase = false>
+inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeof(I*) )
+{
+	return as_hex((size_t) ptr, hex_string_length);
+}
+
 
 
 

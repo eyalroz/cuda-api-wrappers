@@ -76,7 +76,7 @@ T* malloc(size_t num_bytes)
 inline __host__ void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
-	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::as_hex((size_t)ptr));
+	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
 namespace detail {
@@ -136,7 +136,7 @@ inline __host__ void copy(void *destination, const void *source, size_t num_byte
 {
 	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_id);
 	if (is_failure(result)) {
-		std::string error_message("Asynchronougly copying data on stream " + cuda::detail::as_hex((size_t)stream_id));
+		std::string error_message("Asynchronougly copying data on stream " + cuda::detail::ptr_as_hex(stream_id));
 		// TODO: Determine whether it was from host to device, device to host etc and
 		// add this information to the error string
 		throw_if_error(result, error_message);
@@ -184,7 +184,7 @@ inline __host__ void* allocate(size_t size_in_bytes)
 inline __host__ void free(void* host_ptr)
 {
 	auto result = cudaFreeHost(host_ptr);
-	throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::as_hex((size_t)host_ptr));
+	throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
 }
 
 namespace detail {
