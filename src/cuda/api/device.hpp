@@ -16,18 +16,6 @@ namespace device {
 
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class device_t;
 
-struct pci_id_t {
-	// This is simply what we get in CUDA's cudaDeviceProp structure
-	int domain;
-	int bus;
-	int device;
-
-	operator std::string() const;
-	// This is not a ctor so as to maintain the plain-old-structness
-	static pci_id_t parse(const std::string& id_str);
-	device::id_t get_cuda_device_id() const;
-};
-
 inline bool can_access_peer(id_t accessor_id, id_t peer_id)
 {
 	int result;
@@ -61,7 +49,6 @@ protected: // types
 	using attribute_t                = device::attribute_t;
 	using attribute_value_t          = device::attribute_value_t;
 	using flags_t                    = device::flags_t;
-	using pci_id_t                   = device::pci_id_t;
 	using resource_id_t              = cudaLimit;
 	using resource_limit_t           = size_t;
 	using shared_memory_bank_size_t  = cudaSharedMemConfig;
@@ -282,11 +269,7 @@ public: // methods
 
 	std::string name() const { return properties().name; }
 
-	pci_id_t pci_id() const
-	{
-		auto p = properties();
-		return { p.pciDomainID, p.pciBusID, p.pciDeviceID };
-	}
+	device::pci_id_t pci_id() const { return properties().pci_id(); }
 
 	/**
 	 * Yes, properties vs attributes is a bit confusing, but that's what CUDA has.
@@ -566,10 +549,6 @@ inline cuda::device_t<detail::do_not_assume_device_is_current> get(device::id_t 
 }
 
 } // namespace device
-
 } // namespace cuda
-
-std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id);
-
 
 #endif /* CUDA_DEVICE_H_ */

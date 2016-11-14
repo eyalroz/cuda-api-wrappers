@@ -1,20 +1,11 @@
 #include "cuda/api/device_properties.hpp"
 
 #include <string>
-#include <sstream>
-#include <iomanip>
 #include <unordered_map>
 #include <utility>
-#include <climits>
 
 namespace cuda {
 namespace device {
-
-using std::setw;
-using std::left;
-using std::setprecision;
-using std::setw;
-using std::setprecision;
 
 const char* architecture_name(unsigned major_compute_capability_version)
 {

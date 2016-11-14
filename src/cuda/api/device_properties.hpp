@@ -4,6 +4,7 @@
 
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
+#include "cuda/api/pci_id.h"
 
 #include <cuda_runtime_api.h>
 
@@ -89,9 +90,8 @@ struct properties_t : public cudaDeviceProp {
 	compute_capability_t compute_capability() const {
 		return {(unsigned) major, (unsigned) minor};
 	}
-	operator compute_capability_t() const {
-		return compute_capability();
-	}
+
+	pci_id_t pci_id() const { return { pciDomainID, pciBusID, pciDeviceID }; }
 
 	unsigned long long max_in_flight_threads_on_device()
 	{

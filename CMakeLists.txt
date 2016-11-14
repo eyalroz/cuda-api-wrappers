@@ -141,7 +141,7 @@ cuda_add_library(
 	cuda-api-wrappers
 	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
-	src/cuda/api/device.cpp
+	src/cuda/api/pci_id.cpp
 )
 
 

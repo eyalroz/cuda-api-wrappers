@@ -1,5 +1,19 @@
-#include "cuda/api/device.hpp"
+
+#include <cuda/api/pci_id.h>
+#include <cuda/api/error.hpp>
+
+#include <string>
 #include <sstream>
+
+#include <cuda_runtime_api.h>
+
+std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id)
+{
+	is >> pci_id.domain; is.ignore(1); // ignoring a ':'
+	is >> pci_id.bus;    is.ignore(1); // ignoring a ':'
+	is >> pci_id.device;
+	return is;
+}
 
 namespace cuda {
 namespace device {
@@ -19,7 +33,7 @@ pci_id_t pci_id_t::parse(const std::string& id_str)
 	return id;
 }
 
-device::id_t pci_id_t::get_cuda_device_id() const
+device::id_t pci_id_t::cuda_device_id() const
 {
 	auto as_string = operator std::string();
 	device::id_t cuda_device_id;
@@ -32,11 +46,3 @@ device::id_t pci_id_t::get_cuda_device_id() const
 
 } //namespace device
 } // namespace cuda
-
-std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id)
-{
-	is >> pci_id.domain; is.ignore(1); // ignoring a ':'
-	is >> pci_id.bus;    is.ignore(1); // ignoring a ':'
-	is >> pci_id.device;
-	return is;
-}
