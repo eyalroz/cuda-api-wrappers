@@ -6,28 +6,31 @@
 
 namespace cuda {
 
-using driver_version_t = int;
-enum : driver_version_t { no_driver_installed = 0 };
-using runtime_version_t = int;
+using cuda_version_t = int;
+
+enum : cuda_version_t { no_driver_installed = 0 };
 
 namespace version_numbers {
 
 /**
- * @return 0 is no CUDA driver is installed; the driver version number otherwise
+ * @return If an nVIDIA GPU driver is installed on this system,
+ * the maximum CUDA version it supports is returned. If no nVIDIA
+ * GPU driver is installed, {@ref no_version_supported}} is returned.
  */
-driver_version_t driver() {
-	driver_version_t version;
+cuda_version_t maximum_supported_by_driver() {
+	cuda_version_t version;
 	auto status = cudaDriverGetVersion(&version);
-	throw_if_error(status, "Failed obtaining the CUDA driver version");
+	throw_if_error(status, "Failed obtaining the maximum CUDA version supported by the nVIDIA GPU driver");
 	return version;
 }
 
 /**
- * @note unlike {@ref driver()}, 0 cannot be returned, as if a runtime was
- * not installed its version could not be checked.
+ * @note unlike {@ref maximum_supported_by_driver()}, 0 cannot be returned,
+ * as we are actually using the runtime to obtain the version, so it does
+ * have _some_ version.
  */
-runtime_version_t runtime() {
-	runtime_version_t version;
+cuda_version_t runtime() {
+	cuda_version_t version;
 	auto status = cudaRuntimeGetVersion(&version);
 	throw_if_error(status, "Failed obtaining the CUDA runtime version");
 	return version;

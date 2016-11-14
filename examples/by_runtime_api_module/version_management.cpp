@@ -6,13 +6,19 @@
 
 int main(int argc, char **argv)
 {
-	std::cout << "Using CUDA runtime version " << cuda::version_numbers::runtime() << ".\n";
+	auto runtime_version = cuda::version_numbers::runtime();
+	std::cout << "Using CUDA runtime version " << runtime_version << ".\n";
 
-	auto driver_version = cuda::version_numbers::driver();
-	std::cout
-		<< "Using CUDA driver version "
-		<< (driver_version == cuda::no_driver_installed ? "(no driver installed" :
-			std::to_string(driver_version)) << ".\n";
+	auto driver_supported_version = cuda::version_numbers::maximum_supported_by_driver();
+	if (driver_supported_version == cuda::no_driver_installed) {
+		std::cout << "There is no CUDA driver installed, so no CUDA runtime version is supported\n";
+	}
+	else {
+		std::cout
+			<< "The nVIDIA GPU driver supports runtime version " << driver_supported_version
+			<< " at the highest, so the runtime used right now "
+			<< (runtime_version >= driver_supported_version ? "IS" : "IS NOT") << " supported by the driver.\n";
+	}
 	std::cout << "DONE\n";
 	return EXIT_SUCCESS;
 }
