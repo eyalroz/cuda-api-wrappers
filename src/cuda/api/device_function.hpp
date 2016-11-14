@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_DEVICE_FUNCTIONS_HPP_
-#define CUDA_DEVICE_FUNCTIONS_HPP_
+#ifndef CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
+#define CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
 
 #include "cuda/api/types.h"
 #include "cuda/api/device_properties.hpp"
@@ -140,4 +140,4 @@ public: // data members
 
 } // namespace cuda
 
-#endif /* CUDA_DEVICE_FUNCTIONS_HPP_ */
+#endif /* CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_ */

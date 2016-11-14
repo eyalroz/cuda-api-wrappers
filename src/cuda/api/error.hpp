@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_EXCEPTION_H_
-#define CUDA_EXCEPTION_H_
+#ifndef CUDA_API_WRAPPERS_ERROR_HPP_
+#define CUDA_API_WRAPPERS_ERROR_HPP_
 
 #include "cuda/api/types.h"
 
@@ -125,4 +125,4 @@ inline void clear_status() { cudaPeekAtLastError(); }
 
 } // namespace cuda
 
-#endif /* CUDA_EXCEPTION_H_ */
+#endif /* CUDA_API_WRAPPERS_ERROR_HPP_ */

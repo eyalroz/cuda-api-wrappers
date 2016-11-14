@@ -1,5 +1,5 @@
-#include <cuda/api/pci_id.hpp>
-#include <cuda/api/device.hpp>
+#include "cuda/api/pci_id.hpp"
+#include "cuda/api/device.hpp"
 
 #include <iostream>
 #include <string>

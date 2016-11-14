@@ -3,8 +3,8 @@
  * enough; but - I haven't found anywhere else to put it yet
  */
 #pragma once
-#ifndef CUDA_DEVICE_COUNT_H_
-#define CUDA_DEVICE_COUNT_H_
+#ifndef CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_
+#define CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_
 
 #include "cuda/api/types.h"
 #include <cuda_runtime_api.h>
@@ -39,4 +39,4 @@ inline __host__ device::id_t  count()
 } // namespace cuda
 
 
-#endif /* CUDA_DEVICE_COUNT_H_ */
+#endif /* CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_ */

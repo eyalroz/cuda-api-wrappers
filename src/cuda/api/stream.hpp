@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_STREAM_H_
-#define CUDA_STREAM_H_
+#ifndef CUDA_API_WRAPPERS_STREAM_HPP_
+#define CUDA_API_WRAPPERS_STREAM_HPP_
 
 #include "cuda/api/types.h"
 #include "cuda/api/error.hpp"
@@ -343,4 +343,4 @@ using queue_id_t = stream::id_t;
 } // namespace cuda
 
 
-#endif /* CUDA_STREAM_H_ */
+#endif /* CUDA_API_WRAPPERS_STREAM_HPP_ */

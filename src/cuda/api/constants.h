@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_CONSTANTS_CUH_
-#define CUDA_CONSTANTS_CUH_
+#ifndef CUDA_API_WRAPPERS_CONSTANTS_H_
+#define CUDA_API_WRAPPERS_CONSTANTS_H_
 
 #include "cuda/api/types.h"
 
@@ -47,4 +47,4 @@ enum : device::id_t {  default_device_id = 0 };
 
 
 
-#endif /* CUDA_CONSTANTS_CUH_ */
+#endif /* CUDA_API_WRAPPERS_CONSTANTS_H_ */

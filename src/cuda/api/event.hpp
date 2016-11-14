@@ -1,8 +1,8 @@
 #pragma once
-#ifndef CUDA_EVENT_H_
-#define CUDA_EVENT_H_
+#ifndef CUDA_API_WRAPPERS_EVENT_HPP_
+#define CUDA_API_WRAPPERS_EVENT_HPP_
 
-#include "types.h"
+#include "cuda/api/types.h"
 #include "cuda/api/error.hpp"
 
 #include <cuda_runtime_api.h>
@@ -124,4 +124,4 @@ float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 } // namespace cuda
 
 
-#endif /* CUDA_EVENT_H_ */
+#endif /* CUDA_API_WRAPPERS_EVENT_HPP_ */

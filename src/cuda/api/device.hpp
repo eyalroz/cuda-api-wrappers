@@ -1,13 +1,13 @@
 #pragma once
-#ifndef CUDA_DEVICE_H_
-#define CUDA_DEVICE_H_
+#ifndef CUDA_API_WRAPPERS_DEVICE_HPP_
+#define CUDA_API_WRAPPERS_DEVICE_HPP_
 
-#include <cuda/api/types.h>
-#include <cuda/api/device_properties.hpp>
-#include <cuda/api/memory.hpp>
-#include <cuda/api/current_device.hpp>
-#include <cuda/api/pci_id.h>
-#include <cuda/api/stream.hpp> // For default_stream() and launch() only
+#include "cuda/api/types.h"
+#include "cuda/api/device_properties.hpp"
+#include "cuda/api/memory.hpp"
+#include "cuda/api/current_device.hpp"
+#include "cuda/api/pci_id.h"
+#include "cuda/api/stream.hpp" // For default_stream() and launch() only
 
 #include <cuda_runtime_api.h>
 #include <string>
@@ -562,4 +562,4 @@ inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::st
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_DEVICE_H_ */
+#endif /* CUDA_API_WRAPPERS_DEVICE_HPP_ */

@@ -16,8 +16,8 @@
  */
 
 #pragma once
-#ifndef CUDA_KERNEL_LAUNCH_CUH_
-#define CUDA_KERNEL_LAUNCH_CUH_
+#ifndef CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
+#define CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"

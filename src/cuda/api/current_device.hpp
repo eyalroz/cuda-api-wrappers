@@ -1,5 +1,5 @@
-#ifndef CUDA_CURRENT_DEVICE_HPP_
-#define CUDA_CURRENT_DEVICE_HPP_
+#ifndef CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
+#define CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
@@ -66,4 +66,4 @@ public:
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_CURRENT_DEVICE_HPP_ */
+#endif /* CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_ */

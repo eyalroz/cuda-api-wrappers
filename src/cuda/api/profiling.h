@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_PROFILING_H_
-#define CUDA_PROFILING_H_
+#ifndef CUDA_API_WRAPPERS_PROFILING_H_
+#define CUDA_API_WRAPPERS_PROFILING_H_
 
 #include "cuda/api/types.h"
 #include <pthread.h>
@@ -116,4 +116,4 @@ void name_this_thread(const std::string&);
 
 } // namespace cuda
 
-#endif /* CUDA_PROFILING_H_ */
+#endif /* CUDA_API_WRAPPERS_PROFILING_H_ */

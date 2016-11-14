@@ -1,8 +1,8 @@
 #pragma once
-#ifndef CUDA_RUNTIME_API_WRAPPERS_VERSIONS_HPP_
-#define CUDA_RUNTIME_API_WRAPPERS_VERSIONS_HPP_
+#ifndef CUDA_API_WRAPPERS_VERSIONS_HPP_
+#define CUDA_API_WRAPPERS_VERSIONS_HPP_
 
-#include <cuda/api/error.hpp>
+#include "cuda/api/error.hpp"
 
 namespace cuda {
 
@@ -39,4 +39,4 @@ cuda_version_t runtime() {
 } // namespace version_numbers
 } // namespace cuda {
 
-#endif /* CUDA_RUNTIME_API_WRAPPERS_VERSIONS_HPP_ */
+#endif /* CUDA_API_WRAPPERS_VERSIONS_HPP_ */

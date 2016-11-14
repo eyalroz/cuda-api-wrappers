@@ -1,10 +1,10 @@
 #pragma once
-#ifndef CUDA_MEMORY_HPP_
-#define CUDA_MEMORY_HPP_
+#ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
+#define CUDA_API_WRAPPERS_MEMORY_HPP_
 
 #include "cuda/api/error.hpp"
 
-#include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
+#include "cuda_runtime.h" // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
 #include <memory>
 #include <cstring> // for std::memset
@@ -309,4 +309,4 @@ inline __host__ bool is_part_of_a_region_pair(void* ptr)
 
 } // namespace cuda
 
-#endif /* CUDA_MEMORY_HPP_ */
+#endif /* CUDA_API_WRAPPERS_MEMORY_HPP_ */

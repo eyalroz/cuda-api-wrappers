@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_TYPES_H_
-#define CUDA_TYPES_H_
+#ifndef CUDA_API_WRAPPERS_TYPES_H_
+#define CUDA_API_WRAPPERS_TYPES_H_
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
@@ -164,4 +164,4 @@ enum class endianness_t : bool { big, big_endian = big, little, little_endian = 
 
 } // namespace cuda
 
-#endif /* CUDA_TYPES_H_ */
+#endif /* CUDA_API_WRAPPERS_TYPES_H_ */

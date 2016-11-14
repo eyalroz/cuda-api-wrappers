@@ -1,5 +1,5 @@
-#ifndef CUDA_UNIQUE_PTR_HPP_
-#define CUDA_UNIQUE_PTR_HPP_
+#ifndef CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
+#define CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
 
 #include <cuda/api/memory.hpp>
 
@@ -88,4 +88,4 @@ inline unique_ptr<T> make_unique()
 } // namespace memory
 } // namespace cuda
 
-#endif /* CUDA_UNIQUE_PTR_HPP_ */
+#endif /* CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_ */

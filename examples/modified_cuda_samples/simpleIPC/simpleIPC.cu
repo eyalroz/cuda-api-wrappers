@@ -17,7 +17,7 @@
 // CUDA runtime includes
 #include <cuda_runtime_api.h>
 
-#include <cuda/api_wrappers.h>
+#include "cuda/api_wrappers.h"
 
 #include "../helper_string.h"
 
