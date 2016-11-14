@@ -284,7 +284,7 @@ public: // methods
 		return attribute_value;
 	}
 
-	resource_limit_t resource_limit(resource_id_t resource) const
+	resource_limit_t get_resource_limit(resource_id_t resource) const
 	{
 		resource_limit_t limit;
 		auto status = cudaDeviceGetLimit(&limit, resource);
