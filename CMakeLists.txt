@@ -156,10 +156,18 @@ cuda_add_executable(simpleStreams EXCLUDE_FROM_ALL examples/modified_cuda_sample
 target_link_libraries(simpleStreams cuda-api-wrappers)
 cuda_add_executable(simpleIPC EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleIPC/simpleIPC.cu)
 target_link_libraries(simpleIPC cuda-api-wrappers)
+add_custom_target(modified_cuda_samples)
+add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)
+
+add_executable(version_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/version_management.cpp)
+target_link_libraries(version_management  ${CUDA_LIBRARIES})
+cuda_add_executable(error_handling EXCLUDE_FROM_ALL examples/by_runtime_api_module/error_handling.cu)
+target_link_libraries(error_handling cuda-api-wrappers)
+add_custom_target(examples_by_runtime_api_module)
+add_dependencies(examples_by_runtime_api_module version_management error_handling)
 
 add_custom_target(examples)
-add_dependencies(examples vectorAdd inlinePTX simpleStreams simpleIPC)
-
+add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 
 # -------------
 
