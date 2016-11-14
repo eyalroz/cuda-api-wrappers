@@ -2,11 +2,12 @@
 #ifndef CUDA_DEVICE_H_
 #define CUDA_DEVICE_H_
 
-#include "cuda/api/types.h"
-#include "cuda/api/device_properties.hpp"
-#include "cuda/api/memory.hpp"
-#include "cuda/api/current_device.hpp"
-#include "cuda/api/stream.hpp" // For default_stream() and launch() only
+#include <cuda/api/types.h>
+#include <cuda/api/device_properties.hpp>
+#include <cuda/api/memory.hpp>
+#include <cuda/api/current_device.hpp>
+#include <cuda/api/pci_id.h>
+#include <cuda/api/stream.hpp> // For default_stream() and launch() only
 
 #include <cuda_runtime_api.h>
 #include <string>
@@ -546,6 +547,16 @@ inline cuda::device_t<detail::assume_device_is_current> get()
 inline cuda::device_t<detail::do_not_assume_device_is_current> get(device::id_t device_id)
 {
 	return cuda::device_t<detail::do_not_assume_device_is_current>(device_id);
+}
+
+inline cuda::device_t<detail::do_not_assume_device_is_current> get(pci_id_t pci_id)
+{
+	return get(pci_id.resolve_device_id());
+}
+
+inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::string& pci_id_str)
+{
+	return get(pci_id_t::parse(pci_id_str));
 }
 
 } // namespace device

@@ -5,7 +5,6 @@
 #include "cuda/api/types.h"
 
 #include <string>
-#include <istream>
 
 namespace cuda {
 namespace device {
@@ -22,15 +21,12 @@ struct pci_id_t {
 	int device;
 
 	operator std::string() const;
-	// This is not a ctor so as to maintain the plain-old-structness
+	// This is not a ctor so as to maintain the PODness
 	static pci_id_t parse(const std::string& id_str);
-	device::id_t cuda_device_id() const;
+	device::id_t resolve_device_id() const;
 };
 
 } //namespace device
 } // namespace cuda
-
-// TODO: Does this really need to be outside the namespace? I wonder
-std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id);
 
 #endif /* CUDA_API_WRAPPERS_PCI_ID_H_ */
