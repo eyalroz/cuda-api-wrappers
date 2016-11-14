@@ -22,7 +22,7 @@ inline __host__ device::id_t  get_id()
 inline __host__ void set(device::id_t  device)
 {
 	status_t result = cudaSetDevice(device);
-	throw_if_error(result, "Failure setting device to " + std::to_string(device));
+	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
 }
 
 inline __host__ void set_to_default() { return set(device::default_device_id); }

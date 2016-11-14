@@ -65,17 +65,20 @@ inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeo
 class runtime_error : public cuda_inspecific_runtime_error {
 public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
-	runtime_error(cuda::status_t status_code) :
-		cuda_inspecific_runtime_error(cudaGetErrorString(status_code)),
-		status_code_(status_code)
+	runtime_error(cuda::status_t error_code) :
+		cuda_inspecific_runtime_error(cudaGetErrorString(error_code)),
+		error_code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(cuda::status_t status_code, const std::string& what_arg) :
-		cuda_inspecific_runtime_error(what_arg + ": " + cudaGetErrorString(status_code)),
-		status_code_(status_code)
+	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
+		cuda_inspecific_runtime_error(what_arg + ": " + cudaGetErrorString(error_code)),
+		error_code_(error_code)
 	{ }
+
+	status_t error_code() const { return error_code_; }
+
 private:
-	cuda::status_t status_code_;
+	status_t error_code_;
 };
 
 // TODO: The following could use std::optiomal arguments - which would
@@ -83,24 +86,31 @@ private:
 // not writing C++17 here
 
 inline void throw_if_error(
-	cuda::status_t status_code, std::string message) noexcept(false)
+	cuda::status_t error_code, std::string message) noexcept(false)
 {
-	if (is_failure(status_code)) { throw runtime_error(status_code, message); }
+	if (is_failure(error_code)) { throw runtime_error(error_code, message); }
 }
 
-inline void throw_if_error(cuda::status_t status_code) noexcept(false)
+inline void throw_if_error(cuda::status_t error_code) noexcept(false)
 {
-	if (is_failure(status_code)) { throw runtime_error(status_code); }
+	if (is_failure(error_code)) { throw runtime_error(error_code); }
 }
+
+namespace errors {
+enum : bool {
+	dont_clear = false,
+	clear = true
+};
+} // namespace errors
 
 inline void ensure_no_outstanding_error(
-	std::string message, bool clear_any_error = true) noexcept(false)
+	std::string message, bool clear_any_error = errors::clear) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
 	throw_if_error(last_status, message);
 }
 
-inline void ensure_no_outstanding_error(bool clear_any_error = true) noexcept(false)
+inline void ensure_no_outstanding_error(bool clear_any_error = errors::clear) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
 	throw_if_error(last_status);
