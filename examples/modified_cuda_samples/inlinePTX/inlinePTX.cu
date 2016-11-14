@@ -74,6 +74,6 @@ int main(int argc, char **argv)
         }
     }
 
-    std::cout << "Test " << (bValid ? "Successful" : "Failed") << "\n";
+    std::cout << (bValid ? "SUCCESS" : "FAILURE") << "\n";
     return bValid ? EXIT_SUCCESS: EXIT_FAILURE;
 }

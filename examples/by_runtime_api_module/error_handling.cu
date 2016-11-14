@@ -101,6 +101,6 @@ int main(int argc, char **argv)
 	catch(cuda::runtime_error& e) {
 		cout << e.what() << "\n\n";
 	}
-	cout << "DONE\n";
+	std::cout << "SUCCESS\n";
 	return EXIT_SUCCESS;
 }

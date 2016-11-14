@@ -406,5 +406,6 @@ int main(int argc, char **argv)
 	// Free cudaMallocHost or Generic Host allocated memory (from CUDA 4.0)
 	FreeHostMemory(bPinGenericMemory, &h_a, &hAligned_a, nbytes);
 
+	std::cout << (bResults ? "SUCCESS" : "FAILURE") << "\n";
 	return bResults ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -68,7 +68,7 @@ int main(void)
 	}
 
 	std::cout << "Test PASSED\n";
-	std::cout << "Done\n";
+	std::cout << "SUCCESS\n";
 	return 0;
 }
 

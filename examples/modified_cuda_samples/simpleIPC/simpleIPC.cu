@@ -390,6 +390,7 @@ int main(int argc, char **argv)
 			cuda::device::current::set(s_devices->ordinals[i]);
 		}
 
+		printf("SUCCESS\n");
 		exit(EXIT_SUCCESS);
 	}
 

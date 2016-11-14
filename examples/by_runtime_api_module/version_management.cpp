@@ -19,6 +19,6 @@ int main(int argc, char **argv)
 			<< " at the highest, so the runtime used right now "
 			<< (runtime_version >= driver_supported_version ? "IS" : "IS NOT") << " supported by the driver.\n";
 	}
-	std::cout << "DONE\n";
+	std::cout << "SUCCESS\n";
 	return EXIT_SUCCESS;
 }
