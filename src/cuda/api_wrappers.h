@@ -1,7 +1,5 @@
 /**
- * Include all headers with CUDA API wrapper or
- * replacement definitions (but no headers with
- * additional functionality)
+ * @file Include all headers with CUDA (Runtime) API wrappers.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_H_

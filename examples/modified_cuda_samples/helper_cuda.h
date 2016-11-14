@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 #include "helper_string.h"
 //#include "error_messages.h"
