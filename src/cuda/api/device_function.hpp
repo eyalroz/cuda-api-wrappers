@@ -9,6 +9,7 @@
 #include <cuda_runtime_api.h>
 
 namespace cuda {
+namespace device_function {
 
 struct attributes_t : cudaFuncAttributes {
 
@@ -21,6 +22,8 @@ struct attributes_t : cudaFuncAttributes {
 	}
 };
 
+} // namespace device_function
+
 /**
  * A non-owning wrapper class for CUDA __device__ functions
  */
@@ -30,7 +33,7 @@ public: // type definitions
 public: // statics
 
 	static shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-		attributes_t attributes, device::compute_capability_t compute_capability)
+		device_function::attributes_t attributes, device::compute_capability_t compute_capability)
 	{
 
 		auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
@@ -54,9 +57,9 @@ public: // non-mutators
 
 	// TODO: A getter for the shared mem / L1 cache config
 
-	inline attributes_t attributes() const
+	inline device_function::attributes_t attributes() const
 	{
-		attributes_t function_attributes;
+		device_function::attributes_t function_attributes;
 		auto result = cudaFuncGetAttributes(&function_attributes, ptr_);
 		throw_if_error(result, "Failed obtaining attributes for a CUDA device function");
 		return function_attributes;
@@ -152,13 +155,6 @@ public: // data members
 	const void* ptr_;
 
 };
-
-template <typename DeviceFunction>
-device_function_t make_function_proxy(const DeviceFunction& f)
-{
-	return device_function_t(f);
-}
-
 
 } // namespace cuda
 
