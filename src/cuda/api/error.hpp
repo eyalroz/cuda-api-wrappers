@@ -213,9 +213,9 @@ inline void ensure_no_outstanding_error(bool clear_any_error = errors::clear) no
 }
 
 /**
- * Reset the CUDA status to cudaSuccess.
+ * Reset the CUDA status to cuda::error::success.
  */
-inline void clear_status() { cudaPeekAtLastError(); }
+inline void clear_outstanding_errors() { cudaGetLastError(); }
 
 } // namespace cuda
 

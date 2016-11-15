@@ -17,15 +17,32 @@ namespace device {
 
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class device_t;
 
-inline bool can_access_peer(id_t accessor_id, id_t peer_id)
+namespace peer_to_peer {
+
+using attribute_value_t = int;
+using attribute_t       = cudaDeviceP2PAttr;
+
+inline bool can_access(id_t accessor, id_t peer)
 {
 	int result;
-	auto status = cudaDeviceCanAccessPeer(&result, accessor_id, peer_id);
+	auto status = cudaDeviceCanAccessPeer(&result, accessor, peer);
 	throw_if_error(status,
-		"Failed determining whether CUDA device " + std::to_string(accessor_id) +
-		" can access CUDA device " + std::to_string(peer_id));
+		"Failed determining whether CUDA device " + std::to_string(accessor) +
+		" can access CUDA device " + std::to_string(peer));
 	return (result == 1);
 }
+
+inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
+{
+	attribute_value_t value;
+	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
+	throw_if_error(status,
+		"Failed obtaining peer-to-peer device attribute for device pair ("
+		+ std::to_string(source) + ", " + std::to_string(destination) + ')');
+	return value;
+}
+
+} // namespace peer_to_peer
 
 namespace current {
 
@@ -211,7 +228,7 @@ public: // types
 		bool can_access(id_t peer_id) const
 		{
 			device_setter set_device_for_this_scope(device_id);
-			return device::can_access_peer(device_id, peer_id);
+			return device::peer_to_peer::can_access(device_id, peer_id);
 		}
 
 		void enable_to(id_t peer_id) {
@@ -524,6 +541,22 @@ public: // faux data members (used as surrogates for internal namespaces)
 		// without making sure it's been correctly determined
 };
 
+template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
+bool operator==(
+	const device_t<LHSAssumedCurrent>& lhs,
+	const device_t<RHSAssumedCurrent>& rhs)
+{
+	return lhs.id() == rhs.id();
+}
+template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
+bool operator!=(
+	const device_t<LHSAssumedCurrent>& lhs,
+	const device_t<RHSAssumedCurrent>& rhs)
+{
+	return lhs.id() != rhs.id();
+}
+
+
 namespace device {
 namespace current {
 
@@ -551,7 +584,8 @@ inline cuda::device_t<detail::do_not_assume_device_is_current> get(device::id_t 
 
 inline cuda::device_t<detail::do_not_assume_device_is_current> get(pci_id_t pci_id)
 {
-	return get(pci_id.resolve_device_id());
+	auto resolved_id = pci_id.resolve_device_id();
+	return get(resolved_id);
 }
 
 inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::string& pci_id_str)

@@ -20,17 +20,25 @@
 // TODO: Does this really need to be outside the namespace? I wonder
 inline std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id)
 {
+	auto format_flags(is.flags());
+	is >> std::hex;
 	is >> pci_id.domain; is.ignore(1); // ignoring a ':'
 	is >> pci_id.bus;    is.ignore(1); // ignoring a ':'
 	is >> pci_id.device;
+	is.flags(format_flags);
 	return is;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_id_t& pci_id)
 {
-	return os << pci_id.domain << ':' << pci_id.bus << ':' << pci_id.device;
+	auto format_flags(os.flags());
+	os << std::hex << pci_id.domain << ':' << pci_id.bus << ':' << pci_id.device;
+	os.flags(format_flags);
+	return os;
 }
-
+/* Added: An enum constant representing an unbounded stream priority
+* q
+*/
 namespace cuda {
 namespace device {
 
