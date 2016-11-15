@@ -23,8 +23,104 @@ using cuda_inspecific_runtime_error = std::runtime_error;
 
 namespace cuda {
 
-inline bool is_success(status_t status)  { return status == cudaSuccess; }
-inline bool is_failure(status_t status)  { return status != cudaSuccess; }
+namespace error {
+
+// We can't just 'inherit' from status_t, unfortunately,
+// so we're creating an "unrelated" enum; see also the comparison
+// operators below which help us avoid the warnings we would
+// get from comparing values of the two enums
+enum code_t : std::underlying_type<status_t>::type {
+	success                         = cudaSuccess,
+	missing_configuration           = cudaErrorMissingConfiguration,
+	memory_allocation               = cudaErrorMemoryAllocation,
+	initialization_error            = cudaErrorInitializationError,
+	launch_failure                  = cudaErrorLaunchFailure,
+	prior_launch_failure            = cudaErrorPriorLaunchFailure,
+	launch_timeout                  = cudaErrorLaunchTimeout,
+	launch_out_of_resources         = cudaErrorLaunchOutOfResources,
+	invalid_device_function         = cudaErrorInvalidDeviceFunction,
+	invalid_configuration           = cudaErrorInvalidConfiguration,
+	invalid_device                  = cudaErrorInvalidDevice,
+	invalid_value                   = cudaErrorInvalidValue,
+	invalid_pitch_value             = cudaErrorInvalidPitchValue,
+	invalid_symbol                  = cudaErrorInvalidSymbol,
+	map_buffer_object_failed        = cudaErrorMapBufferObjectFailed,
+	unmap_buffer_object_failed      = cudaErrorUnmapBufferObjectFailed,
+	invalid_host_pointer            = cudaErrorInvalidHostPointer,
+	invalid_device_pointer          = cudaErrorInvalidDevicePointer,
+	invalid_texture                 = cudaErrorInvalidTexture,
+	invalid_texture_binding         = cudaErrorInvalidTextureBinding,
+	invalid_channel_descriptor      = cudaErrorInvalidChannelDescriptor,
+	invalid_memcpy_direction        = cudaErrorInvalidMemcpyDirection,
+	address_of_constant             = cudaErrorAddressOfConstant,
+	texture_fetch_failed            = cudaErrorTextureFetchFailed,
+	texture_not_bound               = cudaErrorTextureNotBound,
+	synchronization_error           = cudaErrorSynchronizationError,
+	invalid_filter_setting          = cudaErrorInvalidFilterSetting,
+	invalid_norm_setting            = cudaErrorInvalidNormSetting,
+	mixed_device_execution          = cudaErrorMixedDeviceExecution,
+	cudart_unloading                = cudaErrorCudartUnloading,
+	unknown                         = cudaErrorUnknown,
+	not_yet_implemented             = cudaErrorNotYetImplemented,
+	memory_value_too_large          = cudaErrorMemoryValueTooLarge,
+	invalid_resource_handle         = cudaErrorInvalidResourceHandle,
+	not_ready                       = cudaErrorNotReady,
+	insufficient_driver             = cudaErrorInsufficientDriver,
+	set_on_active_process           = cudaErrorSetOnActiveProcess,
+	invalid_surface                 = cudaErrorInvalidSurface,
+	no_device                       = cudaErrorNoDevice,
+	ecc_uncorrectable               = cudaErrorECCUncorrectable,
+	shared_object_symbol_not_found  = cudaErrorSharedObjectSymbolNotFound,
+	shared_object_init_failed       = cudaErrorSharedObjectInitFailed,
+	unsupported_limit               = cudaErrorUnsupportedLimit,
+	duplicate_variable_name         = cudaErrorDuplicateVariableName,
+	duplicate_texture_name          = cudaErrorDuplicateTextureName,
+	duplicate_surface_name          = cudaErrorDuplicateSurfaceName,
+	devices_unavailable             = cudaErrorDevicesUnavailable,
+	invalid_kernel_image            = cudaErrorInvalidKernelImage,
+	no_kernel_image_for_device      = cudaErrorNoKernelImageForDevice,
+	incompatible_driver_context     = cudaErrorIncompatibleDriverContext,
+	peer_access_already_enabled     = cudaErrorPeerAccessAlreadyEnabled,
+	peer_access_not_enabled         = cudaErrorPeerAccessNotEnabled,
+	device_already_in_use           = cudaErrorDeviceAlreadyInUse,
+	profiler_disabled               = cudaErrorProfilerDisabled,
+	profiler_not_initialized        = cudaErrorProfilerNotInitialized,
+	profiler_already_started        = cudaErrorProfilerAlreadyStarted,
+	profiler_already_stopped        = cudaErrorProfilerAlreadyStopped,
+	assert                          = cudaErrorAssert,
+	too_many_peers                  = cudaErrorTooManyPeers,
+	host_memory_already_registered  = cudaErrorHostMemoryAlreadyRegistered,
+	host_memory_not_registered      = cudaErrorHostMemoryNotRegistered,
+	operating_system                = cudaErrorOperatingSystem,
+	peer_access_unsupported         = cudaErrorPeerAccessUnsupported,
+	launch_max_depth_exceeded       = cudaErrorLaunchMaxDepthExceeded,
+	launch_file_scoped_tex          = cudaErrorLaunchFileScopedTex,
+	launch_file_scoped_surf         = cudaErrorLaunchFileScopedSurf,
+	sync_depth_exceeded             = cudaErrorSyncDepthExceeded,
+	launch_pending_count_exceeded   = cudaErrorLaunchPendingCountExceeded,
+	not_permitted                   = cudaErrorNotPermitted,
+	not_supported                   = cudaErrorNotSupported,
+	hardware_stack_error            = cudaErrorHardwareStackError,
+	illegal_instruction             = cudaErrorIllegalInstruction,
+	misaligned_address              = cudaErrorMisalignedAddress,
+	invalid_address_space           = cudaErrorInvalidAddressSpace,
+	invalid_pc                      = cudaErrorInvalidPc,
+	illegal_address                 = cudaErrorIllegalAddress,
+	invalid_ptx                     = cudaErrorInvalidPtx,
+	invalid_graphics_context        = cudaErrorInvalidGraphicsContext,
+	nvlink_uncorrectable            = cudaErrorNvlinkUncorrectable,
+	startup_failure                 = cudaErrorStartupFailure,
+	api_failure_base                = cudaErrorApiFailureBase
+
+};
+
+bool operator==(const status_t& lhs, const code_t& rhs) { return lhs == (status_t) rhs;}
+bool operator!=(const status_t& lhs, const code_t& rhs) { return lhs != (status_t) rhs;}
+
+} // namespace error
+
+inline bool is_success(status_t status)  { return status == error::success; }
+inline bool is_failure(status_t status)  { return status != error::success; }
 
 namespace detail {
 
@@ -120,8 +216,6 @@ inline void ensure_no_outstanding_error(bool clear_any_error = errors::clear) no
  * Reset the CUDA status to cudaSuccess.
  */
 inline void clear_status() { cudaPeekAtLastError(); }
-
-
 
 } // namespace cuda
 
