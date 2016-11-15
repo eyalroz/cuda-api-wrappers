@@ -114,8 +114,8 @@ enum code_t : std::underlying_type<status_t>::type {
 
 };
 
-bool operator==(const status_t& lhs, const code_t& rhs) { return lhs == (status_t) rhs;}
-bool operator!=(const status_t& lhs, const code_t& rhs) { return lhs != (status_t) rhs;}
+inline bool operator==(const status_t& lhs, const code_t& rhs) { return lhs == (status_t) rhs;}
+inline bool operator!=(const status_t& lhs, const code_t& rhs) { return lhs != (status_t) rhs;}
 
 } // namespace error
 
