@@ -163,11 +163,13 @@ add_executable(version_management EXCLUDE_FROM_ALL examples/by_runtime_api_modul
 target_link_libraries(version_management  ${CUDA_LIBRARIES})
 cuda_add_executable(error_handling EXCLUDE_FROM_ALL examples/by_runtime_api_module/error_handling.cu)
 target_link_libraries(error_handling cuda-api-wrappers)
-cuda_add_executable(device_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/device_management.cpp)
+add_executable(device_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/device_management.cpp)
 target_link_libraries(device_management cuda-api-wrappers)
+cuda_add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_module/execution_control.cu)
+target_link_libraries(execution_control cuda-api-wrappers)
 #----
 add_custom_target(examples_by_runtime_api_module)
-add_dependencies(examples_by_runtime_api_module version_management error_handling device_management)
+add_dependencies(examples_by_runtime_api_module version_management error_handling device_management execution_control)
 
 add_custom_target(examples)
 add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
