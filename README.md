@@ -34,7 +34,7 @@ Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-r
 
 Since the (main) developer is not currently working on anything graphics-related, there are no short-term plans to extend coverage to any of the graphics related modules. Other modules may well become supported.
 
-## Examples
+## A taste of the key features in play
 
 #### Use of namespaces (and internal classes)
 With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of `cudaSetDevice()` and `cudaMalloc()` calls.
@@ -62,13 +62,21 @@ cuda::event_t::event_t(
 ```
 The default values here are `enum : bool`'s, which you should also use when constructing an `event_t` with non-default parameters. There is also the no-arguments `event_t()` constructor which calls `cudaEventCreate` without flags.
 
-#### Modified CUDA samples
+## Example programs
 
-More detailed documentation / feature walk-through is forthcoming. For now, have a look at the [modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples) example folder, which adapts some of the CUDA sample code to use the runtime API only via this wrappers library.
+More detailed documentation / feature walk-through is forthcoming. For now I'm providing two kinds of short example programs; browsing their source you'll know essentially all there is to know about the API wrappers.
 
-To build and run the samples, do:
+To build and run the examples (just as a sanity check), execute the following:
 
     [user@host:/path/to/cuda-api-wrappers/]$ cmake . && make examples && examples/scripts/run-all-examples
+
+#### Modified CUDA samples
+
+The CUDA distribution contains sample programs demostrating various features and concepts. A few of these - which are not focused on device-side work - have been adapted to use the API wrappers - completely foregoing direct use of the CUDA Runtime API itself. You will find them in the [modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples/) example programs folder.
+
+#### 'Coverage' test programs - by module of the Runtime API
+
+Gradually, an example program is being added for each one of the CUDA Runtime API [Modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), in which the approach replacing use of those module API calls by use of the API wrappers is demonstrated. These per-module example programs can be found [here](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/by_runtime_api_module/) 
 
 ## Bugs, suggestions, feedback
 
