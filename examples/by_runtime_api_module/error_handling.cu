@@ -1,3 +1,10 @@
+/**
+ * An example program utilizing most/all calls
+ * from the CUDA Runtime API module:
+ *
+ *   Error Handling
+ *
+ */
 #include <cuda/api_wrappers.h>
 
 #include <iostream>
@@ -22,7 +29,7 @@ int main(int argc, char **argv)
 	}
 	catch(cuda::runtime_error& e) {
 		if (e.error_code() != cuda::error::invalid_device) { throw e; }
-		cout << "The triggered exception was indeed thrown: " << e.what() << "\n";
+		cout << "The exception we expected was indeed thrown." << "\n";
 	}
 
 	try {
@@ -57,7 +64,10 @@ int main(int argc, char **argv)
 	}
 	catch(cuda::runtime_error&) { }
 
-	// This time around, repeated calls to ensure_no_outstanding_error do throw
+	// This time around, repeated calls to ensure_no_outstanding_error do throw...
+
+	cuda::clear_outstanding_errors();
+	cuda::ensure_no_outstanding_error(); // ... and that makes them stop
 
 	cout << "SUCCESS\n";
 	return EXIT_SUCCESS;
