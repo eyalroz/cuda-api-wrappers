@@ -10,12 +10,22 @@
 
 namespace cuda {
 
+struct attributes_t : cudaFuncAttributes {
+
+	cuda::device::compute_capability_t ptx_version() const {
+		return device::compute_capability_t::from_combined_number(ptxVersion);
+	}
+
+	cuda::device::compute_capability_t binary_compilation_target_architecture() const {
+		return device::compute_capability_t::from_combined_number(binaryVersion);
+	}
+};
+
 /**
  * A non-owning wrapper class for CUDA __device__ functions
  */
 class device_function_t {
 public: // type definitions
-	using attributes_t   = cudaFuncAttributes;
 
 public: // statics
 
@@ -70,10 +80,14 @@ public: // non-mutators
 		return maximum_dynamic_shared_memory_per_block(attributes(), compute_capability);
 	}
 
-	/**
+/*
+	// The following are commented out because there are no CUDA API calls for them!
+	// You may uncomment them if you'd rather get an exception...
+
+	**
 	 * Obtains a device function's preference (on the current device probably) of
 	 * either having more L1 cache or more shared memory space
-	 */
+	 *
 	multiprocessor_cache_preference_t cache_preference() const
 	{
 		throw cuda_inspecific_runtime_error(
@@ -86,6 +100,7 @@ public: // non-mutators
 		throw cuda_inspecific_runtime_error(
 			"There's no CUDA runtime API call for obtaining the shared memory bank size!");
 	}
+*/
 
 
 public: // mutators
@@ -137,6 +152,13 @@ public: // data members
 	const void* ptr_;
 
 };
+
+template <typename DeviceFunction>
+device_function_t make_function_proxy(const DeviceFunction& f)
+{
+	return device_function_t(f);
+}
+
 
 } // namespace cuda
 

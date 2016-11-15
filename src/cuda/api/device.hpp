@@ -406,16 +406,30 @@ public: // methods
 		bool                synchronizes_with_default_stream = true)
 	{
 		return AssumedCurrent ?
-			stream::create(priority, synchronizes_with_default_stream) :
+			stream::detail::create_on_current_device(priority, synchronizes_with_default_stream) :
 			stream::create(id(), priority, synchronizes_with_default_stream);
 	}
+
+	stream::id_t create_stream(bool synchronizes_with_default_stream)
+	{
+		return create_stream(stream::default_priority, synchronizes_with_default_stream);
+	}
+
+/*
+	// I've disabled this method for the fear that
+	// coders creating stream proxies with
+	// cuda::device::current::get().create_stream_proxy() will not mind
+	// the stream's assumption of being on the current device
+
 
 	stream_t<detail::do_not_assume_device_is_current> create_stream_proxy(
 		stream::priority_t  priority = stream::default_priority,
 		bool                synchronizes_with_default_stream = true)
 	{
-		return stream_t<AssumedCurrent>::create(id(), priority, synchronizes_with_default_stream);
+		auto new_stream_id = create_stream(priority, synchronizes_with_default_stream);
+		return stream_t<AssumedCurrent>(id(), new_stream_id);
 	}
+*/
 
 	template<typename KernelFunction, typename... KernelParameters>
 	void launch(

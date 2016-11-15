@@ -17,6 +17,12 @@ namespace cuda {
 
 namespace stream {
 
+enum : bool {
+	implicitly_synchronizes_with_default_stream = true,
+	no_implicit_synchronization_with_default_stream = false,
+};
+
+namespace detail {
 /**
  * Creates a new stream on the current device.
  *
@@ -24,11 +30,11 @@ namespace stream {
  *
  * @return the created stream's id
  */
-inline id_t create(
+inline id_t create_on_current_device(
 	priority_t    priority = default_priority,
-	bool          synchronizes_with_default_stream = true)
+	bool          implicitly_synchronize_with_default_stream = true)
 {
-	unsigned int flags = synchronizes_with_default_stream ?
+	unsigned int flags = implicitly_synchronize_with_default_stream ?
 		cudaStreamDefault : cudaStreamNonBlocking;
 	stream::id_t new_stream_id;
 	auto result = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
@@ -37,6 +43,8 @@ inline id_t create(
 		+ std::to_string(device::current::get_id()));
 	return new_stream_id;
 }
+
+} // namespace detail
 
 /**
  * Creates a new stream on an artibrary device
@@ -52,7 +60,7 @@ inline id_t create(
 	bool          synchronizes_with_default_stream = true)
 {
 	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-	return create(priority, synchronizes_with_default_stream);
+	return detail::create_on_current_device(priority, synchronizes_with_default_stream);
 }
 
 
@@ -72,7 +80,7 @@ inline id_t create(
  */
 inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
-	device::current::scoped_override_t<detail::do_not_assume_device_is_current>
+	device::current::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
 		set_device_for_this_scope(device_id);
 	auto result = cudaStreamQuery(stream_id);
 	switch(result) {
@@ -103,12 +111,12 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		if (is_associated_with(stream_id, device_index)) { return device_index; }
 	}
 	throw std::runtime_error(
-		"Could not find any device associated with stream " + detail::ptr_as_hex(stream_id));
+		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 } // namespace stream
 
-template <bool AssumesDeviceIsCurrent = detail::do_not_assume_device_is_current>
+template <bool AssumesDeviceIsCurrent = cuda::detail::do_not_assume_device_is_current>
 class stream_t {
 
 public: // type definitions
@@ -122,7 +130,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using DeviceSetter = ::cuda::device::current::scoped_override_t<AssumesDeviceIsCurrent>;
+	using DeviceSetter = device::current::scoped_override_t<AssumesDeviceIsCurrent>;
 
 
 public: // const getters
@@ -214,7 +222,7 @@ public: // mutators
 
 	__host__ void synchronize()
 	{
-		DeviceSetter set_device_for_this_scope(id_);
+		DeviceSetter set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
 		auto result = cudaStreamSynchronize(id_);
 		throw_if_error(result,
@@ -286,54 +294,31 @@ public: // mutators
 
 public: // constructors and destructor
 
-	stream_t(cuda::device::id_t device_id, stream::id_t stream_id) : device_id_(device_id), id_(stream_id)
+	stream_t(device::id_t device_id, stream::id_t stream_id) : device_id_(device_id), id_(stream_id)
 	{
 		// TODO: Should we check that the stream is actually associated with the device?
 	}
 	~stream_t() { if (is_owning) cudaStreamDestroy(id_); }
 
-public: // named constructor idioms
-
-	stream_t<detail::do_not_assume_device_is_current> create(
-		device::id_t  device_id,
-		priority_t    priority = stream::default_priority,
-		bool          synchronizes_with_default_stream = true)
-	{
-		return stream_t<detail::do_not_assume_device_is_current>(
-			AssumesDeviceIsCurrent ?
-				stream::create(priority, synchronizes_with_default_stream) :
-				stream::create(device_id, priority, synchronizes_with_default_stream)
-		);
-	}
-
-protected: // constructors
-
-	// The ctors here are called by named constructor idioms, see below; we don't
-	// want to "just" create streams willy-nilly just by writing "stream_t my_stream;"...
-
-	/**
-	 *
-	 *
-	 * @param device_id
-	 * @param priority a value in the device's allowed priority range
-	 * (@ref cudaDeviceGetStreamPriorityRange
-	 * @param synchronizes_with_default_stream
-	 */
-	stream_t(
-		cuda::device::id_t  device_id,
-		priority_t priority = stream::default_priority,
-		bool synchronizes_with_default_stream = true) : device_id_(device_id), is_owning(true)
-	{
-		stream::create(device_id, priority, synchronizes_with_default_stream);
-	}
-	stream_t() : stream_t(cuda::device::current::get_id()) { };
 
 protected: // data members
-	cuda::device::id_t  device_id_;
-	stream::id_t        id_;
-	bool               is_owning { false };
+	device::id_t  device_id_;
+	stream::id_t  id_;
+	bool          is_owning { false };
 
 };
+
+namespace stream {
+
+stream_t<> make_proxy(
+	device::id_t  device_id,
+	id_t          stream_id)
+{
+	return cuda::stream_t<>(device_id, stream_id);
+}
+
+} // namespace stream
+
 
 template <bool AssumesDeviceIsCurrent = false>
 using queue_t = stream_t<AssumesDeviceIsCurrent>;
