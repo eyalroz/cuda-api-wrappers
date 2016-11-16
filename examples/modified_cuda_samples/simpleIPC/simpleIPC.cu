@@ -242,7 +242,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 	else
 	{
 		cuda::event_t event(
-			cuda::event::use_blocking_sync,
+			cuda::event::sync_by_blocking,
 			cuda::event::dont_record_timings,
 			cuda::event::interprocess);
 		s_mem[index].eventHandle = cuda::event::ipc::export_(event.id());

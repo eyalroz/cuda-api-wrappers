@@ -17,6 +17,9 @@
 
 #include <cuda_runtime_api.h>
 
+namespace cuda {
+namespace device {
+
 // TODO: Does this really need to be outside the namespace? I wonder
 inline std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id)
 {
@@ -36,11 +39,6 @@ inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_id_t& 
 	os.flags(format_flags);
 	return os;
 }
-/* Added: An enum constant representing an unbounded stream priority
-* q
-*/
-namespace cuda {
-namespace device {
 
 inline pci_id_t::operator std::string() const
 {

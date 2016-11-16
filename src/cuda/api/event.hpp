@@ -3,24 +3,50 @@
 #define CUDA_API_WRAPPERS_EVENT_HPP_
 
 #include "cuda/api/types.h"
+#include "cuda/api/constants.h"
 #include "cuda/api/error.hpp"
 
 #include <cuda_runtime_api.h>
 
 namespace cuda {
-
 namespace event {
+
+/**
+ * Synchronization option for @ref cuda::event_t 's
+ */
 enum : bool {
-	dont_use_blocking_sync = false,
-	use_blocking_sync = true,
+	sync_by_busy_waiting = false,
+		/**
+		 * The thread calling event_.synchronize() will enter
+		 * a busy-wait loop; this (might) minimize delay between
+		 * kernel execution conclusion and control returning to
+		 * the thread, but is very wasteful of CPU time.
+		 */
+	sync_by_blocking = true,
+		/**
+		 * The thread calling event_.synchronize() will block -
+		 * yield control of the CPU and will only become ready
+		 * for execution after the kernel has completed its
+		 * execution - at which point it would have to wait its
+		 * turn among other threads. This does not waste CPU
+		 * computing time, but results in a longer delay.
+		 */
 };
+
 enum : bool {
 	dont_record_timings = false,
 	do_record_timings = true,
 };
+
+/**
+ * IPC usability option for @ref cuda::event_t 's
+ */
 enum : bool {
 	not_interprocess = false,
+		//!< Can be shared between processes. Must not be
+		//!< able to record timings
 	interprocess = true,
+		//!< Can only be used by the process which created it
 };
 } // namespace event
 
@@ -46,7 +72,7 @@ public: // constructors and destructor
 		bool records_timing = event::do_record_timings,
 		bool interprocess = event::not_interprocess)
 	:
-		owning(true), uses_blocking_sync_(uses_blocking_sync),
+		owning(true), blocking_sync(uses_blocking_sync),
 		records_timing_(records_timing), interprocess_(interprocess)
 	{
 		auto status = cudaEventCreate(&id_, flags());
@@ -55,12 +81,12 @@ public: // constructors and destructor
 
 	event_t(const event_t& other) :
 		id_(other.id_), owning(false),
-		uses_blocking_sync_(other.uses_blocking_sync_),
+		blocking_sync(other.blocking_sync),
 		records_timing_(other.records_timing_),
 		interprocess_(other.interprocess_) { };
 
 	event_t(event_t&& other) : owning(other.owning), id_(other.id_),
-		uses_blocking_sync_(other.uses_blocking_sync_),
+		blocking_sync(other.blocking_sync),
 		records_timing_(other.records_timing_),
 		interprocess_(other.interprocess_) { other.owning = false; };
 
@@ -69,48 +95,74 @@ public: // constructors and destructor
 protected:
 	unsigned flags() const {
 		return
-			  (uses_blocking_sync_  ? cudaEventBlockingSync : 0)
-			| (records_timing_      ? 0 : cudaEventDisableTiming)
-			| (interprocess_        ? cudaEventInterprocess : 0)
+			  ( blocking_sync    ? cudaEventBlockingSync : 0  )
+			| ( records_timing_  ? 0 : cudaEventDisableTiming )
+			| ( interprocess_    ? cudaEventInterprocess : 0  )
 		;
 	}
 
 public: // data member getter
-	event::id_t id()                  const { return id_;                 }
-	bool        is_owning()           const { return owning;              }
-	bool        interprocess()        const { return interprocess_;       }
-	bool        records_timing()      const { return records_timing_;     }
-	bool        uses_blocking_sync()  const { return uses_blocking_sync_; }
+	event::id_t id()                  const { return id_;             }
+	bool        is_owning()           const { return owning;          }
+	bool        interprocess()        const { return interprocess_;   }
+	bool        records_timing()      const { return records_timing_; }
+	bool        uses_blocking_sync()  const { return blocking_sync;   }
+
+public: // other non-mutator methods
+
+	/**
+	 * Checks whether this event has already occurred or whether it's
+	 * still pending.
+	 *
+	 * @return if all work on the stream with which the event was recorded
+	 * has been completed, returns true; if there is pending work on that stream
+	 * before the point of recording, returns false; if the event has not
+	 * been recorded at all, returns true.
+	 */
+	bool has_occured() const
+	{
+		auto status = cudaEventQuery(id_);
+		if (status == cuda::error::success) return true;
+		if (status == cuda::error::not_ready) return false;
+		throw cuda::runtime_error(status,
+			"Could not determine whether the event with ID " + detail::ptr_as_hex(id_)
+			+ "has already occurred or not.");
+	}
+
+	bool query() const { return has_occured(); }
+
 
 public: // other mutator methods
-	status_t query()
-	{
-		// Note we can't throw on failure since this is a destructor... let's
-		// home for the best.
-		return cudaEventQuery(id_);
-	}
 
 	/**
 	 * @note No protection against repeated calls.
-	 *
-	 * @note Not using cuda::stream::Default to avoid the extra include
 	 */
-	void record(stream::id_t stream = (stream::id_t) nullptr)
+	void record(stream::id_t stream_id = stream::default_stream_id)
 	{
-		throw_if_error(cudaEventRecord(id_, stream), "failed recording an event");
+		auto status = cudaEventRecord(id_, stream_id);
+		throw_if_error(status,
+			"Failed recording event " + detail::ptr_as_hex(id_)
+			+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
 	}
+
+	/**
+	 * Have the calling thread wait - either busy-waiting or blocking - and
+	 * return only after this event has occurred (see @ref has_occrred ).
+	 */
 	void synchronize()
 	{
-		throw_if_error(cudaEventSynchronize(id_), "failed synchronizing an event");
+		auto status = cudaEventSynchronize(id_);
+		throw_if_error(status,
+			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
 	}
 
 protected: // data members
 	bool           owning; // not const, to enable move assignment / construction
 	event::id_t    id_; // it can't be a const, since we're making
 	                    // a CUDA API call during construction
-	const bool uses_blocking_sync_ { false };
+	const bool blocking_sync    { false };
 	const bool records_timing_  { false };
-	const bool interprocess_ { false };
+	const bool interprocess_    { false };
 };
 
 namespace event {

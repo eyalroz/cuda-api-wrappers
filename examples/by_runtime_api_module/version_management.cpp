@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 	std::cout << "Using CUDA runtime version " << runtime_version << ".\n";
 
 	auto driver_supported_version = cuda::version_numbers::maximum_supported_by_driver();
-	if (driver_supported_version == cuda::no_driver_installed) {
+	if (driver_supported_version == cuda::version_numbers::none()) {
 		std::cout << "There is no CUDA driver installed, so no CUDA runtime version is supported\n";
 	}
 	else {
