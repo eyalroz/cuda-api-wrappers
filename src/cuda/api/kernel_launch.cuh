@@ -30,20 +30,20 @@ const grid_block_dimensions_t SingleThreadPerBlock { 1 };
 
 
 /**
-* CUDA's kernel launching mechanism cannot be compiled in C++ - both for syntactic and semantic reasons.
+* CUDA's kernel launching mechanism cannot be compiled in proper C++ - both for syntactic and semantic reasons.
 * Thus, every kernel launch must at some point reach code compiled with CUDA's nvcc. Naively, every single
 * different kernel (perhaps up to template specialization) would require writing its own wrapper C++ function,
 * launching it. This function, however, constitutes a single minimal wrapper around the CUDA kernel launch,
-* which may be called from proper C++ code.
+* which may be called from proper C++ code (across translation unit boundaries - the caller is compiled
+* with a C++ compiler, the callee compiled by nvcc).
 *
 * <p>This function is similar to C++17's std::apply, or to a a beta-reduction in Lambda calculus: It applies
 * a function to its arguments; the difference is in the nature of the function (a CUDA kernel) and in that
-* the function application requires setting additional CUDA-related launch parameters, other than the
+* the function application requires setting additional CUDA-related launch parameters, additional to the
 * function's own.
 *
-* <p>As kernels do not return values, neither does this function. It also contains
-* no hooks, logging commands etc. - if you want those, write your own wrapper (perhaps calling this one in
-* turn).
+* <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
+* commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
 *
 * @param[in] kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
 * If the kernel is templated, you must pass it fully-instantiated.
@@ -59,7 +59,7 @@ const grid_block_dimensions_t SingleThreadPerBlock { 1 };
 * @param[in] parameters whatever parameters {@kernel_function} takes
 */
 template<typename KernelFunction, typename... KernelParameters>
-inline void launch(
+inline void enqueue_launch(
 	const KernelFunction&       kernel_function,
 	launch_configuration_t      launch_configuration,
 	stream::id_t                stream_id,
@@ -80,7 +80,8 @@ inline void launch(
 #endif
 
 /**
- * Variant of launch, above, for use with the default stream on the current device.
+ * Variant of enqueue_launch, above, for use with the default stream on the current device;
+ * it's not also called 'enqueue' since the default stream is synchronous
  */
 template<typename KernelFunction, typename... KernelParameters>
 inline void launch(
@@ -88,7 +89,7 @@ inline void launch(
 	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
 {
-	launch(kernel_function, launch_configuration, stream::default_stream_id, parameters...);
+	enqueue_launch(kernel_function, launch_configuration, stream::default_stream_id, parameters...);
 }
 
 namespace linear_grid {

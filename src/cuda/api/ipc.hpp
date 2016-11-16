@@ -13,8 +13,22 @@ namespace cuda {
 namespace memory {
 namespace ipc {
 
-cudaIpcMemHandle_t export_(void* device_ptr) {
-	cudaIpcMemHandle_t handle;
+using handle_t = cudaIpcMemHandle_t;
+
+/**
+ * Obtain a handle for a region of on-device memory which can
+ * be transmitted for use in another operating system process
+ *
+ * @note The name contains an underscore so as not to clash
+ * with the C++ reserved word export
+ *
+ * @param device_ptr beginning of the region of memory
+ * to be shared with other processes
+ * @return a handle which another process can call @ref import
+ * on to obtain a device pointer it can use
+ */
+handle_t export_(void* device_ptr) {
+	handle_t handle;
 	auto status = cudaIpcGetMemHandle(&handle, device_ptr);
 		throw_if_error(status,
 			"Failed producing an IPC memory handle for device pointer " + cuda::detail::ptr_as_hex(device_ptr));
@@ -22,7 +36,7 @@ cudaIpcMemHandle_t export_(void* device_ptr) {
 }
 
 template <typename T = void>
-inline T* import(const cudaIpcMemHandle_t& handle)
+inline T* import(const handle_t& handle)
 {
 	void* device_ptr;
 	auto status = cudaIpcOpenMemHandle(&device_ptr, handle, cudaIpcMemLazyEnablePeerAccess);
@@ -40,7 +54,7 @@ void unmap(void* ipc_mapped_ptr)
 template <typename T = void>
 class imported_t {
 public: // constructors & destructor
-	imported_t(const cudaIpcMemHandle_t& handle) : ptr_(import<T>(handle))
+	imported_t(const handle_t& handle) : ptr_(import<T>(handle))
 	{
 		if (ptr_ == nullptr) {
 			throw std::logic_error("IPC memory handle yielded a null pointer");
@@ -62,18 +76,6 @@ public: // operators
 	imported_t& operator=(imported_t&& other) = delete;
 	imported_t(const imported_t&& other) = delete;
 
-/*
-	imported_t& operator=(imported_t&& other)
-	{
-		if (this == &other) { return *this; }
-		std::swap(ptr_, other.ptr_);
-		return *this;
-	}
-	imported_t(const imported_t&& other) {
-		std::swap(ptr_, other.ptr_);
-	}
-*/
-
 	operator T*() const { return ptr_; }
 
 public: // getters
@@ -87,7 +89,7 @@ protected: // data members
 	 * to close the handle
 	 */
 	T*         ptr_;
-};
+}; // class imported_t
 
 } // namespace ipc
 } // namespace memory
@@ -95,16 +97,18 @@ protected: // data members
 namespace event {
 namespace ipc {
 
-cudaIpcEventHandle_t export_(id_t event_id)
+using handle_t = cudaIpcEventHandle_t;
+
+handle_t export_(id_t event_id)
 {
-	cudaIpcEventHandle_t ipc_handle;
+	handle_t ipc_handle;
 	auto status = cudaIpcGetEventHandle(&ipc_handle, event_id);
 	throw_if_error(status,
 		"Failed obtaining an IPC event handle for event " + cuda::detail::ptr_as_hex(event_id));
 	return ipc_handle;
 }
 
-inline event::id_t import(const cudaIpcEventHandle_t& handle)
+inline event::id_t import(const handle_t& handle)
 {
 	event::id_t event_id;
 	auto status = cudaIpcOpenEventHandle(&event_id, handle);

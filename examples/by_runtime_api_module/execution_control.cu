@@ -106,13 +106,12 @@ int main(int argc, char **argv)
 
 	// or via a stream:
 
-	auto stream_id = device.create_stream(
+	auto stream = cuda::device::current::get().create_stream(
 		cuda::stream::no_implicit_synchronization_with_default_stream);
-	auto stream = cuda::stream::make_proxy(device.id(), stream_id);
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using stream.launch()\n" << std::flush;
-	stream.launch(kernel, launch_config, bar);
+	stream.enqueue_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
 	std::cout << "\nSUCCESS\n";

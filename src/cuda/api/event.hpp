@@ -24,6 +24,14 @@ enum : bool {
 };
 } // namespace event
 
+/**
+ * A proxy class for CUDA events. By default, it has
+ * RAII semantics, i.e. it has the runtime create an event
+ * on construction and destory it on destruction, and isn't
+ * merely an ephemeral wrapper one could apply and discard;
+ * but this second kind of semantics is also (sort of)
+ * supported, throw the owning field.
+ */
 class event_t {
 public: // constructors and destructor
 	event_t() : owning(true)

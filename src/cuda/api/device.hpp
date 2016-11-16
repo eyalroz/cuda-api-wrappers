@@ -401,13 +401,21 @@ public: // methods
 		return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
 	}
 
-	stream::id_t create_stream(
+	// I'm a worried about the creation of streams with the assumption
+	// that theirs is the current device, so I'm just forbidding it
+	// outright here - even though it's very natural to want to write
+	//
+	//   cuda::device::curent::get().create_stream()
+	//
+	// (sigh)... safety over convenience I guess
+	//
+	stream_t<> create_stream(
 		stream::priority_t  priority = stream::default_priority,
 		bool                synchronizes_with_default_stream = true)
 	{
-		return AssumedCurrent ?
-			stream::detail::create_on_current_device(priority, synchronizes_with_default_stream) :
-			stream::create(id(), priority, synchronizes_with_default_stream);
+		device_setter set_device_for_this_scope(id_);
+		return stream_t<>(id(), stream::detail::create_on_current_device(
+			priority, synchronizes_with_default_stream));
 	}
 
 	stream::id_t create_stream(bool synchronizes_with_default_stream)
@@ -415,29 +423,13 @@ public: // methods
 		return create_stream(stream::default_priority, synchronizes_with_default_stream);
 	}
 
-/*
-	// I've disabled this method for the fear that
-	// coders creating stream proxies with
-	// cuda::device::current::get().create_stream_proxy() will not mind
-	// the stream's assumption of being on the current device
-
-
-	stream_t<detail::do_not_assume_device_is_current> create_stream_proxy(
-		stream::priority_t  priority = stream::default_priority,
-		bool                synchronizes_with_default_stream = true)
-	{
-		auto new_stream_id = create_stream(priority, synchronizes_with_default_stream);
-		return stream_t<AssumedCurrent>(id(), new_stream_id);
-	}
-*/
-
 	template<typename KernelFunction, typename... KernelParameters>
 	void launch(
 		const KernelFunction&       kernel_function,
 		launch_configuration_t      launch_configuration,
 		KernelParameters...         parameters)
 	{
-		return default_stream().launch(kernel_function, launch_configuration, parameters...);
+		return default_stream().enqueue_launch(kernel_function, launch_configuration, parameters...);
 	}
 
 	priority_range_t stream_priority_range() const

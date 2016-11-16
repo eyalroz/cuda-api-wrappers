@@ -4,6 +4,7 @@
 
 #include "cuda/api/types.h"
 #include "cuda/api/error.hpp"
+#include "cuda/api/memory.hpp"
 #include "cuda/api/kernel_launch.cuh"
 #include "cuda/api/current_device.hpp"
 #include "cuda/api/device_count.hpp"
@@ -15,6 +16,8 @@
 
 namespace cuda {
 
+template <bool AssumesDeviceIsCurrent = false> class stream_t;
+
 namespace stream {
 
 enum : bool {
@@ -23,20 +26,14 @@ enum : bool {
 };
 
 namespace detail {
-/**
- * Creates a new stream on the current device.
- *
- * @note stream_t construction _never_ creates a stream!
- *
- * @return the created stream's id
- */
+
 inline id_t create_on_current_device(
-	priority_t    priority = default_priority,
-	bool          implicitly_synchronize_with_default_stream = true)
+	priority_t    priority = stream::default_priority,
+	bool          synchronizes_with_default_stream = true)
 {
-	unsigned int flags = implicitly_synchronize_with_default_stream ?
+	unsigned int flags = cuda::stream::implicitly_synchronizes_with_default_stream ?
 		cudaStreamDefault : cudaStreamNonBlocking;
-	stream::id_t new_stream_id;
+	id_t new_stream_id;
 	auto result = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
 	throw_if_error(result,
 		std::string("Failed creating a new stream on CUDA device ")
@@ -45,24 +42,6 @@ inline id_t create_on_current_device(
 }
 
 } // namespace detail
-
-/**
- * Creates a new stream on an artibrary device
- * (which may or may not be the current one)
- *
- * @note stream_t construction _never_ creates a stream!
- *
- * @return the created stream's id
- */
-inline id_t create(
-	device::id_t  device_id,
-	priority_t    priority = default_priority,
-	bool          synchronizes_with_default_stream = true)
-{
-	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-	return detail::create_on_current_device(priority, synchronizes_with_default_stream);
-}
-
 
 /**
  * Check whether a certain stream is associated with a specific device.
@@ -114,9 +93,21 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
+/**
+ * Wraps a CUDA stream ID in a stream_t proxy instance,
+ * possibly also taking on the responsibility of eventually
+ * destroying the stream
+ *
+ * @return a stream_t proxy for the CUDA stream
+ */
+inline stream_t<> wrap(
+	device::id_t  device_id,
+	id_t          stream_id,
+	bool          take_ownership = false);
+
 } // namespace stream
 
-template <bool AssumesDeviceIsCurrent = cuda::detail::do_not_assume_device_is_current>
+template <bool AssumesDeviceIsCurrent /* = false , see template declaration */>
 class stream_t {
 
 public: // type definitions
@@ -136,9 +127,9 @@ protected: // type definitions
 public: // const getters
 	stream::id_t id() const { return id_; }
 	device::id_t device_id() const { return device_id_; }
+	bool is_owning() const { return owning; }
 
 public: // other non-mutators
-
 
 	/**
 	 * When true, work running in the created stream may run concurrently with
@@ -191,7 +182,15 @@ public: // other non-mutators
 protected: // static methods
 
 	/**
-	 * Untested!
+	 * A function used internally by this class as the immediate CUDA callback; see
+	 * @ref add_callback
+	 *
+	 * @param stream_id the ID of the stream for which a callback was triggered - this
+	 * will be passed by the CUDA runtime
+	 * @param status the CUDA status when the callback is triggered - this
+	 * will be passed by the CUDA runtime
+	 * @param type_erased_callback the callback which was passed to @ref add_callback,
+	 * and which the programmer actually wants to be called
 	 */
 	static void callback_adapter(stream::id_t stream_id, status_t status, void *type_erased_callback)
 	{
@@ -199,28 +198,25 @@ protected: // static methods
 		(*retyped_callback)(stream_id, status);
 	}
 
-
 public: // mutators
-	template<typename KernelFunction, typename... KernelParameters>
-	void launch(
-		const KernelFunction&       kernel_function,
-		launch_configuration_t      launch_configuration,
-		KernelParameters...         parameters)
-	{
-		return ::cuda::launch(kernel_function, launch_configuration, id_, parameters...);
-	}
-
 	// TODO: Duplicate the above better?
 	template<typename KernelFunction, typename... KernelParameters>
-	void enqueue(
+	void enqueue_launch(
 		const KernelFunction&       kernel_function,
 		launch_configuration_t      launch_configuration,
 		KernelParameters...         parameters)
 	{
-		return launch(kernel_function, launch_configuration, id_, parameters...);
+		return cuda::enqueue_launch(kernel_function, launch_configuration, id_, parameters...);
 	}
 
-	__host__ void synchronize()
+	void enqueue_copy(void *destination, const void *source, size_t num_bytes)
+	{
+		// Is it necessary to set the device? I wonder.
+		DeviceSetter set_device_for_this_scope(device_id_);
+		memory::async::copy(destination, source, num_bytes, id_);
+	}
+
+	void synchronize()
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
@@ -230,19 +226,20 @@ public: // mutators
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
-	__host__ void add_callback (callback_t& callback)
+	void add_callback(callback_t& callback)
 	{
-		DeviceSetter set_device_for_this_scope(id_);
+		DeviceSetter set_device_for_this_scope(device_id_);
 
-		// The nVIDIA runtime API (upto v.8) requires flags to be 0, see
-		// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM
-		enum : unsigned int { fixed_flags = 0 };
+		// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
+		// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
+		//
+		enum : unsigned int { fixed_flags = 0 };//!< fixed_flags
 
 		// This always registers the static function callback_adapter as the callback -
 		// but what that one will do is call the actual callback we were passed; note
-		// that since you can one can have a lambda capture data and wrap that in an
+		// that since you can can have a lambda capture data and wrap that in the
 		// std::function, there's not much need (it would seem) for an extra inner
-		// user_data parameter to callback_t.
+		// user_data parameter to callback_t
 		auto result = cudaStreamAddCallback(id_, &callback_adapter, &callback, fixed_flags);
 		throw_if_error(result,
 			std::string("Failed adding a callback to stream ")
@@ -268,7 +265,7 @@ public: // mutators
 	 */
 	void enqueue_memory_attachment(const void* managed_region_start)
 	{
-		DeviceSetter set_device_for_this_scope(id_);
+		DeviceSetter set_device_for_this_scope(device_id_);
 		// This fixed value is required by the CUDA Runtime API,
 		// to indicate that the entire memory region, rather than a part of it, will be
 		// attached to this stream
@@ -279,8 +276,7 @@ public: // mutators
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
-
-	void wait(event::id_t event_id)
+	void wait_on(event::id_t event_id)
 	{
 		// Required by the CUDA runtime API
 		constexpr const unsigned int  flags = 0;
@@ -290,31 +286,126 @@ public: // mutators
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
-	// TODO: wait() with an event_t - possible?
-
 public: // constructors and destructor
 
-	stream_t(device::id_t device_id, stream::id_t stream_id) : device_id_(device_id), id_(stream_id)
+	stream_t(
+		device::id_t  device_id,
+		priority_t    priority = stream::default_priority,
+		bool          synchronizes_with_default_stream = true)
+	: device_id_(device_id), owning(true)
 	{
-		// TODO: Should we check that the stream is actually associated with the device?
+		device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+		id_ = stream::detail::create_on_current_device(
+			priority, synchronizes_with_default_stream);
 	}
-	~stream_t() { if (is_owning) cudaStreamDestroy(id_); }
 
+	stream_t(const stream_t& other) :
+		device_id_(other.device_id_), id_(other.id_), owning(false) { };
+
+	stream_t(stream_t&& other) :
+		device_id_(other.device_id_), id_(other.id_), owning(other.owning) { other.owning = false; };
+
+	// TODO: Perhaps drop this in favor of just the protected constructor,
+	// and let all wrapping construction be done by the stream::wrap() function?
+	stream_t(device::id_t device_id, stream::id_t stream_id)
+	: stream_t(device_id, stream_id, false) { }
+
+	~stream_t() { destruct(); }
+
+public: // operators
+
+/*
+	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
+	// too risky
+
+	stream_t& operator=(const stream_t<!AssumesDeviceIsCurrent>& other) = delete;
+	stream_t& operator=(const stream_t<AssumesDeviceIsCurrent>& other)
+	{
+		destruct();
+		device_id_ = other.device_id_;
+		id_ = other.id_;
+		owning = false;
+		return *this;
+	}
+	stream_t& operator=(stream_t<!AssumesDeviceIsCurrent>&& other) = delete;
+	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>&& other)
+	{
+		destruct();
+		device_id_ = other.device_id_;
+		id_ = other.id_;
+		owning = other.owning;
+		other.owning = false;
+		return *this;
+	}
+*/
+
+protected: // mutators
+
+	void destruct() {
+		if (owning) {
+			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);
+			cudaStreamDestroy(id_);
+		}
+		owning = false;
+	}
+
+protected: // constructor
+
+	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership)
+	: device_id_(device_id), id_(stream_id), owning(take_ownership) { }
+
+public: // friendship
+
+	friend stream_t<> stream::wrap(device::id_t device_id, id_t stream_id, bool take_ownership);
 
 protected: // data members
 	device::id_t  device_id_;
 	stream::id_t  id_;
-	bool          is_owning { false };
+	bool          owning;
 
 };
 
+inline bool operator==(const stream_t<>& lhs, const stream_t<>& rhs)
+{
+	return lhs.device_id() == rhs.device_id() && lhs.id() == rhs.id();
+}
+
+inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs)
+{
+	return !(lhs == rhs);
+}
+
 namespace stream {
 
-stream_t<> make_proxy(
+/**
+ * Use these for the third argument of @ref wrap
+ */
+enum : bool {
+	dont_take_ownership = false,
+	take_ownership = true,
+};
+
+inline stream_t<> wrap(
 	device::id_t  device_id,
-	id_t          stream_id)
+	id_t          stream_id,
+	bool          take_ownership /* = false, see declaration */)
 {
-	return cuda::stream_t<>(device_id, stream_id);
+	return stream_t<>(device_id, stream_id, take_ownership);
+}
+
+inline stream_t<> make(
+	device::id_t  device_id,
+	priority_t    priority = stream::default_priority,
+	bool          synchronizes_with_default_stream = true)
+{
+	return cuda::stream_t<>(device_id, priority, synchronizes_with_default_stream);
+}
+
+inline stream_t<> make(
+	device::id_t  device_id,
+	bool          synchronizes_with_default_stream)
+{
+	return make(device_id, default_priority, synchronizes_with_default_stream);
 }
 
 } // namespace stream

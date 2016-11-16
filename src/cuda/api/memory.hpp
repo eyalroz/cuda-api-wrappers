@@ -73,7 +73,7 @@ T* malloc(size_t num_bytes)
 
 } // namespace detail
 
-inline __host__ void free(void* ptr)
+inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
@@ -89,13 +89,13 @@ struct deleter {
 };
 } // namespace detail
 
-inline __host__ void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 {
 	auto result = cudaMemset(buffer_start, byte_value, num_bytes);
 	throw_if_error(result, "memsetting an on-device buffer");
 }
 
-inline __host__ void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* buffer_start, size_t num_bytes)
 {
 	return set(buffer_start, 0, num_bytes);
 }
@@ -113,7 +113,7 @@ inline __host__ void zero(void* buffer_start, size_t num_bytes)
  * @param src A pointer to a num_bytes-long buffer, either in main memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @ref src to @ref dst
  */
-inline __host__ void copy(void *destination, const void *source, size_t num_bytes)
+inline void copy(void *destination, const void *source, size_t num_bytes)
 {
 	auto result = cudaMemcpy(destination, source, num_bytes, cudaMemcpyDefault);
 	if (is_failure(result)) {
@@ -125,18 +125,18 @@ inline __host__ void copy(void *destination, const void *source, size_t num_byte
 }
 
 template <typename T>
-inline __host__ void copy_single(T& destination, const T& source)
+inline void copy_single(T& destination, const T& source)
 {
 	copy(&destination, &source, sizeof(T));
 }
 
 namespace async {
 
-inline __host__ void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
+inline void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
 {
 	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_id);
 	if (is_failure(result)) {
-		std::string error_message("Asynchronougly copying data on stream " + cuda::detail::ptr_as_hex(stream_id));
+		std::string error_message("Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 		// TODO: Determine whether it was from host to device, device to host etc and
 		// add this information to the error string
 		throw_if_error(result, error_message);
@@ -144,7 +144,7 @@ inline __host__ void copy(void *destination, const void *source, size_t num_byte
 }
 
 template <typename T>
-inline __host__ void copy_single(T& destination, const T& source, stream::id_t stream_id)
+inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 {
 	copy(&destination, &source, sizeof(T), stream_id);
 }
@@ -155,7 +155,7 @@ namespace host {
 
 // TODO: Consider a variant of this supporting the cudaHostAlloc flags
 template <typename T>
-inline __host__ T* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
+inline T* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
 {
 	T* allocated = nullptr;
 	// Note: the typed cudaMallocHost also takes its size in bytes, apparently, not in number of elements
@@ -176,12 +176,12 @@ inline __host__ T* allocate(size_t size_in_bytes /* write me:, bool recognized_b
  * @result host pointer to the allocated memory region; this must be freed with ::cuda::host::free()
  * rather than C++'s delete() .
  */
-inline __host__ void* allocate(size_t size_in_bytes)
+inline void* allocate(size_t size_in_bytes)
 {
 	return (void*) allocate<char>(size_in_bytes);
 }
 
-inline __host__ void free(void* host_ptr)
+inline void free(void* host_ptr)
 {
 	auto result = cudaFreeHost(host_ptr);
 	throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
@@ -249,13 +249,13 @@ inline void deregister(void *ptr)
 		"Could not unregister the memory segment starting at address *a");
 }
 
-inline __host__ void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 {
 	std::memset(buffer_start, byte_value, num_bytes);
 	// TODO: Error handling?
 }
 
-inline __host__ void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* buffer_start, size_t num_bytes)
 {
 	return set(buffer_start, 0, num_bytes);
 	// TODO: Error handling?
@@ -266,14 +266,14 @@ inline __host__ void zero(void* buffer_start, size_t num_bytes)
 
 namespace mapped {
 
-inline __host__ void free(region_pair pair)
+inline void free(region_pair pair)
 {
 	auto result = cudaFreeHost(pair.host_side);
 	throw_if_error(result,
 		"Could not free the (supposed) region pair passed.");
 }
 
-inline __host__ void free_region_pair_of(void* ptr)
+inline void free_region_pair_of(void* ptr)
 {
 	cudaPointerAttributes attributes;
 	auto result = cudaPointerGetAttributes(&attributes, ptr);
@@ -285,7 +285,7 @@ inline __host__ void free_region_pair_of(void* ptr)
 }
 
 // Mostly for debugging purposes
-inline __host__ bool is_part_of_a_region_pair(void* ptr)
+inline bool is_part_of_a_region_pair(void* ptr)
 {
 	cudaPointerAttributes attributes;
 	auto result = cudaPointerGetAttributes(&attributes, ptr);

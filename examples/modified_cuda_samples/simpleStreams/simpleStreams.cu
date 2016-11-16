@@ -184,8 +184,6 @@ int main(int argc, char **argv)
 
 	int niterations;    // number of iterations for the loop inside the kernel
 
-	std::cout << "[ " << sSDKsample << " ]\n\n";
-
 	if (checkCmdLineFlag(argc, (const char **)argv, "help"))
 	{
 		printHelp();
@@ -318,12 +316,16 @@ int main(int argc, char **argv)
 	std::cout << "\nStarting Test\n";
 
 	// allocate and initialize an array of stream handles
-	std::vector<cuda::stream::id_t> streams(nstreams);
+	std::vector<cuda::stream_t<>> streams;
 	streams.reserve(nstreams);
-	std::generate(
-		streams.begin(), streams.end(),
+	std::generate_n(
+		std::back_inserter(streams), nstreams,
 		[&current_device]() { return current_device.create_stream(); }
 	);
+
+	for(auto i = 0; i < nstreams; i++) {
+		streams.emplace_back(current_device.create_stream());
+	}
 
 	// create CUDA event handles
 	// use blocking sync
@@ -334,7 +336,7 @@ int main(int argc, char **argv)
 
 	// time memcopy from device
 	start_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
-	cuda::memory::async::copy(hAligned_a, d_a.get(), nbytes, streams[0]);
+	cuda::memory::async::copy(hAligned_a, d_a.get(), nbytes, streams[0].id());
 	stop_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
@@ -344,7 +346,7 @@ int main(int argc, char **argv)
 	threads=dim3(512, 1);
 	blocks=dim3(n / threads.x, 1);
 	start_event.record(cuda::stream::default_stream_id);
-	init_array<<<blocks, threads, 0, streams[0]>>>(d_a.get(), d_c.get(), niterations);
+	init_array<<<blocks, threads, 0, streams[0].id()>>>(d_a.get(), d_c.get(), niterations);
 	stop_event.record(cuda::stream::default_stream_id);
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
@@ -380,7 +382,7 @@ int main(int argc, char **argv)
 		// asynchronously launch nstreams kernels, each operating on its own portion of data
 		for (int i = 0; i < nstreams; i++)
 		{
-			init_array<<<blocks, threads, 0, streams[i]>>>(d_a.get() + i *n / nstreams, d_c.get(), niterations);
+			init_array<<<blocks, threads, 0, streams[i].id()>>>(d_a.get() + i *n / nstreams, d_c.get(), niterations);
 		}
 
 		// asynchronously launch nstreams memcopies.  Note that memcopy in stream x will only
@@ -390,7 +392,7 @@ int main(int argc, char **argv)
 			cuda::memory::async::copy(
 				hAligned_a + i * n / nstreams,
 				d_a.get() + i * n / nstreams, nbytes / nstreams,
-				streams[i]);
+				streams[i].id());
 		}
 	}
 

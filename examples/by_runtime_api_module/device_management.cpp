@@ -1,8 +1,13 @@
 /**
- * An example program utilizing most/all calls
- * from the CUDA Runtime API module:
+ * An example program utilizing most/all calls from the CUDA
+ * Runtime API module:
  *
  *   Device Management
+ *
+ * but does not include the API calls relating to IPC (inter-
+ * process communication) - sharing pointers to device memory
+ * and events among operating system process. That should be
+ * covered by a different program.
  *
  */
 #include "cuda/api/pci_id.hpp"

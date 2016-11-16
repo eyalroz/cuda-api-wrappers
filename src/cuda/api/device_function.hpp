@@ -9,6 +9,7 @@
 #include <cuda_runtime_api.h>
 
 namespace cuda {
+
 namespace device_function {
 
 struct attributes_t : cudaFuncAttributes {
