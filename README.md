@@ -36,6 +36,18 @@ Since the (main) developer is not currently working on anything graphics-related
 
 ## A taste of the key features in play
 
+We've all dreamed of being able to type in:
+
+	my_stream.enqueue_callback(
+		[&foo](cuda::stream::id_t stream_id, cuda::status_t status) {
+			std::cout << "Hello " << foo << " world!\n";
+		}
+	);
+
+... and have that just work, right? Well, now it does! 
+
+On a slightly more serious note, though, let's demonstrate the principles listed above:
+
 #### Use of namespaces (and internal classes)
 With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of `cudaSetDevice()` and `cudaMalloc()` calls.
 
@@ -76,7 +88,7 @@ The CUDA distribution contains sample programs demostrating various features and
 
 #### 'Coverage' test programs - by module of the Runtime API
 
-Gradually, an example program is being added for each one of the CUDA Runtime API [Modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), in which the approach replacing use of those module API calls by use of the API wrappers is demonstrated. These per-module example programs can be found [here](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/by_runtime_api_module/) 
+Gradually, an example program is being added for each one of the CUDA Runtime API [Modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), in which the approach replacing use of those module API calls by use of the API wrappers is demonstrated. These per-module example programs can be found [here](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/by_runtime_api_module/).
 
 ## Bugs, suggestions, feedback
 
