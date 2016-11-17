@@ -125,10 +125,14 @@ public: // other non-mutator methods
 		if (status == cuda::error::success) return true;
 		if (status == cuda::error::not_ready) return false;
 		throw cuda::runtime_error(status,
-			"Could not determine whether the event with ID " + detail::ptr_as_hex(id_)
+			"Could not determine whether event " + detail::ptr_as_hex(id_)
 			+ "has already occurred or not.");
 	}
 
+	/**
+	 * An alias for @ref has_occurred() - to conform to how the CUDA runtime
+	 * API names this functionality
+	 */
 	bool query() const { return has_occured(); }
 
 

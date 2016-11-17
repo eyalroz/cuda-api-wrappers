@@ -34,8 +34,8 @@ inline id_t create_on_current_device(
 	unsigned int flags = cuda::stream::implicitly_synchronizes_with_default_stream ?
 		cudaStreamDefault : cudaStreamNonBlocking;
 	id_t new_stream_id;
-	auto result = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
-	throw_if_error(result,
+	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
+	throw_if_error(status,
 		std::string("Failed creating a new stream on CUDA device ")
 		+ std::to_string(device::current::get_id()));
 	return new_stream_id;
@@ -61,8 +61,8 @@ inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
 	device::current::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
 		set_device_for_this_scope(device_id);
-	auto result = cudaStreamQuery(stream_id);
-	switch(result) {
+	auto status = cudaStreamQuery(stream_id);
+	switch(status) {
 	case cudaSuccess:
 	case cudaErrorNotReady:
 		return true;
@@ -139,8 +139,8 @@ public: // other non-mutators
 	bool synchronizes_with_default_stream() const
 	{
 		unsigned int flags;
-		auto result = cudaStreamGetFlags(id_, &flags);
-		throw_if_error(result,
+		auto status = cudaStreamGetFlags(id_, &flags);
+		throw_if_error(status,
 			std::string("Failed obtaining flags for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return flags & cudaStreamNonBlocking;
@@ -149,35 +149,53 @@ public: // other non-mutators
 	priority_t priority() const
 	{
 		int the_priority;
-		auto result = cudaStreamGetPriority(id_, &the_priority);
-		throw_if_error(result,
+		auto status = cudaStreamGetPriority(id_, &the_priority);
+		throw_if_error(status,
 			std::string("Failure obtaining priority for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return the_priority;
 	}
 
 	/**
-	 * Check whether the queue has any incomplete operations
+	 * Determines whether all work on this stream has been completed
+	 *
+	 * @note having work is _not_ the same as being busy executing that work!
 	 *
 	 * @todo What if there are incomplete operations, but they're all waiting on
 	 * something on another queue? Should the queue count as "busy" then?
 	 *
-	 * @return true if all enqueued operations have been completed; false if there
-	 * are any incomplete enqueued operations
+	 * @return true if there is still work pending, false otherwise
 	 */
-	bool busy() const
+	bool has_work() const
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
-		auto result = cudaStreamQuery(id_);
-		switch(result) {
+		auto status = cudaStreamQuery(id_);
+		switch(status) {
 		case cudaSuccess:
-			return true;
-		case cudaErrorNotReady:
 			return false;
+		case cudaErrorNotReady:
+			return true;
 		default:
-			throw(std::logic_error("unexpected status returned from cudaStreamQuery()"));
+			throw(cuda::runtime_error(status,
+				"unexpected status returned from cudaStreamQuery() for stream "
+				+ detail::ptr_as_hex(id_)));
 		}
 	}
+
+	/**
+	 * The opposite of @ref has_work()
+	 *
+	 * @return true if there is no work pending, false if all
+	 * previously-scheduled work has been completed
+	 */
+	bool is_clear() const { return !has_work(); }
+
+	/**
+	 * An alias for @ref is_clear() - to conform to how the CUDA runtime
+	 * API names this functionality
+	 */
+	bool query() const { return is_clear(); }
+
 
 protected: // static methods
 
@@ -220,8 +238,8 @@ public: // mutators
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
-		auto result = cudaStreamSynchronize(id_);
-		throw_if_error(result,
+		auto status = cudaStreamSynchronize(id_);
+		throw_if_error(status,
 			std::string("Failed synchronizing a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
@@ -240,8 +258,8 @@ public: // mutators
 		// that since you can can have a lambda capture data and wrap that in the
 		// std::function, there's not much need (it would seem) for an extra inner
 		// user_data parameter to callback_t
-		auto result = cudaStreamAddCallback(id_, &callback_adapter, &callback, fixed_flags);
-		throw_if_error(result,
+		auto status = cudaStreamAddCallback(id_, &callback_adapter, &callback, fixed_flags);
+		throw_if_error(status,
 			std::string("Failed adding a callback to stream ")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
@@ -270,8 +288,8 @@ public: // mutators
 		// to indicate that the entire memory region, rather than a part of it, will be
 		// attached to this stream
 		constexpr const size_t length = 0;
-		auto result =  cudaStreamAttachMemAsync(id_, managed_region_start, length, cudaMemAttachSingle);
-		throw_if_error(result,
+		auto status =  cudaStreamAttachMemAsync(id_, managed_region_start, length, cudaMemAttachSingle);
+		throw_if_error(status,
 			std::string("Failed attaching a managed memory region to a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
@@ -280,8 +298,8 @@ public: // mutators
 	{
 		// Required by the CUDA runtime API
 		constexpr const unsigned int  flags = 0;
-		auto result = cudaStreamWaitEvent(id_, event_id, flags);
-		throw_if_error(result,
+		auto status = cudaStreamWaitEvent(id_, event_id, flags);
+		throw_if_error(status,
 			std::string("Failed waiting for an event")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
