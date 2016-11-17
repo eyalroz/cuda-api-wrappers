@@ -155,6 +155,7 @@ inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeo
 } // namespace detail
 
 inline std::string interpret_status(status_t status) { return cudaGetErrorString(status); }
+inline std::string interpret_error(error::code_t code) { return interpret_status((status_t) code); }
 
 /**
  * A (base?) class for exceptions raised by CUDA code
@@ -164,18 +165,18 @@ public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(cuda::status_t error_code) :
 		cuda_inspecific_runtime_error(interpret_status(error_code)),
-		error_code_(error_code)
+		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
 	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
 		cuda_inspecific_runtime_error(what_arg + ": " + interpret_status(error_code)),
-		error_code_(error_code)
+		code_(error_code)
 	{ }
 
-	status_t error_code() const { return error_code_; }
+	status_t code() const { return code_; }
 
 private:
-	status_t error_code_;
+	status_t code_;
 };
 
 // TODO: The following could use std::optiomal arguments - which would

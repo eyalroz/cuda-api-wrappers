@@ -11,7 +11,7 @@ namespace cuda {
 namespace device {
 namespace current {
 
-inline __host__ device::id_t  get_id()
+inline device::id_t get_id()
 {
 	device::id_t  device;
 	status_t result = cudaGetDevice(&device);
@@ -19,28 +19,28 @@ inline __host__ device::id_t  get_id()
 	return device;
 }
 
-inline __host__ void set(device::id_t  device)
+inline void set(device::id_t  device)
 {
 	status_t result = cudaSetDevice(device);
 	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
 }
 
-inline __host__ void set_to_default() { return set(device::default_device_id); }
+inline void set_to_default() { return set(device::default_device_id); }
 
-template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class scoped_override_t;
+template <bool AssumedCurrent = false> class scoped_override_t;
 
 template <>
 class scoped_override_t<detail::do_not_assume_device_is_current> {
 protected:
 	// Note the previous device and the current one might be one and the same;
 	// in that case, the push is idempotent (but who guarantees this? Hmm.)
-	static inline __host__ device::id_t  push(device::id_t new_device)
+	static inline device::id_t  push(device::id_t new_device)
 	{
 		device::id_t  previous_device = device::current::get_id();
 		device::current::set(new_device);
 		return previous_device;
 	}
-	static inline __host__ void pop(device::id_t  old_device) { device::current::set(old_device); }
+	static inline void pop(device::id_t  old_device) { device::current::set(old_device); }
 
 public:
 	scoped_override_t(device::id_t  device) { previous_device = push(device); }

@@ -169,9 +169,17 @@ cuda_add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_m
 target_link_libraries(execution_control cuda-api-wrappers)
 cuda_add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
 target_link_libraries(stream_management cuda-api-wrappers)
+cuda_add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
+target_link_libraries(event_management cuda-api-wrappers)
 #----
 add_custom_target(examples_by_runtime_api_module)
-add_dependencies(examples_by_runtime_api_module version_management error_handling device_management execution_control stream_management)
+add_dependencies(
+	examples_by_runtime_api_module 
+	version_management 
+	error_handling device_management 
+	execution_control 
+	stream_management 
+	event_management)
 
 add_custom_target(examples)
 add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)

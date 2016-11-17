@@ -15,14 +15,6 @@
 #include <cassert>
 #include <cstdio>
 
-/*
-[[noreturn]] void die(const std::string& message)
-{
-	std::cerr << message << "\n";
-	exit(EXIT_FAILURE);
-}
-*/
-
 using std::printf;
 
 template <typename T, size_t N>
@@ -87,7 +79,7 @@ int main(int argc, char **argv)
 	cuda::device::current::set(device_id);
 	auto device = cuda::device::current::get();
 
-	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
+	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
 	// Stream creation and destruction, stream flags
 	//------------------------------------------------
@@ -113,10 +105,9 @@ int main(int argc, char **argv)
 		cuda::stream::default_priority + 1,
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 
-	auto buffer_size = 12345678;
+	constexpr auto buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
-		buffer_size, cuda::memory::managed::is_visible_to_all_devices);
-		//(char*) device.memory.allocate_managed(buffer_size);
+		buffer_size, cuda::memory::managed::is_initially_invisible_to_other_devices);
 	print_first_char(buffer.get());
 	std::fill(buffer.get(), buffer.get() + buffer_size, 'a');
 	print_first_char(buffer.get());

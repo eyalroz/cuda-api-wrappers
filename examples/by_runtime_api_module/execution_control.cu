@@ -48,6 +48,7 @@ int main(int argc, char **argv)
 		std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	auto device = cuda::device::get(device_id);
+	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 	cuda::device_function_t device_function(kernel);
 
 	// ------------------------------------------

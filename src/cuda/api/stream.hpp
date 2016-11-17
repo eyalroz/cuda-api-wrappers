@@ -241,6 +241,15 @@ public: // mutators
 		memory::async::set(destination, byte_value, num_bytes, id_);
 	}
 
+	void enqueue_event(event::id_t event_id) {
+		DeviceSetter set_device_for_this_scope(device_id_);
+		// Not calling event::detail::enqueue to avoid dependency on event.hpp
+		auto status = cudaEventRecord(event_id, id_);
+		throw_if_error(status,
+			"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
+			+ " on stream " + cuda::detail::ptr_as_hex(id_));
+	}
+
 	void enqueue_callback(callback_t callback)
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
@@ -261,7 +270,6 @@ public: // mutators
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
-	// TODO: wrap this with a nicer interface taking a lambda...
 	/**
 	 * Attaches a region of managed memory (i.e. in an address space visible
 	 * on all CUDA devices and the host) to this specific stream on its specific device.

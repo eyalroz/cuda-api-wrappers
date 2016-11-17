@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error& e) {
-		if (e.error_code() != cuda::error::invalid_device) { throw e; }
+		if (e.code() != cuda::error::invalid_device) { throw e; }
 		cout << "The exception we expected was indeed thrown." << "\n";
 	}
 

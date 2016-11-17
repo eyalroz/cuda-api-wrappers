@@ -395,7 +395,7 @@ public: // methods
 		return id_.id;
 	}
 
-	stream_t<AssumedCurrent> default_stream()
+	stream_t<AssumedCurrent> default_stream() const
 	{
 		// TODO: Perhaps support not-knowing our ID here as well?
 		return stream_t<AssumedCurrent>(id(), stream::default_stream_id);

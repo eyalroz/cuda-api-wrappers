@@ -48,6 +48,22 @@ enum : bool {
 	interprocess = true,
 		//!< Can only be used by the process which created it
 };
+
+namespace detail {
+
+void enqueue(stream::id_t stream_id, id_t event_id) {
+	auto status = cudaEventRecord(event_id, stream_id);
+	throw_if_error(status,
+		"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
+		+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
+}
+
+void enqueue(device::id_t device_id, stream::id_t stream_id, id_t event_id) {
+	device::current::scoped_override_t<> device_setter(device_id);
+	enqueue(stream_id, event_id);
+}
+
+} // namespace detail
 } // namespace event
 
 /**
@@ -66,7 +82,7 @@ public: // constructors and destructor
 		throw_if_error(status, "failed creating a CUDA event");
 	}
 	event_t(
-		bool uses_blocking_sync, 
+		bool uses_blocking_sync,
 			// I would have liked to default to false, but this would
 			// occlude the trivial (argument-less) constructor)
 		bool records_timing = event::do_record_timings,
@@ -119,7 +135,7 @@ public: // other non-mutator methods
 	 * before the point of recording, returns false; if the event has not
 	 * been recorded at all, returns true.
 	 */
-	bool has_occured() const
+	bool has_occurred() const
 	{
 		auto status = cudaEventQuery(id_);
 		if (status == cuda::error::success) return true;
@@ -133,7 +149,7 @@ public: // other non-mutator methods
 	 * An alias for @ref has_occurred() - to conform to how the CUDA runtime
 	 * API names this functionality
 	 */
-	bool query() const { return has_occured(); }
+	bool query() const { return has_occurred(); }
 
 
 public: // other mutator methods
@@ -143,10 +159,8 @@ public: // other mutator methods
 	 */
 	void record(stream::id_t stream_id = stream::default_stream_id)
 	{
-		auto status = cudaEventRecord(id_, stream_id);
-		throw_if_error(status,
-			"Failed recording event " + detail::ptr_as_hex(id_)
-			+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
+		// TODO: Don't I need a device ID here?
+		event::detail::enqueue(stream_id, id_);
 	}
 
 	/**
@@ -181,6 +195,19 @@ float milliseconds_elapsed_between(id_t start, id_t end)
 float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 {
 	return milliseconds_elapsed_between(start.id(), end.id());
+}
+
+inline event_t make()
+{
+	return event_t();
+}
+
+inline event_t make(
+	bool uses_blocking_sync,
+	bool records_timing = do_record_timings,
+	bool interprocess = not_interprocess)
+{
+	return event_t(uses_blocking_sync, records_timing, interprocess);
 }
 
 } // namespace event

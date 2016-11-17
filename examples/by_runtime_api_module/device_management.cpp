@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
 	auto device = cuda::device::get(device_id);
 
-	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
+	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
 	// Attributes and properties
 	// ---------------------------
@@ -47,10 +47,7 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Maximum number of registers per block on this device: "
 		<< max_registers_per_block << "\n";
-
-	auto properties = device.properties();
-	assert(properties.regsPerBlock == max_registers_per_block);
-
+	assert(device.properties().regsPerBlock == max_registers_per_block);
 
 	// PCI bus IDs
 	// --------------------
@@ -173,7 +170,7 @@ int main(int argc, char **argv)
 			+ " (one less)");
 	}
 	catch(cuda::runtime_error& e) {
-		assert(e.error_code() == cuda::error::invalid_device);
+		assert(e.code() == cuda::error::invalid_device);
 		// We expected to get this exception, just clear it
 		cuda::clear_outstanding_errors();
 	}
