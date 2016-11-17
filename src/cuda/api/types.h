@@ -35,7 +35,9 @@ using id_t              = cudaEvent_t;
 namespace stream {
 using id_t             = cudaStream_t;
 using priority_t       = int;
-enum : priority_t { default_priority = 0, unbounded_priority = -1 };
+enum : priority_t { 
+	default_priority   = 0,
+	unbounded_priority = -1 };
 
 } // namespace stream
 

@@ -81,9 +81,30 @@ inline unique_ptr<T> make_unique()
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
-
-
 } // namespace host
+
+namespace managed {
+
+template<typename T>
+using unique_ptr = std::unique_ptr<T, detail::deleter>;
+
+template<typename T>
+inline unique_ptr<T> make_unique(size_t n, bool initially_invisible_to_other_devices)
+{
+	return initially_invisible_to_other_devices ?
+		cuda::memory::detail::make_unique<T, detail::allocator<true >, detail::deleter>(n) :
+		cuda::memory::detail::make_unique<T, detail::allocator<false>, detail::deleter>(n);
+}
+
+template<typename T>
+inline unique_ptr<T> make_unique(bool initially_invisible_to_other_devices)
+{
+	return initially_invisible_to_other_devices ?
+		cuda::memory::detail::make_unique<T, detail::allocator<true >, detail::deleter>() :
+		cuda::memory::detail::make_unique<T, detail::allocator<false>, detail::deleter>();
+
+}
+} // namespace managed
 
 } // namespace memory
 } // namespace cuda

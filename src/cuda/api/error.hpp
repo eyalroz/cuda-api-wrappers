@@ -111,7 +111,6 @@ enum code_t : std::underlying_type<status_t>::type {
 	nvlink_uncorrectable            = cudaErrorNvlinkUncorrectable,
 	startup_failure                 = cudaErrorStartupFailure,
 	api_failure_base                = cudaErrorApiFailureBase
-
 };
 
 inline bool operator==(const status_t& lhs, const code_t& rhs) { return lhs == (status_t) rhs;}
@@ -155,6 +154,8 @@ inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeo
 
 } // namespace detail
 
+inline std::string interpret_status(status_t status) { return cudaGetErrorString(status); }
+
 /**
  * A (base?) class for exceptions raised by CUDA code
  */
@@ -162,12 +163,12 @@ class runtime_error : public cuda_inspecific_runtime_error {
 public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(cuda::status_t error_code) :
-		cuda_inspecific_runtime_error(cudaGetErrorString(error_code)),
+		cuda_inspecific_runtime_error(interpret_status(error_code)),
 		error_code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
 	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
-		cuda_inspecific_runtime_error(what_arg + ": " + cudaGetErrorString(error_code)),
+		cuda_inspecific_runtime_error(what_arg + ": " + interpret_status(error_code)),
 		error_code_(error_code)
 	{ }
 

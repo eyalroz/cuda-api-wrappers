@@ -234,17 +234,14 @@ public: // mutators
 		memory::async::copy(destination, source, num_bytes, id_);
 	}
 
-	void synchronize()
+	void enqueue_memset(void *destination, int byte_value, size_t num_bytes)
 	{
+		// Is it necessary to set the device? I wonder.
 		DeviceSetter set_device_for_this_scope(device_id_);
-		// TODO: some kind of string representation for the stream
-		auto status = cudaStreamSynchronize(id_);
-		throw_if_error(status,
-			std::string("Failed synchronizing a stream")
-			+ " on CUDA device " + std::to_string(device_id_));
+		memory::async::set(destination, byte_value, num_bytes, id_);
 	}
 
-	void add_callback(callback_t& callback)
+	void enqueue_callback(callback_t callback)
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
 
@@ -291,6 +288,16 @@ public: // mutators
 		auto status =  cudaStreamAttachMemAsync(id_, managed_region_start, length, cudaMemAttachSingle);
 		throw_if_error(status,
 			std::string("Failed attaching a managed memory region to a stream")
+			+ " on CUDA device " + std::to_string(device_id_));
+	}
+
+	void synchronize()
+	{
+		DeviceSetter set_device_for_this_scope(device_id_);
+		// TODO: some kind of string representation for the stream
+		auto status = cudaStreamSynchronize(id_);
+		throw_if_error(status,
+			std::string("Failed synchronizing a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 

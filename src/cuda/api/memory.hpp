@@ -149,6 +149,18 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 	copy(&destination, &source, sizeof(T), stream_id);
 }
 
+inline void set(void* buffer_start, int byte_value, size_t num_bytes, stream::id_t stream_id)
+{
+	auto result = cudaMemsetAsync(buffer_start, byte_value, num_bytes, stream_id);
+	throw_if_error(result, "memsetting an on-device buffer");
+}
+
+inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id)
+{
+	return set(buffer_start, 0, num_bytes, stream_id);
+}
+
+
 } // namespace async
 
 namespace host {
@@ -263,6 +275,51 @@ inline void zero(void* buffer_start, size_t num_bytes)
 
 
 } // namespace host
+
+namespace managed {
+
+enum : bool {
+	is_visible_to_all_devices = false,
+	is_initially_invisible_to_other_devices = true,
+};
+
+namespace detail {
+
+template <typename T = void>
+T* malloc(size_t num_bytes, bool initially_invisible_to_other_devices = false)
+{
+	T* allocated = nullptr;
+	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
+	// not in number of elements
+	auto flags = initially_invisible_to_other_devices ?
+		cudaMemAttachHost : cudaMemAttachGlobal;
+	auto status = cudaMallocManaged<T>(&allocated, num_bytes, flags);
+	if (is_success(status) && allocated == nullptr) {
+		// Can this even happen? hopefully not
+		status = (status_t) cuda::error::unknown;
+	}
+	throw_if_error(status,
+		"Failed allocating " + std::to_string(num_bytes) + " bytes of managed CUDA memory");
+	return allocated;
+}
+
+inline void free(void* ptr)
+{
+	auto result = cudaFree(ptr);
+	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+}
+
+template <bool InitiallyInvisibleToOtherDevices = false>
+struct allocator {
+	// Allocates on the current device!
+	void* operator()(size_t num_bytes) const { return detail::malloc(num_bytes, InitiallyInvisibleToOtherDevices); }
+};
+struct deleter {
+	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
+};
+} // namespace detail
+
+} // namespace managed
 
 namespace mapped {
 

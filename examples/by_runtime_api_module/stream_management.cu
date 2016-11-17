@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cstdio>
 
 /*
 [[noreturn]] void die(const std::string& message)
@@ -21,6 +22,8 @@
 	exit(EXIT_FAILURE);
 }
 */
+
+using std::printf;
 
 template <typename T, size_t N>
 struct poor_mans_array {
@@ -47,13 +50,31 @@ poor_mans_array<char, N> message(const std::string& message_str)
 }
 
 template <size_t N, unsigned Index>
-__global__ void print(poor_mans_array<char, N> message)
+__global__ void print_message(poor_mans_array<char, N> message)
 {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
 		printf("Kernel no. %u says: %s\n", Index, (const char*) message);
 	}
 }
 
+__host__ __device__ void print_first_char(const char* __restrict__ data)
+{
+	printf("data[0] = '%c' (0x%02x)\n", data[0], (unsigned) data[0]);
+}
+
+__global__ void print_first_char_kernel(const char* __restrict__ data)
+{
+	if (threadIdx.x == 0 && blockIdx.x == 0) {
+		print_first_char(data);
+	}
+}
+
+__global__ void increment(char* data, size_t length)
+{
+	size_t global_index = threadIdx.x + blockIdx.x * blockDim.x;
+	if (global_index < length)
+	data[global_index]++;
+}
 
 int main(int argc, char **argv)
 {
@@ -68,6 +89,8 @@ int main(int argc, char **argv)
 
 	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
+	// Stream creation and destruction, stream flags
+	//------------------------------------------------
 	{
 		auto stream = cuda::device::current::get().create_stream();
 		std::cout
@@ -75,9 +98,13 @@ int main(int argc, char **argv)
 			<< stream.priority() << " and synchronizes by "
 			<< (stream.synchronizes_with_default_stream() ? "blocking" : "busy-waiting")
 			<< ".\n";
-		stream.enqueue_launch(print<N,1>, { 1, 1 }, message<N>("I can see my house!"));
+		stream.enqueue_launch(print_message<N,1>, { 1, 1 }, message<N>("I can see my house!"));
 		stream.synchronize();
 	}
+
+	// Everything else - Enqueueing kernels, events, callbacks
+	// and memory attachments, recording and waiting on events
+	//--------------------------------------------------------------
 
 	auto stream_1 = cuda::device::current::get().create_stream(
 		cuda::stream::default_priority + 1,
@@ -86,27 +113,43 @@ int main(int argc, char **argv)
 		cuda::stream::default_priority + 1,
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 
+	auto buffer_size = 12345678;
+	auto buffer = cuda::memory::managed::make_unique<char[]>(
+		buffer_size, cuda::memory::managed::is_visible_to_all_devices);
+		//(char*) device.memory.allocate_managed(buffer_size);
+	print_first_char(buffer.get());
+	std::fill(buffer.get(), buffer.get() + buffer_size, 'a');
+	print_first_char(buffer.get());
 
 	cuda::event_t event_1(cuda::event::sync_by_blocking);
-	stream_1.enqueue_launch(print<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue_memset(buffer.get(), 'b', buffer_size);
+	stream_1.enqueue_callback(
+		[&buffer](cuda::stream::id_t stream_id, cuda::status_t status) {
+			std::cout << "Callback from stream 1!... ";
+			print_first_char(buffer.get());
+		}
+	);
+	auto threads_per_block = cuda::device_function_t(increment).attributes().maxThreadsPerBlock;
+	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
+	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
+	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
+	// so that the attachment has some observable effect
+	stream_1.enqueue_memory_attachment(buffer.get());
+	stream_1.enqueue_launch(increment, launch_config, buffer.get(), buffer_size);
 	event_1.record(stream_1.id());
-	stream_1.enqueue_launch(print<N,3>, { 1, 1 }, message<N>("I'm on stream 1"));
-
+	stream_1.enqueue_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_2.wait_on(event_1.id());
-	stream_2.enqueue_launch(print<N,4>, { 1, 1 }, message<N>("I'm on stream 2"));
-
+	stream_2.enqueue_launch(print_first_char_kernel, launch_config , buffer.get());
+	stream_2.enqueue_launch(print_message<N,5>, { 1, 1 }, message<N>("I'm on stream 2"));
 	bool idleness_1 = stream_2.has_work();
-
 	device.synchronize();
-
+	print_first_char(buffer.get());
+	// cuda::memory::managed::free(buffer);
 	bool idleness_2 = stream_2.has_work();
-
 	std::cout << std::boolalpha
 		<< "Did stream 2 have work before device-level synchronization? " << (idleness_1 ? "yes" : "no") << "\n"
 		<< "Did stream 2 have work after  device-level synchronization? " << (idleness_2 ? "yes" : "no") << "\n";
-
-	// Remain to be tested: add_callback, enqueue_memory_attachment
-
 	std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;
 }
