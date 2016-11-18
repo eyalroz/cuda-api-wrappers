@@ -5,10 +5,12 @@
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
 #include "cuda/api/error.hpp"
+#include "cuda/api/current_device.hpp"
 
 #include <cuda_runtime_api.h>
 
 namespace cuda {
+
 namespace event {
 
 /**
@@ -58,12 +60,36 @@ void enqueue(stream::id_t stream_id, id_t event_id) {
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
-void enqueue(device::id_t device_id, stream::id_t stream_id, id_t event_id) {
-	device::current::scoped_override_t<> device_setter(device_id);
-	enqueue(stream_id, event_id);
+constexpr unsigned make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
+{
+	return
+		  ( uses_blocking_sync  ? cudaEventBlockingSync : 0  )
+		| ( records_timing      ? 0 : cudaEventDisableTiming )
+		| ( interprocess        ? cudaEventInterprocess : 0  );
+}
+
+id_t create_on_current_device(bool uses_blocking_sync, bool records_timing, bool interprocess)
+{
+	id_t new_event_id;
+	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
+	auto status = cudaEventCreate(&new_event_id, flags);
+	throw_if_error(status, "failed creating a CUDA event associated with the current device");
+	return new_event_id;
 }
 
 } // namespace detail
+
+} // namespace event
+
+class event_t;
+
+namespace event {
+
+inline event_t wrap(
+	device::id_t  device_id,
+	id_t          event_id,
+	bool          take_ownership = false);
+
 } // namespace event
 
 /**
@@ -75,54 +101,10 @@ void enqueue(device::id_t device_id, stream::id_t stream_id, id_t event_id) {
  * supported, throw the owning field.
  */
 class event_t {
-public: // constructors and destructor
-	event_t() : owning(true)
-	{
-		auto status = cudaEventCreate(&id_);
-		throw_if_error(status, "failed creating a CUDA event");
-	}
-	event_t(
-		bool uses_blocking_sync,
-			// I would have liked to default to false, but this would
-			// occlude the trivial (argument-less) constructor)
-		bool records_timing = event::do_record_timings,
-		bool interprocess = event::not_interprocess)
-	:
-		owning(true), blocking_sync(uses_blocking_sync),
-		records_timing_(records_timing), interprocess_(interprocess)
-	{
-		auto status = cudaEventCreate(&id_, flags());
-		throw_if_error(status, "failed creating a CUDA event");
-	}
-
-	event_t(const event_t& other) :
-		id_(other.id_), owning(false),
-		blocking_sync(other.blocking_sync),
-		records_timing_(other.records_timing_),
-		interprocess_(other.interprocess_) { };
-
-	event_t(event_t&& other) : owning(other.owning), id_(other.id_),
-		blocking_sync(other.blocking_sync),
-		records_timing_(other.records_timing_),
-		interprocess_(other.interprocess_) { other.owning = false; };
-
-	~event_t() { if (owning) cudaEventDestroy(id_); }
-
-protected:
-	unsigned flags() const {
-		return
-			  ( blocking_sync    ? cudaEventBlockingSync : 0  )
-			| ( records_timing_  ? 0 : cudaEventDisableTiming )
-			| ( interprocess_    ? cudaEventInterprocess : 0  )
-		;
-	}
-
-public: // data member getter
-	event::id_t id()                  const { return id_;             }
-	bool        is_owning()           const { return owning;          }
-	bool        interprocess()        const { return interprocess_;   }
-	bool        records_timing()      const { return records_timing_; }
-	bool        uses_blocking_sync()  const { return blocking_sync;   }
+public: // data member non-mutator getters
+	event::id_t  id()                 const { return id_;                 }
+	device::id_t device_id()          const { return device_id_;          }
+	bool         is_owning()          const { return owning;              }
 
 public: // other non-mutator methods
 
@@ -159,7 +141,8 @@ public: // other mutator methods
 	 */
 	void record(stream::id_t stream_id = stream::default_stream_id)
 	{
-		// TODO: Don't I need a device ID here?
+		// TODO: Perhaps check the device ID here, rather than
+		// have the Runtime API call fail?
 		event::detail::enqueue(stream_id, id_);
 	}
 
@@ -174,44 +157,91 @@ public: // other mutator methods
 			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
 	}
 
+protected: // mutators
+
+	void destruct() {
+		if (owning) cudaEventDestroy(id_);
+		owning = false;
+	}
+
+protected: // constructor
+
+	event_t(device::id_t device_id, event::id_t event_id, bool take_ownership)
+	: device_id_(device_id), id_(event_id), owning(take_ownership) { }
+
+public: // friendship
+
+	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership);
+
+public: // constructors and destructor
+	event_t(device::id_t device_id, event::id_t event_id) :
+		event_t(device_id, event_id, false) { }
+
+	event_t(const event_t& other) :
+		device_id_(other.device_id_), id_(other.id_), owning(false){ };
+
+	event_t(event_t&& other) :
+		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
+	{
+		other.destruct();
+		other.owning = false;
+	};
+
+	~event_t() { destruct(); }
+
 protected: // data members
-	bool           owning; // not const, to enable move assignment / construction
-	event::id_t    id_; // it can't be a const, since we're making
-	                    // a CUDA API call during construction
-	const bool blocking_sync    { false };
-	const bool records_timing_  { false };
-	const bool interprocess_    { false };
+	const device::id_t  device_id_;
+	const event::id_t   id_;
+	bool                owning;
+		// this field is mutable only for enabling move construction; other
+		// than in that case it must not be altered
 };
 
 namespace event {
 
 float milliseconds_elapsed_between(id_t start, id_t end)
 {
-	float elapsed_ms;
-	auto result = cudaEventElapsedTime(&elapsed_ms, start, end);
-	throw_if_error(result, "determining the time elapsed between events");
-	return elapsed_ms;
+	float elapsed_milliseconds;
+	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start, end);
+	throw_if_error(status, "determining the time elapsed between events");
+	return elapsed_milliseconds;
 }
 float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 {
 	return milliseconds_elapsed_between(start.id(), end.id());
 }
 
-inline event_t make()
+inline event_t wrap(
+	device::id_t  device_id,
+	id_t          event_id,
+	bool          take_ownership /* = false, see declaration */)
 {
-	return event_t();
+	return event_t(device_id, event_id, take_ownership);
 }
 
 inline event_t make(
-	bool uses_blocking_sync,
-	bool records_timing = do_record_timings,
-	bool interprocess = not_interprocess)
+	device::id_t device_id,
+	bool uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool records_timing     = do_record_timings,
+	bool interprocess       = not_interprocess)
 {
-	return event_t(uses_blocking_sync, records_timing, interprocess);
+	auto new_event_id = detail::create_on_current_device(
+		uses_blocking_sync, records_timing, interprocess);
+	bool take_ownership = true;
+	return wrap(device_id, new_event_id, take_ownership);
+}
+
+/**
+ * @note The reason this doesn't take the three boolean parameters
+ * is avoiding an implicit cast from bool to device::id_t, which would take
+ * us to the other variant of @ref make with a possibly invalid device ID.
+ */
+inline event_t make()
+{
+	return make(device::current::get_id());
 }
 
 } // namespace event
-
 } // namespace cuda
 
 

@@ -241,7 +241,8 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 	}
 	else
 	{
-		cuda::event_t event(
+		auto event = cuda::event::make(
+			cuda::device::current::get_id(),
 			cuda::event::sync_by_blocking,
 			cuda::event::dont_record_timings,
 			cuda::event::interprocess);
