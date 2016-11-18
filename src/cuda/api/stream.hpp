@@ -233,16 +233,40 @@ public: // mutators
 			launch_configuration_t      launch_configuration,
 			KernelParameters...         parameters)
 		{
+			// Kernel executions cannot be enqueued in streams associated
+			// with devices other than the current one, see:
+			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
+			DeviceSetter set_device_for_this_scope(device_id_);
 			return cuda::enqueue_launch(kernel_function, launch_configuration, stream_id_, parameters...);
 		}
 
+		/**
+		 * Have the CUDA device perform an I/O operation between two specified
+		 * memory regions (on or off the actual device)
+		 *
+		 * @param destination destination region into which to copy. May be
+		 * anywhere in which memory can be mapped to the device's memory space (e.g.
+		 * the device's global memory, host memory or the global memory of another device)
+		 * @param source destination region from which to copy. May be
+		 * anywhere in which memory can be mapped to the device's memory space (e.g.
+		 * the device's global memory, host memory or the global memory of another device)
+		 * @param num_bytes size of the region to copy
+		 **/
 		void copy(void *destination, const void *source, size_t num_bytes)
 		{
-			// Is it necessary to set the device? I wonder.
-			DeviceSetter set_device_for_this_scope(device_id_);
+			// It is not necessary to make the device current, according to:
+			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
 			memory::async::copy(destination, source, num_bytes, stream_id_);
 		}
 
+		/**
+		 * Set all bytes of a certain region in device memory (or unified memory,
+	 	 * but using the CUDA device to do it) to a single fixed value.
+		 *
+		 * @param destination Beginning of the region to fill
+		 * @param byte_value the value with which to fill the memory region bytes
+		 * @param num_bytes size of the region to fill
+		 */
 		void memset(void *destination, int byte_value, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
@@ -250,15 +274,32 @@ public: // mutators
 			memory::async::set(destination, byte_value, num_bytes, stream_id_);
 		}
 
+		/**
+		 * Have an event 'fire', i.e. marked as having occurred,
+		 * after all hereto-scheduled work on this stream has been completed.
+		 * Threads which are @ref wait_on 'ing the event will become available
+		 * for continued execution.
+		 *
+		 * @param event_id ID of the event to occur on completing of hereto-schedule work
+		 **/
 		void event(cuda::event::id_t event_id) {
-			DeviceSetter set_device_for_this_scope(device_id_);
+			// TODO: ensure the stream and the event are associated with the same device
+
 			// Not calling event::detail::enqueue to avoid dependency on event.hpp
 			auto status = cudaEventRecord(event_id, stream_id_);
 			throw_if_error(status,
 				"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_));
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) + " (device "
+				+ std::to_string(device_id_) + ")");
 		}
 
+		/**
+		 * Execute the specified function on the calling host thread (?) all
+		 * hereto-scheduled work on this stream has been completed.
+		 *
+		 * @param function a function to execute on the host. Its signature
+		 * must being with (cuda::stream::id_t stream_id, cuda::event::id_t event_id..
+		 */
 		void callback(callback_t callback)
 		{
 			DeviceSetter set_device_for_this_scope(device_id_);
@@ -310,6 +351,10 @@ public: // mutators
 		}
 	}; // class enqueue_t
 
+	/**
+	 * Block or busy-wait until all previously-scheduled work
+	 * on this stream has been completed
+	 */
 	void synchronize()
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
@@ -320,6 +365,13 @@ public: // mutators
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
+	/**
+	 * Block or busy-wait until a specified event has occurred
+	 * (i.e. has fired, i.e. has had all preceding scheduled work
+	 * on the stream on which it was recorded completed)
+	 *
+	 * @param event_id ID of the event for whose occurrence to wait
+	 */
 	void wait_on(event::id_t event_id)
 	{
 		// Required by the CUDA runtime API
