@@ -5,6 +5,7 @@ syntax: glob
 \#\#* 
 *.a
 bin/*
+examples/bin
 build/*
 CMakeCache.txt
 CMakeFiles/*
