@@ -101,21 +101,21 @@ int main(int argc, char **argv)
 	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 
-	stream.enqueue_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
-	stream.enqueue_event(event_1.id());
-	stream.enqueue_callback(
+	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
+	stream.enqueue.event(event_1.id());
+	stream.enqueue.callback(
 		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
 			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
 		}
 	);
-	stream.enqueue_launch(increment, launch_config, buffer.get(), buffer_size);
-	stream.enqueue_callback(
+	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
+	stream.enqueue.callback(
 		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
 		report_occurrence("In secondcallback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);
-	stream.enqueue_event(event_2.id());
-	stream.enqueue_launch(print_message<N,3>, { 1, 1 }, message<N>("I am launched after the second event"));
+	stream.enqueue.event(event_2.id());
+	stream.enqueue.kernel_launch(print_message<N,3>, { 1, 1 }, message<N>("I am launched after the second event"));
 
 	try {
 		cuda::event::milliseconds_elapsed_between(event_1, event_2);

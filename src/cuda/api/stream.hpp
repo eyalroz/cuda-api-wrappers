@@ -217,87 +217,98 @@ protected: // static methods
 	}
 
 public: // mutators
-	// TODO: Duplicate the above better?
-	template<typename KernelFunction, typename... KernelParameters>
-	void enqueue_launch(
-		const KernelFunction&       kernel_function,
-		launch_configuration_t      launch_configuration,
-		KernelParameters...         parameters)
-	{
-		return cuda::enqueue_launch(kernel_function, launch_configuration, id_, parameters...);
-	}
 
-	void enqueue_copy(void *destination, const void *source, size_t num_bytes)
-	{
-		// Is it necessary to set the device? I wonder.
-		DeviceSetter set_device_for_this_scope(device_id_);
-		memory::async::copy(destination, source, num_bytes, id_);
-	}
+	class enqueue_t {
+	protected:
+		const device::id_t& device_id_;
+		const stream::id_t& stream_id_;
 
-	void enqueue_memset(void *destination, int byte_value, size_t num_bytes)
-	{
-		// Is it necessary to set the device? I wonder.
-		DeviceSetter set_device_for_this_scope(device_id_);
-		memory::async::set(destination, byte_value, num_bytes, id_);
-	}
+	public:
+		enqueue_t(const device::id_t& device_id, const stream::id_t& stream_id)
+		: device_id_(device_id), stream_id_(stream_id) {}
 
-	void enqueue_event(event::id_t event_id) {
-		DeviceSetter set_device_for_this_scope(device_id_);
-		// Not calling event::detail::enqueue to avoid dependency on event.hpp
-		auto status = cudaEventRecord(event_id, id_);
-		throw_if_error(status,
-			"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
-			+ " on stream " + cuda::detail::ptr_as_hex(id_));
-	}
+		template<typename KernelFunction, typename... KernelParameters>
+		void kernel_launch(
+			const KernelFunction&       kernel_function,
+			launch_configuration_t      launch_configuration,
+			KernelParameters...         parameters)
+		{
+			return cuda::enqueue_launch(kernel_function, launch_configuration, stream_id_, parameters...);
+		}
 
-	void enqueue_callback(callback_t callback)
-	{
-		DeviceSetter set_device_for_this_scope(device_id_);
+		void copy(void *destination, const void *source, size_t num_bytes)
+		{
+			// Is it necessary to set the device? I wonder.
+			DeviceSetter set_device_for_this_scope(device_id_);
+			memory::async::copy(destination, source, num_bytes, stream_id_);
+		}
 
-		// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
-		// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
-		//
-		enum : unsigned int { fixed_flags = 0 };//!< fixed_flags
+		void memset(void *destination, int byte_value, size_t num_bytes)
+		{
+			// Is it necessary to set the device? I wonder.
+			DeviceSetter set_device_for_this_scope(device_id_);
+			memory::async::set(destination, byte_value, num_bytes, stream_id_);
+		}
 
-		// This always registers the static function callback_adapter as the callback -
-		// but what that one will do is call the actual callback we were passed; note
-		// that since you can can have a lambda capture data and wrap that in the
-		// std::function, there's not much need (it would seem) for an extra inner
-		// user_data parameter to callback_t
-		auto status = cudaStreamAddCallback(id_, &callback_adapter, &callback, fixed_flags);
-		throw_if_error(status,
-			std::string("Failed adding a callback to stream ")
-			+ " on CUDA device " + std::to_string(device_id_));
-	}
+		void event(cuda::event::id_t event_id) {
+			DeviceSetter set_device_for_this_scope(device_id_);
+			// Not calling event::detail::enqueue to avoid dependency on event.hpp
+			auto status = cudaEventRecord(event_id, stream_id_);
+			throw_if_error(status,
+				"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_));
+		}
 
-	/**
-	 * Attaches a region of managed memory (i.e. in an address space visible
-	 * on all CUDA devices and the host) to this specific stream on its specific device.
-	 * This is actually a commitment vis-a-vis the CUDA driver and the GPU itself that
-	 * it doesn't need to worry about accesses to this memory from elsewhere, and can
-	 * optimize accordingly. Also, the host will be allowed to read from this memory
-	 * region whenever no kernels are pending on this stream
-	 *
-	 * @note This happens asynchronously, as an operation on this stream, i.e.
-	 * the attachment goes into effect (some time after) after previous stream
-	 * operations have concluded.
-	 *
-	 * @param managed_region_start a pointer to the beginning of the managed memory region.
-	 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-	 * pass whatever cudaMallocManaged (@ref memory::managed:allocate
-	 */
-	void enqueue_memory_attachment(const void* managed_region_start)
-	{
-		DeviceSetter set_device_for_this_scope(device_id_);
-		// This fixed value is required by the CUDA Runtime API,
-		// to indicate that the entire memory region, rather than a part of it, will be
-		// attached to this stream
-		constexpr const size_t length = 0;
-		auto status =  cudaStreamAttachMemAsync(id_, managed_region_start, length, cudaMemAttachSingle);
-		throw_if_error(status,
-			std::string("Failed attaching a managed memory region to a stream")
-			+ " on CUDA device " + std::to_string(device_id_));
-	}
+		void callback(callback_t callback)
+		{
+			DeviceSetter set_device_for_this_scope(device_id_);
+
+			// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
+			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
+			//
+			enum : unsigned int { fixed_flags = 0 };//!< fixed_flags
+
+			// This always registers the static function callback_adapter as the callback -
+			// but what that one will do is call the actual callback we were passed; note
+			// that since you can can have a lambda capture data and wrap that in the
+			// std::function, there's not much need (it would seem) for an extra inner
+			// user_data parameter to callback_t
+			auto status = cudaStreamAddCallback(stream_id_, &callback_adapter, &callback, fixed_flags);
+			throw_if_error(status,
+				std::string("Failed adding a callback to stream ")
+				+ " on CUDA device " + std::to_string(device_id_));
+		}
+
+		/**
+		 * Attaches a region of managed memory (i.e. in an address space visible
+		 * on all CUDA devices and the host) to this specific stream on its specific device.
+		 * This is actually a commitment vis-a-vis the CUDA driver and the GPU itself that
+		 * it doesn't need to worry about accesses to this memory from elsewhere, and can
+		 * optimize accordingly. Also, the host will be allowed to read from this memory
+		 * region whenever no kernels are pending on this stream
+		 *
+		 * @note This happens asynchronously, as an operation on this stream, i.e.
+		 * the attachment goes into effect (some time after) after previous stream
+		 * operations have concluded.
+		 *
+		 * @param managed_region_start a pointer to the beginning of the managed memory region.
+		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
+		 * pass whatever cudaMallocManaged (@ref memory::managed:allocate
+		 */
+		void memory_attachment(const void* managed_region_start)
+		{
+			DeviceSetter set_device_for_this_scope(device_id_);
+			// This fixed value is required by the CUDA Runtime API,
+			// to indicate that the entire memory region, rather than a part of it, will be
+			// attached to this stream
+			constexpr const size_t length = 0;
+			auto status =  cudaStreamAttachMemAsync(
+				stream_id_, managed_region_start, length, cudaMemAttachSingle);
+			throw_if_error(status,
+				std::string("Failed attaching a managed memory region to a stream")
+				+ " on CUDA device " + std::to_string(device_id_));
+		}
+	}; // class enqueue_t
 
 	void synchronize()
 	{
@@ -384,6 +395,9 @@ protected: // data members
 	const device::id_t  device_id_;
 	const stream::id_t  id_;
 	bool                owning;
+
+public: // data members - which only exist in lieu of namespaces
+	enqueue_t     enqueue { device_id_, id_ };
 
 };
 

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			<< stream.priority() << " and synchronizes by "
 			<< (stream.synchronizes_with_default_stream() ? "blocking" : "busy-waiting")
 			<< ".\n";
-		stream.enqueue_launch(print_message<N,1>, { 1, 1 }, message<N>("I can see my house!"));
+		stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I can see my house!"));
 		stream.synchronize();
 	}
 
@@ -117,9 +117,9 @@ int main(int argc, char **argv)
 	print_first_char(buffer.get());
 
 	cuda::event_t event_1(cuda::event::sync_by_blocking);
-	stream_1.enqueue_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
-	stream_1.enqueue_memset(buffer.get(), 'b', buffer_size);
-	stream_1.enqueue_callback(
+	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
+	stream_1.enqueue.callback(
 		[&buffer](cuda::stream::id_t stream_id, cuda::status_t status) {
 			std::cout << "Callback from stream 1!... ";
 			print_first_char(buffer.get());
@@ -130,13 +130,13 @@ int main(int argc, char **argv)
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect
-	stream_1.enqueue_memory_attachment(buffer.get());
-	stream_1.enqueue_launch(increment, launch_config, buffer.get(), buffer_size);
+	stream_1.enqueue.memory_attachment(buffer.get());
+	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	event_1.record(stream_1.id());
-	stream_1.enqueue_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_2.wait_on(event_1.id());
-	stream_2.enqueue_launch(print_first_char_kernel, launch_config , buffer.get());
-	stream_2.enqueue_launch(print_message<N,5>, { 1, 1 }, message<N>("I'm on stream 2"));
+	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());
+	stream_2.enqueue.kernel_launch(print_message<N,5>, { 1, 1 }, message<N>("I'm on stream 2"));
 	bool idleness_1 = stream_2.has_work();
 	device.synchronize();
 	print_first_char(buffer.get());

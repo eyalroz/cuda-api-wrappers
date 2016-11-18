@@ -434,7 +434,7 @@ public: // methods
 		launch_configuration_t      launch_configuration,
 		KernelParameters...         parameters)
 	{
-		return default_stream().enqueue_launch(kernel_function, launch_configuration, parameters...);
+		return default_stream().enqueue.kernel_launch(kernel_function, launch_configuration, parameters...);
 	}
 
 	priority_range_t stream_priority_range() const

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using stream.launch()\n" << std::flush;
-	stream.enqueue_launch(kernel, launch_config, bar);
+	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
 	std::cout << "\nSUCCESS\n";
