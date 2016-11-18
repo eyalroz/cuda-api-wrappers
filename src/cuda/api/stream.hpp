@@ -321,17 +321,6 @@ public: // mutators
 
 public: // constructors and destructor
 
-	stream_t(
-		device::id_t  device_id,
-		priority_t    priority = stream::default_priority,
-		bool          synchronizes_with_default_stream = true)
-	: device_id_(device_id), owning(true)
-	{
-		device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-		id_ = stream::detail::create_on_current_device(
-			priority, synchronizes_with_default_stream);
-	}
-
 	stream_t(const stream_t& other) :
 		device_id_(other.device_id_), id_(other.id_), owning(false) { };
 
@@ -392,9 +381,9 @@ public: // friendship
 	friend stream_t<> stream::wrap(device::id_t device_id, id_t stream_id, bool take_ownership);
 
 protected: // data members
-	device::id_t  device_id_;
-	stream::id_t  id_;
-	bool          owning;
+	const device::id_t  device_id_;
+	const stream::id_t  id_;
+	bool                owning;
 
 };
 
@@ -431,7 +420,10 @@ inline stream_t<> make(
 	priority_t    priority = stream::default_priority,
 	bool          synchronizes_with_default_stream = true)
 {
-	return cuda::stream_t<>(device_id, priority, synchronizes_with_default_stream);
+	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	auto new_stream_id = cuda::stream::detail::create_on_current_device(
+		priority, synchronizes_with_default_stream);
+	return wrap(device_id, new_stream_id, take_ownership);
 }
 
 inline stream_t<> make(
