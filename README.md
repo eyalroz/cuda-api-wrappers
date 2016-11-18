@@ -38,7 +38,7 @@ Since the (main) developer is not currently working on anything graphics-related
 
 We've all dreamed of being able to type in:
 
-	my_stream.enqueue_callback(
+	my_stream.enqueue.callback(
 		[&foo](cuda::stream::id_t stream_id, cuda::status_t status) {
 			std::cout << "Hello " << foo << " world!\n";
 		}
