@@ -301,6 +301,11 @@ public: // methods
 		return attribute_value;
 	}
 
+	bool supports_concurrent_managed_access() const
+	{
+		return (get_attribute(cudaDevAttrConcurrentManagedAccess) != 0);
+	}
+
 	resource_limit_t get_resource_limit(resource_id_t resource) const
 	{
 		resource_limit_t limit;

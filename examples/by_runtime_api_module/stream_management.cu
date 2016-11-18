@@ -105,9 +105,13 @@ int main(int argc, char **argv)
 		cuda::stream::default_priority + 1,
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 
+
 	constexpr auto buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
-		buffer_size, cuda::memory::managed::is_initially_invisible_to_other_devices);
+		buffer_size,
+		device.supports_concurrent_managed_access() ?
+			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access:
+			cuda::memory::managed::initial_visibility_t::to_all_devices);
 	print_first_char(buffer.get());
 	std::fill(buffer.get(), buffer.get() + buffer_size, 'a');
 	print_first_char(buffer.get());

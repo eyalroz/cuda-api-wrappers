@@ -278,21 +278,23 @@ inline void zero(void* buffer_start, size_t num_bytes)
 
 namespace managed {
 
-enum : bool {
-	is_visible_to_all_devices = false,
-	is_initially_invisible_to_other_devices = true,
+enum class initial_visibility_t {
+	to_all_devices,
+	to_supporters_of_concurrent_managed_access,
 };
 
 namespace detail {
 
 template <typename T = void>
-T* malloc(size_t num_bytes, bool initially_invisible_to_other_devices = false)
+T* malloc(
+	size_t num_bytes,
+	initial_visibility_t initial_visibility = initial_visibility_t::to_all_devices)
 {
 	T* allocated = nullptr;
-	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
-	// not in number of elements
-	auto flags = initially_invisible_to_other_devices ?
-		cudaMemAttachHost : cudaMemAttachGlobal;
+	auto flags = (initial_visibility == initial_visibility_t::to_all_devices) ?
+		cudaMemAttachGlobal : cudaMemAttachHost;
+	// Note: Despite the templating by T, the size is still in bytes,
+	// not in number of T's
 	auto status = cudaMallocManaged<T>(&allocated, num_bytes, flags);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
@@ -309,16 +311,19 @@ inline void free(void* ptr)
 	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
-template <bool InitiallyInvisibleToOtherDevices = false>
+template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const { return detail::malloc(num_bytes, InitiallyInvisibleToOtherDevices); }
+	void* operator()(size_t num_bytes) const
+	{
+		return detail::malloc(num_bytes, InitialVisibility);
+	}
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
-} // namespace detail
 
+} // namespace detail
 } // namespace managed
 
 namespace mapped {

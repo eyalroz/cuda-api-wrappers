@@ -89,19 +89,27 @@ template<typename T>
 using unique_ptr = std::unique_ptr<T, detail::deleter>;
 
 template<typename T>
-inline unique_ptr<T> make_unique(size_t n, bool initially_invisible_to_other_devices)
+inline unique_ptr<T> make_unique(size_t n, initial_visibility_t initial_visibility)
 {
-	return initially_invisible_to_other_devices ?
-		cuda::memory::detail::make_unique<T, detail::allocator<true >, detail::deleter>(n) :
-		cuda::memory::detail::make_unique<T, detail::allocator<false>, detail::deleter>(n);
+	return (initial_visibility == initial_visibility_t::to_all_devices) ?
+		cuda::memory::detail::make_unique<T, detail::allocator<
+			initial_visibility_t::to_all_devices>, detail::deleter
+		>(n) :
+		cuda::memory::detail::make_unique<T, detail::allocator<
+			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail::deleter
+		>(n);
 }
 
 template<typename T>
-inline unique_ptr<T> make_unique(bool initially_invisible_to_other_devices)
+inline unique_ptr<T> make_unique(initial_visibility_t initial_visibility)
 {
-	return initially_invisible_to_other_devices ?
-		cuda::memory::detail::make_unique<T, detail::allocator<true >, detail::deleter>() :
-		cuda::memory::detail::make_unique<T, detail::allocator<false>, detail::deleter>();
+	return (initial_visibility == initial_visibility_t::to_all_devices) ?
+		cuda::memory::detail::make_unique<T, detail::allocator<
+			initial_visibility_t::to_all_devices>, detail::deleter
+		>() :
+		cuda::memory::detail::make_unique<T, detail::allocator<
+			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail::deleter
+		>();
 
 }
 } // namespace managed
