@@ -29,9 +29,9 @@ int main(void)
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
 	// If we could rely on C++14, we would  use std::make_unique
-	auto h_A = std::unique_ptr<float>(new float[size]);
-	auto h_B = std::unique_ptr<float>(new float[size]);
-	auto h_C = std::unique_ptr<float>(new float[size]);
+	auto h_A = std::unique_ptr<float>(new float[numElements]);
+	auto h_B = std::unique_ptr<float>(new float[numElements]);
+	auto h_C = std::unique_ptr<float>(new float[numElements]);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
 	std::generate(h_A.get(), h_A.get() + numElements, generator);
