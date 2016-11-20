@@ -16,6 +16,7 @@
 #include "cuda/api/device_count.hpp"
 #include "cuda/api/device_function.hpp"
 #include "cuda/api/memory.hpp"
+#include "cuda/api/pointer.hpp"
 #include "cuda/api/unique_ptr.hpp"
 #include "cuda/api/ipc.hpp"
 
