@@ -41,32 +41,33 @@ enum : priority_t {
 
 } // namespace stream
 
-struct dimensions_t : public dim3 // it's 3 uints in a struct. But it's not uint3 !
+struct dimensions_t // this almost-inherits dim3
 {
-	using dim3::dim3;
-	dimensions_t(const dim3& dims) : dim3(dims) { }
+    unsigned int x, y, z;
+    constexpr __host__ __device__ dimensions_t(unsigned x_ = 1, unsigned y_ = 1, unsigned z_ = 1)
+    : x(x_), y(y_), z(z_) {}
 
-	inline size_t empty() const
+    __host__ __device__ constexpr dimensions_t(const int3& v) : dimensions_t(v.x, v.y, v.z) { }
+    __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+
+    __host__ __device__ constexpr operator uint3(void) const { return { x, y, z }; }
+    __host__ __device__ operator dim3(void) const { return { x, y, z }; }
+
+    __host__ __device__ inline size_t volume() const { return (size_t) x * y * z; }
+    __host__ __device__ inline bool empty() const {	return volume() == 0; }
+    __host__ __device__ inline unsigned char dimensionality() const
 	{
-		return (x == 0) or (y == 0) or  (z == 0);
-	}
-	inline size_t volume() const
-	{
-		return (size_t) x * y * z;
-	}
-	inline unsigned char dimensionality() const
-	{
-		return (z > 1) + (y > 1) + (x > 1);
+		return ((z > 1) + (y > 1) + (x > 1)) * (!empty());
 	}
 };
 
-inline bool operator==(const dim3& lhs, const dim3& rhs)
+constexpr inline bool operator==(const dim3& lhs, const dim3& rhs)
 {
-   return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
+	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-inline bool operator==(const dimensions_t& lhs, const dimensions_t& rhs)
+constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rhs)
 {
-   return static_cast<dim3>(lhs) == static_cast<dim3>(rhs);
+	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
 
 

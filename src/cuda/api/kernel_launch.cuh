@@ -9,9 +9,10 @@
  * soup using the launch_configuration_t structure. Still, you should probably
  * call the launch() method of {@ref stream_t}'s.
  *
- * @note Even though when you use this wrapper, your code will not have the silly chevron,
- * you can't use it from regular .cpp files compiled with your host compiler.
- * Hence the .cuh extension.
+ * @note Even though when you use this wrapper, your code will not have the silly
+ * chevron, you can't use it from regular .cpp files compiled with your host
+ * compiler. Hence the .cuh extension. You _can_, however, safely include this
+ * file from your .cpp for other definitions
  *
  */
 
@@ -24,10 +25,9 @@
 
 namespace cuda {
 
-enum : shared_memory_size_t { NoSharedKernelMemory = 0 };
-const grid_dimensions_t       SingleBlock          { 1 };
-const grid_block_dimensions_t SingleThreadPerBlock { 1 };
-
+enum : shared_memory_size_t { no_shared_memory = 0 };
+constexpr grid_dimensions_t single_block() { return 1; }
+constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 
 /**
 * CUDA's kernel launching mechanism cannot be compiled in proper C++ - both for syntactic and semantic reasons.
@@ -91,37 +91,6 @@ inline void launch(
 {
 	enqueue_launch(kernel_function, launch_configuration, stream::default_stream_id, parameters...);
 }
-
-namespace linear_grid {
-
-enum : grid_dimension_t       { SingleBlock = 1 };
-enum : grid_block_dimension_t { SingleThreadPerBlock = 1 };
-
-class launch_configuration_t {
-public:
-	grid_dimension_t       grid_length; // in threads
-	grid_block_dimension_t block_length; // in threads
-	shared_memory_size_t   dynamic_shared_memory_size; // in bytes
-
-	launch_configuration_t()
-		: grid_length(SingleBlock), block_length(SingleThreadPerBlock),
-		  dynamic_shared_memory_size(NoSharedKernelMemory) { }
-	launch_configuration_t(
-			grid_dimension_t grid_length_,
-			grid_block_dimension_t block_length_,
-			unsigned short dynamic_shared_memory_size = NoSharedKernelMemory)
-		: grid_length(grid_length_), block_length(block_length_),
-		  dynamic_shared_memory_size(dynamic_shared_memory_size) { }
-
-	// Allows linear launch configs to be passed
-	// to the launcher function
-	operator cuda::launch_configuration_t()
-	{
-		return {grid_length, block_length, dynamic_shared_memory_size};
-	}
-};
-
-} // linear_grid
 
 } // namespace cuda
 
