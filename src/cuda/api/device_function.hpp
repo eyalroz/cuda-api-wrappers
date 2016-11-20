@@ -5,6 +5,7 @@
 #include "cuda/api/types.h"
 #include "cuda/api/device_properties.hpp"
 #include "cuda/api/error.hpp"
+#include "cuda/api/current_device.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -23,36 +24,29 @@ struct attributes_t : cudaFuncAttributes {
 	}
 };
 
+inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
+	attributes_t attributes, device::compute_capability_t compute_capability)
+{
+	auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
+	auto statically_allocated_shared_mem = attributes.sharedSizeBytes;
+	if (statically_allocated_shared_mem > available_without_static_allocation) {
+		throw std::logic_error("More static shared memory has been allocated for a device function"
+		" than seems to be available on devices with the specified compute capability.");
+	}
+	return available_without_static_allocation - statically_allocated_shared_mem;
+}
+
 } // namespace device_function
 
 /**
  * A non-owning wrapper class for CUDA __device__ functions
  */
 class device_function_t {
-public: // type definitions
-
-public: // statics
-
-	static shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-		device_function::attributes_t attributes, device::compute_capability_t compute_capability)
-	{
-
-		auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
-		auto statically_allocated_shared_mem = attributes.sharedSizeBytes;
-		if (statically_allocated_shared_mem > available_without_static_allocation) {
-			throw std::logic_error("More static shared memory has been allocated for a device function"
-			" than seems to be available on devices with the specified compute capability.");
-		}
-		return available_without_static_allocation - statically_allocated_shared_mem;
-	}
-
 public: // getters
-
-	const void* ptr() { return ptr_; }
+	const void* ptr() const { return ptr_; }
 
 public: // type_conversions
 	operator const void*() { return ptr_; }
-
 
 public: // non-mutators
 
@@ -61,27 +55,9 @@ public: // non-mutators
 	inline device_function::attributes_t attributes() const
 	{
 		device_function::attributes_t function_attributes;
-		auto result = cudaFuncGetAttributes(&function_attributes, ptr_);
-		throw_if_error(result, "Failed obtaining attributes for a CUDA device function");
+		auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
+		throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
 		return function_attributes;
-	}
-
-	/**
-	 * A 'version' of @ref compute_capability_t::effective_max_shared_memory_per_block for
-	 * use with a specific device function - which will take its use of static shared memory into account
-	 *
-	 * @param device_function The (__global__ or __device__) function for which to calculate
-	 * the effective available shared memory per block
-	 * @param compute_capability on which kind of device the kernel function is to be launched;
-	 * TODO: it's not clear whether this is actually necessary given the {@ref device_function}
-	 * pointer
-	 * @return the maximum amount of shared memory per block which a launch of the specified
-	 * function can require
-	 */
-	shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-		device::compute_capability_t compute_capability) const
-	{
-		return maximum_dynamic_shared_memory_per_block(attributes(), compute_capability);
 	}
 
 /*
@@ -153,10 +129,50 @@ public: // ctors & dtor
 	~device_function_t() { };
 
 public: // data members
-	const void* ptr_;
+	const void* const ptr_;
 
 };
 
+namespace device_function {
+
+/**
+ * A 'version' of @ref compute_capability_t::effective_max_shared_memory_per_block for
+ * use with a specific device function - which will take its use of static shared memory into account
+ *
+ * @param device_function The (__global__ or __device__) function for which to calculate
+ * the effective available shared memory per block
+ * @param compute_capability on which kind of device the kernel function is to be launched;
+ * TODO: it's not clear whether this is actually necessary given the {@ref device_function}
+ * pointer
+ * @return the maximum amount of shared memory per block which a launch of the specified
+ * function can require
+ */
+inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
+	const device_function_t& f, device::compute_capability_t compute_capability)
+{
+	return device_function::maximum_dynamic_shared_memory_per_block(f.attributes(), compute_capability);
+}
+
+inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
+	device::id_t              device_id,
+	const device_function_t&  device_function,
+	grid_block_dimension_t    num_threads_per_block,
+	size_t                    dynamic_shared_memory_per_block,
+	bool                      disable_caching_override = false)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device_id);
+	int result;
+	unsigned int flags = disable_caching_override ?
+		cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
+	auto status = cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+		&result, device_function.ptr(), num_threads_per_block,
+		dynamic_shared_memory_per_block, flags);
+	throw_if_error(status, "Failed calculating the maximum occupancy "
+		"of device function blocks per multiprocessor");
+	return result;
+}
+
+} // namespace device_function
 } // namespace cuda
 
 #endif /* CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_ */

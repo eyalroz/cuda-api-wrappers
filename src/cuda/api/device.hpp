@@ -285,9 +285,26 @@ public: // methods
 		return properties;
 	}
 
-	std::string name() const { return properties().name; }
+	std::string name() const {
+		// I could get the name directly, but that would require
+		// direct use of the driver, and I'm not ready for that
+		// just yet
+		return properties().name;
+	}
+	device::pci_id_t pci_id() const
+	{
+		auto pci_domain_id = get_attribute(cudaDevAttrPciDomainId);
+		auto pci_bus_id    = get_attribute(cudaDevAttrPciBusId);
+		auto pci_device_id = get_attribute(cudaDevAttrPciDeviceId);
+		return { pci_domain_id, pci_bus_id, pci_device_id };
+	}
 
-	device::pci_id_t pci_id() const { return properties().pci_id(); }
+	device::compute_capability_t compute_capability() const
+	{
+		auto major = get_attribute(cudaDevAttrComputeCapabilityMajor);
+		auto minor = get_attribute(cudaDevAttrComputeCapabilityMinor);
+		return { major, minor };
+	}
 
 	/**
 	 * Yes, properties vs attributes is a bit confusing, but that's what CUDA has.

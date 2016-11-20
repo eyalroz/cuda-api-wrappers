@@ -150,7 +150,9 @@ cuda_add_library(
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "examples/bin")
 cuda_add_executable(vectorAdd EXCLUDE_FROM_ALL examples/modified_cuda_samples/vectorAdd/vectorAdd.cu)
+target_link_libraries(vectorAdd cuda-api-wrappers)
 cuda_add_executable(inlinePTX EXCLUDE_FROM_ALL examples/modified_cuda_samples/inlinePTX/inlinePTX.cu)
+target_link_libraries(inlinePTX cuda-api-wrappers)
 cuda_add_executable(simpleStreams EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleStreams/simpleStreams.cu)
 target_link_libraries(simpleStreams cuda-api-wrappers)
 cuda_add_executable(simpleIPC EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleIPC/simpleIPC.cu)
