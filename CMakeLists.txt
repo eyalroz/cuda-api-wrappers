@@ -94,6 +94,10 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --keep  --generate-line-info --source-in-
 # We would like to add "-G" to the next line, but for some reason that causes segmentation faults in the driver when linking with libcub (on FC 23 with CUDA 7.5)
 set(CUDA_NVCC_FLAGS_DEBUG -g)
 set(CUDA_NVCC_FLAGS_RELEASE -O3 --use_fast_math)
+
+get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
+set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
+
 #
 # have a look at http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/
 # for more potential options
