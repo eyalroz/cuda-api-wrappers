@@ -17,11 +17,11 @@
 #
 #
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-
-# ----------------------
-# Project & build type settings
-# ----------------------
+# -----------------------------------
+# Project name, version & build type
+# -----------------------------------
 
 PROJECT(kernel_tester)
 
@@ -30,40 +30,7 @@ set(PROJECT_MINOR_VERSION 1)
 set(PROJECT_PATCH_VERSION 0)
 set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 
-if("$ENV{RELEASE}" STREQUAL ""  AND  "$ENV{DEBUG}" STREQUAL "" )
-	message("Neither DEBUG nor RELEASE environment variables set, defaulting to DEBUG.")
-	set(CMAKE_BUILD_TYPE "DEBUG")
-endif( "$ENV{RELEASE}" STREQUAL ""  AND  "$ENV{DEBUG}" STREQUAL "" )
-
-if (NOT "$ENV{DEBUG}" STREQUAL "")
-	set(CMAKE_BUILD_TYPE "DEBUG")
-endif (NOT "$ENV{DEBUG}" STREQUAL "")
-
-if (NOT "$ENV{RELEASE}" STREQUAL "")
-	set(CMAKE_BUILD_TYPE "RELEASE")
-endif (NOT "$ENV{RELEASE}" STREQUAL "")
-
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
-	message("\
-  ____           _                               _ 
- |  _ \\    ___  | |   ___    __ _   ___    ___  | |
- | |_) |  / _ \\ | |  / _ \\  / _` | / __|  / _ \\ | |
- |  _ <  |  __/ | | |  __/ | (_| | \\__ \\ |  __/ |_|
- |_| \\_\\  \\___| |_|  \\___|  \\__,_| |___/  \\___| (_)
-
-")
-else ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
-if("${CMAKE_BUILD_TYPE}" STREQUAL "DEBUG")
-	message("\
-  ____           _                     
- |  _ \\    ___  | |__    _   _    __ _ 
- | | | |  / _ \\ | '_ \\  | | | |  / _` |
- | |_| | |  __/ | |_) | | |_| | | (_| |
- |____/   \\___| |_.__/   \\__,_|  \\__, |
-                                 |___/ 
-")
-endif("${CMAKE_BUILD_TYPE}" STREQUAL "DEBUG")
-endif("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+include (ReleaseOrDebug)
 
 # ----------------------------
 # General C/C++ build settings
@@ -78,37 +45,23 @@ include_directories( "src/" )
 
 find_package(CUDA QUIET REQUIRED)
 
-if("$ENV{CUDA_SM}" STREQUAL "")
-	message(WARNING  "CUDA_SM environment variable not set. Defaulting to \"30\" (i.e. a compute capability of 3.0)")
-	set(CUDA_TARGET_COMPUTE_CAPABILITY "30")
-else("$ENV{CUDA_SM}" STREQUAL "")
-	set(CUDA_TARGET_COMPUTE_CAPABILITY $ENV{CUDA_SM})
-	execute_process(COMMAND sh "-c" "echo ${CUDA_TARGET_COMPUTE_CAPABILITY} | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n" OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY) 
-	message("Building for Compute Capability ${FORMATTED_COMPUTE_CAPABILITY}.")
-endif("$ENV{CUDA_SM}" STREQUAL "")
+include(HandleCUDAComputeCapability)
 
-set(CUDA_GENCODE "arch=compute_${CUDA_TARGET_COMPUTE_CAPABILITY},code=compute_${CUDA_TARGET_COMPUTE_CAPABILITY}")
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --std=c++11 --keep  --generate-line-info --source-in-ptx -Xcompiler -Wall -Xcompiler -D__CORRECT_ISO_CPP11_MATH_H_PROTO )
+# Note: Adding "-G" to the next line might give you debugging info, but it switches off all optimizers, so you're not really debugging what you're running; and it also increases the register pressure, and the local memory pressure tremendously, changing the behavior even further; finally, it _may_ cause linking trouble with CUDA 7.5 and Fedora 23 (or equivalent build environments)
+set(CUDA_NVCC_FLAGS_DEBUG -g -lineinfo -DDEBUG)
+set(CUDA_NVCC_FLAGS_RELEASE -O3 -DNDEBUG)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -gencode ${CUDA_GENCODE} "-Xcompiler" "-D__CORRECT_ISO_CPP11_MATH_H_PROTO")
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --keep  --generate-line-info --source-in-ptx)
-# We would like to add "-G" to the next line, but for some reason that causes segmentation faults in the driver when linking with libcub (on FC 23 with CUDA 7.5)
-set(CUDA_NVCC_FLAGS_DEBUG -g)
-set(CUDA_NVCC_FLAGS_RELEASE -O3 --use_fast_math)
+set(CUDA_SEPARABLE_COMPILATION OFF)
+set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
 get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
 set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
-
-#
-# have a look at http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/
-# for more potential options
-
-set(CUDA_SEPARABLE_COMPILATION OFF)
 
 # -----------------------
 # Miscellaneous targets
 # -----------------------
 
-# Add "tags" target and make project depending on this target.
 set_source_files_properties( tags PROPERTIES GENERATED true )
 add_custom_target(tags 
 	COMMAND ctags --langmap=c++:+.cu.cuh.hpp -R ./ 
@@ -146,7 +99,6 @@ cuda_add_library(
 	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
 )
-
 
 # -----------------------
 # Examples
