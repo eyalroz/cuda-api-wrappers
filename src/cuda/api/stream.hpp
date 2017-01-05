@@ -20,9 +20,12 @@ template <bool AssumesDeviceIsCurrent = false> class stream_t;
 
 namespace stream {
 
+// Use this for the second argument to create_on_current_device()
 enum : bool {
 	implicitly_synchronizes_with_default_stream = true,
 	no_implicit_synchronization_with_default_stream = false,
+	sync = implicitly_synchronizes_with_default_stream,
+	async = no_implicit_synchronization_with_default_stream,
 };
 
 namespace detail {
@@ -31,7 +34,7 @@ inline id_t create_on_current_device(
 	priority_t    priority = stream::default_priority,
 	bool          synchronizes_with_default_stream = true)
 {
-	unsigned int flags = cuda::stream::implicitly_synchronizes_with_default_stream ?
+	unsigned int flags = synchronizes_with_default_stream ?
 		cudaStreamDefault : cudaStreamNonBlocking;
 	id_t new_stream_id;
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);

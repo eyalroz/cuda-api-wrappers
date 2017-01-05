@@ -49,6 +49,8 @@ enum : bool {
 		//!< able to record timings
 	interprocess = true,
 		//!< Can only be used by the process which created it
+	single_process = not_interprocess
+		//!< See @ref not_interprocess
 };
 
 namespace detail {

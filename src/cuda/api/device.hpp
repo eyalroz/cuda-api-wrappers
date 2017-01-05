@@ -433,7 +433,8 @@ public: // methods
 	//
 	stream_t<> create_stream(
 		stream::priority_t  priority = stream::default_priority,
-		bool                synchronizes_with_default_stream = true)
+		bool                synchronizes_with_default_stream =
+			stream::no_implicit_synchronization_with_default_stream)
 	{
 		device_setter set_device_for_this_scope(id_);
 		return stream_t<>(id(), stream::detail::create_on_current_device(
