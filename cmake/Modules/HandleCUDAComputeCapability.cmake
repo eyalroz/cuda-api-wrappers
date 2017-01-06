@@ -16,7 +16,8 @@ else("$ENV{CUDA_SM}" STREQUAL "")
         set(CUDA_TARGET_COMPUTE_CAPABILITY $ENV{CUDA_SM})
 endif("$ENV{CUDA_SM}" STREQUAL "")
 
-execute_process(COMMAND bash -c "echo -n $(echo ${CUDA_TARGET_COMPUTE_CAPABILITY}) | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n" OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY) 
+execute_process(COMMAND bash -c "echo -n $(echo ${CUDA_TARGET_COMPUTE_CAPABILITY})" OUTPUT_VARIABLE CUDA_TARGET_COMPUTE_CAPABILITY) 
+execute_process(COMMAND bash -c "echo ${CUDA_TARGET_COMPUTE_CAPABILITY} | sed 's/^\\([0-9]\\)\\([0-9]\\)/\\1.\\2/;' | xargs echo -n" OUTPUT_VARIABLE FORMATTED_COMPUTE_CAPABILITY) 
 
 message("Building for Compute Capability ${FORMATTED_COMPUTE_CAPABILITY}.")
 
