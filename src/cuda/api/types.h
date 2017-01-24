@@ -35,7 +35,7 @@ using id_t              = cudaEvent_t;
 namespace stream {
 using id_t             = cudaStream_t;
 using priority_t       = int;
-enum : priority_t { 
+enum : priority_t {
 	default_priority   = 0,
 	unbounded_priority = -1 };
 
@@ -151,16 +151,17 @@ enum : bool { assume_device_is_current = true, do_not_assume_device_is_current =
 
 enum host_thread_synch_scheduling_policy_t : unsigned int {
 	heuristic = cudaDeviceScheduleAuto,
-    spin      = cudaDeviceScheduleSpin,
-    yield     = cudaDeviceScheduleYield,
-    block     = cudaDeviceScheduleBlockingSync,
+	spin      = cudaDeviceScheduleSpin,
+	yield     = cudaDeviceScheduleYield,
+	block     = cudaDeviceScheduleBlockingSync,
+	automatic = heuristic,
 };
 
 enum synchronicity_t : bool {
 	asynchronous = false,
-	synchronous = true,
-	sync = synchronous,
-	async = asynchronous,
+	synchronous  = true,
+	sync         = synchronous,
+	async        = asynchronous,
 };
 
 enum class endianness_t : bool { big, big_endian = big, little, little_endian = little };

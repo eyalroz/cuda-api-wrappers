@@ -11,6 +11,7 @@
  *
  */
 #include "cuda/api/pci_id.hpp"
+#include "cuda/api/device_count.hpp"
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
 
@@ -121,7 +122,7 @@ int main(int argc, char **argv)
 		<< (device.keeping_local_mem_allocation_after_launch() ? "keeps" : "discards")
 		<< " shared memory allocation after launch.\n";
 	std::cout << "Device " << device.id()
-		<< " is set " << (device.pinned_mapped_memory_allocation_is_allowed() ? "to allow" : "not to allow")
+		<< " is set " << (device.can_map_host_memory() ? "to allow" : "not to allow")
 		<< "pinned mapped memory.\n";
 	// TODO: Change the settings as well obtaining them
 

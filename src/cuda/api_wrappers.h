@@ -24,4 +24,6 @@
 #include "cuda/api/device.hpp"
 #include "cuda/api/event.hpp"
 
+#include "cuda/api/multi_wrapper_impls.hpp"
+
 #endif /* CUDA_API_WRAPPERS_H_ */

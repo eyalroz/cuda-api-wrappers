@@ -93,7 +93,7 @@ struct properties_t : public cudaDeviceProp {
 
 	pci_id_t pci_id() const { return { pciDomainID, pciBusID, pciDeviceID }; }
 
-	unsigned long long max_in_flight_threads_on_device()
+	unsigned long long max_in_flight_threads_on_device() const
 	{
 		return compute_capability().max_in_flight_threads_per_processor() * multiProcessorCount;
 	}
@@ -105,16 +105,17 @@ struct properties_t : public cudaDeviceProp {
 	 * for L1...
 	 * so, if you call this function, you'll get the proper effective maximum figure.
 	 */
-	const char*  architecture_name() { return compute_capability().architecture_name(); }
+	const char*  architecture_name() const { return compute_capability().architecture_name(); }
 
 	/**
 	 * A convenience method which applies an appropriate cast (e.g. for avoiding
 	 * signed/unsigned comparison warnings)
 	 */
-	grid_block_dimension_t max_threads_per_block() { return maxThreadsPerBlock; }
+	grid_block_dimension_t max_threads_per_block() const { return maxThreadsPerBlock; }
 
-	grid_block_dimension_t max_warps_per_block() { return maxThreadsPerBlock / warp_size; }
+	grid_block_dimension_t max_warps_per_block() const { return maxThreadsPerBlock / warp_size; }
 
+	bool can_map_host_memory() const { return canMapHostMemory != 0; }
 };
 
 } // namespace device

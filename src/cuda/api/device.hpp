@@ -7,12 +7,15 @@
 #include "cuda/api/memory.hpp"
 #include "cuda/api/current_device.hpp"
 #include "cuda/api/pci_id.h"
-#include "cuda/api/stream.hpp" // For default_stream() and launch() only
 
 #include <cuda_runtime_api.h>
 #include <string>
 
 namespace cuda {
+
+class event_t;
+template <bool DeviceAssumedCurrent> class stream_t;
+
 namespace device {
 
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class device_t;
@@ -32,7 +35,18 @@ inline bool can_access(id_t accessor, id_t peer)
 	return (result == 1);
 }
 
-inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
+
+template <bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
+inline bool can_access(
+	const device_t<FirstIsAssumedCurrent>& accessor,
+	const device_t<SecondIsAssumedCurrent>& peer);
+
+
+
+inline attribute_value_t get_attribute(
+	attribute_t   attribute,
+	id_t          source,
+	id_t          destination)
 {
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
@@ -41,6 +55,12 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 		+ std::to_string(source) + ", " + std::to_string(destination) + ')');
 	return value;
 }
+
+template <bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
+inline attribute_value_t get_attribute(
+	attribute_t                              attribute,
+	const device_t<FirstIsAssumedCurrent >&  source,
+	const device_t<SecondIsAssumedCurrent>&  destination);
 
 } // namespace peer_to_peer
 
@@ -231,6 +251,14 @@ public: // types
 			return device::peer_to_peer::can_access(device_id, peer_id);
 		}
 
+		// This won't compile, for some reason:
+		//
+		// inline bool can_access(const device_t<detail::do_not_assume_device_is_current>& peer) const
+		// {
+		// 	return this->can_access(peer.id());
+		// }
+
+
 		void enable_to(id_t peer_id) {
 			device_setter set_device_for_this_scope(device_id);
 			enum : unsigned { fixed_flags = 0}; // No flags are supported as of CUDA 8.0
@@ -252,9 +280,6 @@ public: // types
 
 
 protected:
-	/**
-	 * Code using the device_t class should use
-	 */
 	void set_flags(flags_t new_flags)
 	{
 		device_setter set_device_for_this_scope(id_);
@@ -352,12 +377,16 @@ public: // methods
 		throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
 	}
 
+	inline void synchronize(stream_t<detail::do_not_assume_device_is_current>& stream);
+
 	inline void synchronize_event(event::id_t event_id)
 	{
 		device_setter set_device_for_this_scope(id_);
 		auto status = cudaEventSynchronize(event_id);
 		throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
 	}
+
+	inline void synchronize(event_t& event);
 
 	inline void reset()
 	{
@@ -417,11 +446,7 @@ public: // methods
 		return id_.id;
 	}
 
-	stream_t<AssumedCurrent> default_stream() const
-	{
-		// TODO: Perhaps support not-knowing our ID here as well?
-		return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
-	}
+	stream_t<AssumedCurrent> default_stream() const;
 
 	// I'm a worried about the creation of streams with the assumption
 	// that theirs is the current device, so I'm just forbidding it
@@ -431,19 +456,12 @@ public: // methods
 	//
 	// (sigh)... safety over convenience I guess
 	//
-	stream_t<> create_stream(
+	stream_t<detail::do_not_assume_device_is_current> create_stream(
 		stream::priority_t  priority,
-		bool                synchronization_with_default_stream)
-	{
-		device_setter set_device_for_this_scope(id_);
-		return stream_t<>(id(), stream::detail::create_on_current_device(
-			priority, synchronization_with_default_stream));
-	}
+		bool                will_synchronize_with_default_stream);
 
-	stream_t<> create_stream(bool synchronization_with_default_stream = stream::implicitly_synchronizes_with_default_stream)
-	{
-		return create_stream(stream::default_priority, synchronization_with_default_stream);
-	}
+	stream_t<detail::do_not_assume_device_is_current> create_stream(
+		bool will_synchronize_with_default_stream = true);
 
 	template<typename KernelFunction, typename... KernelParameters>
 	void launch(
@@ -503,12 +521,12 @@ public: // methods
 		keep_local_mem_allocation_after_launch(false);
 	}
 
-	bool pinned_mapped_memory_allocation_is_allowed() const
+	bool can_map_host_memory() const
 	{
 		return flags() & cudaDeviceMapHost;
 	}
 
-	void allow_pinned_mapped_memory_allocation(bool allow = true)
+	void enable_mapping_host_memory(bool allow = true)
 	{
 		auto flags_ =  flags();
 		if (allow) { flags_ |= cudaDeviceMapHost; }
@@ -516,9 +534,9 @@ public: // methods
 		set_flags(flags_);
 	}
 
-	void prevent_pinned_mapped_memory_allocation()
+	void disable_mapping_host_memory()
 	{
-		allow_pinned_mapped_memory_allocation(false);
+		enable_mapping_host_memory(false);
 	}
 
 	void set_flags(
@@ -627,6 +645,32 @@ inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::st
 {
 	return get(pci_id_t::parse(pci_id_str));
 }
+
+
+
+namespace peer_to_peer {
+
+template <bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
+inline bool can_access(
+	const device_t<FirstIsAssumedCurrent>& accessor,
+	const device_t<SecondIsAssumedCurrent>& peer)
+{
+	return can_access(accessor.id(), peer.id());
+}
+
+template <bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
+inline attribute_value_t get_attribute(
+	attribute_t                              attribute,
+	const device_t<FirstIsAssumedCurrent >&  source,
+	const device_t<SecondIsAssumedCurrent>&  destination)
+{
+	return get_attribute(attribute, source.id(), destination.id());
+}
+
+} // namespace peer_to_peer
+
+
+
 
 } // namespace device
 } // namespace cuda

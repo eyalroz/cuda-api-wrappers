@@ -11,6 +11,8 @@
 
 namespace cuda {
 
+template <bool AssumedCurrent> class device_t;
+
 namespace event {
 
 /**
@@ -106,6 +108,7 @@ class event_t {
 public: // data member non-mutator getters
 	event::id_t  id()                 const { return id_;                 }
 	device::id_t device_id()          const { return device_id_;          }
+	device_t<detail::do_not_assume_device_is_current> device() const;
 	bool         is_owning()          const { return owning;              }
 
 public: // other non-mutator methods

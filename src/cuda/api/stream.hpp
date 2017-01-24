@@ -16,6 +16,8 @@
 
 namespace cuda {
 
+template <bool AssumedCurrent> class device_t;
+
 template <bool AssumesDeviceIsCurrent = false> class stream_t;
 
 namespace stream {
@@ -130,6 +132,7 @@ protected: // type definitions
 public: // const getters
 	stream::id_t id() const { return id_; }
 	device::id_t device_id() const { return device_id_; }
+	device_t<detail::do_not_assume_device_is_current> device() const;
 	bool is_owning() const { return owning; }
 
 public: // other non-mutators

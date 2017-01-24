@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 		std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
 				<< (properties.canMapHostMemory ? "Yes" : "No") << "\n";
 
-		if (properties.canMapHostMemory == 0)
+		if (not properties.can_map_host_memory())
 		{
 			std::cout << "Using cudaMallocHost, CUDA device does not support mapping of generic host memory\n";
 			bPinGenericMemory = false;
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	current_device.set_synch_scheduling_policy(policy);
-	current_device.allow_pinned_mapped_memory_allocation(bPinGenericMemory);
+	current_device.enable_mapping_host_memory(bPinGenericMemory);
 
 	// allocate host memory
 	int c = 5;                      // value to which the array will be initialized
