@@ -7,7 +7,27 @@
  * and the deriver is the owner of this code according to the EULA.
  *
  * Use this reasonably. If you want to discuss licensing formalities, please
- * contact the author.
+ * contact the deriving author.
+ *
+ *
+ * This sample illustrates the usage of CUDA streams for overlapping
+ * kernel execution with device/host memcopies.  The kernel is used to
+ * initialize an array to a specific value, after which the array is
+ * copied to the host (CPU) memory.  To increase performance, multiple
+ * kernel/memcopy pairs are launched asynchronously, each pair in its
+ * own stream.  Devices with Compute Capability 1.1 can overlap a kernel
+ * and a memcopy as long as they are issued in different streams.  Kernels
+ * are serialized.  Thus, if n pairs are launched, streamed approach
+ * can reduce the memcopy cost to the (1/n)th of a single copy of the entire
+ * data set.
+ *
+ * Additionally, this sample uses CUDA events to measure elapsed time for
+ * CUDA calls.  Events are a part of CUDA API and provide a system independent
+ * way to measure execution times on CUDA devices with approximately 0.5
+ * microsecond precision.
+ *
+ * Elapsed times are averaged over nreps repetitions (10 by default).
+ *
  */
 
 #ifndef EXIT_WAIVED
@@ -89,10 +109,10 @@ AllocateHostMemory(bool bPinGenericMemory, int **pp_a, int **ppAligned_a, int nb
 	{
 		// allocate a generic page-aligned chunk of system memory
 #ifdef WIN32
-		std::cout << "> VirtualAlloc() allocating " << (float)nbytes/1048576.0f << " Mbytes of (generic page-aligned system memory)\n";
+		std::cout << "> VirtualAlloc() allocating " << (float)nbytes/1048576.0f << " Mbytes of generic page-aligned system memory\n";
 		*pp_a = (int *) VirtualAlloc(NULL, (nbytes + MEMORY_ALIGNMENT), MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 #else
-		std::cout << "> mmap() allocating " << (float)nbytes/1048576.0f << " Mbytes of (generic page-aligned system memory)\n";
+		std::cout << "> mmap() allocating " << (float)nbytes/1048576.0f << " Mbytes of generic page-aligned system memory\n";
 		*pp_a = (int *) mmap(NULL, (nbytes + MEMORY_ALIGNMENT), PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
 #endif
 
@@ -102,7 +122,7 @@ AllocateHostMemory(bool bPinGenericMemory, int **pp_a, int **ppAligned_a, int nb
 		// pin allocate memory
 		cuda::memory::host::register_(*ppAligned_a, nbytes,
 			cuda::memory::host::is_not_mapped_io_space,
-			cuda::memory::host::is_not_mapped_into_device_memory,
+			cuda::memory::host::is_mapped_into_device_memory,
 			cuda::memory::host::is_not_accessible_on_all_devices
 		);
 	}
@@ -285,7 +305,7 @@ int main(int argc, char **argv)
 	scale_factor = max((32.0f / faux_cores_overall), 1.0f);
 	n = (int)rint((float)n / scale_factor);
 
-	std::cout << "> CUDA Capable: " << compute_capability.major << "." << compute_capability.minor << " hardware\n";
+	std::cout << "> CUDA Capable: SM " << compute_capability.major << "." << compute_capability.minor << " hardware\n";
 	std::cout
 		<< "> " << properties.multiProcessorCount << " Multiprocessor(s)"
 		<< " x " << faux_cores_per_sm << " (Cores/Multiprocessor) = "
@@ -295,8 +315,18 @@ int main(int argc, char **argv)
 	std::cout << "> array_size   = " << n << "\n\n";
 
 	// enable use of blocking sync, to reduce CPU usage
-	std::cout << "> Using CPU/GPU Device Synchronization method (" << sDeviceSyncMethod[device_sync_method] << ")\n";
-	current_device.set_synch_scheduling_policy((cuda::host_thread_synch_scheduling_policy_t) device_sync_method);
+	std::cout << "> Using CPU/GPU Device Synchronization method " << sDeviceSyncMethod[device_sync_method] << "\n";
+
+	cuda::host_thread_synch_scheduling_policy_t policy;
+	switch(device_sync_method) {
+	case 0: policy = cuda::heuristic; break;
+	case 1: policy = cuda::spin;      break;
+	case 2: policy = cuda::yield;     break;
+	case 4: policy = cuda::block;     break;
+	default: // should not be able to get here
+		exit(EXIT_FAILURE);
+	}
+	current_device.set_synch_scheduling_policy(policy);
 	current_device.allow_pinned_mapped_memory_allocation(bPinGenericMemory);
 
 	// allocate host memory
@@ -317,15 +347,16 @@ int main(int argc, char **argv)
 
 	// allocate and initialize an array of stream handles
 	std::vector<cuda::stream_t<>> streams;
-	streams.reserve(nstreams);
 	std::generate_n(
 		std::back_inserter(streams), nstreams,
-		[&current_device]() { return current_device.create_stream(); }
+		[&current_device]() {
+			// Note: we could omit the specific requirement of synchronization
+			// with the default stream, since that's the CUDA default - but I
+			// think it's important to state that's the case
+			return current_device.create_stream(
+				cuda::stream::implicitly_synchronizes_with_default_stream);
+		}
 	);
-
-	for(auto i = 0; i < nstreams; i++) {
-		streams.emplace_back(current_device.create_stream());
-	}
 
 	// create CUDA event handles
 	// use blocking sync

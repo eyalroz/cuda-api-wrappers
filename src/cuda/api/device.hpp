@@ -432,18 +432,17 @@ public: // methods
 	// (sigh)... safety over convenience I guess
 	//
 	stream_t<> create_stream(
-		stream::priority_t  priority = stream::default_priority,
-		bool                synchronizes_with_default_stream =
-			stream::no_implicit_synchronization_with_default_stream)
+		stream::priority_t  priority,
+		bool                synchronization_with_default_stream)
 	{
 		device_setter set_device_for_this_scope(id_);
 		return stream_t<>(id(), stream::detail::create_on_current_device(
-			priority, synchronizes_with_default_stream));
+			priority, synchronization_with_default_stream));
 	}
 
-	stream::id_t create_stream(bool synchronizes_with_default_stream)
+	stream_t<> create_stream(bool synchronization_with_default_stream = stream::implicitly_synchronizes_with_default_stream)
 	{
-		return create_stream(stream::default_priority, synchronizes_with_default_stream);
+		return create_stream(stream::default_priority, synchronization_with_default_stream);
 	}
 
 	template<typename KernelFunction, typename... KernelParameters>
@@ -482,7 +481,8 @@ public: // methods
 
 	void set_synch_scheduling_policy(host_thread_synch_scheduling_policy_t new_policy)
 	{
-		set_flags(flags() & (flags_t) new_policy);
+		auto other_flags = flags() & ~cudaDeviceScheduleMask;
+		set_flags(other_flags | (flags_t) new_policy);
 	}
 
 	bool keeping_local_mem_allocation_after_launch() const
@@ -492,12 +492,15 @@ public: // methods
 
 	void keep_local_mem_allocation_after_launch(bool keep = true)
 	{
-		if (keep) { set_flags(flags() & cudaDeviceLmemResizeToMax); }
+		auto flags_ =  flags();
+		if (keep) { flags_ |= cudaDeviceLmemResizeToMax; }
+		else      { flags_ &= ~cudaDeviceLmemResizeToMax; }
+		set_flags(flags_);
 	}
 
 	void discard_local_mem_allocation_after_launch()
 	{
-		set_flags(flags() & ~cudaDeviceLmemResizeToMax);
+		keep_local_mem_allocation_after_launch(false);
 	}
 
 	bool pinned_mapped_memory_allocation_is_allowed() const
@@ -507,12 +510,15 @@ public: // methods
 
 	void allow_pinned_mapped_memory_allocation(bool allow = true)
 	{
-		if (allow) { set_flags(flags() & cudaDeviceMapHost); }
+		auto flags_ =  flags();
+		if (allow) { flags_ |= cudaDeviceMapHost; }
+		else       { flags_ &= ~cudaDeviceMapHost; }
+		set_flags(flags_);
 	}
 
 	void prevent_pinned_mapped_memory_allocation()
 	{
-		set_flags(flags() & ~cudaDeviceMapHost);
+		allow_pinned_mapped_memory_allocation(false);
 	}
 
 	void set_flags(
