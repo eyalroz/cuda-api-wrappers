@@ -31,11 +31,19 @@
 
 int main(int argc, char **argv)
 {
+	if (cuda::device::count() == 0) {
+		die("No CUDA devices on this system");
+	}
+
 	// TODO: cudaChooseDevice
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
 		std::stoi(argv[1]) : cuda::device::default_device_id;
+
+	if (cuda::device::count() <= device_id) {
+		die("No CUDA device with ID " + std::to_string(device_id));
+	}
 
 	auto device = cuda::device::get(device_id);
 

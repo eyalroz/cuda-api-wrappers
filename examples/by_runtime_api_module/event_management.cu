@@ -14,6 +14,12 @@
 #include <cstring>
 #include <cassert>
 
+[[noreturn]] void die(const std::string& message)
+{
+	std::cerr << message << "\n";
+	exit(EXIT_FAILURE);
+}
+
 template <typename T, size_t N>
 struct poor_mans_array {
 	T data[N];
@@ -67,6 +73,10 @@ inline void report_occurrence(
 
 int main(int argc, char **argv)
 {
+	if (cuda::device::count() == 0) {
+		die("No CUDA devices on this system");
+	}
+
 	static constexpr size_t N = 40;
 
 	// Being very cavalier about our command-line arguments here...

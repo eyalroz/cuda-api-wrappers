@@ -23,6 +23,10 @@ using std::flush;
 int main(int argc, char **argv)
 {
 	auto device_count = cuda::device::count();
+	if (device_count == 0) {
+		die("No CUDA devices on this system");
+	}
+
 	try {
 		cuda::device::current::set(device_count);
 		die("An exception should have be thrown");

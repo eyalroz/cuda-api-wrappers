@@ -28,7 +28,10 @@ inline __host__ device::id_t  count()
 {
 	int device_count = 0; // Initializing, just to be on the safe side
 	status_t result = cudaGetDeviceCount(&device_count);
-	throw_if_error(result, "Failed obtaining the number of CUDA devices on the system");
+	if (result == cudaErrorNoDevice) { return 0; }
+	else {
+		throw_if_error(result, "Failed obtaining the number of CUDA devices on the system");
+	}
 	if (device_count < 0) {
 		throw std::logic_error("cudaGetDeviceCount() reports an invalid number of CUDA devices");
 	}

@@ -24,6 +24,11 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 
 int main(void)
 {
+	if (cuda::device::count() == 0) {
+		std::cerr << "No CUDA devices on this system" << "\n";
+		exit(EXIT_FAILURE);
+	}
+
 	int numElements = 50000;
 	size_t size = numElements * sizeof(float);
 	std::cout << "[Vector addition of " << numElements << " elements]\n";

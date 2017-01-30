@@ -17,6 +17,14 @@
 
 using std::printf;
 
+
+[[noreturn]] void die(const std::string& message)
+{
+	std::cerr << message << "\n";
+	exit(EXIT_FAILURE);
+}
+
+
 template <typename T, size_t N>
 struct poor_mans_array {
 	T data[N];
@@ -75,6 +83,10 @@ int main(int argc, char **argv)
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
 		std::stoi(argv[1]) : cuda::device::default_device_id;
+
+	if (cuda::device::count() == 0) {
+		die("No CUDA devices on this system");
+	}
 
 	cuda::device::current::set(device_id);
 	auto device = cuda::device::current::get();
