@@ -7,6 +7,10 @@
 # CUDA_TARGET_COMPUTE or CUDA_TARGET_COMPUTE_CAP and maybe even 
 # those without the CUDA_ prefix
 
+if (CUDA_TARGET_COMPUTE_CAPABILITY)
+	return()
+endif()
+
 if("$ENV{CUDA_SM}" STREQUAL "")
         set(ENV{CUDA_INCLUDE_DIRS} "${CUDA_INCLUDE_DIRS}")
         set(ENV{CUDA_CUDART_LIBRARY} "${CUDA_CUDART_LIBRARY}")

@@ -1,8 +1,8 @@
 # CMakeLists.txt for the cuda-api-wrappers project
 #
 # Notes:
-# 
-# CUDA is very picky about which compiler you can use. 
+#
+# CUDA is very picky about which compiler you can use.
 # CUDA 7.x supports gcc up to version 4.9.x (and not clang);
 # CUDA 8.0 supports gcc up to version 5.4.x (and there seems
 # to be some work on getting clang to support CUDA, but it
@@ -23,20 +23,26 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 # Project name, version & build type
 # -----------------------------------
 
-PROJECT(kernel_tester)
-
-set(PROJECT_MAJOR_VERSION 0)
-set(PROJECT_MINOR_VERSION 1)
-set(PROJECT_PATCH_VERSION 0)
-set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
-
 include (ReleaseOrDebug)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    # This is the top-level project.
+	PROJECT(cuda-api-wrappers)
+
+#	# No versioning for now
+#
+#	set(PROJECT_MAJOR_VERSION 0)
+#	set(PROJECT_MINOR_VERSION 1)
+#	set(PROJECT_PATCH_VERSION 0)
+#	set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
+endif()
+
 
 # ----------------------------
 # General C/C++ build settings
 # ----------------------------
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++11 -g" )
+set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -g" )
 include_directories( "src/" )
 
 # -------------
@@ -62,30 +68,35 @@ set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
 # Miscellaneous targets
 # -----------------------
 
-set_source_files_properties( tags PROPERTIES GENERATED true )
-add_custom_target(tags 
-	COMMAND ctags --langmap=c++:+.cu.cuh.hpp -R ./ 
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)	
+    # This is the top-level project.
+	set_source_files_properties( tags PROPERTIES GENERATED true )
+	add_custom_target(tags
+	    COMMAND ctags --langmap=c++:+.cu.cuh.hpp  -R ./
+	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/)
+	add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/ cmake_install.cmake)
+endif()
 
 # -----------------------------------
 # Be verbose about what we've found
 # -----------------------------------
 
-message("--------------------------------------------------------------")
-message("Paths Used"                                                    )
-message("--------------------------------------------------------------")
-message("C compiler (for non-CUDA code):    " "${CMAKE_C_COMPILER}"     )
-message("C++ compiler (for non-CUDA code):  " "${CMAKE_CXX_COMPILER}"   )
-message("CUDA C++ forward-to host compiler: " "${CUDA_HOST_COMPILER}"   )
-message("CUB header-only library root:      " "${CUB_INCLUDE_DIR}"      )
-message("CUDA include directories:          " "${CUDA_INCLUDE_DIRS}"    )
-message("--------------------------------------------------------------")
-message("Package and Library versions"                                  )
-message("--------------------------------------------------------------")
-message("nVIDIA CUDA toolkit:               " "${CUDA_VERSION_STRING}"  )
-message("--------------------------------------------------------------")
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)	
+	message("--------------------------------------------------------------")
+	message("Paths Used"                                                    )
+	message("--------------------------------------------------------------")
+	message("C compiler (for non-CUDA code):    " "${CMAKE_C_COMPILER}"     )
+	message("C++ compiler (for non-CUDA code):  " "${CMAKE_CXX_COMPILER}"   )
+	message("CUDA C++ forward-to host compiler: " "${CUDA_HOST_COMPILER}"   )
+	message("CUB header-only library root:      " "${CUB_INCLUDE_DIR}"      )
+	message("CUDA include directories:          " "${CUDA_INCLUDE_DIRS}"    )
+	message("--------------------------------------------------------------")
+	message("Package and Library versions"                                  )
+	message("--------------------------------------------------------------")
+	message("nVIDIA CUDA toolkit:               " "${CUDA_VERSION_STRING}"  )
+	message("--------------------------------------------------------------")
+endif()
 
 # -----------------------
 # Main target(s)
@@ -132,11 +143,11 @@ target_link_libraries(event_management cuda-api-wrappers)
 #----
 add_custom_target(examples_by_runtime_api_module)
 add_dependencies(
-	examples_by_runtime_api_module 
-	version_management 
-	error_handling device_management 
-	execution_control 
-	stream_management 
+	examples_by_runtime_api_module
+	version_management
+	error_handling device_management
+	execution_control
+	stream_management
 	event_management)
 
 add_custom_target(examples)
