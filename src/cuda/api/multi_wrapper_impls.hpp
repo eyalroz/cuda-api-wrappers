@@ -39,7 +39,7 @@ device_t<AssumedCurrent>::create_stream(
 	stream::priority_t  priority,
 	bool                synchronizes_with_default_stream)
 {
-	device_setter set_device_for_this_scope(id_);
+	scoped_setter set_device_for_this_scope(id_);
 	return stream_t<>(id(), stream::detail::create_on_current_device(
 		priority, synchronizes_with_default_stream));
 }

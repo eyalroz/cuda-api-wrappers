@@ -82,7 +82,7 @@ inline device_t<detail::do_not_assume_device_is_current> get(device::id_t device
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current>
 class device_t {
 public: // types
-	using device_setter              = device::current::scoped_override_t<AssumedCurrent>;
+	using scoped_setter              = device::current::scoped_override_t<AssumedCurrent>;
 
 protected: // types
 	using properties_t               = device::properties_t;
@@ -142,7 +142,7 @@ public: // types
 		template <typename T = void>
 		__host__ T* allocate(size_t size_in_bytes)
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			return memory::device::detail::malloc<T>(size_in_bytes);
 		}
 
@@ -171,7 +171,7 @@ public: // types
 		__host__ T* allocate_managed(
 			size_t size_in_bytes, bool initially_visible_to_host_only = false)
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			T* allocated = nullptr;
 			auto flags = initially_visible_to_host_only ?
 				cudaMemAttachHost : cudaMemAttachGlobal;
@@ -193,7 +193,7 @@ public: // types
 		__host__ region_pair allocate_region_pair(
 			size_t size_in_bytes, region_pair::allocation_options options = {false, false})
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			region_pair allocated;
 			auto flags = cuda::memory::mapped::detail::make_cuda_host_alloc_flags(options);
 			// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
@@ -219,7 +219,7 @@ public: // types
 
 		size_t amount_total() const
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			size_t total_mem_in_bytes;
 			auto status = cudaMemGetInfo(&total_mem_in_bytes, nullptr);
 			throw_if_error(status,
@@ -230,7 +230,7 @@ public: // types
 
 		size_t amount_free() const
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
 			throw_if_error(status,
@@ -254,7 +254,7 @@ public: // types
 
 		bool can_access(id_t peer_id) const
 		{
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			return device::peer_to_peer::can_access(device_id, peer_id);
 		}
 
@@ -267,7 +267,7 @@ public: // types
 
 
 		void enable_to(id_t peer_id) {
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			enum : unsigned { fixed_flags = 0}; // No flags are supported as of CUDA 8.0
 			auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
 			throw_if_error(status,
@@ -276,7 +276,7 @@ public: // types
 		}
 
 		void disable_to(id_t peer_id) {
-			device_setter set_device_for_this_scope(device_id);
+			scoped_setter set_device_for_this_scope(device_id);
 			auto status = cudaDeviceDisablePeerAccess(peer_id);
 			throw_if_error(status,
 				"Failed disabling access of " + device_id_as_str() +
@@ -289,7 +289,7 @@ public: // types
 protected:
 	void set_flags(flags_t new_flags)
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaSetDeviceFlags(new_flags);
 		throw_if_error(status,
 			"Failed setting the flags for " + device_id_as_str());
@@ -373,13 +373,13 @@ public: // methods
 
 	inline void synchronize()
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSynchronize();
 		throw_if_error(status, "Failed synchronizing " + device_id_as_str());
 	}
 	inline void synchronize_stream(stream::id_t stream_id)
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaStreamSynchronize(stream_id);
 		throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
 	}
@@ -388,7 +388,7 @@ public: // methods
 
 	inline void synchronize_event(event::id_t event_id)
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaEventSynchronize(event_id);
 		throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
 	}
@@ -397,13 +397,13 @@ public: // methods
 
 	inline void reset()
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		status_t status = cudaDeviceReset();
 		throw_if_error(status, "Resetting  " + device_id_as_str());
 	}
 
 	inline void set_cache_preference(multiprocessor_cache_preference_t preference) {
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetCacheConfig((cudaFuncCache) preference);
 		throw_if_error(status,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for " +
@@ -411,7 +411,7 @@ public: // methods
 	}
 
 	inline multiprocessor_cache_preference_t cache_preference() const {
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		cudaFuncCache raw_preference;
 		auto status = cudaDeviceGetCacheConfig(&raw_preference);
 		throw_if_error(status,
@@ -421,14 +421,14 @@ public: // methods
 	}
 
 	inline void set_shared_memory_bank_size(shared_memory_bank_size_t new_bank_size) {
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
 		throw_if_error(status,
 			"Setting the multiprocessor shared memory bank size for " + device_id_as_str());
 	}
 
 	inline shared_memory_bank_size_t shared_memory_bank_size() const {
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		shared_memory_bank_size_t bank_size;
 		auto status = cudaDeviceGetSharedMemConfig(&bank_size);
 		throw_if_error(status,
@@ -481,7 +481,7 @@ public: // methods
 
 	priority_range_t stream_priority_range() const
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		stream::priority_t least, greatest;
 		auto status = cudaDeviceGetStreamPriorityRange(&least, &greatest);
 		throw_if_error(status,
@@ -491,7 +491,7 @@ public: // methods
 
 	flags_t flags() const
 	{
-		device_setter set_device_for_this_scope(id_);
+		scoped_setter set_device_for_this_scope(id_);
 		flags_t flags;
 		auto status = cudaGetDeviceFlags(&flags);
 		throw_if_error(status,
@@ -688,14 +688,14 @@ namespace device {
 template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
 inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device, size_t n)
 {
-	typename device_t<AssumedCurrent>::device_setter set_device_for_this_scope(device.id());
+	typename device_t<AssumedCurrent>::scoped_setter set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
 }
 
 template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
 inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device)
 {
-	typename device_t<AssumedCurrent>::device_setter set_device_for_this_scope(device.id());
+	typename device_t<AssumedCurrent>::scoped_setter set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
