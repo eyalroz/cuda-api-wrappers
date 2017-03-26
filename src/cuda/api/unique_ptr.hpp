@@ -2,6 +2,7 @@
 #define CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
 
 #include <cuda/api/memory.hpp>
+#include <cuda/api/current_device.hpp>
 
 namespace cuda {
 namespace memory {
@@ -51,15 +52,23 @@ template<typename T>
 using unique_ptr = std::unique_ptr<T, detail::deleter>;
 
 template<typename T>
-inline unique_ptr<T> make_unique(size_t n)
+inline unique_ptr<T> make_unique(cuda::device::id_t device_id, size_t n)
 {
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
+	cuda::device::current::scoped_override_t<
+		cuda::detail::do_not_assume_device_is_current
+	> set_device_for_this_scope(device_id);
+	return ::cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
 }
 
 template<typename T>
-inline unique_ptr<T> make_unique()
+inline unique_ptr<T> make_unique(cuda::device::id_t device_id)
 {
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
+
+	cuda::device::current::scoped_override_t<
+		cuda::detail::do_not_assume_device_is_current
+	> set_device_for_this_scope(device_id);
+
+	return ::cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
 } // namespace device

@@ -339,8 +339,8 @@ int main(int argc, char **argv)
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::device::make_unique<int[]>(n);
-	auto d_c = cuda::memory::device::make_unique<int>();
+	auto d_a = cuda::memory::device::make_unique<int[]>(cuda_device_id, n);
+	auto d_c = cuda::memory::device::make_unique<int>(cuda_device_id);
 	cuda::memory::copy_single(*d_c.get(), c);
 
 	std::cout << "\nStarting Test\n";

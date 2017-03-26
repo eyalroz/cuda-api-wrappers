@@ -7,6 +7,7 @@
 #include "cuda/api/memory.hpp"
 #include "cuda/api/current_device.hpp"
 #include "cuda/api/pci_id.h"
+#include "cuda/api/unique_ptr.hpp"
 
 #include <cuda_runtime_api.h>
 #include <string>
@@ -80,9 +81,10 @@ inline device_t<detail::do_not_assume_device_is_current> get(device::id_t device
 // TODO: Consider making this a multiton, with one possible instance per device_id
 template <bool AssumedCurrent = detail::do_not_assume_device_is_current>
 class device_t {
+public: // types
+	using device_setter              = device::current::scoped_override_t<AssumedCurrent>;
 
 protected: // types
-	using device_setter              = device::current::scoped_override_t<AssumedCurrent>;
 	using properties_t               = device::properties_t;
 	using attribute_t                = device::attribute_t;
 	using attribute_value_t          = device::attribute_value_t;
@@ -124,12 +126,17 @@ public: // types
 	protected:
 		const id_holder_type& device_id;
 
+		using deleter = memory::device::detail::deleter;
+		using allocator = memory::device::detail::allocator;
+
 		std::string device_id_as_str() const
 		{
 			return device_t::device_id_as_str(device_id);
 		}
 
+
 	public:
+
 		memory_t(const device_t::id_holder_type& id) : device_id(id) {}
 
 		template <typename T = void>
@@ -673,6 +680,28 @@ inline attribute_value_t get_attribute(
 
 
 } // namespace device
+
+
+namespace memory {
+namespace device {
+
+template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
+inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device, size_t n)
+{
+	typename device_t<AssumedCurrent>::device_setter set_device_for_this_scope(device.id());
+	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
+}
+
+template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
+inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device)
+{
+	typename device_t<AssumedCurrent>::device_setter set_device_for_this_scope(device.id());
+	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
+}
+
+} // namespace device
+} // namespace memory
+
 } // namespace cuda
 
 #endif /* CUDA_API_WRAPPERS_DEVICE_HPP_ */
