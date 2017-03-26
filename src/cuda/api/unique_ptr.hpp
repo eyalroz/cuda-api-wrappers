@@ -71,6 +71,13 @@ inline unique_ptr<T> make_unique(cuda::device::id_t device_id)
 	return ::cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
+template<typename T>
+inline unique_ptr<T> make_unique(T* raw_ptr)
+{
+	// We should not have to care about single-elements vs arrays here. I think
+	return unique_ptr<T>(raw_ptr);
+}
+
 } // namespace device
 
 namespace host {
