@@ -4,8 +4,8 @@
  * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
  *
  * This file has two stand-alone functions used for launching kernels - by
- * application code directly and by other API wrappers (e.g. @ref device_t
- * and @ref stream_t ).
+ * application code directly and by other API wrappers (e.g. @ref cuda::device_t
+ * and @ref cuda::stream_t ).
  *
  * <p>The wrapper functions have two goals:
  *
@@ -19,19 +19,21 @@
  * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
  * rather easy to mix up shared memory sizes with stream IDs; grid and
  * block dimensions with each other; and even grid/block dimensions with
- * the scalar parameters - since a @code{dim3} is constructible from
+ * the scalar parameters - since a {@code dim3} is constructible from
  * integral values. Instead, we enforce a launch configuration structure:
- * @ref launch_configuration_t .
+ * {@ref cuda::launch_configuration_t}.
+ * </ul>
  *
  * @note You'd probably better avoid launching kernels using these
- * function directly, and go through the @ref stream_t or @ref device_t proxy
- * classes' launch mechanism (e.g. @code{my_stream.enqueue.kernel_launch(...)}).
+ * function directly, and go through the @ref cuda::stream_t or @ref cuda::device_t
+ * proxy classes' launch mechanism (e.g.
+ * {@code my_stream.enqueue.kernel_launch(...)}).
  *
  * @note Even though when you use this wrapper, your code will not have the silly
- * chevron, you can't use it from regular .cpp files compiled with your host
- * compiler. Hence the .cuh extension. You _can_, however, safely include this
- * file from your .cpp for other definitions. Theoretically, we could have
- * used the @code{cudaLaunchKernel} API function, by creating an array on the stack
+ * chevron, you can't use it from regular {@code .cpp} files compiled with your host
+ * compiler. Hence the {@code .cuh} extension. You _can_, however, safely include this
+ * file from your {@code .cpp} for other definitions. Theoretically, we could have
+ * used the {@code cudaLaunchKernel} API function, by creating an array on the stack
  * which points to all of the other arguments, but that's kind of redundant.
  *
  */
@@ -57,10 +59,10 @@ constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 * called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
 * compiler, the callee compiled by nvcc).
 *
-* <p>This function is similar to C++17's std::apply, or to a a beta-reduction in Lambda calculus: It applies
-* a function to its arguments; the difference is in the nature of the function (a CUDA kernel) and in that
-* the function application requires setting additional CUDA-related launch parameters, additional to the
-* function's own.
+* <p>This function is similar to C++17's {@code std::apply}, or to a a beta-reduction in Lambda calculus:
+* It applies a function to its arguments; the difference is in the nature of the function (a CUDA kernel)
+* and in that the function application requires setting additional CUDA-related launch parameters,
+* additional to the function's own.
 *
 * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
 * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
@@ -69,14 +71,12 @@ constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 * If the kernel is templated, you must pass it fully-instantiated.
 * @param[in] launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
 * shared memory per block in the grid; this defines how the grid will look and what the shared memory
-* allowance will be; {@see launch_configuration_t}
-* @param[in] block_dimensions the number of CUDA threads (a.k.a. hardware threads, or 'CUDA cores') in every
-* execution grid block, in each of upto 3 dimensions.
-* @param[in] shared_memory_size the amount, in bytes, of shared memory to allocate for common use by each execution
-* block in the grid; limited by your specific GPU's capabilities and typically <= 48 Ki.
-* @param[in] stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
+* allowance will be (see {@ref cuda::launch_configuration_t})
+* @param[in] launch_configuration The grid and shared memory configuration parameters for this launch
+* in the apprioriate structure
+* @param[in] stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
 * the scheduling of the launch and the execution)
-* @param[in] parameters whatever parameters {@kernel_function} takes
+* @param[in] parameters whatever parameters @p kernel_function takes
 */
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(

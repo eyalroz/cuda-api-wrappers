@@ -1,9 +1,8 @@
 /**
  * @file unique_ptr.hpp
  *
- * @brief A mechanism on top of the memory-related functions in @ref memory.hpp
- * and @ref device.hpp , implementing an @ref{std::unique_ptr}-like smart
- * pointers, both for device memory and for pinned host memory.
+ * @brief A smart pointer for CUDA device- and host-side memory, similar
+ * to the standard library's <a href="http://en.cppreference.com/w/cpp/memory/unique_ptr">std::unique_ptr</a>.
  *
  */
 #ifndef CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_

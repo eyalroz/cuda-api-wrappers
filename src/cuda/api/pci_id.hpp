@@ -1,8 +1,9 @@
 /**
  * @file pci_id.hpp
  *
- * @brief iostream-related freestanding operator functions for @ref{pci_id_t}'s
- * and iostream-related methods of the @ref pci_id_t class.
+ * @brief iostream-related freestanding operator functions for
+ * @ref cuda::device::pci_id_t instances and iostream-related methods of
+ * the @ref cuda::device::pci_id_t class.
  *
  * @note This file is split off from {@ref pci_id.h} since
  * it requires inclusions of standard library headers which most of the

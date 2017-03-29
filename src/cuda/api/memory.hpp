@@ -116,9 +116,11 @@ inline void zero(void* buffer_start, size_t num_bytes)
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
  * where the data is located, and one does not have to specify this.
  *
- * @param dst A pointer to a num_bytes-long buffer, either in main memory or on any CUDA device's global memory
- * @param src A pointer to a num_bytes-long buffer, either in main memory or on any CUDA device's global memory
- * @param num_bytes The number of bytes to copy from @ref src to @ref dst
+ * @param destination A pointer to a memory region of size @p num_bytes, either in
+ * main memory or on any CUDA device's global memory
+ * @param source A pointer to a a memory region of size @p num_bytes, either in
+ * main memory or on any CUDA device's global memory
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
  */
 inline void copy(void *destination, const void *source, size_t num_bytes)
 {

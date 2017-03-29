@@ -3,7 +3,7 @@
  *
  * @brief facilities for exception-based handling of Runtime API
  * errors, including a basic exception class wrapping
- * @ref{std::runtime error}.
+ * {@code std::runtime_error}.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_

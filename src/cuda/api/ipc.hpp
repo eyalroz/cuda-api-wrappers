@@ -14,9 +14,9 @@
  * <p>CUDA provides several functions to enable different processes
  * to share at least memory addresses and events, which are wrapped
  * here. In addition to the free-standing functions, the class
- * @ref imported_t is defined, usable by receiving processes as
- * an 'adapter' to incoming handles which may be passed as-is to
- * code requiring a propoer pointer.
+ * @ref cuda::memory::ipc::imported_t is defined, usable by receiving
+ * processes as an 'adapter' to incoming handles which may be passed
+ * as-is to code requiring a propoer pointer.
  *
  */
 #pragma once
@@ -45,7 +45,7 @@ using handle_t = cudaIpcMemHandle_t;
  *
  * @param device_ptr beginning of the region of memory
  * to be shared with other processes
- * @return a handle which another process can call @ref import
+ * @return a handle which another process can call @ref import()
  * on to obtain a device pointer it can use
  */
 handle_t export_(void* device_ptr) {
@@ -56,6 +56,14 @@ handle_t export_(void* device_ptr) {
 	return handle;
 }
 
+/**
+ * @brief Obtain a CUDA pointer from a handle passed
+ * by inter-process communication
+ *
+ * @param handle the handle which allows us access to the on-device address
+ * @return a pointer to the relevant address (which may not have the same value
+ * as it would on a different processor.
+ */
 template <typename T = void>
 inline T* import(const handle_t& handle)
 {

@@ -149,6 +149,9 @@ using serialization_factor_t = unsigned short;
 
 namespace device {
 
+/**
+ * @brief Numeric ID of a CUDA device used by the CUDA Runtime API.
+ */
 using id_t               = int;
 
 using attribute_t        = enum cudaDeviceAttr;

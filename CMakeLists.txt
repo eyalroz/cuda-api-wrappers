@@ -153,6 +153,12 @@ add_dependencies(
 add_custom_target(examples)
 add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 
+add_custom_target(docs 
+    COMMAND doxygen doxygen.cfg
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
+
 # -------------
 
 # We don't do installation for now

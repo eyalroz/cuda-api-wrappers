@@ -2,7 +2,7 @@
  * @file versions.hpp
  *
  * @brief Wrappers for Runtime API functions involving versions -
- * of the CUDA runtime and of the CUDA driver. Also defines a @ref version_t
+ * of the CUDA runtime and of the CUDA driver. Also defines a @ref cuda::version_t
  * class for working with such versions (as they are not really single
  * numbers) - which is what the wrappers return.
  */
@@ -86,7 +86,7 @@ inline version_t make(int major, int minor)
 /**
  * @return If an nVIDIA GPU driver is installed on this system,
  * the maximum CUDA version it supports is returned. If no nVIDIA
- * GPU driver is installed, {@ref no_version_supported}} is returned.
+ * GPU driver is installed, {@code cuda::error::invalid_value}} is returned.
  */
 version_t maximum_supported_by_driver() {
 	combined_version_t version;

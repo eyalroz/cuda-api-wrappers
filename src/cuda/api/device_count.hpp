@@ -6,7 +6,7 @@
  *
  * @note This probably should not merit its own file, but I haven't
  * found another file to put it in - unless we also want to pull
- * in @ref{device.hpp}, which would be overkill I think.
+ * in {@ref device.hpp}, which would be overkill I think.
  *
  */
 #pragma once

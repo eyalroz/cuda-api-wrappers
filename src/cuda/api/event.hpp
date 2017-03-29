@@ -50,7 +50,7 @@ enum : bool {
 };
 
 /**
- * IPC usability option for @ref cuda::event_t 's
+ * IPC usability option for {@ref cuda::event_t}'s
  */
 enum : bool {
 	not_interprocess = false,
@@ -59,7 +59,6 @@ enum : bool {
 	interprocess = true,
 		//!< Can only be used by the process which created it
 	single_process = not_interprocess
-		//!< See @ref not_interprocess
 };
 
 namespace detail {
@@ -140,7 +139,7 @@ public: // other non-mutator methods
 	}
 
 	/**
-	 * An alias for @ref has_occurred() - to conform to how the CUDA runtime
+	 * An alias for {@ref event_t::has_occurred()} - to conform to how the CUDA runtime
 	 * API names this functionality
 	 */
 	bool query() const { return has_occurred(); }
@@ -160,7 +159,7 @@ public: // other mutator methods
 
 	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and
-	 * return only after this event has occurred (see @ref has_occrred ).
+	 * return only after this event has occurred (see @ref has_occurred() ).
 	 */
 	void synchronize()
 	{
@@ -223,6 +222,19 @@ float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 	return milliseconds_elapsed_between(start.id(), end.id());
 }
 
+/**
+ * @brief Wrap an existing CUDA event in a @ref event_t instance.
+ *
+ * @param device_id ID of the device for which the stream is defined
+ * @param event_id ID of the pre-existing event
+ * @param take_ownership When set to {@code false}, the CUDA event
+ * will not be destroyed along with proxy; use this setting
+ * when temporarily working with a stream existing irrespective of
+ * the current context and outlasting it. When set to {@code true},
+ * the proxy class will act as it does usually, destroying the event
+ * when being destructed itself.
+ * @return The constructed {@code cuda::event_t}.
+ */
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
@@ -231,11 +243,23 @@ inline event_t wrap(
 	return event_t(device_id, event_id, take_ownership);
 }
 
+/**
+ * @brief creates a new execution stream on a device.
+ *
+ * @param device_id ID of the device on which to create the new stream
+ * @param uses_blocking_sync When synchronizing on this new evet,
+ * shall a thread busy-wait for it, or
+ * @param records_timing Can this event be used to record time
+ * values (e.g. duration between events)
+ * @param interprocess Can multiple processes work with the constructed
+ * event?
+ * @return The constructed event proxy class
+ */
 inline event_t make(
-	device::id_t device_id,
-	bool uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool records_timing     = do_record_timings,
-	bool interprocess       = not_interprocess)
+	device::id_t  device_id,
+	bool          uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool          records_timing     = do_record_timings,
+	bool          interprocess       = not_interprocess)
 {
 	auto new_event_id = detail::create_on_current_device(
 		uses_blocking_sync, records_timing, interprocess);
@@ -245,8 +269,9 @@ inline event_t make(
 
 /**
  * @note The reason this doesn't take the three boolean parameters
- * is avoiding an implicit cast from bool to device::id_t, which would take
- * us to the other variant of @ref make with a possibly invalid device ID.
+ * is avoiding an implicit cast from {@code bool} to {@code cuda::device::id_t},
+ * which would take us to the other variant of @ref cuda::event::make() with a
+ * possibly invalid device ID.
  */
 inline event_t make()
 {

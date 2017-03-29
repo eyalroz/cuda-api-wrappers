@@ -163,9 +163,9 @@ public: // types
 		 * device or from the host. However, the actual space is allocated on
 		 * some device, so its creation is a device (device_t) object method.
 		 *
-		 * @note for a more complete description see
-		 * {@link http://docs.nvidia.com/cuda/cuda-runtime-api/}
-		 *
+		 * @note for a more complete description see the
+		 * <a href="http://docs.nvidia.com/cuda/cuda-runtime-api/">CUDA Runtime API
+		 * reference</a>)
 		 *
 		 * @param size_in_bytes Size of memory region to allocate
 		 * @param initially_visible_to_host_only if true, only the host (and the

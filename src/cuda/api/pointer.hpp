@@ -6,7 +6,7 @@
  *
  * @note at the moment, this class is not used by other sections of the API
  * wrappers; specifically, freestanding functions and methods returning
- * pointers return raw @code{T*}'s rather than @code{pointer_t<T>}'s.
+ * pointers return raw {@code T*}'s rather than {@code pointer_t<T>}'s.
  * This may change in the future.
  *
  * @todo Consider allowing for storing attributes within the class,

@@ -1,5 +1,5 @@
 /**
- * @file device_functions.hpp
+ * @file device_function.hpp
  *
  * @brief Functions for querying information and making settings
  * regarding device-side functions - kernels or otherwise.
@@ -35,6 +35,15 @@ struct attributes_t : cudaFuncAttributes {
 	}
 };
 
+/**
+ * @brief Calculate the effective maximum size of allocatable (dynamic)
+ * shared memory in a grid block
+ *
+ * @param attributes Attributes of the {@code __global__} kernel function
+ * for which we wish to determine the allocation limit
+ * @param compute_capability the GPU device's compute capability figure (e.g. 3.5
+ * or 5.0), which fully determines the maximum allocation size
+ */
 inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
 	attributes_t attributes, device::compute_capability_t compute_capability)
 {
@@ -50,7 +59,7 @@ inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
 } // namespace device_function
 
 /**
- * A non-owning wrapper class for CUDA __device__ functions
+ * A non-owning wrapper class for CUDA {@code __device__} functions
  */
 class device_function_t {
 public: // getters
@@ -60,8 +69,6 @@ public: // type_conversions
 	operator const void*() { return ptr_; }
 
 public: // non-mutators
-
-	// TODO: A getter for the shared mem / L1 cache config
 
 	inline device_function::attributes_t attributes() const
 	{
@@ -147,21 +154,24 @@ public: // data members
 namespace device_function {
 
 /**
- * A 'version' of @ref compute_capability_t::effective_max_shared_memory_per_block for
+ * A 'version' of @ref cuda::compute_capability_t::maximum_dynamic_shared_memory_per_block() for
  * use with a specific device function - which will take its use of static shared memory into account
  *
- * @param device_function The (__global__ or __device__) function for which to calculate
+ * @param device_function The ({@code __global__} or {@code __device__}) function for which to calculate
  * the effective available shared memory per block
  * @param compute_capability on which kind of device the kernel function is to be launched;
- * TODO: it's not clear whether this is actually necessary given the {@ref device_function}
- * pointer
  * @return the maximum amount of shared memory per block which a launch of the specified
  * function can require
+
+ * @todo It's not clear whether this is actually necessary given the {@ref device_function_t}
+ * pointer.
+ *
  */
 inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
-	const device_function_t& f, device::compute_capability_t compute_capability)
+	const device_function_t& device_function, device::compute_capability_t compute_capability)
 {
-	return device_function::maximum_dynamic_shared_memory_per_block(f.attributes(), compute_capability);
+	return device_function::maximum_dynamic_shared_memory_per_block(
+		device_function.attributes(), compute_capability);
 }
 
 inline grid_dimension_t maximum_active_blocks_per_multiprocessor(

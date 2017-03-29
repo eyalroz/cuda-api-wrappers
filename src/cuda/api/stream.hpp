@@ -213,13 +213,13 @@ protected: // static methods
 
 	/**
 	 * A function used internally by this class as the immediate CUDA callback; see
-	 * @ref add_callback
+	 * @ref enqueue_t::callback
 	 *
 	 * @param stream_id the ID of the stream for which a callback was triggered - this
 	 * will be passed by the CUDA runtime
 	 * @param status the CUDA status when the callback is triggered - this
 	 * will be passed by the CUDA runtime
-	 * @param type_erased_callback the callback which was passed to @ref add_callback,
+	 * @param type_erased_callback the callback which was passed to @ref enqueue_t::callback,
 	 * and which the programmer actually wants to be called
 	 */
 	static void callback_adapter(stream::id_t stream_id, status_t status, void *type_erased_callback)
@@ -289,7 +289,7 @@ public: // mutators
 		/**
 		 * Have an event 'fire', i.e. marked as having occurred,
 		 * after all hereto-scheduled work on this stream has been completed.
-		 * Threads which are @ref wait_on 'ing the event will become available
+		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
 		 * for continued execution.
 		 *
 		 * @param event_id ID of the event to occur on completing of hereto-schedule work
@@ -306,11 +306,11 @@ public: // mutators
 		}
 
 		/**
-		 * Execute the specified function on the calling host thread (?) all
+		 * Execute the specified function on the calling host thread once all
 		 * hereto-scheduled work on this stream has been completed.
 		 *
-		 * @param function a function to execute on the host. Its signature
-		 * must being with (cuda::stream::id_t stream_id, cuda::event::id_t event_id..
+		 * @param callback a function to execute on the host. Its signature
+		 * must being with {@code (cuda::stream::id_t stream_id, cuda::event::id_t event_id}
 		 */
 		void callback(callback_t callback)
 		{
@@ -319,7 +319,7 @@ public: // mutators
 			// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
 			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
 			//
-			enum : unsigned int { fixed_flags = 0 };//!< fixed_flags
+			enum : unsigned int { fixed_flags = 0 };
 
 			// This always registers the static function callback_adapter as the callback -
 			// but what that one will do is call the actual callback we were passed; note
@@ -346,7 +346,8 @@ public: // mutators
 		 *
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-		 * pass whatever cudaMallocManaged (@ref memory::managed:allocate
+		 * pass whatever @ref cuda::memory::managed::allocate() (or {@code cudaMallocManaged()})
+		 * returned.
 		 */
 		void memory_attachment(const void* managed_region_start)
 		{
@@ -478,13 +479,27 @@ inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs)
 namespace stream {
 
 /**
- * Use these for the third argument of @ref wrap
+ * Use these for the third argument of @ref cuda::stream::wrap()
  */
 enum : bool {
 	dont_take_ownership = false,
 	take_ownership = true,
 };
 
+/**
+ * @brief Wrap an existing stream in a @ref stream_t instance.
+ *
+ * @param device_id ID of the device for which the stream is defined
+ * @param stream_id ID of the pre-existing stream
+ * @param take_ownership When set to {@code false}, the stream
+ * will not be destroyed along with the wrapper; use this setting
+ * when temporarily working with a stream existing irrespective of
+ * the current context and outlasting it. When set to {@code true},
+ * the proxy class will act as it does usually, destroying the stream
+ * when being destructed itself.
+ * @return an instance of the stream proxy class, with the specified
+ * device-stream combination.
+ */
 inline stream_t<> wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
