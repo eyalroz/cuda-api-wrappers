@@ -32,10 +32,6 @@ enum : unsigned short { lane_index_mask    = warp_size - 1 };
 // reflects that fact
 static const endianness_t compilation_target_endianness = endianness_t::little;
 
-} // namespace cuda
-
-namespace cuda {
-
 namespace stream {
 
 // Would have called it "default" but that's a reserved word;
@@ -52,7 +48,5 @@ enum : device::id_t {  default_device_id = 0 };
 } // namespace device
 
 } // namespace cuda
-
-
 
 #endif /* CUDA_API_WRAPPERS_CONSTANTS_H_ */
