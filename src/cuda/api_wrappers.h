@@ -1,5 +1,8 @@
 /**
- * @file Include all headers with CUDA (Runtime) API wrappers.
+ * @file api_wrappers.h
+ *
+ * @brief A single file which includes, in turn, all of the CUDA
+ * Runtime API wrappers and related headers.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_H_

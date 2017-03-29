@@ -1,3 +1,14 @@
+/**
+ * @file device_functions.hpp
+ *
+ * @brief Functions for querying information and making settings
+ * regarding device-side functions - kernels or otherwise.
+ *
+ * @note This file does _not_ have device-side functions itself,
+ * nor is it about the device-side part of the runtime API (i.e.
+ * API functions which may be called from the device).
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_

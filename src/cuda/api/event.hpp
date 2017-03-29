@@ -1,3 +1,10 @@
+/**
+ * @file event.hpp
+ *
+ * @brief A CUDA event wrapper class, and some free-standing
+ * functions for handling events using their IDs.
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_EVENT_HPP_
 #define CUDA_API_WRAPPERS_EVENT_HPP_

@@ -1,3 +1,13 @@
+/**
+ * @file types.h
+ *
+ * @brief Fundamental, plain-old-data, CUDA-related type definitions.
+
+ * This is a common file for all definitions fundamental,
+ * plain-old-data, CUDA-related types - those with no methods, or with
+ * only constexpr methods (which, specifically, do not involve making
+ * any Runtime API calls).
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_TYPES_H_
 #define CUDA_API_WRAPPERS_TYPES_H_

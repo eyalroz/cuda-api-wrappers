@@ -1,3 +1,9 @@
+/**
+ * @file stream.hpp
+ *
+ * @brief A proxy class for CUDA streams, providing access to
+ * all Runtime API calls involving their use and management.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_STREAM_HPP_
 #define CUDA_API_WRAPPERS_STREAM_HPP_

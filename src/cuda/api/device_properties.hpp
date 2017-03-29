@@ -1,3 +1,10 @@
+/**
+ * @file device_properties.hpp
+ *
+ * @brief Classes for holding CUDA device properties and
+ * CUDA compute capability values.
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_

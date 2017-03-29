@@ -1,3 +1,24 @@
+/**
+ * @file ipc.hpp
+ *
+ * @brief wrappers for CUDA's facilities for sharing on-device
+ * memory addresses and CUDA events between host processes
+ *
+ * CUDA addresses into device memory are not valid across different
+ * host processes - somewhat, but not entirely, similarly to the
+ * case of host memory addresses. Still, there is no reason why
+ * different processes should not be able to interact with the same
+ * on-device memory region. The same is also true for other entities,
+ * such as streams and events.
+ *
+ * <p>CUDA provides several functions to enable different processes
+ * to share at least memory addresses and events, which are wrapped
+ * here. In addition to the free-standing functions, the class
+ * @ref imported_t is defined, usable by receiving processes as
+ * an 'adapter' to incoming handles which may be passed as-is to
+ * code requiring a propoer pointer.
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_IPC_HPP_
 #define CUDA_API_WRAPPERS_IPC_HPP_

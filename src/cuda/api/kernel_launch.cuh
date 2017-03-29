@@ -1,18 +1,38 @@
 /**
- * Variadic wrapper function for the CUDA kernel launch mechanism.
- * The basic intention is to avoid the annoying triple-chevron syntax, e.g.
+ * @file kernel_launch.cuh
+ *
+ * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
+ *
+ * This file has two stand-alone functions used for launching kernels - by
+ * application code directly and by other API wrappers (e.g. @ref device_t
+ * and @ref stream_t ).
+ *
+ * <p>The wrapper functions have two goals:
+ *
+ * <ul>
+ * <li>Avoiding the annoying triple-chevron syntax, e.g.
  *
  *   my_kernel<<<launch, config, stuff>>>(real, args)
  *
- * and stick to proper C++. So essentially these wrapper will be ugly instead
- * of your code being ugly. Additionally, we're avoiding some of the parameter
- * soup using the launch_configuration_t structure. Still, you should probably
- * call the launch() method of {@ref stream_t}'s.
+ * and stick to proper C++; in other words, the wrappers are "ugly" instead
+ * of your code having to be.
+ * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
+ * rather easy to mix up shared memory sizes with stream IDs; grid and
+ * block dimensions with each other; and even grid/block dimensions with
+ * the scalar parameters - since a @code{dim3} is constructible from
+ * integral values. Instead, we enforce a launch configuration structure:
+ * @ref launch_configuration_t .
+ *
+ * @note You'd probably better avoid launching kernels using these
+ * function directly, and go through the @ref stream_t or @ref device_t proxy
+ * classes' launch mechanism (e.g. @code{my_stream.enqueue.kernel_launch(...)}).
  *
  * @note Even though when you use this wrapper, your code will not have the silly
  * chevron, you can't use it from regular .cpp files compiled with your host
  * compiler. Hence the .cuh extension. You _can_, however, safely include this
- * file from your .cpp for other definitions
+ * file from your .cpp for other definitions. Theoretically, we could have
+ * used the @code{cudaLaunchKernel} API function, by creating an array on the stack
+ * which points to all of the other arguments, but that's kind of redundant.
  *
  */
 
@@ -30,12 +50,12 @@ constexpr grid_dimensions_t single_block() { return 1; }
 constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 
 /**
-* CUDA's kernel launching mechanism cannot be compiled in proper C++ - both for syntactic and semantic reasons.
-* Thus, every kernel launch must at some point reach code compiled with CUDA's nvcc. Naively, every single
-* different kernel (perhaps up to template specialization) would require writing its own wrapper C++ function,
-* launching it. This function, however, constitutes a single minimal wrapper around the CUDA kernel launch,
-* which may be called from proper C++ code (across translation unit boundaries - the caller is compiled
-* with a C++ compiler, the callee compiled by nvcc).
+* CUDA's 'chevron' kernel launch syntax cannot be compiled in proper C++. Thus, every kernel launch must
+* at some point reach code compiled with CUDA's nvcc. Naively, every single different kernel (perhaps up
+* to template specialization) would require writing its own wrapper C++ function, launching it. This
+* function, however, constitutes a single minimal wrapper around the CUDA kernel launch, which may be
+* called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
+* compiler, the callee compiled by nvcc).
 *
 * <p>This function is similar to C++17's std::apply, or to a a beta-reduction in Lambda calculus: It applies
 * a function to its arguments; the difference is in the nature of the function (a CUDA kernel) and in that
@@ -81,7 +101,7 @@ inline void enqueue_launch(
 
 /**
  * Variant of enqueue_launch, above, for use with the default stream on the current device;
- * it's not also called 'enqueue' since the default stream is synchronous
+ * it's not also called 'enqueue' since the default stream is synchronous.
  */
 template<typename KernelFunction, typename... KernelParameters>
 inline void launch(

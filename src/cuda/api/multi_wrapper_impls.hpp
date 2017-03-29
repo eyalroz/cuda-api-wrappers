@@ -1,6 +1,9 @@
 /**
- * @file implementations of methods requiring the definitions of multiple
- * API wrapper classes
+ * @file multi_wrapper_impls.hpp
+ *
+ * @brief Implementations of methods or functions requiring the definitions of
+ * multiple CUDA entity proxy classes. In some cases these are declared in the
+ * individual proxy class files, with the other classes forward-declared.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_HPP_

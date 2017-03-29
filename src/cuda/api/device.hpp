@@ -1,3 +1,10 @@
+/**
+ * @file device.hpp
+ *
+ * @brief A proxy class for CUDA devices, providing access to
+ * all Runtime API calls involving their use and management; and
+ * some device-related standalone functions.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_HPP_

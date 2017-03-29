@@ -1,3 +1,11 @@
+/**
+ * @file constants.h
+ *
+ * @brief Fundamental CUDA-related constants and enumerations,
+ * not dependent on any more complex abstractions, placed
+ * in relevant namespaces.
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_CONSTANTS_H_
 #define CUDA_API_WRAPPERS_CONSTANTS_H_

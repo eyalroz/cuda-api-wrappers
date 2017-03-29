@@ -1,6 +1,13 @@
 /**
- * TODO: I don't like having this as a separate file, it's not large or important
- * enough; but - I haven't found anywhere else to put it yet
+ * @file device_count.hpp
+ *
+ * @brief A wrapper for the function counting the number of
+ * available devices.
+ *
+ * @note This probably should not merit its own file, but I haven't
+ * found another file to put it in - unless we also want to pull
+ * in @ref{device.hpp}, which would be overkill I think.
+ *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_

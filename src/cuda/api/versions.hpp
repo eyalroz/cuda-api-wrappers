@@ -1,3 +1,11 @@
+/**
+ * @file versions.hpp
+ *
+ * @brief Wrappers for Runtime API functions involving versions -
+ * of the CUDA runtime and of the CUDA driver. Also defines a @ref version_t
+ * class for working with such versions (as they are not really single
+ * numbers) - which is what the wrappers return.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_VERSIONS_HPP_
 #define CUDA_API_WRAPPERS_VERSIONS_HPP_

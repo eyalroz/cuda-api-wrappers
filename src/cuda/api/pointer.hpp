@@ -1,3 +1,17 @@
+/**
+ * @file pointer.hpp
+ *
+ * @brief A wrapper class for host and/or device pointers, allowing
+ * easy access to CUDA's pointer attributes.
+ *
+ * @note at the moment, this class is not used by other sections of the API
+ * wrappers; specifically, freestanding functions and methods returning
+ * pointers return raw @code{T*}'s rather than @code{pointer_t<T>}'s.
+ * This may change in the future.
+ *
+ * @todo Consider allowing for storing attributes within the class,
+ * lazily (e.g. with an std::optional).
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_POINTER_HPP_
 #define CUDA_API_WRAPPERS_POINTER_HPP_

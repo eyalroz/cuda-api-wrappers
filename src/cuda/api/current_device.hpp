@@ -1,3 +1,22 @@
+/**
+ * @file current_device.hpp
+ *
+ * @brief Wrappers for getting and setting CUDA's choice of
+ * which device is 'current'
+ *
+ * CUDA has one device set as 'current'; and much of the Runtime API
+ * implicitly refers to that device only. This file contains wrappers
+ * for getting and setting it - as standalone functions - and
+ * a RAII class which can be used for setting it for the duration of
+ * a scope, popping back the old setting as the scope is exited.
+ *
+ * @note that code for getting the current device as a CUDA device
+ * proxy class is found in @ref device.hpp
+ *
+ * @note the scoped device setter is used extensively throughout
+ * this CUDA API wrapper library.
+ *
+ */
 #ifndef CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 

@@ -1,3 +1,9 @@
+/**
+ * @file memory.hpp
+ *
+ * @brief freestanding wrapper functions for working with CUDA's various
+ * kinds of memory spaces, arranged into a relevant namespace hierarchy.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
 #define CUDA_API_WRAPPERS_MEMORY_HPP_

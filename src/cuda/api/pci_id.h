@@ -1,3 +1,9 @@
+/**
+ * @file pci_id.h
+ *
+ * @brief Definition of a wrapper class for CUDA PCI device ID
+ * information.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_PCI_ID_H_
 #define CUDA_API_WRAPPERS_PCI_ID_H_

@@ -1,3 +1,10 @@
+/**
+ * @file error.hpp
+ *
+ * @brief facilities for exception-based handling of Runtime API
+ * errors, including a basic exception class wrapping
+ * @ref{std::runtime error}.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
 #define CUDA_API_WRAPPERS_ERROR_HPP_
@@ -148,9 +155,6 @@ inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeo
 {
 	return as_hex((size_t) ptr, hex_string_length);
 }
-
-
-
 
 } // namespace detail
 

@@ -1,3 +1,11 @@
+/**
+ * @file profiling.h
+ *
+ * @brief wrappers for the CUDA profiler API functions,
+ * and convenience RAII classes for profiler-output-marked
+ * time range and points.
+ *
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_PROFILING_H_
 #define CUDA_API_WRAPPERS_PROFILING_H_

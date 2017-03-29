@@ -1,5 +1,10 @@
 /**
- * @file This file is split off from {@ref pci_id.h} since
+ * @file pci_id.hpp
+ *
+ * @brief iostream-related freestanding operator functions for @ref{pci_id_t}'s
+ * and iostream-related methods of the @ref pci_id_t class.
+ *
+ * @note This file is split off from {@ref pci_id.h} since
  * it requires inclusions of standard library headers which most of the
  * API wrapper code doesn't.
  */
@@ -63,7 +68,6 @@ inline device::id_t pci_id_t::resolve_device_id() const
 	throw_if_error(result,
 		"Failed obtaining a CUDA device ID corresponding to PCI id " + as_string);
 	return cuda_device_id;
-
 }
 
 } //namespace device
