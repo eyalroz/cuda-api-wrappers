@@ -16,6 +16,10 @@ This library of wrappers around the Runtime API is intended to allow us to embra
     - No costly inheritance structure, vtables, virtual methods and so on - vanishes almost entirely on compilation
     - Doesn't "hide" any of CUDA's complexity or functionality; it only simplifies _use_ of the Runtime API.
 
+## Detailed documentation
+
+Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/), but is not yet complete (see [issue #3](https://github.com/eyalroz/cuda-api-wrappers/issues/3)).
+
 ## Requirements
 
 - CUDA v8.0 is recommended and v7.5 is supported (but not tested as frequently). CUDA 6.x should probably be ok as well.
