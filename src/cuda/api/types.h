@@ -51,6 +51,13 @@ enum : priority_t {
 
 } // namespace stream
 
+/**
+ * A richer wrapper for CUDA's dim3 class, used to specify
+ * dimensions for blocks and grid (up to 3 dimensions).
+ *
+ * @note Unfortunately, dim3 does not have constexpr methods -
+ * preventing us from having constexpr methods here.
+ */
 struct dimensions_t // this almost-inherits dim3
 {
     unsigned int x, y, z;
