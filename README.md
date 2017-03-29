@@ -92,6 +92,6 @@ Gradually, an example program is being added for each one of the CUDA Runtime AP
 
 ## Bugs, suggestions, feedback
 
-Do not hesitate to file issues for bugs/feature requests/design suggestions. If you're interested in collaboration or for general feedback, please contact me:
+I would like some help with building up documentation and perhaps a Wiki here; if you can spare the time - do [write me](mailto:E.Rozneberg@cwi.nl). You can also do so if you're interested in collaborating on some related project or for general comments/feedback/suggestions.
 
-Eyal Rozenberg [\<E.Rozneberg@cwi.nl\>](mailto:Eyal Rozenberg <E.Rozneberg@cwi.nl>)
+If you notice a specific issue which needs addressing, especially any sort of bug or compilation error, please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub.
