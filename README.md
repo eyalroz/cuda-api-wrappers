@@ -69,7 +69,7 @@ cudaError_t cudaEventCreateWithFlags(
     cudaEvent_t* event, 
     unsigned int flags) 
 ```
-which requires you remember what you need to specify as flags and how, you construct a `cuda::event_t` proxy objecty, using the constructor 
+which requires you remember what you need to specify as flags and how, you construct a `cuda::event_t` proxy object, using the constructor 
 ```
 cuda::event_t::event_t(
     bool uses_blocking_sync,
