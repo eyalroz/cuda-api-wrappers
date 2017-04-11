@@ -45,11 +45,22 @@
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
 
+#include <type_traits>
+#include <utility>
+
 namespace cuda {
 
 enum : shared_memory_size_t { no_shared_memory = 0 };
 constexpr grid_dimensions_t single_block() { return 1; }
 constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
+
+namespace detail {
+
+template<typename Fun>
+struct is_function_ptr: std::integral_constant<bool,
+    std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
+
+}
 
 /**
 * CUDA's 'chevron' kernel launch syntax cannot be compiled in proper C++. Thus, every kernel launch must
@@ -88,6 +99,11 @@ inline void enqueue_launch(
 	;
 #else
 {
+	static_assert(std::is_function<KernelFunction>::value or
+	    (detail::is_function_ptr<KernelFunction>::value),
+	    "Only a bona fide function can be a CUDA kernel and be launched; "
+	    "you were attempting to enqueue a launch of something other than a function");
+
 	kernel_function <<<
 		launch_configuration.grid_dimensions,
 		launch_configuration.block_dimensions,
