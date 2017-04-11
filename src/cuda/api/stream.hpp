@@ -249,7 +249,7 @@ public: // mutators
 			// with devices other than the current one, see:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
 			DeviceSetter set_device_for_this_scope(device_id_);
-			return cuda::enqueue_launch(kernel_function, launch_configuration, stream_id_, parameters...);
+			return cuda::enqueue_launch(kernel_function, stream_id_, launch_configuration, parameters...);
 		}
 
 		/**

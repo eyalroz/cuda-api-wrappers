@@ -72,8 +72,6 @@ constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 * @param[in] launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
 * shared memory per block in the grid; this defines how the grid will look and what the shared memory
 * allowance will be (see {@ref cuda::launch_configuration_t})
-* @param[in] launch_configuration The grid and shared memory configuration parameters for this launch
-* in the apprioriate structure
 * @param[in] stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
 * the scheduling of the launch and the execution)
 * @param[in] parameters whatever parameters @p kernel_function takes
@@ -81,8 +79,8 @@ constexpr grid_block_dimensions_t single_thread_per_block() { return 1; };
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	const KernelFunction&       kernel_function,
-	launch_configuration_t      launch_configuration,
 	stream::id_t                stream_id,
+	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
 #ifndef __CUDACC__
 // If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
@@ -109,7 +107,7 @@ inline void launch(
 	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
 {
-	enqueue_launch(kernel_function, launch_configuration, stream::default_stream_id, parameters...);
+	enqueue_launch(kernel_function, stream::default_stream_id, launch_configuration, parameters...);
 }
 
 } // namespace cuda
