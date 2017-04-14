@@ -102,8 +102,10 @@ endif()
 # Main target(s)
 # -----------------------
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
+endif()
 
 cuda_add_library(
 	cuda-api-wrappers
