@@ -96,12 +96,10 @@ int main(int argc, char **argv)
 	// Stream creation and destruction, stream flags
 	//------------------------------------------------
 	{
-		auto stream = cuda::device::current::get().create_stream();
+		auto stream = cuda::device::current::get().create_stream(cuda::stream::sync);
 		std::cout
-			<< "A new CUDA stream with no options specified defaults to having priority "
-			<< stream.priority() << " and synchronizes by "
-			<< (stream.synchronizes_with_default_stream() ? "blocking" : "busy-waiting")
-			<< ".\n";
+			<< "A new CUDA stream with no priority specified defaults to having priority "
+			<< stream.priority() << ".\n";
 		stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I can see my house!"));
 		stream.synchronize();
 	}
@@ -149,11 +147,11 @@ int main(int argc, char **argv)
 	stream_2.wait_on(event_1.id());
 	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());
 	stream_2.enqueue.kernel_launch(print_message<N,5>, { 1, 1 }, message<N>("I'm on stream 2"));
-	bool idleness_1 = stream_2.has_work();
+	bool idleness_1 = stream_2.has_work_remaining();
 	device.synchronize();
 	print_first_char(buffer.get());
 	// cuda::memory::managed::free(buffer);
-	bool idleness_2 = stream_2.has_work();
+	bool idleness_2 = stream_2.has_work_remaining();
 	std::cout << std::boolalpha
 		<< "Did stream 2 have work before device-level synchronization? " << (idleness_1 ? "yes" : "no") << "\n"
 		<< "Did stream 2 have work after  device-level synchronization? " << (idleness_2 ? "yes" : "no") << "\n";

@@ -39,10 +39,11 @@ enum : bool {
 namespace detail {
 
 inline id_t create_on_current_device(
-	priority_t    priority = stream::default_priority,
-	bool          synchronizes_with_default_stream = true)
+	bool          synchronizes_with_default_stream,
+	priority_t    priority = stream::default_priority
+)
 {
-	unsigned int flags = synchronizes_with_default_stream ?
+	unsigned int flags = (synchronizes_with_default_stream == sync) ?
 		cudaStreamDefault : cudaStreamNonBlocking;
 	id_t new_stream_id;
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
@@ -85,6 +86,8 @@ inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 }
 
 /**
+ * @brief Obtains the device ID with which a stream with a given ID is associated
+ *
  * Strangely enough, CUDA won't tell you which device a stream is associated with,
  * while it can - supposedly - tell this itself when querying stream status. So,
  * let's use that. This is ugly and possibly buggy, but it _might_ just work.
@@ -178,7 +181,7 @@ public: // other non-mutators
 	 *
 	 * @return true if there is still work pending, false otherwise
 	 */
-	bool has_work() const
+	bool has_work_remaining() const
 	{
 		DeviceSetter set_device_for_this_scope(device_id_);
 		auto status = cudaStreamQuery(id_);
@@ -200,7 +203,7 @@ public: // other non-mutators
 	 * @return true if there is no work pending, false if all
 	 * previously-scheduled work has been completed
 	 */
-	bool is_clear() const { return !has_work(); }
+	bool is_clear() const { return !has_work_remaining(); }
 
 	/**
 	 * An alias for @ref is_clear() - to conform to how the CUDA runtime
@@ -412,30 +415,12 @@ public: // constructors and destructor
 
 public: // operators
 
-/*
 	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
 	// too risky
-
-	stream_t& operator=(const stream_t<!AssumesDeviceIsCurrent>& other) = delete;
-	stream_t& operator=(const stream_t<AssumesDeviceIsCurrent>& other)
-	{
-		destruct();
-		device_id_ = other.device_id_;
-		id_ = other.id_;
-		owning = false;
-		return *this;
-	}
-	stream_t& operator=(stream_t<!AssumesDeviceIsCurrent>&& other) = delete;
-	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>&& other)
-	{
-		destruct();
-		device_id_ = other.device_id_;
-		id_ = other.id_;
-		owning = other.owning;
-		other.owning = false;
-		return *this;
-	}
-*/
+	stream_t& operator=(const stream_t<AssumesDeviceIsCurrent>& other) = delete;
+	stream_t& operator=(const stream_t<not AssumesDeviceIsCurrent>& other) = delete;
+	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>& other) = delete;
+	stream_t& operator=(stream_t<not AssumesDeviceIsCurrent>& other) = delete;
 
 protected: // mutators
 
@@ -468,12 +453,12 @@ public: // data members - which only exist in lieu of namespaces
 
 inline bool operator==(const stream_t<>& lhs, const stream_t<>& rhs)
 {
-	return lhs.device_id() == rhs.device_id() && lhs.id() == rhs.id();
+	return lhs.device_id() == rhs.device_id() and lhs.id() == rhs.id();
 }
 
 inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs)
 {
-	return !(lhs == rhs);
+	return not (lhs == rhs);
 }
 
 namespace stream {
@@ -483,7 +468,7 @@ namespace stream {
  */
 enum : bool {
 	dont_take_ownership = false,
-	take_ownership = true,
+	take_ownership      = true,
 };
 
 /**
@@ -510,20 +495,13 @@ inline stream_t<> wrap(
 
 inline stream_t<> make(
 	device::id_t  device_id,
-	priority_t    priority = stream::default_priority,
-	bool          synchronizes_with_default_stream = true)
+	bool          synchronizes_with_default_stream,
+	priority_t    priority = stream::default_priority)
 {
 	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	auto new_stream_id = cuda::stream::detail::create_on_current_device(
 		priority, synchronizes_with_default_stream);
 	return wrap(device_id, new_stream_id, take_ownership);
-}
-
-inline stream_t<> make(
-	device::id_t  device_id,
-	bool          synchronizes_with_default_stream)
-{
-	return make(device_id, default_priority, synchronizes_with_default_stream);
 }
 
 } // namespace stream

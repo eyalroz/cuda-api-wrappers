@@ -39,19 +39,12 @@ stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const
 template <bool AssumedCurrent>
 stream_t<detail::do_not_assume_device_is_current>
 device_t<AssumedCurrent>::create_stream(
-	stream::priority_t  priority,
-	bool                synchronizes_with_default_stream)
+	bool                will_synchronize_with_default_stream,
+	stream::priority_t  priority)
 {
 	scoped_setter set_device_for_this_scope(id_);
 	return stream_t<>(id(), stream::detail::create_on_current_device(
-		priority, synchronizes_with_default_stream));
-}
-
-template <bool AssumedCurrent>
-stream_t<detail::do_not_assume_device_is_current>
-device_t<AssumedCurrent>::create_stream(bool synchronizes_with_default_stream)
-{
-	return create_stream(stream::default_priority, synchronizes_with_default_stream);
+		will_synchronize_with_default_stream, priority));
 }
 
 // event_t methods
