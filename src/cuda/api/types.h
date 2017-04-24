@@ -167,7 +167,7 @@ using flags_t            = unsigned;
 
 namespace detail {
 enum : bool { assume_device_is_current = true, do_not_assume_device_is_current = false };
-}
+} // namespace detail
 
 enum host_thread_synch_scheduling_policy_t : unsigned int {
 	heuristic = cudaDeviceScheduleAuto,
@@ -185,6 +185,8 @@ enum synchronicity_t : bool {
 };
 
 enum class endianness_t : bool { big, big_endian = big, little, little_endian = little };
+
+using native_word_t = unsigned;
 
 } // namespace cuda
 
