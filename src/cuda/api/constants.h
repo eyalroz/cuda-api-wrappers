@@ -19,14 +19,10 @@ namespace cuda {
 // it is compiled into an immediate constant in the machine instruction. Anyway,
 // we're using a constant of our own here, for ease of use. If nVIDIA comes
 // out with 64-lanes-per-warp GPUs, we'll need to refactor this
-//
-// TODO: Perhaps make these unsigned int's? Or int's?
 
-enum : unsigned short { warp_size          = 32 };
-enum : unsigned short { half_warp_size     = warp_size / 2 };
-enum : unsigned short { squared_warp_size  = warp_size * warp_size };
-enum : unsigned char  { log_warp_size      = 5 };
-enum : unsigned short { lane_index_mask    = warp_size - 1 };
+enum : native_word_t { warp_size          = 32 };
+enum : native_word_t { half_warp_size     = warp_size / 2 };
+enum : native_word_t { log_warp_size      = 5 };
 
 // For the time being, all CUDA-enabled GPUs are little-endian, and this constant
 // reflects that fact
