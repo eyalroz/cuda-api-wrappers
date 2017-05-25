@@ -303,9 +303,9 @@ public: // mutators
 			// Not calling event::detail::enqueue to avoid dependency on event.hpp
 			auto status = cudaEventRecord(event_id, stream_id_);
 			throw_if_error(status,
-				"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) + " (device "
-				+ std::to_string(device_id_) + ")");
+				"Failed scheduling scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
 		/**
@@ -331,7 +331,8 @@ public: // mutators
 			// user_data parameter to callback_t
 			auto status = cudaStreamAddCallback(stream_id_, &callback_adapter, &callback, fixed_flags);
 			throw_if_error(status,
-				std::string("Failed adding a callback to stream ")
+				std::string("Failed scheduling a callback function to be launched")
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
@@ -362,9 +363,35 @@ public: // mutators
 			auto status =  cudaStreamAttachMemAsync(
 				stream_id_, managed_region_start, length, cudaMemAttachSingle);
 			throw_if_error(status,
-				std::string("Failed attaching a managed memory region to a stream")
+				std::string("Failed scheduling an attachment of a managed memory region")
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
+
+		/**
+		 * Will pause all further activity on the stream until the specified event has
+		 * occurred  (i.e. has fired, i.e. has had all preceding scheduled work
+		 * on the stream on which it was recorded completed). 
+		 *
+		 * @note this call will not delay any already-enqueued work on the stream,
+		 * only work enqueued _after_ the call.
+		 *
+		 * @param event_id ID of the event for whose occurrence to wait; the event
+		 * would typically be recorded on another stream.
+		 *
+		 */
+		void wait(event::id_t event_id)
+		{
+			// Required by the CUDA runtime API; the flags value is
+			// currently unused
+			constexpr const unsigned int  flags = 0;
+			auto status = cudaStreamWaitEvent(stream_id_, event_id, flags);
+			throw_if_error(status,
+				std::string("Failed scheduling a wait on event ") + cuda::detail::ptr_as_hex(event_id)
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on CUDA device " + std::to_string(device_id_));
+		}
+
 	}; // class enqueue_t
 
 	/**
@@ -378,23 +405,6 @@ public: // mutators
 		auto status = cudaStreamSynchronize(id_);
 		throw_if_error(status,
 			std::string("Failed synchronizing a stream")
-			+ " on CUDA device " + std::to_string(device_id_));
-	}
-
-	/**
-	 * Block or busy-wait until a specified event has occurred
-	 * (i.e. has fired, i.e. has had all preceding scheduled work
-	 * on the stream on which it was recorded completed)
-	 *
-	 * @param event_id ID of the event for whose occurrence to wait
-	 */
-	void wait_on(event::id_t event_id)
-	{
-		// Required by the CUDA runtime API
-		constexpr const unsigned int  flags = 0;
-		auto status = cudaStreamWaitEvent(id_, event_id, flags);
-		throw_if_error(status,
-			std::string("Failed waiting for an event")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
 
