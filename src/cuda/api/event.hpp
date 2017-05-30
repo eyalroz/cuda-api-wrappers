@@ -168,13 +168,6 @@ public: // other mutator methods
 			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
 	}
 
-protected: // mutators
-
-	void destruct() {
-		if (owning) cudaEventDestroy(id_);
-		owning = false;
-	}
-
 protected: // constructor
 
 	event_t(device::id_t device_id, event::id_t event_id, bool take_ownership)
@@ -194,11 +187,14 @@ public: // constructors and destructor
 	event_t(event_t&& other) :
 		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
 	{
-		other.destruct();
 		other.owning = false;
 	};
 
-	~event_t() { destruct(); }
+	~event_t() 
+	{
+		if (owning) { cudaEventDestroy(id_); }
+		owning = false;
+	}
 
 protected: // data members
 	const device::id_t  device_id_;

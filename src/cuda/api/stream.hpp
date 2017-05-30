@@ -421,7 +421,14 @@ public: // constructors and destructor
 	stream_t(device::id_t device_id, stream::id_t stream_id)
 	: stream_t(device_id, stream_id, false) { }
 
-	~stream_t() { destruct(); }
+	~stream_t() 
+	{
+		if (owning) {
+			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);
+			cudaStreamDestroy(id_);
+		}
+		owning = false;
+	}
 
 public: // operators
 
@@ -431,16 +438,6 @@ public: // operators
 	stream_t& operator=(const stream_t<not AssumesDeviceIsCurrent>& other) = delete;
 	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>& other) = delete;
 	stream_t& operator=(stream_t<not AssumesDeviceIsCurrent>& other) = delete;
-
-protected: // mutators
-
-	void destruct() {
-		if (owning) {
-			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);
-			cudaStreamDestroy(id_);
-		}
-		owning = false;
-	}
 
 protected: // constructor
 
