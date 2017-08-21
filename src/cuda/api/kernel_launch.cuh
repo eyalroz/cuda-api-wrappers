@@ -44,6 +44,7 @@
 
 #include "cuda/api/types.h"
 #include "cuda/api/constants.h"
+#include "cuda/api/device_function.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -113,6 +114,29 @@ inline void enqueue_launch(
 }
 #endif
 
+template<typename... KernelParameters>
+inline void enqueue_launch(
+	device_function_t           wrapped_device_function,
+	stream::id_t                stream_id,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+#ifndef __CUDACC__
+// If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
+// compilation error, or we just do nothing. For now it's option 2.
+	;
+#else
+{
+	using device_function_type = void (*)(KernelParameters...);
+	auto unwrapped = reinterpret_cast<device_function_type>(wrapped_device_function.ptr());
+	unwrapped <<<
+		launch_configuration.grid_dimensions,
+		launch_configuration.block_dimensions,
+		launch_configuration.dynamic_shared_memory_size,
+		stream_id
+		>>>(parameters...);
+}
+#endif
+
 /**
  * Variant of enqueue_launch, above, for use with the default stream on the current device;
  * it's not also called 'enqueue' since the default stream is synchronous.
@@ -124,6 +148,19 @@ inline void launch(
 	KernelParameters...         parameters)
 {
 	enqueue_launch(kernel_function, stream::default_stream_id, launch_configuration, parameters...);
+}
+
+/**
+ * Variant of enqueue_launch, above, for use with the default stream on the current device;
+ * it's not also called 'enqueue' since the default stream is synchronous.
+ */
+template<typename... KernelParameters>
+inline void launch(
+	device_function_t           device_function,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+{
+	enqueue_launch(device_function, stream::default_stream_id, launch_configuration, parameters...);
 }
 
 } // namespace cuda

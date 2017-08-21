@@ -104,7 +104,16 @@ int main(int argc, char **argv)
 	cuda::launch(kernel, launch_config, bar);
 	cuda::device::current::get().synchronize();
 
-	// but there's more than one way to launch! we can also do
+	// Let's do the same, but when the kernel is wrapped in a device_function_t
+	std::cout
+		<< "Launching kernel " << kernel_name
+		<< " wrapped in a device_function_t strcture,"
+		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
+
+	cuda::launch(device_function, launch_config, bar);
+	cuda::device::current::get().synchronize();
+
+	// But there's more than one way to launch! we can also do
 	// it via the device proxy, using the default stream:
 
 	std::cout
