@@ -228,9 +228,9 @@ public: // types
 		{
 			scoped_setter set_device_for_this_scope(device_id);
 			size_t total_mem_in_bytes;
-			auto status = cudaMemGetInfo(&total_mem_in_bytes, nullptr);
+			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
 			throw_if_error(status,
-				std::string("Failed determining amount of free memory for CUDA device ") +
+				std::string("Failed determining amount of total memory for CUDA device ") +
 				std::to_string(device_id));
 			return total_mem_in_bytes;
 		}

@@ -10,6 +10,7 @@
 
 #include "cuda/api/error.hpp"
 #include "cuda/api/constants.h"
+#include "cuda/api/current_device.hpp"
 
 #include "cuda_runtime.h" // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
@@ -84,6 +85,19 @@ inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+}
+
+/**
+ * Allocate device-side memory on a CUDA device
+ *
+ * @param size_in_bytes
+ * @return
+ */
+template <typename T = void>
+__host__ T* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+{
+	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	return memory::device::detail::malloc<T>(size_in_bytes);
 }
 
 namespace detail {
