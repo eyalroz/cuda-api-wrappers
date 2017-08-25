@@ -1,7 +1,7 @@
-#include "cuda/api/profiling.h"
-#include "cuda/api/error.hpp"
+#include <cuda/api/profiling.h>
+#include <cuda/api/error.hpp>
 
-#include "cuda_profiler_api.h"
+#include <cuda_profiler_api.h>
 #include <nvToolsExt.h>
 #include <nvToolsExtCudaRt.h>
 

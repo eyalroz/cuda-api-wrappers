@@ -9,9 +9,9 @@
 #ifndef MULTI_WRAPPER_IMPLS_HPP_
 #define MULTI_WRAPPER_IMPLS_HPP_
 
-#include "cuda/api/stream.hpp"
-#include "cuda/api/device.hpp"
-#include "cuda/api/event.hpp"
+#include <cuda/api/stream.hpp>
+#include <cuda/api/device.hpp>
+#include <cuda/api/event.hpp>
 
 namespace cuda {
 

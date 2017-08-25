@@ -13,8 +13,8 @@
 #ifndef CUDA_API_WRAPPERS_PCI_ID_HPP_
 #define CUDA_API_WRAPPERS_PCI_ID_HPP_
 
-#include "cuda/api/pci_id.h"
-#include "cuda/api/error.hpp"
+#include <cuda/api/pci_id.h>
+#include <cuda/api/error.hpp>
 
 #include <string>
 #include <istream>

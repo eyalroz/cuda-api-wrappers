@@ -1,4 +1,4 @@
-#include "cuda/api/device_properties.hpp"
+#include <cuda/api/device_properties.hpp>
 
 #include <string>
 #include <unordered_map>

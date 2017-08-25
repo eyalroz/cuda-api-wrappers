@@ -9,7 +9,7 @@
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
 #define CUDA_API_WRAPPERS_ERROR_HPP_
 
-#include "cuda/api/types.h"
+#include <cuda/api/types.h>
 
 #ifdef HAVE_KERNEL_TESTER_UTILS
 // This wrapper exception will include a stack trace;
@@ -17,7 +17,7 @@
 // be piped into a stringstream; but we won't make use of that here
 // to ensure compatibility with the single-string ctor of an
 // std::runtime_error
-#include "util/exception.h"
+#include <util/exception.h>
 using cuda_inspecific_runtime_error = util::runtime_error;
 #else
 #include <stdexcept>
