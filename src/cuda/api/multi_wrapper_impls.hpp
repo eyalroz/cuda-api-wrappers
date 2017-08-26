@@ -30,14 +30,14 @@ inline void device_t<AssumedCurrent>::synchronize(stream_t<detail::do_not_assume
 }
 
 template <bool AssumedCurrent>
-stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const
+inline stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const
 {
 	// TODO: Perhaps support not-knowing our ID here as well, somehow?
 	return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
 }
 
 template <bool AssumedCurrent>
-stream_t<detail::do_not_assume_device_is_current>
+inline stream_t<detail::do_not_assume_device_is_current>
 device_t<AssumedCurrent>::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
@@ -49,13 +49,13 @@ device_t<AssumedCurrent>::create_stream(
 
 // event_t methods
 
-device_t<detail::do_not_assume_device_is_current>
+inline device_t<detail::do_not_assume_device_is_current>
 event_t::device() const { return cuda::device::get(device_id_); }
 
 // stream_t methods
 
 template <bool AssumesDeviceIsCurrent>
-device_t<detail::do_not_assume_device_is_current>
+inline device_t<detail::do_not_assume_device_is_current>
 stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
 
 } // namespace cuda

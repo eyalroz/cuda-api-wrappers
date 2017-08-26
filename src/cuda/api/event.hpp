@@ -63,14 +63,14 @@ enum : bool {
 
 namespace detail {
 
-void enqueue(stream::id_t stream_id, id_t event_id) {
+inline void enqueue(stream::id_t stream_id, id_t event_id) {
 	auto status = cudaEventRecord(event_id, stream_id);
 	throw_if_error(status,
 		"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
-constexpr unsigned make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
+constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
 {
 	return
 		  ( uses_blocking_sync  ? cudaEventBlockingSync : 0  )
@@ -78,7 +78,7 @@ constexpr unsigned make_flags(bool uses_blocking_sync, bool records_timing, bool
 		| ( interprocess        ? cudaEventInterprocess : 0  );
 }
 
-id_t create_on_current_device(bool uses_blocking_sync, bool records_timing, bool interprocess)
+inline id_t create_on_current_device(bool uses_blocking_sync, bool records_timing, bool interprocess)
 {
 	id_t new_event_id;
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
@@ -206,14 +206,15 @@ protected: // data members
 
 namespace event {
 
-float milliseconds_elapsed_between(id_t start, id_t end)
+inline float milliseconds_elapsed_between(id_t start, id_t end)
 {
 	float elapsed_milliseconds;
 	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start, end);
 	throw_if_error(status, "determining the time elapsed between events");
 	return elapsed_milliseconds;
 }
-float milliseconds_elapsed_between(const event_t& start, const event_t& end)
+
+inline float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 {
 	return milliseconds_elapsed_between(start.id(), end.id());
 }

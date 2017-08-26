@@ -88,7 +88,7 @@ inline version_t make(int major, int minor)
  * the maximum CUDA version it supports is returned. If no nVIDIA
  * GPU driver is installed, {@code cuda::error::invalid_value}} is returned.
  */
-version_t maximum_supported_by_driver() {
+inline version_t maximum_supported_by_driver() {
 	combined_version_t version;
 	auto status = cudaDriverGetVersion(&version);
 	throw_if_error(status, "Failed obtaining the maximum CUDA version supported by the nVIDIA GPU driver");
@@ -100,7 +100,7 @@ version_t maximum_supported_by_driver() {
  * as we are actually using the runtime to obtain the version, so it does
  * have _some_ version.
  */
-version_t runtime() {
+inline version_t runtime() {
 	combined_version_t version;
 	auto status = cudaRuntimeGetVersion(&version);
 	throw_if_error(status, "Failed obtaining the CUDA runtime version");

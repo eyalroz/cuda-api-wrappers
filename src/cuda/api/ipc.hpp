@@ -48,7 +48,7 @@ using handle_t = cudaIpcMemHandle_t;
  * @return a handle which another process can call @ref import()
  * on to obtain a device pointer it can use
  */
-handle_t export_(void* device_ptr) {
+inline handle_t export_(void* device_ptr) {
 	handle_t handle;
 	auto status = cudaIpcGetMemHandle(&handle, device_ptr);
 		throw_if_error(status,
@@ -74,7 +74,7 @@ inline T* import(const handle_t& handle)
 	return reinterpret_cast<T*>(device_ptr);
 }
 
-void unmap(void* ipc_mapped_ptr)
+inline void unmap(void* ipc_mapped_ptr)
 {
 	auto status = cudaIpcCloseMemHandle(ipc_mapped_ptr);
 	throw_if_error(status, "Failed unmapping IPC memory mapped to " + cuda::detail::ptr_as_hex(ipc_mapped_ptr));
@@ -128,7 +128,7 @@ namespace ipc {
 
 using handle_t = cudaIpcEventHandle_t;
 
-handle_t export_(id_t event_id)
+inline handle_t export_(id_t event_id)
 {
 	handle_t ipc_handle;
 	auto status = cudaIpcGetEventHandle(&ipc_handle, event_id);
