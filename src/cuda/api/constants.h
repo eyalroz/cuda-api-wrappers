@@ -14,32 +14,44 @@
 
 namespace cuda {
 
-// warpSize is not a compile-time constant, because theoretically different
-// devices could have different constants; but for a specific target architecture,
-// it is compiled into an immediate constant in the machine instruction. Anyway,
-// we're using a constant of our own here, for ease of use. If nVIDIA comes
-// out with 64-lanes-per-warp GPUs, we'll need to refactor this
-
+/**
+* CUDA's NVCC allows use the use of the warpSize identifier, without having
+* to define it. Un(?)fortunately, warpSize is not a compile-time constant; it
+* is replaced at some point with the appropriate immediate value which goes into,
+* the SASS instruction as a literal. This is apparently due to the theoretical
+* possibility of different warp sizes in the future. However, it is useful -
+* both for host-side and more importantly for device-side code - to have the
+* warp size available at compile time. This allows all sorts of useful
+* optimizations, as well as its use in constexpr code.
+*
+* If nVIDIA comes out with 64-lanes-per-warp GPUs - we'll refactor this.
+*/
 enum : native_word_t { warp_size          = 32 };
-enum : native_word_t { half_warp_size     = warp_size / 2 };
-enum : native_word_t { log_warp_size      = 5 };
-
-// For the time being, all CUDA-enabled GPUs are little-endian, and this constant
-// reflects that fact
-static const endianness_t compilation_target_endianness = endianness_t::little;
 
 namespace stream {
 
 // Would have called it "default" but that's a reserved word;
 // Would have liked to make this an enum, but pointers are
 // not appropriate for that
+/**
+ * The CUDA runtime provides a default stream on which work
+ * is scheduled when no stream is specified; for those API calls
+ * where you need to specify the relevant stream's ID, and want to
+ * specify the default, this is what you use.
+ */
 const stream::id_t default_stream_id = nullptr;
 
 } // namespace stream
 
 namespace device {
 
-enum : device::id_t {  default_device_id = 0 };
+enum : device::id_t {
+	/**
+	 * If the CUDA runtime has not been set to a specific device, this
+	 * is the ID of the device it defaults to.
+	 */
+	default_device_id = 0
+};
 
 } // namespace device
 

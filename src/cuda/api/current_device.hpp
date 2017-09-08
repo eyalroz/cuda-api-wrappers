@@ -30,6 +30,9 @@ namespace cuda {
 namespace device {
 namespace current {
 
+/**
+ * Obtains the numeric id of the device set as current for the CUDA Runtime API
+ */
 inline device::id_t get_id()
 {
 	device::id_t  device;
@@ -38,14 +41,35 @@ inline device::id_t get_id()
 	return device;
 }
 
+/**
+ * Set a device as the current one for the CUDA Runtime API (so that API calls
+ * not specifying a device apply to it.)
+ *
+ * @param[in] device Numeric ID of the device to make current
+ */
 inline void set(device::id_t  device)
 {
 	status_t result = cudaSetDevice(device);
 	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
 }
 
+/**
+ * Reset the CUDA Runtime API's current device to its default value - the default device
+ */
 inline void set_to_default() { return set(device::default_device_id); }
 
+
+/**
+ * A RAII-based mechanism for setting the CUDA Runtime API's current device for
+ * what remains of the current scope, and changing it back to its previous value
+ * when exiting the scope.
+ *
+ * @tparam AssumedCurrent the current device override is also used in code which
+ * can be instantiated when the current device has already been set, or when it
+ * has not been set; for this reason, the scoped current device override also
+ * has this feature (which when set to {@code true} makes it into a do-nothing
+ * object).
+ */
 template <bool AssumedCurrent = false> class scoped_override_t;
 
 template <>
@@ -76,7 +100,12 @@ public:
 };
 
 
-// In user code, this could be useful. Maybe.
+/**
+ * This macro will set the current device for the remainder of the scope in which it is
+ * invoked, and will change it back to the previous value when exiting the scope. Use
+ * it as an opaque command, which does not explicitly expose the variable defined under
+ * the hood to effect this behavior.
+ */
 #define CUDA_DEVICE_FOR_THIS_SCOPE(_device_id) \
 	::cuda::device::current::scoped_override_t<::cuda::detail::do_not_assume_device_is_current> scoped_device_override(_device_id)
 
