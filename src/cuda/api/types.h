@@ -236,9 +236,6 @@ using attribute_value_t  = int;
  */
 using pair_attribute_t   = cudaDeviceP2PAttr;
 
-// TODO: Try to drop this type, I don't think we really need to expose it
-using flags_t            = unsigned;
-
 } // namespace device
 
 namespace detail {

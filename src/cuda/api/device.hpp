@@ -95,7 +95,7 @@ protected: // types
 	using properties_t               = device::properties_t;
 	using attribute_t                = device::attribute_t;
 	using attribute_value_t          = device::attribute_value_t;
-	using flags_t                    = device::flags_t;
+	using flags_t                    = unsigned;
 	using resource_id_t              = cudaLimit;
 	using resource_limit_t           = size_t;
 	using shared_memory_bank_size_t  = cudaSharedMemConfig;
@@ -302,6 +302,18 @@ protected:
 			"Failed setting the flags for " + device_id_as_str());
 	}
 
+	void set_flags(
+		host_thread_synch_scheduling_policy_t synch_scheduling_policy,
+		bool keep_local_mem_allocation_after_launch,
+		bool allow_pinned_mapped_memory_allocation)
+	{
+		set_flags((flags_t)
+			  synch_scheduling_policy // this enum value is also a valid flags value
+			| (keep_local_mem_allocation_after_launch ? cudaDeviceLmemResizeToMax : 0)
+			| (allow_pinned_mapped_memory_allocation  ? cudaDeviceMapHost         : 0)
+		);
+	}
+
 	static std::string device_id_as_str(device::id_t id)
 	{
 		return AssumedCurrent ? "current device" : "device " + std::to_string(id);
@@ -312,7 +324,17 @@ protected:
 		return device_id_as_str(id_);
 	}
 
-public: // methods
+	flags_t flags() const
+	{
+		scoped_setter set_device_for_this_scope(id_);
+		flags_t flags;
+		auto status = cudaGetDeviceFlags(&flags);
+		throw_if_error(status,
+			"Failed obtaining the flags for  " + device_id_as_str());
+		return flags;
+	}
+
+public:
 	// TODO: Add free() and free_region_pair() as methods?
 
 	properties_t properties() const
@@ -493,15 +515,7 @@ public: // methods
 		return { least, greatest };
 	}
 
-	flags_t flags() const
-	{
-		scoped_setter set_device_for_this_scope(id_);
-		flags_t flags;
-		auto status = cudaGetDeviceFlags(&flags);
-		throw_if_error(status,
-			"Failed obtaining the flags for  " + device_id_as_str());
-		return flags;
-	}
+public:
 
 	host_thread_synch_scheduling_policy_t synch_scheduling_policy() const
 	{
@@ -550,18 +564,7 @@ public: // methods
 		enable_mapping_host_memory(false);
 	}
 
-	void set_flags(
-		host_thread_synch_scheduling_policy_t synch_scheduling_policy,
-		bool keep_local_mem_allocation_after_launch,
-		bool allow_pinned_mapped_memory_allocation)
-	{
-		set_flags((flags_t)
-			  synch_scheduling_policy // this enum value is also a valid flags value
-			| (keep_local_mem_allocation_after_launch ? cudaDeviceLmemResizeToMax : 0)
-			| (allow_pinned_mapped_memory_allocation  ? cudaDeviceMapHost         : 0)
-		);
-	}
-
+public:
 	// I'm of two minds regarding whether or not we should have this method at all;
 	// I'm worried people might assume the proxy object will start behaving like
 	// what they get with cuda::device::current::get(), i.e. a device_t<AssumedCurrent>.
