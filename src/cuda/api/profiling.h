@@ -62,11 +62,36 @@ using handle_t = uint64_t;
 } // namespace range
 
 namespace mark {
-void            point (const std::string& message, color_t color = color_t::Black());
+
+void point (const std::string& message, color_t color);
+
+inline void point (const std::string& message)
+{
+	point(message, color_t::Black());
+}
+
 range::handle_t range_start (
-	const std::string& description, range::Type type = range::Type::unspecified, color_t color = color_t::LightRed());
-void            range_end (range::handle_t range);
+	const std::string&  description,
+	range::Type         type,
+	color_t             color);
+
+inline range::handle_t range_start (
+	const std::string&  description,
+	range::Type         type)
+{
+	return range_start(description, type, color_t::LightRed());
+}
+
+inline range::handle_t range_start (
+	const std::string&  description)
+{
+	return range_start(description, range::Type::unspecified);
+}
+
+void range_end (range::handle_t range);
+
 } // namespace mark
+
 
 /**
  * A RAII class whose scope of existence is reflected as a range in the profiler.

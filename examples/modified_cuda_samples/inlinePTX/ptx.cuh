@@ -10,35 +10,59 @@ namespace ptx {
 namespace special_registers {
 
 
-#define DEFINE_SPECIAL_REGISTER_GETTER(special_register_name, value_type, width_in_bits) \
-__forceinline__ __device__ value_type special_register_name () \
+#define SIZE_MARKER_u16 "h"
+#define SIZE_MARKER_u32 "r"
+#define SIZE_MARKER_u64 "l"
+#define SIZE_MARKER_f32 "f"
+#define SIZE_MARKER_f64 "d"
+
+#define SIZE_MARKER(kind_of_register) SIZE_MARKER_ ## kind_of_register
+
+#define RETURN_TYPE_u16 uint16_t
+#define RETURN_TYPE_u32 uint32_t
+#define RETURN_TYPE_u64 uint64_t
+#define RETURN_TYPE_f32 float
+#define RETURN_TYPE_f64 double
+
+#define RETURN_TYPE(kind_of_register) RETURN_TYPE_ ## kind_of_register
+
+#define DEFINE_SPECIAL_REGISTER_GETTER(special_register_name, kind_of_register) \
+__forceinline__ __device__ RETURN_TYPE(kind_of_register) special_register_name() \
 { \
-	value_type ret;  \
-	if (std::is_unsigned<value_type>::value) { \
-		asm volatile ("mov.u" STRINGIFY(width_in_bits) " %0, %" STRINGIFY(special_register_name) ";" : "=r"(ret)); \
-	} \
-	else { \
-		asm volatile ("mov.s" STRINGIFY(width_in_bits) " %0, %" STRINGIFY(special_register_name) ";" : "=r"(ret)); \
-	} \
+	RETURN_TYPE(kind_of_register) ret;  \
+	asm volatile ("mov." STRINGIFY(kind_of_register) "%0, %" STRINGIFY(special_register_name) ";" : "=" SIZE_MARKER(kind_of_register) (ret)); \
 	return ret; \
 } \
 
-DEFINE_SPECIAL_REGISTER_GETTER( laneid,             unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( warpid,             unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( gridid,             unsigned long long, 64);
-DEFINE_SPECIAL_REGISTER_GETTER( smid,               unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( nsmid,              unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( clock,              unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( clock64,            unsigned long long, 64);
-DEFINE_SPECIAL_REGISTER_GETTER( lanemask_lt,        unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( lanemask_le,        unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( lanemask_eq,        unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( lanemask_ge,        unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( lanemask_gt,        unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( dynamic_smem_size,  unsigned,           32);
-DEFINE_SPECIAL_REGISTER_GETTER( total_smem_size,    unsigned,           32);
+DEFINE_SPECIAL_REGISTER_GETTER( laneid,             u32);
+DEFINE_SPECIAL_REGISTER_GETTER( warpid,             u32);
+DEFINE_SPECIAL_REGISTER_GETTER( gridid,             u64);
+DEFINE_SPECIAL_REGISTER_GETTER( smid,               u32);
+DEFINE_SPECIAL_REGISTER_GETTER( nsmid,              u32);
+DEFINE_SPECIAL_REGISTER_GETTER( clock,              u32);
+DEFINE_SPECIAL_REGISTER_GETTER( clock64,            u64);
+DEFINE_SPECIAL_REGISTER_GETTER( lanemask_lt,        u32);
+DEFINE_SPECIAL_REGISTER_GETTER( lanemask_le,        u32);
+DEFINE_SPECIAL_REGISTER_GETTER( lanemask_eq,        u32);
+DEFINE_SPECIAL_REGISTER_GETTER( lanemask_ge,        u32);
+DEFINE_SPECIAL_REGISTER_GETTER( lanemask_gt,        u32);
+DEFINE_SPECIAL_REGISTER_GETTER( dynamic_smem_size,  u32);
+DEFINE_SPECIAL_REGISTER_GETTER( total_smem_size,    u32);
 
 #undef DEFINE_SPECIAL_REGISTER_GETTER
+#undef RETURN_TYPE
+#undef RETURN_TYPE_u16
+#undef RETURN_TYPE_u32
+#undef RETURN_TYPE_u64
+#undef RETURN_TYPE_f32
+#undef RETURN_TYPE_f64
+#undef SIZE_MARKER
+#undef SIZE_MARKER_u16
+#undef SIZE_MARKER_u32
+#undef SIZE_MARKER_u64
+#undef SIZE_MARKER_f32
+#undef SIZE_MARKER_f64
+
 
 /*
  * Not defining getters for:
