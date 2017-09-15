@@ -22,7 +22,7 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 ## Requirements
 
-- CUDA v8.0 is recommended and v7.5 is supported (but not tested as frequently). CUDA 6.x should probably be ok as well.
+- CUDA v8.0 or later is recommended and v7.5 should be supported (but is untested). CUDA 6.x should probably be Ok as well.
 - A C++11-capable compiler compatible with your version of CUDA.
 - CMake version 2.8 or later - although you don't really need it, you can just copy the `src/` directory into your own project and just make sure to compile the non-header-only parts.
 
