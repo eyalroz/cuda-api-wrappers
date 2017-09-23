@@ -11,22 +11,10 @@
 
 #include <cuda/api/types.h>
 
-#ifdef HAVE_KERNEL_TESTER_UTILS
-// This wrapper exception will include a stack trace;
-// also, it can take multiple arguments in the ctor which will
-// be piped into a stringstream; but we won't make use of that here
-// to ensure compatibility with the single-string ctor of an
-// std::runtime_error
-#include <util/exception.h>
-using cuda_inspecific_runtime_error = util::runtime_error;
-#else
-#include <stdexcept>
-using cuda_inspecific_runtime_error = std::runtime_error;
-#endif
-
 #include <cuda_runtime_api.h>
 #include <type_traits>
 #include <string>
+#include <stdexcept>
 
 namespace cuda {
 
@@ -164,16 +152,16 @@ inline std::string interpret_error(error::code_t code) { return interpret_status
 /**
  * A (base?) class for exceptions raised by CUDA code
  */
-class runtime_error : public cuda_inspecific_runtime_error {
+class runtime_error : public std::runtime_error {
 public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(cuda::status_t error_code) :
-		cuda_inspecific_runtime_error(interpret_status(error_code)),
+		std::runtime_error(interpret_status(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
 	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
-		cuda_inspecific_runtime_error(what_arg + ": " + interpret_status(error_code)),
+		std::runtime_error(what_arg + ": " + interpret_status(error_code)),
 		code_(error_code)
 	{ }
 
