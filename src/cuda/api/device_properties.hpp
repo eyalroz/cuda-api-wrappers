@@ -19,7 +19,58 @@ namespace cuda {
 
 namespace device {
 
-const char* architecture_name(unsigned major_compute_capability_version);
+struct compute_architecture_t {
+	/**
+	 * A @ref compute_capability_t has a "major" and a "minor" number,
+	 * with "major" indicating the architecture; so this struct only
+	 * has a "major" numner
+	 */
+	unsigned major;
+
+	static const char* name(unsigned major_compute_capability_version);
+	unsigned max_warp_schedulings_per_processor_cycle() const;
+	unsigned max_resident_warps_per_processor() const;
+	unsigned max_in_flight_threads_per_processor() const;
+	/**
+	 * @note On some architectures, the shared memory / L1 balance is configurable,
+	 * so you might not get the maxima here without making this configuration
+	 * setting
+	 */
+	shared_memory_size_t max_shared_memory_per_block() const;
+	const char* name() const { return name(major); }
+
+	bool is_valid() const
+	{
+		return (major > 0) and (major < 9999); // Picked this up from the CUDA code somwhere
+	}
+
+};
+
+inline bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major == rhs.major;
+}
+inline bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major != rhs.major;
+}
+inline bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major < rhs.major;
+}
+inline bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major < rhs.major;
+}
+inline bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major > rhs.major;
+}
+inline bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+{
+	return lhs.major > rhs.major;
+}
+
 
 // TODO: Consider making this a non-POD struct,
 // with a proper ctor checking validity, an operator converting to pair etc;
@@ -33,19 +84,23 @@ struct compute_capability_t {
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	unsigned max_in_flight_threads_per_processor() const;
+	/**
+	 * @note On some architectures, the shared memory / L1 balance is configurable,
+	 * so you might not get the maxima here without making this configuration
+	 * setting
+	 */
 	shared_memory_size_t max_shared_memory_per_block() const;
-	const char* architecture_name() const
+	compute_architecture_t architecture() const { return compute_architecture_t { major }; }
+
+	bool is_valid() const
 	{
-		return device::architecture_name(major);
+		return (major > 0) and (major < 9999) and (minor > 0) and (minor < 9999);
+			// Picked this up from the CUDA code somwhere
 	}
 
 	static compute_capability_t from_combined_number(unsigned combined)
 	{
 		return  { combined / 10, combined % 10 };
-	}
-	bool is_valid() const
-	{
-		return (major > 0) and (major < 9999) and (minor > 0) and (minor < 9999);
 	}
 };
 
@@ -88,16 +143,12 @@ struct properties_t : public cudaDeviceProp {
 
 	properties_t() = default;
 	properties_t(cudaDeviceProp& cdp) : cudaDeviceProp(cdp) { };
-
 	bool usable_for_compute() const
 	{
 		return computeMode != cudaComputeModeProhibited;
 	}
-
-	compute_capability_t compute_capability() const {
-		return {(unsigned) major, (unsigned) minor};
-	}
-
+	compute_capability_t compute_capability() const { return { (unsigned) major, (unsigned) minor }; }
+	compute_capability_t compute_architecture() const { return { (unsigned) major }; };
 	pci_id_t pci_id() const { return { pciDomainID, pciBusID, pciDeviceID }; }
 
 	unsigned long long max_in_flight_threads_on_device() const
@@ -105,23 +156,8 @@ struct properties_t : public cudaDeviceProp {
 		return compute_capability().max_in_flight_threads_per_processor() * multiProcessorCount;
 	}
 
-	/**
-	 * The CUDA device properties have a field with the supposed maximum amount of shared
-	 * memory per block you can use, but - that field is a dirty lie, is what it is!
-	 * On Kepler, you can only get 48 KiB shared memory and the rest is always reserved
-	 * for L1...
-	 * so, if you call this function, you'll get the proper effective maximum figure.
-	 */
-	const char*  architecture_name() const { return compute_capability().architecture_name(); }
-
-	/**
-	 * A convenience method which applies an appropriate cast (e.g. for avoiding
-	 * signed/unsigned comparison warnings)
-	 */
 	grid_block_dimension_t max_threads_per_block() const { return maxThreadsPerBlock; }
-
 	grid_block_dimension_t max_warps_per_block() const { return maxThreadsPerBlock / warp_size; }
-
 	bool can_map_host_memory() const { return canMapHostMemory != 0; }
 };
 

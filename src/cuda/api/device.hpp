@@ -367,6 +367,12 @@ public:
 		return { major, minor };
 	}
 
+	device::compute_capability_t architecture() const
+	{
+		auto major = get_attribute(cudaDevAttrComputeCapabilityMajor);
+		return { major };
+	}
+
 	/**
 	 * Yes, properties vs attributes is a bit confusing, but that's what CUDA has.
 	 */
