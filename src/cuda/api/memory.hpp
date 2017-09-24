@@ -29,6 +29,16 @@ namespace mapped {
 // Or maybe inherit a pair?
 struct region_pair {
 
+	enum : bool {
+		is_portable_across_cuda_contexts   = true,
+		isnt_portable_across_cuda_contexts = false
+	};
+
+	enum : bool {
+		with_cpu_write_combining    = true,
+		without_cpu_write_combining = false
+	};
+
 	struct allocation_options {
 		bool portable_across_cuda_contexts;
 		bool cpu_write_combining;

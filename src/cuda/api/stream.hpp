@@ -121,6 +121,18 @@ inline stream_t<> wrap(
 
 } // namespace stream
 
+/**
+ * @brief Proxy class for a CUDA stream
+ *
+ * Use this class - built around an event ID - to perform almost, if not all
+ * operations related to CUDA events,
+ *
+ * @tparam AssumesDeviceCurrent - when true, the code performs no setting of the
+ * device ID before acting
+ *
+ * @note this is one of the three main classes in the Runtime API wrapper library,
+ * together with @ref cuda::device_t and @ref cuda::event_t
+ */
 template <bool AssumesDeviceIsCurrent /* = false , see template declaration */>
 class stream_t {
 

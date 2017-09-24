@@ -95,6 +95,19 @@ class event_t;
 
 namespace event {
 
+/**
+ * @brief Wrap an existing CUDA event in a @ref event_t instance.
+ *
+ * @param device_id ID of the device for which the stream is defined
+ * @param event_id ID of the pre-existing event
+ * @param take_ownership When set to {@code false}, the CUDA event
+ * will not be destroyed along with proxy; use this setting
+ * when temporarily working with a stream existing irrespective of
+ * the current context and outlasting it. When set to {@code true},
+ * the proxy class will act as it does usually, destroying the event
+ * when being destructed itself.
+ * @return The constructed {@code cuda::event_t}.
+ */
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
@@ -103,12 +116,18 @@ inline event_t wrap(
 } // namespace event
 
 /**
- * A proxy class for CUDA events. By default, it has
- * RAII semantics, i.e. it has the runtime create an event
- * on construction and destory it on destruction, and isn't
- * merely an ephemeral wrapper one could apply and discard;
- * but this second kind of semantics is also (sort of)
- * supported, throw the owning field.
+ * @brief Proxy class for a CUDA event
+ *
+ * Use this class - built around an event id - to perform almost, if not all,
+ * event-related operations the CUDA Runtime API is capable of.
+ *
+ * @note By default this class has RAII semantics, i.e. it has the runtime create
+ * an event on construction and destroy it on destruction, and isn't merely
+ * an ephemeral wrapper one could apply and discard; but this second kind of
+ * semantics is also (sort of) supported, through the @ref event_t::owning field.
+ *
+ * @note this is one of the three main classes in the Runtime API wrapper library,
+ * together with @ref cuda::device_t and @ref cuda::stream_t
  */
 class event_t {
 public: // data member non-mutator getters
@@ -219,19 +238,6 @@ inline float milliseconds_elapsed_between(const event_t& start, const event_t& e
 	return milliseconds_elapsed_between(start.id(), end.id());
 }
 
-/**
- * @brief Wrap an existing CUDA event in a @ref event_t instance.
- *
- * @param device_id ID of the device for which the stream is defined
- * @param event_id ID of the pre-existing event
- * @param take_ownership When set to {@code false}, the CUDA event
- * will not be destroyed along with proxy; use this setting
- * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to {@code true},
- * the proxy class will act as it does usually, destroying the event
- * when being destructed itself.
- * @return The constructed {@code cuda::event_t}.
- */
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,

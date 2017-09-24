@@ -76,6 +76,12 @@ inline bool operator >=(const compute_architecture_t& lhs, const compute_archite
 // with a proper ctor checking validity, an operator converting to pair etc;
 // however, that would require including at least std::utility, if not other
 // stuff (e.g. for an std::hash specialization)
+/**
+ * A numeric designator of the computational capabilities of a CUDA device
+ *
+ * @note See @url https://en.wikipedia.org/wiki/CUDA#Version_features_and_specifications
+ * for a specification of capabilities by CC values
+ */
 struct compute_capability_t {
 	unsigned major;
 	unsigned minor;

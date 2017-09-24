@@ -127,11 +127,11 @@ int main(int argc, char **argv)
 		<< (device.synch_scheduling_policy() ? " synchronous" : "n asynchronous")
 		<< " scheduling policy.\n";
 	std::cout << "Device " << device.id() << " is set to "
-		<< (device.keeping_local_mem_allocation_after_launch() ? "keeps" : "discards")
+		<< (device.keeping_larger_local_mem_after_resize() ? "keeps" : "discards")
 		<< " shared memory allocation after launch.\n";
 	std::cout << "Device " << device.id()
 		<< " is set " << (device.can_map_host_memory() ? "to allow" : "not to allow")
-		<< "pinned mapped memory.\n";
+		<< " pinned mapped memory.\n";
 	// TODO: Change the settings as well obtaining them
 
 	// Peer-to-peer
