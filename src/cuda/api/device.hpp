@@ -23,10 +23,9 @@ namespace cuda {
 
 class event_t;
 template <bool DeviceAssumedCurrent> class stream_t;
+template <bool AssumedCurrent> class device_t;
 
 namespace device {
-
-template <bool AssumedCurrent = detail::do_not_assume_device_is_current> class device_t;
 
 namespace peer_to_peer {
 
