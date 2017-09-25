@@ -51,7 +51,7 @@ using handle_t = cudaIpcMemHandle_t;
 inline handle_t export_(void* device_ptr) {
 	handle_t handle;
 	auto status = cudaIpcGetMemHandle(&handle, device_ptr);
-		throw_if_error(status,
+		cuda::detail::throw_if_error(status,
 			"Failed producing an IPC memory handle for device pointer " + cuda::detail::ptr_as_hex(device_ptr));
 	return handle;
 }
@@ -69,7 +69,7 @@ inline T* import(const handle_t& handle)
 {
 	void* device_ptr;
 	auto status = cudaIpcOpenMemHandle(&device_ptr, handle, cudaIpcMemLazyEnablePeerAccess);
-	throw_if_error(status,
+	cuda::detail::throw_if_error(status,
 		"Failed obtaining a device pointer from an IPC memory handle");
 	return reinterpret_cast<T*>(device_ptr);
 }
@@ -77,7 +77,7 @@ inline T* import(const handle_t& handle)
 inline void unmap(void* ipc_mapped_ptr)
 {
 	auto status = cudaIpcCloseMemHandle(ipc_mapped_ptr);
-	throw_if_error(status, "Failed unmapping IPC memory mapped to " + cuda::detail::ptr_as_hex(ipc_mapped_ptr));
+	cuda::detail::throw_if_error(status, "Failed unmapping IPC memory mapped to " + cuda::detail::ptr_as_hex(ipc_mapped_ptr));
 }
 
 template <typename T = void>
@@ -132,7 +132,7 @@ inline handle_t export_(id_t event_id)
 {
 	handle_t ipc_handle;
 	auto status = cudaIpcGetEventHandle(&ipc_handle, event_id);
-	throw_if_error(status,
+	cuda::detail::throw_if_error(status,
 		"Failed obtaining an IPC event handle for event " + cuda::detail::ptr_as_hex(event_id));
 	return ipc_handle;
 }
@@ -141,7 +141,7 @@ inline event::id_t import(const handle_t& handle)
 {
 	event::id_t event_id;
 	auto status = cudaIpcOpenEventHandle(&event_id, handle);
-	throw_if_error(status,
+	cuda::detail::throw_if_error(status,
 		"Failed obtaining an event ID from an IPC event handle");
 	return event_id;
 }

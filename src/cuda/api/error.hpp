@@ -18,13 +18,14 @@
 
 namespace cuda {
 
-namespace error {
+namespace status {
 
-// We can't just 'inherit' from status_t, unfortunately,
-// so we're creating an "unrelated" enum; see also the comparison
-// operators below which help us avoid the warnings we would
-// get from comparing values of the two enums
-enum code_t : std::underlying_type<status_t>::type {
+/**
+ * Aliases for CUDA status codes
+ *
+ * @note unfortunately, this enum can't inherit from @ref status_t
+ */
+enum alias_t : std::underlying_type<status_t>::type {
 	success                         = cudaSuccess,
 	missing_configuration           = cudaErrorMissingConfiguration,
 	memory_allocation               = cudaErrorMemoryAllocation,
@@ -54,7 +55,7 @@ enum code_t : std::underlying_type<status_t>::type {
 	invalid_filter_setting          = cudaErrorInvalidFilterSetting,
 	invalid_norm_setting            = cudaErrorInvalidNormSetting,
 	mixed_device_execution          = cudaErrorMixedDeviceExecution,
-	cudart_unloading                = cudaErrorCudartUnloading,
+	cuda_runtime_unloading          = cudaErrorCudartUnloading,
 	unknown                         = cudaErrorUnknown,
 	not_yet_implemented             = cudaErrorNotYetImplemented,
 	memory_value_too_large          = cudaErrorMemoryValueTooLarge,
@@ -108,13 +109,23 @@ enum code_t : std::underlying_type<status_t>::type {
 	api_failure_base                = cudaErrorApiFailureBase
 };
 
-inline bool operator==(const status_t& lhs, const code_t& rhs) { return lhs == (status_t) rhs;}
-inline bool operator!=(const status_t& lhs, const code_t& rhs) { return lhs != (status_t) rhs;}
+inline bool operator==(const status_t& lhs, const alias_t& rhs) { return lhs == (status_t) rhs;}
+inline bool operator!=(const status_t& lhs, const alias_t& rhs) { return lhs != (status_t) rhs;}
+inline bool operator==(const alias_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
+inline bool operator!=(const alias_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
 
-} // namespace error
 
-inline bool is_success(status_t status)  { return status == error::success; }
-inline bool is_failure(status_t status)  { return status != error::success; }
+} // namespace status
+
+inline bool is_success(status_t status)  { return status == (status_t) status::success; }
+inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
+
+
+/**
+ * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
+ * or error code.
+ */
+inline std::string describe(status_t status) { return cudaGetErrorString(status); }
 
 namespace detail {
 
@@ -146,39 +157,46 @@ inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeo
 
 } // namespace detail
 
-inline std::string interpret_status(status_t status) { return cudaGetErrorString(status); }
-inline std::string interpret_error(error::code_t code) { return interpret_status((status_t) code); }
-
 /**
- * A (base?) class for exceptions raised by CUDA code
+ * A (base?) class for exceptions raised by CUDA code; these errors are thrown by
+ * essentially all CUDA Runtime API wrappers upon failure.
+ *
+ * A CUDA runtime error can be constructed with either just a CUDA error code
+ * (=status code), or a code plus an additional message.
  */
 class runtime_error : public std::runtime_error {
 public:
+	///@cond
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(cuda::status_t error_code) :
-		std::runtime_error(interpret_status(error_code)),
+		std::runtime_error(describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
 	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
-		std::runtime_error(what_arg + ": " + interpret_status(error_code)),
+		std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
+	///@endcond
 
+	/**
+	 * Obtain the CUDA status code which resulted in this error being thrown.
+	 */
 	status_t code() const { return code_; }
 
 private:
 	status_t code_;
 };
 
+namespace detail {
+
 // TODO: The following could use std::optiomal arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
-inline void throw_if_error(
-	cuda::status_t error_code, std::string message) noexcept(false)
+inline void throw_if_error(cuda::status_t status, std::string message) noexcept(false)
 {
-	if (is_failure(error_code)) { throw runtime_error(error_code, message); }
+	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
 inline void throw_if_error(cuda::status_t error_code) noexcept(false)
@@ -186,24 +204,24 @@ inline void throw_if_error(cuda::status_t error_code) noexcept(false)
 	if (is_failure(error_code)) { throw runtime_error(error_code); }
 }
 
-namespace errors {
+} // namespace detail
+
 enum : bool {
-	dont_clear = false,
-	clear = true
+	dont_clear_errors = false,
+	do_clear_errors    = true
 };
-} // namespace errors
 
 inline void ensure_no_outstanding_error(
-	std::string message, bool clear_any_error = errors::clear) noexcept(false)
+	std::string message, bool clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
-	throw_if_error(last_status, message);
+	detail::throw_if_error(last_status, message);
 }
 
-inline void ensure_no_outstanding_error(bool clear_any_error = errors::clear) noexcept(false)
+inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
-	throw_if_error(last_status);
+	detail::throw_if_error(last_status);
 }
 
 /**

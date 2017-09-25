@@ -91,7 +91,7 @@ inline version_t make(int major, int minor)
 inline version_t maximum_supported_by_driver() {
 	combined_version_t version;
 	auto status = cudaDriverGetVersion(&version);
-	throw_if_error(status, "Failed obtaining the maximum CUDA version supported by the nVIDIA GPU driver");
+	detail::throw_if_error(status, "Failed obtaining the maximum CUDA version supported by the nVIDIA GPU driver");
 	return version_t::from_single_number(version);
 }
 
@@ -103,7 +103,7 @@ inline version_t maximum_supported_by_driver() {
 inline version_t runtime() {
 	combined_version_t version;
 	auto status = cudaRuntimeGetVersion(&version);
-	throw_if_error(status, "Failed obtaining the CUDA runtime version");
+	detail::throw_if_error(status, "Failed obtaining the CUDA runtime version");
 	return version_t::from_single_number(version);
 }
 

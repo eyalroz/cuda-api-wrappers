@@ -47,7 +47,7 @@ inline id_t create_on_current_device(
 		cudaStreamDefault : cudaStreamNonBlocking;
 	id_t new_stream_id;
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
-	throw_if_error(status,
+	cuda::detail::throw_if_error(status,
 		std::string("Failed creating a new stream on CUDA device ")
 		+ std::to_string(device::current::get_id()));
 	return new_stream_id;
@@ -167,7 +167,7 @@ public: // other non-mutators
 	{
 		unsigned int flags;
 		auto status = cudaStreamGetFlags(id_, &flags);
-		throw_if_error(status,
+		detail::throw_if_error(status,
 			std::string("Failed obtaining flags for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return flags & cudaStreamNonBlocking;
@@ -177,7 +177,7 @@ public: // other non-mutators
 	{
 		int the_priority;
 		auto status = cudaStreamGetPriority(id_, &the_priority);
-		throw_if_error(status,
+		detail::throw_if_error(status,
 			std::string("Failure obtaining priority for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return the_priority;
@@ -314,9 +314,9 @@ public: // mutators
 
 			// Not calling event::detail::enqueue to avoid dependency on event.hpp
 			auto status = cudaEventRecord(event_id, stream_id_);
-			throw_if_error(status,
+			detail::throw_if_error(status,
 				"Failed scheduling scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
@@ -342,9 +342,9 @@ public: // mutators
 			// std::function, there's not much need (it would seem) for an extra inner
 			// user_data parameter to callback_t
 			auto status = cudaStreamAddCallback(stream_id_, &callback_adapter, &callback, fixed_flags);
-			throw_if_error(status,
+			detail::throw_if_error(status,
 				std::string("Failed scheduling a callback function to be launched")
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
@@ -374,16 +374,16 @@ public: // mutators
 			constexpr const size_t length = 0;
 			auto status =  cudaStreamAttachMemAsync(
 				stream_id_, managed_region_start, length, cudaMemAttachSingle);
-			throw_if_error(status,
+			detail::throw_if_error(status,
 				std::string("Failed scheduling an attachment of a managed memory region")
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
 		/**
 		 * Will pause all further activity on the stream until the specified event has
 		 * occurred  (i.e. has fired, i.e. has had all preceding scheduled work
-		 * on the stream on which it was recorded completed). 
+		 * on the stream on which it was recorded completed).
 		 *
 		 * @note this call will not delay any already-enqueued work on the stream,
 		 * only work enqueued _after_ the call.
@@ -398,9 +398,9 @@ public: // mutators
 			// currently unused
 			constexpr const unsigned int  flags = 0;
 			auto status = cudaStreamWaitEvent(stream_id_, event_id, flags);
-			throw_if_error(status,
+			detail::throw_if_error(status,
 				std::string("Failed scheduling a wait on event ") + cuda::detail::ptr_as_hex(event_id)
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_) 
+				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
 
@@ -415,7 +415,7 @@ public: // mutators
 		DeviceSetter set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
 		auto status = cudaStreamSynchronize(id_);
-		throw_if_error(status,
+		detail::throw_if_error(status,
 			std::string("Failed synchronizing a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}
@@ -433,7 +433,7 @@ public: // constructors and destructor
 	stream_t(device::id_t device_id, stream::id_t stream_id)
 	: stream_t(device_id, stream_id, false) { }
 
-	~stream_t() 
+	~stream_t()
 	{
 		if (owning) {
 			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);

@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 
 	} catch(cuda::runtime_error& e) {
-		assert(e.code() == cuda::error::not_ready);
+		assert(e.code() == cuda::status::not_ready);
 	}
 	event_2.synchronize();
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);

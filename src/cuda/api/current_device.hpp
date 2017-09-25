@@ -37,7 +37,7 @@ inline device::id_t get_id()
 {
 	device::id_t  device;
 	status_t result = cudaGetDevice(&device);
-	throw_if_error(result, "Failure obtaining current device index");
+	detail::throw_if_error(result, "Failure obtaining current device index");
 	return device;
 }
 
@@ -50,7 +50,7 @@ inline device::id_t get_id()
 inline void set(device::id_t  device)
 {
 	status_t result = cudaSetDevice(device);
-	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
+	detail::throw_if_error(result, "Failure setting current device to " + std::to_string(device));
 }
 
 /**

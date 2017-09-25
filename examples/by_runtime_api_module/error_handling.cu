@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error& e) {
-		if (e.code() != cuda::error::invalid_device) { throw e; }
+		if (e.code() != cuda::status::invalid_device) { throw e; }
 		cout << "The exception we expected was indeed thrown." << "\n";
 	}
 
@@ -57,13 +57,13 @@ int main(int argc, char **argv)
 	catch(cuda::runtime_error&) { }
 
 	try {
-		cuda::ensure_no_outstanding_error(cuda::errors::dont_clear);
+		cuda::ensure_no_outstanding_error(cuda::dont_clear_errors);
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
 	try {
-		cuda::ensure_no_outstanding_error(cuda::errors::dont_clear);
+		cuda::ensure_no_outstanding_error(cuda::dont_clear_errors);
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }

@@ -69,13 +69,13 @@ scoped_range_marker::~scoped_range_marker()
 __host__ void start()
 {
 	auto status = cudaProfilerStart();
-	throw_if_error(status, "Starting to profile");
+	detail::throw_if_error(status, "Starting to profile");
 }
 
 __host__ void stop()
 {
 	auto status = cudaProfilerStop();
-	throw_if_error(status, "Starting to profile");
+	detail::throw_if_error(status, "Starting to profile");
 }
 
 void name_host_thread(pthread_t thread_id, const std::string& name)

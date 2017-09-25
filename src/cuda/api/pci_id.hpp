@@ -66,7 +66,7 @@ inline device::id_t pci_id_t::resolve_device_id() const
 	auto as_string = operator std::string();
 	device::id_t cuda_device_id;
 	auto result = cudaDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
-	throw_if_error(result,
+	detail::throw_if_error(result,
 		"Failed obtaining a CUDA device ID corresponding to PCI id " + as_string);
 	return cuda_device_id;
 }

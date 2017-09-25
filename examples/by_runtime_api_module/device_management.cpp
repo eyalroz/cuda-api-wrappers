@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	auto pci_id = device.pci_id();
 	std::string pci_id_str(pci_id);
 
-	cuda::ensure_no_outstanding_error(cuda::errors::clear);
+	cuda::ensure_no_outstanding_error(cuda::do_clear_errors);
 
 	auto re_obtained_device = cuda::device::get(pci_id_str);
 	assert(re_obtained_device == device);
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 			+ " (one less)");
 	}
 	catch(cuda::runtime_error& e) {
-		assert(e.code() == cuda::error::invalid_device);
+		assert(e.code() == cuda::status::invalid_device);
 		// We expected to get this exception, just clear it
 		cuda::clear_outstanding_errors();
 	}
