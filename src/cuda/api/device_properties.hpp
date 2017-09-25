@@ -19,6 +19,13 @@ namespace cuda {
 
 namespace device {
 
+/**
+ * A numeric designator of an architectural generation of CUDA devices
+ *
+ * @note See @url https://en.wikipedia.org/wiki/Volta_(microarchitecture)
+ * and previous architectures' pages via "previous" links.
+ * Also see @ref compute_capability_t .
+ */
 struct compute_architecture_t {
 	/**
 	 * A @ref compute_capability_t has a "major" and a "minor" number,
@@ -145,6 +152,18 @@ inline compute_capability_t make_compute_capability(unsigned major, unsigned min
 	return { major, minor };
 }
 
+/**
+ * @brief A structure holding a collection various properties of a device
+ *
+ * @note Somewhat annoyingly, CUDA devices have attributes, properties and flags.
+ * Attributes have integral number values; properties have all sorts of values,
+ * including arrays and limited-length strings (see
+ * @ref cuda::device::properties_t), and flags are either binary or
+ * small-finite-domain type fitting into an overall flagss value (see
+ * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
+ * attributes are more one-at-a-time.
+ *
+ */
 struct properties_t : public cudaDeviceProp {
 
 	properties_t() = default;

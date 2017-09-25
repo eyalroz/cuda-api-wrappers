@@ -1,9 +1,9 @@
 /**
  * @file error.hpp
  *
- * @brief facilities for exception-based handling of Runtime API
+ * @brief Facilities for exception-based handling of Runtime API
  * errors, including a basic exception class wrapping
- * {@code std::runtime_error}.
+ * `std::runtime_error`.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
@@ -225,7 +225,7 @@ inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) 
 }
 
 /**
- * Reset the CUDA status to cuda::error::success.
+ * Reset the CUDA status to cuda::status::success.
  */
 inline void clear_outstanding_errors() { cudaGetLastError(); }
 

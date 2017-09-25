@@ -64,7 +64,8 @@ using attribute_value_t = int;
  * including arrays and limited-length strings (see
  * @ref cuda::device::properties_t), and flags are either binary or
  * small-finite-domain type fitting into an overall flagss value (see
- * @ref cuda::device_t::flags_t).
+ * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
+ * attributes are more one-at-a-time.
  */
 using attribute_t = cudaDeviceP2PAttr;
 
@@ -897,7 +898,7 @@ protected:
 	/**
 	 * The numeric ID of the proxied device.
 	 *
-	 * @note  The cannot simply have type {@code const device::id_t}, as
+	 * @note  The cannot simply have type `const device::id_t`, as
 	 * when this class is used for the current device (AssumedCurrent is
 	 * true), we don't actually know the device ID on construction - only
 	 * later.

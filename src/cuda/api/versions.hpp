@@ -86,7 +86,7 @@ inline version_t make(int major, int minor)
 /**
  * @return If an nVIDIA GPU driver is installed on this system,
  * the maximum CUDA version it supports is returned. If no nVIDIA
- * GPU driver is installed, {@code cuda::error::invalid_value}} is returned.
+ * GPU driver is installed, @ref cuda::status::invalid_value is returned.
  */
 inline version_t maximum_supported_by_driver() {
 	combined_version_t version;

@@ -325,7 +325,7 @@ public: // mutators
 		 * hereto-scheduled work on this stream has been completed.
 		 *
 		 * @param callback a function to execute on the host. Its signature
-		 * must being with {@code (cuda::stream::id_t stream_id, cuda::event::id_t event_id}
+		 * must being with `(cuda::stream::id_t stream_id, cuda::event::id_t event_id`
 		 */
 		void callback(callback_t callback)
 		{
@@ -362,7 +362,7 @@ public: // mutators
 		 *
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-		 * pass whatever @ref cuda::memory::managed::allocate() (or {@code cudaMallocManaged()})
+		 * pass whatever @ref cuda::memory::managed::allocate() (or `cudaMallocManaged()`)
 		 * returned.
 		 */
 		void memory_attachment(const void* managed_region_start)
@@ -495,10 +495,10 @@ enum : bool {
  *
  * @param device_id ID of the device for which the stream is defined
  * @param stream_id ID of the pre-existing stream
- * @param take_ownership When set to {@code false}, the stream
+ * @param take_ownership When set to `false`, the stream
  * will not be destroyed along with the wrapper; use this setting
  * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to {@code true},
+ * the current context and outlasting it. When set to `true`,
  * the proxy class will act as it does usually, destroying the stream
  * when being destructed itself.
  * @return an instance of the stream proxy class, with the specified

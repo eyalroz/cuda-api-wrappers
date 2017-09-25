@@ -67,7 +67,7 @@ inline void set_to_default() { return set(device::default_device_id); }
  * @tparam AssumedCurrent the current device override is also used in code which
  * can be instantiated when the current device has already been set, or when it
  * has not been set; for this reason, the scoped current device override also
- * has this feature (which when set to {@code true} makes it into a do-nothing
+ * has this feature (which when set to `true` makes it into a do-nothing
  * object).
  */
 template <bool AssumedCurrent = false> class scoped_override_t;

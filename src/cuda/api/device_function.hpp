@@ -25,7 +25,7 @@ namespace cuda {
 namespace device_function {
 
 /**
- * @brief a wrapper around @ref cudaFuncAttributes , offering
+ * @brief a wrapper around @ref cudaFuncAttributes, offering
  * a few convenience member functions.
  */
 struct attributes_t : cudaFuncAttributes {
@@ -43,7 +43,7 @@ struct attributes_t : cudaFuncAttributes {
  * @brief Calculate the effective maximum size of allocatable (dynamic)
  * shared memory in a grid block
  *
- * @param attributes Attributes of the {@code __global__} kernel function
+ * @param attributes Attributes of the `__global__` kernel function
  * for which we wish to determine the allocation limit
  * @param compute_capability the GPU device's compute capability figure (e.g. 3.5
  * or 5.0), which fully determines the maximum allocation size
@@ -63,7 +63,7 @@ inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
 } // namespace device_function
 
 /**
- * A non-owning wrapper class for CUDA {@code __device__} functions
+ * A non-owning wrapper class for CUDA `__device__` functions
  */
 class device_function_t {
 public: // getters
@@ -175,7 +175,7 @@ namespace device_function {
  * for use with a specific device function - which will take its use of
  * static shared memory into account.
  *
- * @param device_function The ({@code __global__} or {@code __device__})
+ * @param device_function The (`__global__` or `__device__`)
  * function for which to calculate
  * the effective available shared memory per block
  * @param compute_capability on which kind of device the kernel function is to

@@ -60,6 +60,8 @@ inline handle_t export_(void* device_ptr) {
  * @brief Obtain a CUDA pointer from a handle passed
  * by inter-process communication
  *
+ * @note the couterpart of @ref memory::ipc::unmap.
+ *
  * @param handle the handle which allows us access to the on-device address
  * @return a pointer to the relevant address (which may not have the same value
  * as it would on a different processor.
@@ -74,12 +76,27 @@ inline T* import(const handle_t& handle)
 	return reinterpret_cast<T*>(device_ptr);
 }
 
+/**
+ * @brief Unmap CUDA host-side memory shared by another process
+ *
+ * @param ipc_mapped_ptr pointer to the memory region to unmap
+ */
 inline void unmap(void* ipc_mapped_ptr)
 {
 	auto status = cudaIpcCloseMemHandle(ipc_mapped_ptr);
-	cuda::detail::throw_if_error(status, "Failed unmapping IPC memory mapped to " + cuda::detail::ptr_as_hex(ipc_mapped_ptr));
+	cuda::detail::throw_if_error(status,
+		"Failed unmapping IPC memory mapped to " +
+		cuda::detail::ptr_as_hex(ipc_mapped_ptr));
 }
 
+/**
+ * @brief A smart-pointer-like class for memory obtained via inter-process communication.
+ *
+ * This RAII wrapper class maps memory in the current process' address space on
+ * construction, and unmaps it on destruction, using a CUDA IPC handle.
+ *
+ * @tparam the element type in the stretch of IPC-shared memory
+ */
 template <typename T = void>
 class imported_t {
 public: // constructors & destructor
@@ -91,7 +108,7 @@ public: // constructors & destructor
 	}
 
 	/**
-	 * @note May throw! Be very careful.
+	 * @note This may (?) throw! Be very careful.
 	 */
 	~imported_t() {
 		if (ptr_ == nullptr) { return; }
@@ -128,6 +145,14 @@ namespace ipc {
 
 using handle_t = cudaIpcEventHandle_t;
 
+/**
+ * Enable use of an event which this process created by other processes
+ *
+ * @param event_id id of the event to share with other processes
+ * @return the handle to pass directly to other processes with which they
+ * may obtain a proper CUDA event
+ *
+ */
 inline handle_t export_(id_t event_id)
 {
 	handle_t ipc_handle;
@@ -137,6 +162,15 @@ inline handle_t export_(id_t event_id)
 	return ipc_handle;
 }
 
+/**
+ * Obtain a proper CUDA event, corresponding to an event created by another
+ * process, using a handle communicated via operating-system inter-process communications
+ *
+ * @param event_id id of the event to share with other processes
+ * @return the handle to pass directly to other processes with which they
+ * may obtain a proper CUDA event
+ *
+ */
 inline event::id_t import(const handle_t& handle)
 {
 	event::id_t event_id;

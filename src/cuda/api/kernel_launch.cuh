@@ -19,7 +19,7 @@
  * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
  * rather easy to mix up shared memory sizes with stream IDs; grid and
  * block dimensions with each other; and even grid/block dimensions with
- * the scalar parameters - since a {@code dim3} is constructible from
+ * the scalar parameters - since a `dim3` is constructible from
  * integral values. Instead, we enforce a launch configuration structure:
  * {@ref cuda::launch_configuration_t}.
  * </ul>
@@ -27,13 +27,13 @@
  * @note You'd probably better avoid launching kernels using these
  * function directly, and go through the @ref cuda::stream_t or @ref cuda::device_t
  * proxy classes' launch mechanism (e.g.
- * {@code my_stream.enqueue.kernel_launch(...)}).
+ * `my_stream.enqueue.kernel_launch(...)`).
  *
  * @note Even though when you use this wrapper, your code will not have the silly
- * chevron, you can't use it from regular {@code .cpp} files compiled with your host
- * compiler. Hence the {@code .cuh} extension. You _can_, however, safely include this
- * file from your {@code .cpp} for other definitions. Theoretically, we could have
- * used the {@code cudaLaunchKernel} API function, by creating an array on the stack
+ * chevron, you can't use it from regular `.cpp` files compiled with your host
+ * compiler. Hence the `.cuh` extension. You _can_, however, safely include this
+ * file from your `.cpp` for other definitions. Theoretically, we could have
+ * used the `cudaLaunchKernel` API function, by creating an array on the stack
  * which points to all of the other arguments, but that's kind of redundant.
  *
  */
@@ -64,30 +64,32 @@ struct is_function_ptr: std::integral_constant<bool,
 }
 
 /**
-* CUDA's 'chevron' kernel launch syntax cannot be compiled in proper C++. Thus, every kernel launch must
-* at some point reach code compiled with CUDA's nvcc. Naively, every single different kernel (perhaps up
-* to template specialization) would require writing its own wrapper C++ function, launching it. This
-* function, however, constitutes a single minimal wrapper around the CUDA kernel launch, which may be
-* called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
-* compiler, the callee compiled by nvcc).
-*
-* <p>This function is similar to C++17's {@code std::apply}, or to a a beta-reduction in Lambda calculus:
-* It applies a function to its arguments; the difference is in the nature of the function (a CUDA kernel)
-* and in that the function application requires setting additional CUDA-related launch parameters,
-* additional to the function's own.
-*
-* <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
-* commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
-*
-* @param[in] kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
-* If the kernel is templated, you must pass it fully-instantiated.
-* @param[in] launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
-* shared memory per block in the grid; this defines how the grid will look and what the shared memory
-* allowance will be (see {@ref cuda::launch_configuration_t})
-* @param[in] stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
-* the scheduling of the launch and the execution)
-* @param[in] parameters whatever parameters @p kernel_function takes
-*/
+ * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
+ *
+ * CUDA's 'chevron' kernel launch syntax cannot be compiled in proper C++. Thus, every kernel launch must
+ * at some point reach code compiled with CUDA's nvcc. Naively, every single different kernel (perhaps up
+ * to template specialization) would require writing its own wrapper C++ function, launching it. This
+ * function, however, constitutes a single minimal wrapper around the CUDA kernel launch, which may be
+ * called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
+ * compiler, the callee compiled by nvcc).
+ *
+ * <p>This function is similar to C++17's `std::apply`, or to a a beta-reduction in Lambda calculus:
+ * It applies a function to its arguments; the difference is in the nature of the function (a CUDA kernel)
+ * and in that the function application requires setting additional CUDA-related launch parameters,
+ * additional to the function's own.
+ *
+ * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
+ * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
+ *
+ * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
+ * If the kernel is templated, you must pass it fully-instantiated.
+ * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
+ * the scheduling of the launch and the execution)
+ * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
+ * shared memory per block in the grid; this defines how the grid will look and what the shared memory
+ * allowance will be (see {@ref cuda::launch_configuration_t})
+ * @param parameters whatever parameters @p kernel_function takes
+ */
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	const KernelFunction&       kernel_function,
@@ -114,6 +116,20 @@ inline void enqueue_launch(
 }
 #endif
 
+/**
+ * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
+ *
+ * @note It is up to the caller to ensure the device function's signature
+ * matches the argument types.
+ *
+ * @param wrapped_device_function the kernel to apply, as a @ref device_function_t.
+ * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
+ * the scheduling of the launch and the execution)
+ * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
+ * shared memory per block in the grid; this defines how the grid will look and what the shared memory
+ * allowance will be (see {@ref cuda::launch_configuration_t})
+ * @param parameters whatever parameters @p wrapped_device_function takes
+ */
 template<typename... KernelParameters>
 inline void enqueue_launch(
 	device_function_t           wrapped_device_function,
@@ -138,8 +154,9 @@ inline void enqueue_launch(
 #endif
 
 /**
- * Variant of enqueue_launch, above, for use with the default stream on the current device;
- * it's not also called 'enqueue' since the default stream is synchronous.
+ * Variant of @ref enqueue_launch for use with the default stream on the current device.
+ *
+ * @note This isn't called `enqueue` since the default stream is synchronous.
  */
 template<typename KernelFunction, typename... KernelParameters>
 inline void launch(
@@ -151,8 +168,10 @@ inline void launch(
 }
 
 /**
- * Variant of enqueue_launch, above, for use with the default stream on the current device;
- * it's not also called 'enqueue' since the default stream is synchronous.
+ * Variant of @ref enqueue_launch for use with the default stream on the current device.
+ *
+ * @note This isn't called `enqueue` since the default stream is synchronous.
+ *
  */
 template<typename... KernelParameters>
 inline void launch(

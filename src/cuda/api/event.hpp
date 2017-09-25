@@ -26,43 +26,51 @@ namespace event {
  * Synchronization option for @ref cuda::event_t 's
  */
 enum : bool {
+	/**
+	 * The thread calling event_.synchronize() will enter
+	 * a busy-wait loop; this (might) minimize delay between
+	 * kernel execution conclusion and control returning to
+	 * the thread, but is very wasteful of CPU time.
+	 */
 	sync_by_busy_waiting = false,
-		/**
-		 * The thread calling event_.synchronize() will enter
-		 * a busy-wait loop; this (might) minimize delay between
-		 * kernel execution conclusion and control returning to
-		 * the thread, but is very wasteful of CPU time.
-		 */
+	/**
+	 * The thread calling event_.synchronize() will block -
+	 * yield control of the CPU and will only become ready
+	 * for execution after the kernel has completed its
+	 * execution - at which point it would have to wait its
+	 * turn among other threads. This does not waste CPU
+	 * computing time, but results in a longer delay.
+	 */
 	sync_by_blocking = true,
-		/**
-		 * The thread calling event_.synchronize() will block -
-		 * yield control of the CPU and will only become ready
-		 * for execution after the kernel has completed its
-		 * execution - at which point it would have to wait its
-		 * turn among other threads. This does not waste CPU
-		 * computing time, but results in a longer delay.
-		 */
 };
 
+/**
+ * Should the CUDA Runtime API record timing information for
+ * events as it schedules them?
+ */
 enum : bool {
 	dont_record_timings = false,
-	do_record_timings = true,
+	do_record_timings   = true,
 };
 
 /**
  * IPC usability option for {@ref cuda::event_t}'s
  */
 enum : bool {
-	not_interprocess = false,
-		//!< Can be shared between processes. Must not be
-		//!< able to record timings
-	interprocess = true,
-		//!< Can only be used by the process which created it
+	not_interprocess = false,         //!< Can only be used by the process which created it
+	interprocess = true,              //!< Can be shared between processes. Must not be able to record timings.
 	single_process = not_interprocess
 };
 
 namespace detail {
 
+/**
+ * Schedule a specified event to occur (= to fire) when all activities
+ * already scheduled on the stream habe concluded.
+ *
+ * @param stream_id id of the stream (=queue) where to enqueue the event occurrence
+ * @param event_id Event to be made to occur on stream @ref stream_id
+ */
 inline void enqueue(stream::id_t stream_id, id_t event_id) {
 	auto status = cudaEventRecord(event_id, stream_id);
 	cuda::detail::throw_if_error(status,
@@ -91,7 +99,9 @@ inline id_t create_on_current_device(bool uses_blocking_sync, bool records_timin
 
 } // namespace event
 
+///@cond
 class event_t;
+///@endcond
 
 namespace event {
 
@@ -100,13 +110,13 @@ namespace event {
  *
  * @param device_id ID of the device for which the stream is defined
  * @param event_id ID of the pre-existing event
- * @param take_ownership When set to {@code false}, the CUDA event
+ * @param take_ownership When set to `false`, the CUDA event
  * will not be destroyed along with proxy; use this setting
  * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to {@code true},
+ * the current context and outlasting it. When set to `true`,
  * the proxy class will act as it does usually, destroying the event
  * when being destructed itself.
- * @return The constructed {@code cuda::event_t}.
+ * @return The constructed `cuda::event_t`.
  */
 inline event_t wrap(
 	device::id_t  device_id,
@@ -225,6 +235,17 @@ protected: // data members
 
 namespace event {
 
+/**
+ * Determine (inaccurately) the elapsed time between two events,
+ * by their id's.
+ *
+ * @note  Q: Why the weird output type?
+ *        A: This is what the CUDA Runtime API itself returns
+ *
+ * @param start first timepoint event id
+ * @param end second, later, timepoint event id
+ * @return the difference in the (inaccurately) measured time, in msec
+ */
 inline float milliseconds_elapsed_between(id_t start, id_t end)
 {
 	float elapsed_milliseconds;
@@ -233,11 +254,34 @@ inline float milliseconds_elapsed_between(id_t start, id_t end)
 	return elapsed_milliseconds;
 }
 
+
+/**
+ * Determine (inaccurately) the elapsed time between two events
+ *
+ * @note  Q: Why the weird output type?
+ *        A: This is what the CUDA Runtime API itself returns
+ *
+ * @param start first timepoint event
+ * @param end second, later, timepoint event
+ * @return the difference in the (inaccurately) measured time, in msec
+ */
 inline float milliseconds_elapsed_between(const event_t& start, const event_t& end)
 {
 	return milliseconds_elapsed_between(start.id(), end.id());
 }
 
+/**
+ * Obtain a proxy object for an already-existing CUDA event
+ *
+ * @note This is a named constructor idiom instead of direct access to the ctor of the same
+ * signature, to emphase whot this construction means - a new event is not
+ * created.
+ *
+ * @param device_id Device to which the event is related
+ * @param event_id of the event for which to obtain a proxy
+ * @param take_ownership
+ * @return
+ */
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
@@ -271,8 +315,11 @@ inline event_t make(
 }
 
 /**
+ * @brief creates a new execution stream on the current with default parameters
+ *
+ *
  * @note The reason this doesn't take the three boolean parameters
- * is avoiding an implicit cast from {@code bool} to {@code cuda::device::id_t},
+ * is avoiding an implicit cast from `bool` to `cuda::device::id_t`,
  * which would take us to the other variant of @ref cuda::event::make() with a
  * possibly invalid device ID.
  */
