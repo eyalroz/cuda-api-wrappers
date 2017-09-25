@@ -18,7 +18,7 @@ This library of wrappers around the Runtime API is intended to allow us to embra
 
 ## Detailed documentation
 
-Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/), but is not yet complete (see [issue #3](https://github.com/eyalroz/cuda-api-wrappers/issues/3)).
+Detailed nearly-complete Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/).
 
 ## Requirements
 
