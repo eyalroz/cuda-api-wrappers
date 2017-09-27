@@ -16,11 +16,12 @@ namespace cuda {
 namespace device {
 
 /**
- * An aggregate struct for the fields one obtains as device attributes
- * (or in the cudaDeviceProp structure) identifying a device's location
- * on the PCI bus(es) on a system
+ * Location "coordinates" for a CUDA device on a PCIe bus
+ *
+ * @note can be compiled from individual values from a device's properties;
+ * see @ref properties_t
  */
-struct pci_id_t {
+struct pci_location_t {
 	// This is simply what we get in CUDA's cudaDeviceProp structure
 	int domain;
 	int bus;
@@ -28,8 +29,7 @@ struct pci_id_t {
 
 	operator std::string() const;
 	// This is not a ctor so as to maintain the PODness
-	static pci_id_t parse(const std::string& id_str);
-	device::id_t resolve_device_id() const;
+	static pci_location_t parse(const std::string& id_str);
 };
 
 } //namespace device

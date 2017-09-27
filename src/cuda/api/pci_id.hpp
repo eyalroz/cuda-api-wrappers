@@ -2,8 +2,8 @@
  * @file pci_id.hpp
  *
  * @brief iostream-related freestanding operator functions for
- * @ref cuda::device::pci_id_t instances and iostream-related methods of
- * the @ref cuda::device::pci_id_t class.
+ * @ref cuda::device::pci_location_t instances and iostream-related methods of
+ * the @ref cuda::device::pci_location_t class.
  *
  * @note This file is split off from {@ref pci_id.h} since
  * it requires inclusions of standard library headers which most of the
@@ -27,7 +27,7 @@ namespace cuda {
 namespace device {
 
 // TODO: Does this really need to be outside the namespace? I wonder
-inline std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id)
+inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& pci_id)
 {
 	auto format_flags(is.flags());
 	is >> std::hex;
@@ -38,7 +38,7 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_id_t& pci_id
 	return is;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_id_t& pci_id)
+inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_location_t& pci_id)
 {
 	auto format_flags(os.flags());
 	os << std::hex << pci_id.domain << ':' << pci_id.bus << ':' << pci_id.device;
@@ -46,24 +46,28 @@ inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_id_t& 
 	return os;
 }
 
-inline pci_id_t::operator std::string() const
+inline pci_location_t::operator std::string() const
 {
 	std::ostringstream oss;
 	oss << (*this);
 	return oss.str();
 }
 
-inline pci_id_t pci_id_t::parse(const std::string& id_str)
+inline pci_location_t pci_location_t::parse(const std::string& id_str)
 {
 	std::istringstream iss(id_str);
-	pci_id_t id;
+	pci_location_t id;
 	iss >> id;
 	return id;
 }
 
-inline device::id_t pci_id_t::resolve_device_id() const
+/**
+ * Obtain the CUDA device id for the device at a specified location on
+ * a PCIe bus
+ */
+inline device::id_t resolve_id(pci_location_t pci_id)
 {
-	auto as_string = operator std::string();
+	std::string as_string {pci_id};
 	device::id_t cuda_device_id;
 	auto result = cudaDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
 	detail::throw_if_error(result,

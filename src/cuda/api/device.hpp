@@ -524,7 +524,7 @@ public:
 	 * Obtains this device's location on the PCI express bus in terms of
 	 * domain, bus and device id, e.g. (0, 1, 0)
 	 */
-	device::pci_id_t pci_id() const
+	device::pci_location_t pci_id() const
 	{
 		auto pci_domain_id = get_attribute(cudaDevAttrPciDomainId);
 		auto pci_bus_id = get_attribute(cudaDevAttrPciBusId);
@@ -961,9 +961,9 @@ inline device_t<detail::do_not_assume_device_is_current> get(id_t device_id)
  * @param pci_id The domain-bus-device triplet locating the GPU on the PCI bus
  * @return a device_t proxy object for the device at the specified location
  */
-inline device_t<detail::do_not_assume_device_is_current> get(pci_id_t pci_id)
+inline device_t<detail::do_not_assume_device_is_current> get(pci_location_t pci_id)
 {
-	auto resolved_id = pci_id.resolve_device_id();
+	auto resolved_id = resolve_id(pci_id);
 	return get(resolved_id);
 }
 
@@ -975,7 +975,7 @@ inline device_t<detail::do_not_assume_device_is_current> get(pci_id_t pci_id)
  */
 inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::string& pci_id_str)
 {
-	auto parsed_pci_id = pci_id_t::parse(pci_id_str);
+	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);
 }
 
