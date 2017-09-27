@@ -113,7 +113,7 @@ inline bool can_access(const device_t<FirstIsAssumedCurrent>& accessor, const de
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-void enable_access(id_t accessor_id, id_t peer_id)
+inline void enable_access(id_t accessor_id, id_t peer_id)
 {
 	enum
 		: unsigned {fixed_flags = 0
@@ -131,7 +131,7 @@ void enable_access(id_t accessor_id, id_t peer_id)
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-void disable_access(id_t accessor_id, id_t peer_id)
+inline void disable_access(id_t accessor_id, id_t peer_id)
 {
 	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
 	auto status = cudaDeviceDisablePeerAccess(peer_id);

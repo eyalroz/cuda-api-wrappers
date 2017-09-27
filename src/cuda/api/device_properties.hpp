@@ -173,7 +173,7 @@ struct properties_t : public cudaDeviceProp {
 		return computeMode != cudaComputeModeProhibited;
 	}
 	compute_capability_t compute_capability() const { return { (unsigned) major, (unsigned) minor }; }
-	compute_capability_t compute_architecture() const { return { (unsigned) major }; };
+	compute_architecture_t compute_architecture() const { return { (unsigned) major }; };
 	pci_location_t pci_id() const { return { pciDomainID, pciBusID, pciDeviceID }; }
 
 	unsigned long long max_in_flight_threads_on_device() const
