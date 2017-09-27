@@ -90,7 +90,7 @@ inline bool can_access(id_t accessor, id_t peer)
 {
 	int result;
 	auto status = cudaDeviceCanAccessPeer(&result, accessor, peer);
-	detail::throw_if_error(status,
+	throw_if_error(status,
 		"Failed determining whether CUDA device " + std::to_string(accessor) + " can access CUDA device "
 			+ std::to_string(peer));
 	return (result == 1);
@@ -121,7 +121,7 @@ inline void enable_access(id_t accessor_id, id_t peer_id)
 	// No flags are supported as of CUDA 8.0
 	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
 	auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
-	detail::throw_if_error(status,
+	throw_if_error(status,
 		"Failed enabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
 }
 
@@ -135,7 +135,7 @@ inline void disable_access(id_t accessor_id, id_t peer_id)
 {
 	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
 	auto status = cudaDeviceDisablePeerAccess(peer_id);
-	detail::throw_if_error(status,
+	throw_if_error(status,
 		"Failed disabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
 }
 
@@ -154,7 +154,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 {
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
-	detail::throw_if_error(status,
+	throw_if_error(status,
 		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(source) + ", "
 			+ std::to_string(destination) + ')');
 	return value;
@@ -298,7 +298,7 @@ public:	// types
 				// Can this even happen? hopefully not
 				status = cudaErrorUnknown;
 			}
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				"Failed allocating " + std::to_string(size_in_bytes) + " bytes of global memory on "
 					+ device_id_as_str());
 			return allocated;
@@ -336,7 +336,7 @@ public:	// types
 				status = cudaHostGetDevicePointer(static_cast<T**>(&allocated.device_side), allocated.host_side,
 					get_device_pointer_flags);
 			}
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
 					+ " bytes of global memory on " + device_id_as_str());
 			return allocated;
@@ -350,7 +350,7 @@ public:	// types
 			scoped_setter_t set_device_for_this_scope(device_id);
 			size_t total_mem_in_bytes;
 			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				std::string("Failed determining amount of total memory for CUDA device ") + std::to_string(device_id));
 			return total_mem_in_bytes;
 		}
@@ -366,7 +366,7 @@ public:	// types
 			scoped_setter_t set_device_for_this_scope(device_id);
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
-			detail::throw_if_error(status, "Failed determining amount of free memory for " + device_id_as_str());
+			throw_if_error(status, "Failed determining amount of free memory for " + device_id_as_str());
 			return free_mem_in_bytes;
 		}
 	}; // class memory_t
@@ -422,7 +422,7 @@ public:	// types
 				enum : unsigned {fixed_flags = 0 };
 				// No flags are supported as of CUDA 8.0
 				auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
-				detail::throw_if_error(status, "Failed enabling access of current device to device " + std::to_string(peer_id));
+				throw_if_error(status, "Failed enabling access of current device to device " + std::to_string(peer_id));
 			} else
 				device::peer_to_peer::enable_access(device_id, peer_id);
 		}
@@ -444,7 +444,7 @@ public:	// types
 		{
 			if (AssumedCurrent) {
 				auto status = cudaDeviceDisablePeerAccess(peer_id);
-				detail::throw_if_error(status,
+				throw_if_error(status,
 					"Failed disabling access of current device to device " + std::to_string(peer_id));
 			} else
 			device::peer_to_peer::disable_access(device_id, peer_id);
@@ -464,7 +464,7 @@ protected:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaSetDeviceFlags(new_flags);
-		detail::throw_if_error(status, "Failed setting the flags for " + device_id_as_str());
+		throw_if_error(status, "Failed setting the flags for " + device_id_as_str());
 	}
 
 	void set_flags(
@@ -493,7 +493,7 @@ protected:
 		scoped_setter_t set_device_for_this_scope(id_);
 		flags_t flags;
 		auto status = cudaGetDeviceFlags(&flags);
-		detail::throw_if_error(status, "Failed obtaining the flags for  " + device_id_as_str());
+		throw_if_error(status, "Failed obtaining the flags for  " + device_id_as_str());
 		return flags;
 	}
 
@@ -505,7 +505,7 @@ public:
 	{
 		properties_t properties;
 		auto status = cudaGetDeviceProperties(&properties, id());
-		detail::throw_if_error(status, "Failed obtaining device properties for " + device_id_as_str());
+		throw_if_error(status, "Failed obtaining device properties for " + device_id_as_str());
 		return properties;
 	}
 
@@ -562,7 +562,7 @@ public:
 	{
 		attribute_value_t attribute_value;
 		auto ret = cudaDeviceGetAttribute(&attribute_value, attribute, id());
-		detail::throw_if_error(ret, "Failed obtaining device properties for " + device_id_as_str());
+		throw_if_error(ret, "Failed obtaining device properties for " + device_id_as_str());
 		return attribute_value;
 	}
 
@@ -585,7 +585,7 @@ public:
 	{
 		resource_limit_t limit;
 		auto status = cudaDeviceGetLimit(&limit, resource);
-		detail::throw_if_error(status, "Failed obtaining a resource limit for " + device_id_as_str());
+		throw_if_error(status, "Failed obtaining a resource limit for " + device_id_as_str());
 		return limit;
 	}
 
@@ -596,7 +596,7 @@ public:
 	void set_resource_limit(resource_id_t resource, resource_limit_t new_limit)
 	{
 		auto status = cudaDeviceSetLimit(resource, new_limit);
-		detail::throw_if_error(status, "Failed setting a resource limit for  " + device_id_as_str());
+		throw_if_error(status, "Failed setting a resource limit for  " + device_id_as_str());
 	}
 
 	/**
@@ -612,7 +612,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSynchronize();
-		detail::throw_if_error(status, "Failed synchronizing " + device_id_as_str());
+		throw_if_error(status, "Failed synchronizing " + device_id_as_str());
 	}
 
 	/**
@@ -631,7 +631,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaStreamSynchronize(stream_id);
-		detail::throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
+		throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
 	}
 
 	/**
@@ -653,7 +653,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaEventSynchronize(event_id);
-		detail::throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
+		throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
 	}
 
 	/**
@@ -672,7 +672,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		status_t status = cudaDeviceReset();
-		detail::throw_if_error(status, "Resetting  " + device_id_as_str());
+		throw_if_error(status, "Resetting  " + device_id_as_str());
 	}
 
 	/**
@@ -685,7 +685,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetCacheConfig((cudaFuncCache) preference);
-		detail::throw_if_error(status,
+		throw_if_error(status,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for " + device_id_as_str());
 	}
 
@@ -698,7 +698,7 @@ public:
 		scoped_setter_t set_device_for_this_scope(id_);
 		cudaFuncCache raw_preference;
 		auto status = cudaDeviceGetCacheConfig(&raw_preference);
-		detail::throw_if_error(status,
+		throw_if_error(status,
 			"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + device_id_as_str());
 		return (multiprocessor_cache_preference_t) raw_preference;
 	}
@@ -713,7 +713,7 @@ public:
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
-		detail::throw_if_error(status, "Setting the multiprocessor shared memory bank size for " + device_id_as_str());
+		throw_if_error(status, "Setting the multiprocessor shared memory bank size for " + device_id_as_str());
 	}
 
 	/**
@@ -727,7 +727,7 @@ public:
 		scoped_setter_t set_device_for_this_scope(id_);
 		shared_memory_bank_size_t bank_size;
 		auto status = cudaDeviceGetSharedMemConfig(&bank_size);
-		detail::throw_if_error(status, "Obtaining the multiprocessor shared memory bank size for  " + device_id_as_str());
+		throw_if_error(status, "Obtaining the multiprocessor shared memory bank size for  " + device_id_as_str());
 		return bank_size;
 	}
 
@@ -778,7 +778,7 @@ public:
 		scoped_setter_t set_device_for_this_scope(id_);
 		stream::priority_t least, greatest;
 		auto status = cudaDeviceGetStreamPriorityRange(&least, &greatest);
-		detail::throw_if_error(status, "Failed obtaining stream priority range for " + device_id_as_str());
+		throw_if_error(status, "Failed obtaining stream priority range for " + device_id_as_str());
 		return {least, greatest};
 	}
 

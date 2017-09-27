@@ -84,7 +84,7 @@ T* malloc(size_t num_bytes)
 		// Can this even happen? hopefully not
 		status = cudaErrorUnknown;
 	}
-	cuda::detail::throw_if_error(status,
+	cuda::throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) + " bytes of global memory on CUDA device");
 	return allocated;
 }
@@ -94,7 +94,7 @@ T* malloc(size_t num_bytes)
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
-	cuda::detail::throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+	cuda::throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
 /**
@@ -123,7 +123,7 @@ struct deleter {
 inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 {
 	auto result = cudaMemset(buffer_start, byte_value, num_bytes);
-	cuda::detail::throw_if_error(result, "memsetting an on-device buffer");
+	cuda::throw_if_error(result, "memsetting an on-device buffer");
 }
 
 inline void zero(void* buffer_start, size_t num_bytes)
@@ -153,7 +153,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 		std::string error_message("Synchronously copying data");
 		// TODO: Determine whether it was from host to device, device to host etc and
 		// add this information to the error string
-		detail::throw_if_error(result, error_message);
+		throw_if_error(result, error_message);
 	}
 }
 
@@ -172,7 +172,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 		std::string error_message("Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 		// TODO: Determine whether it was from host to device, device to host etc and
 		// add this information to the error string
-		detail::throw_if_error(result, error_message);
+		throw_if_error(result, error_message);
 	}
 }
 
@@ -185,7 +185,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 inline void set(void* buffer_start, int byte_value, size_t num_bytes, stream::id_t stream_id)
 {
 	auto result = cudaMemsetAsync(buffer_start, byte_value, num_bytes, stream_id);
-	detail::throw_if_error(result, "memsetting an on-device buffer");
+	throw_if_error(result, "memsetting an on-device buffer");
 }
 
 inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id = stream::default_stream_id)
@@ -209,7 +209,7 @@ inline T* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_con
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
 	}
-	cuda::detail::throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
+	cuda::throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
 }
 
@@ -229,7 +229,7 @@ inline void* allocate(size_t size_in_bytes)
 inline void free(void* host_ptr)
 {
 	auto result = cudaFreeHost(host_ptr);
-	cuda::detail::throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
+	cuda::throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
 }
 
 namespace detail {
@@ -243,7 +243,7 @@ struct deleter {
 inline void register_(void *ptr, size_t size, unsigned flags)
 {
 	auto result = cudaHostRegister(ptr, size, flags);
-	cuda::detail::throw_if_error(result,
+	cuda::throw_if_error(result,
 		"Could not register a region of page-locked host memory");
 }
 
@@ -290,7 +290,7 @@ inline void register_(void *ptr, size_t size)
 inline void deregister(void *ptr)
 {
 	auto result = cudaHostUnregister(ptr);
-	cuda::detail::throw_if_error(result,
+	cuda::throw_if_error(result,
 		"Could not unregister the memory segment starting at address *a");
 }
 
@@ -333,7 +333,7 @@ T* malloc(
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
-	cuda::detail::throw_if_error(status,
+	cuda::throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) + " bytes of managed CUDA memory");
 	return allocated;
 }
@@ -341,7 +341,7 @@ T* malloc(
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
-	cuda::detail::throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+	cuda::throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
@@ -364,7 +364,7 @@ namespace mapped {
 inline void free(region_pair pair)
 {
 	auto result = cudaFreeHost(pair.host_side);
-	cuda::detail::throw_if_error(result,
+	cuda::throw_if_error(result,
 		"Could not free the (supposed) region pair passed.");
 }
 
@@ -372,7 +372,7 @@ inline void free_region_pair_of(void* ptr)
 {
 	cudaPointerAttributes attributes;
 	auto result = cudaPointerGetAttributes(&attributes, ptr);
-	cuda::detail::throw_if_error(result,
+	cuda::throw_if_error(result,
 		"Could not obtain the properties for the pointer"
 		", being necessary for freeing the region pair it's (supposedly) "
 		"associated with.");
@@ -384,7 +384,7 @@ inline bool is_part_of_a_region_pair(void* ptr)
 {
 	cudaPointerAttributes attributes;
 	auto result = cudaPointerGetAttributes(&attributes, ptr);
-	cuda::detail::throw_if_error(result, "Could not obtain device pointer attributes");
+	cuda::throw_if_error(result, "Could not obtain device pointer attributes");
 #ifdef DEBUG
 	auto self_copy = (attributes.memoryType == cudaMemoryTypeHost) ?
 		attributes.hostPointer : attributes.devicePointer ;

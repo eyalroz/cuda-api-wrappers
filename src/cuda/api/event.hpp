@@ -73,7 +73,7 @@ namespace detail {
  */
 inline void enqueue(stream::id_t stream_id, id_t event_id) {
 	auto status = cudaEventRecord(event_id, stream_id);
-	cuda::detail::throw_if_error(status,
+	cuda::throw_if_error(status,
 		"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
@@ -91,7 +91,7 @@ inline id_t create_on_current_device(bool uses_blocking_sync, bool records_timin
 	id_t new_event_id;
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
 	auto status = cudaEventCreate(&new_event_id, flags);
-	cuda::detail::throw_if_error(status, "failed creating a CUDA event associated with the current device");
+	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
 	return new_event_id;
 }
 
@@ -193,7 +193,7 @@ public: // other mutator methods
 	void synchronize()
 	{
 		auto status = cudaEventSynchronize(id_);
-		cuda::detail::throw_if_error(status,
+		cuda::throw_if_error(status,
 			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
 	}
 
@@ -250,7 +250,7 @@ inline float milliseconds_elapsed_between(id_t start, id_t end)
 {
 	float elapsed_milliseconds;
 	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start, end);
-	cuda::detail::throw_if_error(status, "determining the time elapsed between events");
+	cuda::throw_if_error(status, "determining the time elapsed between events");
 	return elapsed_milliseconds;
 }
 

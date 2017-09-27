@@ -47,7 +47,7 @@ inline id_t create_on_current_device(
 		cudaStreamDefault : cudaStreamNonBlocking;
 	id_t new_stream_id;
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
-	cuda::detail::throw_if_error(status,
+	cuda::throw_if_error(status,
 		std::string("Failed creating a new stream on CUDA device ")
 		+ std::to_string(device::current::get_id()));
 	return new_stream_id;
@@ -167,7 +167,7 @@ public: // other non-mutators
 	{
 		unsigned int flags;
 		auto status = cudaStreamGetFlags(id_, &flags);
-		detail::throw_if_error(status,
+		throw_if_error(status,
 			std::string("Failed obtaining flags for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return flags & cudaStreamNonBlocking;
@@ -177,7 +177,7 @@ public: // other non-mutators
 	{
 		int the_priority;
 		auto status = cudaStreamGetPriority(id_, &the_priority);
-		detail::throw_if_error(status,
+		throw_if_error(status,
 			std::string("Failure obtaining priority for a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 		return the_priority;
@@ -314,7 +314,7 @@ public: // mutators
 
 			// Not calling event::detail::enqueue to avoid dependency on event.hpp
 			auto status = cudaEventRecord(event_id, stream_id_);
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				"Failed scheduling scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
@@ -342,7 +342,7 @@ public: // mutators
 			// std::function, there's not much need (it would seem) for an extra inner
 			// user_data parameter to callback_t
 			auto status = cudaStreamAddCallback(stream_id_, &callback_adapter, &callback, fixed_flags);
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				std::string("Failed scheduling a callback function to be launched")
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
@@ -374,7 +374,7 @@ public: // mutators
 			constexpr const size_t length = 0;
 			auto status =  cudaStreamAttachMemAsync(
 				stream_id_, managed_region_start, length, cudaMemAttachSingle);
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				std::string("Failed scheduling an attachment of a managed memory region")
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
@@ -398,7 +398,7 @@ public: // mutators
 			// currently unused
 			constexpr const unsigned int  flags = 0;
 			auto status = cudaStreamWaitEvent(stream_id_, event_id, flags);
-			detail::throw_if_error(status,
+			throw_if_error(status,
 				std::string("Failed scheduling a wait on event ") + cuda::detail::ptr_as_hex(event_id)
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
@@ -415,7 +415,7 @@ public: // mutators
 		DeviceSetter set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
 		auto status = cudaStreamSynchronize(id_);
-		detail::throw_if_error(status,
+		throw_if_error(status,
 			std::string("Failed synchronizing a stream")
 			+ " on CUDA device " + std::to_string(device_id_));
 	}

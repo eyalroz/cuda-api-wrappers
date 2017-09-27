@@ -78,7 +78,7 @@ public: // non-mutators
 	{
 		device_function::attributes_t function_attributes;
 		auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
-		detail::throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
+		throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
 		return function_attributes;
 	}
 
@@ -113,7 +113,7 @@ public: // mutators
 	void cache_preference(multiprocessor_cache_preference_t preference)
 	{
 		auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
-		detail::throw_if_error(result,
+		throw_if_error(result,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
 			"CUDA device function");
 	}
@@ -132,12 +132,12 @@ public: // mutators
 		// to minimize dependecies
 		device::id_t  old_device;
 		auto result = cudaGetDevice(&old_device);
-		detail::throw_if_error(result, "Failed obtaining the current CUDA device ID");
+		throw_if_error(result, "Failed obtaining the current CUDA device ID");
 		result = cudaSetDevice(device_id);
-		detail::throw_if_error(result, "Failed setting the current CUDA device ID to " + std::to_string(device_id));
+		throw_if_error(result, "Failed setting the current CUDA device ID to " + std::to_string(device_id));
 		cache_preference(preference);
 		result = cudaSetDevice(old_device);
-		detail::throw_if_error(result, "Failure setting device back to " + std::to_string(old_device));
+		throw_if_error(result, "Failure setting device back to " + std::to_string(old_device));
 	}
 
 	/**
@@ -150,7 +150,7 @@ public: // mutators
 	{
 		auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
 		if (result == cudaErrorInvalidDeviceFunction) { return; }
-		detail::throw_if_error(result);
+		throw_if_error(result);
 	}
 
 public: // ctors & dtor
@@ -221,7 +221,7 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 	auto status = cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, device_function.ptr(), num_threads_per_block,
 		dynamic_shared_memory_per_block, flags);
-	detail::throw_if_error(status, "Failed calculating the maximum occupancy "
+	throw_if_error(status, "Failed calculating the maximum occupancy "
 		"of device function blocks per multiprocessor");
 	return result;
 }

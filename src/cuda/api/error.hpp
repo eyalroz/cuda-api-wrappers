@@ -188,23 +188,32 @@ private:
 	status_t code_;
 };
 
-namespace detail {
-
 // TODO: The following could use std::optiomal arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
+/**
+ * Do nothing... unless the status indicates an error, in which case
+ * a @ref cuda::runtime_error exception is thrown
+ *
+ * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param message An extra description message to add to the exception
+ */ 
 inline void throw_if_error(cuda::status_t status, std::string message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
+/**
+ * Do nothing... unless the status indicates an error, in which case
+ * a @ref cuda::runtime_error exception is thrown
+ *
+ * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ */ 
 inline void throw_if_error(cuda::status_t error_code) noexcept(false)
 {
 	if (is_failure(error_code)) { throw runtime_error(error_code); }
 }
-
-} // namespace detail
 
 enum : bool {
 	dont_clear_errors = false,
@@ -215,13 +224,13 @@ inline void ensure_no_outstanding_error(
 	std::string message, bool clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
-	detail::throw_if_error(last_status, message);
+	throw_if_error(last_status, message);
 }
 
 inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
-	detail::throw_if_error(last_status);
+	throw_if_error(last_status);
 }
 
 /**
