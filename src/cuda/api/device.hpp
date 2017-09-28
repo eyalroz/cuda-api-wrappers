@@ -963,7 +963,7 @@ inline device_t<detail::do_not_assume_device_is_current> get(id_t device_id)
  */
 inline device_t<detail::do_not_assume_device_is_current> get(pci_location_t pci_id)
 {
-	auto resolved_id = resolve_id(pci_id);
+	auto resolved_id = device::resolve_id(pci_id);
 	return get(resolved_id);
 }
 
