@@ -14,14 +14,12 @@
 #define CUDA_API_WRAPPERS_PCI_ID_HPP_
 
 #include <cuda/api/pci_id.h>
-#include <cuda/api/error.hpp>
 
 #include <string>
 #include <istream>
 #include <ostream>
 #include <sstream>
 
-#include <cuda_runtime_api.h>
 
 namespace cuda {
 namespace device {
@@ -59,20 +57,6 @@ inline pci_location_t pci_location_t::parse(const std::string& id_str)
 	pci_location_t id;
 	iss >> id;
 	return id;
-}
-
-/**
- * Obtain the CUDA device id for the device at a specified location on
- * a PCIe bus
- */
-inline id_t resolve_id(pci_location_t pci_id)
-{
-	std::string as_string = pci_id;
-	id_t cuda_device_id;
-	auto result = cudaDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
-	throw_if_error(result,
-		"Failed obtaining a CUDA device ID corresponding to PCI id " + as_string);
-	return cuda_device_id;
 }
 
 } //namespace device
