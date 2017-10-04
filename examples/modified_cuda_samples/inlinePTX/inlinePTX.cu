@@ -60,8 +60,8 @@ int main(int argc, char **argv)
 
 	sequence_cpu(h_ptr.get(), N);
 
-	dim3 cudaBlockSize(256,1,1);
-	dim3 cudaGridSize((N + cudaBlockSize.x - 1) / cudaBlockSize.x, 1, 1);
+	cuda::dimensions_t cudaBlockSize(256,1,1);
+	cuda::dimensions_t cudaGridSize((N + cudaBlockSize.x - 1) / cudaBlockSize.x, 1, 1);
 	current_device.launch(
 		sequence_gpu,
 		{ cudaGridSize, cudaBlockSize },

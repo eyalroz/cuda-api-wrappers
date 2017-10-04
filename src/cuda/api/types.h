@@ -97,7 +97,7 @@ struct dimensions_t // this almost-inherits dim3
     constexpr __host__ __device__ dimensions_t(unsigned x_ = 1, unsigned y_ = 1, unsigned z_ = 1)
     : x(x_), y(y_), z(z_) {}
 
-    __host__ __device__ constexpr dimensions_t(const int3& v) : dimensions_t(v.x, v.y, v.z) { }
+    __host__ __device__ constexpr dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
     __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
 
     __host__ __device__ constexpr operator uint3(void) const { return { x, y, z }; }
