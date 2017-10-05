@@ -362,8 +362,8 @@ int main(int argc, char **argv)
 	// use blocking sync
 	auto use_blocking_sync = (device_sync_method == cudaDeviceBlockingSync);
 
-	auto start_event = cuda::event::make(current_device.id(), use_blocking_sync);
-	auto stop_event = cuda::event::make(current_device.id(), use_blocking_sync);
+	auto start_event = cuda::event::create(current_device.id(), use_blocking_sync);
+	auto stop_event = cuda::event::create(current_device.id(), use_blocking_sync);
 
 	// time memcopy from device
 	start_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed

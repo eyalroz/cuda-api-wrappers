@@ -302,7 +302,7 @@ inline event_t wrap(
  * event?
  * @return The constructed event proxy class
  */
-inline event_t make(
+inline event_t create(
 	device::id_t  device_id,
 	bool          uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
 	bool          records_timing     = do_record_timings,
@@ -320,12 +320,12 @@ inline event_t make(
  *
  * @note The reason this doesn't take the three boolean parameters
  * is avoiding an implicit cast from `bool` to `cuda::device::id_t`,
- * which would take us to the other variant of @ref cuda::event::make() with a
+ * which would take us to the other variant of @ref cuda::event::create() with a
  * possibly invalid device ID.
  */
-inline event_t make()
+inline event_t create()
 {
-	return make(device::current::get_id());
+	return create(device::current::get_id());
 }
 
 } // namespace event

@@ -94,13 +94,13 @@ int main(int argc, char **argv)
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 	auto default_stream = cuda::device::current::get().default_stream();
 
-	{ auto event = cuda::event::make(); }
-	auto event_1 = cuda::event::make(
+	{ auto event = cuda::event::create(); }
+	auto event_1 = cuda::event::create(
 		device.id(),
 		cuda::event::sync_by_blocking,
 		cuda::event::do_record_timings,
 		cuda::event::not_interprocess);
-	auto event_2 = cuda::event::make(
+	auto event_2 = cuda::event::create(
 		device.id(),
 		cuda::event::sync_by_blocking,
 		cuda::event::do_record_timings,

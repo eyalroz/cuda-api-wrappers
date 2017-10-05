@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	std::fill(buffer.get(), buffer.get() + buffer_size, 'a');
 	print_first_char(buffer.get());
 
-	auto event_1 = cuda::event::make(cuda::event::sync_by_blocking);
+	auto event_1 = cuda::event::create(cuda::event::sync_by_blocking);
 	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
 	stream_1.enqueue.callback(

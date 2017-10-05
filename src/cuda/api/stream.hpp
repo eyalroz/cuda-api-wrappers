@@ -512,7 +512,7 @@ inline stream_t<> wrap(
 	return stream_t<>(device_id, stream_id, take_ownership);
 }
 
-inline stream_t<> make(
+inline stream_t<> create(
 	device::id_t  device_id,
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority)
