@@ -18,7 +18,9 @@
 
 namespace cuda {
 
+///@cond
 template <bool AssumedCurrent> class device_t;
+///@endcond
 
 namespace event {
 
@@ -141,16 +143,29 @@ inline event_t wrap(
  */
 class event_t {
 public: // data member non-mutator getters
+	/**
+	 * The CUDA runtime API ID this object is wrapping
+	 */
 	event::id_t  id()                 const { return id_;                 }
+	/**
+	 * The device with which this event is associated (i.e. on whose stream
+	 * this event can be enqueued)
+	 */
 	device::id_t device_id()          const { return device_id_;          }
 	device_t<detail::do_not_assume_device_is_current> device() const;
+	/**
+	 * Is this wrapper responsible for having the CUDA Runtime API destroy
+	 * the event when it destructs?
+	 */
 	bool         is_owning()          const { return owning;              }
 
 public: // other non-mutator methods
 
 	/**
-	 * Checks whether this event has already occurred or whether it's
-	 * still pending.
+	 * Has this event already occurred, or is it still pending on a stream?
+	 *
+	 * @note an event can occur multiple times, but in the context of this
+	 * method, it only has two states: pending (on a stream) and has_occured.
 	 *
 	 * @return if all work on the stream with which the event was recorded
 	 * has been completed, returns true; if there is pending work on that stream
@@ -222,7 +237,6 @@ public: // constructors and destructor
 	~event_t()
 	{
 		if (owning) { cudaEventDestroy(id_); }
-		owning = false;
 	}
 
 protected: // data members
@@ -279,13 +293,16 @@ inline float milliseconds_elapsed_between(const event_t& start, const event_t& e
  *
  * @param device_id Device to which the event is related
  * @param event_id of the event for which to obtain a proxy
- * @param take_ownership
- * @return
+ * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
+ * the event when it destructs (making an "owning" event wrapper; otherwise, it is
+ * assume that some other code "owns" the event and will destroy it when necessary
+ * (and not while the wrapper is being used!)
+ * @return an event wrapper associated with the specified event
  */
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
-	bool          take_ownership /* = false, see declaration */)
+	bool          take_ownership)
 {
 	return event_t(device_id, event_id, take_ownership);
 }

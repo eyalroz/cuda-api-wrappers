@@ -317,29 +317,11 @@ public:	// types
 		 * @param options to be passed to the CUDA memory allocation API
 		 * @return a non-null pair of allocated regions
 		 */
-		template<typename T = void>
 		__host__ region_pair allocate_region_pair(size_t size_in_bytes, region_pair::allocation_options options = {
 			region_pair::isnt_portable_across_cuda_contexts, region_pair::without_cpu_write_combining })
 		{
 			scoped_setter_t set_device_for_this_scope(device_id);
-			region_pair allocated;
-			auto flags = cuda::memory::mapped::detail::make_cuda_host_alloc_flags(options);
-			// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
-			// not in number of elements
-			auto status = cudaHostAlloc<T>(static_cast<T**>(&allocated.host_side), size_in_bytes, flags);
-			if (is_success(status) && (allocated.host_side == nullptr)) {
-				// Can this even happen? hopefully not
-				status = cudaErrorUnknown;
-			}
-			if (is_success(status)) {
-				auto get_device_pointer_flags = 0u; // see CUDA runtime API 7.5 documentation
-				status = cudaHostGetDevicePointer(static_cast<T**>(&allocated.device_side), allocated.host_side,
-					get_device_pointer_flags);
-			}
-			throw_if_error(status,
-				"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
-					+ " bytes of global memory on " + device_id_as_str());
-			return allocated;
+			return memory::mapped::detail::allocate(size_in_bytes, options);
 		}
 
 		/**

@@ -298,7 +298,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::async::set(destination, byte_value, num_bytes, stream_id_);
+			memory::device::async::set(destination, byte_value, num_bytes, stream_id_);
 		}
 
 		/**
@@ -307,7 +307,8 @@ public: // mutators
 		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
 		 * for continued execution.
 		 *
-		 * @param event_id ID of the event to occur on completing of hereto-schedule work
+		 * @param event_id CUDA runtime API ID of the event to have occuring on
+		 * completion of the hereto-scheduled work on this stream
 		 **/
 		void event(cuda::event::id_t event_id) {
 			// TODO: ensure the stream and the event are associated with the same device
