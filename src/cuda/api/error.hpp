@@ -144,7 +144,7 @@ std::string as_hex(I x, unsigned hex_string_length = 2*sizeof(I) )
 		auto hexadecimal_digit = (x >> bit_offset) & 0xF;
 		result[digit_index] = digit_characters[hexadecimal_digit];
 	}
-    return result;
+	return result;
 }
 
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
@@ -205,14 +205,14 @@ inline void throw_if_error(cuda::status_t status, std::string message) noexcept(
 }
 
 /**
- * Do nothing... unless the status indicates an error, in which case
+ * Does nothing - unless the status indicates an error, in which case
  * a @ref cuda::runtime_error exception is thrown
  *
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  */ 
-inline void throw_if_error(cuda::status_t error_code) noexcept(false)
+inline void throw_if_error(cuda::status_t status) noexcept(false)
 {
-	if (is_failure(error_code)) { throw runtime_error(error_code); }
+	if (is_failure(status)) { throw runtime_error(status); }
 }
 
 enum : bool {
@@ -220,6 +220,19 @@ enum : bool {
 	do_clear_errors    = true
 };
 
+/**
+ * @brief Does nothing (unless throwing an exception)
+ *
+ * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
+ * state
+ *
+ * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * encountered previously encountered an (uncleared) error
+ *
+ * @param message Additional message to incldue in the exception thrown
+ * @param clear_any_error When true, clears the CUDA Runtime API's state from
+ * recalling errors arising from before this oment
+ */
 inline void ensure_no_outstanding_error(
 	std::string message, bool clear_any_error = do_clear_errors) noexcept(false)
 {
@@ -227,7 +240,18 @@ inline void ensure_no_outstanding_error(
 	throw_if_error(last_status, message);
 }
 
-inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) noexcept(false)
+/**
+ * @brief Does nothing (unless throwing an exception)
+ *
+ * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
+ * state
+ *
+ * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * encountered previously encountered an (uncleared) error
+ *
+ * @param clear_any_error When true, clears the CUDA Runtime API's state from
+ * recalling errors arising from before this oment
+ */inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
 	throw_if_error(last_status);
