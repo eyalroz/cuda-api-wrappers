@@ -131,7 +131,7 @@ AllocateHostMemory(bool bPinGenericMemory, int **pp_a, int **ppAligned_a, int nb
 	{
 		std::cout << "> cudaMallocHost() registering " <<  (float)nbytes/1048576.0f << " Mbytes of generic allocated system memory\n";
 		// allocate host memory (pinned is required for achieve asynchronicity)
-		*pp_a = cuda::memory::host::allocate<int>(nbytes);
+		*pp_a = static_cast<int*>(cuda::memory::host::allocate(nbytes));
 		*ppAligned_a = *pp_a;
 	}
 }

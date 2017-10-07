@@ -257,12 +257,14 @@ public:	// types
 		 * @param size_in_bytes size in bytes of the region of memory to allocate
 		 * @return a non-null (device-side) pointer to the allocated memory
 		 */
-		template<typename T = void>
-		__host__ T* allocate(size_t size_in_bytes)
+		__host__ void* allocate(size_t size_in_bytes)
 		{
 			scoped_setter_t set_device_for_this_scope(device_id);
-			return memory::device::detail::malloc<T>(size_in_bytes);
+			return memory::device::detail::allocate(size_in_bytes);
 		}
+
+		// Perhaps drop this? it should really go into a managed namespace
+		using initial_visibility_t  = cuda::memory::managed::initial_visibility_t;
 
 		/**
 		 * Allocates memory on the device whose pointer is also visible on the host,
@@ -284,24 +286,13 @@ public:	// types
 		 * it will be made usable on all CUDA devices on the system
 		 * @return the allocated pointer; never returns null (throws on failure)
 		 */
-		template<typename T = void>
-		__host__ T* allocate_managed(size_t size_in_bytes, bool initially_visible_to_host_only = false)
+		__host__ void* allocate_managed(
+			size_t size_in_bytes,
+			initial_visibility_t initial_visibility =
+				initial_visibility_t::to_supporters_of_concurrent_managed_access)
 		{
 			scoped_setter_t set_device_for_this_scope(device_id);
-			T* allocated = nullptr;
-			auto flags = initially_visible_to_host_only ?
-				cudaMemAttachHost : cudaMemAttachGlobal;
-			// Note: the typed version also takes its size in bytes, apparently,
-			// not in number of elements
-			auto status = cudaMallocManaged<T>(&allocated, size_in_bytes, flags);
-			if (is_success(status) && allocated == nullptr) {
-				// Can this even happen? hopefully not
-				status = cudaErrorUnknown;
-			}
-			throw_if_error(status,
-				"Failed allocating " + std::to_string(size_in_bytes) + " bytes of global memory on "
-					+ device_id_as_str());
-			return allocated;
+			return cuda::memory::managed::detail::allocate(size_in_bytes, initial_visibility);
 		}
 
 		using region_pair = ::cuda::memory::mapped::region_pair;
@@ -317,8 +308,12 @@ public:	// types
 		 * @param options to be passed to the CUDA memory allocation API
 		 * @return a non-null pair of allocated regions
 		 */
-		__host__ region_pair allocate_region_pair(size_t size_in_bytes, region_pair::allocation_options options = {
-			region_pair::isnt_portable_across_cuda_contexts, region_pair::without_cpu_write_combining })
+		__host__ region_pair allocate_region_pair(
+			size_t                           size_in_bytes,
+			region_pair::allocation_options  options = {
+				region_pair::isnt_portable_across_cuda_contexts,
+				region_pair::without_cpu_write_combining
+			})
 		{
 			scoped_setter_t set_device_for_this_scope(device_id);
 			return memory::mapped::detail::allocate(size_in_bytes, options);
@@ -333,7 +328,8 @@ public:	// types
 			size_t total_mem_in_bytes;
 			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
 			throw_if_error(status,
-				std::string("Failed determining amount of total memory for CUDA device ") + std::to_string(device_id));
+				std::string("Failed determining amount of total memory "
+					"for CUDA device ") + device_id_as_str());
 			return total_mem_in_bytes;
 		}
 
@@ -348,7 +344,8 @@ public:	// types
 			scoped_setter_t set_device_for_this_scope(device_id);
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
-			throw_if_error(status, "Failed determining amount of free memory for " + device_id_as_str());
+			throw_if_error(status, "Failed determining amount of "
+				"free memory for " + device_id_as_str());
 			return free_mem_in_bytes;
 		}
 	}; // class memory_t

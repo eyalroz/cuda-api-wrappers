@@ -73,13 +73,17 @@ namespace device {
 
 namespace detail {
 
-template <typename T = void>
-T* malloc(size_t num_bytes)
+/**
+ * Allocate memory on current device
+ *
+ * @param num_bytes amount of memory to allocate in bytes
+ */
+void* allocate(size_t num_bytes)
 {
-	T* allocated = nullptr;
+	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMalloc<T>(&allocated, num_bytes);
+	auto status = cudaMalloc(&allocated, num_bytes);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = cudaErrorUnknown;
@@ -113,17 +117,16 @@ inline void free(void* ptr)
  * @param size_in_bytes the amount of memory to allocate
  * @return a pointer to the allocated stretch of memory (on the CUDA device)
  */
-template <typename T = void>
-__host__ T* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+__host__ void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
 	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-	return memory::device::detail::malloc<T>(size_in_bytes);
+	return memory::device::detail::allocate(size_in_bytes);
 }
 
 namespace detail {
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const { return detail::malloc(num_bytes); }
+	void* operator()(size_t num_bytes) const { return detail::allocate(num_bytes); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
@@ -284,37 +287,17 @@ namespace host {
  * in the number of `T` elements
  * @return a pointer to the allocated stretch of memory
  */
-template <typename T>
-inline T* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
+inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
 {
-	T* allocated = nullptr;
+	void* allocated = nullptr;
 	// Note: the typed cudaMallocHost also takes its size in bytes, apparently, not in number of elements
-	auto result = cudaMallocHost<T>(&allocated, size_in_bytes);
+	auto result = cudaMallocHost(&allocated, size_in_bytes);
 	if (is_success(result) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
 	}
 	cuda::throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
-}
-
-/**
- * Allocate pinned host memory (= main system memory)
- *
- * @note "Pinned" memory is excepted from virtual memory swapping-out
- * (and possibly undergoes some sort of registration), making it
- * possible to copy to and from it to the the GPU using DMA without
- * assistance from the GPU. Typically for PCIe 3.0, the effective
- * bandwidth for I/O vis-a-vis such a memory region is twice as
- * high as for naively-allocated host memory.
- *
- * @param size_in_bytes number of bytes to allocate
- * @result host pointer to the allocated memory region; this must be freed with ::cuda::host::free()
- * rather than C++'s delete() .
- */
-inline void* allocate(size_t size_in_bytes)
-{
-	return (void*) allocate<char>(size_in_bytes);
 }
 
 /**
@@ -425,17 +408,16 @@ enum class initial_visibility_t {
 
 namespace detail {
 
-template <typename T = void>
-T* malloc(
-	size_t num_bytes,
-	initial_visibility_t initial_visibility = initial_visibility_t::to_all_devices)
+void* allocate(
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
-	T* allocated = nullptr;
+	void* allocated = nullptr;
 	auto flags = (initial_visibility == initial_visibility_t::to_all_devices) ?
 		cudaMemAttachGlobal : cudaMemAttachHost;
 	// Note: Despite the templating by T, the size is still in bytes,
 	// not in number of T's
-	auto status = cudaMallocManaged<T>(&allocated, num_bytes, flags);
+	auto status = cudaMallocManaged(&allocated, num_bytes, flags);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
@@ -456,7 +438,7 @@ struct allocator {
 	// Allocates on the current device!
 	void* operator()(size_t num_bytes) const
 	{
-		return detail::malloc(num_bytes, InitialVisibility);
+		return detail::allocate(num_bytes, InitialVisibility);
 	}
 };
 struct deleter {
@@ -464,6 +446,24 @@ struct deleter {
 };
 
 } // namespace detail
+
+void* allocate(
+	cuda::device::id_t    device_id,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
+{
+	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	return detail::allocate(num_bytes, initial_visibility);
+}
+
+inline void free(void* managed_ptr)
+{
+	auto result = cudaFree(managed_ptr);
+	cuda::throw_if_error(result,
+		"Freeing managed device memory at 0x"
+		+ cuda::detail::ptr_as_hex(managed_ptr));
+}
+
 } // namespace managed
 
 namespace mapped {
@@ -512,7 +512,6 @@ inline region_pair allocate(
 	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	return detail::allocate(size_in_bytes, options);
 }
-
 
 inline void free(region_pair pair)
 {
