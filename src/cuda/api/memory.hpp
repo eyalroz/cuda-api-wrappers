@@ -267,7 +267,7 @@ inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id)
 namespace host {
 
 /**
- * Allocate pinned host memory (= main system memory)
+ * Allocate pinned host memory
  *
  * @note "Pinned" memory is excepted from virtual memory swapping-out,
  * and is allocated in contiguous physical RAM addresses, making it
@@ -280,11 +280,7 @@ namespace host {
  *
  * @todo Consider a variant of this supporting the cudaHostAlloc flags
  *
- * @tparam T the type of elements to consider the allocated memory
- * to be intended for storing; these will not actually be constructed.
- *
- * @param size_in_bytes the amount of memory to allocate - in bytes, not
- * in the number of `T` elements
+ * @param size_in_bytes the amount of memory to allocate, in bytes
  * @return a pointer to the allocated stretch of memory
  */
 inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
@@ -427,6 +423,9 @@ void* allocate(
 	return allocated;
 }
 
+/**
+ * Free a region of pinned host memory which was allocated with @ref allocate.
+ */
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
@@ -447,6 +446,31 @@ struct deleter {
 
 } // namespace detail
 
+/**
+ * @brief Allocate a a region of managed memory, accessible with the same
+ * address on the host and on CUDA devices
+ *
+ * CUDA "managed memory" means being able to use the same address on the host
+ * and on CUDA devices to refer to different memory regions, one in host
+ * memory and others in global device memory. CUDA "manages" these regions,
+ * i.e. migrates data between CUDA devices and host memory when its been written
+ * somewhere and needs to be read elsewhere.
+ * See @url https://devblogs.nvidia.com/parallelforall/unified-memory-in-cuda-6/
+ *
+ * @note "managed memory" is similar to "mapped memory" in the propagation
+ * of changes from the host to the device and back as necessary, but differs
+ * from it in that "mapped memory" involves just a single device; and that
+ * with "mapped memory" the host-side and device-side addresses are different
+ *
+ * @param device_id the initial device which is likely to access the managed
+ * memory region (and which will certainly have actually allocated for it)
+ * @param num_bytes size of each of the regions of memory to allocate
+ * @param initial_visibility will the allocated region be visible, using the
+ * common address, to all CUDA device (= more overhead, more work for the CUDA
+ * runtime) or just to those devices with some hardware features to assist in
+ * this task (= less overhead)?
+ */
+
 void* allocate(
 	cuda::device::id_t    device_id,
 	size_t                num_bytes,
@@ -456,11 +480,16 @@ void* allocate(
 	return detail::allocate(num_bytes, initial_visibility);
 }
 
+/**
+ * Free a managed memory region (host-side and device-side regions on all devices
+ * where it was allocated, all with the same address) which was allocated with
+ * @ref allocate.
+ */
 inline void free(void* managed_ptr)
 {
 	auto result = cudaFree(managed_ptr);
 	cuda::throw_if_error(result,
-		"Freeing managed device memory at 0x"
+		"Freeing managed memory (host and device regions) at address 0x"
 		+ cuda::detail::ptr_as_hex(managed_ptr));
 }
 
@@ -487,7 +516,7 @@ inline region_pair allocate(
 		status = cudaErrorUnknown;
 	}
 	if (is_success(status)) {
-		auto get_device_pointer_flags = 0u; // see CUDA runtime API 7.5 documentation
+		auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
 		status = cudaHostGetDevicePointer(
 			&allocated.device_side,
 			allocated.host_side,
@@ -501,6 +530,21 @@ inline region_pair allocate(
 
 } // namespace detail
 
+/**
+ * Allocate a pair of mapped memory regions, one in host memory and one
+ * in the global memory of a CUDA device, which the CUDA runtime will keep
+ * syncrhonized
+ *
+ * @note "managed memory" is similar to "mapped memory" in the propagation
+ * of changes from the host to the device and back as necessary, but differs
+ * from it in that "mapped memory" involves just a single device; and that
+ * with "mapped memory" the host-side and device-side addresses are different
+ *
+ * @param device_id The device on which to allocate the device-side region
+ * @param size_in_bytes size of each of the memory region
+ * @param options see @ref region_pair::allocation_options
+ * @return a structure for the pair of allocated regions
+ */
 inline region_pair allocate(
 	cuda::device::id_t               device_id,
 	size_t                           size_in_bytes,
@@ -513,13 +557,21 @@ inline region_pair allocate(
 	return detail::allocate(size_in_bytes, options);
 }
 
+/**
+ * Free a pair of mapped memory regions allocated with @ref allocate.
+ */
 inline void free(region_pair pair)
 {
 	auto result = cudaFreeHost(pair.host_side);
-	cuda::throw_if_error(result,
-		"Could not free the (supposed) region pair passed.");
+	cuda::throw_if_error(result, "Could not free mapped memory region pair.");
 }
 
+/**
+ * Free a pair of mapped memory regions allocated with @ref allocate
+ *
+ * @param ptr a pointer to one of the mapped regions (can be either
+ * the device-side or the host-side)
+ */
 inline void free_region_pair_of(void* ptr)
 {
 	cudaPointerAttributes attributes;
