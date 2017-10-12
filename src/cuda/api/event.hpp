@@ -92,7 +92,7 @@ inline id_t create_on_current_device(bool uses_blocking_sync, bool records_timin
 {
 	id_t new_event_id;
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
-	auto status = cudaEventCreate(&new_event_id, flags);
+	auto status = cudaEventCreateWithFlags(&new_event_id, flags);
 	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
 	return new_event_id;
 }
