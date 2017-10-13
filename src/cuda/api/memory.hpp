@@ -78,7 +78,7 @@ namespace detail {
  *
  * @param num_bytes amount of memory to allocate in bytes
  */
-void* allocate(size_t num_bytes)
+inline void* allocate(size_t num_bytes)
 {
 	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
@@ -117,7 +117,7 @@ inline void free(void* ptr)
  * @param size_in_bytes the amount of memory to allocate
  * @return a pointer to the allocated stretch of memory (on the CUDA device)
  */
-__host__ void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+inline __host__ void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
 	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	return memory::device::detail::allocate(size_in_bytes);
@@ -404,7 +404,7 @@ enum class initial_visibility_t {
 
 namespace detail {
 
-void* allocate(
+inline void* allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
@@ -471,7 +471,7 @@ struct deleter {
  * this task (= less overhead)?
  */
 
-void* allocate(
+inline void* allocate(
 	cuda::device::id_t    device_id,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
