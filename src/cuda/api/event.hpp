@@ -88,15 +88,6 @@ constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timin
 		| ( interprocess        ? cudaEventInterprocess : 0  );
 }
 
-inline id_t create_on_current_device(bool uses_blocking_sync, bool records_timing, bool interprocess)
-{
-	id_t new_event_id;
-	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
-	auto status = cudaEventCreateWithFlags(&new_event_id, flags);
-	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
-	return new_event_id;
-}
-
 } // namespace detail
 
 } // namespace event
@@ -307,6 +298,23 @@ inline event_t wrap(
 	return event_t(device_id, event_id, take_ownership);
 }
 
+namespace detail {
+
+inline event_t create_on_current_device(
+	bool          uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool          records_timing     = do_record_timings,
+	bool          interprocess       = not_interprocess)
+{
+	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
+	id_t new_event_id;
+	auto status = cudaEventCreateWithFlags(&new_event_id, flags);
+	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
+	bool take_ownership = true;
+	return wrap(device::current::get_id(), new_event_id, take_ownership);
+}
+
+} // namespace detail
+
 /**
  * @brief creates a new execution stream on a device.
  *
@@ -325,24 +333,10 @@ inline event_t create(
 	bool          records_timing     = do_record_timings,
 	bool          interprocess       = not_interprocess)
 {
-	auto new_event_id = detail::create_on_current_device(
+	device::current::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
+		set_device_for_this_scope(device_id);
+	return detail::create_on_current_device(
 		uses_blocking_sync, records_timing, interprocess);
-	bool take_ownership = true;
-	return wrap(device_id, new_event_id, take_ownership);
-}
-
-/**
- * @brief creates a new execution stream on the current with default parameters
- *
- *
- * @note The reason this doesn't take the three boolean parameters
- * is avoiding an implicit cast from `bool` to `cuda::device::id_t`,
- * which would take us to the other variant of @ref cuda::event::create() with a
- * possibly invalid device ID.
- */
-inline event_t create()
-{
-	return create(device::current::get_id());
 }
 
 } // namespace event
