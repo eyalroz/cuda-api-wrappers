@@ -404,7 +404,7 @@ enum class initial_visibility_t {
 
 namespace detail {
 
-void* allocate(
+inline void* allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
