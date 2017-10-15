@@ -37,12 +37,12 @@ int main(int argc, char **argv)
 	}
 
 	try {
-		cuda::ensure_no_outstanding_error();
+		cuda::outstanding_error::ensure_none();
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
-	cuda::ensure_no_outstanding_error();
+	cuda::outstanding_error::ensure_none();
 
 	// An exception was not thrown, since by default,
 	// ensure_no_outstanding_error() clears the error it finds
@@ -57,21 +57,21 @@ int main(int argc, char **argv)
 	catch(cuda::runtime_error&) { }
 
 	try {
-		cuda::ensure_no_outstanding_error(cuda::dont_clear_errors);
+		cuda::outstanding_error::ensure_none(cuda::dont_clear_errors);
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
 	try {
-		cuda::ensure_no_outstanding_error(cuda::dont_clear_errors);
+		cuda::outstanding_error::ensure_none(cuda::dont_clear_errors);
 		die("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
 	// This time around, repeated calls to ensure_no_outstanding_error do throw...
 
-	cuda::clear_outstanding_errors();
-	cuda::ensure_no_outstanding_error(); // ... and that makes them stop
+	cuda::outstanding_error::clear();
+	cuda::outstanding_error::ensure_none(); // ... and that makes them stop
 
 	cout << "SUCCESS\n";
 	return EXIT_SUCCESS;

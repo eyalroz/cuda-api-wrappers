@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 		d_ptr.get(), N
 	);
 
-	cuda::ensure_no_outstanding_error();
+	cuda::outstanding_error::ensure_none();
 	current_device.synchronize();
 
 	auto h_d_ptr = cuda::memory::host::make_unique<int[]>(N);

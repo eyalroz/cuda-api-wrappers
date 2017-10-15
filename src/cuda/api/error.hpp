@@ -120,7 +120,6 @@ inline bool operator!=(const alias_t& lhs, const status_t& rhs) { return (status
 inline bool is_success(status_t status)  { return status == (status_t) status::success; }
 inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
 
-
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
  * or error code.
@@ -220,6 +219,14 @@ enum : bool {
 	do_clear_errors    = true
 };
 
+namespace outstanding_error {
+
+/**
+ * Reset the CUDA status to cuda::status::success.
+ */
+inline status_t clear() { return cudaGetLastError();    }
+inline status_t get()   { return cudaPeekAtLastError(); }
+
 /**
  * @brief Does nothing (unless throwing an exception)
  *
@@ -233,10 +240,11 @@ enum : bool {
  * @param clear_any_error When true, clears the CUDA Runtime API's state from
  * recalling errors arising from before this oment
  */
-inline void ensure_no_outstanding_error(
-	std::string message, bool clear_any_error = do_clear_errors) noexcept(false)
+inline void ensure_none(
+	std::string  message,
+	bool         clear_any_error = do_clear_errors) noexcept(false)
 {
-	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
+	auto last_status = clear_any_error ? clear() : get();
 	throw_if_error(last_status, message);
 }
 
@@ -251,16 +259,15 @@ inline void ensure_no_outstanding_error(
  *
  * @param clear_any_error When true, clears the CUDA Runtime API's state from
  * recalling errors arising from before this oment
- */inline void ensure_no_outstanding_error(bool clear_any_error = do_clear_errors) noexcept(false)
+ */
+inline void ensure_none(bool clear_any_error = do_clear_errors) noexcept(false)
 {
-	auto last_status = clear_any_error ? cudaGetLastError() : cudaPeekAtLastError();
+	auto last_status = clear_any_error ? clear() : get();
 	throw_if_error(last_status);
 }
 
-/**
- * Reset the CUDA status to cuda::status::success.
- */
-inline void clear_outstanding_errors() { cudaGetLastError(); }
+} // namespace outstanding_error
+
 
 } // namespace cuda
 
