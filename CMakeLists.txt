@@ -16,14 +16,19 @@
 # cmake -D CMAKE_C_COMPILER=/path/to/your/cc -D CMAKE_CXX_COMPILER=/path/to/your/c++ your_project_dir
 #
 #
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 # -----------------------------------
 # Project name, version & build type
 # -----------------------------------
 
-include (ReleaseOrDebug)
+
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "Release" )
+endif()
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     # This is the top-level project.
@@ -42,25 +47,35 @@ endif()
 # General C/C++ build settings
 # ----------------------------
 
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -g" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic" )
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+#SET(CMAKE_BUILD_TYPE distribution)
+
 include_directories( "src/" )
 
 # -------------
 # CUDA
 # -------------
 
-find_package(CUDA QUIET REQUIRED)
-
+find_package(CUDA 7.0 REQUIRED)
+if (${CUDA_VERSION} GREATER 9.0)
+    message(FATAL_ERROR "Unsupported CUDA version")
+endif()
 include(HandleCUDAComputeCapability)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --std=c++11 --keep  --generate-line-info --source-in-ptx -Xcompiler -Wall -Xcompiler -D__CORRECT_ISO_CPP11_MATH_H_PROTO )
-# Note: Adding "-G" to the next line might give you debugging info, but it switches off all optimizers, so you're not really debugging what you're running; and it also increases the register pressure, and the local memory pressure tremendously, changing the behavior even further; finally, it _may_ cause linking trouble with CUDA 7.5 and Fedora 23 (or equivalent build environments)
-set(CUDA_NVCC_FLAGS_DEBUG -g -lineinfo -DDEBUG)
-set(CUDA_NVCC_FLAGS_RELEASE -O3 -DNDEBUG)
+# There is no CUDA equivalent of CMAKE_CXX_STANDARD* macros... so we're stuck with the following line:
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --std=c++11)
+
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler -Wall)
+set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG} -g --keep --generate-line-info --source-in-ptx)
+set(CUDA_NVCC_FLAGS_RELEASE ${CUDA_NVCC_FLAGS_RELEASE} -O3 -DNDEBUG)
 
 set(CUDA_SEPARABLE_COMPILATION OFF)
 set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
+# This should really have been automatic...
 get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
 set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
 
@@ -76,26 +91,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 	add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/ cmake_install.cmake)
-endif()
-
-# -----------------------------------
-# Be verbose about what we've found
-# -----------------------------------
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)	
-	message("--------------------------------------------------------------")
-	message("Paths Used"                                                    )
-	message("--------------------------------------------------------------")
-	message("C compiler (for non-CUDA code):    " "${CMAKE_C_COMPILER}"     )
-	message("C++ compiler (for non-CUDA code):  " "${CMAKE_CXX_COMPILER}"   )
-	message("CUDA C++ forward-to host compiler: " "${CUDA_HOST_COMPILER}"   )
-	message("CUB header-only library root:      " "${CUB_INCLUDE_DIR}"      )
-	message("CUDA include directories:          " "${CUDA_INCLUDE_DIRS}"    )
-	message("--------------------------------------------------------------")
-	message("Package and Library versions"                                  )
-	message("--------------------------------------------------------------")
-	message("nVIDIA CUDA toolkit:               " "${CUDA_VERSION_STRING}"  )
-	message("--------------------------------------------------------------")
 endif()
 
 # -----------------------
@@ -114,7 +109,7 @@ cuda_add_library(
 )
 
 # -----------------------
-# Examples
+# Examples / Tests
 # -----------------------
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
