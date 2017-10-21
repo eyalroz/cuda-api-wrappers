@@ -18,7 +18,7 @@ static std::mutex profiler_mutex; // To prevent multiple threads from accessing 
 
 void point(const std::string& description, color_t color)
 {
-	std::lock_guard<std::mutex>(detail::profiler_mutex);
+	std::lock_guard<std::mutex> { detail::profiler_mutex };
 	// logging?
 	nvtxEventAttributes_t eventAttrib = {0};
 	eventAttrib.version = NVTX_VERSION;
@@ -33,7 +33,7 @@ void point(const std::string& description, color_t color)
 range::handle_t range_start(
 	const std::string& description, ::cuda::profiling::range::Type type, color_t color)
 {
-	std::lock_guard<std::mutex>(detail::profiler_mutex);
+	std::lock_guard<std::mutex> { detail::profiler_mutex };
 	nvtxEventAttributes_t range_attributes;
 	range_attributes.version   = NVTX_VERSION;
 	range_attributes.size      = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
