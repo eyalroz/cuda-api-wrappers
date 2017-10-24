@@ -427,7 +427,10 @@ public: // constructors and destructor
 		device_id_(other.device_id_), id_(other.id_), owning(false) { };
 
 	stream_t(stream_t&& other) :
-		device_id_(other.device_id_), id_(other.id_), owning(other.owning) { other.owning = false; };
+		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
+	{
+		other.owning = false;
+	};
 
 	// TODO: Perhaps drop this in favor of just the protected constructor,
 	// and let all wrapping construction be done by the stream::wrap() function?
@@ -446,7 +449,7 @@ public: // constructors and destructor
 public: // operators
 
 	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
-	// too risky
+	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t<AssumesDeviceIsCurrent>& other) = delete;
 	stream_t& operator=(const stream_t<not AssumesDeviceIsCurrent>& other) = delete;
 	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>& other) = delete;

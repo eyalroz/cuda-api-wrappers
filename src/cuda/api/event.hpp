@@ -321,9 +321,11 @@ inline event_t create_on_current_device(
 	bool          interprocess       = not_interprocess)
 {
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
-	id_t new_event_id;
 	auto status = cudaEventCreateWithFlags(&new_event_id, flags);
 	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
+	// Note: We're trusting CUDA to actually have succeeded if it reports success,
+	// so we're not checking the newly-created event id - which is really just
+	// a pointer - for nullness
 	bool take_ownership = true;
 	return wrap(device::current::get_id(), new_event_id, take_ownership);
 }

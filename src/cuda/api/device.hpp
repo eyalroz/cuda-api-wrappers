@@ -742,8 +742,9 @@ public:
 	//
 	// (sigh)... safety over convenience I guess
 	//
-	stream_t<detail::do_not_assume_device_is_current> create_stream(bool will_synchronize_with_default_stream,
-		stream::priority_t priority = cuda::stream::default_priority);
+	stream_t<detail::do_not_assume_device_is_current> create_stream(
+		bool                will_synchronize_with_default_stream,
+		stream::priority_t  priority = cuda::stream::default_priority);
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(const KernelFunction& kernel_function, launch_configuration_t launch_configuration,

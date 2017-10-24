@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	stream.enqueue.callback(
 		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
-		report_occurrence("In secondcallback (enqueued after the first kernel but before the second event)", event_1, event_2);
+		report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);
 	stream.enqueue.event(event_2.id());
