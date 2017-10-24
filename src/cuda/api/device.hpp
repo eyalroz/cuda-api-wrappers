@@ -746,6 +746,14 @@ public:
 		bool                will_synchronize_with_default_stream,
 		stream::priority_t  priority = cuda::stream::default_priority);
 
+	/**
+	 * See @ref event::create()
+	 */
+	event_t create_event(
+		bool          uses_blocking_sync,
+		bool          records_timing,
+		bool          interprocess);
+
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
 		KernelParameters ... parameters)

@@ -105,6 +105,10 @@ int main(int argc, char **argv)
 		cuda::event::sync_by_blocking,
 		cuda::event::do_record_timings,
 		cuda::event::not_interprocess);
+	auto event_3 = device.create_event(
+		cuda::event::sync_by_blocking,
+		cuda::event::do_record_timings,
+		cuda::event::not_interprocess);
 
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
@@ -128,6 +132,8 @@ int main(int argc, char **argv)
 	);
 	stream.enqueue.event(event_2.id());
 	stream.enqueue.kernel_launch(print_message<N,3>, { 1, 1 }, message<N>("I am launched after the second event"));
+	stream.enqueue.event(event_3.id());
+	stream.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I am launched after the third event"));
 
 	try {
 		cuda::event::milliseconds_elapsed_between(event_1, event_2);

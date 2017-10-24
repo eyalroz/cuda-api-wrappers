@@ -15,6 +15,37 @@
 
 namespace cuda {
 
+namespace event {
+
+/**
+ * @brief creates a new execution stream on a device.
+ *
+ * @note The CUDA API runtime defaults to creating
+ * which you synchronize on by busy-waiting. This function does
+ * the same for compatibility.
+ *
+ * @param device The device on which to create the new stream
+ * @param uses_blocking_sync When synchronizing on this new evet,
+ * shall a thread busy-wait for it, or
+ * @param records_timing Can this event be used to record time
+ * values (e.g. duration between events)
+ * @param interprocess Can multiple processes work with the constructed
+ * event?
+ * @return The constructed event proxy class
+ */
+template <bool DeviceAssumedCurrent>
+inline event_t create(
+	device_t<DeviceAssumedCurrent>  device,
+	bool                            uses_blocking_sync = sync_by_busy_waiting,
+	bool                            records_timing     = do_record_timings,
+	bool                            interprocess       = not_interprocess)
+{
+	return create(device.id(), uses_blocking_sync, records_timing, interprocess);
+}
+
+} // namespace event_t
+
+
 // device_t methods
 
 template <bool AssumedCurrent>
@@ -48,47 +79,28 @@ device_t<AssumedCurrent>::create_stream(
 		will_synchronize_with_default_stream, priority), take_ownership);
 }
 
+template <bool AssumedCurrent>
+inline event_t device_t<AssumedCurrent>::create_event(
+	bool          uses_blocking_sync,
+	bool          records_timing,
+	bool          interprocess)
+{
+	// The current implementation of event::create is not super-smart,
+	// but it's probably not worth it trying to improve just this function
+	return event::create<AssumedCurrent>(*this, uses_blocking_sync, records_timing, interprocess);
+}
+
 // event_t methods
 
 inline device_t<detail::do_not_assume_device_is_current>
 event_t::device() const { return cuda::device::get(device_id_); }
+
 
 // stream_t methods
 
 template <bool AssumesDeviceIsCurrent>
 inline device_t<detail::do_not_assume_device_is_current>
 stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
-
-namespace event {
-
-
-/**
- * @brief creates a new execution stream on a device.
- *
- * @note The CUDA API runtime defaults to creating 
- * which you synchronize on by busy-waiting. This function does
- * the same for compatibility.
- *
- * @param device The device on which to create the new stream
- * @param uses_blocking_sync When synchronizing on this new evet,
- * shall a thread busy-wait for it, or
- * @param records_timing Can this event be used to record time
- * values (e.g. duration between events)
- * @param interprocess Can multiple processes work with the constructed
- * event?
- * @return The constructed event proxy class
- */
-template <bool DeviceAssumedCurrent>
-inline event_t create(
-	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync = sync_by_busy_waiting,
-	bool                            records_timing     = do_record_timings,
-	bool                            interprocess       = not_interprocess)
-{
-	return create(device.id(), uses_blocking_sync, records_timing, interprocess);
-}
-
-} // namespace event_t
 
 } // namespace cuda
 

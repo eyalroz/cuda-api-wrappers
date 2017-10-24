@@ -24,46 +24,6 @@ template <bool AssumedCurrent> class device_t;
 
 namespace event {
 
-/**
- * Synchronization option for @ref cuda::event_t 's
- */
-enum : bool {
-	/**
-	 * The thread calling event_.synchronize() will enter
-	 * a busy-wait loop; this (might) minimize delay between
-	 * kernel execution conclusion and control returning to
-	 * the thread, but is very wasteful of CPU time.
-	 */
-	sync_by_busy_waiting = false,
-	/**
-	 * The thread calling event_.synchronize() will block -
-	 * yield control of the CPU and will only become ready
-	 * for execution after the kernel has completed its
-	 * execution - at which point it would have to wait its
-	 * turn among other threads. This does not waste CPU
-	 * computing time, but results in a longer delay.
-	 */
-	sync_by_blocking = true,
-};
-
-/**
- * Should the CUDA Runtime API record timing information for
- * events as it schedules them?
- */
-enum : bool {
-	dont_record_timings = false,
-	do_record_timings   = true,
-};
-
-/**
- * IPC usability option for {@ref cuda::event_t}'s
- */
-enum : bool {
-	not_interprocess = false,         //!< Can only be used by the process which created it
-	interprocess = true,              //!< Can be shared between processes. Must not be able to record timings.
-	single_process = not_interprocess
-};
-
 namespace detail {
 
 /**
