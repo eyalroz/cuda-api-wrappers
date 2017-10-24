@@ -43,8 +43,9 @@ device_t<AssumedCurrent>::create_stream(
 	stream::priority_t  priority)
 {
 	device::current::scoped_override_t<AssumedCurrent> set_device_for_this_scope(id_);
-	return stream_t<>(id(), stream::detail::create_on_current_device(
-		will_synchronize_with_default_stream, priority));
+	constexpr const auto take_ownership = true;
+	return stream::wrap(id(), stream::detail::create_on_current_device(
+		will_synchronize_with_default_stream, priority), take_ownership);
 }
 
 // event_t methods
