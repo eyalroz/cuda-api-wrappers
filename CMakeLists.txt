@@ -132,6 +132,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	cuda_add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_module/execution_control.cu)
 	cuda_add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
 	cuda_add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
+	cuda_add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
 	#----
 	add_custom_target(examples_by_runtime_api_module)
 	add_dependencies(
@@ -140,7 +141,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 		error_handling device_management
 		execution_control
 		stream_management
-		event_management)
+		event_management
+		io_compute_overlap_with_streams)
 
 	add_custom_target(examples)
 	add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
