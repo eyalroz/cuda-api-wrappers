@@ -843,6 +843,25 @@ public:
 	 }
 	device_t& operator=(const device_t& other) = delete;
 
+
+	/**
+	 * Drops the assumption of a device being current ("recasting" it as a
+	 * not-assumed-current device).
+	 *
+	 * @note This involve some template voodoo - making a copy of AssumedCurrent -
+	 * to delay the evaluation here until this template is instantiated rather
+	 * than at class instantiation. See: https://stackoverflow.com/q/46907372/1593077
+	 *
+	 */
+	template <
+		bool AssumedCurrentCopy = AssumedCurrent,
+		typename = typename std::enable_if<AssumedCurrentCopy == detail::assume_device_is_current>::type>
+	operator device_t<detail::do_not_assume_device_is_current>()
+	{
+		return device_t<detail::do_not_assume_device_is_current> { id() };
+	}
+
+
 public: 	// destructor
 
 	~device_t() = default;
@@ -871,6 +890,8 @@ protected: // constructors
 public: // friends
 	friend device_t<detail::assume_device_is_current> device::current::get();
 	friend device_t<detail::do_not_assume_device_is_current> device::get(device::id_t id);
+	friend class device_t<detail::assume_device_is_current>;
+		// for the conversion operator between assumed and not-assumed current
 
 protected:
 	// data members

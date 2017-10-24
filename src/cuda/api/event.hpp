@@ -193,6 +193,21 @@ public: // other mutator methods
 	}
 
 	/**
+	 * Records the event and ensures it has occurred before returning
+	 * (by synchronizing the stream).
+	 *
+	 * @note with the default argument, and when the default stream
+	 * is synchronous, the synchronization will do nothing, and there
+	 * will be no difference between @ref record() and this method.
+	 *
+	 * @note No protection against repeated calls.
+	 */
+	void fire(stream::id_t stream_id = stream::default_stream_id) {
+		record(stream_id);
+		stream::wrap(device_id_, stream_id).synchronize();
+	}
+
+	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and
 	 * return only after this event has occurred (see @ref has_occurred() ).
 	 */
