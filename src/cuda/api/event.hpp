@@ -321,6 +321,7 @@ inline event_t create_on_current_device(
 	bool          interprocess       = not_interprocess)
 {
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
+	cuda::event::id_t new_event_id;
 	auto status = cudaEventCreateWithFlags(&new_event_id, flags);
 	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
 	// Note: We're trusting CUDA to actually have succeeded if it reports success,
