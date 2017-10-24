@@ -131,8 +131,10 @@ namespace detail {
 template <typename I, bool UpperCase = false>
 std::string as_hex(I x)
 {
-	unsigned num_hex_digits = 2*sizeof(I);
 	static_assert(std::is_unsigned<I>::value, "only signed representations are supported");
+	unsigned num_hex_digits = 2*sizeof(I);
+	if (x == 0) return "0x0";
+
 	enum { bits_per_hex_digit = 4 }; // = log_2 of 16
 	static const char* digit_characters =
 		UpperCase ? "0123456789ABCDEF" : "0123456789abcdef" ;
@@ -144,7 +146,7 @@ std::string as_hex(I x)
 		auto hexadecimal_digit = (x >> bit_offset) & 0xF;
 		result[digit_index] = digit_characters[hexadecimal_digit];
 	}
-	return "0x0" + result.substr(result.find_first_not_of('0', 0), std::string::npos);
+	return "0x0" + result.substr(result.find_first_not_of('0'), std::string::npos);
 }
 
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
