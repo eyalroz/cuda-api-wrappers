@@ -316,7 +316,7 @@ public: // mutators
 			// Not calling event::detail::enqueue to avoid dependency on event.hpp
 			auto status = cudaEventRecord(event_id, stream_id_);
 			throw_if_error(status,
-				"Failed scheduling scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
+				"Failed scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}
@@ -400,7 +400,7 @@ public: // mutators
 			constexpr const unsigned int  flags = 0;
 			auto status = cudaStreamWaitEvent(stream_id_, event_id, flags);
 			throw_if_error(status,
-				std::string("Failed scheduling a wait on event ") + cuda::detail::ptr_as_hex(event_id)
+				std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_id)
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 				+ " on CUDA device " + std::to_string(device_id_));
 		}

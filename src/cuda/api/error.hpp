@@ -129,29 +129,30 @@ inline std::string describe(status_t status) { return cudaGetErrorString(status)
 namespace detail {
 
 template <typename I, bool UpperCase = false>
-std::string as_hex(I x, unsigned hex_string_length = 2*sizeof(I) )
+std::string as_hex(I x)
 {
+	unsigned num_hex_digits = 2*sizeof(I);
 	static_assert(std::is_unsigned<I>::value, "only signed representations are supported");
 	enum { bits_per_hex_digit = 4 }; // = log_2 of 16
 	static const char* digit_characters =
 		UpperCase ? "0123456789ABCDEF" : "0123456789abcdef" ;
 
-	std::string result(hex_string_length,'0');
-	for (unsigned digit_index = 0; digit_index < hex_string_length ; digit_index++)
+	std::string result(num_hex_digits,'0');
+	for (unsigned digit_index = 0; digit_index < num_hex_digits ; digit_index++)
 	{
-		size_t bit_offset = (hex_string_length - 1 - digit_index) * bits_per_hex_digit;
+		size_t bit_offset = (num_hex_digits - 1 - digit_index) * bits_per_hex_digit;
 		auto hexadecimal_digit = (x >> bit_offset) & 0xF;
 		result[digit_index] = digit_characters[hexadecimal_digit];
 	}
-	return result;
+	return "0x0" + result.substr(result.find_first_not_of('0', 0), std::string::npos);
 }
 
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
 // be called for pointer types as well? Would be easier with boost's uint<T>...
 template <typename I, bool UpperCase = false>
-inline std::string ptr_as_hex(const I* ptr, unsigned hex_string_length = 2*sizeof(I*) )
+inline std::string ptr_as_hex(const I* ptr)
 {
-	return as_hex((size_t) ptr, hex_string_length);
+	return as_hex((size_t) ptr);
 }
 
 } // namespace detail
