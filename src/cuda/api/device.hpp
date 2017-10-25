@@ -750,9 +750,9 @@ public:
 	 * See @ref event::create()
 	 */
 	event_t create_event(
-		bool          uses_blocking_sync,
-		bool          records_timing,
-		bool          interprocess);
+		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
+		bool records_timing     = event::do_record_timings,
+		bool interprocess       = event::not_interprocess);
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
