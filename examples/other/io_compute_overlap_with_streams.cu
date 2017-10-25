@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	std::cout << "Using CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
 	std::cout << "Generating host buffers... " << std::flush;
-	std::vector<buffer_set_t> buffers = generate_buffers(device);
+	auto buffers = generate_buffers(device);
 	std::cout << "done.\n" << std::flush;
 
 	std::vector<cuda::stream_t<> > streams;
