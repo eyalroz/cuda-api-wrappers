@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <unistd.h>
+#include <random>
 
 using element_t = float;
 constexpr size_t num_elements    = 1e5;
