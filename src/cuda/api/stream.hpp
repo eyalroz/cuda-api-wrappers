@@ -19,6 +19,7 @@
 
 #include <string>
 #include <functional>
+#include <memory>
 
 namespace cuda {
 
@@ -237,9 +238,14 @@ protected: // static methods
 	 * @param type_erased_callback the callback which was passed to @ref enqueue_t::callback,
 	 * and which the programmer actually wants to be called
 	 */
-	static void callback_adapter(stream::id_t stream_id, status_t status, void *type_erased_callback)
+	static void callback_adapter(
+		stream::id_t  stream_id,
+		status_t      status,
+		void *        callback_allocated_on_the_heap)
 	{
-		auto retyped_callback = reinterpret_cast<callback_t*>(type_erased_callback);
+		auto retyped_callback = std::unique_ptr<callback_t>(
+			reinterpret_cast<callback_t*>(callback_allocated_on_the_heap)
+		);
 		(*retyped_callback)(stream_id, status);
 	}
 
@@ -325,10 +331,12 @@ public: // mutators
 		 * Execute the specified function on the calling host thread once all
 		 * hereto-scheduled work on this stream has been completed.
 		 *
+		 * @todo avoid the overhead of constructing an std::function
+		 *
 		 * @param callback a function to execute on the host. Its signature
 		 * must being with `(cuda::stream::id_t stream_id, cuda::event::id_t event_id`
 		 */
-		void callback(callback_t callback)
+		void callback(callback_t callback_)
 		{
 			DeviceSetter set_device_for_this_scope(device_id_);
 
@@ -337,12 +345,16 @@ public: // mutators
 			//
 			enum : unsigned int { fixed_flags = 0 };
 
+			// Since callback_ will be going out of scope after the enqueueing,
+			// and we don't know anything about the scope of the original argument with
+			// which we were called, we must make a copy of `callback_` on the heap
+			// and pass that as the user-defined data
+			callback_t * callback_on_the_heap = new callback_t(std::move(callback_));
+
 			// This always registers the static function callback_adapter as the callback -
-			// but what that one will do is call the actual callback we were passed; note
-			// that since you can can have a lambda capture data and wrap that in the
-			// std::function, there's not much need (it would seem) for an extra inner
-			// user_data parameter to callback_t
-			auto status = cudaStreamAddCallback(stream_id_, &callback_adapter, &callback, fixed_flags);
+			// but what that one will do is call the actual callback we were passed;
+			auto status = cudaStreamAddCallback(
+				stream_id_, &callback_adapter, callback_on_the_heap, fixed_flags);
 			throw_if_error(status,
 				std::string("Failed scheduling a callback function to be launched")
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
