@@ -79,6 +79,16 @@ set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
 set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
 
+find_library(CUDA_NVTX_LIBRARY
+  NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
+  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+  PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+  DOC "Location of the CUDA Toolkit Extension (NVTX) library"
+  NO_DEFAULT_PATH
+  )
+mark_as_advanced(CUDA_NVTX_LIBRARY)
+set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
+
 # -----------------------
 # Miscellaneous targets
 # -----------------------
