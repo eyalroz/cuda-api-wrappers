@@ -24,6 +24,7 @@
 namespace cuda {
 
 template <bool AssumedCurrent> class device_t;
+class event_t;
 
 template <bool AssumesDeviceIsCurrent = false> class stream_t;
 
@@ -61,7 +62,7 @@ inline id_t create_on_current_device(
  *
  * @note the stream_t class includes information regarding a stream's
  * device association, so this function only makes sense for CUDA stream
- * identifiers
+ * identifiers.
  *
  * @param stream_id the CUDA runtime API identifier for the stream whose
  * association is to be checked
@@ -316,6 +317,11 @@ public: // mutators
 		 * @param event_id CUDA runtime API ID of the event to have occuring on
 		 * completion of the hereto-scheduled work on this stream
 		 **/
+		void event(const event_t& event);
+
+		/**
+		 * Same as @ref event(event_t) , but taking the event's ID only
+		 */
 		void event(cuda::event::id_t event_id) {
 			// TODO: ensure the stream and the event are associated with the same device
 
@@ -404,6 +410,11 @@ public: // mutators
 		 * @param event_id ID of the event for whose occurrence to wait; the event
 		 * would typically be recorded on another stream.
 		 *
+		 */
+		void wait(const event_t& event);
+
+		/**
+		 * Same as @ref wait(event_t) , but taking the event's ID only
 		 */
 		void wait(event::id_t event_id)
 		{

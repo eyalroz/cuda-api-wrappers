@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
-	stream.enqueue.event(event_1.id());
+	stream.enqueue.event(event_1);
 	stream.enqueue.callback(
 		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
 			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
@@ -130,9 +130,9 @@ int main(int argc, char **argv)
 		report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);
-	stream.enqueue.event(event_2.id());
+	stream.enqueue.event(event_2);
 	stream.enqueue.kernel_launch(print_message<N,3>, { 1, 1 }, message<N>("I am launched after the second event"));
-	stream.enqueue.event(event_3.id());
+	stream.enqueue.event(event_3);
 	stream.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I am launched after the third event"));
 
 	try {
