@@ -252,6 +252,20 @@ inline void ensure_none(
 }
 
 /**
+ * @brief A variant of @ref ensure_none(std::string, bool) which takes
+ * a C-style string.
+ *
+ * @note exists so as to avoid incorrect overload resolution of
+ * `ensure_none(my_c_string)` calls.
+ */
+inline void ensure_none(
+	const char*  message,
+	bool         clear_any_error = do_clear_errors) noexcept(false)
+{
+	return ensure_none(std::string(message), clear_any_error);
+}
+
+/**
  * @brief Does nothing (unless throwing an exception)
  *
  * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
