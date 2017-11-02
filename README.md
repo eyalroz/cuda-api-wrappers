@@ -24,7 +24,7 @@ Detailed nearly-complete Doxygen-genereated documentation is [available](https:/
 
 - CUDA v8.0 or later is recommended and v7.5 should be supported (but is untested). CUDA 6.x should probably be Ok as well.
 - A C++11-capable compiler compatible with your version of CUDA.
-- CMake version 2.8 or later - although you don't really need it, you can just copy the `src/` directory into your own project and just make sure to compile the non-header-only parts.
+- CMake v3.1 or later - although most of the library will work as simple headers with no building.
 
 ## Coverage of the Runtime API
 
@@ -58,7 +58,7 @@ With this library, you would do `cuda::memory::host::allocate()` instead of `cud
 #### Adorning POD structs with convenience methods
 The expression 
 ```
-my_device_properties.compute_capability() >= cuda::make_compute_capability(50)
+my_device.properties().compute_capability() >= cuda::make_compute_capability(50)
 ```
 is a valid comparison, true for all devices with a Maxwell-or-later micro-architecture. This, despite the fact that `struct cuda::compute_capability_t` is a POD type with two unsigned integer fields, not a scalar. Note that `struct cuda::device::properties_t` (which is really basically a `struct cudaDeviceProp` of the Runtime API itself) does not have a `compute_capability` field.
 
