@@ -101,63 +101,6 @@ bool correct_data(int *a, const int n, const int c)
 	return true;
 }
 
-inline void
-AllocateHostMemory(bool bPinGenericMemory, int **pp_a, int **ppAligned_a, int nbytes)
-{
-#if !defined(__arm__) && !defined(__aarch64__)
-	if (bPinGenericMemory)
-	{
-		// allocate a generic page-aligned chunk of system memory
-#ifdef WIN32
-		std::cout << "> VirtualAlloc() allocating " << (float)nbytes/1048576.0f << " Mbytes of generic page-aligned system memory\n";
-		*pp_a = (int *) VirtualAlloc(NULL, (nbytes + MEMORY_ALIGNMENT), MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-#else
-		std::cout << "> mmap() allocating " << (float)nbytes/1048576.0f << " Mbytes of generic page-aligned system memory\n";
-		*pp_a = (int *) mmap(NULL, (nbytes + MEMORY_ALIGNMENT), PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-#endif
-
-		*ppAligned_a = (int *)ALIGN_UP(*pp_a, MEMORY_ALIGNMENT);
-
-		std::cout << "> cudaHostRegister() registering " <<  (float)nbytes/1048576.0f << " Mbytes of generic allocated system memory\n";
-		// pin allocate memory
-		cuda::memory::host::register_(*ppAligned_a, nbytes,
-			cuda::memory::host::is_not_mapped_io_space,
-			cuda::memory::host::is_mapped_into_device_memory,
-			cuda::memory::host::is_not_accessible_on_all_devices
-		);
-	}
-	else
-#endif
-	{
-		std::cout << "> cudaMallocHost() registering " <<  (float)nbytes/1048576.0f << " Mbytes of generic allocated system memory\n";
-		// allocate host memory (pinned is required for achieve asynchronicity)
-		*pp_a = static_cast<int*>(cuda::memory::host::allocate(nbytes));
-		*ppAligned_a = *pp_a;
-	}
-}
-
-inline void
-FreeHostMemory(bool bPinGenericMemory, int **pp_a, int **ppAligned_a, int nbytes)
-{
-#if !defined(__arm__) && !defined(__aarch64__)
-	// CUDA 4.0 support pinning of generic host memory
-	if (bPinGenericMemory)
-	{
-		// unpin and delete host memory
-		cuda::memory::host::deregister(*ppAligned_a);
-#ifdef WIN32
-		VirtualFree(*pp_a, 0, MEM_RELEASE);
-#else
-		munmap(*pp_a, nbytes);
-#endif
-	}
-	else
-#endif
-	{
-		cudaFreeHost(*pp_a);
-	}
-}
-
 static const char *sSyncMethod[] =
 {
 	"0 (Automatic Blocking)",
@@ -181,12 +124,6 @@ void printHelp()
 		<< "\t--use_cuda_malloc_host (optional) use cudaMallocHost to allocate system memory\n";
 }
 
-#if defined(__APPLE__) || defined(MACOSX)
-#define DEFAULT_PINNED_GENERIC_MEMORY false
-#else
-#define DEFAULT_PINNED_GENERIC_MEMORY true
-#endif
-
 int main(int argc, char **argv)
 {
 	int cuda_device_id = 0;
@@ -199,7 +136,6 @@ int main(int argc, char **argv)
 
 	// allocate generic memory and pin it laster instead of using cudaHostAlloc()
 
-	bool bPinGenericMemory  = DEFAULT_PINNED_GENERIC_MEMORY; // we want this to be the default behavior
 	int  device_sync_method = cudaDeviceBlockingSync; // by default we use BlockingSync
 
 	int niterations;    // number of iterations for the loop inside the kernel
@@ -230,18 +166,12 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	if (checkCmdLineFlag(argc, (const char **)argv, "use_generic_memory"))
-	{
-#if defined(__APPLE__) || defined(MACOSX)
-		bPinGenericMemory = false;  // Generic Pinning of System Paged memory not currently supported on Mac OSX
-#else
-		bPinGenericMemory = true;
-#endif
-	}
-
 	if (checkCmdLineFlag(argc, (const char **)argv, "use_cuda_malloc_host"))
 	{
-		bPinGenericMemory = false;
+		std::cout
+			<< "To simplify this example, support for using cuda_malloc_host instead of "
+			<< "pinned memory has been dropped.\n";
+		return EXIT_FAILURE;
 	}
 
 	std::cout << "\n> ";
@@ -287,16 +217,13 @@ int main(int argc, char **argv)
 	}
 
 	// Check if GPU can map host memory (Generic Method), if not then we override bPinGenericMemory to be false
-	if (bPinGenericMemory)
-	{
-		std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
-				<< (properties.canMapHostMemory ? "Yes" : "No") << "\n";
+	std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
+			<< (properties.canMapHostMemory ? "Yes" : "No") << "\n";
 
-		if (not properties.can_map_host_memory())
-		{
-			std::cout << "Using cudaMallocHost, CUDA device does not support mapping of generic host memory\n";
-			bPinGenericMemory = false;
-		}
+	if (not properties.can_map_host_memory())
+	{
+		std::cout << "Cannot allocate pinned memory (and map GPU device memory to it); aborting.\n";
+		return EXIT_FAILURE;
 	}
 
 	// Anything that is less than 32 Cores will have scaled down workload
@@ -327,15 +254,13 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	current_device.set_synch_scheduling_policy(policy);
-	current_device.enable_mapping_host_memory(bPinGenericMemory);
+	current_device.enable_mapping_host_memory();
 
 	// allocate host memory
 	int c = 5;                      // value to which the array will be initialized
-	int *h_a = 0;                   // pointer to the array data in host memory
-	int *hAligned_a = 0;           // pointer to the array data in host memory (aligned to MEMORY_ALIGNMENT)
 
-	// Allocate Host memory (could be using cudaMallocHost or VirtualAlloc/mmap if using the new CUDA 4.0 features
-	AllocateHostMemory(bPinGenericMemory, &h_a, &hAligned_a, nbytes);
+	// Allocate Host memory
+	auto h_a = cuda::memory::host::make_unique<int[]>(n);
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
@@ -367,7 +292,7 @@ int main(int argc, char **argv)
 
 	// time memcopy from device
 	start_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
-	cuda::memory::async::copy(hAligned_a, d_a.get(), nbytes, streams[0].id());
+	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0].id());
 	stop_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
@@ -392,7 +317,7 @@ int main(int argc, char **argv)
 	for (int k = 0; k < nreps; k++)
 	{
 		init_array<<<blocks, threads>>>(d_a.get(), d_c.get(), niterations);
-		cuda::memory::copy(hAligned_a, d_a.get(), nbytes);
+		cuda::memory::copy(h_a.get(), d_a.get(), nbytes);
 	}
 
 	stop_event.record(cuda::stream::default_stream_id);
@@ -404,7 +329,7 @@ int main(int argc, char **argv)
 	// time execution with nstreams streams
 	threads=dim3(512,1);
 	blocks=dim3(n/(nstreams*threads.x),1);
-	memset(hAligned_a, 255, nbytes);     // set host memory bits to all 1s, for testing correctness
+	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
 	cuda::memory::device::zero(d_a.get(), nbytes); // set device memory to all 0s, for testing correctness
 	start_event.record(cuda::stream::default_stream_id);
 
@@ -421,7 +346,7 @@ int main(int argc, char **argv)
 		for (int i = 0; i < nstreams; i++)
 		{
 			cuda::memory::async::copy(
-				hAligned_a + i * n / nstreams,
+				h_a.get() + i * n / nstreams,
 				d_a.get() + i * n / nstreams, nbytes / nstreams,
 				streams[i].id());
 		}
@@ -434,10 +359,7 @@ int main(int argc, char **argv)
 
 	// check whether the output is correct
 	std::cout << "-------------------------------\n";
-	bool bResults = correct_data(hAligned_a, n, c*nreps*niterations);
-
-	// Free cudaMallocHost or Generic Host allocated memory (from CUDA 4.0)
-	FreeHostMemory(bPinGenericMemory, &h_a, &hAligned_a, nbytes);
+	bool bResults = correct_data(h_a.get(), n, c*nreps*niterations);
 
 	std::cout << (bResults ? "SUCCESS" : "FAILURE") << "\n";
 	return bResults ? EXIT_SUCCESS : EXIT_FAILURE;
