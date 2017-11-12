@@ -41,7 +41,7 @@ using handle_t = cudaIpcMemHandle_t;
  * be transmitted for use in another operating system process
  *
  * @note The name contains an underscore so as not to clash
- * with the C++ reserved word export
+ * with the C++ reserved word `export`
  *
  * @param device_ptr beginning of the region of memory
  * to be shared with other processes

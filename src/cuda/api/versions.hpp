@@ -36,6 +36,7 @@ struct version_t {
 
 };
 
+///@cond
 inline std::ostream& operator<<(std::ostream& os, version_t v)
 {
 	return os << v.major << '.' << v.minor;
@@ -70,12 +71,14 @@ inline bool operator>=(const version_t& lhs, const version_t& rhs)
 {
 	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
 }
+///@endcond
 
 
 namespace version_numbers {
 
 /**
- * This "value" is what the Runtime API returns if no version is supported by the driver
+ * This "value" is what the Runtime API returns if no version is
+ * supported by the driver
  *
  * @note this is super-ugly, I'd rather n ot use  it at all
  */
@@ -84,10 +87,20 @@ constexpr version_t none()
 	return { 0, 0 };
 }
 
+/**
+ * Convert an integer representing a major and minor number (e.g.
+ * 55 for major version 5, minor version 5) into the version type
+ * we use (@ref version_t).
+ */
 inline version_t make(combined_version_t combined_version)
 {
 	return version_t::from_single_number(combined_version);
 }
+
+/**
+ * Convert a pair integer representing a major and minor number
+ * (e.g. 5 and 5) into the version type we use (@ref version_t).
+ */
 inline version_t make(int major, int minor)
 {
 	return { major, minor };

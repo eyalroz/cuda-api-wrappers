@@ -24,7 +24,8 @@
 namespace cuda {
 namespace device {
 
-// TODO: Does this really need to be outside the namespace? I wonder
+///@cond
+
 inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& pci_id)
 {
 	auto format_flags(is.flags());
@@ -58,6 +59,8 @@ inline pci_location_t pci_location_t::parse(const std::string& id_str)
 	iss >> id;
 	return id;
 }
+
+///@endcond
 
 } //namespace device
 } // namespace cuda

@@ -36,8 +36,10 @@ struct pci_location_t {
 };
 
 /**
- * Obtain the CUDA device id for the device at a specified location on
- * a PCIe bus
+ * Obtain a CUDA device id for a PCIe bus device
+ *
+ * @param pci_id the location on (one of) the PCI bus(es) of
+ * the device of interest
  */
 inline id_t resolve_id(pci_location_t pci_id)
 {
@@ -49,7 +51,7 @@ inline id_t resolve_id(pci_location_t pci_id)
 	return cuda_device_id;
 }
 
-} //namespace device
+} // namespace device
 } // namespace cuda
 
 #endif /* CUDA_API_WRAPPERS_PCI_ID_H_ */

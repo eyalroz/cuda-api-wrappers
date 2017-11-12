@@ -18,15 +18,34 @@
 #include <cstring> // for std::memset
 
 namespace cuda {
+
+/**
+ * @namespace memory
+ * Representation, allocation and manipulation of CUDA-related memory, with
+ * its various namespaces and kinds of memory regions.
+ */
 namespace memory {
 
+/**
+ * @namespace mapped
+ * Memory regions appearing in both on the host-side and device-side address 
+ * spaces with the regions in both spaces mapped to each other (i.e. guaranteed 
+ * to have the same contents on access up to synchronization details). See @url 
+ * http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory
+ * for more details.
+ */
 namespace mapped {
-
-// This namespace regards memory appearing both on the device
-// and on the host, with the regions mapped to each other.
 
 // TODO: Perhaps make this an array of size 2 and use aspects to index it?
 // Or maybe inherit a pair?
+
+/**
+ * @brief A pair of memory regions, one in system (=host) memory and one on a
+ * CUDA device's memory - mapped to each other
+ *
+ * @note this is the mapped-pair equivalent of a `void *`; it is not a
+ * proper memory region abstraction, i.e. it has no size information
+ */
 struct region_pair {
 
 	enum : bool {
@@ -64,11 +83,16 @@ inline unsigned make_cuda_host_alloc_flags(region_pair::allocation_options optio
 } // namespace detail
 
 } // namespace mapped
+
 } // namespace memory
 
 
 namespace memory {
 
+/**
+ * @namespace device
+ * CUDA-Device-global memory on a single device (not accessible from the host)
+ */
 namespace device {
 
 namespace detail {
@@ -264,6 +288,11 @@ inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id)
 
 } // namespace device
 
+/**
+ * @namespace host
+ * Host-side (= system) memory which is "pinned", i.e. resides in
+ * a fixed physical location - and allocated by the CUDA driver.
+ */
 namespace host {
 
 /**
@@ -395,6 +424,23 @@ inline void zero(void* buffer_start, size_t num_bytes)
 
 } // namespace host
 
+/**
+ * @namespace managed
+ * This type of memory, also known as _unified_ memory, appears within
+ * a unified, all-system address space - and is used with the same
+ * address range on the host and on all relevant CUDA devices on a
+ * system. It is paged, so that it may exceed the physical size of
+ * a CUDA device's global memory. The CUDA driver takes care of
+ * "swapping" pages "out" from a device to host memory or "swapping"
+ * them back "in", as well as of propagation of changes between
+ * devices and host-memory.
+ *
+ * @note For more details, see
+ * <a href="https://devblogs.nvidia.com/parallelforall/unified-memory-cuda-beginners/">
+ * Unified Memory for CUDA Beginners</a> on the
+ * <a href="https://devblogs.nvidia.com/parallelforall">Parallel4All blog</a>.
+ *
+ */
 namespace managed {
 
 enum class initial_visibility_t {
@@ -450,18 +496,6 @@ struct deleter {
  * @brief Allocate a a region of managed memory, accessible with the same
  * address on the host and on CUDA devices
  *
- * CUDA "managed memory" means being able to use the same address on the host
- * and on CUDA devices to refer to different memory regions, one in host
- * memory and others in global device memory. CUDA "manages" these regions,
- * i.e. migrates data between CUDA devices and host memory when its been written
- * somewhere and needs to be read elsewhere.
- * See @url https://devblogs.nvidia.com/parallelforall/unified-memory-in-cuda-6/
- *
- * @note "managed memory" is similar to "mapped memory" in the propagation
- * of changes from the host to the device and back as necessary, but differs
- * from it in that "mapped memory" involves just a single device; and that
- * with "mapped memory" the host-side and device-side addresses are different
- *
  * @param device_id the initial device which is likely to access the managed
  * memory region (and which will certainly have actually allocated for it)
  * @param num_bytes size of each of the regions of memory to allocate
@@ -500,7 +534,13 @@ namespace mapped {
 namespace detail {
 
 /**
- * Allocates on the current device.
+ * Allocates a mapped pair of memory regions - on the current device
+ * and in host memory.
+ *
+ * @param size_in_bytes size of each of the two regions, in bytes.
+ * @param options indication of how the CUDA driver will manage
+ * the region pair
+ * @return the allocated pair (with both regions being non-null)
  */
 inline region_pair allocate(
 	size_t                           size_in_bytes,
@@ -531,20 +571,16 @@ inline region_pair allocate(
 } // namespace detail
 
 /**
- * Allocate a pair of mapped memory regions, one in host memory and one
- * in the global memory of a CUDA device, which the CUDA runtime will keep
- * syncrhonized
- *
- * @note "managed memory" is similar to "mapped memory" in the propagation
- * of changes from the host to the device and back as necessary, but differs
- * from it in that "mapped memory" involves just a single device; and that
- * with "mapped memory" the host-side and device-side addresses are different
+ * Allocates a mapped pair of memory regions - on a CUDA device
+ * and in host memory.
  *
  * @param device_id The device on which to allocate the device-side region
- * @param size_in_bytes size of each of the memory region
- * @param options see @ref region_pair::allocation_options
- * @return a structure for the pair of allocated regions
+ * @param size_in_bytes size of each of the two regions, in bytes.
+ * @param options indication of how the CUDA driver will manage
+ * the region pair
+ * @return the allocated pair (with both regions being non-null)
  */
+
 inline region_pair allocate(
 	cuda::device::id_t               device_id,
 	size_t                           size_in_bytes,
@@ -558,7 +594,10 @@ inline region_pair allocate(
 }
 
 /**
- * Free a pair of mapped memory regions allocated with @ref allocate.
+ * Free a pair of mapped memory regions
+ *
+ * @param pair a pair of regions allocated with @ref allocate (or with
+ * the C-style CUDA runtime API directly)
  */
 inline void free(region_pair pair)
 {
@@ -567,7 +606,7 @@ inline void free(region_pair pair)
 }
 
 /**
- * Free a pair of mapped memory regions allocated with @ref allocate
+ * Free a pair of mapped memory regions using just one of them
  *
  * @param ptr a pointer to one of the mapped regions (can be either
  * the device-side or the host-side)
@@ -584,13 +623,13 @@ inline void free_region_pair_of(void* ptr)
 }
 
 /**
- * Determines whether a given stretch of memory was allocated as part of
+ * Determine whether a given stretch of memory was allocated as part of
  * a mapped pair of host and device memory regions
  *
- * @note mostly for debugging purposes
- *
- * @param ptr the region to check
- * @return true iff the region was allocated as one side of a mapped memory region pair
+ * @param ptr the beginning of a memory region - in either host or device
+ * memory - to check
+ * @return `true` iff the region was allocated as one side of a mapped
+ * memory region pair
  */
 inline bool is_part_of_a_region_pair(void* ptr)
 {

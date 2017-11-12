@@ -26,18 +26,19 @@ namespace cuda {
 namespace memory {
 
 namespace pointer {
+
 struct attributes_t : cudaPointerAttributes {
-	bool on_host() const    { return memoryType == cudaMemoryTypeHost; }
-	bool on_device() const  { return memoryType == cudaMemoryTypeDevice; }
-	bool is_managed() const { return isManaged; }
+	bool on_host()    const  { return memoryType == cudaMemoryTypeHost; }
+	bool on_device()  const  { return memoryType == cudaMemoryTypeDevice; }
+	bool is_managed() const  { return isManaged; }
 };
 
 } // namespace pointer
 
 /**
- * A convenience wrapper around a  pointer which the CUDA runtime "knows" about -
- * and which thus has various kinds of associated information which this wrapper
- * allows access to.
+ * A convenience wrapper around a raw pointer "known" to the CUDA runtime
+ * and which thus has various kinds of associated information which this
+ * wrapper allows access to.
  */
 template <typename T>
 class pointer_t {
@@ -53,12 +54,12 @@ public: // other non-mutators
 		throw_on_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
-	bool                is_on_host()     const { return attributes().on_host();     }
-	bool                is_on_device()   const { return attributes().on_device();   }
-	bool                is_managed()     const { return attributes().is_managed();  }
-	cuda::device::id_t  device_id()      const { return attributes().device;        }
-	T*                  get_for_device() const { return attributes().hostPointer;   }
-	T*                  get_for_host()   const { return attributes().devicePointer; }
+	bool                is_on_host()     const  { return attributes().on_host();     }
+	bool                is_on_device()   const  { return attributes().on_device();   }
+	bool                is_managed()     const  { return attributes().is_managed();  }
+	cuda::device::id_t  device_id()      const  { return attributes().device;        }
+	T*                  get_for_device() const  { return attributes().hostPointer;   }
+	T*                  get_for_host()   const  { return attributes().devicePointer; }
 
 public: // constructors
 	pointer_t(T* ptr) : ptr_(ptr) { }
@@ -73,6 +74,9 @@ namespace pointer {
 
 /**
  * Wraps an existing pointer in a @ref pointer_t wrapper
+ *
+ * @param ptr a pointer - into either device or host memory -
+ * to be wrapped.
  */
 template<typename T>
 inline pointer_t<T> wrap(T* ptr) { return pointer_t<T>(ptr); }

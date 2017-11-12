@@ -14,8 +14,8 @@
  *
  *   my_kernel<<<launch, config, stuff>>>(real, args)
  *
- * and stick to proper C++; in other words, the wrappers are "ugly" instead
- * of your code having to be.
+ * and sticking to proper C++; in other words, the wrappers are "ugly" 
+ * instead of client code having to be.
  * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
  * rather easy to mix up shared memory sizes with stream IDs; grid and
  * block dimensions with each other; and even grid/block dimensions with
