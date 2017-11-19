@@ -103,13 +103,13 @@ inline device_t<detail::do_not_assume_device_is_current>
 stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
 
 template <bool AssumesDeviceIsCurrent>
-void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event)
+void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
-	if (event.device_id() != device_id()) {
+	if (event_.device_id() != device_id()) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
 			+ std::to_string(device_id()) + " wait for an event on another device ("
-			"device " + std::to_string(event.device_id()) + ")");
+			"device " + std::to_string(event_.device_id()) + ")");
 	}
 #endif
 
@@ -117,30 +117,30 @@ void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event)
 	// currently unused
 	constexpr const unsigned int  flags = 0;
 
-	auto status = cudaStreamWaitEvent(stream_id_, event.id(), flags);
+	auto status = cudaStreamWaitEvent(stream_id_, event_.id(), flags);
 	throw_if_error(status,
-		std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event.id())
+		std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 		+ " on CUDA device " + std::to_string(device_id_));
 
 }
 
 template <bool AssumesDeviceIsCurrent>
-void stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(const event_t& event)
+void stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(const event_t& event_)
 {
 #ifndef NDEBUG
-	if (event.device_id() != device_id()) {
+	if (event_.device_id() != device_id()) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
 			+ std::to_string(device_id()) + " wait for an event on another device ("
-			"device " + std::to_string(event.device_id()) + ")");
+			"device " + std::to_string(event_.device_id()) + ")");
 	}
 #endif
 	// TODO: ensure the stream and the event are associated with the same device
 
 	// Not calling event::detail::enqueue to avoid dependency on event.hpp
-	auto status = cudaEventRecord(event.id(), stream_id_);
+	auto status = cudaEventRecord(event_.id(), stream_id_);
 	throw_if_error(status,
-		"Failed scheduling event " + cuda::detail::ptr_as_hex(event.id()) + " to occur"
+		"Failed scheduling event " + cuda::detail::ptr_as_hex(event_.id()) + " to occur"
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 		+ " on CUDA device " + std::to_string(device_id_));
 }

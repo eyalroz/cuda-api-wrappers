@@ -317,21 +317,7 @@ public: // mutators
 		 * @param event_id CUDA runtime API ID of the event to have occuring on
 		 * completion of the hereto-scheduled work on this stream
 		 **/
-		void event(const event_t& event);
-
-		/**
-		 * Same as @ref event(event_t) , but taking the event's ID only
-		 */
-		void event(cuda::event::id_t event_id) {
-			// TODO: ensure the stream and the event are associated with the same device
-
-			// Not calling event::detail::enqueue to avoid dependency on event.hpp
-			auto status = cudaEventRecord(event_id, stream_id_);
-			throw_if_error(status,
-				"Failed scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-				+ " on CUDA device " + std::to_string(device_id_));
-		}
+		void event(const event_t& event_);
 
 		/**
 		 * Execute the specified function on the calling host thread once all
@@ -411,22 +397,7 @@ public: // mutators
 		 * would typically be recorded on another stream.
 		 *
 		 */
-		void wait(const event_t& event);
-
-		/**
-		 * Same as @ref wait(event_t) , but taking the event's ID only
-		 */
-		void wait(event::id_t event_id)
-		{
-			// Required by the CUDA runtime API; the flags value is
-			// currently unused
-			constexpr const unsigned int  flags = 0;
-			auto status = cudaStreamWaitEvent(stream_id_, event_id, flags);
-			throw_if_error(status,
-				std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_id)
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-				+ " on CUDA device " + std::to_string(device_id_));
-		}
+		void wait(const event_t& event_);
 
 	}; // class enqueue_t
 
