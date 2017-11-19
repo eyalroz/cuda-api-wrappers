@@ -141,7 +141,7 @@ inline void free(void* ptr)
  * @param size_in_bytes the amount of memory to allocate
  * @return a pointer to the allocated stretch of memory (on the CUDA device)
  */
-inline __host__ void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
 	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	return memory::device::detail::allocate(size_in_bytes);
@@ -180,7 +180,7 @@ inline void set(void* buffer_start, int byte_value, size_t num_bytes)
  */
 inline void zero(void* buffer_start, size_t num_bytes)
 {
-	return set(buffer_start, 0, num_bytes);
+	set(buffer_start, 0, num_bytes);
 }
 
 } // namespace device
@@ -281,7 +281,7 @@ inline void set(void* buffer_start, int byte_value, size_t num_bytes, stream::id
 
 inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id)
 {
-	return set(buffer_start, 0, num_bytes, stream_id);
+	set(buffer_start, 0, num_bytes, stream_id);
 }
 
 } // namespace async
@@ -386,7 +386,7 @@ inline void register_(void *ptr, size_t size,
 	bool map_into_device_space,
 	bool make_device_side_accesible_to_all)
 {
-	return detail::register_(
+	detail::register_(
 		ptr, size,
 		  register_mapped_io_space ? cudaHostRegisterIoMemory : 0
 		| map_into_device_space ? cudaHostRegisterMapped : 0
@@ -417,8 +417,7 @@ inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 
 inline void zero(void* buffer_start, size_t num_bytes)
 {
-	return set(buffer_start, 0, num_bytes);
-	// TODO: Error handling?
+	set(buffer_start, 0, num_bytes);
 }
 
 
