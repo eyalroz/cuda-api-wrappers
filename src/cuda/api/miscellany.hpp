@@ -21,6 +21,7 @@ namespace cuda {
  * is done on the device etc. This function forces this initialization to
  * happen immediately, while not having any other effect.
  */
+inline
 void force_runtime_initialization()
 {
 	// nVIDIA's Robin Thoni (https://www.rthoni.com/) guarantees
