@@ -143,16 +143,16 @@ int main(int argc, char **argv)
 		auto peer_id = (argc > 2) ?
 			std::stoi(argv[2]): (device.id() + 1) % cuda::device::count();
 		auto peer_device = cuda::device::get(peer_id);
-		if (device.peer_access.can_access(peer_id)) {
+		if (device.can_access(peer_device)) {
 			auto atomics_supported_over_link = cuda::device::peer_to_peer::get_attribute(
 				cudaDevP2PAttrNativeAtomicSupported, device_id, peer_id);
 			std::cout
 				<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 				<< "supported over the link from device " << device_id
 				<< " to device " << peer_id << ".\n";
-			device.peer_access.disable_to(peer_id);
+			device.disable_access_to(peer_device);
 			// TODO: Try some device-to-device access here, expect an exception
-			device.peer_access.enable_to(peer_id);
+			device.enable_access_to(peer_device);
 			// TODO: Try some device-to-device access here
 		}
 	}

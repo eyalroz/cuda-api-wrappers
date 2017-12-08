@@ -351,92 +351,49 @@ public:	// types
 	}; // class memory_t
 
 	/**
-	 * @brief A class to create a faux member in a @ref device_t, in lieu of an in-class
-	 * namespace (which C++ does not support); whenever you see a function
-	 * `my_dev.peer_access::foo()`, think of it as a `my_dev::peer_access::foo()`.
+	 * @brief Determine whether this device can access the global memory
+	 * of another CUDA device.
+	 *
+	 * @param peer id of the device which is to be accessed
+	 * @return true iff acesss is possible
 	 */
-	class peer_access_t {
-	protected:
-		const device_t::id_holder_type& device_id;
+	bool can_access(const device_t<>& peer) const
+	{
+		scoped_setter_t set_device_for_this_scope(id());
+		return device::peer_to_peer::can_access(id(), peer.id());
+	}
 
-		std::string device_id_as_str() const
-		{
-			return device_t::device_id_as_str(device_id);
-		}
+	/**
+	 * @brief Enable access by this device to the global memory of another device
+	 *
+	 * @param peer device to have access access to
+	 * @param peer_id id of the device to which to enable access
+	 */
+	void enable_access_to(const device_t<>& peer)
+	{
+		if (AssumedCurrent) {
+			enum : unsigned {fixed_flags = 0 };
+			// No flags are supported as of CUDA 8.0
+			auto status = cudaDeviceEnablePeerAccess(peer.id(), fixed_flags);
+			throw_if_error(status, "Failed enabling access of current device to device " + std::to_string(peer.id()));
+		} else
+			device::peer_to_peer::enable_access(id(), peer.id());
+	}
 
-	public:
-		///@cond
-		peer_access_t(const device_t::id_holder_type& holder) : device_id(holder) { }
-		///@endcond
-
-		/**
-		 * @brief Determine whether this device can access the global memory
-		 * of another CUDA device.
-		 *
-		 * @param peer id of the device which is to be accessed
-		 * @return true iff acesss is possible
-		 */
-		bool can_access(id_t peer_id) const
-		{
-			scoped_setter_t set_device_for_this_scope(device_id);
-			return device::peer_to_peer::can_access(device_id, peer_id);
-		}
-
-		// This won't compile, for some reason:
-		//
-		// inline bool can_access(const device_t<detail::do_not_assume_device_is_current>& peer) const
-		// {
-		// 	return this->can_access(peer.id());
-		// }
-
-		/**
-		 * @brief Enable access by this device to the global memory of another device
-		 * with a specified id
-		 *
-		 * @param peer_id id of the device to which to enable access
-		 */
-		void enable_to(id_t peer_id)
-		{
-			if (AssumedCurrent) {
-				enum : unsigned {fixed_flags = 0 };
-				// No flags are supported as of CUDA 8.0
-				auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
-				throw_if_error(status, "Failed enabling access of current device to device " + std::to_string(peer_id));
-			} else
-				device::peer_to_peer::enable_access(device_id, peer_id);
-		}
-
-		/**
-		 * @brief Enable access by this device to the global memory of another device
-		 *
-		 * @param peer device to have access access to
-		 */
-		void enable_to(device_t<> peer) { enable_to(peer.id()); }
-
-		/**
-		 * @brief Disable access by this device to the global memory of another device
-		 * with a specified id
-		 *
-		 * @param peer_id id of the device to which to disable access
-		 */
-		void disable_to(id_t peer_id)
-		{
-			if (AssumedCurrent) {
-				auto status = cudaDeviceDisablePeerAccess(peer_id);
-				throw_if_error(status,
-					"Failed disabling access of current device to device " + std::to_string(peer_id));
-			} else
-			device::peer_to_peer::disable_access(device_id, peer_id);
-		}
-
-		/**
-		 * @brief Disable access by this device to the global memory of another device
-		 *
-		 * @param peer device to have access disabled to
-		 */
-		void disable_to(device_t<> peer) { disable_to(peer.id()); }
-
-	}; // class peer_access_t
+	/**
+	 * @brief Disable access by this device to the global memory of another device
+	 *
+	 * @param peer device to have access disabled to
+	 */
+	void disable_access_to(const device_t<>& peer)
+	{
+		if (AssumedCurrent) {
+			auto status = cudaDeviceDisablePeerAccess(peer.id());
+			throw_if_error(status,
+				"Failed disabling access of current device to device " + std::to_string(peer.id()));
+		} else
+		device::peer_to_peer::disable_access(id(), peer.id());
+	}
 
 protected:
 	void set_flags(flags_t new_flags)
@@ -918,8 +875,7 @@ public:
 	// faux data members (used as surrogates for internal namespaces)
 	///@cond
 	memory_t memory { id_ };
-	peer_access_t peer_access { id_ };
-	// don't worry, these two will not actually use the id_ value
+	// don't worry, this will not actually use the id_ value
 	// without making sure it's been correctly determined
 	///@endcond
 };
