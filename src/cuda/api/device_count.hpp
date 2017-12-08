@@ -31,7 +31,7 @@ namespace device {
  * @return the number of CUDA devices on this system
  * @throws cuda::error if the device count could not be obtained
  */
-inline __host__ device::id_t  count()
+inline device::id_t  count()
 {
 	int device_count = 0; // Initializing, just to be on the safe side
 	status_t result = cudaGetDeviceCount(&device_count);

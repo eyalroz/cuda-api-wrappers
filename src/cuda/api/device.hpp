@@ -257,7 +257,7 @@ public:	// types
 		 * @param size_in_bytes size in bytes of the region of memory to allocate
 		 * @return a non-null (device-side) pointer to the allocated memory
 		 */
-		__host__ void* allocate(size_t size_in_bytes)
+		void* allocate(size_t size_in_bytes)
 		{
 			scoped_setter_t set_device_for_this_scope(device_id);
 			return memory::device::detail::allocate(size_in_bytes);
@@ -286,7 +286,7 @@ public:	// types
 		 * it will be made usable on all CUDA devices on the system
 		 * @return the allocated pointer; never returns null (throws on failure)
 		 */
-		__host__ void* allocate_managed(
+		void* allocate_managed(
 			size_t size_in_bytes,
 			initial_visibility_t initial_visibility =
 				initial_visibility_t::to_supporters_of_concurrent_managed_access)
@@ -308,7 +308,7 @@ public:	// types
 		 * @param options to be passed to the CUDA memory allocation API
 		 * @return a non-null pair of allocated regions
 		 */
-		__host__ region_pair allocate_region_pair(
+		region_pair allocate_region_pair(
 			size_t                           size_in_bytes,
 			region_pair::allocation_options  options = {
 				region_pair::isnt_portable_across_cuda_contexts,

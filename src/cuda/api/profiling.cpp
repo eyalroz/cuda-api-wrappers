@@ -66,13 +66,13 @@ scoped_range_marker::~scoped_range_marker()
 	profiling::mark::range_end(range);
 }
 
-__host__ void start()
+void start()
 {
 	auto status = cudaProfilerStart();
 	throw_if_error(status, "Starting to profile");
 }
 
-__host__ void stop()
+void stop()
 {
 	auto status = cudaProfilerStop();
 	throw_if_error(status, "Starting to profile");
