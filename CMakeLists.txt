@@ -60,9 +60,6 @@ include_directories( "src/" )
 # -------------
 
 find_package(CUDA 7.0 REQUIRED)
-if (${CUDA_VERSION} GREATER 9.0)
-    message(FATAL_ERROR "Unsupported CUDA version")
-endif()
 include(HandleCUDAComputeCapability)
 
 # There is no CUDA equivalent of CMAKE_CXX_STANDARD* macros... so we're stuck with the following line:
