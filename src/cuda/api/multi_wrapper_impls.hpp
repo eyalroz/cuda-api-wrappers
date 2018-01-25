@@ -106,9 +106,9 @@ template <bool AssumesDeviceIsCurrent>
 void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
-	if (event_.device_id() != device_id()) {
+	if (event_.device_id() != device_id_) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(device_id()) + " wait for an event on another device ("
+			+ std::to_string(device_id_) + " wait for an event on another device ("
 			"device " + std::to_string(event_.device_id()) + ")");
 	}
 #endif
@@ -129,9 +129,9 @@ template <bool AssumesDeviceIsCurrent>
 void stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(const event_t& event_)
 {
 #ifndef NDEBUG
-	if (event_.device_id() != device_id()) {
+	if (event_.device_id() != device_id_) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(device_id()) + " wait for an event on another device ("
+			+ std::to_string(device_id_) + " wait for an event on another device ("
 			"device " + std::to_string(event_.device_id()) + ")");
 	}
 #endif
