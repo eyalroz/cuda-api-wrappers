@@ -99,6 +99,16 @@ enum : bool {
 
 } // namespace event
 
+/**
+ * Thread block cooperativity control for kernel launches
+ */
+enum : bool {
+	/** Thread groups may span multiple blocks, so that they can synchronize their actions */
+	thread_blocks_may_cooperate = true,
+	/** Thread blocks cannot synchronize (the default, and likely faster, execution mode) */
+	thread_blocks_cant_cooperate = false
+};
+
 } // namespace cuda
 
 #endif /* CUDA_API_WRAPPERS_CONSTANTS_H_ */

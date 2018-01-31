@@ -15,6 +15,7 @@
 #include "cuda/api_wrappers.h"
 
 #include <cuda_runtime_api.h>
+#include <cooperative_groups.h>
 
 #include <iostream>
 #include <string>
@@ -32,6 +33,17 @@ __global__ void foo(int bar)
 		printf("Block %u is executing (with v = %d)\n", blockIdx.x, bar);
 	}
 }
+
+#ifdef _CG_HAS_GRID_GROUP
+__global__ void grid_cooperating_foo(int bar)
+{
+	auto g = cooperative_groups::this_grid();
+	g.sync();
+	if (threadIdx.x == 0) {
+		printf("Block %u is executing (with v = %d)\n", blockIdx.x, bar);
+	}
+}
+#endif
 
 std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc)
 {
@@ -126,11 +138,30 @@ int main(int argc, char **argv)
 
 	auto stream = cuda::device::current::get().create_stream(
 		cuda::stream::no_implicit_synchronization_with_default_stream);
+
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using stream.launch()\n" << std::flush;
 	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
+
+#ifdef _CG_HAS_GRID_GROUP
+	// And finally, some "cooperative" vs ""uncooperative"  kernel launches
+	if (cuda::version_numbers::runtime() >= 9) {
+		std::cout
+			<< "Launching kernel " << kernel_name
+			<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
+			<< "(but note it does not actually check the cooperativeness)." << std::flush;
+		stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel, launch_config, bar);
+		stream.synchronize();
+
+		std::cout
+			<< "Launching kernel " << kernel_name
+			<< " with " << num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
+		stream.enqueue.kernel_launch(cuda::thread_blocks_cant_cooperate, kernel, launch_config, bar);
+		stream.synchronize();
+	}
+#endif
 
 	std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;

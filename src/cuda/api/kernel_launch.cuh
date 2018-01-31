@@ -14,7 +14,7 @@
  *
  *   my_kernel<<<launch, config, stuff>>>(real, args)
  *
- * and sticking to proper C++; in other words, the wrappers are "ugly" 
+ * and sticking to proper C++; in other words, the wrappers are "ugly"
  * instead of client code having to be.
  * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
  * rather easy to mix up shared memory sizes with stream IDs; grid and
@@ -46,6 +46,10 @@
 #include <cuda/api/constants.h>
 #include <cuda/api/device_function.hpp>
 
+#if (__CUDACC_VER_MAJOR__ >= 9)
+#include <cooperative_groups.h>
+#endif
+
 #include <type_traits>
 #include <utility>
 
@@ -61,7 +65,12 @@ template<typename Fun>
 struct is_function_ptr: std::integral_constant<bool,
     std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
 
+template <typename F, typename... Args>
+void for_each_argument_address(F f, Args&&... args) {
+    [](...){}((f( (void*) &std::forward<Args>(args) ), 0)...);
 }
+
+} // namespace detail
 
 /**
  * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
@@ -81,6 +90,8 @@ struct is_function_ptr: std::integral_constant<bool,
  * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
+ * @param cooperative if true, use CUDA's "cooperative launch" mechanism which enables more flexible
+ * synchronization capabilities (see
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated.
  * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
@@ -92,6 +103,7 @@ struct is_function_ptr: std::integral_constant<bool,
  */
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
+	bool                        thread_blocks_may_cooperate,
 	const KernelFunction&       kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
@@ -107,14 +119,55 @@ inline void enqueue_launch(
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
-	kernel_function <<<
-		launch_configuration.grid_dimensions,
-		launch_configuration.block_dimensions,
-		launch_configuration.dynamic_shared_memory_size,
-		stream_id
-		>>>(parameters...);
+	if (not thread_blocks_cant_cooperate) {
+		// regular plain vanilla launch
+		kernel_function <<<
+			launch_configuration.grid_dimensions,
+			launch_configuration.block_dimensions,
+			launch_configuration.dynamic_shared_memory_size,
+			stream_id
+			>>>(parameters...);
+	}
+	else {
+#if __CUDACC_VER_MAJOR__ >= 9
+		// Cooperative launches cannot be made using the triple-chevron syntax,
+		// nor is there a variadic-template of the launch API call, so we need to
+		// a bit of useless work here. We could have done exactly the same thing
+		// for the non-cooperative case, mind you.
+
+		void* arguments_ptrs[sizeof...(KernelParameters)];
+		// fill the argument array with our parameters. Yes, the use
+		// of the two terms is confusing here and depends on how you
+		// look at things.
+		auto arg_index = 0;
+		detail::for_each_argument_address(
+			[&](void * x) {arguments_ptrs[arg_index++] = x;},
+			parameters...);
+		cudaLaunchCooperativeKernel<KernelFunction>(
+			&kernel_function,
+			launch_configuration.grid_dimensions,
+			launch_configuration.block_dimensions,
+			arguments_ptrs,
+			launch_configuration.dynamic_shared_memory_size,
+			stream_id);
+
+#else
+		throw cuda::runtime_error(status::not_supported,
+			"Only CUDA versions 9.0 and later support launching kernels \"cooperatively\"");
+#endif
+	}
 }
 #endif
+
+template<typename KernelFunction, typename... KernelParameters>
+inline void enqueue_launch(
+	const KernelFunction&       kernel_function,
+	stream::id_t                stream_id,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+{
+	enqueue_launch(thread_blocks_cant_cooperate, kernel_function, stream_id, launch_configuration, parameters...);
+}
 
 /**
  * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
@@ -132,26 +185,15 @@ inline void enqueue_launch(
  */
 template<typename... KernelParameters>
 inline void enqueue_launch(
-	device_function_t           wrapped_device_function,
+	device_function_t           wrapped_kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
-#ifndef __CUDACC__
-// If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
-// compilation error, or we just do nothing. For now it's option 2.
-	;
-#else
 {
-	using device_function_type = void (*)(KernelParameters...);
-	auto unwrapped = reinterpret_cast<device_function_type>(wrapped_device_function.ptr());
-	unwrapped <<<
-		launch_configuration.grid_dimensions,
-		launch_configuration.block_dimensions,
-		launch_configuration.dynamic_shared_memory_size,
-		stream_id
-		>>>(parameters...);
+	using kernel_function_type = void (*)(KernelParameters...);
+	auto unwrapped_kernel_function = reinterpret_cast<kernel_function_type>(wrapped_kernel_function.ptr());
+	return enqueue_launch(unwrapped_kernel_function, stream_id, launch_configuration, parameters...);
 }
-#endif
 
 /**
  * Variant of @ref enqueue_launch for use with the default stream on the current device.

@@ -712,10 +712,22 @@ public:
 		bool interprocess       = event::not_interprocess);
 
 	template<typename KernelFunction, typename ... KernelParameters>
-	void launch(const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
+	void launch(
+		bool thread_block_cooperativity,
+		const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
 		KernelParameters ... parameters)
 	{
-		return default_stream().enqueue.kernel_launch(kernel_function, launch_configuration, parameters...);
+		return default_stream().enqueue.kernel_launch(
+			thread_block_cooperativity, kernel_function, launch_configuration, parameters...);
+	}
+
+	template<typename KernelFunction, typename ... KernelParameters>
+	void launch(
+		const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
+		KernelParameters ... parameters)
+	{
+		return launch(
+			cuda::thread_blocks_cant_cooperate, kernel_function, launch_configuration, parameters...);
 	}
 
 	priority_range_t stream_priority_range() const
