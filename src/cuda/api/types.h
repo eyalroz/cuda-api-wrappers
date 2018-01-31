@@ -139,11 +139,10 @@ using grid_block_dimensions_t = dimensions_t;
  * @link https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
  * ). This type is large enough to hold its size.
  */
-using shared_memory_size_t    = unsigned short;
-	// Like size_t, but for shared memory spaces, which, currently in nVIDIA (and AMD)
-	// GPUs are sized at no more than 64 KiB. Note that using this for computations
-	// might not be the best idea since there are penalties for sub-32-bit computation
-	// sometimes
+using shared_memory_size_t    = unsigned;
+	// Like size_t, but for shared memory spaces, which, currently in nVIDIA GPUs
+	// are sized at no more than 112 KiB (and usually less; 112 KiB was an
+	// extremal value on the Kepler-based Tesla cards)
 
 /**
  * Holds the parameters necessary to "launch" a CUDA kernel (i.e. schedule it for
