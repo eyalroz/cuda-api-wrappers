@@ -71,6 +71,16 @@ inline bool operator>=(const version_t& lhs, const version_t& rhs)
 {
 	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
 }
+
+// comparison with single integers - as major versions
+
+inline bool operator==(const version_t& lhs, int rhs)  { return lhs == version_t::from_single_number(rhs); }
+inline bool operator!=(const version_t& lhs, int rhs)  { return lhs != version_t::from_single_number(rhs); }
+inline bool operator< (const version_t& lhs, int rhs)  { return lhs  < version_t::from_single_number(rhs); }
+inline bool operator> (const version_t& lhs, int rhs)  { return lhs  > version_t::from_single_number(rhs); }
+inline bool operator<=(const version_t& lhs, int rhs)  { return lhs <= version_t::from_single_number(rhs); }
+inline bool operator>=(const version_t& lhs, int rhs)  { return lhs >= version_t::from_single_number(rhs); }
+
 ///@endcond
 
 
