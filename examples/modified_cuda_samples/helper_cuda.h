@@ -48,7 +48,7 @@
 #endif
 #endif
 
-[[noreturn]] inline void die(const std::string& message, int exit_value = EXIT_FAILURE) noexcept
+[[noreturn]] inline void die_(const std::string& message, int exit_value = EXIT_FAILURE) noexcept
 {
 	std::cerr << message << "\n";
 	exit(exit_value);
@@ -66,7 +66,7 @@ inline int gpuDeviceInit(int device_id)
 	auto device_count = cuda::device::count();
 
 	if (device_count == 0) {
-		die ("gpuDeviceInit() CUDA error: no devices supporting CUDA.");
+		die_ ("gpuDeviceInit() CUDA error: no devices supporting CUDA.");
 	}
 
 	device_id  = std::max(device_id, 0);
@@ -83,12 +83,12 @@ inline int gpuDeviceInit(int device_id)
 	auto properties = device.properties();
 
 	if (!properties.usable_for_compute()) {
-		die("Error: device is running in <Compute Mode Prohibited>, "
+		die_("Error: device is running in <Compute Mode Prohibited>, "
 			"no threads can use ::cudaSetDevice().\n");
 	}
 
 	if (properties.compute_capability().major < 1) {
-		die("gpuDeviceInit(): GPU device does not support CUDA.\n");
+		die_("gpuDeviceInit(): GPU device does not support CUDA.\n");
 	}
 
 	device.make_current();
@@ -101,7 +101,7 @@ inline int gpuGetMaxGflopsDeviceId()
 	auto device_count = cuda::device::count();
 
 	if (device_count == 0) {
-		die("gpuGetMaxGflopsDeviceId() CUDA error: no devices supporting CUDA.");
+		die_("gpuGetMaxGflopsDeviceId() CUDA error: no devices supporting CUDA.");
 	}
 
 	std::vector<cuda::device::id_t> device_ids(device_count);
@@ -114,7 +114,7 @@ inline int gpuGetMaxGflopsDeviceId()
 		}
 	);
 	if (device_ids.empty()) {
-		die("gpuGetMaxGflopsDeviceId() CUDA error: all devices have compute mode prohibited.");
+		die_("gpuGetMaxGflopsDeviceId() CUDA error: all devices have compute mode prohibited.");
 	}
 	if (device_ids.size() == 1) { return *device_ids.begin(); }
 
@@ -155,11 +155,11 @@ inline int findCudaDevice(int argc, const char **argv)
 	{
 		device_id = getCmdLineArgumentInt(argc, argv, "device=");
 
-		if (device_id < 0) { die("Invalid command line parameter"); }
+		if (device_id < 0) { die_("Invalid command line parameter"); }
 		else
 		{
 			device_id = gpuDeviceInit(device_id);
-			if (device_id < 0) { die ("exiting..."); }
+			if (device_id < 0) { die_ ("exiting..."); }
 		}
 	}
 	else

@@ -14,7 +14,7 @@ using std::cout;
 using std::cerr;
 using std::flush;
 
-[[noreturn]] void die(const std::string& message)
+[[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
@@ -24,12 +24,12 @@ int main(int argc, char **argv)
 {
 	auto device_count = cuda::device::count();
 	if (device_count == 0) {
-		die("No CUDA devices on this system");
+		die_("No CUDA devices on this system");
 	}
 
 	try {
 		cuda::device::current::set(device_count);
-		die("An exception should have be thrown");
+		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error& e) {
 		if (e.code() != cuda::status::invalid_device) { throw e; }
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
 	try {
 		cuda::outstanding_error::ensure_none();
-		die("An exception should have be thrown");
+		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
@@ -52,19 +52,19 @@ int main(int argc, char **argv)
 
 	try {
 		cuda::device::current::set(device_count);
-		die("An exception should have be thrown");
+		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
 	try {
 		cuda::outstanding_error::ensure_none(cuda::dont_clear_errors);
-		die("An exception should have be thrown");
+		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 
 	try {
 		cuda::outstanding_error::ensure_none(cuda::dont_clear_errors);
-		die("An exception should have be thrown");
+		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }
 

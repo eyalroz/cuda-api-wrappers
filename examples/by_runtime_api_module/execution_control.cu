@@ -20,7 +20,7 @@
 #include <string>
 #include <cassert>
 
-[[noreturn]] void die(const std::string& message)
+[[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc
 int main(int argc, char **argv)
 {
 	if (cuda::device::count() == 0) {
-		die("No CUDA devices on this system");
+		die_("No CUDA devices on this system");
 	}
 
 	const auto kernel = foo;
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 		std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	if (cuda::device::count() <= device_id) {
-		die("No CUDA device with ID " + std::to_string(device_id));
+		die_("No CUDA device with ID " + std::to_string(device_id));
 	}
 
 	auto device = cuda::device::get(device_id);

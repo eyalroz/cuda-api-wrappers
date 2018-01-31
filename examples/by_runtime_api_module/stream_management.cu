@@ -18,7 +18,7 @@
 using std::printf;
 
 
-[[noreturn]] void die(const std::string& message)
+[[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 		std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	if (cuda::device::count() == 0) {
-		die("No CUDA devices on this system");
+		die_("No CUDA devices on this system");
 	}
 
 	cuda::device::current::set(device_id);

@@ -12,7 +12,7 @@
 #include <string>
 #include <cstdlib>
 
-[[noreturn]] void die(const std::string& message)
+[[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
@@ -22,7 +22,7 @@
 int main(int argc, char **argv)
 {
 	if (cuda::device::count() == 0) {
-		die("No CUDA devices on this system (and, unfortunately, the CUDA runtime requires one to report its supported version)");
+		die_("No CUDA devices on this system (and, unfortunately, the CUDA runtime requires one to report its supported version)");
 	}
 
 	auto runtime_version = cuda::version_numbers::runtime();

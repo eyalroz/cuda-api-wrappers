@@ -29,7 +29,7 @@
 #include <cassert>
 
 
-[[noreturn]] void die(const std::string& message)
+[[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
