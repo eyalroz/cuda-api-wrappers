@@ -263,6 +263,7 @@ public: // mutators
 
 		template<typename KernelFunction, typename... KernelParameters>
 		void kernel_launch(
+			bool                        thread_block_cooperativity,
 			const KernelFunction&       kernel_function,
 			launch_configuration_t      launch_configuration,
 			KernelParameters...         parameters)
@@ -271,7 +272,27 @@ public: // mutators
 			// with devices other than the current one, see:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
 			DeviceSetter set_device_for_this_scope(device_id_);
-			return cuda::enqueue_launch(kernel_function, stream_id_, launch_configuration, parameters...);
+			return cuda::enqueue_launch(
+				thread_block_cooperativity, kernel_function, stream_id_, launch_configuration, parameters...);
+		}
+
+		template<typename KernelFunction, typename... KernelParameters>
+		void kernel_launch(
+			const KernelFunction&       kernel_function,
+			launch_configuration_t      launch_configuration,
+			KernelParameters...         parameters)
+		{
+			// TODO: Somehow I can't avoid code duplication with the previous variant of kernel_launch;
+			// why is that?
+			//
+			// return kernel_launch(cuda::thread_blocks_cant_cooperate,
+			// 	kernel_function, stream_id_, launch_configuration, parameters...);
+			//
+
+			DeviceSetter set_device_for_this_scope(device_id_);
+			return cuda::enqueue_launch(
+				cuda::thread_blocks_cant_cooperate,
+				kernel_function, stream_id_, launch_configuration, parameters...);
 		}
 
 		/**
