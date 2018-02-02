@@ -526,6 +526,27 @@ inline void free(void* managed_ptr)
 		+ cuda::detail::ptr_as_hex(managed_ptr));
 }
 
+namespace async {
+
+/**
+ * @brief Prefetches a region of managed memory to a specific device, so
+ * it can later be used there without waiting for I/O fromm the host or other
+ * devices.
+ */
+inline void prefetch(
+	void*               managed_ptr,
+	size_t              num_bytes,
+	cuda::device::id_t  destination,
+	stream::id_t        stream_id)
+{
+	auto result = cudaMemPrefetchAsync(managed_ptr, num_bytes, destination, stream_id);
+	throw_if_error(result,
+		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_ptr) + " to device " + std::to_string(destination));
+}
+
+} // namespace async
+
 } // namespace managed
 
 namespace mapped {
