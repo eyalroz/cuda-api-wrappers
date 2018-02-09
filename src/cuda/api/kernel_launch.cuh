@@ -92,7 +92,7 @@ void for_each_argument_address(F f, Args&&... args) {
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
  * @param cooperative if true, use CUDA's "cooperative launch" mechanism which enables more flexible
- * synchronization capabilities (see
+ * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated.
  * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
