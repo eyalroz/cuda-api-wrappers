@@ -105,8 +105,8 @@ enum : bool {
 enum : bool {
 	/** Thread groups may span multiple blocks, so that they can synchronize their actions */
 	thread_blocks_may_cooperate = true,
-	/** Thread blocks cannot synchronize (the default, and likely faster, execution mode) */
-	thread_blocks_cant_cooperate = false
+	/** Thread blocks are not allowed to synchronize (the default, and likely faster, execution mode) */
+	thread_blocks_may_not_cooperate = false
 };
 
 } // namespace cuda

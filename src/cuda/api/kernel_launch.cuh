@@ -91,7 +91,7 @@ void for_each_argument_address(F f, Args&&... args) {
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
  * @param cooperative if true, use CUDA's "cooperative launch" mechanism which enables more flexible
- * synchronization capabilities (see
+ * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated.
  * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
@@ -103,7 +103,7 @@ void for_each_argument_address(F f, Args&&... args) {
  */
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                        thread_blocks_may_cooperate,
+	bool                        thread_block_cooperation,
 	const KernelFunction&       kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
@@ -119,7 +119,7 @@ inline void enqueue_launch(
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
-	if (not thread_blocks_cant_cooperate) {
+	if (thread_block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<
 			launch_configuration.grid_dimensions,
@@ -143,13 +143,14 @@ inline void enqueue_launch(
 		detail::for_each_argument_address(
 			[&](void * x) {arguments_ptrs[arg_index++] = x;},
 			parameters...);
-		cudaLaunchCooperativeKernel<KernelFunction>(
-			&kernel_function,
+		auto status = cudaLaunchCooperativeKernel(
+			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
 			launch_configuration.block_dimensions,
 			arguments_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id);
+		throw_if_error(status, "Cooperative launch failed");
 
 #else
 		throw cuda::runtime_error(status::not_supported,
@@ -166,7 +167,7 @@ inline void enqueue_launch(
 	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
 {
-	enqueue_launch(thread_blocks_cant_cooperate, kernel_function, stream_id, launch_configuration, parameters...);
+	enqueue_launch(thread_blocks_may_not_cooperate, kernel_function, stream_id, launch_configuration, parameters...);
 }
 
 /**

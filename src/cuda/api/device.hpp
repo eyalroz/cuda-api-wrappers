@@ -727,7 +727,7 @@ public:
 		KernelParameters ... parameters)
 	{
 		return launch(
-			cuda::thread_blocks_cant_cooperate, kernel_function, launch_configuration, parameters...);
+			cuda::thread_blocks_may_not_cooperate, kernel_function, launch_configuration, parameters...);
 	}
 
 	priority_range_t stream_priority_range() const

@@ -291,7 +291,7 @@ public: // mutators
 
 			DeviceSetter set_device_for_this_scope(device_id_);
 			return cuda::enqueue_launch(
-				cuda::thread_blocks_cant_cooperate,
+				cuda::thread_blocks_may_not_cooperate,
 				kernel_function, stream_id_, launch_configuration, parameters...);
 		}
 
