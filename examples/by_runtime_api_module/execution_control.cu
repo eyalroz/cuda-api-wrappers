@@ -15,7 +15,9 @@
 #include "cuda/api_wrappers.h"
 
 #include <cuda_runtime_api.h>
+#if __CUDACC_VER_MAJOR__ >= 9
 #include <cooperative_groups.h>
+#endif
 
 #include <iostream>
 #include <string>
@@ -148,6 +150,7 @@ int main(int argc, char **argv)
 #ifdef _CG_HAS_GRID_GROUP
 	// And finally, some "cooperative" vs ""uncooperative"  kernel launches
 	if (cuda::version_numbers::runtime() >= 9) {
+		const auto kernel = grid_cooperating_foo;
 		std::cout
 			<< "Launching kernel " << kernel_name
 			<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
