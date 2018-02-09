@@ -179,6 +179,15 @@ public:
 		std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
+	runtime_error(cuda::status::alias_t error_code) :
+		std::runtime_error(describe((cuda::status_t) error_code)),
+		code_((cuda::status_t) error_code)
+	{ }
+	runtime_error(cuda::status::alias_t error_code, const std::string& what_arg) :
+		std::runtime_error(what_arg + ": " + describe((cuda::status_t) error_code)),
+		code_((cuda::status_t) error_code)
+	{ }
+
 	///@endcond
 
 	/**

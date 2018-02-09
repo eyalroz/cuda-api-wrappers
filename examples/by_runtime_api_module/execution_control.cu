@@ -15,7 +15,9 @@
 #include "cuda/api_wrappers.h"
 
 #include <cuda_runtime_api.h>
+#if __CUDACC_VER_MAJOR__ >= 9
 #include <cooperative_groups.h>
+#endif
 
 #include <iostream>
 #include <string>
