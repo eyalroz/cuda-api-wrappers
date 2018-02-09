@@ -42,6 +42,7 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 #define CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 
+#include <iostream>
 #include <cuda/api/types.h>
 #include <cuda/api/constants.h>
 #include <cuda/api/device_function.hpp>
@@ -119,7 +120,7 @@ inline void enqueue_launch(
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
-	if (not thread_blocks_cant_cooperate) {
+	if (not thread_blocks_may_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<
 			launch_configuration.grid_dimensions,
@@ -143,13 +144,14 @@ inline void enqueue_launch(
 		detail::for_each_argument_address(
 			[&](void * x) {arguments_ptrs[arg_index++] = x;},
 			parameters...);
-		cudaLaunchCooperativeKernel<KernelFunction>(
-			&kernel_function,
+		auto status = cudaLaunchCooperativeKernel(
+			(void*) kernel_function,
 			launch_configuration.grid_dimensions,
 			launch_configuration.block_dimensions,
 			arguments_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id);
+		throw_if_error(status, "Cooperative launch failed");
 
 #else
 		throw cuda::runtime_error(status::not_supported,
