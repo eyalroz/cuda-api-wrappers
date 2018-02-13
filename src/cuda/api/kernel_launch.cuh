@@ -65,9 +65,47 @@ template<typename Fun>
 struct is_function_ptr: std::integral_constant<bool,
     std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
 
-template <typename F, typename... Args>
-void for_each_argument_address(F f, Args&&... args) {
-    [](...){}((f( (void*) &std::forward<Args>(args) ), 0)...);
+template <typename Arg>
+void collect_argument_addresses(void** collected_addresses, Arg&& arg)
+{
+	collected_addresses[0] = static_cast<void*>(&arg);
+}
+
+template <typename Arg1, typename Arg2>
+void collect_argument_addresses(void** collected_addresses, Arg1&& arg1, Arg2&& arg2)
+{
+	collect_argument_addresses(collected_addresses,     std::forward<Arg1>(arg1));
+	collect_argument_addresses(collected_addresses + 1, std::forward<Arg2>(arg2));
+}
+
+template <typename Arg1, typename Arg2, typename Arg3>
+void collect_argument_addresses(
+	void** collected_addresses, Arg1&& arg1, Arg2&& arg2, Arg3&& arg3)
+{
+	collect_argument_addresses(collected_addresses,     std::forward<Arg1>(arg1));
+	collect_argument_addresses(collected_addresses + 1, std::forward<Arg2>(arg2));
+	collect_argument_addresses(collected_addresses + 2, std::forward<Arg3>(arg3));
+}
+
+template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+void collect_argument_addresses(
+	void** collected_addresses, Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4)
+{
+	collect_argument_addresses(
+		collected_addresses,std::forward<Arg1>(arg1), std::forward<Arg2>(arg2));
+	collect_argument_addresses(
+		collected_addresses + 2, std::forward<Arg3>(arg3), std::forward<Arg4>(arg4));
+}
+
+template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename... Args>
+void collect_argument_addresses(
+	void** collected_addresses, 
+	Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Args&&... args)
+{
+	collect_argument_addresses(
+		collected_addresses, 
+		std::forward<Arg1, Arg2, Arg3, Arg4>(arg1, arg2, arg3, arg4));
+	collect_argument_addresses(collected_addresses + 4, std::forward<Args>(args)...);
 }
 
 } // namespace detail
@@ -135,19 +173,16 @@ inline void enqueue_launch(
 		// a bit of useless work here. We could have done exactly the same thing
 		// for the non-cooperative case, mind you.
 
-		void* arguments_ptrs[sizeof...(KernelParameters)];
+		void* argument_ptrs[sizeof...(KernelParameters)];
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		auto arg_index = 0;
-		detail::for_each_argument_address(
-			[&](void * x) {arguments_ptrs[arg_index++] = x;},
-			parameters...);
+		detail::collect_argument_addresses(argument_ptrs, parameters...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
 			launch_configuration.block_dimensions,
-			arguments_ptrs,
+			argument_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id);
 		throw_if_error(status, "Cooperative launch failed");
