@@ -25,7 +25,7 @@ namespace status {
  *
  * @note unfortunately, this enum can't inherit from @ref status_t
  */
-enum alias_t : std::underlying_type<status_t>::type {
+enum named_t : std::underlying_type<status_t>::type {
 	success                         = cudaSuccess,
 	missing_configuration           = cudaErrorMissingConfiguration,
 	memory_allocation               = cudaErrorMemoryAllocation,
@@ -109,10 +109,10 @@ enum alias_t : std::underlying_type<status_t>::type {
 	api_failure_base                = cudaErrorApiFailureBase
 };
 
-inline bool operator==(const status_t& lhs, const alias_t& rhs) { return lhs == (status_t) rhs;}
-inline bool operator!=(const status_t& lhs, const alias_t& rhs) { return lhs != (status_t) rhs;}
-inline bool operator==(const alias_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
-inline bool operator!=(const alias_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
+inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
+inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
+inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
+inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
 
 
 } // namespace status
@@ -180,6 +180,10 @@ public:
 		code_(error_code)
 	{ }
 	///@endcond
+	runtime_error(cuda::status::named_t error_code) :
+		runtime_error(static_cast<cuda::status_t>(error_code)) { }
+	runtime_error(cuda::status::named_t error_code, const std::string& what_arg) :
+		runtime_error(static_cast<cuda::status_t>(error_code), what_arg) { }
 
 	/**
 	 * Obtain the CUDA status code which resulted in this error being thrown.
