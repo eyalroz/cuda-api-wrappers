@@ -162,7 +162,14 @@ int main(int argc, char **argv)
 		// And finally, some "cooperative" vs ""uncooperative"  kernel launches:
 
 		auto can_launch_cooperatively =
+#if __CUDACC_VER_MAJOR__ >= 9
 			(cuda::device::current::get().get_attribute(cudaDevAttrCooperativeLaunch) > 0);
+#else
+			false; // This is not strictly true, since the device might support it, but
+			       // 1. We can't check and
+			       // 2. We don't have a cooperative launch API before CUDA 9
+			       // so "false" is good enough.
+#endif
 		if (can_launch_cooperatively) {
 			std::cout
 				<< "Launching kernel" << kernel_name
