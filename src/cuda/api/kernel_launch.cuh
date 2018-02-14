@@ -65,47 +65,13 @@ template<typename Fun>
 struct is_function_ptr: std::integral_constant<bool,
     std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
 
-template <typename Arg>
-void collect_argument_addresses(void** collected_addresses, Arg&& arg)
+inline void collect_argument_addresses(void** collected_addresses) { }
+
+template <typename Arg, typename... Args>
+inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
 	collected_addresses[0] = static_cast<void*>(&arg);
-}
-
-template <typename Arg1, typename Arg2>
-void collect_argument_addresses(void** collected_addresses, Arg1&& arg1, Arg2&& arg2)
-{
-	collect_argument_addresses(collected_addresses,     std::forward<Arg1>(arg1));
-	collect_argument_addresses(collected_addresses + 1, std::forward<Arg2>(arg2));
-}
-
-template <typename Arg1, typename Arg2, typename Arg3>
-void collect_argument_addresses(
-	void** collected_addresses, Arg1&& arg1, Arg2&& arg2, Arg3&& arg3)
-{
-	collect_argument_addresses(collected_addresses,     std::forward<Arg1>(arg1));
-	collect_argument_addresses(collected_addresses + 1, std::forward<Arg2>(arg2));
-	collect_argument_addresses(collected_addresses + 2, std::forward<Arg3>(arg3));
-}
-
-template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-void collect_argument_addresses(
-	void** collected_addresses, Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4)
-{
-	collect_argument_addresses(
-		collected_addresses,std::forward<Arg1>(arg1), std::forward<Arg2>(arg2));
-	collect_argument_addresses(
-		collected_addresses + 2, std::forward<Arg3>(arg3), std::forward<Arg4>(arg4));
-}
-
-template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename... Args>
-void collect_argument_addresses(
-	void** collected_addresses, 
-	Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Args&&... args)
-{
-	collect_argument_addresses(
-		collected_addresses, 
-		std::forward<Arg1, Arg2, Arg3, Arg4>(arg1, arg2, arg3, arg4));
-	collect_argument_addresses(collected_addresses + 4, std::forward<Args>(args)...);
+	collect_argument_addresses(collected_addresses, std::forward<Args>(args)...);
 }
 
 } // namespace detail
