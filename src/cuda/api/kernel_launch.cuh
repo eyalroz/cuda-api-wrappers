@@ -71,7 +71,7 @@ template <typename Arg, typename... Args>
 inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
 	collected_addresses[0] = static_cast<void*>(&arg);
-	collect_argument_addresses(collected_addresses, std::forward<Args>(args)...);
+	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
 }
 
 } // namespace detail
