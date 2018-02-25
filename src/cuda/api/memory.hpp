@@ -388,9 +388,9 @@ inline void register_(void *ptr, size_t size,
 {
 	detail::register_(
 		ptr, size,
-		  register_mapped_io_space ? cudaHostRegisterIoMemory : 0
-		| map_into_device_space ? cudaHostRegisterMapped : 0
-		| make_device_side_accesible_to_all ? cudaHostRegisterPortable : 0
+		  (register_mapped_io_space ? cudaHostRegisterIoMemory : 0)
+		| (map_into_device_space ? cudaHostRegisterMapped : 0)
+		| (make_device_side_accesible_to_all ? cudaHostRegisterPortable : 0)
 	);
 }
 
