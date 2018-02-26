@@ -24,8 +24,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/" 
 # -----------------------------------
 
 
-if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE "Release" )
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -66,11 +66,15 @@ include(HandleCUDAComputeCapability)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --std=c++11)
 
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler -Wall)
-if (CMAKE_BUILD_TYPE_UPPER STREQUAL "RELEASE")
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CUDA_NVCC_FLAGS_RELEASE ${CUDA_NVCC_FLAGS_RELEASE} -O3 -DNDEBUG)
-elseif (CMAKE_BUILD_TYPE_UPPER STREQUAL "DEBUG")
+elseif (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel;")
+    set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG} -O3 -DNDEBUG)
+elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG} -g --keep --generate-line-info --source-in-ptx -O3 -DNDEBUG)
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG} -g --keep --generate-line-info --source-in-ptx)
-endif (CMAKE_BUILD_TYPE_UPPER STREQUAL "RELEASE")
+endif ()
 
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_PROPAGATE_HOST_FLAGS OFF)
@@ -88,6 +92,9 @@ find_library(CUDA_NVTX_LIBRARY
   )
 mark_as_advanced(CUDA_NVTX_LIBRARY)
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
+
+find_package(CUB 1.5.0 REQUIRED)
+include_directories(${CUB_INCLUDE_DIR})
 
 # -----------------------
 # Miscellaneous targets
@@ -143,6 +150,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	cuda_add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
 	cuda_add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
 	cuda_add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
+	cuda_add_executable(sort_with_cub EXCLUDE_FROM_ALL examples/other/sort_with_cub.cu)
 	#----
 	add_custom_target(examples_by_runtime_api_module)
 	add_dependencies(
