@@ -107,7 +107,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	    COMMAND ctags --langmap=c++:+.cu.cuh.hpp  -R ./
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-	add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/ cmake_install.cmake)
+	add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/ cmake_install.cmake install_manifest.txt)
 endif()
 
 # -----------------------
@@ -174,6 +174,16 @@ endif()
 
 # -------------
 
-# We don't do installation for now
-# set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
+INSTALL(
+	TARGETS cuda-api-wrappers
+	ARCHIVE # For CMake, a static library is an ARCHIVE, a dynamic library is a RUNTIME
+	DESTINATION lib
+	INCLUDES DESTINATION include
+	CONFIGURATIONS Release RelWithDebugInfi
+)
+
+install(
+	DIRECTORY src/cuda
+	DESTINATION include
+)
 
