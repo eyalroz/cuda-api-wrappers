@@ -187,6 +187,7 @@ inline void enqueue_launch(
  */
 template<typename... KernelParameters>
 inline void enqueue_launch(
+	bool                        thread_block_cooperation,
 	device_function_t           wrapped_kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
@@ -194,7 +195,17 @@ inline void enqueue_launch(
 {
 	using kernel_function_type = void (*)(KernelParameters...);
 	auto unwrapped_kernel_function = reinterpret_cast<kernel_function_type>(wrapped_kernel_function.ptr());
-	return enqueue_launch(unwrapped_kernel_function, stream_id, launch_configuration, parameters...);
+	return enqueue_launch(thread_block_cooperation, unwrapped_kernel_function, stream_id, launch_configuration, parameters...);
+}
+
+template<typename... KernelParameters>
+inline void enqueue_launch(
+	device_function_t           wrapped_kernel_function,
+	stream::id_t                stream_id,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+{
+	enqueue_launch(thread_blocks_may_not_cooperate, wrapped_kernel_function, stream_id, launch_configuration, parameters...);
 }
 
 /**

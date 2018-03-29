@@ -174,9 +174,30 @@ int main(int argc, char **argv)
 			std::cout
 				<< "Launching kernel" << kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
-				<< "(but note it does not actually check the cooperativeness).\n" << std::flush;
+				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel, launch_config, bar);
 			stream.synchronize();
+
+/*			// same, but with a device_function_t
+			std::cout
+				<< "Launching kernel" << kernel_name
+				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
+				<< "(but note it does not actually check the cooperativeness).\n" << std::flush;
+			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, device_function, launch_config, bar);
+			stream.synchronize();
+*/
+			// Same, but using cuda::enqueue_launch
+			// both options
+			std::cout
+				<< "Launching kernel " << kernel_name
+				<< " wrapped in a device_function_t strcture,"
+				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
+				<< " and allowing thread block cooperation\n" << 
+				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
+
+			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, device_function, stream.id(), launch_config, bar);
+			cuda::device::current::get().synchronize();
+
 		}
 		else {
 			std::cout
