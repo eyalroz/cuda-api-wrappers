@@ -93,9 +93,6 @@ find_library(CUDA_NVTX_LIBRARY
 mark_as_advanced(CUDA_NVTX_LIBRARY)
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
 
-find_package(CUB 1.5.0 REQUIRED)
-include_directories(${CUB_INCLUDE_DIR})
-
 # -----------------------
 # Miscellaneous targets
 # -----------------------
@@ -150,7 +147,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	cuda_add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
 	cuda_add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
 	cuda_add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
-	cuda_add_executable(sort_with_cub EXCLUDE_FROM_ALL examples/other/sort_with_cub.cu)
 	#----
 	add_custom_target(examples_by_runtime_api_module)
 	add_dependencies(
