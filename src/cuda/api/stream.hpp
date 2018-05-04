@@ -477,7 +477,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend stream_t<> stream::wrap(device::id_t device_id, id_t stream_id, bool take_ownership);
+	friend stream_t<> stream::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership);
 
 protected: // data members
 	const device::id_t  device_id_;
