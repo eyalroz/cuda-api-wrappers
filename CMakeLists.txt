@@ -88,7 +88,6 @@ find_library(CUDA_NVTX_LIBRARY
   PATHS ${CUDA_TOOLKIT_ROOT_DIR}
   PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
   DOC "Location of the CUDA Toolkit Extension (NVTX) library"
-  NO_DEFAULT_PATH
   )
 mark_as_advanced(CUDA_NVTX_LIBRARY)
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
