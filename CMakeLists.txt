@@ -169,12 +169,12 @@ endif()
 
 # -------------
 
-INSTALL(
+install(
 	TARGETS cuda-api-wrappers
 	ARCHIVE # For CMake, a static library is an ARCHIVE, a dynamic library is a RUNTIME
 	DESTINATION lib
 	INCLUDES DESTINATION include
-	CONFIGURATIONS Release RelWithDebugInfi
+	CONFIGURATIONS Release RelWithDebugInfo
 )
 
 install(
