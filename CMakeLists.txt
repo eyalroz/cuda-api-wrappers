@@ -92,6 +92,11 @@ find_library(CUDA_NVTX_LIBRARY
 mark_as_advanced(CUDA_NVTX_LIBRARY)
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
 
+# The FindCUDA script forces the use of the libcublas library when perform device linkage;
+# but on some systems and in certain situations, its inclusion on the command line 
+# triggers various kinds of errors; so - we ensure it is empty and unused
+set(CUDA_cublas_device_LIBRARY "" CACHE FILEPATH "Path of the CUBLAS library - unused dummy value" FORCE)
+
 # -----------------------
 # Miscellaneous targets
 # -----------------------
@@ -103,7 +108,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	    COMMAND ctags --langmap=c++:+.cu.cuh.hpp  -R ./
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-	add_custom_target(cclean COMMAND rm -r CMakeCache.txt CMakeFiles/ cmake_install.cmake install_manifest.txt)
+	add_custom_target(cclean COMMAND rm -rf CMakeCache.txt CMakeFiles/ cmake_install.cmake install_manifest.txt)
 endif()
 
 # -----------------------
