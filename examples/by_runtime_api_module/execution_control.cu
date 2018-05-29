@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 				<< "Launching kernel " << kernel_name
 				<< " wrapped in a device_function_t strcture,"
 				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
-				<< " and allowing thread block cooperation\n" << 
+				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
 			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, device_function, stream.id(), launch_config, bar);
