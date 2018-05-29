@@ -826,15 +826,23 @@ public:
 	 * Drops the assumption of a device being current ("recasting" it as a
 	 * not-assumed-current device).
 	 *
-	 * @note This involve some template voodoo - making a copy of AssumedCurrent -
-	 * to delay the evaluation here until this template is instantiated rather
-	 * than at class instantiation. See: https://stackoverflow.com/q/46907372/1593077
+	 * @note 
+	 * 1. This involve some template voodoo - making a copy of AssumedCurrent -
+	 *    to delay the evaluation here until this template is instantiated 
+	 *    rather than at class instantiation. See: 
+	 *    https://stackoverflow.com/q/46907372/1593077
+	 * 2. We only want this method to return a non-current device, yet the 
+	 *    return value corresponds to flipping the current-assumption. This
+	 *    is due to getting (clang) warnings in the case we actually want, 
+	 *    about A conversion operator into the same class. The effect is the
+	 *    same, since we only actually instantiate this for the assumed-current
+	 *    case
 	 *
 	 */
 	template <
 		bool AssumedCurrentCopy = AssumedCurrent,
 		typename = typename std::enable_if<AssumedCurrentCopy == detail::assume_device_is_current>::type>
-	operator device_t<detail::do_not_assume_device_is_current>()
+	operator device_t<not AssumedCurrentCopy>()
 	{
 		return device_t<detail::do_not_assume_device_is_current> { id() };
 	}
