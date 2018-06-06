@@ -62,9 +62,9 @@ public: // other non-mutators
 	T*                  get_for_host()   const  { return attributes().devicePointer; }
 
 public: // constructors
-	pointer_t(T* ptr) : ptr_(ptr) { }
-	pointer_t(const pointer_t& other) = default;
-	pointer_t(pointer_t&& other) = default;
+	pointer_t(T* ptr) noexcept : ptr_(ptr) { }
+	pointer_t(const pointer_t& other) noexcept = default;
+	pointer_t(pointer_t&& other) noexcept = default;
 
 protected: // data members
 	T* const ptr_;

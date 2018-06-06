@@ -848,9 +848,11 @@ public:
 	}
 
 
-public: 	// destructor
+public: 	// constructors and destructor
 
 	~device_t() = default;
+	device_t(device_t&& other) noexcept = default;
+	device_t(const device_t& other) noexcept = default;
 
 protected: // constructors
 
@@ -858,15 +860,14 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) : id_( { device_id })
+	device_t(device::id_t device_id) noexcept : id_( { device_id })
 	{
 	}
 
 	/**
 	 * @note Have a look at how @ref mutable_id_holder is default-constructed.
 	 */
-	device_t() :
-		id_()
+	device_t() noexcept : id_()
 	{
 		static_assert(AssumedCurrent,
 			"Attempt to instantiate a device proxy for a device not known to be "

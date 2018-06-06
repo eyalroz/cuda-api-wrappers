@@ -470,10 +470,10 @@ public: // mutators
 
 public: // constructors and destructor
 
-	stream_t(const stream_t& other) :
+	stream_t(const stream_t& other) noexcept :
 		device_id_(other.device_id_), id_(other.id_), owning(false) { };
 
-	stream_t(stream_t&& other) :
+	stream_t(stream_t&& other) noexcept :
 		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
 	{
 		other.owning = false;
@@ -481,7 +481,7 @@ public: // constructors and destructor
 
 	// TODO: Perhaps drop this in favor of just the protected constructor,
 	// and let all wrapping construction be done by the stream::wrap() function?
-	stream_t(device::id_t device_id, stream::id_t stream_id)
+	stream_t(device::id_t device_id, stream::id_t stream_id) noexcept
 	: stream_t(device_id, stream_id, false) { }
 
 	~stream_t()

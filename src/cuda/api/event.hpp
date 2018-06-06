@@ -180,7 +180,7 @@ public: // other mutator methods
 
 protected: // constructor
 
-	event_t(device::id_t device_id, event::id_t event_id, bool take_ownership)
+	event_t(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept
 	: device_id_(device_id), id_(event_id), owning(take_ownership) { }
 
 public: // friendship
@@ -188,13 +188,13 @@ public: // friendship
 	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership);
 
 public: // constructors and destructor
-	event_t(device::id_t device_id, event::id_t event_id) :
+	event_t(device::id_t device_id, event::id_t event_id) noexcept :
 		event_t(device_id, event_id, false) { }
 
-	event_t(const event_t& other) :
+	event_t(const event_t& other) noexcept :
 		device_id_(other.device_id_), id_(other.id_), owning(false){ };
 
-	event_t(event_t&& other) :
+	event_t(event_t&& other) noexcept :
 		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
 	{
 		other.owning = false;
