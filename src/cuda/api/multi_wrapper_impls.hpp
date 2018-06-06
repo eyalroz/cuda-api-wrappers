@@ -126,24 +126,32 @@ void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
 }
 
 template <bool AssumesDeviceIsCurrent>
-void stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(const event_t& event_)
+event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_event)
 {
 #ifndef NDEBUG
-	if (event_.device_id() != device_id_) {
+	if (existing_event.device_id() != device_id_) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
 			+ std::to_string(device_id_) + " wait for an event on another device ("
-			"device " + std::to_string(event_.device_id()) + ")");
+			"device " + std::to_string(existing_event.device_id()) + ")");
 	}
 #endif
-	// TODO: ensure the stream and the event are associated with the same device
-
-	// Not calling event::detail::enqueue to avoid dependency on event.hpp
-	auto status = cudaEventRecord(event_.id(), stream_id_);
+	auto status = cudaEventRecord(existing_event.id(), stream_id_);
 	throw_if_error(status,
-		"Failed scheduling event " + cuda::detail::ptr_as_hex(event_.id()) + " to occur"
+		"Failed scheduling event " + cuda::detail::ptr_as_hex(existing_event.id()) + " to occur"
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
 		+ " on CUDA device " + std::to_string(device_id_));
+	return existing_event;
 }
+
+template <bool AssumesDeviceIsCurrent>
+event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
+    bool          uses_blocking_sync,
+    bool          records_timing,
+    bool          interprocess)
+{
+	return event::create(device_id_, uses_blocking_sync, records_timing, interprocess);
+}
+
 
 void wait(const event_t& event);
 

@@ -316,7 +316,7 @@ public: // mutators
 
 		/**
 		 * Set all bytes of a certain region in device memory (or unified memory,
-	 	 * but using the CUDA device to do it) to a single fixed value.
+		 * but using the CUDA device to do it) to a single fixed value.
 		 *
 		 * @param destination Beginning of the region to fill
 		 * @param byte_value the value with which to fill the memory region bytes
@@ -353,10 +353,24 @@ public: // mutators
 		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
 		 * for continued execution.
 		 *
-		 * @param event_id CUDA runtime API ID of the event to have occuring on
-		 * completion of the hereto-scheduled work on this stream
+		 * @param event A pre-created CUDA event (for the stream's device); any existing
+		 * "registration" of the event to occur elsewhere is overwritten.
 		 **/
-		void event(const event_t& event_);
+		event_t& event(event_t& existing_event);
+
+		/**
+		 * Have an event 'fire', i.e. marked as having occurred,
+		 * after all hereto-scheduled work on this stream has been completed.
+		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
+		 * for continued execution.
+		 *
+		 * @note the parameters are the same as for @ref event::create()
+		 *
+		 **/
+		event_t event(
+			bool          uses_blocking_sync = event::sync_by_busy_waiting,
+			bool          records_timing     = event::do_record_timings,
+			bool          interprocess       = event::not_interprocess);
 
 		/**
 		 * Execute the specified function on the calling host thread once all
