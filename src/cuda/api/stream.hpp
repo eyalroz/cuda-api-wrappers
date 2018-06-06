@@ -330,6 +330,24 @@ public: // mutators
 		}
 
 		/**
+		 * Set all bytes of a certain region in device memory (or unified memory,
+		 * but using the CUDA device to do it) to zero.
+		 *
+		 * @note this is a separate method, since the CUDA runtime has a separate
+		 * API call for setting to zero; does that mean there are special facilities
+		 * for zero'ing memory faster? Who knows.
+		 *
+		 * @param destination Beginning of the region to fill
+		 * @param num_bytes size of the region to fill
+		 */
+		void memzero(void *destination, size_t num_bytes)
+		{
+			// Is it necessary to set the device? I wonder.
+			DeviceSetter set_device_for_this_scope(device_id_);
+			memory::device::async::zero(destination, num_bytes, stream_id_);
+		}
+
+		/**
 		 * Have an event 'fire', i.e. marked as having occurred,
 		 * after all hereto-scheduled work on this stream has been completed.
 		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
