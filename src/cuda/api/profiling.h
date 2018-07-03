@@ -140,6 +140,7 @@ namespace naming {
 void name_host_thread(pthread_t thread_id, const std::string&);
 void name_host_thread(pthread_t thread_id, const std::wstring&);
 void name_this_thread(const std::string&);
+void name_this_thread(const std::wstring&);
 
 //void name_device_stream(device::id_t  device, stream::id_t stream);
 

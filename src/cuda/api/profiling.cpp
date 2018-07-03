@@ -93,6 +93,11 @@ void name_this_thread(const std::string& name)
 	name_host_thread(pthread_self(), name);
 }
 
+void name_this_thread(const std::wstring& name)
+{
+	name_host_thread(pthread_self(), name);
+}
+
 
 } // namespace profiling
 } // namespace cuda
