@@ -74,7 +74,7 @@ namespace event {
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
-	bool          take_ownership = false);
+	bool          take_ownership = false) noexcept;
 
 } // namespace event
 
@@ -97,18 +97,18 @@ public: // data member non-mutator getters
 	/**
 	 * The CUDA runtime API ID this object is wrapping
 	 */
-	event::id_t  id()                 const { return id_;                 }
+	event::id_t  id()                 const noexcept{ return id_;                 }
 	/**
 	 * The device with which this event is associated (i.e. on whose stream
 	 * this event can be enqueued)
 	 */
-	device::id_t device_id()          const { return device_id_;          }
+	device::id_t device_id()          const noexcept { return device_id_;          }
 	device_t<detail::do_not_assume_device_is_current> device() const;
 	/**
 	 * Is this wrapper responsible for having the CUDA Runtime API destroy
 	 * the event when it destructs?
 	 */
-	bool         is_owning()          const { return owning;              }
+	bool         is_owning()          const noexcept { return owning;              }
 
 public: // other non-mutator methods
 
@@ -185,7 +185,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership);
+	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
 
 public: // constructors and destructor
 	event_t(device::id_t device_id, event::id_t event_id) noexcept :
@@ -268,7 +268,7 @@ inline float milliseconds_elapsed_between(const event_t& start, const event_t& e
 inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
-	bool          take_ownership)
+	bool          take_ownership) noexcept
 {
 	return event_t(device_id, event_id, take_ownership);
 }

@@ -119,7 +119,7 @@ inline device::id_t associated_device(stream::id_t stream_id)
 inline stream_t<> wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
-	bool          take_ownership = false);
+	bool          take_ownership = false) noexcept;
 
 } // namespace stream
 
@@ -153,10 +153,10 @@ protected: // type definitions
 
 
 public: // const getters
-	stream::id_t id() const { return id_; }
-	device::id_t device_id() const { return device_id_; }
+	stream::id_t id() const noexcept { return id_; }
+	device::id_t device_id() const noexcept { return device_id_; }
 	device_t<detail::do_not_assume_device_is_current> device() const;
-	bool is_owning() const { return owning; }
+	bool is_owning() const noexcept { return owning; }
 
 public: // other non-mutators
 
@@ -504,12 +504,12 @@ public: // operators
 
 protected: // constructor
 
-	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership)
+	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept
 	: device_id_(device_id), id_(stream_id), owning(take_ownership) { }
 
 public: // friendship
 
-	friend stream_t<> stream::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership);
+	friend stream_t<> stream::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
 
 protected: // data members
 	const device::id_t  device_id_;
@@ -521,12 +521,12 @@ public: // data members - which only exist in lieu of namespaces
 
 };
 
-inline bool operator==(const stream_t<>& lhs, const stream_t<>& rhs)
+inline bool operator==(const stream_t<>& lhs, const stream_t<>& rhs) noexcept
 {
 	return lhs.device_id() == rhs.device_id() and lhs.id() == rhs.id();
 }
 
-inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs)
+inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -558,7 +558,7 @@ enum : bool {
 inline stream_t<> wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
-	bool          take_ownership /* = false, see declaration */)
+	bool          take_ownership /* = false, see declaration */) noexcept
 {
 	return stream_t<>(device_id, stream_id, take_ownership);
 }

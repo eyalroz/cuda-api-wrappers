@@ -114,7 +114,6 @@ inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != 
 inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
 inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
 
-
 } // namespace status
 
 inline bool is_success(status_t status)  { return status == (status_t) status::success; }
@@ -231,8 +230,8 @@ namespace outstanding_error {
 /**
  * Reset the CUDA status to cuda::status::success.
  */
-inline status_t clear() { return cudaGetLastError();    }
-inline status_t get()   { return cudaPeekAtLastError(); }
+inline status_t clear() noexcept { return cudaGetLastError();    }
+inline status_t get()   noexcept { return cudaPeekAtLastError(); }
 
 /**
  * @brief Does nothing (unless throwing an exception)

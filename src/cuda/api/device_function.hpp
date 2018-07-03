@@ -30,11 +30,11 @@ namespace device_function {
  */
 struct attributes_t : cudaFuncAttributes {
 
-	cuda::device::compute_capability_t ptx_version() const {
+	cuda::device::compute_capability_t ptx_version() const noexcept {
 		return device::compute_capability_t::from_combined_number(ptxVersion);
 	}
 
-	cuda::device::compute_capability_t binary_compilation_target_architecture() const {
+	cuda::device::compute_capability_t binary_compilation_target_architecture() const noexcept {
 		return device::compute_capability_t::from_combined_number(binaryVersion);
 	}
 };
@@ -67,10 +67,10 @@ inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
  */
 class device_function_t {
 public: // getters
-	const void* ptr() const { return ptr_; }
+	const void* ptr() const noexcept { return ptr_; }
 
 public: // type_conversions
-	operator const void*() { return ptr_; }
+	operator const void*() noexcept { return ptr_; }
 
 public: // non-mutators
 

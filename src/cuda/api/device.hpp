@@ -689,7 +689,7 @@ public:
 		return id_.id;
 	}
 
-	stream_t<AssumedCurrent> default_stream() const;
+	stream_t<AssumedCurrent> default_stream() const noexcept;
 
 	// I'm a worried about the creation of streams with the assumption
 	// that theirs is the current device, so I'm just forbidding it

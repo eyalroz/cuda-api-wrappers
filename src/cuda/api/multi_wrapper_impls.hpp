@@ -61,7 +61,7 @@ inline void device_t<AssumedCurrent>::synchronize(stream_t<detail::do_not_assume
 }
 
 template <bool AssumedCurrent>
-inline stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const
+inline stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const noexcept
 {
 	// TODO: Perhaps support not-knowing our ID here as well, somehow?
 	return stream_t<AssumedCurrent>(id(), stream::default_stream_id);

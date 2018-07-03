@@ -79,7 +79,7 @@ namespace pointer {
  * to be wrapped.
  */
 template<typename T>
-inline pointer_t<T> wrap(T* ptr) { return pointer_t<T>(ptr); }
+inline pointer_t<T> wrap(T* ptr) noexcept { return pointer_t<T>(ptr); }
 
 } // namespace pointer
 } // namespace memory

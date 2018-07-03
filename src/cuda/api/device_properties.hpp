@@ -46,34 +46,34 @@ struct compute_architecture_t {
 	shared_memory_size_t max_shared_memory_per_block() const;
 	const char* name() const { return name(major); }
 
-	bool is_valid() const
+	bool is_valid() const noexcept
 	{
 		return (major > 0) and (major < 9999); // Picked this up from the CUDA code somwhere
 	}
 
 };
 
-inline bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major == rhs.major;
 }
-inline bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major != rhs.major;
 }
-inline bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major < rhs.major;
 }
-inline bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major < rhs.major;
 }
-inline bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major > rhs.major;
 }
-inline bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs)
+inline bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major > rhs.major;
 }
@@ -83,6 +83,8 @@ inline bool operator >=(const compute_architecture_t& lhs, const compute_archite
 // with a proper ctor checking validity, an operator converting to pair etc;
 // however, that would require including at least std::utility, if not other
 // stuff (e.g. for an std::hash specialization)
+// TODO: If we constrained this to versions we know about, we could make the
+// methods noexcept
 /**
  * A numeric designator of the computational capabilities of a CUDA device
  *
@@ -93,7 +95,7 @@ struct compute_capability_t {
 	unsigned major;
 	unsigned minor;
 
-	unsigned as_combined_number() const { return major * 10 + minor; }
+	unsigned as_combined_number() const noexcept { return major * 10 + minor; }
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	unsigned max_in_flight_threads_per_processor() const;
@@ -117,37 +119,37 @@ struct compute_capability_t {
 	}
 };
 
-inline bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major == rhs.major and lhs.minor == rhs.minor;
 }
-inline bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major != rhs.major or lhs.minor != rhs.minor;
 }
-inline bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major < rhs.major or (lhs.major == rhs.major and lhs.minor < rhs.minor);
 }
-inline bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major < rhs.major or (lhs.major == rhs.major and lhs.minor <= rhs.minor);
 }
-inline bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major > rhs.major or (lhs.major == rhs.major and lhs.minor > rhs.minor);
 }
-inline bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs)
+inline bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major > rhs.major or (lhs.major == rhs.major and lhs.minor >= rhs.minor);
 }
 
-inline compute_capability_t make_compute_capability(unsigned combined)
+inline compute_capability_t make_compute_capability(unsigned combined) noexcept
 {
 	return compute_capability_t::from_combined_number(combined);
 }
 
-inline compute_capability_t make_compute_capability(unsigned major, unsigned minor)
+inline compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept
 {
 	return { major, minor };
 }
@@ -167,23 +169,24 @@ inline compute_capability_t make_compute_capability(unsigned major, unsigned min
 struct properties_t : public cudaDeviceProp {
 
 	properties_t() = default;
-	properties_t(cudaDeviceProp& cdp) : cudaDeviceProp(cdp) { };
-	bool usable_for_compute() const
+	properties_t(const cudaDeviceProp& cdp) noexcept : cudaDeviceProp(cdp) { };
+	properties_t(cudaDeviceProp&& cdp) noexcept : cudaDeviceProp(cdp) { };
+	bool usable_for_compute() const noexcept
 	{
 		return computeMode != cudaComputeModeProhibited;
 	}
 	compute_capability_t compute_capability() const { return { (unsigned) major, (unsigned) minor }; }
-	compute_architecture_t compute_architecture() const { return { (unsigned) major }; };
-	pci_location_t pci_id() const { return { pciDomainID, pciBusID, pciDeviceID }; }
+	compute_architecture_t compute_architecture() const noexcept { return { (unsigned) major }; };
+	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID }; }
 
 	unsigned long long max_in_flight_threads_on_device() const
 	{
 		return compute_capability().max_in_flight_threads_per_processor() * multiProcessorCount;
 	}
 
-	grid_block_dimension_t max_threads_per_block() const { return maxThreadsPerBlock; }
-	grid_block_dimension_t max_warps_per_block() const { return maxThreadsPerBlock / warp_size; }
-	bool can_map_host_memory() const { return canMapHostMemory != 0; }
+	grid_block_dimension_t max_threads_per_block() const noexcept { return maxThreadsPerBlock; }
+	grid_block_dimension_t max_warps_per_block() const noexcept { return maxThreadsPerBlock / warp_size; }
+	bool can_map_host_memory() const noexcept { return canMapHostMemory != 0; }
 };
 
 } // namespace device

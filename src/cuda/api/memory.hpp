@@ -74,7 +74,9 @@ struct region_pair {
 
 namespace detail {
 
-inline unsigned make_cuda_host_alloc_flags(region_pair::allocation_options options) {
+inline unsigned make_cuda_host_alloc_flags(
+	region_pair::allocation_options options) noexcept
+{
 	return cudaHostAllocMapped &
 		(options.portable_across_cuda_contexts ? cudaHostAllocPortable : 0) &
 		(options.cpu_write_combining ? cudaHostAllocWriteCombined: 0);

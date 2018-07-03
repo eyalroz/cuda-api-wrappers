@@ -27,12 +27,12 @@ struct version_t {
 	int major;
 	int minor;
 
-	static version_t from_single_number(combined_version_t combined_version)
+	static version_t from_single_number(combined_version_t combined_version) noexcept
 	{
 		return { combined_version / 1000, (combined_version % 100) / 10 };
 	}
 
-	operator std::pair<int, int>() const { return { major, minor}; }
+	operator std::pair<int, int>() const noexcept { return { major, minor }; }
 
 };
 
@@ -42,44 +42,44 @@ inline std::ostream& operator<<(std::ostream& os, version_t v)
 	return os << v.major << '.' << v.minor;
 }
 
-inline bool operator==(const version_t& lhs, const version_t& rhs)
+inline bool operator==(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() == rhs.operator std::pair<int, int>();
 }
 
-inline bool operator!=(const version_t& lhs, const version_t& rhs)
+inline bool operator!=(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() != rhs.operator std::pair<int, int>();
 }
 
-inline bool operator<(const version_t& lhs, const version_t& rhs)
+inline bool operator<(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() < rhs.operator std::pair<int, int>();
 }
 
-inline bool operator<=(const version_t& lhs, const version_t& rhs)
+inline bool operator<=(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() <= rhs.operator std::pair<int, int>();
 }
 
-inline bool operator>(const version_t& lhs, const version_t& rhs)
+inline bool operator>(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() > rhs.operator std::pair<int, int>();
 }
 
-inline bool operator>=(const version_t& lhs, const version_t& rhs)
+inline bool operator>=(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
 }
 
 // comparison with single integers - as major versions
 
-inline bool operator==(const version_t& lhs, int rhs)  { return lhs == version_t::from_single_number(rhs); }
-inline bool operator!=(const version_t& lhs, int rhs)  { return lhs != version_t::from_single_number(rhs); }
-inline bool operator< (const version_t& lhs, int rhs)  { return lhs  < version_t::from_single_number(rhs); }
-inline bool operator> (const version_t& lhs, int rhs)  { return lhs  > version_t::from_single_number(rhs); }
-inline bool operator<=(const version_t& lhs, int rhs)  { return lhs <= version_t::from_single_number(rhs); }
-inline bool operator>=(const version_t& lhs, int rhs)  { return lhs >= version_t::from_single_number(rhs); }
+inline bool operator==(const version_t& lhs, int rhs)  noexcept { return lhs == version_t::from_single_number(rhs); }
+inline bool operator!=(const version_t& lhs, int rhs)  noexcept { return lhs != version_t::from_single_number(rhs); }
+inline bool operator< (const version_t& lhs, int rhs)  noexcept { return lhs  < version_t::from_single_number(rhs); }
+inline bool operator> (const version_t& lhs, int rhs)  noexcept { return lhs  > version_t::from_single_number(rhs); }
+inline bool operator<=(const version_t& lhs, int rhs)  noexcept { return lhs <= version_t::from_single_number(rhs); }
+inline bool operator>=(const version_t& lhs, int rhs)  noexcept { return lhs >= version_t::from_single_number(rhs); }
 
 ///@endcond
 
@@ -92,7 +92,7 @@ namespace version_numbers {
  *
  * @note this is super-ugly, I'd rather n ot use  it at all
  */
-constexpr version_t none()
+constexpr version_t none() noexcept
 {
 	return { 0, 0 };
 }
@@ -102,7 +102,7 @@ constexpr version_t none()
  * 55 for major version 5, minor version 5) into the version type
  * we use (@ref version_t).
  */
-inline version_t make(combined_version_t combined_version)
+inline version_t make(combined_version_t combined_version) noexcept
 {
 	return version_t::from_single_number(combined_version);
 }
@@ -111,7 +111,7 @@ inline version_t make(combined_version_t combined_version)
  * Convert a pair integer representing a major and minor number
  * (e.g. 5 and 5) into the version type we use (@ref version_t).
  */
-inline version_t make(int major, int minor)
+inline version_t make(int major, int minor) noexcept
 {
 	return { major, minor };
 }
