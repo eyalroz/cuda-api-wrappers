@@ -149,7 +149,11 @@ event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
     bool          records_timing,
     bool          interprocess)
 {
-	return event::create(device_id_, uses_blocking_sync, records_timing, interprocess);
+	event_t ev {event::create(device_id_, uses_blocking_sync, records_timing, interprocess)};
+	// so far, we've created an event which is not associated with this stream; we
+	// must specifically enqueue it:
+	this->event(ev);
+	return ev;
 }
 
 
