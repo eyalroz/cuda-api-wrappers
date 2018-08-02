@@ -103,7 +103,7 @@ inline device_t<detail::do_not_assume_device_is_current>
 stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
 
 template <bool AssumesDeviceIsCurrent>
-void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
+inline void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
 	if (event_.device_id() != device_id_) {
@@ -126,7 +126,7 @@ void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
 }
 
 template <bool AssumesDeviceIsCurrent>
-event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_event)
+inline event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_event)
 {
 #ifndef NDEBUG
 	if (existing_event.device_id() != device_id_) {
@@ -144,7 +144,7 @@ event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_ev
 }
 
 template <bool AssumesDeviceIsCurrent>
-event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
+inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
     bool          uses_blocking_sync,
     bool          records_timing,
     bool          interprocess)
@@ -155,10 +155,6 @@ event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
 	this->event(ev);
 	return ev;
 }
-
-
-void wait(const event_t& event);
-
 
 } // namespace cuda
 
