@@ -7,7 +7,8 @@
 device_index=${1:-0}
 timestamp=$(date +%s.%N)
 gcc_binary=${CMAKE_CXX_COMPILER:-$(which c++)}
-cuda_root=${CUDA_DIR:-/usr/local/cuda}
+nvcc_default_path=$(which nvcc)
+cuda_root=${CUDA_DIR:-${nvcc_default_path:0:-4}..}
 CUDA_INCLUDE_DIRS=${CUDA_INCLUDE_DIRS:-${cuda_root}/include}
 CUDA_CUDART_LIBRARY=${CUDA_CUDART_LIBRARY:-${cuda_root}/lib64/libcudart.so}
 generated_binary="/tmp/cuda-compute-version-helper-$$-$timestamp"
