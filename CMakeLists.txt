@@ -118,8 +118,7 @@ add_library(
 # Examples / Tests
 # -----------------------
 
-find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-link_libraries(cuda-api-wrappers ${CUDART_LIBRARY})
+link_libraries(${CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES} cuda-api-wrappers)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "examples/bin")
 add_executable(vectorAdd EXCLUDE_FROM_ALL examples/modified_cuda_samples/vectorAdd/vectorAdd.cu)
@@ -131,7 +130,6 @@ add_custom_target(modified_cuda_samples)
 add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)
 
 add_executable(version_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/version_management.cpp)
-target_link_libraries(version_management  ${CUDA_LIBRARIES})
 add_executable(error_handling EXCLUDE_FROM_ALL examples/by_runtime_api_module/error_handling.cu)
 add_executable(device_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/device_management.cpp)
 add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_module/execution_control.cu)
