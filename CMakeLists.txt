@@ -95,23 +95,6 @@ add_library(
 	cuda-api-wrappers
 	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
-	src/cuda/api/ipc.hpp
-	src/cuda/api/event.hpp
-	src/cuda/api/device_properties.hpp
-	src/cuda/api/pointer.hpp
-	src/cuda/api/multi_wrapper_impls.hpp
-	src/cuda/api/current_device.hpp
-	src/cuda/api/peer_to_peer.hpp
-	src/cuda/api/device.hpp
-	src/cuda/api/pci_id.hpp
-	src/cuda/api/versions.hpp
-	src/cuda/api/unique_ptr.hpp
-	src/cuda/api/memory.hpp
-	src/cuda/api/device_count.hpp
-	src/cuda/api/stream.hpp
-	src/cuda/api/error.hpp
-	src/cuda/api/device_function.hpp
-	src/cuda/api/miscellany.hpp
 )
 
 # -----------------------
