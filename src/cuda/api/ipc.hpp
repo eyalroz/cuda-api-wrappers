@@ -24,7 +24,7 @@
 #define CUDA_API_WRAPPERS_IPC_HPP_
 
 #include <cuda/api/error.hpp>
-#include <cuda/api/types.h>
+#include <cuda/api/types.hpp>
 
 #include <cuda_runtime_api.h>
 

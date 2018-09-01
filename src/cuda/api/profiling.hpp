@@ -10,7 +10,7 @@
 #ifndef CUDA_API_WRAPPERS_PROFILING_H_
 #define CUDA_API_WRAPPERS_PROFILING_H_
 
-#include <cuda/api/types.h>
+#include <cuda/api/types.hpp>
 #include <pthread.h>
 
 #include <mutex>

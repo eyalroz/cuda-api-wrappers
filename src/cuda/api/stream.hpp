@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_STREAM_HPP_
 #define CUDA_API_WRAPPERS_STREAM_HPP_
 
-#include <cuda/api/types.h>
+#include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/memory.hpp>
 #include <cuda/api/kernel_launch.cuh>

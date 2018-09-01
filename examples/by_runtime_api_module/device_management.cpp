@@ -10,7 +10,7 @@
  * covered by a different program.
  *
  */
-#include "cuda/api/pci_id.hpp"
+#include "cuda/api/pci_id_impl.hpp"
 #include "cuda/api/device_count.hpp"
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
