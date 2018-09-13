@@ -1,6 +1,6 @@
 # cuda-api-wrappers:<br> Thin C++-flavored wrappers for the CUDA runtime API
 
-nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for [CUDA](http://www.nvidia.com/object/cuda_home_new.html) is intended for use both in C and C++ code. As such, it uses a C-style API, the lower common denominator (with a few [notable exceptions](docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
+nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for [CUDA](http://www.nvidia.com/object/cuda_home_new.html) is intended for use both in C and C++ code. As such, it uses a C-style API, the lower common denominator (with a few [notable exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
 
 This library of wrappers around the Runtime API is intended to allow us to embrace many of the features of C++ (including some C++11) for using the runtime API - but without reducing expressivity or increasing the level of abstraction (as in, e.g., the [Thrust](https://thrust.github.io/) library). Using cuda-api-wrappers, you still have your devices, streams, events and so on - but they will be more convenient to work with in more C++-idiomatic ways.
 
