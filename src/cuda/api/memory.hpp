@@ -19,6 +19,10 @@
 
 namespace cuda {
 
+///@cond
+template <bool AssumedCurrent> class device_t;
+///@endcond
+
 /**
  * @namespace memory
  * Representation, allocation and manipulation of CUDA-related memory, with
@@ -149,6 +153,9 @@ inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 	return memory::device::detail::allocate(size_in_bytes);
 }
 
+template <bool AssumedCurrent>
+inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes);
+
 namespace detail {
 struct allocator {
 	// Allocates on the current device!
@@ -277,6 +284,7 @@ namespace async {
 
 inline void set(void* buffer_start, int byte_value, size_t num_bytes, stream::id_t stream_id)
 {
+	// TODO: Double-check that this call doesn't require setting the current device
 	auto result = cudaMemsetAsync(buffer_start, byte_value, num_bytes, stream_id);
 	throw_if_error(result, "memsetting an on-device buffer");
 }
@@ -515,6 +523,14 @@ inline void* allocate(
 	return detail::allocate(num_bytes, initial_visibility);
 }
 
+template <bool AssumedCurrent>
+inline void* allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                                num_bytes,
+	initial_visibility_t                  initial_visibility =
+		initial_visibility_t::to_all_devices
+);
+
 /**
  * Free a managed memory region (host-side and device-side regions on all devices
  * where it was allocated, all with the same address) which was allocated with
@@ -614,6 +630,15 @@ inline region_pair allocate(
 	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	return detail::allocate(size_in_bytes, options);
 }
+
+template <bool AssumedCurrent>
+inline region_pair allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                           size_in_bytes,
+	region_pair::allocation_options  options = {
+		region_pair::isnt_portable_across_cuda_contexts,
+		region_pair::without_cpu_write_combining }
+	);
 
 /**
  * Free a pair of mapped memory regions
