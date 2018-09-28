@@ -58,8 +58,8 @@ public: // other non-mutators
 	bool                is_on_device()   const  { return attributes().on_device();   }
 	bool                is_managed()     const  { return attributes().is_managed();  }
 	cuda::device::id_t  device_id()      const  { return attributes().device;        }
-	T*                  get_for_device() const  { return attributes().hostPointer;   }
-	T*                  get_for_host()   const  { return attributes().devicePointer; }
+	T*                  get_for_device() const  { return attributes().devicePointer; }
+	T*                  get_for_host()   const  { return attributes().hostPointer;   }
 
 public: // constructors
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }

@@ -167,6 +167,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	cuda_add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_module/execution_control.cu OPTIONS -rdc true)
 	cuda_add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
 	cuda_add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
+	cuda_add_executable(unified_addressing EXCLUDE_FROM_ALL examples/by_runtime_api_module/unified_addressing.cpp)
 	cuda_add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
 	#----
 	add_custom_target(examples_by_runtime_api_module)
@@ -177,6 +178,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 		execution_control
 		stream_management
 		event_management
+		unified_addressing
 		io_compute_overlap_with_streams)
 
 	add_custom_target(examples)
