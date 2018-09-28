@@ -51,7 +51,7 @@ public: // other non-mutators
 	{
 		pointer::attributes_t the_attributes;
 		auto status = cudaPointerGetAttributes (&the_attributes, ptr_);
-		throw_on_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
+		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
 	bool                is_on_host()     const  { return attributes().on_host();     }
