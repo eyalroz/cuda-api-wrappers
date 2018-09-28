@@ -49,6 +49,16 @@ int main(int argc, char **argv)
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
+	if (device.id() != device_id) {
+		die_("The device's reported ID and the ID for which we created the device differ: "
+			+ std::to_string(device.id()) + " !=" +  std::to_string(device_id));
+	}
+
+	if (device.id() != device.memory.device_id()) {
+		die_("The device's reported ID and the device's memory object's reported device ID differ: "
+			+ std::to_string(device.id()) + " !=" +  std::to_string(device.memory.device_id()));
+	}
+
 	// Attributes and properties
 	// ---------------------------
 

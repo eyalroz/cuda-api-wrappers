@@ -236,20 +236,22 @@ public:	// types
 	 */
 	class memory_t {
 	protected:
-		const id_holder_type& device_id;
+		const id_holder_type& device_id_;
 
 		using deleter = memory::device::detail::deleter;
 		using allocator = memory::device::detail::allocator;
 
 		std::string device_id_as_str() const
 		{
-			return device_t::device_id_as_str(device_id);
+			return device_t::device_id_as_str(device_id_);
 		}
 
 	public:
 		///@cond
-		memory_t(const device_t::id_holder_type& id) : device_id(id) { }
+		memory_t(const device_t::id_holder_type& id) : device_id_(id) { }
 		///@endcond
+
+		cuda::device::id_t device_id() const { return device_id_; }
 
 		/**
 		 * Allocate a region of memory on the device
@@ -259,7 +261,7 @@ public:	// types
 		 */
 		void* allocate(size_t size_in_bytes)
 		{
-			scoped_setter_t set_device_for_this_scope(device_id);
+			scoped_setter_t set_device_for_this_scope(device_id_);
 			return memory::device::detail::allocate(size_in_bytes);
 		}
 
@@ -291,7 +293,7 @@ public:	// types
 			initial_visibility_t initial_visibility =
 				initial_visibility_t::to_supporters_of_concurrent_managed_access)
 		{
-			scoped_setter_t set_device_for_this_scope(device_id);
+			scoped_setter_t set_device_for_this_scope(device_id_);
 			return cuda::memory::managed::detail::allocate(size_in_bytes, initial_visibility);
 		}
 
@@ -315,7 +317,7 @@ public:	// types
 				region_pair::without_cpu_write_combining
 			})
 		{
-			scoped_setter_t set_device_for_this_scope(device_id);
+			scoped_setter_t set_device_for_this_scope(device_id_);
 			return memory::mapped::detail::allocate(size_in_bytes, options);
 		}
 
@@ -324,7 +326,7 @@ public:	// types
 		 */
 		size_t amount_total() const
 		{
-			scoped_setter_t set_device_for_this_scope(device_id);
+			scoped_setter_t set_device_for_this_scope(device_id_);
 			size_t total_mem_in_bytes;
 			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
 			throw_if_error(status,
@@ -341,7 +343,7 @@ public:	// types
 		 */
 		size_t amount_free() const
 		{
-			scoped_setter_t set_device_for_this_scope(device_id);
+			scoped_setter_t set_device_for_this_scope(device_id_);
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
 			throw_if_error(status, "Failed determining amount of "
@@ -851,8 +853,16 @@ public:
 public: 	// constructors and destructor
 
 	~device_t() = default;
-	device_t(device_t&& other) noexcept = default;
-	device_t(const device_t& other) noexcept = default;
+	device_t(device_t&& other) noexcept : id_(other.id_), memory(other.memory)
+	{
+		// For some reason which is not entirely clear to me, if we just set
+		// this constructor to = default, the memory member is not properly initialized.
+	}
+	device_t(const device_t& other) noexcept : id_(other.id_), memory(other.memory)
+	{
+		// Being extra-careful and actually implementing this ctor due to the weird behavior
+		// observed with the move constructor
+	}
 
 protected: // constructors
 
@@ -860,14 +870,14 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( { device_id })
+	device_t(device::id_t device_id) noexcept : id_( { device_id }), memory(id_)
 	{
 	}
 
 	/**
 	 * @note Have a look at how @ref mutable_id_holder is default-constructed.
 	 */
-	device_t() noexcept : id_()
+	device_t() noexcept : id_(), memory(id_)
 	{
 		static_assert(AssumedCurrent,
 			"Attempt to instantiate a device proxy for a device not known to be "
@@ -895,7 +905,7 @@ protected:
 public:
 	// faux data members (used as surrogates for internal namespaces)
 	///@cond
-	memory_t memory { id_ };
+	memory_t memory;
 	// don't worry, this will not actually use the id_ value
 	// without making sure it's been correctly determined
 	///@endcond
