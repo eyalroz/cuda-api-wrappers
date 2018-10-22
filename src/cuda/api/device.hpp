@@ -9,11 +9,11 @@
 #ifndef CUDA_API_WRAPPERS_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_HPP_
 
-#include <cuda/api/types.h>
+#include <cuda/api/types.hpp>
 #include <cuda/api/device_properties.hpp>
 #include <cuda/api/memory.hpp>
 #include <cuda/api/current_device.hpp>
-#include <cuda/api/pci_id.h>
+#include <cuda/api/pci_id.hpp>
 #include <cuda/api/unique_ptr.hpp>
 
 #include <cuda_runtime_api.h>
@@ -234,21 +234,16 @@ public:	// types
 	 * namespace (which C++ does not support); whenever you see a function
 	 * `my_dev.memory::foo()`, think of it as a `my_dev::memory::foo()`.
 	 */
-	class memory_t {
+	class global_memory_t {
 	protected:
 		const id_holder_type& device_id_;
 
 		using deleter = memory::device::detail::deleter;
 		using allocator = memory::device::detail::allocator;
 
-		std::string device_id_as_str() const
-		{
-			return device_t::device_id_as_str(device_id_);
-		}
-
 	public:
 		///@cond
-		memory_t(const device_t::id_holder_type& id) : device_id_(id) { }
+		global_memory_t(const device_t::id_holder_type& id) : device_id_(id) { }
 		///@endcond
 
 		cuda::device::id_t device_id() const { return device_id_; }
@@ -297,30 +292,6 @@ public:	// types
 			return cuda::memory::managed::detail::allocate(size_in_bytes, initial_visibility);
 		}
 
-		using region_pair = ::cuda::memory::mapped::region_pair;
-
-		/**
-		 * @brief Allocate a pair of mapped regions, in device-global memory and
-		 * in host memory.
-		 *
-		 * @note see @ref memory::mapped::region_pair for an explanation of how
-		 * region pairs work.
-		 *
-		 * @param size_in_bytes of the region to allocate
-		 * @param options to be passed to the CUDA memory allocation API
-		 * @return a non-null pair of allocated regions
-		 */
-		region_pair allocate_region_pair(
-			size_t                           size_in_bytes,
-			region_pair::allocation_options  options = {
-				region_pair::isnt_portable_across_cuda_contexts,
-				region_pair::without_cpu_write_combining
-			})
-		{
-			scoped_setter_t set_device_for_this_scope(device_id_);
-			return memory::mapped::detail::allocate(size_in_bytes, options);
-		}
-
 		/**
 		 * Amount of total global memory on the CUDA device.
 		 */
@@ -350,7 +321,7 @@ public:	// types
 				"free memory for " + device_id_as_str());
 			return free_mem_in_bytes;
 		}
-	}; // class memory_t
+	}; // class global_memory_t
 
 	/**
 	 * @brief Determine whether this device can access the global memory
@@ -436,6 +407,11 @@ protected:
 	}
 
 public:
+	/**
+	 * @brief Obtains a proxy for the device's global memory
+	 */
+	global_memory_t memory() { return global_memory_t(id_); };
+
 	/**
 	 * Obtains the (mostly) non-numeric properties for this device.
 	 */
@@ -853,16 +829,8 @@ public:
 public: 	// constructors and destructor
 
 	~device_t() = default;
-	device_t(device_t&& other) noexcept : id_(other.id_), memory(other.memory)
-	{
-		// For some reason which is not entirely clear to me, if we just set
-		// this constructor to = default, the memory member is not properly initialized.
-	}
-	device_t(const device_t& other) noexcept : id_(other.id_), memory(other.memory)
-	{
-		// Being extra-careful and actually implementing this ctor due to the weird behavior
-		// observed with the move constructor
-	}
+	device_t(device_t&& other) noexcept = default;
+	device_t(const device_t& other) noexcept = default;
 
 protected: // constructors
 
@@ -870,14 +838,14 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( { device_id }), memory(id_)
+	device_t(device::id_t device_id) noexcept : id_( { device_id })
 	{
 	}
 
 	/**
 	 * @note Have a look at how @ref mutable_id_holder is default-constructed.
 	 */
-	device_t() noexcept : id_(), memory(id_)
+	device_t() noexcept : id_()
 	{
 		static_assert(AssumedCurrent,
 			"Attempt to instantiate a device proxy for a device not known to be "
@@ -901,14 +869,6 @@ protected:
 	 * later.
 	 */
 	const id_holder_type id_;
-
-public:
-	// faux data members (used as surrogates for internal namespaces)
-	///@cond
-	memory_t memory;
-	// don't worry, this will not actually use the id_ value
-	// without making sure it's been correctly determined
-	///@endcond
 };
 
 template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>

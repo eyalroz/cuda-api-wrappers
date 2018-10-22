@@ -1,4 +1,4 @@
-#include <cuda/api/profiling.h>
+#include <cuda/api/profiling.hpp>
 #include <cuda/api/error.hpp>
 
 #include <cuda_profiler_api.h>

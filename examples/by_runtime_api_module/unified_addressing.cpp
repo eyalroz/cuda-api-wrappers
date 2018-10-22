@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")" << std::endl;
 
 	static const size_t allocation_size { 1024 };
-	auto raw_ptr = device.memory.allocate(allocation_size);
+	auto raw_ptr = device.memory().allocate(allocation_size);
 
 	auto ptr = cuda::memory::pointer::wrap(raw_ptr);
 

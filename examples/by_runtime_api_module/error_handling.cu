@@ -5,7 +5,7 @@
  *   Error Handling
  *
  */
-#include <cuda/api_wrappers.h>
+#include <cuda/api_wrappers.hpp>
 
 #include <iostream>
 #include <string>

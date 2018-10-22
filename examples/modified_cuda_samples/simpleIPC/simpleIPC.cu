@@ -17,7 +17,7 @@
 // CUDA runtime includes
 #include <cuda_runtime_api.h>
 
-#include "cuda/api_wrappers.h"
+#include <cuda/api_wrappers.hpp>
 
 #include "../helper_string.h"
 
@@ -199,7 +199,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 		cudaEvent_t event[MAX_DEVICES * PROCESSES_PER_DEVICE];
 		int* d_ptr = reinterpret_cast<int*>(
-			cuda::device::current::get().memory.allocate(DATA_BUF_SIZE * g_processCount * sizeof(int))
+			cuda::device::current::get().memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int))
 		);
 		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
 		cuda::memory::copy((void *) d_ptr, (void *) h_refData, DATA_BUF_SIZE * sizeof(int));

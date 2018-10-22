@@ -5,7 +5,7 @@
  *   Event Management
  *
  */
-#include "cuda/api_wrappers.h"
+#include <cuda/api_wrappers.hpp>
 
 #include <cuda_runtime_api.h>
 

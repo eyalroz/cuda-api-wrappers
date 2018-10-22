@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 #
 # Prints the compute capability of the first CUDA device installed
 # on the system, or alternatively the device whose index is the
@@ -8,8 +8,13 @@ device_index=${1:-0}
 timestamp=$(date +%s.%N)
 gcc_binary=${CMAKE_CXX_COMPILER:-$(which c++)}
 cuda_root=${CUDA_DIR:-/usr/local/cuda}
-CUDA_INCLUDE_DIRS=${CUDA_INCLUDE_DIRS:-${cuda_root}/include}
-CUDA_CUDART_LIBRARY=${CUDA_CUDART_LIBRARY:-${cuda_root}/lib64/libcudart.so}
+nvcc_default_path=$(which nvcc:-"/usr/local/cuda/bin/nvcc")
+cuda_root=${CUDA_DIR:-${nvcc_default_path:0:-4}..}
+cuda_include_dirs=${CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES:-${cuda_root}/include}
+cuda_link_directories=${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES:-${cuda_root}/lib64}
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${cuda_link_directories}"
+cuda_link_libraries=${CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES:--lcudart}
+cudart_library=${CUDA_CUDART_LIBRARY:-${cuda_link_directory}/libcudart.so}
 generated_binary="/tmp/cuda-compute-version-helper-$$-$timestamp"
 # create a 'here document' that is code we compile and use to probe the card
 source_code="$(cat << EOF 
@@ -40,7 +45,7 @@ int main()
 }
 EOF
 )"
-echo "$source_code" | $gcc_binary -x c++ -I"$CUDA_INCLUDE_DIRS" -o "$generated_binary" - -x none "$CUDA_CUDART_LIBRARY"
+echo "$source_code" | $gcc_binary -x c++ -I"$cuda_include_dirs" -o "$generated_binary" - -x none -L${cuda_link_directories} ${cuda_link_libraries}
 
 # probe the card and cleanup
 
