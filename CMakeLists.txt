@@ -47,7 +47,17 @@ PROJECT(cuda-api-wrappers
 # General C++ build settings
 # ----------------------------
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Werror=sign-compare" )
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(warning_flags_str "-Wall -Wpedantic -Werror=sign-compare")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(warning_flags_str "-Wall -Wpedantic -Werror=sign-compare")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+	set(warning_flags_str "-Wall -Werror=sign-compare")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	set(warning_flags_str "/W4")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warning_flags_str}")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
