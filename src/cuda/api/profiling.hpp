@@ -11,9 +11,8 @@
 #define CUDA_API_WRAPPERS_PROFILING_H_
 
 #include <cuda/api/types.hpp>
-#include <pthread.h>
-
-#include <mutex>
+#include <cstdint>
+#include <string>
 
 namespace cuda {
 
@@ -57,7 +56,7 @@ struct color_t {
 };
 
 namespace range {
-enum class Type { unspecified, Kernel, pci_express_transfer	};
+enum class Type { unspecified, kernel, pci_express_transfer	};
 using handle_t = uint64_t;
 } // namespace range
 
@@ -133,14 +132,20 @@ public:
 namespace naming {
 
 /**
- * Have the profiler refer to a host OS thread using
- * a specified string identifier (rather than its
- * hard-to-decipher (alpha)numeric ID).
+ * @brief Have the profiler refer to a thread using a specified string
+ * identifier (rather than its numeric ID).
+ *
+ * @param[in] thread_id  A native numeric ID of the thread; on Linux systems
+ * this would be a `pthread_t`, and on Windows - a DWORD (as is returned,
+ * for example, by `GetCurrentThreadId()`)
+ * @param[in] name The string identifier to use for the specified thread
  */
-void name_host_thread(pthread_t thread_id, const std::string&);
-void name_host_thread(pthread_t thread_id, const std::wstring&);
-void name_this_thread(const std::string&);
-void name_this_thread(const std::wstring&);
+void name_host_thread(uint32_t thread_id, const std::string& name);
+void name_host_thread(uint32_t thread_id, const std::wstring& name);
+#if defined(__unix__) || defined(_WIN32)
+void name_this_thread(const std::string& name);
+void name_this_thread(const std::wstring& name);
+#endif
 
 //void name_device_stream(device::id_t  device, stream::id_t stream);
 

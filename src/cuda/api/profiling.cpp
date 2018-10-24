@@ -7,6 +7,14 @@
 
 #include <mutex>
 
+#ifdef __unix__
+#include <pthread.h>
+#else
+#ifdef _WIN32
+#include <processthreadsapi.h>
+#endif // _WIN32
+#endif // __unix__
+
 namespace cuda {
 namespace profiling {
 
@@ -78,26 +86,43 @@ void stop()
 	throw_if_error(status, "Starting to profile");
 }
 
-void name_host_thread(pthread_t thread_id, const std::string& name)
+void name_host_thread(uint32_t thread_id, const std::string& name)
 {
 	nvtxNameOsThreadA(thread_id, name.c_str());
 }
 
-void name_host_thread(pthread_t thread_id, const std::wstring& name)
+
+#if defined(__unix__) || defined(_WIN32)
+void name_host_thread(uint32_t thread_id, const std::wstring& name)
 {
-	nvtxNameOsThreadW(thread_id, name.c_str());
+	auto this_thread_s_native_handle =
+#ifdef __unix__
+		::pthread_self();
+#else
+		::GetCurrentThreadId();
+#endif // __unix__
+	nvtxNameOsThreadW(this_thread_s_native_handle, name.c_str());
 }
 
 void name_this_thread(const std::string& name)
 {
-	name_host_thread(pthread_self(), name);
+	auto this_thread_s_native_handle =
+#ifdef __unix__
+		::pthread_self();
+#else
+		::GetCurrentThreadId();
+#endif // __unix__
+	name_host_thread(this_thread_s_native_handle, name);
 }
 
+#endif
+
+/*
 void name_this_thread(const std::wstring& name)
 {
-	name_host_thread(pthread_self(), name);
+	name_host_thread(std::thread::native_handle(std::this_thread::get_id()), name);
 }
-
+*/
 
 } // namespace profiling
 } // namespace cuda
