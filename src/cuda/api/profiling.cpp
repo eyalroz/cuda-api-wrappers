@@ -49,15 +49,17 @@ range::handle_t range_start(
 	range_attributes.color     = color;
 	range_attributes.messageType = NVTX_MESSAGE_TYPE_ASCII;
 	range_attributes.message.ascii = description.c_str();
-	nvtxRangeId_t range_id = nvtxRangeStartEx(&range_attributes);
-	static_assert(sizeof(range::handle_t) == sizeof(nvtxRangeId_t),
-		"Can't use range::handle_t as a cover for nvtxRangeId_t - they're not the same size");
-	return reinterpret_cast<range::handle_t>(range_id);
+	nvtxRangeId_t range_handle = nvtxRangeStartEx(&range_attributes);
+	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
+		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+	return range_handle;
 }
 
-void range_end(range::handle_t range)
+void range_end(range::handle_t range_handle)
 {
-	nvtxRangeEnd(reinterpret_cast<nvtxRangeId_t>(range));
+	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
+		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+	nvtxRangeEnd(range_handle);
 }
 
 } // namespace mark
