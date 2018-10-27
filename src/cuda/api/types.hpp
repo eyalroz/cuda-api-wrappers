@@ -19,6 +19,15 @@
 
 #include <type_traits>
 
+#ifdef _MSC_VER
+/*
+ * Microsoft Visual C++ (upto v2017) does not support the C++
+ * keywords `and`, `or` and `not`. Apparently, the following
+ * include is a work-around.
+ */
+#include <ciso646>
+#endif
+
 namespace cuda {
 
 /*
