@@ -109,15 +109,15 @@ enum named_t : std::underlying_type<status_t>::type {
 	api_failure_base                = cudaErrorApiFailureBase
 };
 
-inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
-inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
-inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
-inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
+constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
+constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
+constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
+constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
 
 } // namespace status
 
-inline bool is_success(status_t status)  { return status == (status_t) status::success; }
-inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
+constexpr inline bool is_success(status_t status)  { return status == (status_t) status::success; }
+constexpr inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
 
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
