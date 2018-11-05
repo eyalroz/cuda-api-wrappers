@@ -12,6 +12,7 @@
 #include <cuda/api/stream.hpp>
 #include <cuda/api/device.hpp>
 #include <cuda/api/event.hpp>
+#include <cuda/api/pointer.hpp>
 
 namespace cuda {
 
@@ -155,6 +156,17 @@ inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
 	this->event(ev);
 	return ev;
 }
+
+namespace memory {
+
+template <typename T>
+inline device_t<cuda::detail::do_not_assume_device_is_current>
+pointer_t<T>::device() const 
+{ 
+	return cuda::device::get(attributes().device); 
+}
+
+} // namespace memory
 
 } // namespace cuda
 

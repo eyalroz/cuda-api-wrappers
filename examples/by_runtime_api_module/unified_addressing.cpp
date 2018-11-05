@@ -13,6 +13,7 @@
  */
 #include "cuda/api/pointer.hpp"
 #include "cuda/api/device.hpp"
+#include "cuda/api/multi_wrapper_impls.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -52,8 +53,9 @@ int main(int argc, char **argv)
 	case device_memory:       break;
 	}
 	{
-		auto ptr_device_id = ptr.device_id();
-		(ptr.device_id() == device_id) or die_(
+		auto ptr_device = ptr.device();
+		auto ptr_device_id = ptr_device.id();
+		(ptr_device_id == device_id) or die_(
 			"Pointer incorrectly reported as associated with device ID " + std::to_string(ptr_device_id) +
 			" rather than " + std::to_string(device_id) + "\n");
 	}
