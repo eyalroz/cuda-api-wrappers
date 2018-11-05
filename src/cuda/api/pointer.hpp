@@ -23,6 +23,11 @@
 #include <cuda_runtime_api.h>
 
 namespace cuda {
+
+///@cond
+template <bool AssumedCurrent> class device_t;
+///@endcond
+
 namespace memory {
 
 
@@ -101,7 +106,7 @@ public: // other non-mutators
 		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
-	cuda::device::id_t device_id() const { return attributes().device; }
+	device_t<detail::do_not_assume_device_is_current> device() const;
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
