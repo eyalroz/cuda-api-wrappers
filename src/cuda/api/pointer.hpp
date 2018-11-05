@@ -25,12 +25,54 @@
 namespace cuda {
 namespace memory {
 
+
+/**
+ * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
+ */
+enum type_t : std::underlying_type<cudaMemoryType>::type {
+    host_memory         = cudaMemoryTypeHost,
+    device_memory       = cudaMemoryTypeDevice,
+#if CUDART_VERSION >= 10000
+    unregistered_memory = cudaMemoryTypeUnregistered,
+    managed_memory      = cudaMemoryTypeManaged,
+#else
+    unregistered_memory,
+    managed_memory,
+#endif // CUDART_VERSION >= 10000
+};
+
+
 namespace pointer {
 
 struct attributes_t : cudaPointerAttributes {
-	bool on_host()    const  { return memoryType == cudaMemoryTypeHost; }
-	bool on_device()  const  { return memoryType == cudaMemoryTypeDevice; }
-	bool is_managed() const  { return isManaged; }
+
+	/**
+	 * @brief indicates a choice memory space, management and access type -
+	 * from among the options in @ref type_t .
+	 *
+	 * @return A value whose semantics are those introduced in CUDA 10.0,
+	 * rather than those of CUDA 9 and earlier, where `type_t::device`
+	 * actually signifies either device-only or `type_t::managed`.
+	 */
+	type_t memory_type() const
+	{
+	    // TODO: For some strange reason, g++ 6.x claims that converting
+	    // to the underlying type is a "narrowing conversion", and doesn't
+		// like some other conversions I've tried - so let's cast
+		// more violently instead
+		// Note: In CUDA v10.0, the semantics changed to what we're supporting
+
+#if CUDART_VERSION >= 10000
+	    return (type_t)cudaPointerAttributes::type;
+#else // CUDART_VERSION < 10000
+		using utype = typename std::underlying_type<cudaMemoryType>::type;
+		if (((utype) memoryType == utype {type_t::device_memory}) and
+    		cudaPointerAttributes::isManaged) {
+			return type_t::managed_memory;
+		}
+	    return (type_t)(memoryType);
+#endif // CUDART_VERSION >= 10000
+	}
 };
 
 } // namespace pointer
@@ -43,6 +85,11 @@ struct attributes_t : cudaPointerAttributes {
 template <typename T>
 class pointer_t {
 public: // getters and operators
+
+	/**
+	 * @return Address of the pointed-to memory, regardless of which memory
+	 * space it's in and whether or not it is accessible from the host
+	 */
 	T* get() const { return ptr_; }
 	operator T*() const { return ptr_; }
 
@@ -54,12 +101,39 @@ public: // other non-mutators
 		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
-	bool                is_on_host()     const  { return attributes().on_host();     }
-	bool                is_on_device()   const  { return attributes().on_device();   }
-	bool                is_managed()     const  { return attributes().is_managed();  }
-	cuda::device::id_t  device_id()      const  { return attributes().device;        }
-	T*                  get_for_device() const  { return attributes().devicePointer; }
-	T*                  get_for_host()   const  { return attributes().hostPointer;   }
+	cuda::device::id_t device_id() const { return attributes().device; }
+
+	/**
+	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
+	 * CUDA ensures that, for pointers to memory not accessible on the CUDA device, `nullptr`
+	 * is returned.
+	 */
+	T* get_for_device() const { return attributes().devicePointer; }
+
+	/**
+	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
+	 * CUDA ensures that, for pointers to memory not accessible on the CUDA device, `nullptr`
+	 * is returned.
+	 */
+	T* get_for_host() const { return attributes().hostPointer; }
+
+	/**
+	 * @returns For a mapped-memory pointer, returns the other side of the mapping,
+	 * i.e. if this is the device pointer, returns the host pointer, otherwise
+	 * returns the device pointer. For a managed-memory pointer, returns the
+	 * single pointer usable on both device and host. In other cases returns `nullptr`.
+	 *
+	 * @note this relies on either the device and host pointers being `nullptr` in
+	 * the case of a non-mapped pointer; and on the device and host pointers being
+	 * identical to ptr_ for managed-memory pointers.
+	 */
+	pointer_t other_side_of_region_pair() const {
+	    auto attrs = attributes();
+#ifndef NDEBUG
+	    assert(attrs.devicePointer == ptr_ or atts.hostPointer == ptr_);
+#endif
+	    return pointer_t { ptr_ == attrs.devicePointer ? attrs.hostPointer : ptr_ };
+	}
 
 public: // constructors
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }
