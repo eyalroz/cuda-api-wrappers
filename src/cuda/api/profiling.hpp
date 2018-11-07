@@ -57,6 +57,11 @@ struct color_t {
 
 namespace range {
 enum class Type { unspecified, kernel, pci_express_transfer	};
+/**
+ * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
+ * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
+ * and can leave them within the implementation only.
+ */
 using handle_t = uint64_t;
 } // namespace range
 

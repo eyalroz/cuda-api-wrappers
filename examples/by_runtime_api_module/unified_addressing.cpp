@@ -13,6 +13,7 @@
  */
 #include "cuda/api/pointer.hpp"
 #include "cuda/api/device.hpp"
+#include "cuda/api/multi_wrapper_impls.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -44,12 +45,17 @@ int main(int argc, char **argv)
 		<< "Verifying a wrapper for raw pointer " << raw_ptr
 		<< " allocated on the CUDA device." << std::endl;
 
-	(not ptr.is_on_host()) or die_("Pointer incorrectly reported to point into host memory");
-	ptr.is_on_device() or die_("Pointer incorrectly reported not to point into device memory");
-	(not ptr.is_managed()) or die_("Pointer incorrectly reported to point to managed memory");
+	switch (ptr.attributes().memory_type()) {
+	using namespace cuda::memory;
+	case host_memory:         die_("Pointer incorrectly reported to point into host memory"); break;
+	case managed_memory:      die_("Pointer incorrectly reported not to point to managed memory"); break;
+	case unregistered_memory: die_("Pointer incorrectly reported to point to \"unregistered\" memory"); break;
+	case device_memory:       break;
+	}
 	{
-		auto ptr_device_id = ptr.device_id();
-		(ptr.device_id() == device_id) or die_(
+		auto ptr_device = ptr.device();
+		auto ptr_device_id = ptr_device.id();
+		(ptr_device_id == device_id) or die_(
 			"Pointer incorrectly reported as associated with device ID " + std::to_string(ptr_device_id) +
 			" rather than " + std::to_string(device_id) + "\n");
 	}

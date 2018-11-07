@@ -25,7 +25,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/" 
 # Project name, version & build type
 # -----------------------------------
 
-
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
@@ -158,8 +157,8 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 install(
 	TARGETS cuda-api-wrappers
 	EXPORT cuda-api-wrappers
-	ARCHIVE # For CMake, a static library is an ARCHIVE, a dynamic library is a RUNTIME
-	DESTINATION lib
+	ARCHIVE DESTINATION lib
+	LIBRARY DESTINATION lib
 	INCLUDES DESTINATION include
 	CONFIGURATIONS Release RelWithDebugInfo
 )

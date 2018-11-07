@@ -11,6 +11,7 @@
 #include <cuda/api/error.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/current_device.hpp>
+#include <cuda/api/pointer.hpp>
 
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
@@ -660,13 +661,9 @@ inline void free(region_pair pair)
  */
 inline void free_region_pair_of(void* ptr)
 {
-	cudaPointerAttributes attributes;
-	auto result = cudaPointerGetAttributes(&attributes, ptr);
-	cuda::throw_if_error(result,
-		"Could not obtain the properties for the pointer"
-		", being necessary for freeing the region pair it's (supposedly) "
-		"associated with.");
-	cudaFreeHost(attributes.hostPointer);
+	auto wrapped_ptr = pointer_t<void> { ptr };
+	auto result = cudaFreeHost(wrapped_ptr.get_for_host());
+	cuda::throw_if_error(result, "Could not free mapped memory region pair.");
 }
 
 /**
@@ -680,20 +677,8 @@ inline void free_region_pair_of(void* ptr)
  */
 inline bool is_part_of_a_region_pair(void* ptr)
 {
-	cudaPointerAttributes attributes;
-	auto result = cudaPointerGetAttributes(&attributes, ptr);
-	cuda::throw_if_error(result, "Could not obtain device pointer attributes");
-#ifdef DEBUG
-	auto self_copy = (attributes.memoryType == cudaMemoryTypeHost) ?
-		attributes.hostPointer : attributes.devicePointer ;
-	if (self_copy != ptr) {
-		throw runtime_error(cudaErrorUnknown, "Inconsistent data obtained from the CUDA runtime API");
-	}
-#endif
-	auto corresponding_buffer_ptr =
-		(attributes.memoryType == cudaMemoryTypeHost) ?
-		attributes.devicePointer : attributes.hostPointer;
-	return (corresponding_buffer_ptr != nullptr);
+	auto wrapped_ptr = pointer_t<void> { ptr };
+	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
 
 } // namespace mapped
