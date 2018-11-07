@@ -168,6 +168,7 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 install(
 	TARGETS cuda-api-wrappers
 	EXPORT cuda-api-wrappers
+	RUNTIME DESTINATION bin
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	INCLUDES DESTINATION include
