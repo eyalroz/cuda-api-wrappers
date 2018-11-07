@@ -106,6 +106,17 @@ add_library(
 	src/cuda/api/profiling.cpp
 )
 
+include(GenerateExportHeader)
+
+generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME cuda_api_wrappers_exports.h)
+target_include_directories(${PROJECT_NAME} 
+	PUBLIC
+	"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
+	"$<INSTALL_INTERFACE:include>")
+
+set(CUDA_LIBRARIES "cudadevrt.lib;cudart.lib")
+target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES})
 # -----------------------
 # Examples / Tests
 # -----------------------
@@ -168,6 +179,11 @@ install(
 	DIRECTORY src/cuda
 	DESTINATION include
 	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
+)
+
+install(
+	FILES ${CMAKE_CURRENT_BINARY_DIR}/cuda_api_wrappers_exports.h
+	DESTINATION include
 )
 
 export(EXPORT cuda-api-wrappers FILE cuda-api-wrappers.cmake)
