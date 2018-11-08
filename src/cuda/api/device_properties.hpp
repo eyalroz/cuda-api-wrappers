@@ -12,7 +12,6 @@
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/pci_id.hpp>
-#include <cuda_api_wrappers_exports.h>
 
 #include <cuda_runtime_api.h>
 
@@ -27,7 +26,7 @@ namespace device {
  * and previous architectures' pages via "previous" links.
  * Also see @ref compute_capability_t .
  */
-struct CUDA_API_WRAPPERS_EXPORT compute_architecture_t {
+struct compute_architecture_t {
 	/**
 	 * A @ref compute_capability_t has a "major" and a "minor" number,
 	 * with "major" indicating the architecture; so this struct only
@@ -92,7 +91,7 @@ inline bool operator >=(const compute_architecture_t& lhs, const compute_archite
  * @note See @url https://en.wikipedia.org/wiki/CUDA#Version_features_and_specifications
  * for a specification of capabilities by CC values
  */
-struct CUDA_API_WRAPPERS_EXPORT compute_capability_t {
+struct compute_capability_t {
 	unsigned major;
 	unsigned minor;
 
@@ -167,7 +166,7 @@ inline compute_capability_t make_compute_capability(unsigned major, unsigned min
  * attributes are more one-at-a-time.
  *
  */
-struct CUDA_API_WRAPPERS_EXPORT properties_t : public cudaDeviceProp {
+struct properties_t : public cudaDeviceProp {
 
 	properties_t() = default;
 	properties_t(const cudaDeviceProp& cdp) noexcept : cudaDeviceProp(cdp) { };
