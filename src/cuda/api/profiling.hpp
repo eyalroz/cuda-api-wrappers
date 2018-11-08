@@ -13,7 +13,6 @@
 #include <cuda/api/types.hpp>
 #include <cstdint>
 #include <string>
-#include <cuda_api_wrappers_exports.h>
 
 namespace cuda {
 
@@ -68,14 +67,14 @@ using handle_t = uint64_t;
 
 namespace mark {
 
-void CUDA_API_WRAPPERS_EXPORT point (const std::string& message, color_t color);
+void point (const std::string& message, color_t color);
 
 inline void point (const std::string& message)
 {
 	point(message, color_t::Black());
 }
 
-range::handle_t CUDA_API_WRAPPERS_EXPORT range_start (
+range::handle_t range_start (
 	const std::string&  description,
 	range::Type         type,
 	color_t             color);
@@ -93,7 +92,7 @@ inline range::handle_t range_start (
 	return range_start(description, range::Type::unspecified);
 }
 
-void CUDA_API_WRAPPERS_EXPORT range_end (range::handle_t range);
+void range_end (range::handle_t range);
 
 } // namespace mark
 
@@ -104,7 +103,7 @@ void CUDA_API_WRAPPERS_EXPORT range_end (range::handle_t range);
  * perform a synchronous I/O operation (and have it conclude of course), or
  * launch and synch several related kernels.
  */
-class CUDA_API_WRAPPERS_EXPORT scoped_range_marker {
+class scoped_range_marker {
 public:
 	scoped_range_marker(
 		const std::string& description,
@@ -117,19 +116,19 @@ protected:
 /**
  * Start CUDA profiling for the current process
  */
-void CUDA_API_WRAPPERS_EXPORT start();
+void start();
 
 /**
  * Sttop CUDA profiling for the current process
  */
-void CUDA_API_WRAPPERS_EXPORT stop();
+void stop();
 
 /**
  * A class to instantiate in the part of your application
  * which does any work you intend to use the CUDA profiler
  * to profile. This could well be your main() function.
  */
-class CUDA_API_WRAPPERS_EXPORT scope {
+class scope {
 public:
 	scope() { start(); }
 	~scope() { stop(); }
@@ -146,11 +145,11 @@ namespace naming {
  * for example, by `GetCurrentThreadId()`)
  * @param[in] name The string identifier to use for the specified thread
  */
-void CUDA_API_WRAPPERS_EXPORT name_host_thread(uint32_t thread_id, const std::string& name);
-void CUDA_API_WRAPPERS_EXPORT name_host_thread(uint32_t thread_id, const std::wstring& name);
+void name_host_thread(uint32_t thread_id, const std::string& name);
+void name_host_thread(uint32_t thread_id, const std::wstring& name);
 #if defined(__unix__) || defined(_WIN32)
-void CUDA_API_WRAPPERS_EXPORT name_this_thread(const std::string& name);
-void CUDA_API_WRAPPERS_EXPORT name_this_thread(const std::wstring& name);
+void name_this_thread(const std::string& name);
+void name_this_thread(const std::wstring& name);
 #endif
 
 //void name_device_stream(device::id_t  device, stream::id_t stream);
