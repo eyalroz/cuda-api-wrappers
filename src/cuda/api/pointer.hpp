@@ -22,6 +22,10 @@
 
 #include <cuda_runtime_api.h>
 
+#ifndef NDEBUG
+#include <cassert>
+#endif
+
 namespace cuda {
 
 ///@cond
@@ -135,7 +139,7 @@ public: // other non-mutators
 	pointer_t other_side_of_region_pair() const {
 	    auto attrs = attributes();
 #ifndef NDEBUG
-	    assert(attrs.devicePointer == ptr_ or atts.hostPointer == ptr_);
+	    assert(attrs.devicePointer == ptr_ or attrs.hostPointer == ptr_);
 #endif
 	    return pointer_t { ptr_ == attrs.devicePointer ? attrs.hostPointer : ptr_ };
 	}
