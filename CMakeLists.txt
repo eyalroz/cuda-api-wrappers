@@ -31,6 +31,10 @@ endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
+if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 PROJECT(cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
@@ -106,6 +110,19 @@ add_library(
 	src/cuda/api/profiling.cpp
 )
 
+target_include_directories(${PROJECT_NAME} 
+	PUBLIC
+	"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
+	"$<INSTALL_INTERFACE:include>")
+
+
+if(WIN32)
+	# Windows users report that CMake has trouble 
+	set(CUDA_LIBRARIES "cudadevrt.lib;cudart.lib")
+	target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES})
+endif()
+
 # -----------------------
 # Examples / Tests
 # -----------------------
@@ -157,6 +174,7 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 install(
 	TARGETS cuda-api-wrappers
 	EXPORT cuda-api-wrappers
+	RUNTIME DESTINATION bin
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	INCLUDES DESTINATION include
