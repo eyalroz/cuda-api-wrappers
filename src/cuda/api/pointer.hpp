@@ -29,6 +29,10 @@
 #include <cassert>
 #endif
 
+#ifndef NDEBUG
+#include <cassert>
+#endif
+
 namespace cuda {
 
 ///@cond
