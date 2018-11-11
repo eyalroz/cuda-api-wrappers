@@ -139,7 +139,13 @@ inline void enqueue_launch(
 		// a bit of useless work here. We could have done exactly the same thing
 		// for the non-cooperative case, mind you.
 
-		void* argument_ptrs[sizeof...(KernelParameters)];
+		// The following hack is due to C++ not supporting arrays of length 0 -
+		// but such an array being necessary for collect_argument_addresses with
+		// multiple parameters. Other workarounds are possible, but would be
+		// more cumbersome, except perhaps with C++17 or later.
+		constexpr auto non_zero_num_params =
+			sizeof...(KernelParameters) == 0 ? 1 : sizeof...(KernelParameters);
+		void* argument_ptrs[non_zero_num_params];
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
