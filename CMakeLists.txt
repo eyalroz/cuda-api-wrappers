@@ -26,7 +26,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/" 
 # -----------------------------------
 
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -84,19 +84,6 @@ set(CMAKE_CUDA_EXTENSIONS ON)
 set(CUDA_SEPARABLE_COMPILATION ON) # Does this work with native CUDA support?
 set(CUDA_PROPAGATE_HOST_FLAGS OFF) # Does this work with native CUDA support?
 
-# This should really have been automatic...
-#get_filename_component(CUDA_LIBRARY_DIR ${CUDA_CUDART_LIBRARY} DIRECTORY)
-#set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-L${CUDA_LIBRARY_DIR}" )
-
-#set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY} ${CUDA_cudadevrt_LIBRARY})
-
-# The FindCUDA script forces the use of the libcublas library when perform device linkage;
-# but on some systems and in certain situations, its inclusion on the command line
-# triggers various kinds of errors; so - we ensure it is empty and unused
-#set(CUDA_cublas_device_LIBRARY "" CACHE FILEPATH "Path of the CUBLAS library - unused dummy value" FORCE)
-
-
-
 # -----------------------
 # Main target(s)
 # -----------------------
@@ -110,12 +97,11 @@ add_library(
 	src/cuda/api/profiling.cpp
 )
 
-target_include_directories(${PROJECT_NAME} 
-	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
-	"$<INSTALL_INTERFACE:include>")
-
+target_include_directories(
+	${PROJECT_NAME}
+	INTERFACE "$<INSTALL_INTERFACE:include>"
+	PRIVATE   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
+)
 
 if(WIN32)
 	# Windows users report that CMake has trouble 
