@@ -1,0 +1,16 @@
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(WARNING_FLAGS "-Wall -Wpedantic")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(WARNING_FLAGS "-Wall -Wpedantic")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    set(WARNING_FLAGS "-Wall")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(WARNING_FLAGS "/W4")
+else ()
+    message(WARNING "Unknown compiler - cannot set warning flags")
+endif()
+
+if(WARNING_FLAGS)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
+endif()
+
