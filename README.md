@@ -34,6 +34,7 @@ Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-r
 |-----------------|-------------------------------------------------------------------------| 
 | full            | Error Handling, Stream Management, Event Management, Memory Management, Version Management, Peer Device Memory Access, Occupancy, Unified Addressing |
 | almost full     | Device Management (no chooseDevice, cudaSetValidDevices),  Execution Control (no support for working with parameter buffers) |
+| (deprecated)    | Thread management |
 | no coverage     | OpenGL Interoperability, Direct3D 9 Interoperability, Direct3D 10 Interoperability, Direct3D 11 Interoperability, VDPAU Interoperability, EGL Interoperability, Graphics Interoperability, Texture Reference Management, Surface Reference Management, Texture Object Management, Surface Object Management   |
 
 CUDA 9.0 additions to the API are a WIP (see the [issues page](https://github.com/eyalroz/cuda-api-wrappers/issues)).
