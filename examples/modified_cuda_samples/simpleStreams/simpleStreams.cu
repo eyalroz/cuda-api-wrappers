@@ -295,8 +295,8 @@ int main(int argc, char **argv)
 	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0].id());
 	stop_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
 	stop_event.synchronize(); // block until the event is actually recorded
-	auto time_memcpy = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
-	std::cout << "memcopy:\t" << time_memcpy << "\n";
+	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
+	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
 
 	// time kernel
 	threads=dim3(512, 1);
@@ -305,8 +305,8 @@ int main(int argc, char **argv)
 	init_array<<<blocks, threads, 0, streams[0].id()>>>(d_a.get(), d_c.get(), niterations);
 	stop_event.record(cuda::stream::default_stream_id);
 	stop_event.synchronize();
-	auto time_kernel = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
-	std::cout << "kernel:\t\t" << time_kernel << "\n";
+	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
+	std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time non-streamed execution for reference
@@ -322,8 +322,8 @@ int main(int argc, char **argv)
 
 	stop_event.record(cuda::stream::default_stream_id);
 	stop_event.synchronize();
-	auto elapsed_time = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
-	std::cout << "non-streamed:\t" << elapsed_time / nreps << "\n";
+	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
+	std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time execution with nstreams streams
@@ -354,8 +354,8 @@ int main(int argc, char **argv)
 
 	stop_event.record(cuda::stream::default_stream_id);
 	stop_event.synchronize();
-	elapsed_time = cuda::event::milliseconds_elapsed_between(start_event, stop_event);
-	std::cout << nstreams <<" streams:\t" << elapsed_time / nreps << "\n";
+	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
+	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / nreps << "\n";
 
 	// check whether the output is correct
 	std::cout << "-------------------------------\n";

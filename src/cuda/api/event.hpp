@@ -16,6 +16,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <chrono> // for duration types
+
 namespace cuda {
 
 ///@cond
@@ -215,25 +217,7 @@ protected: // data members
 
 namespace event {
 
-/**
- * Determine (inaccurately) the elapsed time between two events,
- * by their id's.
- *
- * @note  Q: Why the weird output type?
- *        A: This is what the CUDA Runtime API itself returns
- *
- * @param start first timepoint event id
- * @param end second, later, timepoint event id
- * @return the difference in the (inaccurately) measured time, in msec
- */
-inline float milliseconds_elapsed_between(id_t start, id_t end)
-{
-	float elapsed_milliseconds;
-	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start, end);
-	cuda::throw_if_error(status, "determining the time elapsed between events");
-	return elapsed_milliseconds;
-}
-
+using duration_t = std::chrono::duration<float, std::milli>;
 
 /**
  * Determine (inaccurately) the elapsed time between two events
@@ -245,9 +229,12 @@ inline float milliseconds_elapsed_between(id_t start, id_t end)
  * @param end second, later, timepoint event
  * @return the difference in the (inaccurately) measured time, in msec
  */
-inline float milliseconds_elapsed_between(const event_t& start, const event_t& end)
+inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 {
-	return milliseconds_elapsed_between(start.id(), end.id());
+	float elapsed_milliseconds;
+	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start.id(), end.id());
+	cuda::throw_if_error(status, "determining the time elapsed between events");
+	return duration_t { elapsed_milliseconds };
 }
 
 /**
