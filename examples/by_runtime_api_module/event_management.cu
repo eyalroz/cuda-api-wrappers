@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I am launched after the third event"));
 
 	try {
-		cuda::event::milliseconds_elapsed_between(event_1, event_2);
+		cuda::event::time_elapsed_between(event_1, event_2);
 		std::cerr << "Attempting to obtain the elapsed time between two events on a"
 			"stream which does not auto-sync with the default stream and has not been "
 			"synchronized should fail - but it didn't\n";
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	event_2.synchronize();
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
 	std::cout
-		<< cuda::event::milliseconds_elapsed_between(event_1, event_2) << " msec have elapsed, "
+		<< cuda::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "
 		<< "executing the second kernel (\"increment\") on a buffer of " << buffer_size
 		<< " chars and triggering two callbacks.\n";
 	// ... and this should make the third kernel execute

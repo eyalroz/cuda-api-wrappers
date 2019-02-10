@@ -8,8 +8,10 @@ device_index=${1:-0}
 timestamp=$(date +%s.%N)
 gcc_binary=${CMAKE_CXX_COMPILER:-$(which c++)}
 cuda_root=${CUDA_DIR:-/usr/local/cuda}
-nvcc_default_path=$(which nvcc:-"/usr/local/cuda/bin/nvcc")
-cuda_root=${CUDA_DIR:-${nvcc_default_path:0:-4}..}
+nvcc_fallback_in_path=$(which nvcc)
+nvcc_fallback=${nvcc_fallback_in_path:-"/usr/local/cuda/bin/nvcc"}
+unset nvcc_fallback_in_path
+cuda_root=${CUDA_DIR:-${nvcc_fallback:0:-4}..}
 cuda_include_dirs=${CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES:-${cuda_root}/include}
 cuda_link_directories=${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES:-${cuda_root}/lib64}
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${cuda_link_directories}"
