@@ -79,6 +79,19 @@ int main(int argc, char **argv)
 	auto re_obtained_device = cuda::device::get(pci_id_str);
 	assert(re_obtained_device == device);
 
+	// Memory - total and available
+	// -----------------------------------
+
+	auto device_global_mem = device.memory();
+	auto total_memory = device_global_mem.amount_total();
+	auto free_memory = device_global_mem.amount_total();
+
+	std::cout 
+		<< "Device " << std::to_string(device.id()) << " reports it has:\n"
+		<< free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
+
+	assert(free_memory < total_memory);
+
 
 	// Specific attributes and properties with their own API calls:
 	// L1/shared mem (CacheConfig), shared memory bank size (SharedMemConfig)

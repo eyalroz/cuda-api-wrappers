@@ -302,7 +302,7 @@ public:	// types
 			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
 			throw_if_error(status,
 				std::string("Failed determining amount of total memory "
-					"for CUDA device ") + device_id_as_str());
+					"for CUDA device ") + device_id_as_str(device_id_));
 			return total_mem_in_bytes;
 		}
 
@@ -318,7 +318,7 @@ public:	// types
 			size_t free_mem_in_bytes;
 			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
 			throw_if_error(status, "Failed determining amount of "
-				"free memory for " + device_id_as_str());
+				"free memory for CUDA device " + device_id_as_str(device_id_));
 			return free_mem_in_bytes;
 		}
 	}; // class global_memory_t
