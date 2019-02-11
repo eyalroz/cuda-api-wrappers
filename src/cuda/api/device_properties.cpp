@@ -6,9 +6,14 @@
 
 // The values hard-coded in this file are based on the information from the following sources:
 //
-// https://en.wikipedia.org/wiki/CUDA
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
+// https://docs.nvidia.com/cuda/pascal-tuning-guide/index.html
 // https://docs.nvidia.com/cuda/volta-tuning-guide/index.html
 // https://docs.nvidia.com/cuda/turing-tuning-guide/index.html
+// https://en.wikipedia.org/wiki/CUDA
+//
+// See specifically the sections on shared memory capacity in the Tuning and Programming
+// guides -- it's a somewhat confusing issue.
 
 namespace cuda {
 namespace device {
@@ -22,7 +27,7 @@ const char* compute_architecture_t::name(unsigned architecture_number)
 		{ 3, "Kepler"         },
 		{ 5, "Maxwell"        },
 		{ 6, "Pascal"         },
-		{ 7, "Volta/Turing"   }, 
+		{ 7, "Volta/Turing"   },
 			// Unfortunately, nVIDIA broke with the custom of having the numeric prefix
 			// designate the architecture name, with Turing (Compute Capability 7.5 _only_).
 	};
@@ -41,9 +46,20 @@ shared_memory_size_t compute_architecture_t::max_shared_memory_per_block() const
 		{ 1,  16 * KiB },
 		{ 2,  48 * KiB },
 		{ 3,  48 * KiB },
-		{ 5,  64 * KiB },
-		{ 6,  64 * KiB },
-		{ 7,  96 * KiB }, // this is the Volta figure, Turing is different
+		{ 5,  48 * KiB },
+		{ 6,  48 * KiB },
+		{ 7,  96 * KiB },
+			// this is the Volta figure, Turing is different. Also, values above
+			// 48 require a call such as:
+			//
+			// cudaFuncSetAttribute(
+			//     my_kernel,
+			//     cudaFuncAttributePreferredSharedMemoryCarveout,
+			//     cudaSharedmemCarveoutMaxShared
+			// );
+			//
+			// for details, see the CUDA C Programming Guide at:
+			// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 	};
 	return data.at(major);
 }
@@ -93,9 +109,9 @@ shared_memory_size_t compute_capability_t::max_shared_memory_per_block() const
 	static std::unordered_map<unsigned, unsigned> data =
 	{
 		{ 37, 112 * KiB },
-		{ 52,  96 * KiB },
-		{ 61,  96 * KiB },
-		{ 75,  64 * KiB }, // This is the Turing, rather than Volta, figure
+		{ 75,  64 * KiB },
+			// This is the Turing, rather than Volta, figure; but see
+			// the note regarding how to actually enable this
 	};
 	auto cc = as_combined_number();
 	auto it = data.find(cc);
