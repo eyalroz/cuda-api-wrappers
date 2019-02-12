@@ -41,6 +41,7 @@ void point(const std::string& description, color_t color)
 range::handle_t range_start(
 	const std::string& description, ::cuda::profiling::range::Type type, color_t color)
 {
+	(void) type; // Currently not doing anything with the type; maybe in the future
 	std::lock_guard<std::mutex> { detail::profiler_mutex };
 	nvtxEventAttributes_t range_attributes;
 	range_attributes.version   = NVTX_VERSION;
@@ -67,7 +68,7 @@ void range_end(range::handle_t range_handle)
 
 scoped_range_marker::scoped_range_marker(const std::string& description, profiling::range::Type type)
 {
-	range = profiling::mark::range_start(description);
+	range = profiling::mark::range_start(description, type);
 }
 
 scoped_range_marker::~scoped_range_marker()
@@ -88,14 +89,24 @@ void stop()
 	throw_if_error(status, "Starting to profile");
 }
 
-void name_host_thread(uint32_t thread_id, const std::string& name)
+namespace naming {
+
+template <>
+void name_host_thread<char>(uint32_t thread_id, const std::string& name)
 {
 	nvtxNameOsThreadA(thread_id, name.c_str());
 }
 
+template <>
+void name_host_thread<wchar_t>(uint32_t thread_id, const std::wstring& name)
+{
+	nvtxNameOsThreadW(thread_id, name.c_str());
+}
 
 #if defined(__unix__) || defined(_WIN32)
-void name_host_thread(uint32_t thread_id, const std::wstring& name)
+
+template <typename CharT>
+void name_this_thread(const std::basic_string<CharT>& name)
 {
 	auto this_thread_s_native_handle =
 #ifdef __unix__
@@ -103,28 +114,12 @@ void name_host_thread(uint32_t thread_id, const std::wstring& name)
 #else
 		::GetCurrentThreadId();
 #endif // __unix__
-	nvtxNameOsThreadW(this_thread_s_native_handle, name.c_str());
+	name_host_thread<CharT>(this_thread_s_native_handle, name);
 }
 
-void name_this_thread(const std::string& name)
-{
-	auto this_thread_s_native_handle =
-#ifdef __unix__
-		::pthread_self();
-#else
-		::GetCurrentThreadId();
-#endif // __unix__
-	name_host_thread(this_thread_s_native_handle, name);
-}
+#endif // defined(__unix__) || defined(_WIN32)
 
-#endif
-
-/*
-void name_this_thread(const std::wstring& name)
-{
-	name_host_thread(std::thread::native_handle(std::this_thread::get_id()), name);
-}
-*/
+} // namespace naming
 
 } // namespace profiling
 } // namespace cuda
