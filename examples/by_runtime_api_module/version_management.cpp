@@ -19,7 +19,7 @@
 }
 
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	if (cuda::device::count() == 0) {
 		die_("No CUDA devices on this system (and, unfortunately, the CUDA runtime requires one to report its supported version)");

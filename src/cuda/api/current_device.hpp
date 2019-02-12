@@ -95,7 +95,7 @@ private:
 template <>
 class scoped_override_t<detail::assume_device_is_current> {
 public:
-	scoped_override_t(device::id_t  device) { }
+	scoped_override_t(device::id_t) { }
 	~scoped_override_t() { }
 };
 

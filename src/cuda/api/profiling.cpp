@@ -41,6 +41,7 @@ void point(const std::string& description, color_t color)
 range::handle_t range_start(
 	const std::string& description, ::cuda::profiling::range::Type type, color_t color)
 {
+	(void) type; // Currently not doing anything with the type; maybe in the future
 	std::lock_guard<std::mutex> { detail::profiler_mutex };
 	nvtxEventAttributes_t range_attributes;
 	range_attributes.version   = NVTX_VERSION;
@@ -67,7 +68,7 @@ void range_end(range::handle_t range_handle)
 
 scoped_range_marker::scoped_range_marker(const std::string& description, profiling::range::Type type)
 {
-	range = profiling::mark::range_start(description);
+	range = profiling::mark::range_start(description, type);
 }
 
 scoped_range_marker::~scoped_range_marker()
