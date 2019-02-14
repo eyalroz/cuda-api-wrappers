@@ -224,4 +224,4 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 } // namespace device_function
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_ */
+#endif // CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_

@@ -167,4 +167,4 @@ inline pointer_t<T> wrap(T* ptr) noexcept { return pointer_t<T>(ptr); }
 } // namespace memory
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_POINTER_HPP_ */
+#endif // CUDA_API_WRAPPERS_POINTER_HPP_

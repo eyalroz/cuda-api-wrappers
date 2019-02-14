@@ -143,4 +143,4 @@ inline unique_ptr<T> make_unique(
 } // namespace memory
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_ */
+#endif // CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_

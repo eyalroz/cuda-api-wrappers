@@ -1,12 +1,12 @@
 /**
- * @file api_wrappers.h
+ * @file api_wrappers.hpp
  *
  * @brief A single file which includes, in turn, all of the CUDA
  * Runtime API wrappers and related headers.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_H_
-#define CUDA_API_WRAPPERS_H_
+#ifndef CUDA_API_WRAPPERS_HPP_
+#define CUDA_API_WRAPPERS_HPP_
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
@@ -32,4 +32,4 @@
 #include <cuda/api/pci_id_impl.hpp>
 #include <cuda/api/multi_wrapper_impls.hpp>
 
-#endif /* CUDA_API_WRAPPERS_H_ */
+#endif // CUDA_API_WRAPPERS_HPP_ 

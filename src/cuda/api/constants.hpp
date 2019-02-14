@@ -1,5 +1,5 @@
 /**
- * @file constants.h
+ * @file constants.hpp
  *
  * @brief Fundamental CUDA-related constants and enumerations,
  * not dependent on any more complex abstractions, placed
@@ -7,8 +7,8 @@
  *
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_CONSTANTS_H_
-#define CUDA_API_WRAPPERS_CONSTANTS_H_
+#ifndef CUDA_API_WRAPPERS_CONSTANTS_HPP_
+#define CUDA_API_WRAPPERS_CONSTANTS_HPP_
 
 #include <cuda/api/types.hpp>
 
@@ -111,4 +111,4 @@ enum : bool {
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_CONSTANTS_H_ */
+#endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_ 

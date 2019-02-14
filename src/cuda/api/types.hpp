@@ -1,5 +1,5 @@
 /**
- * @file types.h
+ * @file types.hpp
  *
  * @brief Fundamental, plain-old-data, CUDA-related type definitions.
 
@@ -9,8 +9,8 @@
  * any Runtime API calls).
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_TYPES_H_
-#define CUDA_API_WRAPPERS_TYPES_H_
+#ifndef CUDA_API_WRAPPERS_TYPES_HPP_
+#define CUDA_API_WRAPPERS_TYPES_HPP_
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
@@ -18,6 +18,13 @@
 #endif
 
 #include <type_traits>
+
+#ifndef __CUDACC__
+#ifndef __device__
+#define __device__ 
+#define __host__ 
+#endif
+#endif
 
 #ifdef _MSC_VER
 /*
@@ -307,4 +314,11 @@ using native_word_t = unsigned;
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_TYPES_H_ */
+#ifndef __CUDACC__
+#ifndef __device__
+#define __device__ 
+#define __host__ 
+#endif
+#endif
+
+#endif // CUDA_API_WRAPPERS_TYPES_HPP_

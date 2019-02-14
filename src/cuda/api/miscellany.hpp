@@ -32,4 +32,4 @@ void force_runtime_initialization()
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_MISCELLANY_HPP_ */
+#endif // CUDA_API_WRAPPERS_MISCELLANY_HPP_

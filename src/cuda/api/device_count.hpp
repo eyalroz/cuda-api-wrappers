@@ -49,4 +49,4 @@ inline device::id_t  count()
 } // namespace cuda
 
 
-#endif /* CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_ */
+#endif // CUDA_API_WRAPPERS_DEVICE_COUNT_HPP_

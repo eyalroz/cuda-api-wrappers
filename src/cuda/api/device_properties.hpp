@@ -192,4 +192,4 @@ struct properties_t : public cudaDeviceProp {
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_ */
+#endif // CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_

@@ -184,4 +184,4 @@ inline event::id_t import(const handle_t& handle)
 } // namespace event
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_IPC_HPP_ */
+#endif // CUDA_API_WRAPPERS_IPC_HPP_
