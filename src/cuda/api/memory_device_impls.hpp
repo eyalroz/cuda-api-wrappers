@@ -56,4 +56,4 @@ inline region_pair allocate(
 } // namespace cuda
 
 
-#endif /* MEMORY_DEVICE_IMPLS_HPP_ */
+#endif // MEMORY_DEVICE_IMPLS_HPP_

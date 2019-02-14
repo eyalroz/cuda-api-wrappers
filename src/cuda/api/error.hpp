@@ -291,4 +291,4 @@ inline void ensure_none(bool clear_any_error = do_clear_errors) noexcept(false)
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_ERROR_HPP_ */
+#endif // CUDA_API_WRAPPERS_ERROR_HPP_

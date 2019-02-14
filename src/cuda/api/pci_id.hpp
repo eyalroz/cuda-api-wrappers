@@ -1,12 +1,12 @@
 /**
- * @file pci_id.h
+ * @file pci_id.hpp
  *
  * @brief Definition of a wrapper class for CUDA PCI device ID
  * information.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_PCI_ID_H_
-#define CUDA_API_WRAPPERS_PCI_ID_H_
+#ifndef CUDA_API_WRAPPERS_PCI_ID_CUH_
+#define CUDA_API_WRAPPERS_PCI_ID_CUH_
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
@@ -54,4 +54,4 @@ inline id_t resolve_id(pci_location_t pci_id)
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_PCI_ID_H_ */
+#endif // CUDA_API_WRAPPERS_PCI_ID_HPP_

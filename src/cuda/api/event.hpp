@@ -308,4 +308,4 @@ inline event_t create(
 } // namespace cuda
 
 
-#endif /* CUDA_API_WRAPPERS_EVENT_HPP_ */
+#endif // CUDA_API_WRAPPERS_EVENT_HPP_

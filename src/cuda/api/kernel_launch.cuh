@@ -245,4 +245,4 @@ inline void launch(
 
 } // namespace cuda
 
-#endif /* CUDA_KERNEL_LAUNCH_H_ */
+#endif // CUDA_KERNEL_LAUNCH_CUH_

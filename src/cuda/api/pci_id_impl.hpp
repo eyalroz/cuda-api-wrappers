@@ -65,4 +65,4 @@ inline pci_location_t pci_location_t::parse(const std::string& id_str)
 } //namespace device
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_PCI_ID_HPP_ */
+#endif // CUDA_API_WRAPPERS_PCI_ID_HPP_

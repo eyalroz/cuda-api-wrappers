@@ -114,4 +114,4 @@ public:
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_ */
+#endif // CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_

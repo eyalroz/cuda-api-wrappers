@@ -585,4 +585,4 @@ using queue_id_t = stream::id_t;
 } // namespace cuda
 
 
-#endif /* CUDA_API_WRAPPERS_STREAM_HPP_ */
+#endif // CUDA_API_WRAPPERS_STREAM_HPP_
