@@ -687,4 +687,4 @@ inline bool is_part_of_a_region_pair(void* ptr)
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_MEMORY_HPP_ */
+#endif // CUDA_API_WRAPPERS_MEMORY_HPP_

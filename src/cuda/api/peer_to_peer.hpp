@@ -130,4 +130,4 @@ inline attribute_value_t get_attribute(attribute_t attribute, const device_t<Fir
 } // namespace device
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_ */
+#endif // CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_

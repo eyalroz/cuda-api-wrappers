@@ -193,4 +193,4 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 
 } // namespace cuda
 
-#endif /* MULTI_WRAPPER_IMPLS_HPP_ */
+#endif // MULTI_WRAPPER_IMPLS_HPP_

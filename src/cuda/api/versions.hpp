@@ -151,4 +151,4 @@ inline version_t runtime() {
 } // namespace version_numbers
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_VERSIONS_HPP_ */
+#endif // CUDA_API_WRAPPERS_VERSIONS_HPP_

@@ -1018,4 +1018,4 @@ inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device)
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_DEVICE_HPP_ */
+#endif // CUDA_API_WRAPPERS_DEVICE_HPP_

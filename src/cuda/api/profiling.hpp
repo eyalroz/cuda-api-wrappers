@@ -1,5 +1,5 @@
 /**
- * @file profiling.h
+ * @file profiling.hpp
  *
  * @brief wrappers for the CUDA profiler API functions,
  * and convenience RAII classes for profiler-output-marked
@@ -7,8 +7,8 @@
  *
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_PROFILING_H_
-#define CUDA_API_WRAPPERS_PROFILING_H_
+#ifndef CUDA_API_WRAPPERS_PROFILING_HPP_
+#define CUDA_API_WRAPPERS_PROFILING_HPP_
 
 #include <cuda/api/types.hpp>
 #include <cstdint>
@@ -160,4 +160,4 @@ void name_this_thread(const std::basic_string<CharT>& name);
 
 } // namespace cuda
 
-#endif /* CUDA_API_WRAPPERS_PROFILING_H_ */
+#endif // CUDA_API_WRAPPERS_PROFILING_HPP_
