@@ -10,7 +10,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <unistd.h>
+#include <chrono>
+#include <thread>
 
 using element_t = float;
 
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
 			}
 		);
 	}
-	usleep(50000);
+	std::this_thread::sleep_for(std::chrono::microseconds(50000));
 	for(auto& stream : streams) { stream.synchronize(); }
 	cuda::outstanding_error::ensure_none();
 
