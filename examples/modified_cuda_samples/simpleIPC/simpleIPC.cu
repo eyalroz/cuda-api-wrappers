@@ -144,10 +144,13 @@ void getDeviceCount(ipcDevices_t *devices)
 		devices->count = 1;
 		bool canAccessPeer_0i, canAccessPeer_i0;
 
+		auto device_0 = cuda::device::get(0);
+
 		for (i = 1; i < uvaCount; i++)
 		{
-			canAccessPeer_0i = cuda::device::peer_to_peer::can_access(uvaOrdinals[0], uvaOrdinals[i]);
-			canAccessPeer_i0 = cuda::device::peer_to_peer::can_access(uvaOrdinals[i], uvaOrdinals[0]);
+			auto device_i = cuda::device::get(i);
+			canAccessPeer_0i = cuda::device::peer_to_peer::can_access(device_0, device_i);
+			canAccessPeer_i0 = cuda::device::peer_to_peer::can_access(device_i, device_0);
 
 			if (canAccessPeer_0i and canAccessPeer_i0)
 			{

@@ -79,67 +79,6 @@ enum : std::underlying_type<attribute_t>::type {
 };
 
 /**
- * @brief Determine whether one CUDA device can access the global memory
- * of another CUDA device.
- *
- * @param accessor id of the device interested in making a remote access
- * @param peer id of the device which is to be accessed
- * @return true iff acesss is possible
- */
-inline bool can_access(id_t accessor, id_t peer)
-{
-	int result;
-	auto status = cudaDeviceCanAccessPeer(&result, accessor, peer);
-	throw_if_error(status,
-		"Failed determining whether CUDA device " + std::to_string(accessor) + " can access CUDA device "
-			+ std::to_string(peer));
-	return (result == 1);
-}
-
-/**
- * @brief Determine whether one CUDA device can access the global memory
- * of another CUDA device.
- *
- * @param accessor device interested in making a remote access
- * @param peer device to be accessed
- * @return true iff acess is possible
- */
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline bool can_access(const device_t<FirstIsAssumedCurrent>& accessor, const device_t<SecondIsAssumedCurrent>& peer);
-
-/**
- * @brief Enable access by one CUDA device to the global memory of another
- *
- * @param accessor device interested in making a remote access
- * @param peer device to be accessed
- */
-inline void enable_access(id_t accessor_id, id_t peer_id)
-{
-	enum
-		: unsigned {fixed_flags = 0
-	};
-	// No flags are supported as of CUDA 8.0
-	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
-	auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
-	throw_if_error(status,
-		"Failed enabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
-}
-
-/**
- * @brief Disable access by one CUDA device to the global memory of another
- *
- * @param accessor device interested in making a remote access
- * @param peer device to be accessed
- */
-inline void disable_access(id_t accessor_id, id_t peer_id)
-{
-	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
-	auto status = cudaDeviceDisablePeerAccess(peer_id);
-	throw_if_error(status,
-		"Failed disabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
-}
-
-/**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
  * relating to their interaction
  *
@@ -332,8 +271,12 @@ public:	// types
 	 */
 	bool can_access(const device_t<>& peer) const
 	{
-		scoped_setter_t set_device_for_this_scope(id());
-		return device::peer_to_peer::can_access(id(), peer.id());
+		int result;
+		auto status = cudaDeviceCanAccessPeer(&result, id(), peer.id());
+		throw_if_error(status,
+			"Failed determining whether CUDA device " + std::to_string(id()) + " can access CUDA device "
+				+ std::to_string(peer.id()));
+		return (result == 1);
 	}
 
 	/**
@@ -344,13 +287,12 @@ public:	// types
 	 */
 	void enable_access_to(const device_t<>& peer)
 	{
-		if (AssumedCurrent) {
-			enum : unsigned {fixed_flags = 0 };
-			// No flags are supported as of CUDA 8.0
-			auto status = cudaDeviceEnablePeerAccess(peer.id(), fixed_flags);
-			throw_if_error(status, "Failed enabling access of current device to device " + std::to_string(peer.id()));
-		} else
-			device::peer_to_peer::enable_access(id(), peer.id());
+		enum : unsigned {fixed_flags = 0 };
+		// No flags are supported as of CUDA 8.0
+		scoped_setter_t set_device_for_this_scope(id());
+		auto status = cudaDeviceEnablePeerAccess(peer.id(), fixed_flags);
+		throw_if_error(status,
+			"Failed enabling access of device " + std::to_string(id()) + " to device " + std::to_string(peer.id()));
 	}
 
 	/**
@@ -360,12 +302,10 @@ public:	// types
 	 */
 	void disable_access_to(const device_t<>& peer)
 	{
-		if (AssumedCurrent) {
-			auto status = cudaDeviceDisablePeerAccess(peer.id());
-			throw_if_error(status,
-				"Failed disabling access of current device to device " + std::to_string(peer.id()));
-		} else
-		device::peer_to_peer::disable_access(id(), peer.id());
+		scoped_setter_t set_device_for_this_scope(id());
+		auto status = cudaDeviceDisablePeerAccess(peer.id());
+		throw_if_error(status,
+			"Failed disabling access of device " + std::to_string(id()) + " to device " + std::to_string(peer.id()));
 	}
 
 protected:
@@ -934,42 +874,6 @@ inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::st
 	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);
 }
-
-namespace peer_to_peer {
-
-/**
- * @brief Determine whether one CUDA device can access the global memory
- * of another CUDA device.
- *
- * @param accessor device interested in making a remote access
- * @param peer device to be accessed
- * @return true iff acess is possible
- */
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline bool can_access(const device_t<FirstIsAssumedCurrent>& accessor, const device_t<SecondIsAssumedCurrent>& peer)
-{
-	return can_access(accessor.id(), peer.id());
-}
-
-/**
- * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
- * relating to their interaction
- *
- * @note This is the device-pair equivalent of @ref device_t::get_attribute()
- *
- * @param attribute identifier of the attribute of interest
- * @param source source device
- * @param destination destination device
- * @return the numeric attribute value
- */
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline attribute_value_t get_attribute(attribute_t attribute, const device_t<FirstIsAssumedCurrent>& source,
-	const device_t<SecondIsAssumedCurrent>& destination)
-{
-	return get_attribute(attribute, source.id(), destination.id());
-}
-
-} // namespace peer_to_peer
 
 } // namespace device
 

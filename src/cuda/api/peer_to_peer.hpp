@@ -1,7 +1,8 @@
 /**
  * @file peer_to_peer.hpp
  *
- * @brief Settings and actions related to the interaction of multiple devices
+ * @brief Settings and actions related to the interaction of multiple devices (adding
+ * on those already in @ref device.hpp)
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_
@@ -32,33 +33,6 @@ using attribute_value_t = int;
 using attribute_t = cudaDeviceP2PAttr;
 
 /**
- * Aliases for all CUDA device attributes
- */
-enum : std::underlying_type<attribute_t>::type {
-		link_performance_rank = cudaDevP2PAttrPerformanceRank, /**< A relative value indicating the performance of the link between two devices */                       //!< link_performance_rank
-		access_support = cudaDevP2PAttrAccessSupported, /**< 1 if access is supported, 0 otherwise */                                                                    //!< access_support
-		native_atomics_support = cudaDevP2PAttrNativeAtomicSupported /**< 1 if the first device can perform native atomic operations on the second device, 0 otherwise *///!< native_atomics_support
-};
-
-/**
- * @brief Determine whether one CUDA device can access the global memory
- * of another CUDA device.
- *
- * @param accessor id of the device interested in making a remote access
- * @param peer id of the device which is to be accessed
- * @return true iff acesss is possible
- */
-inline bool can_access(id_t accessor, id_t peer)
-{
-	int result;
-	auto status = cudaDeviceCanAccessPeer(&result, accessor, peer);
-	throw_if_error(status,
-		"Failed determining whether CUDA device " + std::to_string(accessor) + " can access CUDA device "
-			+ std::to_string(peer));
-	return (result == 1);
-}
-
-/**
  * @brief Determine whether one CUDA device can access the global memory
  * of another CUDA device.
  *
@@ -66,8 +40,10 @@ inline bool can_access(id_t accessor, id_t peer)
  * @param peer device to be accessed
  * @return true iff acess is possible
  */
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline bool can_access(const device_t<FirstIsAssumedCurrent>& accessor, const device_t<SecondIsAssumedCurrent>& peer);
+inline bool can_access(device_t<> accessor,	device_t<> peer)
+{
+	return accessor.can_access(peer);
+}
 
 /**
  * @brief Enable access by one CUDA device to the global memory of another
@@ -75,16 +51,12 @@ inline bool can_access(const device_t<FirstIsAssumedCurrent>& accessor, const de
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-inline void enable_access(id_t accessor_id, id_t peer_id)
+template<bool AccessorIsAssumedCurrent>
+inline void enable_access(
+	device_t<AccessorIsAssumedCurrent>                accessor,
+	device_t<> peer)
 {
-	enum
-		: unsigned {fixed_flags = 0
-	};
-	// No flags are supported as of CUDA 8.0
-	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
-	auto status = cudaDeviceEnablePeerAccess(peer_id, fixed_flags);
-	throw_if_error(status,
-		"Failed enabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
+	return accessor.enable_access_to(peer);
 }
 
 /**
@@ -93,12 +65,35 @@ inline void enable_access(id_t accessor_id, id_t peer_id)
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-inline void disable_access(id_t accessor_id, id_t peer_id)
+template<bool AccessorIsAssumedCurrent>
+inline void disable_access(
+	device_t<AccessorIsAssumedCurrent>&               accessor,
+	device_t<> peer)
 {
-	device::current::scoped_override_t<> set_device_for_this_scope(accessor_id);
-	auto status = cudaDeviceDisablePeerAccess(peer_id);
-	throw_if_error(status,
-		"Failed disabling access of device " + std::to_string(accessor_id) + " to device " + std::to_string(peer_id));
+	return accessor.disable_access_to(peer);
+}
+
+
+template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
+inline void can_access_each_other(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+{
+	return first.can_access(second) and second.can_access(first);
+}
+
+
+template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
+inline void enable_bidirectional_access(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+{
+	enable_access<FirstAccessorIsAssumedCurrent >(first,  second);
+	enable_access<SecondAccessorIsAssumedCurrent>(second, first );
+}
+
+template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
+inline void disable_bidirectional_access(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+{
+	// Note: What happens when first and second have the same id?
+	disable_access<FirstAccessorIsAssumedCurrent >(first,  second);
+	disable_access<SecondAccessorIsAssumedCurrent>(second, first );
 }
 
 /**
@@ -112,19 +107,18 @@ inline void disable_access(id_t accessor_id, id_t peer_id)
  * @param destination destination device
  * @return the numeric attribute value
  */
-inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
+inline attribute_value_t get_attribute(
+	attribute_t       attribute,
+	const device_t<>  accessor,
+	const device_t<>  peer)
 {
 	attribute_value_t value;
-	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
+	auto status = cudaDeviceGetP2PAttribute(&value, attribute, accessor.id(), peer.id());
 	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(source) + ", "
-			+ std::to_string(destination) + ')');
+		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(accessor.id()) + ", "
+			+ std::to_string(peer.id()) + ')');
 	return value;
 }
-
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline attribute_value_t get_attribute(attribute_t attribute, const device_t<FirstIsAssumedCurrent>& source,
-	const device_t<SecondIsAssumedCurrent>& destination);
 
 } // namespace peer_to_peer
 } // namespace device
