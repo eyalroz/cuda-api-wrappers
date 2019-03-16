@@ -3,14 +3,21 @@
 # switch to the NVCC compiler flags - so that you don't have to worry
 # about it.
 #
-# TODO: Be willing to take CUDA_CC, CUDA_TARGET_COMPUTE_CAPABILITY, 
-# CUDA_TARGET_COMPUTE or CUDA_TARGET_COMPUTE_CAP and maybe even 
-# those without the CUDA_ prefix
+# TODO:
+# * Be willing to take CUDA_CC, CUDA_TARGET_COMPUTE_CAPABILITY,
+#   CUDA_TARGET_COMPUTE or CUDA_TARGET_COMPUTE_CAP and maybe even
+#   those without the CUDA_ prefix
+# * Support for CMake versions under 3.8 (shouldn't be difficult,
+#   just different variable names
+# * Support "roll-up" of redundant existing nvcc flags
+# * Support clang instead of nvcc
+#
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 if (NOT CUDA_TARGET_COMPUTE_CAPABILITY)
 	if (CMAKE_CUDA_COMPILER_LOADED)
-		set(CUDAFILE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/query_gpu_compute_capability.cu)
-		file(WRITE ${CUDAFILE}
+		set(QUERY_CUDA_COMPUTE_CAPABILITY_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/query_gpu_compute_capability.cu)
+		file(WRITE ${QUERY_CUDA_COMPUTE_CAPABILITY_SOURCE}
 "#include <string>\n\
 #include <iostream>\n\
 #include <vector>\n\
@@ -46,31 +53,36 @@ int main()\n\
 	}\n\
 	return 0;\n\
 }")
-		try_run(RUN_RESULT COMPILE_RESULT ${CMAKE_CURRENT_BINARY_DIR} ${CUDAFILE}
-			RUN_OUTPUT_VARIABLE CUDA_TARGET_COMPUTE_CAPABILITY_
-			COMPILE_OUTPUT_VARIABLE compile_output)
-		if(NOT "${COMPILE_RESULT}")
-			message(SEND_ERROR "Detecting CUDA_TARGET_COMPUTE_CAPABILITY failed: Compilation failure")
-			message(SEND_ERROR "${compile_output}")
-		elseif(NOT ("${RUN_RESULT}" EQUAL "0"))
-			message(SEND_ERROR "Detecting CUDA_TARGET_COMPUTE_CAPABILITY failed: Run failure")
-			message(SEND_ERROR "${CUDA_TARGET_COMPUTE_CAPABILITY_}")
+		try_run(
+			QUERY_CUDA_COMPUTE_CAPABILITY_RUN_RESULT
+			QUERY_CUDA_COMPUTE_CAPABILITY_COMPILE_RESULT
+			${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}
+			${QUERY_CUDA_COMPUTE_CAPABILITY_SOURCE}
+			RUN_OUTPUT_VARIABLE CUDA_TARGET_COMPUTE_CAPABILITIES_
+			COMPILE_OUTPUT_VARIABLE QUERY_CUDA_COMPUTE_CAPABILITY_COMPILE_OUTPUT)
+		if(NOT "${QUERY_CUDA_COMPUTE_CAPABILITY_COMPILE_RESULT}")
+			message(SEND_ERROR "CUDA device compute capability query: Compilation failure")
+			message(SEND_ERROR "${QUERY_CUDA_COMPUTE_CAPABILITY_COMPILE_OUTPUT}")
+		elseif(NOT ("${QUERY_CUDA_COMPUTE_CAPABILITY_RUN_RESULT}" EQUAL "0"))
+			message(SEND_ERROR "CUDA device compute capability query: Runtime error")
+			message(SEND_ERROR "${CUDA_TARGET_COMPUTE_CAPABILITIES_}")
 		endif()
 	endif()
 endif()
 
-set(CUDA_TARGET_COMPUTE_CAPABILITY "${CUDA_TARGET_COMPUTE_CAPABILITY_}" CACHE STRING "List of CUDA compute capabilities of the targeted \
-	CUDA devices in X.Y format - see table of features and capabilities by \
+set(CUDA_TARGET_COMPUTE_CAPABILITY "${CUDA_TARGET_COMPUTE_CAPABILITIES_}" CACHE STRING "List of CUDA compute capabilities of the targeted \
+	CUDA devices in X.Y format; list items separated by semicolons; see table of features and capabilities by \
 	capability X.Y value at https://en.wikipedia.org/wiki/CUDA#Version_features_and_specifications")
 
-message(STATUS "CUDA device-side code will generated for the compute capabilitie(s) ${CUDA_TARGET_COMPUTE_CAPABILITY}")
+string(REPLACE ";" ", " COMPUTE_CAPABILITIES_FORMATTED_FOR_PRINTING "${CUDA_TARGET_COMPUTE_CAPABILITY}")
+message(STATUS "CUDA compilation target architecture(s): ${COMPUTE_CAPABILITIES_FORMATTED_FOR_PRINTING}")
 
-set(FORMATTED_COMPUTE_CAPABILITY "")
+set(NVCC_TARGET_COMPUTE_CAPABILITY_FLAGS "")
 foreach(COMPUTE_CAPABILITY ${CUDA_TARGET_COMPUTE_CAPABILITY})
 	string(REPLACE "." "" COMPUTE_CAPABILITY "${COMPUTE_CAPABILITY}")
-	string(APPEND FORMATTED_COMPUTE_CAPABILITY " -gencode arch=compute_${COMPUTE_CAPABILITY},code=compute_${COMPUTE_CAPABILITY}")
+	# nvcc's documentation is rather confusing regarding what we should actually set these two variables, arch and code, to. It
+	# seems they've unified the set of possible values, so we're just going to go with something simplistic which works.
+	string(APPEND NVCC_TARGET_COMPUTE_CAPABILITY_FLAGS " -gencode arch=compute_${COMPUTE_CAPABILITY},code=compute_${COMPUTE_CAPABILITY}")
 endforeach(COMPUTE_CAPABILITY)
 
-message(STATUS "Using extra NVCC flags:${FORMATTED_COMPUTE_CAPABILITY}")
-
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${FORMATTED_COMPUTE_CAPABILITY})
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${NVCC_TARGET_COMPUTE_CAPABILITY_FLAGS}")
