@@ -117,11 +117,14 @@ struct dimensions_t // this almost-inherits dim3
     __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
 
     __host__ __device__ constexpr operator uint3(void) const { return { x, y, z }; }
+
+	// This _should_ have been constexpr, but nVIDIA have not marked the dim3 constructors
+	// as constexpr, so it isn't
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    __host__ __device__ inline size_t volume() const { return (size_t) x * y * z; }
-    __host__ __device__ inline bool empty() const {	return volume() == 0; }
-    __host__ __device__ inline unsigned char dimensionality() const
+    __host__ __device__ constexpr size_t volume() const { return (size_t) x * y * z; }
+    __host__ __device__ constexpr bool empty() const {	return volume() == 0; }
+    __host__ __device__ constexpr unsigned char dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1)) * (!empty());
 	}

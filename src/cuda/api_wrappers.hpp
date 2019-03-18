@@ -28,6 +28,8 @@
 #include <cuda/api/device.hpp>
 #include <cuda/api/event.hpp>
 
+#include <cuda/api/peer_to_peer.hpp>
+
 #include <cuda/api/memory_device_impls.hpp>
 #include <cuda/api/pci_id_impl.hpp>
 #include <cuda/api/multi_wrapper_impls.hpp>

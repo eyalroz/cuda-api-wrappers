@@ -190,11 +190,13 @@ public: // friendship
 	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
 
 public: // constructors and destructor
-	event_t(device::id_t device_id, event::id_t event_id) noexcept :
+
+	// Users should generally avoid constructing non-owning events. At least let's
+	// not let them do so without giving it a bit of thought first.
+	 explicit event_t(device::id_t device_id, event::id_t event_id) noexcept:
 		event_t(device_id, event_id, false) { }
 
-	event_t(const event_t& other) noexcept :
-		device_id_(other.device_id_), id_(other.id_), owning(false){ };
+	event_t(const event_t&) = delete;
 
 	event_t(event_t&& other) noexcept :
 		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
@@ -206,6 +208,11 @@ public: // constructors and destructor
 	{
 		if (owning) { cudaEventDestroy(id_); }
 	}
+
+public: // operators
+
+	event_t& operator=(const event_t& other) = delete;
+	event_t& operator=(event_t&& other) = delete;
 
 protected: // data members
 	const device::id_t  device_id_;
