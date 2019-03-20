@@ -156,7 +156,6 @@ install(
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	INCLUDES DESTINATION include
-	CONFIGURATIONS Release RelWithDebugInfo
 )
 
 install(
