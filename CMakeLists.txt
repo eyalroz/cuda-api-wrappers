@@ -164,3 +164,12 @@ install(
 	DESTINATION include
 	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
 )
+
+install(
+	EXPORT ${PROJECT_NAME}
+	DESTINATION "share/cmake/${PROJECT_NAME}"
+	NAMESPACE "${PROJECT_NAME}::"
+	# In this CMake config file no dependencies are considered. But since we
+	# do not use any `find_package` call here this approach is sufficient.
+	FILE ${PROJECT_NAME}Config.cmake
+)
