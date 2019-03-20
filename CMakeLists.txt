@@ -165,5 +165,3 @@ install(
 	DESTINATION include
 	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
 )
-
-export(EXPORT cuda-api-wrappers FILE cuda-api-wrappers.cmake)
