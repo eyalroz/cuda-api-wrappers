@@ -90,8 +90,9 @@ add_library(
 
 target_include_directories(
 	${PROJECT_NAME}
-	INTERFACE "$<INSTALL_INTERFACE:include>"
-	PRIVATE   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
+		PUBLIC
+		"$<INSTALL_INTERFACE:include>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 )
 
 if(WIN32)
