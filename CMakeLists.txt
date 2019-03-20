@@ -151,7 +151,7 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 
 install(
 	TARGETS cuda-api-wrappers
-	EXPORT cuda-api-wrappers
+	EXPORT cuda-api-wrappersExport
 	RUNTIME DESTINATION bin
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
@@ -166,7 +166,7 @@ install(
 )
 
 install(
-	EXPORT ${PROJECT_NAME}
+	EXPORT ${PROJECT_NAME}Export
 	DESTINATION "share/cmake/${PROJECT_NAME}"
 	NAMESPACE "${PROJECT_NAME}::"
 	# In this CMake config file no dependencies are considered. But since we
