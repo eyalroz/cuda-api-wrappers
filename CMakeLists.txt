@@ -58,6 +58,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories( "src/" )
 
+#----------------
+# Build options
+#----------------
+
+option(EXPORT_BUILD_DIR "Enables external use without install" OFF)
+
 # -------------
 # CUDA
 # -------------
@@ -172,3 +178,17 @@ install(
 	# do not use any `find_package` call here this approach is sufficient.
 	FILE ${PROJECT_NAME}Config.cmake
 )
+
+if(EXPORT_BUILD_DIR AND NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
+	message("-- Exporting ${PROJECT_NAME} build directory to local CMake package registry.")
+
+	export(
+		EXPORT ${PROJECT_NAME}Export
+		NAMESPACE "${PROJECT_NAME}::"
+		# In this CMake config file no dependencies are considered. But since we
+		# do not use any `find_package` call here this approach is sufficient.
+		FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	)
+	# Export the project build directory as a package into the local CMake package registry.
+	export(PACKAGE ${PROJECT_NAME})
+endif()
