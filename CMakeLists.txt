@@ -157,7 +157,7 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 
 install(
 	TARGETS cuda-api-wrappers
-	EXPORT cuda-api-wrappersExport
+	EXPORT cuda-api-wrappers_export
 	RUNTIME DESTINATION bin
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
@@ -171,7 +171,7 @@ install(
 )
 
 install(
-	EXPORT ${PROJECT_NAME}Export
+	EXPORT ${PROJECT_NAME}_export
 	DESTINATION "share/cmake/${PROJECT_NAME}"
 	NAMESPACE "${PROJECT_NAME}::"
 	# In this CMake config file no dependencies are considered. But since we
@@ -180,10 +180,10 @@ install(
 )
 
 if(EXPORT_BUILD_DIR AND NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
-	message("-- Exporting ${PROJECT_NAME} build directory to local CMake package registry.")
+	message(STATUS "Exporting ${PROJECT_NAME} build directory to local CMake package registry.")
 
 	export(
-		EXPORT ${PROJECT_NAME}Export
+		EXPORT ${PROJECT_NAME}_export
 		NAMESPACE "${PROJECT_NAME}::"
 		# In this CMake config file no dependencies are considered. But since we
 		# do not use any `find_package` call here this approach is sufficient.
