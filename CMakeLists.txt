@@ -58,6 +58,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories( "src/" )
 
+#----------------
+# Build options
+#----------------
+
+option(EXPORT_BUILD_DIR "Enables external use without install" OFF)
+
 # -------------
 # CUDA
 # -------------
@@ -90,8 +96,9 @@ add_library(
 
 target_include_directories(
 	${PROJECT_NAME}
-	INTERFACE "$<INSTALL_INTERFACE:include>"
-	PRIVATE   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src"
+		PUBLIC
+		"$<INSTALL_INTERFACE:include>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 )
 
 if(WIN32)
@@ -150,19 +157,38 @@ add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
 
 install(
 	TARGETS cuda-api-wrappers
-	EXPORT cuda-api-wrappers
+	EXPORT cuda-api-wrappers_export
 	RUNTIME DESTINATION bin
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	INCLUDES DESTINATION include
-	CONFIGURATIONS Release RelWithDebugInfo
 )
 
 install(
-#	EXPORT cuda-api-wrappers
 	DIRECTORY src/cuda
 	DESTINATION include
 	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
 )
 
-export(EXPORT cuda-api-wrappers FILE cuda-api-wrappers.cmake)
+install(
+	EXPORT ${PROJECT_NAME}_export
+	DESTINATION "share/cmake/${PROJECT_NAME}"
+	NAMESPACE "${PROJECT_NAME}::"
+	# In this CMake config file no dependencies are considered. But since we
+	# do not use any `find_package` call here this approach is sufficient.
+	FILE ${PROJECT_NAME}Config.cmake
+)
+
+if(EXPORT_BUILD_DIR AND NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
+	message(STATUS "Exporting ${PROJECT_NAME} build directory to local CMake package registry.")
+
+	export(
+		EXPORT ${PROJECT_NAME}_export
+		NAMESPACE "${PROJECT_NAME}::"
+		# In this CMake config file no dependencies are considered. But since we
+		# do not use any `find_package` call here this approach is sufficient.
+		FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	)
+	# Export the project build directory as a package into the local CMake package registry.
+	export(PACKAGE ${PROJECT_NAME})
+endif()
