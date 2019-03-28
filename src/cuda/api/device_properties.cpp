@@ -50,7 +50,7 @@ T get_compute_capability_value(
 		}
 	);
 	if (result_iter != full_cc_data.end()) { return result_iter->second; }
-	return (compute_capability.architecture().*architecture_fallback)();
+	return (compute_capability.architecture.*architecture_fallback)();
 }
 
 } // namespace detail

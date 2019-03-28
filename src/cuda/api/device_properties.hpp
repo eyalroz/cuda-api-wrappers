@@ -92,10 +92,11 @@ inline bool operator >=(const compute_architecture_t& lhs, const compute_archite
  * for a specification of capabilities by CC values
  */
 struct compute_capability_t {
-	unsigned major;
-	unsigned minor;
 
-	unsigned as_combined_number() const noexcept { return major * 10 + minor; }
+	compute_architecture_t architecture;
+	unsigned minor_;
+
+	unsigned as_combined_number() const noexcept { return major() * 10 + minor_; }
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	unsigned max_in_flight_threads_per_processor() const;
@@ -105,11 +106,17 @@ struct compute_capability_t {
 	 * setting
 	 */
 	shared_memory_size_t max_shared_memory_per_block() const;
-	compute_architecture_t architecture() const { return compute_architecture_t { major }; }
+
+	unsigned major() const { return architecture.major; }
+
+	// We don't really need this method, but it allows for the same access pattern as for the
+	// major number, i.e. major() and minor(). Alternatively, we could have
+	// used a proxy
+	unsigned minor() const { return minor_; }
 
 	bool is_valid() const
 	{
-		return (major > 0) and (major < 9999) and (minor > 0) and (minor < 9999);
+		return (major() > 0) and (major() < 9999) and (minor_ > 0) and (minor_ < 9999);
 			// Picked this up from the CUDA code somwhere
 	}
 
@@ -121,27 +128,27 @@ struct compute_capability_t {
 
 inline bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major == rhs.major and lhs.minor == rhs.minor;
+	return lhs.major() == rhs.major() and lhs.minor_ == rhs.minor_;
 }
 inline bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major != rhs.major or lhs.minor != rhs.minor;
+	return lhs.major() != rhs.major() or lhs.minor_ != rhs.minor_;
 }
 inline bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major < rhs.major or (lhs.major == rhs.major and lhs.minor < rhs.minor);
+	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ < rhs.minor_);
 }
 inline bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major < rhs.major or (lhs.major == rhs.major and lhs.minor <= rhs.minor);
+	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ <= rhs.minor_);
 }
 inline bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major > rhs.major or (lhs.major == rhs.major and lhs.minor > rhs.minor);
+	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ > rhs.minor_);
 }
 inline bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
-	return lhs.major > rhs.major or (lhs.major == rhs.major and lhs.minor >= rhs.minor);
+	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ >= rhs.minor_);
 }
 
 inline compute_capability_t make_compute_capability(unsigned combined) noexcept
