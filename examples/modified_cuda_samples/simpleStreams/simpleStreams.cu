@@ -206,10 +206,10 @@ int main(int argc, char **argv)
 		std::cout << properties.name << " does not have Compute Capability 1.1 or newer.  Reducing workload.\n";
 	}
 
-	if (compute_capability.major >= 2) {
+	if (compute_capability.major() >= 2) {
 		niterations = 5;
 	} else {
-		if (compute_capability.minor > 1) {
+		if (compute_capability.minor() > 1) {
 			niterations = 5;
 		} else {
 			niterations = 1; // reduced workload for compute capability 1.0 and 1.1
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 	scale_factor = max((32.0f / faux_cores_overall), 1.0f);
 	n = (int)rint((float)n / scale_factor);
 
-	std::cout << "> CUDA Capable: SM " << compute_capability.major << "." << compute_capability.minor << " hardware\n";
+	std::cout << "> CUDA Capable: SM " << compute_capability.major() << "." << compute_capability.minor() << " hardware\n";
 	std::cout
 		<< "> " << properties.multiProcessorCount << " Multiprocessor(s)"
 		<< " x " << faux_cores_per_sm << " (Cores/Multiprocessor) = "

@@ -152,16 +152,25 @@ using grid_dimensions_t       = dimensions_t;
 using grid_block_dimensions_t = dimensions_t;
 
 
+namespace memory {
+namespace shared {
+
 /**
  * Each physical core ("Symmetric Multiprocessor") on an nVIDIA GPU has a space
  * of shared memory (see
  * @link https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
  * ). This type is large enough to hold its size.
+ *
+ * @note actually, uint16_t is usually large enough to hold the shared memory
+ * size (as of Volta/Turing architectures), but there are exceptions to this rule,
+ * so we have to go with the next smallest.
+ *
+ * @todo consider using uint32_t.
  */
-using shared_memory_size_t    = unsigned;
-	// Like size_t, but for shared memory spaces, which, currently in nVIDIA GPUs
-	// are sized at no more than 112 KiB (and usually less; 112 KiB was an
-	// extremal value on the Kepler-based Tesla cards)
+using size_t = unsigned;
+
+} // namespace shared
+} // namespace memory
 
 /**
  * Holds the parameters necessary to "launch" a CUDA kernel (i.e. schedule it for
@@ -170,13 +179,13 @@ using shared_memory_size_t    = unsigned;
 typedef struct {
 	grid_dimensions_t       grid_dimensions;
 	grid_block_dimensions_t block_dimensions;
-	shared_memory_size_t    dynamic_shared_memory_size; // in bytes
+	memory::shared::size_t    dynamic_shared_memory_size; // in bytes
 } launch_configuration_t;
 
 inline launch_configuration_t make_launch_config(
 	grid_dimensions_t       grid_dimensions,
 	grid_block_dimensions_t block_dimensions,
-	shared_memory_size_t    dynamic_shared_memory_size = 0) noexcept
+	memory::shared::size_t    dynamic_shared_memory_size = 0) noexcept
 {
 	return { grid_dimensions, block_dimensions, dynamic_shared_memory_size };
 }

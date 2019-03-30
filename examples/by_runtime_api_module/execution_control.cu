@@ -54,7 +54,7 @@ __global__ void grid_cooperating_foo(int bar)
 
 std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc)
 {
-	return os << cc.major << '.' << cc.minor;
+	return os << cc.major() << '.' << cc.minor();
 }
 
 int main(int argc, char **argv)

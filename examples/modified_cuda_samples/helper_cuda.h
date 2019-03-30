@@ -56,7 +56,7 @@
 
 inline std::ostream& operator<< (std::ostream& os, const cuda::device::compute_capability_t& cc)
 {
-	return os << cc.major << '.' << cc.minor;
+	return os << cc.major() << '.' << cc.minor();
 }
 
 #ifdef __CUDA_RUNTIME_H__
@@ -87,7 +87,7 @@ inline int gpuDeviceInit(int device_id)
 			"no threads can use ::cudaSetDevice().\n");
 	}
 
-	if (properties.compute_capability().major < 1) {
+	if (properties.compute_capability().major() < 1) {
 		die_("gpuDeviceInit(): GPU device does not support CUDA.\n");
 	}
 
@@ -129,7 +129,7 @@ inline int gpuGetMaxGflopsDeviceId()
 	if (best_sm_arch > 2) {
 		std::remove_if(device_ids.begin(), device_ids.end(),
 			[best_sm_arch](cuda::device::id_t id) {
-				return cuda::device::get(id).properties().compute_capability().major < (unsigned) best_sm_arch;
+				return cuda::device::get(id).properties().compute_capability().major() < (unsigned) best_sm_arch;
 			}
 		);
 	}

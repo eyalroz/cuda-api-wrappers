@@ -51,7 +51,7 @@ struct attributes_t : cudaFuncAttributes {
  * @param compute_capability the GPU device's compute capability figure (e.g. 3.5
  * or 5.0), which fully determines the maximum allocation size
  */
-inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
+inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 	attributes_t attributes, device::compute_capability_t compute_capability)
 {
 	auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
@@ -193,7 +193,7 @@ namespace device_function {
  * pointer.
  *
  */
-inline shared_memory_size_t maximum_dynamic_shared_memory_per_block(
+inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 	const device_function_t& device_function, device::compute_capability_t compute_capability)
 {
 	return device_function::maximum_dynamic_shared_memory_per_block(
@@ -218,7 +218,7 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
                               device,
 	const device_function_t&  device_function,
 	grid_block_dimension_t    num_threads_per_block,
-	shared_memory_size_t      dynamic_shared_memory_per_block,
+	memory::shared::size_t     dynamic_shared_memory_per_block,
 	bool                      disable_caching_override = false);
 
 } // namespace device_function
