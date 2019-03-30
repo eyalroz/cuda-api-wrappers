@@ -174,7 +174,7 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 	device_t<>                device,
 	const device_function_t&  device_function,
 	grid_block_dimension_t    num_threads_per_block,
-	shared_memory_size_t      dynamic_shared_memory_per_block,
+	memory::shared::size_t      dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
 	device::current::scoped_override_t<> set_device_for_this_context(device.id());

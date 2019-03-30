@@ -43,7 +43,7 @@ struct compute_architecture_t {
 	 * so you might not get the maxima here without making this configuration
 	 * setting
 	 */
-	shared_memory_size_t max_shared_memory_per_block() const;
+	memory::shared::size_t max_shared_memory_per_block() const;
 	const char* name() const { return name(major); }
 
 	bool is_valid() const noexcept
@@ -105,7 +105,7 @@ struct compute_capability_t {
 	 * so you might not get the maxima here without making this configuration
 	 * setting
 	 */
-	shared_memory_size_t max_shared_memory_per_block() const;
+	memory::shared::size_t max_shared_memory_per_block() const;
 
 	unsigned major() const { return architecture.major; }
 

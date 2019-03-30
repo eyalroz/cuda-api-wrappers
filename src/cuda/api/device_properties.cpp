@@ -71,9 +71,9 @@ const char* compute_architecture_t::name(unsigned architecture_number)
 	return detail::get_arch_value(compute_architecture_t{architecture_number}, arch_names);
 }
 
-shared_memory_size_t compute_architecture_t::max_shared_memory_per_block() const
+memory::shared::size_t compute_architecture_t::max_shared_memory_per_block() const
 {
-	enum : shared_memory_size_t { KiB = 1024 };
+	enum : memory::shared::size_t { KiB = 1024 };
 	// On some architectures, the shared memory / L1 balance is configurable,
 	// so you might not get the maxima here without making this configuration
 	// setting
@@ -139,9 +139,9 @@ unsigned compute_architecture_t::max_in_flight_threads_per_processor() const {
 	return (detail::get_arch_value(*this, max_in_flight_threads_values));
 }
 
-shared_memory_size_t compute_capability_t::max_shared_memory_per_block() const
+memory::shared::size_t compute_capability_t::max_shared_memory_per_block() const
 {
-	enum : shared_memory_size_t { KiB = 1024 };
+	enum : memory::shared::size_t { KiB = 1024 };
 
 	static const std::array<std::pair<unsigned, unsigned>, 6> max_shared_memory_values {
 	{
