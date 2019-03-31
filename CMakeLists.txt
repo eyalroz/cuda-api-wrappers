@@ -99,6 +99,7 @@ target_include_directories(
 		PUBLIC
 		"$<INSTALL_INTERFACE:include>"
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
+		"${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
 )
 
 if(WIN32)
