@@ -553,7 +553,7 @@ namespace async {
  * devices.
  */
 inline void prefetch(
-	void*               managed_ptr,
+	const void*         managed_ptr,
 	size_t              num_bytes,
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
