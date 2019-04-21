@@ -68,8 +68,11 @@ option(EXPORT_BUILD_DIR "Enables external use without install" OFF)
 # CUDA
 # -------------
 
-#find_package(CUDA 7.0 REQUIRED) # Why do I to do this damn it ?!
-#include_directories( "${CUDA_TOOLKIT_INCLUDE}" )
+# While this should not be necessary with CMake 3.8 and later,
+# it apparently _is_ necessary to allow non-CUDA C++ code access
+# to the CUDA libraries
+find_package(CUDA REQUIRED)
+
 include_directories( ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} )
 include(HandleCUDAComputeCapability)
 
@@ -80,6 +83,7 @@ set(CMAKE_CUDA_EXTENSIONS ON)
 
 set(CUDA_SEPARABLE_COMPILATION ON) # Does this work with native CUDA support?
 set(CUDA_PROPAGATE_HOST_FLAGS OFF) # Does this work with native CUDA support?
+
 
 # -----------------------
 # Main target(s)
@@ -102,17 +106,23 @@ target_include_directories(
 		"${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
 )
 
-if(WIN32)
-	# Windows users report that CMake has trouble 
-	set(CUDA_LIBRARIES "cudadevrt.lib;cudart.lib")
-	target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES})
-endif()
+target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
 
 # -----------------------
 # Examples / Tests
 # -----------------------
 
-link_libraries(${CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES} cuda-api-wrappers)
+# This next line should have been enough to make the example programs
+# link against the CUDA runtime library. However, users have reported
+# that doesn't actually happen in some cases / on some platforms; see
+# the project page for details and specifically issue #106. It has
+# been removed in favor of relying on the find_package(CUDA) line
+# above, despite the deprecation of that method of locating CUDA
+# libraries.
+#
+#link_libraries(${CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES})
+
+link_libraries(cuda-api-wrappers)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "examples/bin")
 add_executable(vectorAdd EXCLUDE_FROM_ALL examples/modified_cuda_samples/vectorAdd/vectorAdd.cu)
