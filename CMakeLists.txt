@@ -69,12 +69,21 @@ option(EXPORT_BUILD_DIR "Enables external use without install" OFF)
 # -------------
 
 # While this should not be necessary with CMake 3.8 and later,
-# it apparently _is_ necessary to allow non-CUDA C++ code access
-# to the CUDA libraries
-find_package(CUDA REQUIRED)
+# it apparently _is_ necessary to achieve the following:
+# 
+# 1. Allow non-CUDA C++ code access to the CUDA libraries
+# 2. Determine the gencode/arch/code flags for the GPUs on the host (= target) machine
+#
+# so...
+include(FindCUDA) 
 
 include_directories( ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} )
-include(HandleCUDAComputeCapability)
+
+cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_TMP Auto)
+set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS_TMP} CACHE STRING "CUDA -gencode parameters")
+string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
+
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall" )
 set(CMAKE_CUDA_STANDARD 11)
