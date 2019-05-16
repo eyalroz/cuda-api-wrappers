@@ -228,9 +228,9 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * device's global memory
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source)
+inline void copy_single(T* destination, const T* source)
 {
-	copy(&destination, &source, sizeof(T));
+	copy(destination, source, sizeof(T));
 }
 
 namespace async {
