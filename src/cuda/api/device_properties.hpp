@@ -193,6 +193,8 @@ struct properties_t : public cudaDeviceProp {
 
 	grid_block_dimension_t max_threads_per_block() const noexcept { return maxThreadsPerBlock; }
 	grid_block_dimension_t max_warps_per_block() const noexcept { return maxThreadsPerBlock / warp_size; }
+	size_t max_shared_memory_per_block() const noexcept { return sharedMemPerBlock; }
+	size_t global_memory_size() const noexcept { return totalGlobalMem; }
 	bool can_map_host_memory() const noexcept { return canMapHostMemory != 0; }
 };
 
