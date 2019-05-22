@@ -15,6 +15,18 @@
 
 #include <cuda_runtime_api.h>
 
+
+// The following un-definitions avoid warnings about
+// the use of `major` and `minor` in certain versions
+// of the GNU C library
+#ifdef major
+#undef major
+#endif
+
+#ifdef minor
+#undef minor
+#endif
+
 namespace cuda {
 
 namespace device {
