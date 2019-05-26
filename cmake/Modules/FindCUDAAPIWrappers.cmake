@@ -17,7 +17,7 @@ find_package(PkgConfig) # will this even help us at all?
 
 find_path(
 	CUDA_API_WRAPPERS_INCLUDE_DIR 
-	cuda/api_wrappers.h
+	cuda/api_wrappers.hpp
 	HINTS
 		${CUDA_INCLUDE_DIRS}
 		${CMAKE_CURRENT_SOURCE_DIR}/cuda-api-wrappers

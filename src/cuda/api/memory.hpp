@@ -228,9 +228,9 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * device's global memory
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source)
+inline void copy_single(T* destination, const T* source)
 {
-	copy(&destination, &source, sizeof(T));
+	copy(destination, source, sizeof(T));
 }
 
 namespace async {
@@ -553,7 +553,7 @@ namespace async {
  * devices.
  */
 inline void prefetch(
-	void*               managed_ptr,
+	const void*         managed_ptr,
 	size_t              num_bytes,
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
