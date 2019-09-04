@@ -167,7 +167,6 @@ struct allocator {
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
-
 } // namespace detail
 
 /**
