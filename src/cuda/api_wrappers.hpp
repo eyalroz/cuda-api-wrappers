@@ -8,6 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_HPP_
 #define CUDA_API_WRAPPERS_HPP_
 
+#include <cuda/api/array.hpp>
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/error.hpp>
