@@ -232,7 +232,7 @@ void copy(const array::array_t<T, 3>& destination, const void *source)
 	copyParams.srcPtr = make_cudaPitchedPtr(
 	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
 
-	copyParams.dstArray = destination.array_ptr_;
+	copyParams.dstArray = destination.get();
 
 	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
 
@@ -240,11 +240,69 @@ void copy(const array::array_t<T, 3>& destination, const void *source)
 
 	copyParams.kind = cudaMemcpyDefault;
 
-	// Copy to device memory some data located at address h_data
-	// in host memory
 	auto result = cudaMemcpy3D(&copyParams);
 	if (is_failure(result)) {
 		std::string error_message("Synchronously copying into array");
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 3>& source)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	copyParams.dstPtr = make_cudaPitchedPtr(
+	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+
+	copyParams.srcArray = source.get();
+
+	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3D(&copyParams);
+	if (is_failure(result)) {
+		std::string error_message("Synchronously copying from array");
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(const array::array_t<T, 2>& destination, const void *source)
+{
+	// Consider the padded array:
+	// 
+	// x x x x o o o
+	// x x x x o o o
+	// x x x x o o o
+	// 
+	// o = padded element
+	// x = actually used element of the array
+	// 
+	// The pitch in the example above is 7 * sizeof(T)
+	// The width is 4 * sizeof(T)
+	// The height is 3
+	// 
+	// See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
+	// 
+	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault);
+
+	if (is_failure(result)) {
+		std::string error_message("Synchronously copying into array");
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 2>& source)
+{
+	auto result = cudaMemcpy2DFromArray(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault);
+
+	if (is_failure(result)) {
+		std::string error_message("Synchronously copying from array");
 		throw_if_error(result, error_message);
 	}
 }
@@ -303,7 +361,7 @@ void copy(const array::array_t<T, 3>& destination, const void *source, stream::i
 	copyParams.srcPtr = make_cudaPitchedPtr(
 	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
 
-	copyParams.dstArray = destination.array_ptr_;
+	copyParams.dstArray = destination.get();
 
 	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
 
@@ -314,6 +372,51 @@ void copy(const array::array_t<T, 3>& destination, const void *source, stream::i
 	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
 	if (is_failure(result)) {
 		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t stream_id)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	copyParams.dstPtr = make_cudaPitchedPtr(
+	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+
+	copyParams.srcArray = source.get();
+
+	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
+	if (is_failure(result)) {
+		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(const array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+{
+	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault, stream_id);
+
+	if (is_failure(result)) {
+		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::id_t stream_id)
+{
+	auto result = cudaMemcpy2DFromArrayAsync(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault, stream_id);
+
+	if (is_failure(result)) {
+		std::string error_message("Synchronously copying from array");
 		throw_if_error(result, error_message);
 	}
 }
