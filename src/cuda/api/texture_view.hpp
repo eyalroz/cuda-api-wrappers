@@ -21,27 +21,34 @@ namespace cuda {
 
 namespace texture {
 
+struct descriptor_t : public cudaTextureDesc {
+	inline descriptor_t() {
+		memset(static_cast<cudaTextureDesc*>(this), 0, sizeof(cudaTextureDesc));
+		this->addressMode[0] = cudaAddressModeBorder;
+		this->addressMode[1] = cudaAddressModeBorder;
+		this->addressMode[2] = cudaAddressModeBorder;
+		this->filterMode = cudaFilterModePoint;
+		this->readMode = cudaReadModeElementType;
+		this->normalizedCoords = 0;
+	}
+};
+
+/**
+ * @brief Use texture memory for optimized read only cache access
+ *
+ * This represents a view on the memory owned by a CUDA array.
+ */
 class texture_view {
 	public:
 	template <typename T, size_t DIMS>
-	texture_view(const cuda::array::array_t<T, DIMS>& arr) {
+	texture_view(const cuda::array::array_t<T, DIMS>& arr, descriptor_t desc = descriptor_t()) {
 		cudaResourceDesc resDesc;
 		memset(&resDesc, 0, sizeof(resDesc));
 		resDesc.resType = cudaResourceTypeArray;
 		resDesc.res.array.array = arr.get();
 
-		// // Specify texture object parameters
-		cudaTextureDesc texDesc;
-		memset(&texDesc, 0, sizeof(texDesc));
-		texDesc.addressMode[0] = cudaAddressModeBorder;
-		texDesc.addressMode[1] = cudaAddressModeBorder;
-		texDesc.addressMode[2] = cudaAddressModeBorder;
-		texDesc.filterMode = cudaFilterModePoint;
-		texDesc.readMode = cudaReadModeElementType;
-		texDesc.normalizedCoords = 0;
-
 		// // Create texture object
-		auto status = cudaCreateTextureObject(&tobj_, &resDesc, &texDesc, NULL);
+		auto status = cudaCreateTextureObject(&tobj_, &resDesc, &desc, NULL);
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
