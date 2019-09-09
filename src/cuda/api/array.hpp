@@ -10,84 +10,137 @@
 #ifndef CUDA_API_WRAPPERS_ARRAY_HPP
 #define CUDA_API_WRAPPERS_ARRAY_HPP
 
-#include <cuda/api/error.hpp>
 #include <cuda/api/current_device.hpp>
+#include <cuda/api/error.hpp>
 
-#include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 
-#include <array>
 #include <algorithm>
+#include <array>
+#include <numeric>
 
 namespace cuda {
 
 namespace array {
-template<typename T, size_t DIMS> class array_t;
-}
 
-namespace memory {
+namespace detail {
 
-template<typename T>
-void copy(const array::array_t<T, 3>& destination, const void *source);
+/**
+ * @brief Do not use directly
+ *
+ */
+template <typename T, size_t NDIMS>
+class array_base {
 
-}
+protected:
+	array_base(dimensions_t<NDIMS> dims, cudaArray* array_ptr) :
+	    dims_(dims),
+	    array_ptr_(array_ptr) {}
 
-namespace array {
+public:
+	array_base()                        = delete;
+	array_base(const array_base& other) = delete;
 
-template<typename T, size_t DIMS>
-class array_t {
-	//
-	// TODO: throw an error at compile time if user wants to
-	// create an instance, which is not a template specialization. This is
-	// necessary because different CUDA API functions must be used to handle
-	// e.g. 2D or 3D arrays.
-	// 
-};
-
-template<>
-class array_t<float, 3> {
-	public: 
-
-	array_t(cuda::device::id_t device_id, std::array<size_t, 3> dims) : dims_(dims) {
-		cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-		// Up to now: stick to the defaults for channel description
-		auto channel_desc = cudaCreateChannelDesc<float>();
-		cudaExtent ext = make_cudaExtent(dims[0], dims[1], dims[2]);
-		auto status = cudaMalloc3DArray(&array_ptr_, &channel_desc, ext);
-		throw_if_error(status, "failed allocating float 3D CUDA array");
+	array_base(array_base&& other) :
+	    array_ptr_(other.array_ptr_),
+	    dims_(other.dims_) {
+		other.array_ptr_ = nullptr;
+		other.dims_      = {0, 0, 0};
 	}
 
-	array_t() = delete;
-	array_t(const array_t& other) = delete;
-
-	~array_t() {
-		auto status = cudaFreeArray(array_ptr_);
-		throw_if_error(status, "failed freeing float 3D CUDA array");
+	~array_base() {
+		if (array_ptr_) {
+			auto status = cudaFreeArray(array_ptr_);
+			throw_if_error(status, "failed freeing CUDA array");
+		}
 	}
+
+	cudaArray* get() const noexcept { return array_ptr_; }
+
+	dimensions_t<NDIMS> dims() const noexcept { return dims_; }
 
 	size_t size() const noexcept {
-		return dims_[0] * dims_[1] * dims_[2];
+		using dimensions_value_type = typename dimensions_t<NDIMS>::value_type;
+		return std::accumulate(
+		    dims_.begin(), dims_.end(), static_cast<dimensions_value_type>(1),
+		    [](const auto& a, const auto& b) { return a * b; });
 	}
 
-	std::array<size_t, 3> dims() const noexcept {
-		return dims_;
+	size_t size_bytes() const noexcept { return size() * sizeof(T); }
+
+protected:
+	dimensions_t<NDIMS> dims_;
+	cudaArray*          array_ptr_;
+};
+
+} // namespace detail
+
+/**
+ * @brief Wrapper for 2D and 3D arrays
+ * 
+ * Useful in combination with texture memory.
+ * 
+ * @note Only template specializations of this class can be created, because
+ * CUDA does not support any number of dimensions for a CUDA array.
+ */
+template <typename T, size_t NDIMS>
+class array_t {
+public:
+	array_t() = delete;
+};
+
+template <typename T>
+class array_t<T, 3> : public detail::array_base<T, 3> {
+
+private:
+	static cudaArray*
+	malloc_3d_cuda_array(cuda::device::id_t device_id, dimensions_t<3> dims) {
+		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
+		    device_id);
+		// Up to now: stick to the defaults for channel description
+		auto       channel_desc = cudaCreateChannelDesc<float>();
+		cudaExtent ext          = make_cudaExtent(dims[0], dims[1], dims[2]);
+		cudaArray* array_ptr;
+		auto       status = cudaMalloc3DArray(&array_ptr, &channel_desc, ext);
+		throw_if_error(status, "failed allocating 3D CUDA array");
+		return array_ptr;
 	}
 
-	cudaArray* get() const noexcept {
-		return array_ptr_;
+public:
+	array_t(cuda::device::id_t device_id, dimensions_t<3> dims) :
+	    detail::array_base<float, 3>(
+	        dims,
+	        malloc_3d_cuda_array(device_id, dims)) {}
+};
+
+template <>
+class array_t<float, 2> : public detail::array_base<float, 2> {
+
+private:
+	static cudaArray*
+	malloc_2d_cuda_array(cuda::device::id_t device_id, dimensions_t<2> dims) {
+		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
+		    device_id);
+		// Up to now: stick to the defaults for channel description
+		auto       channel_desc = cudaCreateChannelDesc<float>();
+		cudaArray* array_ptr;
+		auto       status =
+		    cudaMallocArray(&array_ptr, &channel_desc, dims[0], dims[1]);
+		throw_if_error(status, "failed allocating 2D CUDA array");
+		return array_ptr;
 	}
 
-	
-	friend void cuda::memory::copy<float>(const array_t<float, 3>& destination, const void *source);
-
-	private:
-		std::array<size_t, 3> dims_;
-		cudaArray* array_ptr_;
+public:
+	array_t(cuda::device::id_t device_id, dimensions_t<2> dims) :
+	    detail::array_base<float, 2>(
+	        dims,
+	        malloc_2d_cuda_array(device_id, dims)) {}
 };
 
 
-}
+} // namespace array
 
-}
+} // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_ARRAY_HPP

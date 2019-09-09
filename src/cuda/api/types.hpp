@@ -18,6 +18,7 @@
 #endif
 
 #include <type_traits>
+#include <array>
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -76,6 +77,10 @@ using grid_dimension_t        = decltype(dim3::x);
  */
 using grid_block_dimension_t  = grid_dimension_t;
 
+namespace array {
+template<size_t NDIMS>
+using dimensions_t = std::array<size_t, NDIMS>;
+}
 
 namespace event {
 using id_t              = cudaEvent_t;
