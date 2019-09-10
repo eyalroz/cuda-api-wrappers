@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
 	{ auto event = cuda::event::create(device); }
 	auto event_1 = cuda::event::create(
-		device.id(),
+		device,
 		cuda::event::sync_by_blocking,
 		cuda::event::do_record_timings,
 		cuda::event::not_interprocess);

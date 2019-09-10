@@ -37,11 +37,14 @@ namespace event {
 template <bool DeviceAssumedCurrent>
 inline event_t create(
 	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync = sync_by_busy_waiting,
-	bool                            records_timing     = do_record_timings,
-	bool                            interprocess       = not_interprocess)
+	bool                            uses_blocking_sync,
+	bool                            records_timing,
+	bool                            interprocess)
 {
-	return create(device.id(), uses_blocking_sync, records_timing, interprocess);
+	auto device_id = device.id();
+		// Yes, we need the ID explicitly even on the current device,
+		// because event_t's don't have an implicit device ID.
+	return event::detail::create(device_id , uses_blocking_sync, records_timing, interprocess);
 }
 
 } // namespace event_t
@@ -150,9 +153,8 @@ inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
     bool          records_timing,
     bool          interprocess)
 {
-	event_t ev {event::create(device_id_, uses_blocking_sync, records_timing, interprocess)};
-	// so far, we've created an event which is not associated with this stream; we
-	// must specifically enqueue it:
+	event_t ev { event::detail::create(device_id(), uses_blocking_sync, records_timing, interprocess) };
+	// Note that, at this point, the event is not associated with this enqueue object's stream.
 	this->event(ev);
 	return ev;
 }
