@@ -64,7 +64,7 @@ public:
 		using dimensions_value_type = typename dimensions_t<NDIMS>::value_type;
 		return std::accumulate(
 		    dims_.begin(), dims_.end(), static_cast<dimensions_value_type>(1),
-		    [](const auto& a, const auto& b) { return a * b; });
+		    [](const dimensions_value_type& a, const dimensions_value_type& b) { return a * b; });
 	}
 
 	size_t size_bytes() const noexcept { return size() * sizeof(T); }
