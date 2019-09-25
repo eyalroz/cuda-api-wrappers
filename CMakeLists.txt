@@ -151,6 +151,7 @@ add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module
 add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
 add_executable(unified_addressing EXCLUDE_FROM_ALL examples/by_runtime_api_module/unified_addressing.cpp)
 add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
+add_executable(array_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/array_management.cu)
 #----
 add_custom_target(examples_by_runtime_api_module)
 add_dependencies(examples_by_runtime_api_module
@@ -161,6 +162,7 @@ add_dependencies(examples_by_runtime_api_module
 	event_management
 	unified_addressing
 	io_compute_overlap_with_streams
+	array_management
 )
 
 add_custom_target(examples)
