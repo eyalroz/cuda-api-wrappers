@@ -40,7 +40,7 @@ int main() {
 	constexpr size_t d = 3;
 	cuda::array::dimensions_t<3> dims = {w, h, d};
 
-	cuda::array::array_t<float, 3> arr0(device.id(), dims);
+	cuda::array::array_t<float, 3> arr0(device, dims);
 	auto ptr_in0 = cuda::memory::managed::make_unique<float[]>(arr0.size());
 	ptr_in0[5] = 6;
 	auto ptr_out0 = cuda::memory::managed::make_unique<float[]>(arr0.size());
@@ -55,7 +55,7 @@ int main() {
 	//
 	// 2D
 	//
-	cuda::array::array_t<float, 2> arr1(device.id() , {w, h});
+	cuda::array::array_t<float, 2> arr1(device , {w, h});
 	auto ptr_in1 = cuda::memory::managed::make_unique<float[]>(arr1.size());
 	ptr_in1[0] = 1;
 	ptr_in1[1] = 2;
@@ -86,7 +86,7 @@ int main() {
 	//
 	// copy between arrays and pointers
 	//
-	cuda::array::array_t<float, 3> arr2(device.id(), dims);
+	cuda::array::array_t<float, 3> arr2(device, dims);
 	cuda::memory::copy(arr2, ptr_out0.get());
 	cuda::memory::copy(ptr_in0.get(), arr2);
 

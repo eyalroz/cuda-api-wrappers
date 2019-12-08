@@ -22,6 +22,8 @@
 
 namespace cuda {
 
+template<bool AssumedCurrent> class device_t;
+
 namespace array {
 
 namespace detail {
@@ -94,10 +96,11 @@ template <typename T>
 class array_t<T, 3> : public detail::array_base<T, 3> {
 
 private:
+
+	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_3d_cuda_array(cuda::device::id_t device_id, dimensions_t<3> dims) {
-		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
-		    device_id);
+	malloc_3d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<3> dims) {
+		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaExtent ext          = make_cudaExtent(dims[0], dims[1], dims[2]);
@@ -108,20 +111,23 @@ private:
 	}
 
 public:
-	array_t(cuda::device::id_t device_id, dimensions_t<3> dims) :
+
+	template<bool AssumedCurrent>
+	array_t(const device_t<AssumedCurrent>& device, dimensions_t<3> dims) :
 	    detail::array_base<float, 3>(
 	        dims,
-	        malloc_3d_cuda_array(device_id, dims)) {}
+	        malloc_3d_cuda_array(device, dims)) {}
+
 };
 
 template <typename T>
 class array_t<T, 2> : public detail::array_base<T, 2> {
 
 private:
+	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_2d_cuda_array(cuda::device::id_t device_id, dimensions_t<2> dims) {
-		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
-		    device_id);
+	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dims) {
+		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaArray* array_ptr;
@@ -132,10 +138,11 @@ private:
 	}
 
 public:
-	array_t(cuda::device::id_t device_id, dimensions_t<2> dims) :
+	template<bool AssumedCurrent>
+	array_t(const device_t<AssumedCurrent>& device, dimensions_t<2> dims) :
 	    detail::array_base<T, 2>(
 	        dims,
-	        malloc_2d_cuda_array(device_id, dims)) {}
+	        malloc_2d_cuda_array(device, dims)) {}
 };
 
 
