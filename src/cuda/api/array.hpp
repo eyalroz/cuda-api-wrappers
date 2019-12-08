@@ -99,7 +99,7 @@ private:
 		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
 		    device_id);
 		// Up to now: stick to the defaults for channel description
-		auto       channel_desc = cudaCreateChannelDesc<float>();
+		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaExtent ext          = make_cudaExtent(dims[0], dims[1], dims[2]);
 		cudaArray* array_ptr;
 		auto       status = cudaMalloc3DArray(&array_ptr, &channel_desc, ext);
@@ -114,8 +114,8 @@ public:
 	        malloc_3d_cuda_array(device_id, dims)) {}
 };
 
-template <>
-class array_t<float, 2> : public detail::array_base<float, 2> {
+template <typename T>
+class array_t<T, 2> : public detail::array_base<T, 2> {
 
 private:
 	static cudaArray*
@@ -123,7 +123,7 @@ private:
 		cuda::device::current::scoped_override_t<> set_device_for_this_scope(
 		    device_id);
 		// Up to now: stick to the defaults for channel description
-		auto       channel_desc = cudaCreateChannelDesc<float>();
+		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaArray* array_ptr;
 		auto       status =
 		    cudaMallocArray(&array_ptr, &channel_desc, dims[0], dims[1]);
@@ -133,7 +133,7 @@ private:
 
 public:
 	array_t(cuda::device::id_t device_id, dimensions_t<2> dims) :
-	    detail::array_base<float, 2>(
+	    detail::array_base<T, 2>(
 	        dims,
 	        malloc_2d_cuda_array(device_id, dims)) {}
 };
