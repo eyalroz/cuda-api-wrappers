@@ -186,6 +186,13 @@ inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurr
 
 namespace device {
 
+template <bool AssumedCurrent>
+inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes)
+{
+	return memory::device::allocate(device.id(), size_in_bytes);
+}
+
+
 namespace async {
 
 template <bool StreamIsOnCurrentDevice>
@@ -220,7 +227,31 @@ inline void prefetch(
 
 } // namespace async
 
+
+template <bool AssumedCurrent>
+inline void* allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                           num_bytes,
+	initial_visibility_t             initial_visibility)
+{
+	return detail::allocate(device.id(), num_bytes, initial_visibility);
+}
+
+
 } // namespace managed
+
+namespace mapped {
+
+template <bool AssumedCurrent>
+inline region_pair allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                           size_in_bytes,
+	region_pair::allocation_options  options)
+{
+	return cuda::memory::mapped::allocate(device.id(), size_in_bytes, options);
+}
+
+} // namespace mapped
 
 } // namespace memory
 
