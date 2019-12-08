@@ -24,7 +24,7 @@ inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_byt
 	return memory::device::allocate(device.id(), size_in_bytes);
 }
 
-}
+} // namespace device
 
 namespace managed {
 
@@ -34,7 +34,7 @@ inline void* allocate(
 	size_t                           num_bytes,
 	initial_visibility_t             initial_visibility)
 {
-	return allocate(device.id(), num_bytes, initial_visibility);
+	return detail::allocate(device.id(), num_bytes, initial_visibility);
 }
 
 } // namespace managed
