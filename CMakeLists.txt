@@ -187,7 +187,7 @@ install(
 install(
 	DIRECTORY src/cuda
 	DESTINATION include
-	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
+	FILES_MATCHING REGEX "\\.(h|hpp|cuh)$"
 )
 
 install(
