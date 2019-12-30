@@ -44,7 +44,7 @@ add_executable(error_handling by_runtime_api_module/error_handling.cu)
 add_executable(device_management by_runtime_api_module/device_management.cpp)
 add_executable(execution_control by_runtime_api_module/execution_control.cu)
 # A weird linking issue
-target_compile_options(execution_control PUBLIC -rdc true)
+set_target_properties(execution_control PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 add_executable(stream_management by_runtime_api_module/stream_management.cu)
 add_executable(event_management by_runtime_api_module/event_management.cu)
 add_executable(unified_addressing by_runtime_api_module/unified_addressing.cpp)
