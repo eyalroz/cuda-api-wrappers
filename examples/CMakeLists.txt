@@ -30,7 +30,7 @@ set(CMAKE_CUDA_EXTENSIONS ON)
 
 link_libraries(cuda-api-wrappers)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 add_executable(vectorAdd modified_cuda_samples/vectorAdd/vectorAdd.cu)
 add_executable(inlinePTX modified_cuda_samples/inlinePTX/inlinePTX.cu)
 add_executable(simpleStreams modified_cuda_samples/simpleStreams/simpleStreams.cu)
