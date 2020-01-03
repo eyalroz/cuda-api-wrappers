@@ -11,26 +11,20 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-PROJECT(cuda-api-wrappers LANGUAGES CUDA CXX)
-
-# # No versioning for now
-#
-# set(PROJECT_MAJOR_VERSION 0)
-# set(PROJECT_MINOR_VERSION 1)
-# set(PROJECT_PATCH_VERSION 0)
-# set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
+PROJECT(cuda-api-wrappers
+	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
+	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
+	LANGUAGES CUDA CXX)
 
 include(FindCUDA) 
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
-add_library(
-	cuda-api-wrappers
+add_library(cuda-api-wrappers
 	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
 )
-
 
 set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD 11)
 set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -46,10 +40,6 @@ target_include_directories(
 # The following lines _should_ have been something like:
 # target_link_libraries(cuda-api-wrappers PUBLIC CUDA::CUDALibs)
 # ... but that's not supported.
-# Also, if we make the inclusion here public (which, really, it should be) - 
-# we get the source directory as part of the include directories in the exported
-# cuda-api-wrappers-config.cmake file - even if 
-# CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES is empty... That seems like a bug.
 target_include_directories(cuda-api-wrappers PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(cuda-api-wrappers PUBLIC ${CUDA_LIBRARIES})
 
