@@ -6,8 +6,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Project name, version & build type
 # -----------------------------------
 
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-
 if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# Avoid a build failure when the BUILD_SHARED_LIBS variable is set to true.
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -52,11 +50,10 @@ target_include_directories(
 # we get the source directory as part of the include directories in the exported
 # cuda-api-wrappers-config.cmake file - even if 
 # CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES is empty... That seems like a bug.
-target_include_directories(cuda-api-wrappers PRIVATE "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+target_include_directories(cuda-api-wrappers PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(cuda-api-wrappers PUBLIC ${CUDA_LIBRARIES})
 
 option(BUILD_EXAMPLES "Build example programs" OFF)
-
 
 if (BUILD_EXAMPLES)
 	add_subdirectory(examples)
