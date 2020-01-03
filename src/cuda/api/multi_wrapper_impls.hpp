@@ -168,6 +168,91 @@ pointer_t<T>::device() const
 	return cuda::device::get(attributes().device); 
 }
 
+namespace async {
+
+template <bool StreamIsOnCurrentDevice>
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+{
+	detail::copy(destination, source, num_bytes, stream.id());
+}
+
+template <typename T, bool StreamIsOnCurrentDevice>
+inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream)
+{
+	detail::copy(&destination, &source, sizeof(T), stream.id());
+}
+
+} // namespace async
+
+namespace device {
+
+template <bool AssumedCurrent>
+inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes)
+{
+	return memory::device::allocate(device.id(), size_in_bytes);
+}
+
+
+namespace async {
+
+template <bool StreamIsOnCurrentDevice>
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+{
+	detail::set(start, byte_value, num_bytes, stream.id());
+}
+
+template <bool StreamIsOnCurrentDevice>
+inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+{
+	detail::zero(start, num_bytes, stream.id());
+}
+
+} // namespace async
+
+} // namespace device
+
+namespace managed {
+
+namespace async {
+
+template <bool DestinationIsCurrentDevice>
+inline void prefetch(
+	const void*                                  managed_ptr,
+	size_t                                       num_bytes,
+	cuda::device_t<DestinationIsCurrentDevice>&  destination,
+	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id)
+{
+	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream_id.id());
+}
+
+} // namespace async
+
+
+template <bool AssumedCurrent>
+inline void* allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                           num_bytes,
+	initial_visibility_t             initial_visibility)
+{
+	return detail::allocate(device.id(), num_bytes, initial_visibility);
+}
+
+
+} // namespace managed
+
+namespace mapped {
+
+template <bool AssumedCurrent>
+inline region_pair allocate(
+	cuda::device_t<AssumedCurrent>&  device,
+	size_t                           size_in_bytes,
+	region_pair::allocation_options  options)
+{
+	return cuda::memory::mapped::allocate(device.id(), size_in_bytes, options);
+}
+
+} // namespace mapped
+
 } // namespace memory
 
 namespace device_function {

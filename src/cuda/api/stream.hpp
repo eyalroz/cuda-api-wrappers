@@ -310,7 +310,7 @@ public: // mutators
 		{
 			// It is not necessary to make the device current, according to:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			memory::async::copy(destination, source, num_bytes, stream_id_);
+			memory::async::detail::copy(destination, source, num_bytes, stream_id_);
 		}
 
 		/**
@@ -325,7 +325,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::set(destination, byte_value, num_bytes, stream_id_);
+			memory::device::async::detail::set(destination, byte_value, num_bytes, stream_id_);
 		}
 
 		/**
@@ -343,7 +343,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::zero(destination, num_bytes, stream_id_);
+			memory::device::async::detail::zero(destination, num_bytes, stream_id_);
 		}
 
 		/**

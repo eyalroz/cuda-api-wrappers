@@ -23,6 +23,7 @@ namespace cuda {
 
 ///@cond
 template <bool AssumedCurrent> class device_t;
+template <bool AssumesDeviceIsCurrent> class stream_t;
 ///@endcond
 
 /**
@@ -127,17 +128,6 @@ inline void* allocate(size_t num_bytes)
 	return allocated;
 }
 
-} // namespace detail
-
-/**
- * Free a region of device-side memory which was allocated with @ref allocate.
- */
-inline void free(void* ptr)
-{
-	auto result = cudaFree(ptr);
-	cuda::throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
-}
-
 /**
  * Allocate device-side memory on a CUDA device.
  *
@@ -155,6 +145,17 @@ inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 	return memory::device::detail::allocate(size_in_bytes);
 }
 
+} // namespace detail
+
+/**
+ * Free a region of device-side memory which was allocated with @ref allocate.
+ */
+inline void free(void* ptr)
+{
+	auto result = cudaFree(ptr);
+	cuda::throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+}
+
 template <bool AssumedCurrent>
 inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes);
 
@@ -166,6 +167,7 @@ struct allocator {
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
+
 } // namespace detail
 
 /**
@@ -323,6 +325,8 @@ inline void copy_single(T* destination, const T* source)
 
 namespace async {
 
+namespace detail {
+
 /**
  * Asynchronously copies data between memory spaces or within a memory space.
  *
@@ -437,23 +441,86 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 	copy(&destination, &source, sizeof(T), stream_id);
 }
 
+} // namespace detail
+
+/**
+ * Asynchronously copies data between memory spaces or within a memory space.
+ *
+ * @note Since we assume Compute Capability >= 2.0, all devices support the
+ * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
+ * where the data is located, and one does not have to specify this.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source A pointer to a a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ */
+template <bool StreamIsOnCurrentDevice>
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+
+/**
+ * Synchronously copies a single (typed) value between memory spaces or within a memory space.
+ *
+ * @note asynchronous version of @ref memory::copy_single
+ *
+ * @param destination a value residing either in host memory or on any CUDA
+ * device's global memory
+ * @param source a value residing either in host memory or on any CUDA
+ * device's global memory
+ */
+template <typename T, bool StreamIsOnCurrentDevice>
+inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream);
+
 } // namespace async
 
 namespace device {
 
 namespace async {
 
-inline void set(void* buffer_start, int byte_value, size_t num_bytes, stream::id_t stream_id)
+namespace detail {
+
+inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stream_id)
 {
 	// TODO: Double-check that this call doesn't require setting the current device
-	auto result = cudaMemsetAsync(buffer_start, byte_value, num_bytes, stream_id);
+	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_id);
 	throw_if_error(result, "memsetting an on-device buffer");
 }
 
-inline void zero(void* buffer_start, size_t num_bytes, stream::id_t stream_id)
+inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
 {
-	set(buffer_start, 0, num_bytes, stream_id);
+	set(start, 0, num_bytes, stream_id);
 }
+
+
+} // namespace detail
+
+/**
+ * Asynchronously sets all bytes in a stretch of memory to a single value
+ *
+ * @note Since we assume Compute Capability >= 2.0, all devices support the
+ * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
+ * where the data is located, and one does not have to specify this.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source A pointer to a a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream The stream on which to schedule this action
+ */
+template <bool StreamIsOnCurrentDevice>
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+
+/**
+ * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
+ */
+template <bool StreamIsOnCurrentDevice>
+inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
 
 } // namespace async
 
@@ -660,6 +727,15 @@ struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
 
+inline void* allocate(
+	cuda::device::id_t    device_id,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
+{
+	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	return detail::allocate(num_bytes, initial_visibility);
+}
+
 } // namespace detail
 
 /**
@@ -674,22 +750,11 @@ struct deleter {
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-
-inline void* allocate(
-	cuda::device::id_t    device_id,
-	size_t                num_bytes,
-	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
-{
-	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
-	return detail::allocate(num_bytes, initial_visibility);
-}
-
 template <bool AssumedCurrent>
 inline void* allocate(
 	cuda::device_t<AssumedCurrent>&  device,
-	size_t                                num_bytes,
-	initial_visibility_t                  initial_visibility =
-		initial_visibility_t::to_all_devices
+	size_t                           num_bytes,
+	initial_visibility_t             initial_visibility = initial_visibility_t::to_all_devices
 );
 
 /**
@@ -707,11 +772,8 @@ inline void free(void* managed_ptr)
 
 namespace async {
 
-/**
- * @brief Prefetches a region of managed memory to a specific device, so
- * it can later be used there without waiting for I/O fromm the host or other
- * devices.
- */
+namespace detail {
+
 inline void prefetch(
 	const void*         managed_ptr,
 	size_t              num_bytes,
@@ -723,6 +785,21 @@ inline void prefetch(
 		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
 		 + cuda::detail::ptr_as_hex(managed_ptr) + " to device " + std::to_string(destination));
 }
+
+} // namespace detail
+
+/**
+ * @brief Prefetches a region of managed memory to a specific device, so
+ * it can later be used there without waiting for I/O fromm the host or other
+ * devices.
+ */
+template <bool DestinationIsCurrentDevice>
+inline void prefetch(
+	const void*                                  managed_ptr,
+	size_t                                       num_bytes,
+	cuda::device_t<DestinationIsCurrentDevice>&  destination,
+	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id);
+
 
 } // namespace async
 

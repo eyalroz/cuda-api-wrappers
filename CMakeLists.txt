@@ -1,22 +1,3 @@
-# CMakeLists.txt for the cuda-api-wrappers project
-#
-# Notes:
-#
-# CUDA is very picky about which compiler you can use.
-# CUDA 7.x supports gcc up to version 4.9.x
-# CUDA 8.x supports gcc up to version 5.x
-# CUDA 9.x supports gcc up to version 6.x
-#
-# (and newer versions of clang seems to support CUDA compilation as well,
-# although the API wrappers haven't been tested with those yet)
-#
-# One way to force the use of a different compiler with CMake is to run it as follows:
-#
-# cmake -D CMAKE_C_COMPILER=/path/to/your/cc -D CMAKE_CXX_COMPILER=/path/to/your/c++ your_project_dir
-#
-# and recall also that libraries must also have been built with a compatible compiler
-#
-
 # We need version 3.8 for native CUDA support in CMake
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
@@ -25,78 +6,23 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Project name, version & build type
 # -----------------------------------
 
-if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-endif()
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 
 if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	# Avoid a build failure when the BUILD_SHARED_LIBS variable is set to true.
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-PROJECT(cuda-api-wrappers
-	LANGUAGES CUDA CXX)
+PROJECT(cuda-api-wrappers LANGUAGES CUDA CXX)
 
-#	# No versioning for now
+# # No versioning for now
 #
-#	set(PROJECT_MAJOR_VERSION 0)
-#	set(PROJECT_MINOR_VERSION 1)
-#	set(PROJECT_PATCH_VERSION 0)
-#	set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
+# set(PROJECT_MAJOR_VERSION 0)
+# set(PROJECT_MINOR_VERSION 1)
+# set(PROJECT_PATCH_VERSION 0)
+# set(PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 
-
-# ----------------------------
-# General C++ build settings
-# ----------------------------
-
-include(CompileWithWarnings)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-include_directories( "src/" )
-
-#----------------
-# Build options
-#----------------
-
-option(EXPORT_BUILD_DIR "Enables external use without install" OFF)
-
-# -------------
-# CUDA
-# -------------
-
-# While this should not be necessary with CMake 3.8 and later,
-# it apparently _is_ necessary to achieve the following:
-# 
-# 1. Allow non-CUDA C++ code access to the CUDA libraries
-# 2. Determine the gencode/arch/code flags for the GPUs on the host (= target) machine
-#
-# so...
 include(FindCUDA) 
-
-include_directories( ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} )
-
-cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_TMP Auto)
-set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS_TMP} CACHE STRING "CUDA -gencode parameters")
-string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
-
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall" )
-set(CMAKE_CUDA_STANDARD 11)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_EXTENSIONS ON)
-
-set(CUDA_SEPARABLE_COMPILATION ON) # Does this work with native CUDA support?
-set(CUDA_PROPAGATE_HOST_FLAGS OFF) # Does this work with native CUDA support?
-
-
-# -----------------------
-# Main target(s)
-# -----------------------
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
@@ -107,75 +33,34 @@ add_library(
 	src/cuda/api/profiling.cpp
 )
 
+
+set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD 11)
+set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET cuda-api-wrappers PROPERTY CXX_EXTENSIONS OFF)
+
 target_include_directories(
-	${PROJECT_NAME}
-		PUBLIC
-		"$<INSTALL_INTERFACE:include>"
-		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
-		"${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+	cuda-api-wrappers
+	PUBLIC
+	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
+	"$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
+# The following lines _should_ have been something like:
+# target_link_libraries(cuda-api-wrappers PUBLIC CUDA::CUDALibs)
+# ... but that's not supported.
+# Also, if we make the inclusion here public (which, really, it should be) - 
+# we get the source directory as part of the include directories in the exported
+# cuda-api-wrappers-config.cmake file - even if 
+# CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES is empty... That seems like a bug.
+target_include_directories(cuda-api-wrappers PRIVATE "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+target_link_libraries(cuda-api-wrappers PUBLIC ${CUDA_LIBRARIES})
 
-# -----------------------
-# Examples / Tests
-# -----------------------
+option(BUILD_EXAMPLES "Build example programs" OFF)
 
-# This next line should have been enough to make the example programs
-# link against the CUDA runtime library. However, users have reported
-# that doesn't actually happen in some cases / on some platforms; see
-# the project page for details and specifically issue #106. It has
-# been removed in favor of relying on the find_package(CUDA) line
-# above, despite the deprecation of that method of locating CUDA
-# libraries.
-#
-#link_libraries(${CMAKE_CUDA_IMPLICIT_LINK_LIBRARIES})
 
-link_libraries(cuda-api-wrappers)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "examples/bin")
-add_executable(vectorAdd EXCLUDE_FROM_ALL examples/modified_cuda_samples/vectorAdd/vectorAdd.cu)
-add_executable(inlinePTX EXCLUDE_FROM_ALL examples/modified_cuda_samples/inlinePTX/inlinePTX.cu)
-add_executable(simpleStreams EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleStreams/simpleStreams.cu)
-add_executable(simpleIPC EXCLUDE_FROM_ALL examples/modified_cuda_samples/simpleIPC/simpleIPC.cu)
-#----
-add_custom_target(modified_cuda_samples)
-add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)
-
-add_executable(version_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/version_management.cpp)
-add_executable(error_handling EXCLUDE_FROM_ALL examples/by_runtime_api_module/error_handling.cu)
-add_executable(device_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/device_management.cpp)
-add_executable(execution_control EXCLUDE_FROM_ALL examples/by_runtime_api_module/execution_control.cu)
-target_compile_options(execution_control PRIVATE -rdc true)
-add_executable(stream_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/stream_management.cu)
-add_executable(event_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/event_management.cu)
-add_executable(unified_addressing EXCLUDE_FROM_ALL examples/by_runtime_api_module/unified_addressing.cpp)
-add_executable(io_compute_overlap_with_streams EXCLUDE_FROM_ALL examples/other/io_compute_overlap_with_streams.cu)
-add_executable(array_management EXCLUDE_FROM_ALL examples/by_runtime_api_module/array_management.cu)
-#----
-add_custom_target(examples_by_runtime_api_module)
-add_dependencies(examples_by_runtime_api_module
-	version_management
-	error_handling device_management
-	execution_control
-	stream_management
-	event_management
-	unified_addressing
-	io_compute_overlap_with_streams
-	array_management
-)
-
-add_custom_target(examples)
-add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
-
-add_custom_target(docs
-	COMMAND doxygen doxygen.cfg
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
-
-add_dependencies(examples examples_by_runtime_api_module modified_cuda_samples)
-
-# -------------
+if (BUILD_EXAMPLES)
+	add_subdirectory(examples)
+endif()
 
 install(
 	TARGETS cuda-api-wrappers
@@ -189,28 +74,15 @@ install(
 install(
 	DIRECTORY src/cuda
 	DESTINATION include
-	FILES_MATCHING REGEX "\\.(h|hpp|cuh)"
+	FILES_MATCHING REGEX "\\.(h|hpp|cuh)$"
 )
 
 install(
-	EXPORT ${PROJECT_NAME}_export
-	DESTINATION "share/cmake/${PROJECT_NAME}"
-	NAMESPACE "${PROJECT_NAME}::"
+	EXPORT cuda-api-wrappers_export
+	DESTINATION "share/cmake/cuda-api-wrappers"
+	NAMESPACE "cuda-api-wrappers::"
 	# In this CMake config file no dependencies are considered. But since we
 	# do not use any `find_package` call here this approach is sufficient.
-	FILE ${PROJECT_NAME}Config.cmake
+	FILE cuda-api-wrappers-config.cmake
 )
 
-if(EXPORT_BUILD_DIR AND NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
-	message(STATUS "Exporting ${PROJECT_NAME} build directory to local CMake package registry.")
-
-	export(
-		EXPORT ${PROJECT_NAME}_export
-		NAMESPACE "${PROJECT_NAME}::"
-		# In this CMake config file no dependencies are considered. But since we
-		# do not use any `find_package` call here this approach is sufficient.
-		FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-	)
-	# Export the project build directory as a package into the local CMake package registry.
-	export(PACKAGE ${PROJECT_NAME})
-endif()

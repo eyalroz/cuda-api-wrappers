@@ -593,6 +593,11 @@ public:
 
 	/**
 	 * Return the proxied device's ID
+	 *
+	 * @note If AssumedCurrent is true, an API call will be necessary
+	 * to determine the device ID; so don't use this unless you really need it;
+	 * prefer using methods of the device_t class which can apply to the current
+	 * device without an id.
 	 */
 	device::id_t id() const
 	{
@@ -814,13 +819,13 @@ protected:
 template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
 bool operator==(const device_t<LHSAssumedCurrent>& lhs, const device_t<RHSAssumedCurrent>& rhs)
 {
-	return lhs.id() == rhs.id();
+	return (LHSAssumedCurrent and RHSAssumedCurrent) ? true : lhs.id() == rhs.id();
 }
 
 template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
 bool operator!=(const device_t<LHSAssumedCurrent>& lhs, const device_t<RHSAssumedCurrent>& rhs)
 {
-	return lhs.id() != rhs.id();
+	return (LHSAssumedCurrent and RHSAssumedCurrent) ? false : lhs.id() != rhs.id();
 }
 
 namespace device {

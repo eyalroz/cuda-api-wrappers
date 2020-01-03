@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 
 	// time memcopy from device
 	start_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
-	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0].id());
+	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0]);
 	stop_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
 			cuda::memory::async::copy(
 				h_a.get() + i * n / nstreams,
 				d_a.get() + i * n / nstreams, nbytes / nstreams,
-				streams[i].id());
+				streams[i]);
 		}
 	}
 
