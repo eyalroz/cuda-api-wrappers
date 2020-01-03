@@ -3,8 +3,6 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 enable_language(CXX)
 enable_language(CUDA)
 
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-
 if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# Avoid a build failure when the BUILD_SHARED_LIBS variable is set to true.
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
