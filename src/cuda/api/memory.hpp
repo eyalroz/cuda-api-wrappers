@@ -461,6 +461,12 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 template <bool StreamIsOnCurrentDevice>
 inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
 
+template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
+inline void copy(array::array_t<T, NDIMS>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
+
+template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
+inline void copy(void* destination, const array::array_t<T, NDIMS>& source, stream_t<StreamIsOnCurrentDevice>& stream);
+
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
  *

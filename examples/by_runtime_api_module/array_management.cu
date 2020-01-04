@@ -92,7 +92,7 @@ int main() {
 
 	// also asynchronously
 	auto stream = device.create_stream(cuda::stream::async);
-	cuda::memory::async::copy(arr2, ptr_out0.get(), stream.id());
-	cuda::memory::async::copy(ptr_in0.get(), arr2, stream.id());
+	cuda::memory::async::copy(arr2, ptr_out0.get(), stream);
+	cuda::memory::async::copy(ptr_in0.get(), arr2, stream);
 
 }
