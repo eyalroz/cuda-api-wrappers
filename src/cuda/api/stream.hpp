@@ -310,7 +310,7 @@ public: // mutators
 		{
 			// It is not necessary to make the device current, according to:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			memory::async::copy(destination, source, num_bytes, stream_id_);
+			memory::async::detail::copy(destination, source, num_bytes, stream_id_);
 		}
 
 		/**
@@ -325,7 +325,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::set(destination, byte_value, num_bytes, stream_id_);
+			memory::device::async::detail::set(destination, byte_value, num_bytes, stream_id_);
 		}
 
 		/**
@@ -343,7 +343,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::zero(destination, num_bytes, stream_id_);
+			memory::device::async::detail::zero(destination, num_bytes, stream_id_);
 		}
 
 		/**
@@ -562,6 +562,18 @@ inline stream_t<> wrap(
 	return stream_t<>(device_id, stream_id, take_ownership);
 }
 
+/*
+ * @brief Create a new stream (= queue) on a CUDA device.
+ *
+ * @param device_id ID of the device for which the stream is to be created
+ * @param synchronizes_with_default_stream if true, no work on this stream
+ * will execute concurrently with work from the default stream (stream 0)
+ * @param priority priority of tasks on the stream, relative to other streams,
+ * for execution scheduling; lower numbers represent higher properities. Each
+ * device has a range of priorities, which can be obtained using
+ * @ref device_t::stream_priority_range() .
+ * @return The newly-created stream
+ */
 inline stream_t<> create(
 	device::id_t  device_id,
 	bool          synchronizes_with_default_stream,

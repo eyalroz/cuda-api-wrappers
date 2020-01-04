@@ -131,6 +131,7 @@ inline void enqueue_launch(
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id
 			>>>(parameters...);
+		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
 #if __CUDACC_VER_MAJOR__ >= 9
@@ -157,7 +158,7 @@ inline void enqueue_launch(
 			argument_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id);
-		throw_if_error(status, "Cooperative launch failed");
+		throw_if_error(status, "Cooperative kernel launch failed");
 
 #else
 		throw cuda::runtime_error(status::not_supported,
