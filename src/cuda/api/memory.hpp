@@ -222,6 +222,12 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 	}
 }
 
+/**
+ * Synchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
 template<typename T>
 void copy(const array::array_t<T, 3>& destination, const void *source)
 {
@@ -249,6 +255,12 @@ void copy(const array::array_t<T, 3>& destination, const void *source)
 	}
 }
 
+/**
+ * Synchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ */
 template<typename T>
 void copy(void* destination, const array::array_t<T, 3>& source)
 {
@@ -272,6 +284,12 @@ void copy(void* destination, const array::array_t<T, 3>& source)
 	}
 }
 
+/**
+ * Synchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
 template<typename T>
 void copy(const array::array_t<T, 2>& destination, const void *source)
 {
@@ -298,6 +316,12 @@ void copy(const array::array_t<T, 2>& destination, const void *source)
 	}
 }
 
+/**
+ * Synchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ */
 template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source)
 {
@@ -461,9 +485,25 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
 template <bool StreamIsOnCurrentDevice>
 inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
 
+/**
+ * Asynchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
 template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
 inline void copy(array::array_t<T, NDIMS>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
 
+/**
+ * Asynchronously copies data between memory spaces and CUDA arrays.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ */
 template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
 inline void copy(void* destination, const array::array_t<T, NDIMS>& source, stream_t<StreamIsOnCurrentDevice>& stream);
 
