@@ -494,7 +494,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  */
 template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
-inline void copy(array::array_t<T, NDIMS>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void copy(const array::array_t<T, NDIMS>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
 
 /**
  * Asynchronously copies data between memory spaces and CUDA arrays.
