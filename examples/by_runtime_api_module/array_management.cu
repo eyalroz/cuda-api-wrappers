@@ -2,7 +2,9 @@
 
 #include <iostream>
 
-__global__ void from_texture_to_ptr_kernel3D(cudaTextureObject_t texture_obj, float* ptr, size_t w, size_t h, size_t d) {
+namespace kernels {
+
+__global__ void from_3D_texture_to_memory_space(cudaTextureObject_t texture_source, float* destination, size_t w, size_t h, size_t d) {
 
 	const auto gtidx = threadIdx.x + blockIdx.x * blockDim.x;
 	const auto gtidy = threadIdx.y + blockIdx.y * blockDim.y;
@@ -10,89 +12,117 @@ __global__ void from_texture_to_ptr_kernel3D(cudaTextureObject_t texture_obj, fl
 	const auto gtid = gtidx + gtidy * w + gtidz * w * h;
 
 	if (gtidx < w && gtidy < h && gtidz < d) {
-		ptr[gtid] = tex3D<float>(texture_obj, gtidx, gtidy, gtidz);
+		destination[gtid] = tex3D<float>(texture_source, gtidx, gtidy, gtidz);
 	}
 }
 
-__global__ void from_texture_to_ptr_kernel2D(cudaTextureObject_t texture_obj, float* ptr, size_t w, size_t h) {
+__global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_source, float* destination, size_t w, size_t h) {
 
 	const auto gtidx = threadIdx.x + blockIdx.x * blockDim.x;
 	const auto gtidy = threadIdx.y + blockIdx.y * blockDim.y;
-	const auto gtid = gtidx + gtidy * w;
+	const auto gtid = gtidx + gtidy * static_cast<unsigned>(w);
 
 	if (gtidx < w && gtidy < h) {
-		auto x = tex2D<float>(texture_obj, gtidx, gtidy);
+		const float x = tex2D<float>(texture_source, gtidx, gtidy);
 		printf("thread %u %u, reading value %f, and writing to index %u\n", gtidx, gtidy, x, gtid);
-		ptr[gtid] = x;
+		destination[gtid] = x;
 	}
 }
 
+}
+
+size_t div_ceil(size_t dividend, size_t divisor) {
+	return dividend / divisor + (dividend % divisor == 0 ? 0 : 1);
+}
+
+template<class Device>
+void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
+	const cuda::array::dimensions_t<3> dims = {w, h, d};
+
+	cuda::array::array_t<float, 3> arr(device, dims);
+	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
+	ptr_in[5] = 6;
+	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
+	cuda::memory::copy(arr, ptr_in.get());
+	cuda::texture_view tv(arr);
+	constexpr cuda::grid_block_dimension_t block_dim = 10;
+	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, block_dim};
+	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), div_ceil(d, block_dim)};
+	cuda::launch(kernels::from_3D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h, d);
+	device.synchronize();
+	for (size_t i = 0; i < arr.size(); ++i) {
+		std::cout << "ptr_out[" << i << "] = " << ptr_out[i] << std::endl;
+	}
+
+	// copy between arrays and memory spaces
+	cuda::array::array_t<float, 3> other_arr(device, dims);
+	cuda::memory::copy(other_arr, ptr_out.get());
+	cuda::memory::copy(ptr_in.get(), other_arr);
+
+	// also asynchronously
+	auto stream = device.create_stream(cuda::stream::async);
+	cuda::memory::async::copy(other_arr, ptr_out.get(), stream);
+	cuda::memory::async::copy(ptr_in.get(), other_arr, stream);
+	device.synchronize();
+}
+
+template<class Device>
+void array_2d_example(Device& device, size_t w, size_t h) {
+
+	const cuda::array::dimensions_t<2> dims = {w, h};
+	cuda::array::array_t<float, 2> arr(device , dims);
+	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
+	ptr_in[0] = 1;
+	ptr_in[1] = 2;
+	ptr_in[3] = 3;
+	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
+
+	std::cout << std::endl;
+	for (size_t i = 0; i < h; ++i) {
+		for (size_t j = 0; j < w; ++j) {
+			std::cout << ptr_in[j + i * w] << ' ';
+		}
+		std::cout << std::endl;
+	}
+
+	cuda::memory::copy(arr, ptr_in.get());
+	cuda::texture_view tv(arr);
+
+	constexpr cuda::grid_block_dimension_t block_dim = 10;
+	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, 1};
+	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), 1};
+
+	cuda::launch(kernels::from_2D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h);
+	cuda::memory::copy(ptr_out.get(), arr);
+	device.synchronize();
+	for (size_t i = 0; i < h; ++i) {
+		for (size_t j = 0; j < w; ++j) {
+			std::cout << ptr_out[j + i * w] << ' ';
+		}
+		std::cout << std::endl;
+	}
+
+	// copy between arrays and memory spaces
+	cuda::array::array_t<float, 2> other_arr(device, dims);
+	cuda::memory::copy(other_arr, ptr_out.get());
+	cuda::memory::copy(ptr_in.get(), other_arr);
+	
+	// also asynchronously
+	auto stream = device.create_stream(cuda::stream::async);
+	cuda::memory::async::copy(other_arr, ptr_out.get(), stream);
+	cuda::memory::async::copy(ptr_in.get(), other_arr, stream);
+	device.synchronize();
+}
 
 int main() {
 
 	auto device = cuda::device::current::get();
 
-	//
-	// 3D
-	//
+	// array dimensions
 	constexpr size_t w = 3;
 	constexpr size_t h = 3;
 	constexpr size_t d = 3;
-	cuda::array::dimensions_t<3> dims = {w, h, d};
 
-	cuda::array::array_t<float, 3> arr0(device, dims);
-	auto ptr_in0 = cuda::memory::managed::make_unique<float[]>(arr0.size());
-	ptr_in0[5] = 6;
-	auto ptr_out0 = cuda::memory::managed::make_unique<float[]>(arr0.size());
-	cuda::memory::copy(arr0, ptr_in0.get());
-	cuda::texture::texture_view tv0(arr0);
-	cuda::launch(from_texture_to_ptr_kernel3D, cuda::make_launch_config(1, {10, 10, 10}), tv0.get(), ptr_out0.get(), w, h, d);
-	device.synchronize();
-	for (size_t i = 0; i < arr0.size(); ++i) {
-		std::cout << "ptr_out0[" << i << "] = " << ptr_out0[i] << std::endl;
-	}
-
-	//
-	// 2D
-	//
-	cuda::array::array_t<float, 2> arr1(device , {w, h});
-	auto ptr_in1 = cuda::memory::managed::make_unique<float[]>(arr1.size());
-	ptr_in1[0] = 1;
-	ptr_in1[1] = 2;
-	ptr_in1[3] = 3;
-	auto ptr_out1 = cuda::memory::managed::make_unique<float[]>(arr1.size());
-
-	std::cout << std::endl;
-	for (size_t i = 0; i < h; ++i) {
-		for (size_t j = 0; j < w; ++j) {
-			std::cout << ptr_in1[j + i * w] << ' ';
-		}
-		std::cout << std::endl;
-	}
-
-	cuda::memory::copy(arr1, ptr_in1.get());
-	cuda::texture::texture_view tv1(arr1);
-
-	cuda::launch(from_texture_to_ptr_kernel2D, cuda::make_launch_config(1, {10, 10, 1}), tv1.get(), ptr_out1.get(), w, h);
-	cuda::memory::copy(ptr_out1.get(), arr1);
-	device.synchronize();
-	for (size_t i = 0; i < h; ++i) {
-		for (size_t j = 0; j < w; ++j) {
-			std::cout << ptr_out1[j + i * w] << ' ';
-		}
-		std::cout << std::endl;
-	}
-
-	//
-	// copy between arrays and pointers
-	//
-	cuda::array::array_t<float, 3> arr2(device, dims);
-	cuda::memory::copy(arr2, ptr_out0.get());
-	cuda::memory::copy(ptr_in0.get(), arr2);
-
-	// also asynchronously
-	auto stream = device.create_stream(cuda::stream::async);
-	cuda::memory::async::copy(arr2, ptr_out0.get(), stream.id());
-	cuda::memory::async::copy(ptr_in0.get(), arr2, stream.id());
-
+	array_3d_example(device, w, h, d);
+	array_2d_example(device, w, h);
 }

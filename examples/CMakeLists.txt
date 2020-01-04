@@ -46,5 +46,6 @@ set_target_properties(execution_control PROPERTIES CUDA_SEPARABLE_COMPILATION ON
 add_executable(stream_management by_runtime_api_module/stream_management.cu)
 add_executable(event_management by_runtime_api_module/event_management.cu)
 add_executable(unified_addressing by_runtime_api_module/unified_addressing.cpp)
+add_executable(array_management by_runtime_api_module/array_management.cu)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
 
