@@ -229,7 +229,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  */
 template<typename T>
-void copy(const array::array_t<T, 3>& destination, const void *source)
+void copy(array::array_t<T, 3>& destination, const void *source)
 {
 	cudaMemcpy3DParms copyParams = {0};
 
@@ -291,7 +291,7 @@ void copy(void* destination, const array::array_t<T, 3>& source)
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  */
 template<typename T>
-void copy(const array::array_t<T, 2>& destination, const void *source)
+void copy(array::array_t<T, 2>& destination, const void *source)
 {
 	// Consider the padded array:
 	// 
@@ -378,7 +378,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 }
 
 template<typename T>
-void copy(const array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
+void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
 {
 	cudaMemcpy3DParms copyParams = {0};
 
@@ -428,7 +428,7 @@ void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t st
 }
 
 template<typename T>
-void copy(const array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
 {
 	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault, stream_id);
 
