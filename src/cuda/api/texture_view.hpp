@@ -55,7 +55,7 @@ class texture_view {
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
-	~texture_view() {
+	~texture_view() noexcept {
 		auto status = cudaDestroyTextureObject(tobj_);
 		throw_if_error(status, "failed destroying texture object");
 	}

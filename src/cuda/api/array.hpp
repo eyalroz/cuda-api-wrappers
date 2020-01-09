@@ -39,7 +39,7 @@ public:
 		other.dims_      = {0, 0, 0};
 	}
 
-	~array_base() {
+	~array_base() noexcept {
 		if (array_ptr_) {
 			auto status = cudaFreeArray(array_ptr_);
 			throw_if_error(status, "failed freeing CUDA array");
