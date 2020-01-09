@@ -1,11 +1,3 @@
-/**
- * @file array.hpp
- * 
- * @brief A CUDA array wrapper class. Especially useful
- * if used in combination with CUDA textures.
- *
- */
-
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ARRAY_HPP
 #define CUDA_API_WRAPPERS_ARRAY_HPP
