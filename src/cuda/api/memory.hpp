@@ -299,7 +299,7 @@ void copy(array::array_t<T, 2>& destination, const void *source)
 	// x x x x o o o
 	// x x x x o o o
 	// 
-	// o = padded element
+	// o = padding element
 	// x = actually used element of the array
 	// 
 	// The pitch in the example above is 7 * sizeof(T)
