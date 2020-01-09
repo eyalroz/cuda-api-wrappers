@@ -1,12 +1,3 @@
-/**
- * @file texture_view.hpp
- *
- * @brief A CUDA texture object wrapper. It is declared as a
- * 'view' because this object only describes how a certain
- * memory resource is accessed. It is non-owning.
- *
- */
-
 #pragma once
 #ifndef CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 #define CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
@@ -38,7 +29,17 @@ struct descriptor_t : public cudaTextureDesc {
 /**
  * @brief Use texture memory for optimized read only cache access
  *
- * This represents a view on the memory owned by a CUDA array.
+ * This represents a view on the memory owned by a CUDA array. Thus you can
+ * first create a CUDA array (\ref cuda::array::array_t) and subsequently
+ * create a `texture_view` from it. In CUDA kernels elements of the array
+ * can be accessed with e.g. `float val = tex3D<float>(tex_obj, x, y, z);`,
+ * where `tex_obj` can be obtained by the member function `get()` of this
+ * class.
+ *
+ * See also the sections in the programming guide:
+ *
+ * - https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory
+ * - https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching
  */
 class texture_view {
 	public:

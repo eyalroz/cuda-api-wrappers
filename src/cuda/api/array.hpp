@@ -20,10 +20,6 @@ namespace array {
 
 namespace detail {
 
-/**
- * @brief Do not use directly
- *
- */
 template <typename T, size_t NDIMS>
 class array_base {
 
@@ -72,11 +68,23 @@ protected:
 
 /**
  * @brief Wrapper for 2D and 3D arrays
- * 
- * Useful in combination with texture memory.
- * 
- * @note Only template specializations of this class can be created, because
- * CUDA does not support any number of dimensions for a CUDA array.
+ *
+ * A CUDA array is a memory owning, multi dimensional, multi array and **not**
+ * comparible in its functionality with a `std::array`.
+ *
+ * See also the documentation of CUDA arrays in the programming guide:
+ * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-arrays
+ *
+ * Useful in combination with texture memory (\ref cuda::texture_view).
+ * One can access elements in a multi dimensional array with the index, e.g.
+ * `array[i][j][k]`. In CUDA it is possible to create a texture on an array and thus
+ * use more advanced ways of accessing the elements of the array, e.g.
+ * `texture[u][v][w]` with `u, v, w` in `[0, 1]`, with normalized coordinates.
+ * Depending on the texture configuration you obtain a value, which is interpolated
+ * between the nearest corresponding array elements.
+ *
+ * @note CUDA only supports arrays of 2 or 3 dimensions; array_t's cannot be
+ * instantiated with other values of `NDIMS`
  */
 template <typename T, size_t NDIMS>
 class array_t {
