@@ -44,7 +44,7 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	ptr_in[5] = 6;
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
-	cuda::texture::texture_view tv(arr);
+	cuda::texture_view tv(arr);
 	constexpr cuda::grid_block_dimension_t block_dim = 10;
 	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, block_dim};
 	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), div_ceil(d, block_dim)};
@@ -86,7 +86,7 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 	}
 
 	cuda::memory::copy(arr, ptr_in.get());
-	cuda::texture::texture_view tv(arr);
+	cuda::texture_view tv(arr);
 
 	constexpr cuda::grid_block_dimension_t block_dim = 10;
 	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, 1};

@@ -33,6 +33,8 @@ struct descriptor_t : public cudaTextureDesc {
 	}
 };
 
+}  // namespace texture
+
 /**
  * @brief Use texture memory for optimized read only cache access
  *
@@ -41,7 +43,7 @@ struct descriptor_t : public cudaTextureDesc {
 class texture_view {
 	public:
 	template <typename T, size_t DIMS>
-	texture_view(const cuda::array::array_t<T, DIMS>& arr, descriptor_t desc = descriptor_t()) {
+	texture_view(const cuda::array::array_t<T, DIMS>& arr, texture::descriptor_t desc = texture::descriptor_t()) {
 		cudaResourceDesc resDesc;
 		memset(&resDesc, 0, sizeof(resDesc));
 		resDesc.resType = cudaResourceTypeArray;
@@ -65,7 +67,6 @@ class texture_view {
 		cudaTextureObject_t tobj_ = 0;
 };
 
-}  // namespace texture
 
 }  // namespace cuda
 
