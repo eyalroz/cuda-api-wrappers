@@ -253,6 +253,7 @@ namespace detail {
  * @param source A pointer to a a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream_id A stream on which to enqueue the copy operation
  */
 inline void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
 {
@@ -274,6 +275,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
+ * @param stream_id A stream on which to enqueue the copy operation
  */
 template <typename T>
 inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
@@ -297,6 +299,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param source A pointer to a a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream A stream on which to enqueue the copy operation
  */
 template <bool StreamIsOnCurrentDevice>
 inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
