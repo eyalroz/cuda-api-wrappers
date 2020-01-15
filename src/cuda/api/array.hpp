@@ -87,10 +87,7 @@ protected:
  * instantiated with other values of `NDIMS`
  */
 template <typename T, size_t NDIMS>
-class array_t {
-public:
-	array_t() = delete;
-};
+class array_t;
 
 template <typename T>
 class array_t<T, 3> : public detail::array_base<T, 3> {
