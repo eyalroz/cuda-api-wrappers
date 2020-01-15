@@ -214,12 +214,9 @@ inline void zero(void* buffer_start, size_t num_bytes)
 inline void copy(void *destination, const void *source, size_t num_bytes)
 {
 	auto result = cudaMemcpy(destination, source, num_bytes, cudaMemcpyDefault);
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying data");
-		// TODO: Determine whether it was from host to device, device to host etc and
-		// add this information to the error string
-		throw_if_error(result, error_message);
-	}
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error(result, "Synchronously copying data");
 }
 
 /**
@@ -249,10 +246,7 @@ void copy(array::array_t<T, 3>& destination, const void *source)
 	copyParams.kind = cudaMemcpyDefault;
 
 	auto result = cudaMemcpy3D(&copyParams);
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying into array");
-		throw_if_error(result, error_message);
-	}
+	throw_if_error(result, "Synchronously copying into array");
 }
 
 /**
@@ -278,10 +272,8 @@ void copy(void* destination, const array::array_t<T, 3>& source)
 	copyParams.kind = cudaMemcpyDefault;
 
 	auto result = cudaMemcpy3D(&copyParams);
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying from array");
-		throw_if_error(result, error_message);
-	}
+
+	throw_if_error(result, "Synchronously copying from array");
 }
 
 /**
@@ -310,10 +302,7 @@ void copy(array::array_t<T, 2>& destination, const void *source)
 	// 
 	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault);
 
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying into array");
-		throw_if_error(result, error_message);
-	}
+	throw_if_error(result, "Synchronously copying into array");
 }
 
 /**
