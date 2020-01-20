@@ -5,18 +5,26 @@
  * specifier shorthands, defined in @ref define_specifiers.hpp .
  */
 
-#ifdef __fd__
-#undef __fd__
+#ifdef CUDA_FD
+#undef CUDA_FD
 #endif
 
-#ifdef __fh__
-#undef __fh__
+#ifdef CUDA_FH
+#undef CUDA_FH
 #endif
 
-#ifdef __fhd__
-#undef __fhd__
+#ifdef CUDA_FHD
+#undef CUDA_FHD
 #endif
 
-#ifdef __hd__
-#undef __hd__
+#ifdef CUDA_HD
+#undef CUDA_HD
+#endif
+
+#ifdef CUDA_D
+#undef CUDA_D
+#endif
+
+#ifdef CUDA_H
+#undef CUDA_H
 #endif
