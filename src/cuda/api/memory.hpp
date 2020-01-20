@@ -228,24 +228,24 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 template<typename T>
 void copy(array::array_t<T, 3>& destination, const void *source)
 {
-	cudaMemcpy3DParms copyParams = {0};
+	cudaMemcpy3DParms copy_params = {0};
 
 	// make_cudaPitchedPtr expects a void* pointer
 	void* source_ = const_cast<void*>(source);
 
 	// How to create a pitched ptr from a `const void*` ?
-	copyParams.srcPtr = make_cudaPitchedPtr(
+	copy_params.srcPtr = make_cudaPitchedPtr(
 	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
 
-	copyParams.dstArray = destination.get();
+	copy_params.dstArray = destination.get();
 
 	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
 
-	copyParams.extent = ext;
+	copy_params.extent = ext;
 
-	copyParams.kind = cudaMemcpyDefault;
+	copy_params.kind = cudaMemcpyDefault;
 
-	auto result = cudaMemcpy3D(&copyParams);
+	auto result = cudaMemcpy3D(&copy_params);
 	throw_if_error(result, "Synchronously copying into array");
 }
 
@@ -258,20 +258,20 @@ void copy(array::array_t<T, 3>& destination, const void *source)
 template<typename T>
 void copy(void* destination, const array::array_t<T, 3>& source)
 {
-	cudaMemcpy3DParms copyParams = {0};
+	cudaMemcpy3DParms copy_params = {0};
 
-	copyParams.dstPtr = make_cudaPitchedPtr(
+	copy_params.dstPtr = make_cudaPitchedPtr(
 	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
 
-	copyParams.srcArray = source.get();
+	copy_params.srcArray = source.get();
 
 	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
 
-	copyParams.extent = ext;
+	copy_params.extent = ext;
 
-	copyParams.kind = cudaMemcpyDefault;
+	copy_params.kind = cudaMemcpyDefault;
 
-	auto result = cudaMemcpy3D(&copyParams);
+	auto result = cudaMemcpy3D(&copy_params);
 
 	throw_if_error(result, "Synchronously copying from array");
 }
@@ -365,24 +365,24 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 template<typename T>
 void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
 {
-	cudaMemcpy3DParms copyParams = {0};
+	cudaMemcpy3DParms copy_params = {0};
 
 	// make_cudaPitchedPtr expects a void* pointer
 	void* source_ = const_cast<void*>(source);
 
 	// How to create a pitched ptr from a `const void*` ?
-	copyParams.srcPtr = make_cudaPitchedPtr(
+	copy_params.srcPtr = make_cudaPitchedPtr(
 	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
 
-	copyParams.dstArray = destination.get();
+	copy_params.dstArray = destination.get();
 
 	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
 
-	copyParams.extent = ext;
+	copy_params.extent = ext;
 
-	copyParams.kind = cudaMemcpyDefault;
+	copy_params.kind = cudaMemcpyDefault;
 
-	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
 	if (is_failure(result)) {
 		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 		throw_if_error(result, error_message);
@@ -392,20 +392,20 @@ void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t st
 template<typename T>
 void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t stream_id)
 {
-	cudaMemcpy3DParms copyParams = {0};
+	cudaMemcpy3DParms copy_params = {0};
 
-	copyParams.dstPtr = make_cudaPitchedPtr(
+	copy_params.dstPtr = make_cudaPitchedPtr(
 	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
 
-	copyParams.srcArray = source.get();
+	copy_params.srcArray = source.get();
 
 	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
 
-	copyParams.extent = ext;
+	copy_params.extent = ext;
 
-	copyParams.kind = cudaMemcpyDefault;
+	copy_params.kind = cudaMemcpyDefault;
 
-	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
 	if (is_failure(result)) {
 		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 		throw_if_error(result, error_message);
