@@ -51,21 +51,21 @@ class texture_view {
 		resDesc.res.array.array = arr.get();
 
 		// // Create texture object
-		auto status = cudaCreateTextureObject(&tobj_, &resDesc, &desc, NULL);
+		auto status = cudaCreateTextureObject(&texture_object_, &resDesc, &desc, NULL);
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
 	~texture_view() noexcept {
-		auto status = cudaDestroyTextureObject(tobj_);
+		auto status = cudaDestroyTextureObject(texture_object_);
 		throw_if_error(status, "failed destroying texture object");
 	}
 
 	inline cudaTextureObject_t get() const noexcept {
-		return tobj_;
+		return texture_object_;
 	}
 
 	private:
-		cudaTextureObject_t tobj_ = 0;
+		cudaTextureObject_t texture_object_ = 0;
 };
 
 
