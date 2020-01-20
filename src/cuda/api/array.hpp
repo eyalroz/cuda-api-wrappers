@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CUDA_API_WRAPPERS_ARRAY_HPP
-#define CUDA_API_WRAPPERS_ARRAY_HPP
+#ifndef CUDA_API_WRAPPERS_ARRAY_HPP_
+#define CUDA_API_WRAPPERS_ARRAY_HPP_
 
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/error.hpp>
@@ -23,33 +23,36 @@ template <typename T, size_t NumDimensions>
 class array_base {
 
 protected:
-	array_base(dimensions_t<NumDimensions> dimensions, cudaArray* array_ptr) :
+	array_base(dimensions_t<NumDimensions> dimensions, cudaArray* raw_cuda_array) :
 	    dimensions_(dimensions),
-	    array_ptr_(array_ptr) {}
+	    raw_cuda_array_(raw_cuda_array) {}
 
 public:
 	array_base()                        = delete;
 	array_base(const array_base& other) = delete;
 
 	array_base(array_base&& other) :
-	    array_ptr_(other.array_ptr_),
-	    dimensions_(other.dimensions_) {
-		other.array_ptr_ = nullptr;
+	    raw_cuda_array_(other.raw_cuda_array_),
+	    dimensions_(other.dimensions_)
+	{
+		other.raw_cuda_array_ = nullptr;
 		other.dimensions_      = {0, 0, 0};
 	}
 
-	~array_base() noexcept {
-		if (array_ptr_) {
-			auto status = cudaFreeArray(array_ptr_);
+	~array_base() noexcept
+	{
+		if (raw_cuda_array_) {
+			auto status = cudaFreeArray(raw_cuda_array_);
 			throw_if_error(status, "failed freeing CUDA array");
 		}
 	}
 
-	cudaArray* get() const noexcept { return array_ptr_; }
+	cudaArray* get() const noexcept { return raw_cuda_array_; }
 
 	dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
 
-	size_t size() const noexcept {
+	size_t size() const noexcept
+		{
 		size_t s = 1;
 		for (size_t dimension_id = 0; dimension_id < NumDimensions; ++dimension_id) {
 			s *= dimensions_[dimension_id];
@@ -61,7 +64,7 @@ public:
 
 protected:
 	dimensions_t<NumDimensions> dimensions_;
-	cudaArray*          array_ptr_;
+	cudaArray*          raw_cuda_array_;
 };
 
 } // namespace detail
@@ -96,15 +99,16 @@ private:
 
 	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_3d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<3> dimensions) {
+	malloc_3d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<3> dimensions)
+	{
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaExtent ext          = make_cudaExtent(dimensions[0], dimensions[1], dimensions[2]);
-		cudaArray* array_ptr;
-		auto       status = cudaMalloc3DArray(&array_ptr, &channel_desc, ext);
+		cudaArray* raw_cuda_array;
+		auto       status = cudaMalloc3DArray(&raw_cuda_array, &channel_desc, ext);
 		throw_if_error(status, "failed allocating 3D CUDA array");
-		return array_ptr;
+		return raw_cuda_array;
 	}
 
 public:
@@ -123,15 +127,16 @@ class array_t<T, 2> : public detail::array_base<T, 2> {
 private:
 	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dimensions) {
+	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dimensions)
+	{
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
-		cudaArray* array_ptr;
+		cudaArray* raw_cuda_array;
 		auto       status =
-		    cudaMallocArray(&array_ptr, &channel_desc, dimensions[0], dimensions[1]);
+		    cudaMallocArray(&raw_cuda_array, &channel_desc, dimensions[0], dimensions[1]);
 		throw_if_error(status, "failed allocating 2D CUDA array");
-		return array_ptr;
+		return raw_cuda_array;
 	}
 
 public:
@@ -142,9 +147,8 @@ public:
 	        malloc_2d_cuda_array(device, dimensions)) {}
 };
 
-
 } // namespace array
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_ARRAY_HPP
+#endif // CUDA_API_WRAPPERS_ARRAY_HPP_
