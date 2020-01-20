@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <array>
-#include <numeric>
 
 namespace cuda {
 
@@ -51,10 +50,11 @@ public:
 	dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
 
 	size_t size() const noexcept {
-		using dimensions_value_type = typename dimensions_t<NumDimensions>::value_type;
-		return std::accumulate(
-		    dimensions_.begin(), dimensions_.end(), static_cast<dimensions_value_type>(1),
-		    [](const dimensions_value_type& a, const dimensions_value_type& b) { return a * b; });
+		size_t s = 1;
+		for (size_t dimension_id = 0; dimension_id < NumDimensions; ++dimension_id) {
+			s *= dimensions_[dimension_id];
+		}
+		return s;
 	}
 
 	size_t size_bytes() const noexcept { return size() * sizeof(T); }
