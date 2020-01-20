@@ -12,6 +12,7 @@
 #include <cuda/api/constants.hpp>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/pointer.hpp>
+#include <cuda/api/array.hpp>
 
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
@@ -213,12 +214,107 @@ inline void zero(void* buffer_start, size_t num_bytes)
 inline void copy(void *destination, const void *source, size_t num_bytes)
 {
 	auto result = cudaMemcpy(destination, source, num_bytes, cudaMemcpyDefault);
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying data");
-		// TODO: Determine whether it was from host to device, device to host etc and
-		// add this information to the error string
-		throw cuda::runtime_error(result, error_message);
-	}
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error(result, "Synchronously copying data");
+}
+
+/**
+ * Synchronously copies data from memory spaces into CUDA arrays.
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
+template<typename T>
+void copy(array::array_t<T, 3>& destination, const void *source)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	// make_cudaPitchedPtr expects a void* pointer
+	void* source_ = const_cast<void*>(source);
+
+	// How to create a pitched ptr from a `const void*` ?
+	copyParams.srcPtr = make_cudaPitchedPtr(
+	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
+
+	copyParams.dstArray = destination.get();
+
+	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3D(&copyParams);
+	throw_if_error(result, "Synchronously copying into array");
+}
+
+/**
+ * Synchronously copies data from CUDA arrays into memory spaces.
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ */
+template<typename T>
+void copy(void* destination, const array::array_t<T, 3>& source)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	copyParams.dstPtr = make_cudaPitchedPtr(
+	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+
+	copyParams.srcArray = source.get();
+
+	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3D(&copyParams);
+
+	throw_if_error(result, "Synchronously copying from array");
+}
+
+/**
+ * Synchronously copies data from memory spaces into CUDA arrays.
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
+template<typename T>
+void copy(array::array_t<T, 2>& destination, const void *source)
+{
+	// Consider the padded array:
+	// 
+	// x x x x o o o
+	// x x x x o o o
+	// x x x x o o o
+	// 
+	// o = padding element
+	// x = actually used element of the array
+	// 
+	// The pitch in the example above is 7 * sizeof(T)
+	// The width is 4 * sizeof(T)
+	// The height is 3
+	// 
+	// See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
+	// 
+	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault);
+	throw_if_error(result, "Synchronously copying into array");
+}
+
+/**
+ * Synchronously copies data from CUDA arrays into memory spaces.
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ */
+template<typename T>
+void copy(void* destination, const array::array_t<T, 2>& source)
+{
+	auto result = cudaMemcpy2DFromArray(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault);
+  throw_if_error(result, "Synchronously copying from a CUDA array");
 }
 
 /**
@@ -266,6 +362,78 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 	}
 }
 
+template<typename T>
+void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	// make_cudaPitchedPtr expects a void* pointer
+	void* source_ = const_cast<void*>(source);
+
+	// How to create a pitched ptr from a `const void*` ?
+	copyParams.srcPtr = make_cudaPitchedPtr(
+	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
+
+	copyParams.dstArray = destination.get();
+
+	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
+	if (is_failure(result)) {
+		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t stream_id)
+{
+	cudaMemcpy3DParms copyParams = {0};
+
+	copyParams.dstPtr = make_cudaPitchedPtr(
+	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+
+	copyParams.srcArray = source.get();
+
+	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+
+	copyParams.extent = ext;
+
+	copyParams.kind = cudaMemcpyDefault;
+
+	auto result = cudaMemcpy3DAsync(&copyParams, stream_id);
+	if (is_failure(result)) {
+		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+{
+	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault, stream_id);
+
+	if (is_failure(result)) {
+		std::string error_message("Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+		throw_if_error(result, error_message);
+	}
+}
+
+template<typename T>
+void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::id_t stream_id)
+{
+	auto result = cudaMemcpy2DFromArrayAsync(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault, stream_id);
+
+	if (is_failure(result)) {
+		std::string error_message("Synchronously copying from array");
+		throw_if_error(result, error_message);
+	}
+}
+
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
  *
@@ -303,6 +471,30 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  */
 template <bool StreamIsOnCurrentDevice>
 inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+
+/**
+ * Asynchronously copies data from memory spaces into CUDA arrays.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A CUDA array @ref cuda::array::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ * @param stream schedule the copy operation into this CUDA stream
+ */
+template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
+inline void copy(array::array_t<T, NDIMS>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
+
+/**
+ * Asynchronously copies data from CUDA arrays into memory spaces.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array::array_t
+ * @param stream schedule the copy operation into this CUDA stream
+ */
+template <typename T, size_t NDIMS, bool StreamIsOnCurrentDevice>
+inline void copy(void* destination, const array::array_t<T, NDIMS>& source, stream_t<StreamIsOnCurrentDevice>& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
