@@ -78,8 +78,8 @@ using grid_dimension_t        = decltype(dim3::x);
 using grid_block_dimension_t  = grid_dimension_t;
 
 namespace array {
-template<size_t NDIMS>
-using dimensions_t = std::array<size_t, NDIMS>;
+template<size_t NumDimensions>
+using dimensions_t = std::array<size_t, NumDimensions>;
 }
 
 namespace event {

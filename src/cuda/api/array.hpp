@@ -20,11 +20,11 @@ namespace array {
 
 namespace detail {
 
-template <typename T, size_t NDIMS>
+template <typename T, size_t NumDimensions>
 class array_base {
 
 protected:
-	array_base(dimensions_t<NDIMS> dims, cudaArray* array_ptr) :
+	array_base(dimensions_t<NumDimensions> dims, cudaArray* array_ptr) :
 	    dims_(dims),
 	    array_ptr_(array_ptr) {}
 
@@ -48,10 +48,10 @@ public:
 
 	cudaArray* get() const noexcept { return array_ptr_; }
 
-	dimensions_t<NDIMS> dims() const noexcept { return dims_; }
+	dimensions_t<NumDimensions> dims() const noexcept { return dims_; }
 
 	size_t size() const noexcept {
-		using dimensions_value_type = typename dimensions_t<NDIMS>::value_type;
+		using dimensions_value_type = typename dimensions_t<NumDimensions>::value_type;
 		return std::accumulate(
 		    dims_.begin(), dims_.end(), static_cast<dimensions_value_type>(1),
 		    [](const dimensions_value_type& a, const dimensions_value_type& b) { return a * b; });
@@ -60,7 +60,7 @@ public:
 	size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 protected:
-	dimensions_t<NDIMS> dims_;
+	dimensions_t<NumDimensions> dims_;
 	cudaArray*          array_ptr_;
 };
 
@@ -84,9 +84,9 @@ protected:
  * between the nearest corresponding array elements.
  *
  * @note CUDA only supports arrays of 2 or 3 dimensions; array_t's cannot be
- * instantiated with other values of `NDIMS`
+ * instantiated with other values of `NumDimensions`
  */
-template <typename T, size_t NDIMS>
+template <typename T, size_t NumDimensions>
 class array_t;
 
 template <typename T>
