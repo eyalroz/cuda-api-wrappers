@@ -19,6 +19,7 @@
 
 #include <type_traits>
 #include <array>
+#include <cassert>
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -59,27 +60,18 @@ namespace cuda {
 using status_t                = cudaError_t;
 
 
-/**
- * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
- * In each of these, the numbers of blocks per grid is specified in this type.
- *
- * @note Theoretically, CUDA could split the type for blocks per grid and
- * threads per block, but for now they're the same.
- */
-using grid_dimension_t        = decltype(dim3::x);
-
-/**
- * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
- * In each of these, the number of threads per block is specified in this type.
- *
- * @note Theoretically, CUDA could split the type for blocks per grid and
- * threads per block, but for now they're the same.
- */
-using grid_block_dimension_t  = grid_dimension_t;
-
 namespace array {
+
+/**
+ * CUDA's array memory-objects are multi-dimensional; but their dimensions,
+ * or extents, are not the same as @ref cuda::grid_dimensionts_t ; they may be
+ * much larger in each axis.
+ *
+ * @note See also @url https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html
+ */
 template<size_t NumDimensions>
 using dimensions_t = std::array<size_t, NumDimensions>;
+
 }
 
 namespace event {
@@ -105,18 +97,50 @@ enum : priority_t {
 
 } // namespace stream
 
+namespace grid {
+
+/**
+ * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
+ * In each of these, the numbers of blocks per grid is specified in this type.
+ *
+ * @note Theoretically, CUDA could split the type for blocks per grid and
+ * threads per block, but for now they're the same.
+ */
+using dimension_t        = decltype(dim3::x);
+
+/**
+ * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
+ * In each of these, the number of threads per block is specified in this type.
+ *
+ * @note Theoretically, CUDA could split the type for blocks per grid and
+ * threads per block, but for now they're the same.
+ */
+using block_dimension_t  = dimension_t;
+
+
+
 /**
  * A richer (kind-of-a-)wrapper for CUDA's @ref dim3 class, used
- * to specify dimensions for blocks and grid (up to 3 dimensions).
+ * to specify dimensions for blocks (in terms of threads) and of
+ * grids(in terms of blocks, or overall).
  *
  * @note Unfortunately, dim3 does not have constexpr methods -
  * preventing us from having constexpr methods here.
+ *
+ * @note Unlike 3D dimensions in general, grid dimensions cannot actually
+ * be empty: A grid must have some threads. Thus, the value in each
+ * axis must be positive.
  */
+
+/**
+ */
+
+
 struct dimensions_t // this almost-inherits dim3
 {
-	grid_dimension_t x, y, z;
-    constexpr __host__ __device__ dimensions_t(unsigned x_ = 1, unsigned y_ = 1, unsigned z_ = 1)
-    : x(x_), y(y_), z(z_) {}
+	dimension_t x, y, z;
+    constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
+    : x(x_), y(y_), z(z_) { }
 
     __host__ __device__ constexpr dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
     __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
@@ -128,11 +152,17 @@ struct dimensions_t // this almost-inherits dim3
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
     __host__ __device__ constexpr size_t volume() const { return (size_t) x * y * z; }
-    __host__ __device__ constexpr bool empty() const {	return volume() == 0; }
     __host__ __device__ constexpr unsigned char dimensionality() const
 	{
-		return ((z > 1) + (y > 1) + (x > 1)) * (!empty());
+		return ((z > 1) + (y > 1) + (x > 1));
 	}
+
+    // Named constructor idioms
+
+    static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+    static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
+    static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
+    static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
 };
 
 constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
@@ -144,18 +174,14 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
 
-/**
- * CUDA kernels are launched in grids of blocks of threads. This expresses the
- * dimensions of a grid, in terms of blocks.
- */
-using grid_dimensions_t       = dimensions_t;
 
 /**
  * CUDA kernels are launched in grids of blocks of threads. This expresses the
  * dimensions of a block within such a grid, in terms of threads.
  */
-using grid_block_dimensions_t = dimensions_t;
+using block_dimensions_t = dimensions_t;
 
+} // namespace grid
 
 namespace memory {
 namespace shared {
@@ -182,14 +208,14 @@ using size_t = unsigned;
  * execution on some stream of some device).
  */
 typedef struct {
-	grid_dimensions_t       grid_dimensions;
-	grid_block_dimensions_t block_dimensions;
+	grid::dimensions_t       grid_dimensions;
+	grid::block_dimensions_t block_dimensions;
 	memory::shared::size_t    dynamic_shared_memory_size; // in bytes
 } launch_configuration_t;
 
 inline launch_configuration_t make_launch_config(
-	grid_dimensions_t       grid_dimensions,
-	grid_block_dimensions_t block_dimensions,
+	grid::dimensions_t       grid_dimensions,
+	grid::block_dimensions_t block_dimensions,
 	memory::shared::size_t    dynamic_shared_memory_size = 0) noexcept
 {
 	return { grid_dimensions, block_dimensions, dynamic_shared_memory_size };

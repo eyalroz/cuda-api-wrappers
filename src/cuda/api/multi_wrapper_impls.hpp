@@ -300,10 +300,10 @@ void device_function_t::set_shared_mem_to_l1_cache_fraction(
 
 namespace device_function {
 
-inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
+inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 	device_t<>                device,
 	const device_function_t&  device_function,
-	grid_block_dimension_t    num_threads_per_block,
+	grid::block_dimension_t    num_threads_per_block,
 	memory::shared::size_t      dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
