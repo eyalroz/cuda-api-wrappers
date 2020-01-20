@@ -24,8 +24,8 @@ template <typename T, size_t NumDimensions>
 class array_base {
 
 protected:
-	array_base(dimensions_t<NumDimensions> dims, cudaArray* array_ptr) :
-	    dims_(dims),
+	array_base(dimensions_t<NumDimensions> dimensions, cudaArray* array_ptr) :
+	    dimensions_(dimensions),
 	    array_ptr_(array_ptr) {}
 
 public:
@@ -34,9 +34,9 @@ public:
 
 	array_base(array_base&& other) :
 	    array_ptr_(other.array_ptr_),
-	    dims_(other.dims_) {
+	    dimensions_(other.dimensions_) {
 		other.array_ptr_ = nullptr;
-		other.dims_      = {0, 0, 0};
+		other.dimensions_      = {0, 0, 0};
 	}
 
 	~array_base() noexcept {
@@ -48,19 +48,19 @@ public:
 
 	cudaArray* get() const noexcept { return array_ptr_; }
 
-	dimensions_t<NumDimensions> dims() const noexcept { return dims_; }
+	dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
 
 	size_t size() const noexcept {
 		using dimensions_value_type = typename dimensions_t<NumDimensions>::value_type;
 		return std::accumulate(
-		    dims_.begin(), dims_.end(), static_cast<dimensions_value_type>(1),
+		    dimensions_.begin(), dimensions_.end(), static_cast<dimensions_value_type>(1),
 		    [](const dimensions_value_type& a, const dimensions_value_type& b) { return a * b; });
 	}
 
 	size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 protected:
-	dimensions_t<NumDimensions> dims_;
+	dimensions_t<NumDimensions> dimensions_;
 	cudaArray*          array_ptr_;
 };
 
@@ -96,11 +96,11 @@ private:
 
 	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_3d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<3> dims) {
+	malloc_3d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<3> dimensions) {
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
-		cudaExtent ext          = make_cudaExtent(dims[0], dims[1], dims[2]);
+		cudaExtent ext          = make_cudaExtent(dimensions[0], dimensions[1], dimensions[2]);
 		cudaArray* array_ptr;
 		auto       status = cudaMalloc3DArray(&array_ptr, &channel_desc, ext);
 		throw_if_error(status, "failed allocating 3D CUDA array");
@@ -110,10 +110,10 @@ private:
 public:
 
 	template<bool AssumedCurrent>
-	array_t(const device_t<AssumedCurrent>& device, dimensions_t<3> dims) :
+	array_t(const device_t<AssumedCurrent>& device, dimensions_t<3> dimensions) :
 	    detail::array_base<float, 3>(
-	        dims,
-	        malloc_3d_cuda_array(device, dims)) {}
+	        dimensions,
+	        malloc_3d_cuda_array(device, dimensions)) {}
 
 };
 
@@ -123,23 +123,23 @@ class array_t<T, 2> : public detail::array_base<T, 2> {
 private:
 	template<bool AssumedCurrent>
 	static cudaArray*
-	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dims) {
+	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dimensions) {
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
 		auto       channel_desc = cudaCreateChannelDesc<T>();
 		cudaArray* array_ptr;
 		auto       status =
-		    cudaMallocArray(&array_ptr, &channel_desc, dims[0], dims[1]);
+		    cudaMallocArray(&array_ptr, &channel_desc, dimensions[0], dimensions[1]);
 		throw_if_error(status, "failed allocating 2D CUDA array");
 		return array_ptr;
 	}
 
 public:
 	template<bool AssumedCurrent>
-	array_t(const device_t<AssumedCurrent>& device, dimensions_t<2> dims) :
+	array_t(const device_t<AssumedCurrent>& device, dimensions_t<2> dimensions) :
 	    detail::array_base<T, 2>(
-	        dims,
-	        malloc_2d_cuda_array(device, dims)) {}
+	        dimensions,
+	        malloc_2d_cuda_array(device, dimensions)) {}
 };
 
 

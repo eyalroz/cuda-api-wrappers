@@ -235,11 +235,11 @@ void copy(array::array_t<T, 3>& destination, const void *source)
 
 	// How to create a pitched ptr from a `const void*` ?
 	copy_params.srcPtr = make_cudaPitchedPtr(
-	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
+	    source_, destination.dimensions()[0] * sizeof(T),  destination.dimensions()[0], destination.dimensions()[1]);
 
 	copy_params.dstArray = destination.get();
 
-	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
+	cudaExtent ext = make_cudaExtent(destination.dimensions()[0], destination.dimensions()[1], destination.dimensions()[2]);
 
 	copy_params.extent = ext;
 
@@ -261,11 +261,11 @@ void copy(void* destination, const array::array_t<T, 3>& source)
 	cudaMemcpy3DParms copy_params = {0};
 
 	copy_params.dstPtr = make_cudaPitchedPtr(
-	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+	    destination, source.dimensions()[0] * sizeof(T),  source.dimensions()[0], source.dimensions()[1]);
 
 	copy_params.srcArray = source.get();
 
-	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+	cudaExtent ext = make_cudaExtent(source.dimensions()[0], source.dimensions()[1], source.dimensions()[2]);
 
 	copy_params.extent = ext;
 
@@ -300,7 +300,7 @@ void copy(array::array_t<T, 2>& destination, const void *source)
 	// 
 	// See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
 	// 
-	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault);
+	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dimensions()[0] * sizeof(T), destination.dimensions()[0] * sizeof(T), destination.dimensions()[1], cudaMemcpyDefault);
 	throw_if_error(result, "Synchronously copying into array");
 }
 
@@ -313,7 +313,7 @@ void copy(array::array_t<T, 2>& destination, const void *source)
 template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source)
 {
-	auto result = cudaMemcpy2DFromArray(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault);
+	auto result = cudaMemcpy2DFromArray(destination, source.dimensions()[0] * sizeof(T), source.get(), 0, 0, source.dimensions()[0] * sizeof(T), source.dimensions()[1], cudaMemcpyDefault);
   throw_if_error(result, "Synchronously copying from a CUDA array");
 }
 
@@ -370,11 +370,11 @@ void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t st
 
 	// How to create a pitched ptr from a `const void*` ?
 	copy_params.srcPtr = make_cudaPitchedPtr(
-	    source_, destination.dims()[0] * sizeof(T),  destination.dims()[0], destination.dims()[1]);
+	    source_, destination.dimensions()[0] * sizeof(T),  destination.dimensions()[0], destination.dimensions()[1]);
 
 	copy_params.dstArray = destination.get();
 
-	cudaExtent ext = make_cudaExtent(destination.dims()[0], destination.dims()[1], destination.dims()[2]);
+	cudaExtent ext = make_cudaExtent(destination.dimensions()[0], destination.dimensions()[1], destination.dimensions()[2]);
 
 	copy_params.extent = ext;
 
@@ -390,11 +390,11 @@ void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t st
 	cudaMemcpy3DParms copy_params = {0};
 
 	copy_params.dstPtr = make_cudaPitchedPtr(
-	    destination, source.dims()[0] * sizeof(T),  source.dims()[0], source.dims()[1]);
+	    destination, source.dimensions()[0] * sizeof(T),  source.dimensions()[0], source.dimensions()[1]);
 
 	copy_params.srcArray = source.get();
 
-	cudaExtent ext = make_cudaExtent(source.dims()[0], source.dims()[1], source.dims()[2]);
+	cudaExtent ext = make_cudaExtent(source.dimensions()[0], source.dimensions()[1], source.dimensions()[2]);
 
 	copy_params.extent = ext;
 
@@ -407,14 +407,14 @@ void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t st
 template<typename T>
 void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
 {
-	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault, stream_id);
+	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dimensions()[0] * sizeof(T), destination.dimensions()[0] * sizeof(T), destination.dimensions()[1], cudaMemcpyDefault, stream_id);
 	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::id_t stream_id)
 {
-	auto result = cudaMemcpy2DFromArrayAsync(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault, stream_id);
+	auto result = cudaMemcpy2DFromArrayAsync(destination, source.dimensions()[0] * sizeof(T), source.get(), 0, 0, source.dimensions()[0] * sizeof(T), source.dimensions()[1], cudaMemcpyDefault, stream_id);
 	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
