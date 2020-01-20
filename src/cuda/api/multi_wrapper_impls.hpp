@@ -266,6 +266,38 @@ inline region_pair allocate(
 
 } // namespace memory
 
+
+/**
+ * @brief Sets a device function's preference of either having more L1 cache or
+ * more shared memory space when executing on some device
+ *
+ * @param device_id the CUDA device for execution on which the preference is set
+ * @param preference value to set for the device function (more cache, more L1 or make the equal)
+ */
+void device_function_t::cache_preference(
+	device_t<detail::do_not_assume_device_is_current>& device,
+	multiprocessor_cache_preference_t preference)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	cache_preference(preference);
+}
+
+void device_function_t::opt_in_to_extra_dynamic_memory(
+	cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel,
+	device_t<detail::do_not_assume_device_is_current>& device)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	opt_in_to_extra_dynamic_memory(maximum_shared_memory_required_by_kernel);
+}
+
+void device_function_t::set_shared_mem_to_l1_cache_fraction(
+	unsigned shared_mem_percentage,
+	device_t<detail::do_not_assume_device_is_current>& device)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	set_shared_mem_to_l1_cache_fraction(shared_mem_percentage);
+}
+
 namespace device_function {
 
 inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
@@ -288,6 +320,7 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 }
 
 } // namespace device_function
+
 
 } // namespace cuda
 

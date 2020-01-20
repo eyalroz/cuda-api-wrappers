@@ -121,7 +121,7 @@ inline void* allocate(size_t num_bytes)
 		// Can this even happen? hopefully not
 		status = cudaErrorUnknown;
 	}
-	cuda::throw_if_error(status,
+	throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) +
 		" bytes of global memory on CUDA device " +
 		std::to_string(cuda::device::current::get_id()));
@@ -153,7 +153,7 @@ inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
-	cuda::throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
 template <bool AssumedCurrent>
@@ -182,7 +182,7 @@ struct deleter {
 inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 {
 	auto result = cudaMemset(buffer_start, byte_value, num_bytes);
-	cuda::throw_if_error(result, "memsetting an on-device buffer");
+	throw_if_error(result, "memsetting an on-device buffer");
 }
 
 /**
@@ -301,7 +301,6 @@ void copy(array::array_t<T, 2>& destination, const void *source)
 	// See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
 	// 
 	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dims()[0] * sizeof(T), destination.dims()[0] * sizeof(T), destination.dims()[1], cudaMemcpyDefault);
-
 	throw_if_error(result, "Synchronously copying into array");
 }
 
@@ -315,11 +314,7 @@ template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source)
 {
 	auto result = cudaMemcpy2DFromArray(destination, source.dims()[0] * sizeof(T), source.get(), 0, 0, source.dims()[0] * sizeof(T), source.dims()[1], cudaMemcpyDefault);
-
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying from array");
-		throw_if_error(result, error_message);
-	}
+  throw_if_error(result, "Synchronously copying from a CUDA array");
 }
 
 /**
@@ -354,6 +349,7 @@ namespace detail {
  * @param source A pointer to a a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream_id A stream on which to enqueue the copy operation
  */
 inline void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
 {
@@ -447,6 +443,7 @@ void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::i
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
+ * @param stream_id A stream on which to enqueue the copy operation
  */
 template <typename T>
 inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
@@ -470,6 +467,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param source A pointer to a a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream A stream on which to enqueue the copy operation
  */
 template <bool StreamIsOnCurrentDevice>
 inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
@@ -596,7 +594,7 @@ inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
 	}
-	cuda::throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
+	throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
 }
 
@@ -606,7 +604,7 @@ inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_
 inline void free(void* host_ptr)
 {
 	auto result = cudaFreeHost(host_ptr);
-	cuda::throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
+	throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail::ptr_as_hex(host_ptr));
 }
 
 namespace detail {
@@ -633,7 +631,7 @@ struct deleter {
 inline void register_(void *ptr, size_t size, unsigned flags)
 {
 	auto result = cudaHostRegister(ptr, size, flags);
-	cuda::throw_if_error(result,
+	throw_if_error(result,
 		"Could not register a region of page-locked host memory");
 }
 
@@ -680,7 +678,7 @@ inline void register_(void *ptr, size_t size)
 inline void deregister(void *ptr)
 {
 	auto result = cudaHostUnregister(ptr);
-	cuda::throw_if_error(result,
+	throw_if_error(result,
 		"Could not unregister the memory segment starting at address *a");
 }
 
@@ -738,7 +736,7 @@ inline void* allocate(
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
-	cuda::throw_if_error(status,
+	throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) + " bytes of managed CUDA memory");
 	return allocated;
 }
@@ -749,7 +747,7 @@ inline void* allocate(
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
-	cuda::throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
+	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
@@ -802,7 +800,7 @@ inline void* allocate(
 inline void free(void* managed_ptr)
 {
 	auto result = cudaFree(managed_ptr);
-	cuda::throw_if_error(result,
+	throw_if_error(result,
 		"Freeing managed memory (host and device regions) at address 0x"
 		+ cuda::detail::ptr_as_hex(managed_ptr));
 }
@@ -924,7 +922,7 @@ inline region_pair allocate(
 inline void free(region_pair pair)
 {
 	auto result = cudaFreeHost(pair.host_side);
-	cuda::throw_if_error(result, "Could not free mapped memory region pair.");
+	throw_if_error(result, "Could not free mapped memory region pair.");
 }
 
 /**
@@ -937,7 +935,7 @@ inline void free_region_pair_of(void* ptr)
 {
 	auto wrapped_ptr = pointer_t<void> { ptr };
 	auto result = cudaFreeHost(wrapped_ptr.get_for_host());
-	cuda::throw_if_error(result, "Could not free mapped memory region pair.");
+	throw_if_error(result, "Could not free mapped memory region pair.");
 }
 
 /**
