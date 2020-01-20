@@ -56,8 +56,8 @@
 namespace cuda {
 
 enum : memory::shared::size_t { no_shared_memory = 0 };
-constexpr grid_dimensions_t single_block() { return 1; }
-constexpr grid_block_dimensions_t single_thread_per_block() { return 1; }
+constexpr grid::dimensions_t single_block() { return 1; }
+constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail {
 
