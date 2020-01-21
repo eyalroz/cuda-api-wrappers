@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 		<< "Device " << std::to_string(device.id()) << " reports it has:\n"
 		<< free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
 
-	assert(free_memory < total_memory);
+	assert(free_memory <= total_memory);
 
 
 	// Specific attributes and properties with their own API calls:
