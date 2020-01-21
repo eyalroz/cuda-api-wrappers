@@ -1,6 +1,8 @@
+#include <iostream>
+#include <numeric>
+
 #include <cuda/api_wrappers.hpp>
 
-#include <iostream>
 
 namespace kernels {
 
@@ -41,7 +43,7 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 
 	cuda::array::array_t<float, 3> arr(device, dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	ptr_in[5] = 6;
+	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
@@ -51,7 +53,9 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	cuda::launch(kernels::from_3D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h, d);
 	device.synchronize();
 	for (size_t i = 0; i < arr.size(); ++i) {
-		std::cout << "ptr_out[" << i << "] = " << ptr_out[i] << std::endl;
+		if (ptr_out[i] != i) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
 	}
 
 	// copy between arrays and memory spaces
@@ -59,11 +63,22 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	cuda::memory::copy(other_arr, ptr_out.get());
 	cuda::memory::copy(ptr_in.get(), other_arr);
 
+	for (size_t i = 0; i < arr.size(); ++i) {
+		if (ptr_in[i] != i) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
+	}
+
 	// also asynchronously
 	auto stream = device.create_stream(cuda::stream::async);
 	cuda::memory::async::copy(other_arr, ptr_out.get(), stream);
 	cuda::memory::async::copy(ptr_in.get(), other_arr, stream);
 	device.synchronize();
+	for (size_t i = 0; i < arr.size(); ++i) {
+		if (ptr_in[i] != i) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
+	}
 }
 
 template<class Device>
@@ -72,12 +87,9 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 	const cuda::array::dimensions_t<2> dims = {w, h};
 	cuda::array::array_t<float, 2> arr(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	ptr_in[0] = 1;
-	ptr_in[1] = 2;
-	ptr_in[3] = 3;
+	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 
-	std::cout << std::endl;
 	for (size_t i = 0; i < h; ++i) {
 		for (size_t j = 0; j < w; ++j) {
 			std::cout << ptr_in[j + i * w] << ' ';
@@ -93,7 +105,6 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), 1};
 
 	cuda::launch(kernels::from_2D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h);
-	cuda::memory::copy(ptr_out.get(), arr);
 	device.synchronize();
 	for (size_t i = 0; i < h; ++i) {
 		for (size_t j = 0; j < w; ++j) {
@@ -101,17 +112,32 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 		}
 		std::cout << std::endl;
 	}
+	for (size_t k = 0; k < arr.size(); ++k) {
+		if (ptr_out[k] != k) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
+	}
 
 	// copy between arrays and memory spaces
 	cuda::array::array_t<float, 2> other_arr(device, dims);
 	cuda::memory::copy(other_arr, ptr_out.get());
 	cuda::memory::copy(ptr_in.get(), other_arr);
+	for (size_t k = 0; k < arr.size(); ++k) {
+		if (ptr_in[k] != k) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
+	}
 	
 	// also asynchronously
 	auto stream = device.create_stream(cuda::stream::async);
 	cuda::memory::async::copy(other_arr, ptr_out.get(), stream);
 	cuda::memory::async::copy(ptr_in.get(), other_arr, stream);
 	device.synchronize();
+	for (size_t k = 0; k < arr.size(); ++k) {
+		if (ptr_in[k] != k) {
+			std::cout << "ERROR: values were not correctly copied!" << std::endl;
+		}
+	}
 }
 
 int main() {
