@@ -4,9 +4,12 @@
 #include <cuda/api_wrappers.hpp>
 
 
+using std::size_t;
+
 namespace kernels {
 
-__global__ void from_3D_texture_to_memory_space(cudaTextureObject_t texture_source, float* destination, size_t w, size_t h, size_t d) {
+__global__ void from_3D_texture_to_memory_space(
+	cudaTextureObject_t texture_source, float* destination, size_t w, size_t h, size_t d) {
 
 	const auto gtidx = threadIdx.x + blockIdx.x * blockDim.x;
 	const auto gtidy = threadIdx.y + blockIdx.y * blockDim.y;
@@ -31,14 +34,18 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 	}
 }
 
-}
+} // namespace kernels
 
-size_t div_ceil(size_t dividend, size_t divisor) {
-	return dividend / divisor + (dividend % divisor == 0 ? 0 : 1);
+template <typename I, typename I2>
+constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
+{
+	return (dividend / divisor) + !!(dividend % divisor);
 }
 
 template<class Device>
-void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
+void array_3d_example(Device& device, size_t w, size_t h, size_t d)
+{
+	namespace grid = cuda::grid;
 	const cuda::array::dimensions_t<3> dims = {w, h, d};
 
 	cuda::array::array_t<float, 3> arr(device, dims);
@@ -47,10 +54,21 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
-	constexpr cuda::grid_block_dimension_t block_dim = 10;
-	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, block_dim};
-	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), div_ceil(d, block_dim)};
-	cuda::launch(kernels::from_3D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h, d);
+	constexpr cuda::grid::block_dimension_t block_dim = 10;
+	constexpr auto block_dims = cuda::grid::block_dimensions_t::cube(block_dim);
+	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(d, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	const grid::dimensions_t grid_dims = {
+		grid::dimension_t( div_rounding_up(w, block_dim) ),
+		grid::dimension_t( div_rounding_up(h, block_dim) ),
+		grid::dimension_t( div_rounding_up(d, block_dim) )
+	};
+
+	cuda::launch(
+		kernels::from_3D_texture_to_memory_space,
+		cuda::make_launch_config(grid_dims, block_dims),
+		tv.get(), ptr_out.get(), w, h, d);
 	device.synchronize();
 	for (size_t i = 0; i < arr.size(); ++i) {
 		if (ptr_out[i] != i) {
@@ -82,7 +100,9 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 }
 
 template<class Device>
-void array_2d_example(Device& device, size_t w, size_t h) {
+void array_2d_example(Device& device, size_t w, size_t h)
+{
+	namespace grid = cuda::grid;
 
 	const cuda::array::dimensions_t<2> dims = {w, h};
 	cuda::array::array_t<float, 2> arr(device , dims);
@@ -100,11 +120,20 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
 
-	constexpr cuda::grid_block_dimension_t block_dim = 10;
-	constexpr cuda::grid_block_dimensions_t block_dims = {block_dim, block_dim, 1};
-	const cuda::grid_dimensions_t grid_dims = {div_ceil(w, block_dim), div_ceil(h, block_dim), 1};
+	constexpr cuda::grid::block_dimension_t block_dim = 10;
+	constexpr auto block_dims = cuda::grid::block_dimensions_t::square(block_dim);
+	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	const cuda::grid::dimensions_t grid_dims = {
+		grid::dimension_t( div_rounding_up(w, block_dim) ),
+		grid::dimension_t( div_rounding_up(h, block_dim) ),
+		1
+	};
 
-	cuda::launch(kernels::from_2D_texture_to_memory_space, cuda::make_launch_config(grid_dims, block_dims), tv.get(), ptr_out.get(), w, h);
+	cuda::launch(
+		kernels::from_2D_texture_to_memory_space,
+		cuda::make_launch_config(grid_dims, block_dims),
+		tv.get(), ptr_out.get(), w, h);
 	device.synchronize();
 	for (size_t i = 0; i < h; ++i) {
 		for (size_t j = 0; j < w; ++j) {
@@ -140,8 +169,8 @@ void array_2d_example(Device& device, size_t w, size_t h) {
 	}
 }
 
-int main() {
-
+int main()
+{
 	auto device = cuda::device::current::get();
 
 	// array dimensions
@@ -151,4 +180,5 @@ int main() {
 
 	array_3d_example(device, w, h, d);
 	array_2d_example(device, w, h);
+	device.synchronize();
 }

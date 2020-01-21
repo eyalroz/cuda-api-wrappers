@@ -47,7 +47,7 @@ cuda::launch_configuration_t make_linear_launch_config(
 	size_t                  length)
 {
 	auto threads_per_block = device.properties().max_threads_per_block();
-	cuda::grid_dimension_t num_blocks =
+	cuda::grid::dimension_t num_blocks =
 		(length / threads_per_block) +
 		(length % threads_per_block == 0 ? 0 : 1);
 	return cuda::make_launch_config(num_blocks, threads_per_block, cuda::no_shared_memory);

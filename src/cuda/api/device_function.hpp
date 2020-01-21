@@ -240,11 +240,11 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
  * See also the "Unified L1/Texture Cache" section of the Maxwell tuning guide:
  * @url http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html
  */
-inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
+inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 	device_t<detail::do_not_assume_device_is_current>
                               device,
 	const device_function_t&  device_function,
-	grid_block_dimension_t    num_threads_per_block,
+	grid::block_dimension_t    num_threads_per_block,
 	memory::shared::size_t     dynamic_shared_memory_per_block,
 	bool                      disable_caching_override = false);
 
