@@ -193,12 +193,12 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 }
 
 template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(array::array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream) {
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream) {
 	detail::copy(destination, source, stream.id());
 }
 
 template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(void* destination, const array::array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream) {
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream) {
 	detail::copy(destination, source, stream.id());
 }
 

@@ -248,7 +248,7 @@ struct copy_params_t : cudaMemcpy3DParms {
 	struct tag { };
 protected:
 	template <typename T>
-	copy_params_t(tag, const void *ptr, const array::array_t<T, 3>& array) :
+	copy_params_t(tag, const void *ptr, const array_t<T, 3>& array) :
 		cudaMemcpy3DParms { 0 },
 		pitch(sizeof(T) * array.dimensions().width),
 		pitched_ptr(make_cudaPitchedPtr(
@@ -263,7 +263,7 @@ protected:
 
 public:
 	template <typename T>
-	copy_params_t(const array::array_t<T, 3>& destination, const void *source) :
+	copy_params_t(const array_t<T, 3>& destination, const void *source) :
 		copy_params_t(tag{}, source, destination)
 	{
 		srcPtr = pitched_ptr;
@@ -271,7 +271,7 @@ public:
 	}
 
 	template <typename T>
-	copy_params_t(const void * destination, const array::array_t<T, 3>& source) :
+	copy_params_t(const void * destination, const array_t<T, 3>& source) :
 		copy_params_t(tag{}, destination, source)
 	{
 		srcArray = source.get();
@@ -293,7 +293,7 @@ public:
  * elements as would fill the @source array, _contiguously_
  */
 template<typename T>
-void copy(array::array_t<T, 3>& destination, const void *source)
+void copy(array_t<T, 3>& destination, const void *source)
 {
 	const auto copy_params = detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3D(&copy_params);
@@ -309,7 +309,7 @@ void copy(array::array_t<T, 3>& destination, const void *source)
  * @param source A 3-dimensional CUDA array
  */
 template<typename T>
-void copy(void *destination, const array::array_t<T, 3>& source)
+void copy(void *destination, const array_t<T, 3>& source)
 {
 	const auto copy_params = detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3D(&copy_params);
@@ -319,11 +319,11 @@ void copy(void *destination, const array::array_t<T, 3>& source)
 /**
  * Synchronously copies data from memory spaces into CUDA arrays.
  *
- * @param destination A CUDA array @ref cuda::array::array_t
+ * @param destination A CUDA array @ref cuda::array_t
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  */
 template<typename T>
-void copy(array::array_t<T, 2>& destination, const void *source)
+void copy(array_t<T, 2>& destination, const void *source)
 {
 	const auto dimensions = destination.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -349,7 +349,7 @@ void copy(array::array_t<T, 2>& destination, const void *source)
  * all elements of the @p source array, contiguously
  * @param source A 2-dimensional CUDA array */
 template<typename T>
-void copy(void* destination, const array::array_t<T, 2>& source)
+void copy(void* destination, const array_t<T, 2>& source)
 {
 	const auto dimensions = source.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -411,7 +411,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 }
 
 template<typename T>
-void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
+void copy(array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
 {
 	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
@@ -419,7 +419,7 @@ void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t st
 }
 
 template<typename T>
-void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t stream_id)
+void copy(void* destination, const array_t<T, 3>& source, stream::id_t stream_id)
 {
 	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
@@ -427,7 +427,7 @@ void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t st
 }
 
 template<typename T>
-void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+void copy(array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
 {
 	const auto dimensions = destination.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -447,7 +447,7 @@ void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t st
 }
 
 template<typename T>
-void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::id_t stream_id)
+void copy(void* destination, const array_t<T, 2>& source, cuda::stream::id_t stream_id)
 {
 	const auto dimensions = source.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -509,12 +509,12 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  *
  * @note asynchronous version of @ref memory::copy
  *
- * @param destination A CUDA array @ref cuda::array::array_t
+ * @param destination A CUDA array @ref cuda::array_t
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(array::array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -522,11 +522,11 @@ inline void copy(array::array_t<T, NumDimensions>& destination, const void *sour
  * @note asynchronous version of @ref memory::copy
  *
  * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
- * @param source A CUDA array @ref cuda::array::array_t
+ * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(void* destination, const array::array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.

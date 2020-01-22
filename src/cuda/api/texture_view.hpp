@@ -30,7 +30,7 @@ struct descriptor_t : public cudaTextureDesc {
  * @brief Use texture memory for optimized read only cache access
  *
  * This represents a view on the memory owned by a CUDA array. Thus you can
- * first create a CUDA array (\ref cuda::array::array_t) and subsequently
+ * first create a CUDA array (\ref cuda::array_t) and subsequently
  * create a `texture_view` from it. In CUDA kernels elements of the array
  * can be accessed with e.g. `float val = tex3D<float>(tex_obj, x, y, z);`,
  * where `tex_obj` can be obtained by the member function `get()` of this
@@ -44,7 +44,7 @@ struct descriptor_t : public cudaTextureDesc {
 class texture_view {
 	public:
 	template <typename T, size_t NumDimensions>
-	texture_view(const cuda::array::array_t<T, NumDimensions>& arr, texture::descriptor_t desc = texture::descriptor_t()) {
+	texture_view(const cuda::array_t<T, NumDimensions>& arr, texture::descriptor_t desc = texture::descriptor_t()) {
 		cudaResourceDesc resDesc;
 		memset(&resDesc, 0, sizeof(resDesc));
 		resDesc.resType = cudaResourceTypeArray;
