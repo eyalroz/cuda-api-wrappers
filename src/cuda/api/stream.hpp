@@ -108,6 +108,8 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
+namespace detail {
+
 /**
  * Wraps a CUDA stream ID in a stream_t proxy instance,
  * possibly also taking on the responsibility of eventually
@@ -119,6 +121,8 @@ inline stream_t<> wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
 	bool          take_ownership = false) noexcept;
+
+} // namespace detail
 
 } // namespace stream
 
@@ -508,7 +512,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend stream_t<> stream::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
+	friend stream_t<> stream::detail::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
 
 protected: // data members
 	const device::id_t  device_id_;
@@ -540,6 +544,7 @@ enum : bool {
 	take_ownership      = true,
 };
 
+namespace detail {
 /**
  * @brief Wrap an existing stream in a @ref stream_t instance.
  *
@@ -585,13 +590,22 @@ inline stream_t<> create(
 	return wrap(device_id, new_stream_id, take_ownership);
 }
 
-} // namespace stream
+} // namespace detail
 
+template <bool AssumedCurrent>
+inline stream_t<> create(
+	device_t<AssumedCurrent>&  device,
+	bool                      synchronizes_with_default_stream,
+	priority_t                priority = stream::default_priority);
+
+} // namespace stream
 
 template <bool AssumesDeviceIsCurrent = false>
 using queue_t = stream_t<AssumesDeviceIsCurrent>;
 
 using queue_id_t = stream::id_t;
+
+
 
 } // namespace cuda
 

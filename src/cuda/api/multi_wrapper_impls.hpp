@@ -80,7 +80,7 @@ device_t<AssumedCurrent>::create_stream(
 {
 	device::current::scoped_override_t<AssumedCurrent> set_device_for_this_scope(id_);
 	constexpr const auto take_ownership = true;
-	return stream::wrap(id(), stream::detail::create_on_current_device(
+	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
 		will_synchronize_with_default_stream, priority), take_ownership);
 }
 
@@ -335,6 +335,19 @@ inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 
 } // namespace device_function
 
+namespace stream {
+
+template <bool AssumeDeviceIsCurrent>
+inline stream_t<> create(
+	device_t<AssumeDeviceIsCurrent>&  device,
+	bool                              synchronizes_with_default_stream,
+	priority_t                        priority)
+{
+	auto device_id = device.id();
+	return detail::create(device_id, synchronizes_with_default_stream, priority);
+}
+
+} // namespace stream
 
 } // namespace cuda
 

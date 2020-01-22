@@ -166,7 +166,7 @@ public: // other mutator methods
 	 */
 	void fire(stream::id_t stream_id = stream::default_stream_id) {
 		record(stream_id);
-		stream::wrap(device_id_, stream_id).synchronize();
+		stream::detail::wrap(device_id_, stream_id).synchronize();
 	}
 
 	/**
