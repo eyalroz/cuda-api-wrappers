@@ -201,6 +201,10 @@ using dimension_t        = decltype(dim3::x);
  *
  * @note Theoretically, CUDA could split the type for blocks per grid and
  * threads per block, but for now they're the same.
+ *
+ * @note At the time of writing, a grid dimension value cannot exceed 2^31
+ * on any axis (even lower on the y and z axes), so signed 32-bit integers
+ * are "usable" even though this type is unsigned.
  */
 using block_dimension_t  = dimension_t;
 
@@ -289,18 +293,46 @@ using size_t = unsigned;
  * Holds the parameters necessary to "launch" a CUDA kernel (i.e. schedule it for
  * execution on some stream of some device).
  */
-typedef struct {
-	grid::dimensions_t       grid_dimensions;
-	grid::block_dimensions_t block_dimensions;
-	memory::shared::size_t    dynamic_shared_memory_size; // in bytes
-} launch_configuration_t;
+struct launch_configuration_t {
+	grid::dimensions_t       grid_dimensions { 0 }; /// in blocks
+	grid::block_dimensions_t block_dimensions { 0 }; /// in threads
+	memory::shared::size_t    dynamic_shared_memory_size { 0u };
+		/// ... in bytes per block
+
+#if __cplusplus < 201402L
+	// In C++11, an inline initializer for a struct's field costs us a lot
+	// of its defaulted constructors; but - we must initialize the shared
+	// memory size to 0, as otherwise, people might be tempted to initialize
+	// a launch config with { num_blocks, num_threads } - and get an
+	// uninitalized shared memory size which they did not expect.
+	launch_configuration_t() = delete;
+	launch_configuration_t(const launch_configuration_t&) = default;
+	launch_configuration_t(launch_configuration_t&&) = default;
+	launch_configuration_t(
+		grid::dimensions_t grid_dims,
+		grid::dimensions_t block_dims,
+		memory::shared::size_t dynamic_shared_mem = 0u
+	) :
+		grid_dimensions(grid_dims),
+		block_dimensions(block_dims),
+		dynamic_shared_memory_size(dynamic_shared_mem)
+	{ }
+	// A "convenience" ctor to avoid narrowing-conversion warnings
+	launch_configuration_t(
+		int grid_dims,
+		int block_dims,
+		memory::shared::size_t dynamic_shared_mem = 0u
+	) : launch_configuration_t(grid::dimensions_t(grid_dims), grid::dimensions_t(block_dims), dynamic_shared_mem )
+	{ }
+#endif
+};
 
 inline launch_configuration_t make_launch_config(
 	grid::dimensions_t       grid_dimensions,
 	grid::block_dimensions_t block_dimensions,
-	memory::shared::size_t    dynamic_shared_memory_size = 0) noexcept
+	memory::shared::size_t    dynamic_shared_memory_size = 0u) noexcept
 {
-	return { grid_dimensions, block_dimensions, dynamic_shared_memory_size };
+	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size };
 }
 
 inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
