@@ -205,7 +205,6 @@ using dimension_t        = decltype(dim3::x);
 using block_dimension_t  = dimension_t;
 
 
-
 /**
  * A richer (kind-of-a-)wrapper for CUDA's @ref dim3 class, used
  * to specify dimensions for blocks (in terms of threads) and of
@@ -218,38 +217,34 @@ using block_dimension_t  = dimension_t;
  * be empty: A grid must have some threads. Thus, the value in each
  * axis must be positive.
  */
-
-/**
- */
-
-
 struct dimensions_t // this almost-inherits dim3
 {
 	dimension_t x, y, z;
-    constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
-    : x(x_), y(y_), z(z_) { }
+	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
+	: x(x_), y(y_), z(z_) { }
 
-    __host__ __device__ constexpr dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
-    __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+    constexpr __host__ __device__ dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
+    constexpr __host__ __device__ dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+    constexpr __host__ __device__ dimensions_t(dim3&& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
 
-    __host__ __device__ constexpr operator uint3(void) const { return { x, y, z }; }
+    constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
 
 	// This _should_ have been constexpr, but nVIDIA have not marked the dim3 constructors
 	// as constexpr, so it isn't
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    __host__ __device__ constexpr size_t volume() const { return (size_t) x * y * z; }
-    __host__ __device__ constexpr unsigned char dimensionality() const
+    constexpr __host__ __device__ std::size_t volume() const { return (std::size_t) x * y * z; }
+    constexpr __host__ __device__ unsigned char dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1));
 	}
 
-    // Named constructor idioms
+	// Named constructor idioms
 
-    static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
-    static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
-    static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
-    static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
+	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+	static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
+	static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
+	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
 };
 
 constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
@@ -352,9 +347,9 @@ enum class multiprocessor_cache_preference_t {
 enum multiprocessor_shared_memory_bank_size_option_t
 	: std::underlying_type<cudaSharedMemConfig>::type
 {
-    device_default       = cudaSharedMemBankSizeDefault,
-    four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
-    eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
+	device_default       = cudaSharedMemBankSizeDefault,
+	four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
+	eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
 };
 
 namespace device {
