@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	// so that the attachment has some observable effect
 	stream_1.enqueue.memory_attachment(buffer.get());
 	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
-	event_1.record(stream_1.id());
+	event_1.record(stream_1);
 	stream_1.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_2.enqueue.wait(event_1);
 	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());
