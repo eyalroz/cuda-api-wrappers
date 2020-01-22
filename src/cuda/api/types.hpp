@@ -18,7 +18,6 @@
 #endif
 
 #include <type_traits>
-#include <array>
 #include <cassert>
 
 #ifndef __CUDACC__
@@ -27,6 +26,15 @@
 #define __host__ 
 #endif
 #endif
+
+#ifndef CPP14_CONSTEXPR
+#if __cplusplus >= 201402L
+#define CPP14_CONSTEXPR constexpr
+#else
+#define CPP14_CONSTEXPR
+#endif
+#endif
+
 
 #ifdef _MSC_VER
 /*
@@ -62,6 +70,7 @@ using status_t                = cudaError_t;
 
 namespace array {
 
+using dimension_t = std::size_t;
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
  * or extents, are not the same as @ref cuda::grid_dimensionts_t ; they may be
@@ -69,10 +78,88 @@ namespace array {
  *
  * @note See also @url https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html
  */
-template<size_t NumDimensions>
-using dimensions_t = std::array<size_t, NumDimensions>;
+template<std::size_t NumDimensions>
+struct dimensions_t;
 
-}
+template<>
+struct dimensions_t<3> // this almost-inherits cudaExtent
+{
+	dimension_t width, height, depth;
+
+	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_, dimension_t depth_)
+	: width(width_), height(height_), depth(depth_) { }
+
+	constexpr __host__ __device__ dimensions_t(cudaExtent e) : dimensions_t(e.width, e.height, e.depth) { }
+
+	constexpr __host__ __device__ dimensions_t(const dimensions_t&) = default;
+	constexpr __host__ __device__ dimensions_t(dimensions_t&&) = default;
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	{
+		width = other.width; height = other.height; depth = other.depth;
+		return *this;
+
+	}
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
+	{
+		width = other.width; height = other.height; depth = other.depth;
+		return *this;
+	}
+
+	constexpr __host__ __device__ operator cudaExtent(void) const
+	{
+		return { width, height, depth };
+			// Note: We're not using make_cudaExtent here because:
+			// 1. It's not constexpr and
+			// 2. It doesn't do anything except construct the plain struct - as of CUDA 10 at least
+	}
+
+	constexpr __host__ __device__ std::size_t volume() const { return width * height * depth; }
+	constexpr __host__ __device__ std::size_t size() const { return volume(); }
+	constexpr __host__ __device__ unsigned char dimensionality() const
+	{
+		return ((width > 1) + (height> 1) + (depth > 1));
+	}
+
+	// Named constructor idioms
+
+	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+};
+
+template<>
+struct dimensions_t<2>
+{
+	dimension_t width, height;
+
+	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_)
+	: width(width_), height(height_) { }
+
+	constexpr __host__ __device__ dimensions_t(const dimensions_t&) = default;
+	constexpr __host__ __device__ dimensions_t(dimensions_t&&) = default;
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	{
+		width = other.width; height = other.height;
+		return *this;
+
+	}
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
+	{
+		width = other.width; height = other.height;
+		return *this;
+	}
+
+	constexpr __host__ __device__ std::size_t area() const { return width * height; }
+	constexpr __host__ __device__ std::size_t size() const { return area(); }
+	constexpr __host__ __device__ unsigned char dimensionality() const
+	{
+		return ((width > 1) + (height> 1));
+	}
+
+	// Named constructor idioms
+
+	static constexpr __host__ __device__ dimensions_t square(dimension_t x)   { return dimensions_t{ x, x }; }
+};
+
+} // namespace array
 
 namespace event {
 using id_t              = cudaEvent_t;

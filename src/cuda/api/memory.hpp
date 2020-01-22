@@ -3,6 +3,26 @@
  *
  * @brief freestanding wrapper functions for working with CUDA's various
  * kinds of memory spaces, arranged into a relevant namespace hierarchy.
+ *
+ * @note Some of the CUDA API for allocating and copying memory involves
+ * the concept of "pitch" and "pitched pointers". To better understand
+ * what that means, consider the following two-dimensional representation
+ * of an array (which is in fact embedded in linear memory):
+ *
+ *	 X X X X * * *
+ *	 X X X X * * *
+ *	 X X X X * * *
+ *
+ *	 * = padding element
+ *	 X = actually used element of the array
+ *
+ *	 The pitch in the example above is 7 * sizeof(T)
+ *	 The width is 4 * sizeof(T)
+ *   The height is 3
+ *
+ * See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
+ *
+ *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
@@ -218,61 +238,82 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 	throw_if_error(result, "Synchronously copying data");
 }
 
+namespace detail {
+
 /**
- * Synchronously copies data from memory spaces into CUDA arrays.
+ * @note When constructing this class - destination first, source second
+ * (otherwise you're implying the opposite direction of transfer).
+ */
+struct copy_params_t : cudaMemcpy3DParms {
+	struct tag { };
+protected:
+	template <typename T>
+	copy_params_t(tag, const void *ptr, const array::array_t<T, 3>& array) :
+		cudaMemcpy3DParms { 0 },
+		pitch(sizeof(T) * array.dimensions().width),
+		pitched_ptr(make_cudaPitchedPtr(
+			const_cast<void*>(ptr),
+			pitch,
+			array.dimensions().width,
+			array.dimensions().height))
+	{
+		kind = cudaMemcpyDefault;
+		extent = array.dimensions();
+	}
+
+public:
+	template <typename T>
+	copy_params_t(const array::array_t<T, 3>& destination, const void *source) :
+		copy_params_t(tag{}, source, destination)
+	{
+		srcPtr = pitched_ptr;
+		dstArray = destination.get();
+	}
+
+	template <typename T>
+	copy_params_t(const void * destination, const array::array_t<T, 3>& source) :
+		copy_params_t(tag{}, destination, source)
+	{
+		srcArray = source.get();
+		dstPtr = pitched_ptr;
+	}
+
+	size_t pitch;
+	cudaPitchedPtr pitched_ptr;
+};
+
+} // namespace detail
+
+/**
+ * Synchronously copies data from a 3-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
  *
- * @param destination A CUDA array @ref cuda::array::array_t
- * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ * @param destination A 3-dimensional CUDA array
+ * @param source A pointer to a a memory region containing as many
+ * elements as would fill the @source array, _contiguously_
  */
 template<typename T>
 void copy(array::array_t<T, 3>& destination, const void *source)
 {
-	cudaMemcpy3DParms copyParams = {0};
-
-	// make_cudaPitchedPtr expects a void* pointer
-	void* source_ = const_cast<void*>(source);
-
-	// How to create a pitched ptr from a `const void*` ?
-	copyParams.srcPtr = make_cudaPitchedPtr(
-	    source_, destination.dimensions()[0] * sizeof(T),  destination.dimensions()[0], destination.dimensions()[1]);
-
-	copyParams.dstArray = destination.get();
-
-	cudaExtent ext = make_cudaExtent(destination.dimensions()[0], destination.dimensions()[1], destination.dimensions()[2]);
-
-	copyParams.extent = ext;
-
-	copyParams.kind = cudaMemcpyDefault;
-
-	auto result = cudaMemcpy3D(&copyParams);
-	throw_if_error(result, "Synchronously copying into array");
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
 }
 
 /**
- * Synchronously copies data from CUDA arrays into memory spaces.
+ * Synchronously copies data from a 3-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
  *
- * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
- * @param source A CUDA array @ref cuda::array::array_t
+ * @param destination A pointer to a a memory region large enough to fit
+ * all elements of the @source array, contiguously
+ * @param source A 3-dimensional CUDA array
  */
 template<typename T>
-void copy(void* destination, const array::array_t<T, 3>& source)
+void copy(void *destination, const array::array_t<T, 3>& source)
 {
-	cudaMemcpy3DParms copyParams = {0};
-
-	copyParams.dstPtr = make_cudaPitchedPtr(
-	    destination, source.dimensions()[0] * sizeof(T),  source.dimensions()[0], source.dimensions()[1]);
-
-	copyParams.srcArray = source.get();
-
-	cudaExtent ext = make_cudaExtent(source.dimensions()[0], source.dimensions()[1], source.dimensions()[2]);
-
-	copyParams.extent = ext;
-
-	copyParams.kind = cudaMemcpyDefault;
-
-	auto result = cudaMemcpy3D(&copyParams);
-
-	throw_if_error(result, "Synchronously copying from array");
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying from a 3-dimensional CUDA array");
 }
 
 /**
@@ -284,36 +325,46 @@ void copy(void* destination, const array::array_t<T, 3>& source)
 template<typename T>
 void copy(array::array_t<T, 2>& destination, const void *source)
 {
-	// Consider the padded array:
-	// 
-	// x x x x o o o
-	// x x x x o o o
-	// x x x x o o o
-	// 
-	// o = padding element
-	// x = actually used element of the array
-	// 
-	// The pitch in the example above is 7 * sizeof(T)
-	// The width is 4 * sizeof(T)
-	// The height is 3
-	// 
-	// See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
-	// 
-	auto result = cudaMemcpy2DToArray(destination.get(), 0, 0, source, destination.dimensions()[0] * sizeof(T), destination.dimensions()[0] * sizeof(T), destination.dimensions()[1], cudaMemcpyDefault);
-	throw_if_error(result, "Synchronously copying into array");
+	const auto dimensions = destination.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto source_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DToArray(
+		destination.get(),
+		offsets.width,
+		offsets.height,
+		source,
+		source_pitch,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault);
+	throw_if_error(result, "Synchronously copying into a 2D CUDA array");
 }
 
 /**
- * Synchronously copies data from CUDA arrays into memory spaces.
+ * Synchronously copies data from a 2-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
  *
- * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
- * @param source A CUDA array @ref cuda::array::array_t
- */
+ * @param destination A pointer to a a memory region large enough to fit
+ * all elements of the @p source array, contiguously
+ * @param source A 2-dimensional CUDA array */
 template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source)
 {
-	auto result = cudaMemcpy2DFromArray(destination, source.dimensions()[0] * sizeof(T), source.get(), 0, 0, source.dimensions()[0] * sizeof(T), source.dimensions()[1], cudaMemcpyDefault);
-  throw_if_error(result, "Synchronously copying from a CUDA array");
+	const auto dimensions = source.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto destination_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DFromArrayAsync(
+		destination,
+		destination_pitch,
+		source.get(),
+		offsets.width,
+		offsets.height,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault);
+	throw_if_error(result, "Synchronously copying out of a 2D CUDA array");
 }
 
 /**
@@ -362,59 +413,57 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 template<typename T>
 void copy(array::array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
 {
-	cudaMemcpy3DParms copy_params = {0};
-
-	// make_cudaPitchedPtr expects a void* pointer
-	void* source_ = const_cast<void*>(source);
-
-	// How to create a pitched ptr from a `const void*` ?
-	copy_params.srcPtr = make_cudaPitchedPtr(
-	    source_, destination.dimensions()[0] * sizeof(T),  destination.dimensions()[0], destination.dimensions()[1]);
-
-	copy_params.dstArray = destination.get();
-
-	cudaExtent ext = make_cudaExtent(destination.dimensions()[0], destination.dimensions()[1], destination.dimensions()[2]);
-
-	copy_params.extent = ext;
-
-	copy_params.kind = cudaMemcpyDefault;
-
+	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
-	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+	throw_if_error(result, "Scheduling a memory copy into a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 template<typename T>
 void copy(void* destination, const array::array_t<T, 3>& source, stream::id_t stream_id)
 {
-	cudaMemcpy3DParms copy_params = {0};
-
-	copy_params.dstPtr = make_cudaPitchedPtr(
-	    destination, source.dimensions()[0] * sizeof(T),  source.dimensions()[0], source.dimensions()[1]);
-
-	copy_params.srcArray = source.get();
-
-	cudaExtent ext = make_cudaExtent(source.dimensions()[0], source.dimensions()[1], source.dimensions()[2]);
-
-	copy_params.extent = ext;
-
-	copy_params.kind = cudaMemcpyDefault;
-
+	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
-	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 template<typename T>
 void copy(array::array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
 {
-	auto result = cudaMemcpy2DToArrayAsync(destination.get(), 0, 0, source, destination.dimensions()[0] * sizeof(T), destination.dimensions()[0] * sizeof(T), destination.dimensions()[1], cudaMemcpyDefault, stream_id);
-	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+	const auto dimensions = destination.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto source_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DToArrayAsync(
+		destination.get(),
+		offsets.width,
+		offsets.height,
+		source,
+		source_pitch,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault,
+		stream_id);
+	throw_if_error(result, "Scheduling a memory copy into a 2D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 template<typename T>
 void copy(void* destination, const array::array_t<T, 2>& source, cuda::stream::id_t stream_id)
 {
-	auto result = cudaMemcpy2DFromArrayAsync(destination, source.dimensions()[0] * sizeof(T), source.get(), 0, 0, source.dimensions()[0] * sizeof(T), source.dimensions()[1], cudaMemcpyDefault, stream_id);
-	throw_if_error(result, "Scheduling an array memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+	const auto dimensions = source.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto destination_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DFromArrayAsync(
+		destination,
+		destination_pitch,
+		source.get(),
+		offsets.width,
+		offsets.height,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault,
+		stream_id);
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 /**

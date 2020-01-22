@@ -7,12 +7,9 @@
 
 #include <cuda_runtime.h>
 
-#include <algorithm>
-#include <array>
-
 namespace cuda {
 
-template<bool AssumedCurrent> class device_t;
+template <bool AssumedCurrent> class device_t;
 
 namespace array {
 
@@ -35,7 +32,6 @@ public:
 	    dimensions_(other.dimensions_)
 	{
 		other.raw_cuda_array_ = nullptr;
-		other.dimensions_      = {0, 0, 0};
 	}
 
 	~array_base() noexcept
@@ -47,23 +43,13 @@ public:
 	}
 
 	cudaArray* get() const noexcept { return raw_cuda_array_; }
-
 	dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
-
-	size_t size() const noexcept
-		{
-		size_t s = 1;
-		for (size_t dimension_id = 0; dimension_id < NumDimensions; ++dimension_id) {
-			s *= dimensions_[dimension_id];
-		}
-		return s;
-	}
-
+	size_t size() const noexcept { return dimensions().size(); }
 	size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 protected:
 	dimensions_t<NumDimensions> dimensions_;
-	cudaArray*          raw_cuda_array_;
+	cudaArray*                  raw_cuda_array_;
 };
 
 } // namespace detail
@@ -102,10 +88,10 @@ private:
 	{
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
 		// Up to now: stick to the defaults for channel description
-		auto       channel_desc = cudaCreateChannelDesc<T>();
-		cudaExtent ext          = make_cudaExtent(dimensions[0], dimensions[1], dimensions[2]);
+		auto channel_descriptor = cudaCreateChannelDesc<T>();
+		cudaExtent extent = dimensions;
 		cudaArray* raw_cuda_array;
-		auto       status = cudaMalloc3DArray(&raw_cuda_array, &channel_desc, ext);
+		auto status = cudaMalloc3DArray(&raw_cuda_array, &channel_descriptor, extent);
 		throw_if_error(status, "failed allocating 3D CUDA array");
 		return raw_cuda_array;
 	}
@@ -129,11 +115,10 @@ private:
 	malloc_2d_cuda_array(const device_t<AssumedCurrent>& device, dimensions_t<2> dimensions)
 	{
 		typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
-		// Up to now: stick to the defaults for channel description
-		auto       channel_desc = cudaCreateChannelDesc<T>();
+		// Sticking to the defaults for channel descriptors
+		auto channel_desc = cudaCreateChannelDesc<T>();
 		cudaArray* raw_cuda_array;
-		auto       status =
-		    cudaMallocArray(&raw_cuda_array, &channel_desc, dimensions[0], dimensions[1]);
+		auto status = cudaMallocArray(&raw_cuda_array, &channel_desc, dimensions.width, dimensions.height);
 		throw_if_error(status, "failed allocating 2D CUDA array");
 		return raw_cuda_array;
 	}
