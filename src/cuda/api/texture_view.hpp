@@ -6,14 +6,14 @@
 #include <cuda/api/error.hpp>
 
 #include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
 
 namespace cuda {
 
 namespace texture {
 
 struct descriptor_t : public cudaTextureDesc {
-	inline descriptor_t() {
+	inline descriptor_t()
+	{
 		memset(static_cast<cudaTextureDesc*>(this), 0, sizeof(cudaTextureDesc));
 		this->addressMode[0] = cudaAddressModeBorder;
 		this->addressMode[1] = cudaAddressModeBorder;
@@ -36,36 +36,37 @@ struct descriptor_t : public cudaTextureDesc {
  * where `tex_obj` can be obtained by the member function `get()` of this
  * class.
  *
- * See also the sections in the programming guide:
+ * See also the following sections in the CUDA programming guide:
  *
- * - https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory
- * - https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching
+ * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory
+ * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching
  */
 class texture_view {
 	public:
 	template <typename T, size_t NumDimensions>
-	texture_view(const cuda::array_t<T, NumDimensions>& arr, texture::descriptor_t desc = texture::descriptor_t()) {
+	texture_view(
+		const cuda::array_t<T, NumDimensions>& arr,
+		texture::descriptor_t desc = texture::descriptor_t())
+	{
 		cudaResourceDesc resDesc;
 		memset(&resDesc, 0, sizeof(resDesc));
 		resDesc.resType = cudaResourceTypeArray;
 		resDesc.res.array.array = arr.get();
 
-		// // Create texture object
-		auto status = cudaCreateTextureObject(&texture_object_, &resDesc, &desc, NULL);
+		auto status = cudaCreateTextureObject(&texture_object, &resDesc, &desc, NULL);
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
-	~texture_view() noexcept {
-		auto status = cudaDestroyTextureObject(texture_object_);
+	~texture_view()
+	{
+		auto status = cudaDestroyTextureObject(texture_object);
 		throw_if_error(status, "failed destroying texture object");
 	}
 
-	inline cudaTextureObject_t get() const noexcept {
-		return texture_object_;
-	}
+	operator cudaTextureObject_t() const noexcept { return texture_object; }
 
 	private:
-		cudaTextureObject_t texture_object_ = 0;
+		cudaTextureObject_t texture_object { } ;
 };
 
 
