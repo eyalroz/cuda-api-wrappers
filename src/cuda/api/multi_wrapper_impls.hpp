@@ -17,6 +17,28 @@
 
 namespace cuda {
 
+namespace array {
+
+namespace detail {
+
+template<typename T, bool AssumedCurrent>
+cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<3> dimensions)
+{
+	device::current::scoped_override_t<AssumedCurrent> set_device_for_this_scope(device.id());
+	return allocate_on_current_device<T>(dimensions);
+}
+
+template<typename T, bool AssumedCurrent>
+cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<2> dimensions)
+{
+	device::current::scoped_override_t<AssumedCurrent> set_device_for_this_scope(device.id());
+	return allocate_on_current_device<T>(dimensions);
+}
+
+} // namespace detail
+
+} // namespace array
+
 namespace event {
 
 /**
@@ -215,8 +237,9 @@ namespace device {
 template <bool AssumedCurrent>
 inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes)
 {
-	return memory::device::detail::allocate(device.id(), size_in_bytes);
+	return memory::device::allocate(device.id(), size_in_bytes);
 }
+
 
 namespace async {
 

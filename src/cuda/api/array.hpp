@@ -11,13 +11,13 @@ namespace cuda {
 
 template <bool AssumedCurrent> class device_t;
 
+namespace array {
+
 namespace detail {
 
-template<typename T, bool AssumedCurrent>
-cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<3> dimensions)
+template<typename T>
+cudaArray* allocate_on_current_device(array::dimensions_t<3> dimensions)
 {
-	typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
-	// Up to now: stick to the defaults for channel description
 	auto channel_descriptor = cudaCreateChannelDesc<T>();
 	cudaExtent extent = dimensions;
 	cudaArray* raw_cuda_array;
@@ -26,11 +26,9 @@ cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<3> dim
 	return raw_cuda_array;
 }
 
-template<typename T, bool AssumedCurrent>
-cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<2> dimensions)
+template<typename T>
+cudaArray* allocate_on_current_device(array::dimensions_t<2> dimensions)
 {
-	typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
-	// Sticking to the defaults for channel descriptors
 	auto channel_desc = cudaCreateChannelDesc<T>();
 	cudaArray* raw_cuda_array;
 	auto status = cudaMallocArray(&raw_cuda_array, &channel_desc, dimensions.width, dimensions.height);
@@ -38,7 +36,15 @@ cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<2> dim
 	return raw_cuda_array;
 }
 
+template<typename T, bool AssumedCurrent>
+cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<3> dimensions);
+
+template<typename T, bool AssumedCurrent>
+cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<2> dimensions);
+
 } // namespace detail
+
+} // namespace array
 
 /**
  * @brief Owning wrapper for CUDA 2D and 3D arrays
@@ -79,7 +85,7 @@ public:
 	 */
 	template<bool AssumedCurrent>
 	array_t(device_t<AssumedCurrent>& device, array::dimensions_t<NumDimensions> dimensions)
-		: array_t(detail::allocate<T, AssumedCurrent>(device, dimensions), dimensions) {}
+		: array_t(array::detail::allocate<T, AssumedCurrent>(device, dimensions), dimensions) {}
 	array_t(const array_t& other) = delete;
 	array_t(array_t&& other) noexcept : array_t(other.raw_array_, other.dimensions_)
 	{
@@ -107,6 +113,5 @@ protected:
 };
 
 } // namespace cuda
-
 
 #endif // CUDA_API_WRAPPERS_ARRAY_HPP_
