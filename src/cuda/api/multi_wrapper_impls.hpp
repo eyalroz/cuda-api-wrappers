@@ -138,7 +138,7 @@ inline event_t device_t<AssumedCurrent>::create_event(
 inline device_t<detail::do_not_assume_device_is_current>
 event_t::device() const { return cuda::device::get(device_id_); }
 
-void event_t::record(stream_t<>& stream)
+inline void event_t::record(stream_t<>& stream)
 {
 	// Note:
 	// TODO: Perhaps check the device ID here, rather than
@@ -146,7 +146,7 @@ void event_t::record(stream_t<>& stream)
 	event::detail::enqueue(stream.id(), id_);
 }
 
-void event_t::fire(stream_t<>& stream) {
+inline void event_t::fire(stream_t<>& stream) {
 	record(stream);
 	stream.synchronize();
 }
@@ -325,7 +325,7 @@ inline region_pair allocate(
  * @param device_id the CUDA device for execution on which the preference is set
  * @param preference value to set for the device function (more cache, more L1 or make the equal)
  */
-void device_function_t::cache_preference(
+inline void device_function_t::cache_preference(
 	device_t<detail::do_not_assume_device_is_current>& device,
 	multiprocessor_cache_preference_t preference)
 {
@@ -333,7 +333,7 @@ void device_function_t::cache_preference(
 	cache_preference(preference);
 }
 
-void device_function_t::opt_in_to_extra_dynamic_memory(
+inline void device_function_t::opt_in_to_extra_dynamic_memory(
 	cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel,
 	device_t<detail::do_not_assume_device_is_current>& device)
 {
@@ -341,7 +341,7 @@ void device_function_t::opt_in_to_extra_dynamic_memory(
 	opt_in_to_extra_dynamic_memory(maximum_shared_memory_required_by_kernel);
 }
 
-void device_function_t::set_shared_mem_to_l1_cache_fraction(
+inline void device_function_t::set_shared_mem_to_l1_cache_fraction(
 	unsigned shared_mem_percentage,
 	device_t<detail::do_not_assume_device_is_current>& device)
 {
