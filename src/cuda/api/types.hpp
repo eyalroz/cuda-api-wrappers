@@ -87,12 +87,14 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	dimension_t width, height, depth;
 
 	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_, dimension_t depth_)
-	: width(width_), height(height_), depth(depth_) { }
+		: width(width_), height(height_), depth(depth_) { }
+	constexpr __host__ __device__ dimensions_t(cudaExtent e)
+		: dimensions_t(e.width, e.height, e.depth) { }
+	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+		: dimensions_t(other.width, other.height, other.depth) { }
+	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
+		: dimensions_t(other.width, other.height, other.depth) { }
 
-	constexpr __host__ __device__ dimensions_t(cudaExtent e) : dimensions_t(e.width, e.height, e.depth) { }
-
-	constexpr __host__ __device__ dimensions_t(const dimensions_t&) = default;
-	constexpr __host__ __device__ dimensions_t(dimensions_t&&) = default;
 	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
 	{
 		width = other.width; height = other.height; depth = other.depth;
@@ -131,10 +133,12 @@ struct dimensions_t<2>
 	dimension_t width, height;
 
 	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_)
-	: width(width_), height(height_) { }
+		: width(width_), height(height_) { }
+	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+		: dimensions_t(other.width, other.height) { }
+	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
+		: dimensions_t(other.width, other.height) { }
 
-	constexpr __host__ __device__ dimensions_t(const dimensions_t&) = default;
-	constexpr __host__ __device__ dimensions_t(dimensions_t&&) = default;
 	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
 	{
 		width = other.width; height = other.height;
