@@ -13,6 +13,7 @@ endif()
 
 PROJECT(cuda-api-wrappers
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
+	VERSION 0.3.0
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
@@ -71,6 +72,20 @@ install(
 	NAMESPACE "cuda-api-wrappers::"
 	# In this CMake config file no dependencies are considered. But since we
 	# do not use any `find_package` call here this approach is sufficient.
-	FILE cuda-api-wrappers-config.cmake
+	FILE "cuda-api-wrappers-config.cmake"
 )
 
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+	"cuda-api-wrappers-config-version.cmake"
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY SameMinorVersion
+)
+
+
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/cuda-api-wrappers-config-version.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers"
+)
+  
