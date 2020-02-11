@@ -581,7 +581,7 @@ inline stream_t<> create(
 {
 	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
 	auto new_stream_id = cuda::stream::detail::create_on_current_device(
-		priority, synchronizes_with_default_stream);
+		synchronizes_with_default_stream, priority);
 	return wrap(device_id, new_stream_id, take_ownership);
 }
 
