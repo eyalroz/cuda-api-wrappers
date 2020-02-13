@@ -248,6 +248,49 @@ inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 	memory::shared::size_t     dynamic_shared_memory_per_block,
 	bool                      disable_caching_override = false);
 
+
+namespace detail {
+
+//
+//template<typename KernelFunction, typename... KernelParameters>
+//using raw_device_function_t = void(*)(KernelParameters...);
+//
+
+template<typename... KernelParameters>
+struct raw_device_function_typegen {
+	using type = void(*)(KernelParameters...);
+};
+
+template<typename KernelFunction, typename... KernelParameters>
+typename raw_device_function_typegen<KernelParameters...>::type unwrap_inner(std::true_type, device_function_t wrapped)
+{
+	using raw_device_function_t = typename raw_device_function_typegen<KernelParameters ...>::type;
+	return reinterpret_cast<raw_device_function_t>(wrapped.ptr());
+}
+
+template<typename KernelFunction, typename... KernelParameters>
+KernelFunction unwrap_inner(std::false_type, KernelFunction raw_function)
+{
+	static_assert(
+		std::is_function<typename std::decay<KernelFunction>::type>::value or
+		(std::is_pointer<KernelFunction>::value and  std::is_function<typename std::remove_pointer<KernelFunction>::type>::value)
+		, "Invalid KernelFunction type - it must be either a function or a pointer-to-a-function");
+	return raw_function;
+}
+
+} // namespace detail
+
+template<typename KernelFunction, typename... KernelParameters>
+auto unwrap(KernelFunction f) -> typename std::conditional<
+	std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value,
+	typename detail::raw_device_function_typegen<KernelParameters...>::type,
+	KernelFunction>::type
+{
+	using got_a_device_function_t =
+		std::integral_constant<bool, std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value>;
+	return detail::unwrap_inner<KernelFunction, KernelParameters...>(got_a_device_function_t{}, f);
+}
+
 } // namespace device_function
 } // namespace cuda
 
