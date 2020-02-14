@@ -238,6 +238,40 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 	throw_if_error(result, "Synchronously copying data");
 }
 
+/**
+ * @brief Sets all bytes in a region of memory to a fixed value
+ *
+ * @note The equivalent of @ref std::memset - for any and all CUDA-related
+ * memory spaces
+ *
+ * @param buffer_start position from where to start
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+{
+	pointer_t<> pointer { buffer_start };
+	switch ( pointer.attributes().memory_type() ) {
+	case device_memory:
+	case managed_memory:
+		memory::device::set(buffer_start, byte_value, num_bytes); break;
+	case unregistered_memory:
+	case host_memory:
+		std::memset(buffer_start, byte_value, num_bytes); break;
+	default:
+		throw runtime_error(
+			cuda::status::invalid_value,
+			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(buffer_start)
+		);
+	}
+}
+
+inline void zero(void* buffer_start, size_t num_bytes)
+{
+	return set(buffer_start, 0, num_bytes);
+}
+
+
 namespace detail {
 
 /**
