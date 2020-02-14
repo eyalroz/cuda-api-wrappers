@@ -144,7 +144,7 @@ inline void* allocate(size_t num_bytes)
 	throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) +
 		" bytes of global memory on CUDA device " +
-		std::to_string(cuda::device::current::get_id()));
+		std::to_string(cuda::device::current::detail::get_id()));
 	return allocated;
 }
 
@@ -250,7 +250,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  */
 inline void set(void* buffer_start, int byte_value, size_t num_bytes)
 {
-	pointer_t<> pointer { buffer_start };
+	pointer_t<void> pointer { buffer_start };
 	switch ( pointer.attributes().memory_type() ) {
 	case device_memory:
 	case managed_memory:
@@ -941,7 +941,7 @@ inline region_pair allocate(
 	}
 	throw_if_error(status,
 		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
-			+ " bytes of global memory on device " + std::to_string(cuda::device::current::get_id()));
+			+ " bytes of global memory on device " + std::to_string(cuda::device::current::detail::get_id()));
 	return allocated;
 }
 

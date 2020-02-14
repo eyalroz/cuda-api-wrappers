@@ -27,9 +27,17 @@
 #include <cuda_runtime_api.h>
 
 namespace cuda {
+
+///@cond
+template <bool AssumedCurrent> class device_t;
+///@endcond
+
+
 namespace device {
+
 namespace current {
 
+namespace detail {
 /**
  * Obtains the numeric id of the device set as current for the CUDA Runtime API
  */
@@ -53,11 +61,14 @@ inline void set(device::id_t  device)
 	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
 }
 
+} // namespace detail
+
 /**
  * Reset the CUDA Runtime API's current device to its default value - the default device
  */
-inline void set_to_default() { return set(device::default_device_id); }
+inline void set_to_default() { return detail::set(device::default_device_id); }
 
+void set(device_t<cuda::detail::do_not_assume_device_is_current> device);
 
 /**
  * A RAII-based mechanism for setting the CUDA Runtime API's current device for
@@ -73,15 +84,12 @@ inline void set_to_default() { return set(device::default_device_id); }
 template <bool AssumedCurrent = false> class scoped_override_t;
 
 template <>
-class scoped_override_t<detail::do_not_assume_device_is_current> {
+class scoped_override_t<cuda::detail::do_not_assume_device_is_current> {
 protected:
 	static inline device::id_t  replace(device::id_t new_device)
 	{
-		device::id_t  previous_device = device::current::get_id();
-//		if (new_device != previous_device)
-		{
-			device::current::set(new_device);
-		}
+		device::id_t  previous_device = device::current::detail::get_id();
+		device::current::detail::set(new_device);
 		return previous_device;
 	}
 
@@ -97,7 +105,7 @@ private:
 };
 
 template <>
-class scoped_override_t<detail::assume_device_is_current> {
+class scoped_override_t<cuda::detail::assume_device_is_current> {
 public:
 	scoped_override_t(device::id_t) { }
 	~scoped_override_t() { }

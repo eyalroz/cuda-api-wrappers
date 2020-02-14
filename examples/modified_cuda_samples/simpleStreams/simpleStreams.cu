@@ -175,27 +175,7 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "\n> ";
-	cuda_device_id = findCudaDevice(argc, (const char **)argv);
-
-	// check the compute capability of the device
-	auto num_devices = cuda::device::count();
-
-	if ( 0 == num_devices)
-	{
-		std::cerr << "your system does not have a CUDA capable device, waiving test...\n";
-		return EXIT_WAIVED;
-	}
-
-	// check if the command-line chosen device ID is within range, exit if not
-	if (cuda_device_id >= num_devices)
-	{
-		std::cout
-			<< "cuda_device=" << cuda_device_id << " is invalid, "
-			<< "must choose device ID between 0 and " << num_devices-1 << "\n";
-		return EXIT_FAILURE;
-	}
-
-	cuda::device::current::set(cuda_device_id);
+	chooseCudaDevice(argc, (const char **)argv);
 	auto current_device = cuda::device::current::get();
 
 	// Checking for compute capabilities

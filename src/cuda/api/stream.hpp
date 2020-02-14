@@ -50,7 +50,7 @@ inline id_t create_on_current_device(
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
 	cuda::throw_if_error(status,
 		std::string("Failed creating a new stream on CUDA device ")
-		+ std::to_string(device::current::get_id()));
+		+ std::to_string(device::current::detail::get_id()));
 	return new_stream_id;
 }
 

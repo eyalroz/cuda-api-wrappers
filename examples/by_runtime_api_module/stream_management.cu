@@ -88,8 +88,7 @@ int main(int argc, char **argv)
 		die_("No CUDA devices on this system");
 	}
 
-	cuda::device::current::set(device_id);
-	auto device = cuda::device::current::get();
+	auto device = cuda::device::get(device_id).make_current();
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 

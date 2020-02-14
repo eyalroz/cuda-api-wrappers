@@ -31,6 +31,9 @@
 #include <string>
 
 namespace cuda {
+
+class event_t;
+
 namespace memory {
 namespace ipc {
 
@@ -145,14 +148,8 @@ namespace ipc {
 
 using handle_t = cudaIpcEventHandle_t;
 
-/**
- * Enable use of an event which this process created by other processes
- *
- * @param event_id id of the event to share with other processes
- * @return the handle to pass directly to other processes with which they
- * may obtain a proper CUDA event
- *
- */
+namespace detail {
+
 inline handle_t export_(id_t event_id)
 {
 	handle_t ipc_handle;
@@ -162,15 +159,6 @@ inline handle_t export_(id_t event_id)
 	return ipc_handle;
 }
 
-/**
- * Obtain a proper CUDA event, corresponding to an event created by another
- * process, using a handle communicated via operating-system inter-process communications
- *
- * @param event_id id of the event to share with other processes
- * @return the handle to pass directly to other processes with which they
- * may obtain a proper CUDA event
- *
- */
 inline event::id_t import(const handle_t& handle)
 {
 	event::id_t event_id;
@@ -179,6 +167,32 @@ inline event::id_t import(const handle_t& handle)
 		"Failed obtaining an event ID from an IPC event handle");
 	return event_id;
 }
+
+} // namespace detail
+
+/**
+ * Enable use of an event which this process created by other processes
+ *
+ * @param event the event to share with other processes
+ * @return the handle to pass directly to other processes with which they
+ * may obtain a proper CUDA event
+ *
+ */
+inline handle_t export_(event_t& event);
+
+/**
+ * Obtain a proper CUDA event, corresponding to an event created by another
+ * process, using a handle communicated via operating-system inter-process communications
+ *
+ * @note IMHO, the CUDA runtime API should allow for obtaining the device
+ * from an event handle (or otherwise - have a handle provide both an event ID and
+ * a device ID), but that is not currently the case.
+ *
+ * @param device The device to which the imported event corresponds
+ * @param the handle obtained via inter-process communications
+ */
+template <bool AssumedCurrent>
+inline event_t import(device_t<AssumedCurrent>& device, const handle_t& handle);
 
 } // namespace ipc
 } // namespace event

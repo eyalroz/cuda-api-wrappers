@@ -36,7 +36,7 @@ namespace device {
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-device_t<detail::do_not_assume_device_is_current> get(id_t id);
+device_t<cuda::detail::do_not_assume_device_is_current> get(id_t id);
 
 namespace current {
 
@@ -45,7 +45,7 @@ namespace current {
  * current, i.e. which will not set the current device before performing any
  * other actions.
  */
-device_t<detail::assume_device_is_current> get();
+device_t<cuda::detail::assume_device_is_current> get();
 
 } // namespace current
 
@@ -501,18 +501,7 @@ public:
 	 * @todo Determine how this waiting takes place (as opposed to stream
 	 * synchrnoization).
 	 *
-	 * @param event_id of the event to wait for
-	 */
-	void synchronize_event(event::id_t event_id)
-	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaEventSynchronize(event_id);
-		throw_if_error(status, "Failed synchronizing an event on   " + device_id_as_str());
-	}
-
-	/**
-	 *
-	 * @param event
+	 * @param event the event to wait for
 	 */
 	void synchronize(event_t& event);
 
@@ -606,7 +595,7 @@ public:
 			// for the current device - as we've constructed this instance of
 			// device_t<assume_device_is_current> without the ID
 			if (id_.id == invalid_id) {
-				id_.set(device::current::get_id());
+				id_.set(device::current::detail::get_id());
 			}
 		}
 		return id_.id;
@@ -733,10 +722,11 @@ public:
 	 * @note a non-current device becoming current will not stop its methods from
 	 * always expressly setting the current device before doing anything(!)
 	 */
-	 void make_current() {
+	 device_t<detail::assume_device_is_current> make_current() {
 		 static_assert(AssumedCurrent == false,
 			 "Attempt to set a device, assumed to be current, to be current");
-		 device::current::set(id());
+		 device::current::detail::set(id());
+		 return device_t<detail::assume_device_is_current>{};
 	 }
 	device_t& operator=(const device_t& other) = delete;
 
@@ -779,7 +769,7 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( { device_id })
+	device_t(device::id_t device_id) noexcept : id_( id_holder_type{ device_id } )
 	{
 	}
 
@@ -796,8 +786,10 @@ protected: // constructors
 public: // friends
 	friend device_t<detail::assume_device_is_current> device::current::get();
 	friend device_t<detail::do_not_assume_device_is_current> device::get(device::id_t id);
+
 	friend class device_t<detail::assume_device_is_current>;
 		// for the conversion operator between assumed and not-assumed current
+	friend class device_t<detail::do_not_assume_device_is_current>;
 
 protected:
 	// data members
@@ -828,15 +820,20 @@ namespace device {
 namespace current {
 
 /**
- * Returns a proxy for the CUDA device the runtime API has set as the current
- *
- * @note direct constructor access is blocked so that you don't get the
- * idea you're actually creating a device
+ * Returns the current device in a wrapper which assumes it is indeed
+ * current, i.e. which will not set the current device before performing any
+ * other actions.
  */
-inline cuda::device_t<detail::assume_device_is_current> get()
+device_t<cuda::detail::assume_device_is_current> get()
 {
 	return {};
 }
+
+void set(device_t<cuda::detail::do_not_assume_device_is_current> device)
+{
+	detail::set(device.id());
+}
+
 
 } // namespace current
 
@@ -918,8 +915,10 @@ inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device)
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
+
 } // namespace device
 } // namespace memory
+
 
 } // namespace cuda
 

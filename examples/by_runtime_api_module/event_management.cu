@@ -80,9 +80,8 @@ int main(int argc, char **argv)
 	static constexpr size_t N = 40;
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	cuda::device::current::set(device_id);
-	auto device = cuda::device::current::get();
+	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+	auto device = cuda::device::get(device_id).make_current();
 
 	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 

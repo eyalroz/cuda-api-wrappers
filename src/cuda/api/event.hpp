@@ -13,6 +13,7 @@
 #include <cuda/api/constants.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/current_device.hpp>
+#include <cuda/api/ipc.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -320,12 +321,13 @@ inline event_t create(
  */
 template <bool DeviceAssumedCurrent>
 inline event_t create(
-	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool                            records_timing     = do_record_timings,
-	bool                            interprocess       = not_interprocess);
+	device_t<DeviceAssumedCurrent>&  device,
+	bool                             uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool                             records_timing     = do_record_timings,
+	bool                             interprocess       = not_interprocess);
 
 } // namespace event
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_EVENT_HPP_

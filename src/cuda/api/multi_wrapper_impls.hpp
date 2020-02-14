@@ -59,10 +59,10 @@ namespace event {
  */
 template <bool DeviceAssumedCurrent>
 inline event_t create(
-	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync,
-	bool                            records_timing,
-	bool                            interprocess)
+	device_t<DeviceAssumedCurrent>&  device,
+	bool                             uses_blocking_sync,
+	bool                             records_timing,
+	bool                             interprocess)
 {
 	auto device_id = device.id();
 		// Yes, we need the ID explicitly even on the current device,
@@ -70,8 +70,24 @@ inline event_t create(
 	return event::detail::create(device_id , uses_blocking_sync, records_timing, interprocess);
 }
 
-} // namespace event
+namespace ipc {
 
+inline handle_t export_(event_t& event)
+{
+	return detail::export_(event.id());
+}
+
+template <bool AssumedCurrent>
+inline event_t import(device_t<AssumedCurrent>& device, const handle_t& handle)
+{
+	bool do_not_take_ownership { false };
+	return event::detail::wrap(device.id(), detail::import(handle), do_not_take_ownership);
+}
+
+} // namespace ipc
+
+
+} // namespace event
 
 
 // device_t methods
@@ -79,7 +95,10 @@ inline event_t create(
 template <bool AssumedCurrent>
 inline void device_t<AssumedCurrent>::synchronize(event_t& event)
 {
-	return synchronize_event(event.id());
+	scoped_setter_t set_device_for_this_scope(id_);
+	auto status = cudaEventSynchronize(event.id());
+	throw_if_error(status, "Failed synchronizing the event with id "
+		+ detail::ptr_as_hex(event.id()) + " on   " + device_id_as_str());
 }
 
 template <bool AssumedCurrent>
