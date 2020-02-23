@@ -43,7 +43,7 @@ namespace cuda {
 
 ///@cond
 template <bool AssumedCurrent> class device_t;
-template <bool AssumesDeviceIsCurrent> class stream_t;
+class stream_t;
 ///@endcond
 
 /**
@@ -535,8 +535,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-template <bool StreamIsOnCurrentDevice>
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream);
 
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
@@ -547,8 +546,8 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
-template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream);
+template <typename T, size_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t& stream);
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -559,8 +558,8 @@ inline void copy(array_t<T, NumDimensions>& destination, const void *source, str
  * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation into this CUDA stream
  */
-template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream);
+template <typename T, size_t NumDimensions>
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
@@ -572,8 +571,8 @@ inline void copy(void* destination, const array_t<T, NumDimensions>& source, str
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
  */
-template <typename T, bool StreamIsOnCurrentDevice>
-inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream);
+template <typename T>
+inline void copy_single(T& destination, const T& source, stream_t& stream);
 
 } // namespace async
 
@@ -614,14 +613,12 @@ inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream The stream on which to schedule this action
  */
-template <bool StreamIsOnCurrentDevice>
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream);
 
 /**
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
-template <bool StreamIsOnCurrentDevice>
-inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void zero(void* start, size_t num_bytes, stream_t& stream);
 
 } // namespace async
 
@@ -899,7 +896,7 @@ inline void prefetch(
 	const void*                                  managed_ptr,
 	size_t                                       num_bytes,
 	cuda::device_t<DestinationIsCurrentDevice>&  destination,
-	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id);
+	cuda::stream_t&                              stream_id);
 
 
 } // namespace async

@@ -23,8 +23,7 @@
 namespace cuda {
 
 class event_t;
-template<bool DeviceAssumedCurrent> class stream_t;
-template<bool AssumedCurrent> class device_t;
+class stream_t;
 template<bool AssumedCurrent> class device_t;
 
 namespace device {
@@ -492,7 +491,7 @@ public:
 	 *
 	 * @param stream
 	 */
-	void synchronize(stream_t<detail::do_not_assume_device_is_current>& stream);
+	void synchronize(stream_t& stream);
 
 	/**
 	 * Waits for a specified event to conclude before returning control
@@ -601,7 +600,7 @@ public:
 		return id_.id;
 	}
 
-	stream_t<AssumedCurrent> default_stream() const noexcept;
+	stream_t default_stream() const noexcept;
 
 	// I'm a worried about the creation of streams with the assumption
 	// that theirs is the current device, so I'm just forbidding it
@@ -611,7 +610,7 @@ public:
 	//
 	// (sigh)... safety over convenience I guess
 	//
-	stream_t<detail::do_not_assume_device_is_current> create_stream(
+	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
 		stream::priority_t  priority = cuda::stream::default_priority);
 

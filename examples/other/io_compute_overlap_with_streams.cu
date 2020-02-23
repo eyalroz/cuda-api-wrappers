@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	auto buffers = generate_buffers(device, num_kernels, num_elements);
 	std::cout << "done.\n" << std::flush;
 
-	std::vector<cuda::stream_t<> > streams;
+	std::vector<cuda::stream_t> streams;
 	streams.reserve(num_kernels);
 	std::generate_n(std::back_inserter(streams), num_kernels,
 		[&]() { return device.create_stream(cuda::stream::async); });

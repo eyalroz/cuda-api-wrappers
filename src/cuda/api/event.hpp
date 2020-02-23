@@ -23,7 +23,7 @@ namespace cuda {
 
 ///@cond
 template <bool AssumedCurrent> class device_t;
-template <bool AssumedCurrent> class stream_t;
+class stream_t;
 ///@endcond
 
 namespace event {
@@ -167,7 +167,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record(stream_t<cuda::detail::do_not_assume_device_is_current>& stream);
+	void record(stream_t& stream);
 
 	/**
 	 * Records the event and ensures it has occurred before returning
@@ -175,7 +175,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void fire(stream_t<cuda::detail::do_not_assume_device_is_current>& stream);
+	void fire(stream_t& stream);
 
 	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and

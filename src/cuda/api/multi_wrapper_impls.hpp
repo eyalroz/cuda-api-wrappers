@@ -102,20 +102,20 @@ inline void device_t<AssumedCurrent>::synchronize(event_t& event)
 }
 
 template <bool AssumedCurrent>
-inline void device_t<AssumedCurrent>::synchronize(stream_t<detail::do_not_assume_device_is_current>& stream)
+inline void device_t<AssumedCurrent>::synchronize(stream_t& stream)
 {
 	return synchronize_stream(stream.id());
 }
 
 template <bool AssumedCurrent>
-inline stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const noexcept
+inline stream_t device_t<AssumedCurrent>::default_stream() const noexcept
 {
 	// TODO: Perhaps support not-knowing our ID here as well, somehow?
-	return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
+	return stream_t(id(), stream::default_stream_id);
 }
 
 template <bool AssumedCurrent>
-inline stream_t<detail::do_not_assume_device_is_current>
+inline stream_t
 device_t<AssumedCurrent>::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
@@ -157,7 +157,7 @@ inline event_t device_t<AssumedCurrent>::create_event(
 inline device_t<detail::do_not_assume_device_is_current>
 event_t::device() const { return cuda::device::get(device_id_); }
 
-inline void event_t::record(stream_t<>& stream)
+inline void event_t::record(stream_t& stream)
 {
 	// Note:
 	// TODO: Perhaps check the device ID here, rather than
@@ -165,7 +165,7 @@ inline void event_t::record(stream_t<>& stream)
 	event::detail::enqueue(stream.id(), id_);
 }
 
-inline void event_t::fire(stream_t<>& stream) {
+inline void event_t::fire(stream_t& stream) {
 	record(stream);
 	stream.synchronize();
 }
@@ -173,12 +173,10 @@ inline void event_t::fire(stream_t<>& stream) {
 
 // stream_t methods
 
-template <bool AssumesDeviceIsCurrent>
 inline device_t<detail::do_not_assume_device_is_current>
-stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
+stream_t::device() const { return cuda::device::get(device_id_); }
 
-template <bool AssumesDeviceIsCurrent>
-inline void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
+inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
 	if (event_.device_id() != device_id_) {
@@ -200,8 +198,7 @@ inline void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& eve
 
 }
 
-template <bool AssumesDeviceIsCurrent>
-inline event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_event)
+inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
 #ifndef NDEBUG
 	if (existing_event.device_id() != device_id_) {
@@ -218,8 +215,7 @@ inline event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& exis
 	return existing_event;
 }
 
-template <bool AssumesDeviceIsCurrent>
-inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
+inline event_t stream_t::enqueue_t::event(
     bool          uses_blocking_sync,
     bool          records_timing,
     bool          interprocess)
@@ -241,24 +237,23 @@ pointer_t<T>::device() const
 
 namespace async {
 
-template <bool StreamIsOnCurrentDevice>
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream)
 {
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t<StreamIsOnCurrentDevice>& stream) {
+template <typename T, size_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t& stream) {
 	detail::copy(destination, source, stream.id());
 }
 
-template <typename T, size_t NumDimensions, bool StreamIsOnCurrentDevice>
-inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t<StreamIsOnCurrentDevice>& stream) {
+template <typename T, size_t NumDimensions>
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t& stream) {
 	detail::copy(destination, source, stream.id());
 }
 
-template <typename T, bool StreamIsOnCurrentDevice>
-inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream)
+template <typename T>
+inline void copy_single(T& destination, const T& source, stream_t& stream)
 {
 	detail::copy(&destination, &source, sizeof(T), stream.id());
 }
@@ -276,14 +271,12 @@ inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_byt
 
 namespace async {
 
-template <bool StreamIsOnCurrentDevice>
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream)
 {
 	detail::set(start, byte_value, num_bytes, stream.id());
 }
 
-template <bool StreamIsOnCurrentDevice>
-inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void zero(void* start, size_t num_bytes, stream_t& stream)
 {
 	detail::zero(start, num_bytes, stream.id());
 }
@@ -301,9 +294,9 @@ inline void prefetch(
 	const void*                                  managed_ptr,
 	size_t                                       num_bytes,
 	cuda::device_t<DestinationIsCurrentDevice>&  destination,
-	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id)
+	cuda::stream_t&                              stream)
 {
-	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream_id.id());
+	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream.id());
 }
 
 } // namespace async
@@ -394,7 +387,7 @@ inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 namespace stream {
 
 template <bool AssumeDeviceIsCurrent>
-inline stream_t<> create(
+inline stream_t create(
 	device_t<AssumeDeviceIsCurrent>&  device,
 	bool                              synchronizes_with_default_stream,
 	priority_t                        priority)

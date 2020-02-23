@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 	std::cout << "\nStarting Test\n";
 
 	// allocate and initialize an array of stream handles
-	std::vector<cuda::stream_t<>> streams;
+	std::vector<cuda::stream_t> streams;
 	std::generate_n(
 		std::back_inserter(streams), nstreams,
 		[&current_device]() {

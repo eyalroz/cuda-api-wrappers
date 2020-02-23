@@ -25,7 +25,7 @@ namespace cuda {
 template <bool AssumedCurrent> class device_t;
 class event_t;
 
-template <bool AssumesDeviceIsCurrent = false> class stream_t;
+class stream_t;
 
 namespace stream {
 
@@ -117,7 +117,7 @@ namespace detail {
  *
  * @return a stream_t proxy for the CUDA stream
  */
-inline stream_t<> wrap(
+inline stream_t wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
 	bool          take_ownership = false) noexcept;
@@ -132,13 +132,9 @@ inline stream_t<> wrap(
  * Use this class - built around an event ID - to perform almost, if not all
  * operations related to CUDA events,
  *
- * @tparam AssumesDeviceCurrent - when true, the code performs no setting of the
- * device ID before acting
- *
  * @note this is one of the three main classes in the Runtime API wrapper library,
  * together with @ref cuda::device_t and @ref cuda::event_t
  */
-template <bool AssumesDeviceIsCurrent /* = false , see template declaration */>
 class stream_t {
 
 public: // type definitions
@@ -150,7 +146,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using DeviceSetter = device::current::scoped_override_t<AssumesDeviceIsCurrent>;
+	using DeviceSetter = device::current::scoped_override_t<detail::do_not_assume_device_is_current>;
 
 
 public: // const getters
@@ -500,10 +496,8 @@ public: // operators
 
 	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
 	// too risky - someone might destroy one of the streams and use the others
-	stream_t& operator=(const stream_t<AssumesDeviceIsCurrent>& other) = delete;
-	stream_t& operator=(const stream_t<not AssumesDeviceIsCurrent>& other) = delete;
-	stream_t& operator=(stream_t<AssumesDeviceIsCurrent>& other) = delete;
-	stream_t& operator=(stream_t<not AssumesDeviceIsCurrent>& other) = delete;
+	stream_t& operator=(const stream_t& other) = delete;
+	stream_t& operator=(stream_t& other) = delete;
 
 protected: // constructor
 
@@ -512,7 +506,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend stream_t<> stream::detail::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
+	friend stream_t stream::detail::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
 
 protected: // data members
 	const device::id_t  device_id_;
@@ -524,12 +518,12 @@ public: // data members - which only exist in lieu of namespaces
 
 };
 
-inline bool operator==(const stream_t<>& lhs, const stream_t<>& rhs) noexcept
+inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 {
 	return lhs.device_id() == rhs.device_id() and lhs.id() == rhs.id();
 }
 
-inline bool operator!=(const stream_t<>& lhs, const stream_t<>& rhs) noexcept
+inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -559,12 +553,12 @@ namespace detail {
  * @return an instance of the stream proxy class, with the specified
  * device-stream combination.
  */
-inline stream_t<> wrap(
+inline stream_t wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
 	bool          take_ownership /* = false, see declaration */) noexcept
 {
-	return stream_t<>(device_id, stream_id, take_ownership);
+	return stream_t(device_id, stream_id, take_ownership);
 }
 
 /*
@@ -579,7 +573,7 @@ inline stream_t<> wrap(
  * @ref device_t::stream_priority_range() .
  * @return The newly-created stream
  */
-inline stream_t<> create(
+inline stream_t create(
 	device::id_t  device_id,
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority)
@@ -593,19 +587,16 @@ inline stream_t<> create(
 } // namespace detail
 
 template <bool AssumedCurrent>
-inline stream_t<> create(
+inline stream_t create(
 	device_t<AssumedCurrent>&  device,
 	bool                      synchronizes_with_default_stream,
 	priority_t                priority = stream::default_priority);
 
 } // namespace stream
 
-template <bool AssumesDeviceIsCurrent = false>
-using queue_t = stream_t<AssumesDeviceIsCurrent>;
+using queue_t = stream_t;
 
 using queue_id_t = stream::id_t;
-
-
 
 } // namespace cuda
 
