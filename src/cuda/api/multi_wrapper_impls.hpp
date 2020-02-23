@@ -189,9 +189,8 @@ namespace device {
 template <bool AssumedCurrent>
 inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes)
 {
-	return memory::device::allocate(device.id(), size_in_bytes);
+	return memory::device::detail::allocate(device.id(), size_in_bytes);
 }
-
 
 namespace async {
 
