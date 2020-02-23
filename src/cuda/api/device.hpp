@@ -386,23 +386,23 @@ public:
 	}
 
 	/**
-	 * Obtains the device's compute capability; see @ref cuda::device::compute_capability_t
-	 */
-	device::compute_capability_t compute_capability() const
-	{
-		auto major = get_attribute(cudaDevAttrComputeCapabilityMajor);
-		auto minor = get_attribute(cudaDevAttrComputeCapabilityMinor);
-		return {major, minor};
-	}
-
-	/**
 	 * Obtains the device's hardware architecture generation numeric
 	 * designator see @ref cuda::device::compute_architecture_t
 	 */
 	device::compute_architecture_t architecture() const
 	{
-		auto major = get_attribute(cudaDevAttrComputeCapabilityMajor);
+		unsigned major = get_attribute(cudaDevAttrComputeCapabilityMajor);
 		return {major};
+	}
+
+	/**
+	 * Obtains the device's compute capability; see @ref cuda::device::compute_capability_t
+	 */
+	device::compute_capability_t compute_capability() const
+	{
+		auto arch { architecture() };
+		unsigned minor = get_attribute(cudaDevAttrComputeCapabilityMinor);
+		return {arch, minor};
 	}
 
 	/**
