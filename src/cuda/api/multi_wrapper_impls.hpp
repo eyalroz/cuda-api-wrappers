@@ -153,7 +153,7 @@ inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
     bool          records_timing,
     bool          interprocess)
 {
-	event_t ev { event::detail::create(device_id(), uses_blocking_sync, records_timing, interprocess) };
+	event_t ev { event::detail::create(device_id_, uses_blocking_sync, records_timing, interprocess) };
 	// Note that, at this point, the event is not associated with this enqueue object's stream.
 	this->event(ev);
 	return ev;
