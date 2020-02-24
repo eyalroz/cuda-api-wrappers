@@ -83,6 +83,21 @@ device_t<AssumedCurrent>::create_stream(
 		will_synchronize_with_default_stream, priority), take_ownership);
 }
 
+namespace detail {
+
+} // namespace detail
+
+template <bool AssumedCurrent>
+template <typename KernelFunction, typename ... KernelParameters>
+void device_t<AssumedCurrent>::launch(
+	bool thread_block_cooperativity,
+	const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
+	KernelParameters ... parameters)
+{
+	return default_stream().enqueue.kernel_launch(
+		thread_block_cooperativity, kernel_function, launch_configuration, parameters...);
+}
+
 template <bool AssumedCurrent>
 inline event_t device_t<AssumedCurrent>::create_event(
 	bool          uses_blocking_sync,

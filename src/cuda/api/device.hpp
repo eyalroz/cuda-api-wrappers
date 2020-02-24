@@ -638,11 +638,7 @@ public:
 	void launch(
 		bool thread_block_cooperativity,
 		const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
-		KernelParameters ... parameters)
-	{
-		return default_stream().enqueue.kernel_launch(
-			thread_block_cooperativity, kernel_function, launch_configuration, parameters...);
-	}
+		KernelParameters ... parameters);
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(
