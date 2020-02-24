@@ -893,7 +893,7 @@ inline void prefetch(
 	const void*      managed_ptr,
 	size_t           num_bytes,
 	cuda::device_t   destination,
-	cuda::stream_t&  stream_id);
+	cuda::stream_t&  stream);
 
 
 } // namespace async
