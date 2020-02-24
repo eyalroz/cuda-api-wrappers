@@ -22,8 +22,9 @@
 
 namespace cuda {
 
-template<bool AssumedCurrent>
+///@cond
 class device_t;
+///@endcond
 
 namespace device_function {
 
@@ -132,8 +133,8 @@ public: // mutators
 	 * @param preference value to set for the device function (more cache, more L1 or make the equal)
 	 */
 	void cache_preference(
-		device_t<detail::do_not_assume_device_is_current>& device,
-		multiprocessor_cache_preference_t preference);
+		device_t                           device,
+		multiprocessor_cache_preference_t  preference);
 
 	void set_attribute(cudaFuncAttribute attribute, int value)
 	{
@@ -152,8 +153,8 @@ public: // mutators
 	}
 
 	void opt_in_to_extra_dynamic_memory(
-		cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel,
-		device_t<detail::do_not_assume_device_is_current>& device);
+		cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
+		device_t                      device);
 
 	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage)
 	{
@@ -169,8 +170,8 @@ public: // mutators
 	}
 
 	void set_shared_mem_to_l1_cache_fraction(
-		unsigned shared_mem_percentage,
-		device_t<detail::do_not_assume_device_is_current>& device);
+		unsigned  shared_mem_percentage,
+		device_t  device);
 
 
 	/**
@@ -241,11 +242,10 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
  * @url http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html
  */
 inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
-	device_t<detail::do_not_assume_device_is_current>
-                              device,
+	device_t                  device,
 	const device_function_t&  device_function,
-	grid::block_dimension_t    num_threads_per_block,
-	memory::shared::size_t     dynamic_shared_memory_per_block,
+	grid::block_dimension_t   num_threads_per_block,
+	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override = false);
 
 

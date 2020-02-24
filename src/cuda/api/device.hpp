@@ -24,7 +24,7 @@ namespace cuda {
 
 class event_t;
 class stream_t;
-template<bool AssumedCurrent> class device_t;
+class device_t;
 
 namespace device {
 
@@ -35,7 +35,7 @@ namespace device {
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-device_t<cuda::detail::do_not_assume_device_is_current> get(id_t id);
+device_t get(id_t id);
 
 namespace current {
 
@@ -44,7 +44,7 @@ namespace current {
  * current, i.e. which will not set the current device before performing any
  * other actions.
  */
-device_t<cuda::detail::assume_device_is_current> get();
+device_t get();
 
 } // namespace current
 
@@ -98,9 +98,10 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 	return value;
 }
 
-template<bool FirstIsAssumedCurrent, bool SecondIsAssumedCurrent>
-inline attribute_value_t get_attribute(attribute_t attribute, const device_t<FirstIsAssumedCurrent>& source,
-	const device_t<SecondIsAssumedCurrent>& destination);
+inline attribute_value_t get_attribute(
+	attribute_t  attribute,
+	device_t     source,
+	device_t     destination);
 
 } // namespace peer_to_peer
 
@@ -113,16 +114,13 @@ inline attribute_value_t get_attribute(attribute_t attribute, const device_t<Fir
  * perform almost, if not all, device-related operations, as opposed to passing
  * the device ID around all that time.
  *
- * @tparam AssumedCurrent - when true, the code performs no setting of the
- *
  * @note this is one of the three main classes in the Runtime API wrapper library,
  * together with @ref cuda::stream_t and @ref cuda::event_t
  */
-template<bool AssumedCurrent = detail::do_not_assume_device_is_current>
 class device_t {
 public:
 	// types
-	using scoped_setter_t = device::current::scoped_override_t<AssumedCurrent>;
+	using scoped_setter_t = device::current::scoped_override_t<>;
 
 protected:
 	// types
@@ -135,36 +133,6 @@ protected:
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
 	using priority_range_t = std::pair<stream::priority_t, stream::priority_t>;
 
-	// This relies on valid CUDA device IDs being non-negative, which is indeed
-	// always the case for CUDA <= 8.0 and unlikely to change; however, it's
-	// a bit underhanded to make that assumption just to twist this class to do
-	// our bidding (see below)
-	enum : device::id_t { invalid_id = -1 };
-
-	struct immutable_id_holder_t {
-		operator const device::id_t&() const { return id; }
-		void set(device::id_t) const { }
-		;
-		device::id_t id;
-	};
-	struct mutable_id_holder_t {
-		operator const device::id_t&() const { return id; }
-		void set(device::id_t new_id) const { id = new_id; }
-		mutable device::id_t id { invalid_id };
-	};
-
-	using id_holder_type = typename std::conditional<
-		AssumedCurrent,
-		mutable_id_holder_t,
-		immutable_id_holder_t
-	>::type;
-		// class device_t has a field with the device's id; when assuming the device is the
-		// current one, we want to be able to set the device_id after construction; but
-		// when not making that assumption, we need a const field, initialized on construction;
-		// this hack allows both the options to coexist without the compiler complaining
-		// about assigning to a const lvalue (we use it since std::conditional can't
-		// be used to select between making a field mutable or not).
-
 public:	// types
 
 	/**
@@ -174,14 +142,14 @@ public:	// types
 	 */
 	class global_memory_t {
 	protected:
-		const id_holder_type& device_id_;
+		const device::id_t device_id_;
 
 		using deleter = memory::device::detail::deleter;
 		using allocator = memory::device::detail::allocator;
 
 	public:
 		///@cond
-		global_memory_t(const device_t::id_holder_type& id) : device_id_(id) { }
+		global_memory_t(device::id_t id) : device_id_(id) { }
 		///@endcond
 
 		cuda::device::id_t device_id() const { return device_id_; }
@@ -268,7 +236,7 @@ public:	// types
 	 * @param peer id of the device which is to be accessed
 	 * @return true iff acesss is possible
 	 */
-	bool can_access(const device_t<>& peer) const
+	bool can_access(device_t peer) const
 	{
 		int result;
 		auto status = cudaDeviceCanAccessPeer(&result, id(), peer.id());
@@ -284,7 +252,7 @@ public:	// types
 	 * @param peer device to have access access to
 	 * @param peer_id id of the device to which to enable access
 	 */
-	void enable_access_to(const device_t<>& peer)
+	void enable_access_to(device_t peer)
 	{
 		enum : unsigned {fixed_flags = 0 };
 		// No flags are supported as of CUDA 8.0
@@ -299,7 +267,7 @@ public:	// types
 	 *
 	 * @param peer device to have access disabled to
 	 */
-	void disable_access_to(const device_t<>& peer)
+	void disable_access_to(device_t peer)
 	{
 		scoped_setter_t set_device_for_this_scope(id());
 		auto status = cudaDeviceDisablePeerAccess(peer.id());
@@ -328,7 +296,7 @@ protected:
 
 	static std::string device_id_as_str(device::id_t id)
 	{
-		return AssumedCurrent ? "current device" : "device " + std::to_string(id);
+		return "device " + std::to_string(id);
 	}
 
 	std::string device_id_as_str() const
@@ -400,7 +368,7 @@ public:
 	 */
 	device::compute_capability_t compute_capability() const
 	{
-		auto arch { architecture() };
+		auto arch = architecture();
 		unsigned minor = get_attribute(cudaDevAttrComputeCapabilityMinor);
 		return {arch, minor};
 	}
@@ -582,22 +550,10 @@ public:
 	/**
 	 * Return the proxied device's ID
 	 *
-	 * @note If AssumedCurrent is true, an API call will be necessary
-	 * to determine the device ID; so don't use this unless you really need it;
-	 * prefer using methods of the device_t class which can apply to the current
-	 * device without an id.
 	 */
 	device::id_t id() const
 	{
-		if (AssumedCurrent) {
-			// This is the first time in which we need to get the device ID
-			// for the current device - as we've constructed this instance of
-			// device_t<assume_device_is_current> without the ID
-			if (id_.id == invalid_id) {
-				id_.set(device::current::detail::get_id());
-			}
-		}
-		return id_.id;
+		return id_;
 	}
 
 	stream_t default_stream() const noexcept;
@@ -712,55 +668,29 @@ public:
 
 public:
 
-	 // I'm of two minds regarding whether or not we should have this method at all;
-	 // I'm worried people might assume the proxy object will start behaving like
-	 // what they get with cuda::device::current::get(), i.e. a device_t<AssumedCurrent>.
 	/**
 	 * @brief Makes this device the CUDA Runtime API's current device
 	 *
 	 * @note a non-current device becoming current will not stop its methods from
 	 * always expressly setting the current device before doing anything(!)
 	 */
-	 device_t<detail::assume_device_is_current> make_current() {
-		 static_assert(AssumedCurrent == false,
-			 "Attempt to set a device, assumed to be current, to be current");
-		 device::current::detail::set(id());
-		 return device_t<detail::assume_device_is_current>{};
-	 }
-	device_t& operator=(const device_t& other) = delete;
-
-
-	/**
-	 * Drops the assumption of a device being current ("recasting" it as a
-	 * not-assumed-current device).
-	 *
-	 * @note 
-	 * 1. This involve some template voodoo - making a copy of AssumedCurrent -
-	 *    to delay the evaluation here until this template is instantiated 
-	 *    rather than at class instantiation. See: 
-	 *    https://stackoverflow.com/q/46907372/1593077
-	 * 2. We only want this method to return a non-current device, yet the 
-	 *    return value corresponds to flipping the current-assumption. This
-	 *    is due to getting (clang) warnings in the case we actually want, 
-	 *    about A conversion operator into the same class. The effect is the
-	 *    same, since we only actually instantiate this for the assumed-current
-	 *    case
-	 *
-	 */
-	template <
-		bool AssumedCurrentCopy = AssumedCurrent,
-		typename = typename std::enable_if<AssumedCurrentCopy == detail::assume_device_is_current>::type>
-	operator device_t<not AssumedCurrentCopy>()
+	device_t& make_current()
 	{
-		return device_t<detail::do_not_assume_device_is_current> { id() };
+		device::current::detail::set(id());
+		return *this;
 	}
-
 
 public: 	// constructors and destructor
 
-	~device_t() = default;
+	~device_t() noexcept = default;
 	device_t(device_t&& other) noexcept = default;
 	device_t(const device_t& other) noexcept = default;
+		// Device proxies are not owning - as devices aren't allocated nor de-allocated.
+		// Also, the proxies don't hold any state - it's the devices _themselves_ which
+		// have state. ; so there's no problem copying the proxies around. This is
+		// unlike events and streams, which get created and destroyed.
+	device_t& operator=(const device_t& other) noexcept = default;
+	device_t& operator=(device_t&& other) noexcept = default;
 
 protected: // constructors
 
@@ -768,71 +698,43 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( id_holder_type{ device_id } )
-	{
-	}
-
-	/**
-	 * @note Have a look at how @ref mutable_id_holder is default-constructed.
-	 */
-	device_t() noexcept : id_()
-	{
-		static_assert(AssumedCurrent,
-			"Attempt to instantiate a device proxy for a device not known to be "
-			"current, without a specific device id");
-	}
+	device_t(device::id_t device_id) noexcept : id_( device_id ) { }
 
 public: // friends
-	friend device_t<detail::assume_device_is_current> device::current::get();
-	friend device_t<detail::do_not_assume_device_is_current> device::get(device::id_t id);
-
-	friend class device_t<detail::assume_device_is_current>;
-		// for the conversion operator between assumed and not-assumed current
-	friend class device_t<detail::do_not_assume_device_is_current>;
+	friend device_t device::current::get();
+	friend device_t device::get(device::id_t);
 
 protected:
 	// data members
 	/**
 	 * The numeric ID of the proxied device.
-	 *
-	 * @note  The cannot simply have type `const device::id_t`, as
-	 * when this class is used for the current device (AssumedCurrent is
-	 * true), we don't actually know the device ID on construction - only
-	 * later.
 	 */
-	const id_holder_type id_;
+	device::id_t id_;
 };
 
-template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
-bool operator==(const device_t<LHSAssumedCurrent>& lhs, const device_t<RHSAssumedCurrent>& rhs)
+inline bool operator==(const device_t& lhs, const device_t& rhs)
 {
-	return (LHSAssumedCurrent and RHSAssumedCurrent) ? true : lhs.id() == rhs.id();
+	return lhs.id() == rhs.id();
 }
 
-template<bool LHSAssumedCurrent, bool RHSAssumedCurrent>
-bool operator!=(const device_t<LHSAssumedCurrent>& lhs, const device_t<RHSAssumedCurrent>& rhs)
+template<bool , bool >
+inline bool operator!=(const device_t& lhs, const device_t& rhs)
 {
-	return (LHSAssumedCurrent and RHSAssumedCurrent) ? false : lhs.id() != rhs.id();
+	return lhs.id() != rhs.id();
 }
 
 namespace device {
 namespace current {
 
 /**
- * Returns the current device in a wrapper which assumes it is indeed
- * current, i.e. which will not set the current device before performing any
- * other actions.
+ * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
  */
-device_t<cuda::detail::assume_device_is_current> get()
-{
-	return {};
-}
+inline device_t get() { return { detail::get_id() }; }
 
-void set(device_t<cuda::detail::do_not_assume_device_is_current> device)
-{
-	detail::set(device.id());
-}
-
+/**
+ * Tells the CUDA runtime API to consider the specified device as the current one.
+ */
+inline void set(device_t device) { detail::set(device.id()); }
 
 } // namespace current
 
@@ -843,9 +745,9 @@ void set(device_t<cuda::detail::do_not_assume_device_is_current> device)
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-inline device_t<detail::do_not_assume_device_is_current> get(id_t device_id)
+inline device_t get(id_t device_id)
 {
-	return device_t<detail::do_not_assume_device_is_current>{device_id};
+	return device_t(device_id);
 }
 
 /**
@@ -854,7 +756,7 @@ inline device_t<detail::do_not_assume_device_is_current> get(id_t device_id)
  * @param pci_id The domain-bus-device triplet locating the GPU on the PCI bus
  * @return a device_t proxy object for the device at the specified location
  */
-inline device_t<detail::do_not_assume_device_is_current> get(pci_location_t pci_id)
+inline device_t get(pci_location_t pci_id)
 {
 	auto resolved_id = device::resolve_id(pci_id);
 	return get(resolved_id);
@@ -866,7 +768,7 @@ inline device_t<detail::do_not_assume_device_is_current> get(pci_location_t pci_
  * @param pci_id_str A string listing of the GPU's location on the PCI bus
  * @return a device_t proxy object for the device at the specified location
  */
-inline cuda::device_t<detail::do_not_assume_device_is_current> get(const std::string& pci_id_str)
+inline device_t get(const std::string& pci_id_str)
 {
 	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);
@@ -882,17 +784,15 @@ namespace device {
  * device-global memory
  *
  * @tparam T  the type of individual array elements
- * @tparam AssumedCurrent when false, the current device needs to be
- * set before the allocation is made
  *
  * @param device  on which to construct the array of T elements
  * @param n       the number of elements of type T
  * @return an std::unique_ptr pointing to the allocated memory
  */
-template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
-inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device, size_t n)
+template<typename T>
+inline unique_ptr<T> make_unique(device_t device, size_t n)
 {
-	typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
+	typename device_t::scoped_setter_t set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
 }
 
@@ -901,16 +801,14 @@ inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device, size_t n)
  * in device-global memory
  *
  * @tparam T  the type of value to construct in device memory
- * @tparam AssumedCurrent when false, the current device needs to be
- * set before the allocation is made
  *
  * @param device  on which to construct the T element
  * @return an std::unique_ptr pointing to the allocated memory
  */
-template<typename T, bool AssumedCurrent = cuda::detail::do_not_assume_device_is_current>
-inline unique_ptr<T> make_unique(device_t<AssumedCurrent>& device)
+template <typename T>
+inline unique_ptr<T> make_unique(device_t device)
 {
-	typename device_t<AssumedCurrent>::scoped_setter_t set_device_for_this_scope(device.id());
+	typename device_t::scoped_setter_t set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 

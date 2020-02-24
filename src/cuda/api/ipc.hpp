@@ -25,6 +25,7 @@
 
 #include <cuda/api/error.hpp>
 #include <cuda/api/types.hpp>
+#include <cuda/api/device.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -32,6 +33,7 @@
 
 namespace cuda {
 
+class device_t;
 class event_t;
 
 namespace memory {
@@ -191,8 +193,7 @@ inline handle_t export_(event_t& event);
  * @param device The device to which the imported event corresponds
  * @param the handle obtained via inter-process communications
  */
-template <bool AssumedCurrent>
-inline event_t import(device_t<AssumedCurrent>& device, const handle_t& handle);
+inline event_t import(device_t& device, const handle_t& handle);
 
 } // namespace ipc
 } // namespace event

@@ -43,8 +43,8 @@ __global__ void add(
  * Produce a launch configuration with one thread covering each element
  */
 cuda::launch_configuration_t make_linear_launch_config(
-	const cuda::device_t<>  device,
-	size_t                  length)
+	const cuda::device_t  device,
+	size_t                length)
 {
 	auto threads_per_block = device.properties().max_threads_per_block();
 	cuda::grid::dimension_t num_blocks =
@@ -63,9 +63,9 @@ struct buffer_set_t {
 };
 
 std::vector<buffer_set_t> generate_buffers(
-	const cuda::device_t<>  device,
-	size_t                  num_kernels,
-	size_t                  num_elements)
+	const cuda::device_t  device,
+	size_t                num_kernels,
+	size_t                num_elements)
 {
 	// TODO: This should be an std::array, but generating
 	// it is a bit tricky and I don't want to burden the example

@@ -29,7 +29,7 @@
 namespace cuda {
 
 ///@cond
-template <bool AssumedCurrent> class device_t;
+class device_t;
 ///@endcond
 
 
@@ -68,7 +68,7 @@ inline void set(device::id_t  device)
  */
 inline void set_to_default() { return detail::set(device::default_device_id); }
 
-void set(device_t<cuda::detail::do_not_assume_device_is_current> device);
+void set(device_t device);
 
 /**
  * A RAII-based mechanism for setting the CUDA Runtime API's current device for

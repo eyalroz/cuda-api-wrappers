@@ -40,7 +40,7 @@ using attribute_t = cudaDeviceP2PAttr;
  * @param peer device to be accessed
  * @return true iff acess is possible
  */
-inline bool can_access(device_t<> accessor,	device_t<> peer)
+inline bool can_access(device_t accessor, device_t peer)
 {
 	return accessor.can_access(peer);
 }
@@ -51,10 +51,7 @@ inline bool can_access(device_t<> accessor,	device_t<> peer)
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-template<bool AccessorIsAssumedCurrent>
-inline void enable_access(
-	device_t<AccessorIsAssumedCurrent>                accessor,
-	device_t<> peer)
+inline void enable_access(device_t accessor, device_t peer)
 {
 	return accessor.enable_access_to(peer);
 }
@@ -65,35 +62,28 @@ inline void enable_access(
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-template<bool AccessorIsAssumedCurrent>
-inline void disable_access(
-	device_t<AccessorIsAssumedCurrent>&               accessor,
-	device_t<> peer)
+inline void disable_access(device_t accessor, device_t peer)
 {
-	return accessor.disable_access_to(peer);
+	accessor.disable_access_to(peer);
 }
 
-
-template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
-inline void can_access_each_other(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+inline bool can_access_each_other(const device_t first, const device_t second)
 {
 	return first.can_access(second) and second.can_access(first);
 }
 
 
-template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
-inline void enable_bidirectional_access(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+inline void enable_bidirectional_access(device_t first, device_t second)
 {
-	enable_access<FirstAccessorIsAssumedCurrent >(first,  second);
-	enable_access<SecondAccessorIsAssumedCurrent>(second, first );
+	enable_access(first,  second);
+	enable_access(second, first );
 }
 
-template<bool FirstAccessorIsAssumedCurrent, bool SecondAccessorIsAssumedCurrent>
-inline void disable_bidirectional_access(device_t<FirstAccessorIsAssumedCurrent> first, device_t<SecondAccessorIsAssumedCurrent> second)
+inline void disable_bidirectional_access(device_t first, device_t second)
 {
 	// Note: What happens when first and second have the same id?
-	disable_access<FirstAccessorIsAssumedCurrent >(first,  second);
-	disable_access<SecondAccessorIsAssumedCurrent>(second, first );
+	disable_access(first,  second);
+	disable_access(second, first );
 }
 
 /**
@@ -109,8 +99,8 @@ inline void disable_bidirectional_access(device_t<FirstAccessorIsAssumedCurrent>
  */
 inline attribute_value_t get_attribute(
 	attribute_t       attribute,
-	const device_t<>  accessor,
-	const device_t<>  peer)
+	const device_t  accessor,
+	const device_t  peer)
 {
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, accessor.id(), peer.id());

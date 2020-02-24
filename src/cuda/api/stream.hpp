@@ -22,7 +22,7 @@
 
 namespace cuda {
 
-template <bool AssumedCurrent> class device_t;
+class device_t;
 class event_t;
 
 class stream_t;
@@ -152,7 +152,7 @@ protected: // type definitions
 public: // const getters
 	stream::id_t id() const noexcept { return id_; }
 	device::id_t device_id() const noexcept { return device_id_; }
-	device_t<detail::do_not_assume_device_is_current> device() const;
+	device_t device() const;
 	bool is_owning() const noexcept { return owning; }
 
 public: // other non-mutators
@@ -586,19 +586,16 @@ inline stream_t create(
 
 } // namespace detail
 
-template <bool AssumedCurrent>
 inline stream_t create(
-	device_t<AssumedCurrent>&  device,
-	bool                      synchronizes_with_default_stream,
-	priority_t                priority = stream::default_priority);
+	device_t     device,
+	bool         synchronizes_with_default_stream,
+	priority_t   priority = stream::default_priority);
 
 } // namespace stream
 
 using queue_t = stream_t;
-
 using queue_id_t = stream::id_t;
 
 } // namespace cuda
-
 
 #endif // CUDA_API_WRAPPERS_STREAM_HPP_
