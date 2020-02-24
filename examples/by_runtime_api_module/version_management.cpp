@@ -6,7 +6,7 @@
  *
  */
 #include "cuda/api/versions.hpp"
-#include "cuda/api/device_count.hpp"
+#include "cuda/api/miscellany.hpp"
 
 #include <iostream>
 #include <string>
