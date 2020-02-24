@@ -17,7 +17,6 @@
 #include <cuda/api/kernel_launch.cuh>
 #include <cuda/api/profiling.hpp>
 #include <cuda/api/device_properties.hpp>
-#include <cuda/api/device_count.hpp>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/device_function.hpp>
 #include <cuda/api/memory.hpp>

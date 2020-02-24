@@ -13,7 +13,7 @@
 #include <cuda/api/memory.hpp>
 #include <cuda/api/kernel_launch.cuh>
 #include <cuda/api/current_device.hpp>
-#include <cuda/api/device_count.hpp>
+#include <cuda/api/miscellany.hpp>
 
 #include <cuda_runtime_api.h>
 

@@ -11,7 +11,7 @@
  *
  */
 #include "cuda/api/pci_id_impl.hpp"
-#include "cuda/api/device_count.hpp"
+#include "cuda/api/miscellany.hpp"
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
 
