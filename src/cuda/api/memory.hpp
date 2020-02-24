@@ -42,7 +42,7 @@
 namespace cuda {
 
 ///@cond
-template <bool AssumedCurrent> class device_t;
+class device_t;
 class stream_t;
 ///@endcond
 
@@ -176,8 +176,7 @@ inline void free(void* ptr)
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
-template <bool AssumedCurrent>
-inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes);
+inline void* allocate(cuda::device_t device, size_t size_in_bytes);
 
 namespace detail {
 struct allocator {
@@ -848,11 +847,10 @@ inline void* allocate(
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-template <bool AssumedCurrent>
 inline void* allocate(
-	cuda::device_t<AssumedCurrent>&  device,
-	size_t                           num_bytes,
-	initial_visibility_t             initial_visibility = initial_visibility_t::to_all_devices
+	cuda::device_t        device,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
 );
 
 /**
@@ -891,12 +889,11 @@ inline void prefetch(
  * it can later be used there without waiting for I/O fromm the host or other
  * devices.
  */
-template <bool DestinationIsCurrentDevice>
 inline void prefetch(
-	const void*                                  managed_ptr,
-	size_t                                       num_bytes,
-	cuda::device_t<DestinationIsCurrentDevice>&  destination,
-	cuda::stream_t&                              stream_id);
+	const void*      managed_ptr,
+	size_t           num_bytes,
+	cuda::device_t   destination,
+	cuda::stream_t&  stream_id);
 
 
 } // namespace async
@@ -967,9 +964,8 @@ inline region_pair allocate(
 	return detail::allocate(size_in_bytes, options);
 }
 
-template <bool AssumedCurrent>
 inline region_pair allocate(
-	cuda::device_t<AssumedCurrent>&  device,
+	cuda::device_t                   device,
 	size_t                           size_in_bytes,
 	region_pair::allocation_options  options = {
 		region_pair::isnt_portable_across_cuda_contexts,

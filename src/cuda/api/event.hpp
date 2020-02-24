@@ -22,7 +22,7 @@
 namespace cuda {
 
 ///@cond
-template <bool AssumedCurrent> class device_t;
+class device_t;
 class stream_t;
 ///@endcond
 
@@ -110,7 +110,7 @@ public: // data member non-mutator getters
 	 * this event can be enqueued)
 	 */
 	device::id_t device_id()          const noexcept { return device_id_;          }
-	device_t<detail::do_not_assume_device_is_current> device() const;
+	device_t     device() const;
 	/**
 	 * Is this wrapper responsible for having the CUDA Runtime API destroy
 	 * the event when it destructs?
@@ -319,12 +319,11 @@ inline event_t create(
  *
  * @note Creating an event
  */
-template <bool DeviceAssumedCurrent>
 inline event_t create(
-	device_t<DeviceAssumedCurrent>&  device,
-	bool                             uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool                             records_timing     = do_record_timings,
-	bool                             interprocess       = not_interprocess);
+	device_t&  device,
+	bool       uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool       records_timing     = do_record_timings,
+	bool       interprocess       = not_interprocess);
 
 } // namespace event
 

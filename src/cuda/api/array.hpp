@@ -9,7 +9,7 @@
 
 namespace cuda {
 
-template <bool AssumedCurrent> class device_t;
+class device_t;
 
 namespace array {
 
@@ -36,11 +36,11 @@ cudaArray* allocate_on_current_device(array::dimensions_t<2> dimensions)
 	return raw_cuda_array;
 }
 
-template<typename T, bool AssumedCurrent>
-cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<3> dimensions);
+template<typename T>
+cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions);
 
-template<typename T, bool AssumedCurrent>
-cudaArray* allocate(device_t<AssumedCurrent>& device, array::dimensions_t<2> dimensions);
+template<typename T>
+cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions);
 
 } // namespace detail
 
@@ -83,9 +83,8 @@ public:
 	/**
 	 * Creates and wraps a new CUDA array.
 	 */
-	template<bool AssumedCurrent>
-	array_t(device_t<AssumedCurrent>& device, array::dimensions_t<NumDimensions> dimensions)
-		: array_t(array::detail::allocate<T, AssumedCurrent>(device, dimensions), dimensions) {}
+	array_t(device_t& device, array::dimensions_t<NumDimensions> dimensions)
+		: array_t(array::detail::allocate<T>(device, dimensions), dimensions) {}
 	array_t(const array_t& other) = delete;
 	array_t(array_t&& other) noexcept : array_t(other.raw_array_, other.dimensions_)
 	{
