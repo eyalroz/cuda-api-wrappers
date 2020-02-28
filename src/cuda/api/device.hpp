@@ -758,7 +758,7 @@ inline device_t get(id_t device_id)
  */
 inline device_t get(pci_location_t pci_id)
 {
-	auto resolved_id = device::resolve_id(pci_id);
+	auto resolved_id = device::detail::resolve_id(pci_id);
 	return get(resolved_id);
 }
 
@@ -767,6 +767,11 @@ inline device_t get(pci_location_t pci_id)
  *
  * @param pci_id_str A string listing of the GPU's location on the PCI bus
  * @return a device_t proxy object for the device at the specified location
+ *
+ * @note I'm not very happy about the assumption that get-device-by-string
+ * means get-device-by-pci-location; that's not such a great assumption to
+ * make IMHO. But - it's convenient for now and there's no immediate risk
+ * from some other obvious source of CUDA-device-identifying strings.
  */
 inline device_t get(const std::string& pci_id_str)
 {
