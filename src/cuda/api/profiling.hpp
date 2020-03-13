@@ -56,13 +56,16 @@ struct color_t {
 };
 
 namespace range {
+
 enum class Type { unspecified, kernel, pci_express_transfer	};
+
 /**
  * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
  * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
  * and can leave them within the implementation only.
  */
 using handle_t = uint64_t;
+
 } // namespace range
 
 namespace mark {
@@ -147,12 +150,11 @@ namespace naming {
  */
 template <typename CharT>
 void name_host_thread(uint32_t thread_id, const std::basic_string<CharT>& name);
+
 #if defined(__unix__) || defined(_WIN32)
 template <typename CharT>
 void name_this_thread(const std::basic_string<CharT>& name);
 #endif
-
-//void name_device_stream(device::id_t  device, stream::id_t stream);
 
 } // namespace naming
 
