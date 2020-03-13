@@ -78,9 +78,9 @@ std::vector<buffer_set_t> generate_buffers(
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements)
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements),
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements),
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements)
 			};
 		}
 	);

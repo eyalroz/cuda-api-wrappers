@@ -126,7 +126,6 @@ void printHelp()
 
 int main(int argc, char **argv)
 {
-	int cuda_device_id = 0;
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                 // number of times each experiment is repeated
 	int n = 16 * 1024 * 1024;       // number of ints in the data set
@@ -244,8 +243,8 @@ int main(int argc, char **argv)
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::device::make_unique<int[]>(cuda_device_id, n);
-	auto d_c = cuda::memory::device::make_unique<int>(cuda_device_id);
+	auto d_a = cuda::memory::device::make_unique<int[]>(current_device, n);
+	auto d_c = cuda::memory::device::make_unique<int>(current_device);
 	cuda::memory::copy_single(d_c.get(), &c);
 
 	std::cout << "\nStarting Test\n";

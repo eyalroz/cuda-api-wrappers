@@ -13,6 +13,7 @@
 #include <cuda/api/device.hpp>
 #include <cuda/api/event.hpp>
 #include <cuda/api/pointer.hpp>
+#include <cuda/api/unique_ptr.hpp>
 #include <cuda/api/array.hpp>
 
 namespace cuda {
@@ -258,7 +259,6 @@ inline void* allocate(cuda::device_t device, size_t size_in_bytes)
 {
 	return memory::device::allocate(device, size_in_bytes);
 }
-
 
 namespace async {
 
