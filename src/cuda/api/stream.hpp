@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 namespace cuda {
 
@@ -35,6 +36,15 @@ enum : bool {
 	no_implicit_synchronization_with_default_stream = false,
 	sync = implicitly_synchronizes_with_default_stream,
 	async = no_implicit_synchronization_with_default_stream,
+};
+
+
+/**
+ * Use these for the third argument of @ref cuda::stream::wrap()
+ */
+enum : bool {
+	dont_take_ownership = false,
+	take_ownership      = true,
 };
 
 namespace detail {
@@ -240,13 +250,14 @@ protected: // static methods
 	static void callback_adapter(
 		stream::id_t  stream_id,
 		status_t      status,
-		void *        invokable_on_heap)
+		void *        extra_args_on_heap)
 	{
-		auto retyped_callback = std::unique_ptr<Invokable>{ 
-			reinterpret_cast<Invokable*>(invokable_on_heap)
-		 };
-		(*retyped_callback)(stream_id, status);
-		// Note: invokable_on_heap will be delete'd
+		using pair_type = std::pair<device::id_t, Invokable>;
+		auto* pair_ptr = reinterpret_cast<pair_type*>(extra_args_on_heap);
+		auto unique_ptr = std::unique_ptr<pair_type>{pair_ptr}; // Ensures deletion when we leave this function.
+		auto device_id = pair_ptr->first;
+		auto& invokable = pair_ptr->second;
+		invokable( stream_t{device_id, stream_id, stream::dont_take_ownership}, status);
 	}
 
 public: // mutators
@@ -394,12 +405,13 @@ public: // mutators
 			// and we don't know anything about the scope of the original argument with
 			// which we were called, we must make a copy of `callback_` on the heap
 			// and pass that as the user-defined data
-			Invokable * invokable_on_the_heap = new Invokable(std::move(callback_));
+			auto raw_callback_extra_argument =
+				new std::pair<device::id_t, Invokable>( device_id_, Invokable(std::move(callback_)) );
 
 			// This always registers the static function callback_adapter as the callback -
 			// but what that one will do is call the actual callback we were passed;
 			auto status = cudaStreamAddCallback(
-				stream_id_, &callback_adapter<Invokable>, invokable_on_the_heap, fixed_flags);
+				stream_id_, &callback_adapter<Invokable>, raw_callback_extra_argument, fixed_flags);
 			throw_if_error(status,
 				std::string("Failed scheduling a callback to be launched")
 				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
@@ -529,14 +541,6 @@ inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 }
 
 namespace stream {
-
-/**
- * Use these for the third argument of @ref cuda::stream::wrap()
- */
-enum : bool {
-	dont_take_ownership = false,
-	take_ownership      = true,
-};
 
 namespace detail {
 /**
