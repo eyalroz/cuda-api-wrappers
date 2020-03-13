@@ -48,7 +48,7 @@ Since I am not currently working on anything graphics-related, there are no shor
 We've all dreamed of being able to type in:
 
 	my_stream.enqueue.callback(
-		[&foo](cuda::stream::id_t stream_id, cuda::status_t status) {
+		[&foo](cuda::stream_t stream, cuda::status_t status) {
 			std::cout << "Hello " << foo << " world!\n";
 		}
 	);

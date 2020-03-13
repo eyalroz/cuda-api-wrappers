@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
 	stream_1.enqueue.callback(
-		[&buffer](cuda::stream::id_t stream_id, cuda::status_t status) {
+		[&buffer](cuda::stream_t, cuda::status_t status) {
 			std::cout << "Callback from stream 1!... \n";
 			print_first_char(buffer.get());
 		}
