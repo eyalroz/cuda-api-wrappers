@@ -51,6 +51,30 @@ inline typename detail::make_unique_selector<T, Deleter>::unbounded_array make_u
 template<typename T, typename Allocator, typename Deleter, typename... Args>
 inline typename detail::make_unique_selector<T, Deleter>::bounded_array make_unique(Args&&...) = delete;
 
+using deleter = device::detail::deleter;
+
+template<typename T>
+inline std::unique_ptr<T, deleter>
+make_unique(cuda::device::id_t device_id, size_t n)
+{
+	cuda::device::current::scoped_override_t<
+		cuda::detail::do_not_assume_device_is_current
+	> set_device_for_this_scope(device_id);
+	return memory::detail::make_unique<T, device::detail::allocator, deleter>(n);
+}
+
+template<typename T>
+inline std::unique_ptr<T, deleter>
+make_unique(cuda::device::id_t device_id)
+{
+
+	cuda::device::current::scoped_override_t<
+		cuda::detail::do_not_assume_device_is_current
+	> set_device_for_this_scope(device_id);
+
+	return memory::detail::make_unique<T, device::detail::allocator, deleter>();
+}
+
 } // namespace detail
 
 namespace device {
@@ -59,24 +83,10 @@ template<typename T>
 using unique_ptr = std::unique_ptr<T, detail::deleter>;
 
 template<typename T>
-inline unique_ptr<T> make_unique(cuda::device::id_t device_id, size_t n)
-{
-	cuda::device::current::scoped_override_t<
-		cuda::detail::do_not_assume_device_is_current
-	> set_device_for_this_scope(device_id);
-	return ::cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
-}
+inline unique_ptr<T> make_unique(cuda::device_t device, size_t n);
 
 template<typename T>
-inline unique_ptr<T> make_unique(cuda::device::id_t device_id)
-{
-
-	cuda::device::current::scoped_override_t<
-		cuda::detail::do_not_assume_device_is_current
-	> set_device_for_this_scope(device_id);
-
-	return ::cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
-}
+inline unique_ptr<T> make_unique(cuda::device_t device);
 
 template<typename T>
 inline unique_ptr<T> make_unique(T* raw_ptr)

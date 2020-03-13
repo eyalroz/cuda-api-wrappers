@@ -760,7 +760,6 @@ inline unique_ptr<T> make_unique(device_t device)
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
-
 } // namespace device
 } // namespace memory
 
