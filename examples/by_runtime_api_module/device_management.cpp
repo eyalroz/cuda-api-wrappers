@@ -14,6 +14,7 @@
 #include "cuda/api/miscellany.hpp"
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
+#include "cuda/api/peer_to_peer.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
 		auto peer_device = cuda::device::get(peer_id);
 		if (device.can_access(peer_device)) {
 			auto atomics_supported_over_link = cuda::device::peer_to_peer::get_attribute(
-				cudaDevP2PAttrNativeAtomicSupported, device_id, peer_id);
+				cudaDevP2PAttrNativeAtomicSupported, cuda::device::get(device_id), cuda::device::get(peer_id));
 			std::cout
 				<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 				<< "supported over the link from device " << device_id

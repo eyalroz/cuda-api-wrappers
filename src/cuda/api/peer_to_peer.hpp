@@ -86,6 +86,7 @@ inline void disable_bidirectional_access(device_t first, device_t second)
 	disable_access(second, first );
 }
 
+
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
  * relating to their interaction
@@ -98,9 +99,9 @@ inline void disable_bidirectional_access(device_t first, device_t second)
  * @return the numeric attribute value
  */
 inline attribute_value_t get_attribute(
-	attribute_t       attribute,
-	const device_t  accessor,
-	const device_t  peer)
+	attribute_t  attribute,
+	device_t     accessor,
+	device_t     peer)
 {
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, accessor.id(), peer.id());
