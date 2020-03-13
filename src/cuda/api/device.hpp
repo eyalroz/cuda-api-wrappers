@@ -48,63 +48,6 @@ device_t get();
 
 } // namespace current
 
-namespace peer_to_peer {
-
-/**
- * @brief The value of type for all CUDA device "attributes"; see also @ref attribute_t.
- */
-using attribute_value_t = int;
-
-/**
- * @brief An identifier of a integral-numeric-value attribute of a CUDA device.
- *
- * @note Somewhat annoyingly, CUDA devices have attributes, properties and flags.
- * Attributes have integral number values; properties have all sorts of values,
- * including arrays and limited-length strings (see
- * @ref cuda::device::properties_t), and flags are either binary or
- * small-finite-domain type fitting into an overall flagss value (see
- * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
- * attributes are more one-at-a-time.
- */
-using attribute_t = cudaDeviceP2PAttr;
-
-/**
- * Aliases for all CUDA device attributes
- */
-enum : std::underlying_type<attribute_t>::type {
-		link_performance_rank = cudaDevP2PAttrPerformanceRank, /**< A relative value indicating the performance of the link between two devices */                       //!< link_performance_rank
-		access_support = cudaDevP2PAttrAccessSupported, /**< 1 if access is supported, 0 otherwise */                                                                    //!< access_support
-		native_atomics_support = cudaDevP2PAttrNativeAtomicSupported /**< 1 if the first device can perform native atomic operations on the second device, 0 otherwise *///!< native_atomics_support
-};
-
-/**
- * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
- * relating to their interaction
- *
- * @note This is the device-pair equivalent of @ref device_t::get_attribute()
- *
- * @param attribute identifier of the attribute of interest
- * @param source source device
- * @param destination destination device
- * @return the numeric attribute value
- */
-inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
-{
-	attribute_value_t value;
-	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
-	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(source) + ", "
-			+ std::to_string(destination) + ')');
-	return value;
-}
-
-inline attribute_value_t get_attribute(
-	attribute_t  attribute,
-	device_t     source,
-	device_t     destination);
-
-} // namespace peer_to_peer
-
 } // namespace device
 
 /**
