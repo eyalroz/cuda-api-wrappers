@@ -74,14 +74,15 @@ cudaError_t cudaEventCreateWithFlags(
     cudaEvent_t* event, 
     unsigned int flags) 
 ```
-which requires you remember what you need to specify as flags and how, you construct a `cuda::event_t` proxy object, using the constructor 
+which requires you remember what you need to specify as flags and how, you create a `cuda::event_t` proxy object, using the function:
 ```
-cuda::event_t::event_t(
-    bool uses_blocking_sync,
-    bool records_timing      = event::do_record_timing,
-    bool interprocess        = event::not_interprocess)
+cuda::event_t cuda::event::create(
+    cuda::device_t  device,
+    bool            uses_blocking_sync,
+    bool            records_timing      = cuda::event::do_record_timing,
+    bool            interprocess        = cuda::event::not_interprocess)
 ```
-The default values here are `enum : bool`'s, which you should also use when constructing an `event_t` with non-default parameters. There is also the no-arguments `event_t()` constructor which calls `cudaEventCreate` without flags.
+The default values here are `enum : bool`'s, which you can use yourself when creating non-default-parameter events - to make the call more easily readable than with `true` or `false`.
 
 ## Example programs
 
