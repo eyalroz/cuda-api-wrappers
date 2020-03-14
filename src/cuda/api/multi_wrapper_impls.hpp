@@ -13,8 +13,32 @@
 #include <cuda/api/device.hpp>
 #include <cuda/api/event.hpp>
 #include <cuda/api/pointer.hpp>
+#include <cuda/api/unique_ptr.hpp>
+#include <cuda/api/array.hpp>
 
 namespace cuda {
+
+namespace array {
+
+namespace detail {
+
+template<typename T>
+cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
+{
+	device::current::scoped_override_t<> set_device_for_this_scope(device.id());
+	return allocate_on_current_device<T>(dimensions);
+}
+
+template<typename T>
+cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
+{
+	device::current::scoped_override_t<> set_device_for_this_scope(device.id());
+	return allocate_on_current_device<T>(dimensions);
+}
+
+} // namespace detail
+
+} // namespace array
 
 namespace event {
 
@@ -34,12 +58,11 @@ namespace event {
  * event?
  * @return The constructed event proxy class
  */
-template <bool DeviceAssumedCurrent>
 inline event_t create(
-	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync,
-	bool                            records_timing,
-	bool                            interprocess)
+	device_t&  device,
+	bool       uses_blocking_sync,
+	bool       records_timing,
+	bool       interprocess)
 {
 	auto device_id = device.id();
 		// Yes, we need the ID explicitly even on the current device,
@@ -47,39 +70,53 @@ inline event_t create(
 	return event::detail::create(device_id , uses_blocking_sync, records_timing, interprocess);
 }
 
-} // namespace event_t
+namespace ipc {
+
+inline handle_t export_(event_t& event)
+{
+	return detail::export_(event.id());
+}
+
+inline event_t import(device_t& device, const handle_t& handle)
+{
+	bool do_not_take_ownership { false };
+	return event::detail::wrap(device.id(), detail::import(handle), do_not_take_ownership);
+}
+
+} // namespace ipc
+
+} // namespace event
 
 
 // device_t methods
 
-template <bool AssumedCurrent>
-inline void device_t<AssumedCurrent>::synchronize(event_t& event)
+inline void device_t::synchronize(event_t& event)
 {
-	return synchronize_event(event.id());
+	scoped_setter_t set_device_for_this_scope(id_);
+	auto status = cudaEventSynchronize(event.id());
+	throw_if_error(status, "Failed synchronizing the event with id "
+		+ detail::ptr_as_hex(event.id()) + " on   " + device_id_as_str());
 }
 
-template <bool AssumedCurrent>
-inline void device_t<AssumedCurrent>::synchronize(stream_t<detail::do_not_assume_device_is_current>& stream)
+inline void device_t::synchronize(stream_t& stream)
 {
 	return synchronize_stream(stream.id());
 }
 
-template <bool AssumedCurrent>
-inline stream_t<AssumedCurrent> device_t<AssumedCurrent>::default_stream() const noexcept
+inline stream_t device_t::default_stream() const noexcept
 {
 	// TODO: Perhaps support not-knowing our ID here as well, somehow?
-	return stream_t<AssumedCurrent>(id(), stream::default_stream_id);
+	return stream_t(id(), stream::default_stream_id);
 }
 
-template <bool AssumedCurrent>
-inline stream_t<detail::do_not_assume_device_is_current>
-device_t<AssumedCurrent>::create_stream(
+inline stream_t
+device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
 {
-	device::current::scoped_override_t<AssumedCurrent> set_device_for_this_scope(id_);
+	device::current::scoped_override_t<> set_device_for_this_scope(id_);
 	constexpr const auto take_ownership = true;
-	return stream::wrap(id(), stream::detail::create_on_current_device(
+	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
 		will_synchronize_with_default_stream, priority), take_ownership);
 }
 
@@ -87,9 +124,8 @@ namespace detail {
 
 } // namespace detail
 
-template <bool AssumedCurrent>
 template <typename KernelFunction, typename ... KernelParameters>
-void device_t<AssumedCurrent>::launch(
+void device_t::launch(
 	bool thread_block_cooperativity,
 	const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
 	KernelParameters ... parameters)
@@ -98,31 +134,43 @@ void device_t<AssumedCurrent>::launch(
 		thread_block_cooperativity, kernel_function, launch_configuration, parameters...);
 }
 
-template <bool AssumedCurrent>
-inline event_t device_t<AssumedCurrent>::create_event(
+inline event_t device_t::create_event(
 	bool          uses_blocking_sync,
 	bool          records_timing,
 	bool          interprocess)
 {
 	// The current implementation of event::create is not super-smart,
 	// but it's probably not worth it trying to improve just this function
-	return event::create<AssumedCurrent>(*this, uses_blocking_sync, records_timing, interprocess);
+	return event::create(*this, uses_blocking_sync, records_timing, interprocess);
 }
 
 // event_t methods
 
-inline device_t<detail::do_not_assume_device_is_current>
-event_t::device() const { return cuda::device::get(device_id_); }
+inline device_t event_t::device() const { return cuda::device::get(device_id_); }
+
+inline void event_t::record(stream_t& stream)
+{
+	// Note:
+	// TODO: Perhaps check the device ID here, rather than
+	// have the Runtime API call fail?
+	event::detail::enqueue(stream.id(), id_);
+}
+
+inline void event_t::fire(stream_t& stream)
+{
+	record(stream);
+	stream.synchronize();
+}
 
 
 // stream_t methods
 
-template <bool AssumesDeviceIsCurrent>
-inline device_t<detail::do_not_assume_device_is_current>
-stream_t<AssumesDeviceIsCurrent>::device() const { return cuda::device::get(device_id_); }
+inline device_t stream_t::device() const
+{
+	return cuda::device::get(device_id_);
+}
 
-template <bool AssumesDeviceIsCurrent>
-inline void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& event_)
+inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
 	if (event_.device_id() != device_id_) {
@@ -144,8 +192,7 @@ inline void stream_t<AssumesDeviceIsCurrent>::enqueue_t::wait(const event_t& eve
 
 }
 
-template <bool AssumesDeviceIsCurrent>
-inline event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& existing_event)
+inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
 #ifndef NDEBUG
 	if (existing_event.device_id() != device_id_) {
@@ -162,8 +209,7 @@ inline event_t& stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(event_t& exis
 	return existing_event;
 }
 
-template <bool AssumesDeviceIsCurrent>
-inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
+inline event_t stream_t::enqueue_t::event(
     bool          uses_blocking_sync,
     bool          records_timing,
     bool          interprocess)
@@ -177,22 +223,30 @@ inline event_t stream_t<AssumesDeviceIsCurrent>::enqueue_t::event(
 namespace memory {
 
 template <typename T>
-inline device_t<cuda::detail::do_not_assume_device_is_current>
-pointer_t<T>::device() const 
+inline device_t pointer_t<T>::device() const
 { 
 	return cuda::device::get(attributes().device); 
 }
 
 namespace async {
 
-template <bool StreamIsOnCurrentDevice>
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream)
 {
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-template <typename T, bool StreamIsOnCurrentDevice>
-inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream)
+template <typename T, size_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t& stream) {
+	detail::copy(destination, source, stream.id());
+}
+
+template <typename T, size_t NumDimensions>
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t& stream) {
+	detail::copy(destination, source, stream.id());
+}
+
+template <typename T>
+inline void copy_single(T& destination, const T& source, stream_t& stream)
 {
 	detail::copy(&destination, &source, sizeof(T), stream.id());
 }
@@ -201,22 +255,19 @@ inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurr
 
 namespace device {
 
-template <bool AssumedCurrent>
-inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes)
+inline void* allocate(cuda::device_t device, size_t size_in_bytes)
 {
-	return memory::device::detail::allocate(device.id(), size_in_bytes);
+	return memory::device::allocate(device, size_in_bytes);
 }
 
 namespace async {
 
-template <bool StreamIsOnCurrentDevice>
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream)
 {
 	detail::set(start, byte_value, num_bytes, stream.id());
 }
 
-template <bool StreamIsOnCurrentDevice>
-inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream)
+inline void zero(void* start, size_t num_bytes, stream_t& stream)
 {
 	detail::zero(start, num_bytes, stream.id());
 }
@@ -229,24 +280,22 @@ namespace managed {
 
 namespace async {
 
-template <bool DestinationIsCurrentDevice>
 inline void prefetch(
-	const void*                                  managed_ptr,
-	size_t                                       num_bytes,
-	cuda::device_t<DestinationIsCurrentDevice>&  destination,
-	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id)
+	const void*      managed_ptr,
+	size_t           num_bytes,
+	cuda::device_t   destination,
+	cuda::stream_t&  stream)
 {
-	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream_id.id());
+	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream.id());
 }
 
 } // namespace async
 
 
-template <bool AssumedCurrent>
 inline void* allocate(
-	cuda::device_t<AssumedCurrent>&  device,
-	size_t                           num_bytes,
-	initial_visibility_t             initial_visibility)
+	cuda::device_t        device,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility)
 {
 	return detail::allocate(device.id(), num_bytes, initial_visibility);
 }
@@ -256,9 +305,8 @@ inline void* allocate(
 
 namespace mapped {
 
-template <bool AssumedCurrent>
 inline region_pair allocate(
-	cuda::device_t<AssumedCurrent>&  device,
+	cuda::device_t                   device,
 	size_t                           size_in_bytes,
 	region_pair::allocation_options  options)
 {
@@ -269,13 +317,45 @@ inline region_pair allocate(
 
 } // namespace memory
 
+
+/**
+ * @brief Sets a device function's preference of either having more L1 cache or
+ * more shared memory space when executing on some device
+ *
+ * @param device_id the CUDA device for execution on which the preference is set
+ * @param preference value to set for the device function (more cache, more L1 or make the equal)
+ */
+inline void device_function_t::cache_preference(
+	device_t                           device,
+	multiprocessor_cache_preference_t  preference)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	cache_preference(preference);
+}
+
+inline void device_function_t::opt_in_to_extra_dynamic_memory(
+	cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
+	device_t                      device)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	opt_in_to_extra_dynamic_memory(maximum_shared_memory_required_by_kernel);
+}
+
+inline void device_function_t::set_shared_mem_to_l1_cache_fraction(
+	unsigned  shared_mem_percentage,
+	device_t  device)
+{
+	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	set_shared_mem_to_l1_cache_fraction(shared_mem_percentage);
+}
+
 namespace device_function {
 
-inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
-	device_t<>                device,
+inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
+	const device_t            device,
 	const device_function_t&  device_function,
-	grid_block_dimension_t    num_threads_per_block,
-	memory::shared::size_t      dynamic_shared_memory_per_block,
+	grid::block_dimension_t   num_threads_per_block,
+	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
 	device::current::scoped_override_t<> set_device_for_this_context(device.id());
@@ -291,6 +371,18 @@ inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
 }
 
 } // namespace device_function
+
+namespace stream {
+
+inline stream_t create(
+	device_t    device,
+	bool        synchronizes_with_default_stream,
+	priority_t  priority)
+{
+	return detail::create(device.id(), synchronizes_with_default_stream, priority);
+}
+
+} // namespace stream
 
 } // namespace cuda
 

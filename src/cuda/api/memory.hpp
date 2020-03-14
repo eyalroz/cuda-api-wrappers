@@ -3,6 +3,26 @@
  *
  * @brief freestanding wrapper functions for working with CUDA's various
  * kinds of memory spaces, arranged into a relevant namespace hierarchy.
+ *
+ * @note Some of the CUDA API for allocating and copying memory involves
+ * the concept of "pitch" and "pitched pointers". To better understand
+ * what that means, consider the following two-dimensional representation
+ * of an array (which is in fact embedded in linear memory):
+ *
+ *	 X X X X * * *
+ *	 X X X X * * *
+ *	 X X X X * * *
+ *
+ *	 * = padding element
+ *	 X = actually used element of the array
+ *
+ *	 The pitch in the example above is 7 * sizeof(T)
+ *	 The width is 4 * sizeof(T)
+ *   The height is 3
+ *
+ * See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
+ *
+ *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
@@ -12,6 +32,7 @@
 #include <cuda/api/constants.hpp>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/pointer.hpp>
+#include <cuda/api/array.hpp>
 
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
@@ -21,8 +42,8 @@
 namespace cuda {
 
 ///@cond
-template <bool AssumedCurrent> class device_t;
-template <bool AssumesDeviceIsCurrent> class stream_t;
+class device_t;
+class stream_t;
 ///@endcond
 
 /**
@@ -123,7 +144,7 @@ inline void* allocate(size_t num_bytes)
 	throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) +
 		" bytes of global memory on CUDA device " +
-		std::to_string(cuda::device::current::get_id()));
+		std::to_string(cuda::device::current::detail::get_id()));
 	return allocated;
 }
 
@@ -155,8 +176,7 @@ inline void free(void* ptr)
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
-template <bool AssumedCurrent>
-inline void* allocate(cuda::device_t<AssumedCurrent>& device, size_t size_in_bytes);
+inline void* allocate(cuda::device_t device, size_t size_in_bytes);
 
 namespace detail {
 struct allocator {
@@ -166,7 +186,6 @@ struct allocator {
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
-
 } // namespace detail
 
 /**
@@ -213,12 +232,172 @@ inline void zero(void* buffer_start, size_t num_bytes)
 inline void copy(void *destination, const void *source, size_t num_bytes)
 {
 	auto result = cudaMemcpy(destination, source, num_bytes, cudaMemcpyDefault);
-	if (is_failure(result)) {
-		std::string error_message("Synchronously copying data");
-		// TODO: Determine whether it was from host to device, device to host etc and
-		// add this information to the error string
-		throw cuda::runtime_error(result, error_message);
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error(result, "Synchronously copying data");
+}
+
+/**
+ * @brief Sets all bytes in a region of memory to a fixed value
+ *
+ * @note The equivalent of @ref std::memset - for any and all CUDA-related
+ * memory spaces
+ *
+ * @param buffer_start position from where to start
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+{
+	pointer_t<void> pointer { buffer_start };
+	switch ( pointer.attributes().memory_type() ) {
+	case device_memory:
+	case managed_memory:
+		memory::device::set(buffer_start, byte_value, num_bytes); break;
+	case unregistered_memory:
+	case host_memory:
+		std::memset(buffer_start, byte_value, num_bytes); break;
+	default:
+		throw runtime_error(
+			cuda::status::invalid_value,
+			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(buffer_start)
+		);
 	}
+}
+
+inline void zero(void* buffer_start, size_t num_bytes)
+{
+	return set(buffer_start, 0, num_bytes);
+}
+
+
+namespace detail {
+
+/**
+ * @note When constructing this class - destination first, source second
+ * (otherwise you're implying the opposite direction of transfer).
+ */
+struct copy_params_t : cudaMemcpy3DParms {
+	struct tag { };
+protected:
+	template <typename T>
+	copy_params_t(tag, const void *ptr, const array_t<T, 3>& array) :
+		cudaMemcpy3DParms { 0 },
+		pitch(sizeof(T) * array.dimensions().width),
+		pitched_ptr(make_cudaPitchedPtr(
+			const_cast<void*>(ptr),
+			pitch,
+			array.dimensions().width,
+			array.dimensions().height))
+	{
+		kind = cudaMemcpyDefault;
+		extent = array.dimensions();
+	}
+
+public:
+	template <typename T>
+	copy_params_t(const array_t<T, 3>& destination, const void *source) :
+		copy_params_t(tag{}, source, destination)
+	{
+		srcPtr = pitched_ptr;
+		dstArray = destination.get();
+	}
+
+	template <typename T>
+	copy_params_t(const void * destination, const array_t<T, 3>& source) :
+		copy_params_t(tag{}, destination, source)
+	{
+		srcArray = source.get();
+		dstPtr = pitched_ptr;
+	}
+
+	size_t pitch;
+	cudaPitchedPtr pitched_ptr;
+};
+
+} // namespace detail
+
+/**
+ * Synchronously copies data from a 3-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
+ *
+ * @param destination A 3-dimensional CUDA array
+ * @param source A pointer to a a memory region containing as many
+ * elements as would fill the @source array, _contiguously_
+ */
+template<typename T>
+void copy(array_t<T, 3>& destination, const void *source)
+{
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
+}
+
+/**
+ * Synchronously copies data from a 3-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
+ *
+ * @param destination A pointer to a a memory region large enough to fit
+ * all elements of the @source array, contiguously
+ * @param source A 3-dimensional CUDA array
+ */
+template<typename T>
+void copy(void *destination, const array_t<T, 3>& source)
+{
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying from a 3-dimensional CUDA array");
+}
+
+/**
+ * Synchronously copies data from memory spaces into CUDA arrays.
+ *
+ * @param destination A CUDA array @ref cuda::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ */
+template<typename T>
+void copy(array_t<T, 2>& destination, const void *source)
+{
+	const auto dimensions = destination.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto source_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DToArray(
+		destination.get(),
+		offsets.width,
+		offsets.height,
+		source,
+		source_pitch,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault);
+	throw_if_error(result, "Synchronously copying into a 2D CUDA array");
+}
+
+/**
+ * Synchronously copies data from a 2-dimensional CUDA array into
+ * non-array memory, on the device or on the host.
+ *
+ * @param destination A pointer to a a memory region large enough to fit
+ * all elements of the @p source array, contiguously
+ * @param source A 2-dimensional CUDA array */
+template<typename T>
+void copy(void* destination, const array_t<T, 2>& source)
+{
+	const auto dimensions = source.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto destination_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DFromArrayAsync(
+		destination,
+		destination_pitch,
+		source.get(),
+		offsets.width,
+		offsets.height,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault);
+	throw_if_error(result, "Synchronously copying out of a 2D CUDA array");
 }
 
 /**
@@ -258,12 +437,66 @@ namespace detail {
 inline void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
 {
 	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_id);
-	if (is_failure(result)) {
-		std::string error_message("Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
-		// TODO: Determine whether it was from host to device, device to host etc and
-		// add this information to the error string
-		throw_if_error(result, error_message);
-	}
+
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error(result, "Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
+}
+
+template<typename T>
+void copy(array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
+{
+	const auto copy_params = memory::detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
+	throw_if_error(result, "Scheduling a memory copy into a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
+}
+
+template<typename T>
+void copy(void* destination, const array_t<T, 3>& source, stream::id_t stream_id)
+{
+	const auto copy_params = memory::detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
+}
+
+template<typename T>
+void copy(array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+{
+	const auto dimensions = destination.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto source_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DToArrayAsync(
+		destination.get(),
+		offsets.width,
+		offsets.height,
+		source,
+		source_pitch,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault,
+		stream_id);
+	throw_if_error(result, "Scheduling a memory copy into a 2D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
+}
+
+template<typename T>
+void copy(void* destination, const array_t<T, 2>& source, cuda::stream::id_t stream_id)
+{
+	const auto dimensions = source.dimensions();
+	const auto width_in_bytes = sizeof(T) * dimensions.width;
+	const auto destination_pitch = width_in_bytes; // i.e. no padding
+	const array::dimensions_t<2> offsets { 0, 0 };
+	auto result = cudaMemcpy2DFromArrayAsync(
+		destination,
+		destination_pitch,
+		source.get(),
+		offsets.width,
+		offsets.height,
+		width_in_bytes,
+		dimensions.height,
+		cudaMemcpyDefault,
+		stream_id);
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
 /**
@@ -301,8 +534,31 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-template <bool StreamIsOnCurrentDevice>
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream);
+
+/**
+ * Asynchronously copies data from memory spaces into CUDA arrays.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A CUDA array @ref cuda::array_t
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ * @param stream schedule the copy operation into this CUDA stream
+ */
+template <typename T, size_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t& stream);
+
+/**
+ * Asynchronously copies data from CUDA arrays into memory spaces.
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array_t
+ * @param stream schedule the copy operation into this CUDA stream
+ */
+template <typename T, size_t NumDimensions>
+inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
@@ -314,8 +570,8 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
  */
-template <typename T, bool StreamIsOnCurrentDevice>
-inline void copy_single(T& destination, const T& source, stream_t<StreamIsOnCurrentDevice>& stream);
+template <typename T>
+inline void copy_single(T& destination, const T& source, stream_t& stream);
 
 } // namespace async
 
@@ -356,14 +612,12 @@ inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream The stream on which to schedule this action
  */
-template <bool StreamIsOnCurrentDevice>
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream);
 
 /**
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
-template <bool StreamIsOnCurrentDevice>
-inline void zero(void* start, size_t num_bytes, stream_t<StreamIsOnCurrentDevice>& stream);
+inline void zero(void* start, size_t num_bytes, stream_t& stream);
 
 } // namespace async
 
@@ -593,11 +847,10 @@ inline void* allocate(
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-template <bool AssumedCurrent>
 inline void* allocate(
-	cuda::device_t<AssumedCurrent>&  device,
-	size_t                           num_bytes,
-	initial_visibility_t             initial_visibility = initial_visibility_t::to_all_devices
+	cuda::device_t        device,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
 );
 
 /**
@@ -636,12 +889,11 @@ inline void prefetch(
  * it can later be used there without waiting for I/O fromm the host or other
  * devices.
  */
-template <bool DestinationIsCurrentDevice>
 inline void prefetch(
-	const void*                                  managed_ptr,
-	size_t                                       num_bytes,
-	cuda::device_t<DestinationIsCurrentDevice>&  destination,
-	cuda::stream_t<DestinationIsCurrentDevice>&  stream_id);
+	const void*      managed_ptr,
+	size_t           num_bytes,
+	cuda::device_t   destination,
+	cuda::stream_t&  stream_id);
 
 
 } // namespace async
@@ -683,7 +935,7 @@ inline region_pair allocate(
 	}
 	throw_if_error(status,
 		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
-			+ " bytes of global memory on device " + std::to_string(cuda::device::current::get_id()));
+			+ " bytes of global memory on device " + std::to_string(cuda::device::current::detail::get_id()));
 	return allocated;
 }
 
@@ -712,9 +964,8 @@ inline region_pair allocate(
 	return detail::allocate(size_in_bytes, options);
 }
 
-template <bool AssumedCurrent>
 inline region_pair allocate(
-	cuda::device_t<AssumedCurrent>&  device,
+	cuda::device_t                   device,
 	size_t                           size_in_bytes,
 	region_pair::allocation_options  options = {
 		region_pair::isnt_portable_across_cuda_contexts,

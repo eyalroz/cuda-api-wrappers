@@ -61,7 +61,7 @@ inline std::ostream& operator<< (std::ostream& os, const cuda::device::compute_c
 
 #ifdef __CUDA_RUNTIME_H__
 // General GPU Device CUDA Initialization
-inline int gpuDeviceInit(int device_id)
+inline void gpuDeviceInit(int device_id)
 {
 	auto device_count = cuda::device::count();
 
@@ -72,11 +72,10 @@ inline int gpuDeviceInit(int device_id)
 	device_id  = std::max(device_id, 0);
 
 	if (device_id > device_count-1) {
-		std::cerr
-			<< "\n"
-			<< ">> " << device_count << " CUDA capable GPU device(s) detected. <<\n"
-			<< ">> gpuDeviceInit (-device=" << device_id << " is not a valid GPU device. <<\n";
-		return -device_id;
+		throw cuda::runtime_error(cuda::status::invalid_device,
+			std::to_string(device_count) +
+			" CUDA capable GPU device(s) detected; gpuDeviceInit called for device " +
+			std::to_string(device_id) + "which doesn't exist.");
 	}
 
 	auto device = cuda::device::get(device_id);
@@ -92,7 +91,6 @@ inline int gpuDeviceInit(int device_id)
 	}
 
 	device.make_current();
-	return device_id;
 }
 
 // This function returns the best GPU (with maximum GFLOPS)
@@ -147,7 +145,7 @@ inline int gpuGetMaxGflopsDeviceId()
 }
 
 // Initialization code to find the best CUDA Device
-inline int findCudaDevice(int argc, const char **argv)
+inline void chooseCudaDevice(int argc, const char **argv)
 {
 	cuda::device::id_t device_id;
 	// If the command-line has a device number specified, use it
@@ -158,24 +156,18 @@ inline int findCudaDevice(int argc, const char **argv)
 		if (device_id < 0) { die_("Invalid command line parameter"); }
 		else
 		{
-			device_id = gpuDeviceInit(device_id);
-			if (device_id < 0) { die_ ("exiting..."); }
+			gpuDeviceInit(device_id);
 		}
 	}
 	else
 	{
 		// Otherwise pick the device with highest Gflops/s
-		device_id = gpuGetMaxGflopsDeviceId();
-		cuda::device::current::set(device_id);
-		auto current_device = cuda::device::current::get();
-		std::cout
-			<< "GPU Device " << device_id << ": "
-			<< "\"" << current_device.name() << "\" "
-			<< "with compute capability "
-			<< current_device.properties().compute_capability() << "\n";
+		auto best_device = cuda::device::get(gpuGetMaxGflopsDeviceId());
+		std::cout << "GPU Device " << best_device.id() << ": ";
+		std::cout << "\"" << best_device.name() << "\" ";
+		std::cout << "with compute capability " << best_device.properties().compute_capability() << "\n";
+		best_device.make_current();
 	}
-
-	return device_id;
 }
 
 

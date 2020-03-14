@@ -18,6 +18,7 @@
 #endif
 
 #include <type_traits>
+#include <cassert>
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -25,6 +26,15 @@
 #define __host__ 
 #endif
 #endif
+
+#ifndef CPP14_CONSTEXPR
+#if __cplusplus >= 201402L
+#define CPP14_CONSTEXPR constexpr
+#else
+#define CPP14_CONSTEXPR
+#endif
+#endif
+
 
 #ifdef _MSC_VER
 /*
@@ -58,24 +68,102 @@ namespace cuda {
 using status_t                = cudaError_t;
 
 
-/**
- * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
- * In each of these, the numbers of blocks per grid is specified in this type.
- *
- * @note Theoretically, CUDA could split the type for blocks per grid and
- * threads per block, but for now they're the same.
- */
-using grid_dimension_t        = decltype(dim3::x);
+namespace array {
 
+using dimension_t = std::size_t;
 /**
- * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
- * In each of these, the number of threads per block is specified in this type.
+ * CUDA's array memory-objects are multi-dimensional; but their dimensions,
+ * or extents, are not the same as @ref cuda::grid_dimensionts_t ; they may be
+ * much larger in each axis.
  *
- * @note Theoretically, CUDA could split the type for blocks per grid and
- * threads per block, but for now they're the same.
+ * @note See also @url https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html
  */
-using grid_block_dimension_t  = grid_dimension_t;
+template<std::size_t NumDimensions>
+struct dimensions_t;
 
+template<>
+struct dimensions_t<3> // this almost-inherits cudaExtent
+{
+	dimension_t width, height, depth;
+
+	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_, dimension_t depth_)
+		: width(width_), height(height_), depth(depth_) { }
+	constexpr __host__ __device__ dimensions_t(cudaExtent e)
+		: dimensions_t(e.width, e.height, e.depth) { }
+	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+		: dimensions_t(other.width, other.height, other.depth) { }
+	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
+		: dimensions_t(other.width, other.height, other.depth) { }
+
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	{
+		width = other.width; height = other.height; depth = other.depth;
+		return *this;
+
+	}
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
+	{
+		width = other.width; height = other.height; depth = other.depth;
+		return *this;
+	}
+
+	constexpr __host__ __device__ operator cudaExtent(void) const
+	{
+		return { width, height, depth };
+			// Note: We're not using make_cudaExtent here because:
+			// 1. It's not constexpr and
+			// 2. It doesn't do anything except construct the plain struct - as of CUDA 10 at least
+	}
+
+	constexpr __host__ __device__ std::size_t volume() const { return width * height * depth; }
+	constexpr __host__ __device__ std::size_t size() const { return volume(); }
+	constexpr __host__ __device__ unsigned char dimensionality() const
+	{
+		return ((width > 1) + (height> 1) + (depth > 1));
+	}
+
+	// Named constructor idioms
+
+	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+};
+
+template<>
+struct dimensions_t<2>
+{
+	dimension_t width, height;
+
+	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_)
+		: width(width_), height(height_) { }
+	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+		: dimensions_t(other.width, other.height) { }
+	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
+		: dimensions_t(other.width, other.height) { }
+
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	{
+		width = other.width; height = other.height;
+		return *this;
+
+	}
+	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
+	{
+		width = other.width; height = other.height;
+		return *this;
+	}
+
+	constexpr __host__ __device__ std::size_t area() const { return width * height; }
+	constexpr __host__ __device__ std::size_t size() const { return area(); }
+	constexpr __host__ __device__ unsigned char dimensionality() const
+	{
+		return ((width > 1) + (height> 1));
+	}
+
+	// Named constructor idioms
+
+	static constexpr __host__ __device__ dimensions_t square(dimension_t x)   { return dimensions_t{ x, x }; }
+};
+
+} // namespace array
 
 namespace event {
 using id_t              = cudaEvent_t;
@@ -100,34 +188,71 @@ enum : priority_t {
 
 } // namespace stream
 
+namespace grid {
+
+/**
+ * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
+ * In each of these, the numbers of blocks per grid is specified in this type.
+ *
+ * @note Theoretically, CUDA could split the type for blocks per grid and
+ * threads per block, but for now they're the same.
+ */
+using dimension_t        = decltype(dim3::x);
+
+/**
+ * CUDA kernels are launched in grids of blocks of threads, in 3 dimensions.
+ * In each of these, the number of threads per block is specified in this type.
+ *
+ * @note Theoretically, CUDA could split the type for blocks per grid and
+ * threads per block, but for now they're the same.
+ *
+ * @note At the time of writing, a grid dimension value cannot exceed 2^31
+ * on any axis (even lower on the y and z axes), so signed 32-bit integers
+ * are "usable" even though this type is unsigned.
+ */
+using block_dimension_t  = dimension_t;
+
+
 /**
  * A richer (kind-of-a-)wrapper for CUDA's @ref dim3 class, used
- * to specify dimensions for blocks and grid (up to 3 dimensions).
+ * to specify dimensions for blocks (in terms of threads) and of
+ * grids(in terms of blocks, or overall).
  *
  * @note Unfortunately, dim3 does not have constexpr methods -
  * preventing us from having constexpr methods here.
+ *
+ * @note Unlike 3D dimensions in general, grid dimensions cannot actually
+ * be empty: A grid must have some threads. Thus, the value in each
+ * axis must be positive.
  */
 struct dimensions_t // this almost-inherits dim3
 {
-	grid_dimension_t x, y, z;
-    constexpr __host__ __device__ dimensions_t(unsigned x_ = 1, unsigned y_ = 1, unsigned z_ = 1)
-    : x(x_), y(y_), z(z_) {}
+	dimension_t x, y, z;
+	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
+	: x(x_), y(y_), z(z_) { }
 
-    __host__ __device__ constexpr dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
-    __host__ __device__ constexpr dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+    constexpr __host__ __device__ dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
+    constexpr __host__ __device__ dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+    constexpr __host__ __device__ dimensions_t(dim3&& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
 
-    __host__ __device__ constexpr operator uint3(void) const { return { x, y, z }; }
+    constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
 
 	// This _should_ have been constexpr, but nVIDIA have not marked the dim3 constructors
 	// as constexpr, so it isn't
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    __host__ __device__ constexpr size_t volume() const { return (size_t) x * y * z; }
-    __host__ __device__ constexpr bool empty() const {	return volume() == 0; }
-    __host__ __device__ constexpr unsigned char dimensionality() const
+    constexpr __host__ __device__ std::size_t volume() const { return (std::size_t) x * y * z; }
+    constexpr __host__ __device__ unsigned char dimensionality() const
 	{
-		return ((z > 1) + (y > 1) + (x > 1)) * (!empty());
+		return ((z > 1) + (y > 1) + (x > 1));
 	}
+
+	// Named constructor idioms
+
+	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+	static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
+	static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
+	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
 };
 
 constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
@@ -139,18 +264,14 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
 
-/**
- * CUDA kernels are launched in grids of blocks of threads. This expresses the
- * dimensions of a grid, in terms of blocks.
- */
-using grid_dimensions_t       = dimensions_t;
 
 /**
  * CUDA kernels are launched in grids of blocks of threads. This expresses the
  * dimensions of a block within such a grid, in terms of threads.
  */
-using grid_block_dimensions_t = dimensions_t;
+using block_dimensions_t = dimensions_t;
 
+} // namespace grid
 
 namespace memory {
 namespace shared {
@@ -176,18 +297,46 @@ using size_t = unsigned;
  * Holds the parameters necessary to "launch" a CUDA kernel (i.e. schedule it for
  * execution on some stream of some device).
  */
-typedef struct {
-	grid_dimensions_t       grid_dimensions;
-	grid_block_dimensions_t block_dimensions;
-	memory::shared::size_t    dynamic_shared_memory_size; // in bytes
-} launch_configuration_t;
+struct launch_configuration_t {
+	grid::dimensions_t       grid_dimensions { 0 }; /// in blocks
+	grid::block_dimensions_t block_dimensions { 0 }; /// in threads
+	memory::shared::size_t    dynamic_shared_memory_size { 0u };
+		/// ... in bytes per block
+
+#if __cplusplus < 201402L
+	// In C++11, an inline initializer for a struct's field costs us a lot
+	// of its defaulted constructors; but - we must initialize the shared
+	// memory size to 0, as otherwise, people might be tempted to initialize
+	// a launch config with { num_blocks, num_threads } - and get an
+	// uninitalized shared memory size which they did not expect.
+	launch_configuration_t() = delete;
+	launch_configuration_t(const launch_configuration_t&) = default;
+	launch_configuration_t(launch_configuration_t&&) = default;
+	launch_configuration_t(
+		grid::dimensions_t grid_dims,
+		grid::dimensions_t block_dims,
+		memory::shared::size_t dynamic_shared_mem = 0u
+	) :
+		grid_dimensions(grid_dims),
+		block_dimensions(block_dims),
+		dynamic_shared_memory_size(dynamic_shared_mem)
+	{ }
+	// A "convenience" ctor to avoid narrowing-conversion warnings
+	launch_configuration_t(
+		int grid_dims,
+		int block_dims,
+		memory::shared::size_t dynamic_shared_mem = 0u
+	) : launch_configuration_t(grid::dimensions_t(grid_dims), grid::dimensions_t(block_dims), dynamic_shared_mem )
+	{ }
+#endif
+};
 
 inline launch_configuration_t make_launch_config(
-	grid_dimensions_t       grid_dimensions,
-	grid_block_dimensions_t block_dimensions,
-	memory::shared::size_t    dynamic_shared_memory_size = 0) noexcept
+	grid::dimensions_t       grid_dimensions,
+	grid::block_dimensions_t block_dimensions,
+	memory::shared::size_t    dynamic_shared_memory_size = 0u) noexcept
 {
-	return { grid_dimensions, block_dimensions, dynamic_shared_memory_size };
+	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size };
 }
 
 inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
@@ -234,9 +383,9 @@ enum class multiprocessor_cache_preference_t {
 enum multiprocessor_shared_memory_bank_size_option_t
 	: std::underlying_type<cudaSharedMemConfig>::type
 {
-    device_default       = cudaSharedMemBankSizeDefault,
-    four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
-    eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
+	device_default       = cudaSharedMemBankSizeDefault,
+	four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
+	eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
 };
 
 namespace device {

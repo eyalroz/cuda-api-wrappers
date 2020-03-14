@@ -126,7 +126,6 @@ void printHelp()
 
 int main(int argc, char **argv)
 {
-	int cuda_device_id = 0;
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                 // number of times each experiment is repeated
 	int n = 16 * 1024 * 1024;       // number of ints in the data set
@@ -175,27 +174,7 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "\n> ";
-	cuda_device_id = findCudaDevice(argc, (const char **)argv);
-
-	// check the compute capability of the device
-	auto num_devices = cuda::device::count();
-
-	if ( 0 == num_devices)
-	{
-		std::cerr << "your system does not have a CUDA capable device, waiving test...\n";
-		return EXIT_WAIVED;
-	}
-
-	// check if the command-line chosen device ID is within range, exit if not
-	if (cuda_device_id >= num_devices)
-	{
-		std::cout
-			<< "cuda_device=" << cuda_device_id << " is invalid, "
-			<< "must choose device ID between 0 and " << num_devices-1 << "\n";
-		return EXIT_FAILURE;
-	}
-
-	cuda::device::current::set(cuda_device_id);
+	chooseCudaDevice(argc, (const char **)argv);
 	auto current_device = cuda::device::current::get();
 
 	// Checking for compute capabilities
@@ -264,14 +243,14 @@ int main(int argc, char **argv)
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::device::make_unique<int[]>(cuda_device_id, n);
-	auto d_c = cuda::memory::device::make_unique<int>(cuda_device_id);
+	auto d_a = cuda::memory::device::make_unique<int[]>(current_device, n);
+	auto d_c = cuda::memory::device::make_unique<int>(current_device);
 	cuda::memory::copy_single(d_c.get(), &c);
 
 	std::cout << "\nStarting Test\n";
 
 	// allocate and initialize an array of stream handles
-	std::vector<cuda::stream_t<>> streams;
+	std::vector<cuda::stream_t> streams;
 	std::generate_n(
 		std::back_inserter(streams), nstreams,
 		[&current_device]() {
@@ -291,9 +270,9 @@ int main(int argc, char **argv)
 	auto stop_event = cuda::event::create(current_device, use_blocking_sync);
 
 	// time memcopy from device
-	start_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
+	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed
 	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0]);
-	stop_event.record(cuda::stream::default_stream_id); // record in stream-0, to ensure that all previous CUDA calls have completed
+	stop_event.record();
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
@@ -301,9 +280,9 @@ int main(int argc, char **argv)
 	// time kernel
 	threads=dim3(512, 1);
 	blocks=dim3(n / threads.x, 1);
-	start_event.record(cuda::stream::default_stream_id);
+	start_event.record();
 	init_array<<<blocks, threads, 0, streams[0].id()>>>(d_a.get(), d_c.get(), niterations);
-	stop_event.record(cuda::stream::default_stream_id);
+	stop_event.record();
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
@@ -312,7 +291,7 @@ int main(int argc, char **argv)
 	// time non-streamed execution for reference
 	threads=dim3(512, 1);
 	blocks=dim3(n / threads.x, 1);
-	start_event.record(cuda::stream::default_stream_id);
+	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
 	{
@@ -320,7 +299,7 @@ int main(int argc, char **argv)
 		cuda::memory::copy(h_a.get(), d_a.get(), nbytes);
 	}
 
-	stop_event.record(cuda::stream::default_stream_id);
+	stop_event.record();
 	stop_event.synchronize();
 	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
@@ -331,7 +310,7 @@ int main(int argc, char **argv)
 	blocks=dim3(n/(nstreams*threads.x),1);
 	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
 	cuda::memory::device::zero(d_a.get(), nbytes); // set device memory to all 0s, for testing correctness
-	start_event.record(cuda::stream::default_stream_id);
+	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
 	{
@@ -352,7 +331,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	stop_event.record(cuda::stream::default_stream_id);
+	stop_event.record();
 	stop_event.synchronize();
 	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / nreps << "\n";

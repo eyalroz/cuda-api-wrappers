@@ -13,6 +13,7 @@
 // Includes
 #include <stdio.h>
 #include <assert.h>
+#include <vector>
 
 // CUDA runtime includes
 #include <cuda_runtime_api.h>
@@ -192,7 +193,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		h_refData[i] = rand();
 	}
 
-	cuda::device::current::set(s_mem[index].device);
+	auto device = cuda::device::get(s_mem[index].device).make_current();
 
 	if (index == 0)
 	{
@@ -200,9 +201,10 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// host memory buffer for checking results
 		int h_results[DATA_BUF_SIZE * MAX_DEVICES * PROCESSES_PER_DEVICE];
 
-		cudaEvent_t event[MAX_DEVICES * PROCESSES_PER_DEVICE];
+		std::vector<cuda::event_t> events;
+		events.reserve(MAX_DEVICES * PROCESSES_PER_DEVICE - 1);
 		int* d_ptr = reinterpret_cast<int*>(
-			cuda::device::current::get().memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int))
+			device.memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int))
 		);
 		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
 		cuda::memory::copy((void *) d_ptr, (void *) h_refData, DATA_BUF_SIZE * sizeof(int));
@@ -212,7 +214,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 		for (int i = 1; i < g_processCount; i++)
 		{
-			event[i] = cuda::event::ipc::import(s_mem[i].eventHandle);
+			events.push_back(cuda::event::ipc::import(device, s_mem[i].eventHandle));
 		}
 
 		// b.2: wait until all kernels launched and events recorded
@@ -220,8 +222,10 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 		for (int i = 1; i < g_processCount; i++)
 		{
-			cuda::device::current::get().synchronize_event(event[i]);
+			device.synchronize(events[i-1]);
 		}
+
+		//-------------------------------------------
 
 		// b.3
 		procBarrier();
@@ -246,12 +250,13 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 	}
 	else
 	{
+		auto current_device  = cuda::device::current::get();
 		auto event = cuda::event::create(
-			cuda::device::current::get(),
+			current_device,
 			cuda::event::sync_by_blocking,
 			cuda::event::dont_record_timings,
 			cuda::event::interprocess);
-		s_mem[index].eventHandle = cuda::event::ipc::export_(event.id());
+		s_mem[index].eventHandle = cuda::event::ipc::export_(event);
 
 		// b.1: wait until proc 0 initializes device memory
 		procBarrier();
@@ -393,7 +398,7 @@ int main(int argc, char **argv)
 
 		for (int i = 0; i < s_devices->count; i++)
 		{
-			cuda::device::current::set(s_devices->ordinals[i]);
+			cuda::device::get(s_devices->ordinals[i]).synchronize();
 		}
 
 		printf("SUCCESS\n");

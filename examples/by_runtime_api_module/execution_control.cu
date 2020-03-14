@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 		die_("No CUDA device with ID " + std::to_string(device_id));
 	}
 
-	auto device = cuda::device::get(device_id);
+	auto device = cuda::device::get(device_id).make_current();
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 	cuda::device_function_t device_function(kernel);
 
@@ -116,7 +116,6 @@ int main(int argc, char **argv)
 	const int bar = 123;
 	const unsigned num_blocks = 3;
 	auto launch_config = cuda::make_launch_config(num_blocks, attributes.maxThreadsPerBlock);
-	cuda::device::current::set(device_id);
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;

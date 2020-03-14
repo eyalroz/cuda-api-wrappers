@@ -1,8 +1,8 @@
 /**
  * @file event.hpp
  *
- * @brief A CUDA event wrapper class, and some free-standing
- * functions for handling events using their IDs.
+ * @brief A CUDA event wrapper class and some associated
+ * free-standing functions.
  *
  */
 #pragma once
@@ -13,6 +13,7 @@
 #include <cuda/api/constants.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/current_device.hpp>
+#include <cuda/api/ipc.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -21,7 +22,8 @@
 namespace cuda {
 
 ///@cond
-template <bool AssumedCurrent> class device_t;
+class device_t;
+class stream_t;
 ///@endcond
 
 namespace event {
@@ -30,7 +32,7 @@ namespace detail {
 
 /**
  * Schedule a specified event to occur (= to fire) when all activities
- * already scheduled on the stream habe concluded.
+ * already scheduled on the stream have concluded.
  *
  * @param stream_id id of the stream (=queue) where to enqueue the event occurrence
  * @param event_id Event to be made to occur on stream @ref stream_id
@@ -60,6 +62,7 @@ class event_t;
 
 namespace event {
 
+namespace detail {
 /**
  * @brief Wrap an existing CUDA event in a @ref event_t instance.
  *
@@ -77,6 +80,8 @@ inline event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
 	bool          take_ownership = false) noexcept;
+
+} // namespace detail
 
 } // namespace event
 
@@ -105,7 +110,7 @@ public: // data member non-mutator getters
 	 * this event can be enqueued)
 	 */
 	device::id_t device_id()          const noexcept { return device_id_;          }
-	device_t<detail::do_not_assume_device_is_current> device() const;
+	device_t     device() const;
 	/**
 	 * Is this wrapper responsible for having the CUDA Runtime API destroy
 	 * the event when it destructs?
@@ -144,30 +149,33 @@ public: // other non-mutator methods
 
 public: // other mutator methods
 
+
 	/**
+	 * Schedule a specified event to occur (= to fire) when all activities
+	 * already scheduled on the event's device's default stream have concluded.
+	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record(stream::id_t stream_id = stream::default_stream_id)
+	void record()
 	{
-		// TODO: Perhaps check the device ID here, rather than
-		// have the Runtime API call fail?
-		event::detail::enqueue(stream_id, id_);
+		event::detail::enqueue(stream::default_stream_id, id_);
 	}
+
+	/**
+	 * Schedule a specified event to occur (= to fire) when all activities
+	 * already scheduled on the stream have concluded.
+	 *
+	 * @note No protection against repeated calls.
+	 */
+	void record(stream_t& stream);
 
 	/**
 	 * Records the event and ensures it has occurred before returning
 	 * (by synchronizing the stream).
 	 *
-	 * @note with the default argument, and when the default stream
-	 * is synchronous, the synchronization will do nothing, and there
-	 * will be no difference between @ref record() and this method.
-	 *
 	 * @note No protection against repeated calls.
 	 */
-	void fire(stream::id_t stream_id = stream::default_stream_id) {
-		record(stream_id);
-		stream::wrap(device_id_, stream_id).synchronize();
-	}
+	void fire(stream_t& stream);
 
 	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and
@@ -180,26 +188,21 @@ public: // other mutator methods
 			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
 	}
 
-protected: // constructor
+protected: // constructors
 
 	event_t(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept
 	: device_id_(device_id), id_(event_id), owning(take_ownership) { }
 
 public: // friendship
 
-	friend event_t event::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
+	friend event_t event::detail::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
 
 public: // constructors and destructor
-
-	// Users should generally avoid constructing non-owning events. At least let's
-	// not let them do so without giving it a bit of thought first.
-	 explicit event_t(device::id_t device_id, event::id_t event_id) noexcept:
-		event_t(device_id, event_id, false) { }
 
 	event_t(const event_t&) = delete;
 
 	event_t(event_t&& other) noexcept :
-		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
+		event_t(other.device_id_, other.id_, other.owning)
 	{
 		other.owning = false;
 	};
@@ -244,6 +247,8 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
+namespace detail {
+
 /**
  * Obtain a proxy object for an already-existing CUDA event
  *
@@ -266,8 +271,6 @@ inline event_t wrap(
 {
 	return event_t(device_id, event_id, take_ownership);
 }
-
-namespace detail {
 
 // Note: For now, event_t's need their device's ID - even if it's the current device;
 // that explains the requirement in this function's interface
@@ -316,15 +319,14 @@ inline event_t create(
  *
  * @note Creating an event
  */
-template <bool DeviceAssumedCurrent>
 inline event_t create(
-	device_t<DeviceAssumedCurrent>  device,
-	bool                            uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool                            records_timing     = do_record_timings,
-	bool                            interprocess       = not_interprocess);
+	device_t&  device,
+	bool       uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool       records_timing     = do_record_timings,
+	bool       interprocess       = not_interprocess);
 
 } // namespace event
-} // namespace cuda
 
+} // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_EVENT_HPP_

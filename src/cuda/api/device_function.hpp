@@ -22,8 +22,9 @@
 
 namespace cuda {
 
-template<bool AssumedCurrent>
+///@cond
 class device_t;
+///@endcond
 
 namespace device_function {
 
@@ -69,7 +70,7 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
  * A non-owning wrapper class for CUDA `__global__` functions
  *
  * @note despite the name, a `device_function_t` is not associated with a specific
- * device - it cant just be _executed_ on a device.
+ * device - it can't just be _executed_ on a device.
  */
 class device_function_t {
 public: // getters
@@ -132,19 +133,46 @@ public: // mutators
 	 * @param preference value to set for the device function (more cache, more L1 or make the equal)
 	 */
 	void cache_preference(
-		device::id_t  device_id, multiprocessor_cache_preference_t preference)
+		device_t                           device,
+		multiprocessor_cache_preference_t  preference);
+
+	void set_attribute(cudaFuncAttribute attribute, int value)
 	{
-		// Not using device::current::scoped_override_t here
-		// to minimize dependecies
-		device::id_t  old_device;
-		auto result = cudaGetDevice(&old_device);
-		throw_if_error(result, "Failed obtaining the current CUDA device ID");
-		result = cudaSetDevice(device_id);
-		throw_if_error(result, "Failed setting the current CUDA device ID to " + std::to_string(device_id));
-		cache_preference(preference);
-		result = cudaSetDevice(old_device);
-		throw_if_error(result, "Failure setting device back to " + std::to_string(old_device));
+		auto result = cudaFuncSetAttribute(ptr_, attribute, value);
+		throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 	}
+
+	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel)
+	{
+#if CUDART_VERSION >= 9000
+		auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, maximum_shared_memory_required_by_kernel);
+		throw_if_error(result, "Trying to opt-in to a (potentially) higher maximum amount of dynamic shared memory");
+#else
+		throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#endif
+	}
+
+	void opt_in_to_extra_dynamic_memory(
+		cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
+		device_t                      device);
+
+	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage)
+	{
+		if (shared_mem_percentage > 100) {
+			throw std::invalid_argument("Invalid percentage");
+		}
+#if CUDART_VERSION >= 9000
+		auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributePreferredSharedMemoryCarveout, shared_mem_percentage);
+		throw_if_error(result, "Trying to set the carve-out of shared memory/L1 cache memory");
+#else
+		throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#endif
+	}
+
+	void set_shared_mem_to_l1_cache_fraction(
+		unsigned  shared_mem_percentage,
+		device_t  device);
+
 
 	/**
 	 * @brief Sets a device function's preference of shared memory bank size preference
@@ -213,13 +241,55 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
  * See also the "Unified L1/Texture Cache" section of the Maxwell tuning guide:
  * @url http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html
  */
-inline grid_dimension_t maximum_active_blocks_per_multiprocessor(
-	device_t<detail::do_not_assume_device_is_current>
-                              device,
+inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
+	device_t                  device,
 	const device_function_t&  device_function,
-	grid_block_dimension_t    num_threads_per_block,
-	memory::shared::size_t     dynamic_shared_memory_per_block,
+	grid::block_dimension_t   num_threads_per_block,
+	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override = false);
+
+
+namespace detail {
+
+//
+//template<typename KernelFunction, typename... KernelParameters>
+//using raw_device_function_t = void(*)(KernelParameters...);
+//
+
+template<typename... KernelParameters>
+struct raw_device_function_typegen {
+	using type = void(*)(KernelParameters...);
+};
+
+template<typename KernelFunction, typename... KernelParameters>
+typename raw_device_function_typegen<KernelParameters...>::type unwrap_inner(std::true_type, device_function_t wrapped)
+{
+	using raw_device_function_t = typename raw_device_function_typegen<KernelParameters ...>::type;
+	return reinterpret_cast<raw_device_function_t>(wrapped.ptr());
+}
+
+template<typename KernelFunction, typename... KernelParameters>
+KernelFunction unwrap_inner(std::false_type, KernelFunction raw_function)
+{
+	static_assert(
+		std::is_function<typename std::decay<KernelFunction>::type>::value or
+		(std::is_pointer<KernelFunction>::value and  std::is_function<typename std::remove_pointer<KernelFunction>::type>::value)
+		, "Invalid KernelFunction type - it must be either a function or a pointer-to-a-function");
+	return raw_function;
+}
+
+} // namespace detail
+
+template<typename KernelFunction, typename... KernelParameters>
+auto unwrap(KernelFunction f) -> typename std::conditional<
+	std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value,
+	typename detail::raw_device_function_typegen<KernelParameters...>::type,
+	KernelFunction>::type
+{
+	using got_a_device_function_t =
+		std::integral_constant<bool, std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value>;
+	return detail::unwrap_inner<KernelFunction, KernelParameters...>(got_a_device_function_t{}, f);
+}
 
 } // namespace device_function
 } // namespace cuda

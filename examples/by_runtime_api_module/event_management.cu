@@ -80,9 +80,8 @@ int main(int argc, char **argv)
 	static constexpr size_t N = 40;
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	cuda::device::current::set(device_id);
-	auto device = cuda::device::current::get();
+	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+	auto device = cuda::device::get(device_id).make_current();
 
 	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
@@ -120,13 +119,13 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
 	stream.enqueue.event(event_1);
 	stream.enqueue.callback(
-		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
+		[&event_1, &event_2](cuda::stream_t, cuda::status_t status) {
 			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
 		}
 	);
 	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	stream.enqueue.callback(
-		[&event_1, &event_2](cuda::stream::id_t stream_id, cuda::status_t status) {
+		[&event_1, &event_2](cuda::stream_t, cuda::status_t status) {
 		report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);

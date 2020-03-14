@@ -36,7 +36,7 @@ before_install:
   - PATH=${CUDA_HOME}/bin:${PATH}
   
 before_script:
-    - cmake .
+    - mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON ..
 
 script: 
-    - VERBOSE=1 make examples
+    - VERBOSE=1 make

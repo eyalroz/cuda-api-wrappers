@@ -88,8 +88,7 @@ int main(int argc, char **argv)
 		die_("No CUDA devices on this system");
 	}
 
-	cuda::device::current::set(device_id);
-	auto device = cuda::device::current::get();
+	auto device = cuda::device::get(device_id).make_current();
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
@@ -130,7 +129,7 @@ int main(int argc, char **argv)
 	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
 	stream_1.enqueue.callback(
-		[&buffer](cuda::stream::id_t stream_id, cuda::status_t status) {
+		[&buffer](cuda::stream_t, cuda::status_t status) {
 			std::cout << "Callback from stream 1!... \n";
 			print_first_char(buffer.get());
 		}
@@ -142,7 +141,7 @@ int main(int argc, char **argv)
 	// so that the attachment has some observable effect
 	stream_1.enqueue.memory_attachment(buffer.get());
 	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
-	event_1.record(stream_1.id());
+	event_1.record(stream_1);
 	stream_1.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_2.enqueue.wait(event_1);
 	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());

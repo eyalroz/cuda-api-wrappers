@@ -43,11 +43,11 @@ __global__ void add(
  * Produce a launch configuration with one thread covering each element
  */
 cuda::launch_configuration_t make_linear_launch_config(
-	const cuda::device_t<>  device,
-	size_t                  length)
+	const cuda::device_t  device,
+	size_t                length)
 {
 	auto threads_per_block = device.properties().max_threads_per_block();
-	cuda::grid_dimension_t num_blocks =
+	cuda::grid::dimension_t num_blocks =
 		(length / threads_per_block) +
 		(length % threads_per_block == 0 ? 0 : 1);
 	return cuda::make_launch_config(num_blocks, threads_per_block, cuda::no_shared_memory);
@@ -63,9 +63,9 @@ struct buffer_set_t {
 };
 
 std::vector<buffer_set_t> generate_buffers(
-	const cuda::device_t<>  device,
-	size_t                  num_kernels,
-	size_t                  num_elements)
+	const cuda::device_t  device,
+	size_t                num_kernels,
+	size_t                num_elements)
 {
 	// TODO: This should be an std::array, but generating
 	// it is a bit tricky and I don't want to burden the example
@@ -78,9 +78,9 @@ std::vector<buffer_set_t> generate_buffers(
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
 				cuda::memory::host::make_unique<element_t[]>(num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements),
-				cuda::memory::device::make_unique<element_t[]>(device.id(), num_elements)
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements),
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements),
+				cuda::memory::device::make_unique<element_t[]>(device, num_elements)
 			};
 		}
 	);
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	auto buffers = generate_buffers(device, num_kernels, num_elements);
 	std::cout << "done.\n" << std::flush;
 
-	std::vector<cuda::stream_t<> > streams;
+	std::vector<cuda::stream_t> streams;
 	streams.reserve(num_kernels);
 	std::generate_n(std::back_inserter(streams), num_kernels,
 		[&]() { return device.create_stream(cuda::stream::async); });
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 			num_elements);
 		stream.enqueue.copy(buffer_set.host_result.get(), buffer_set.device_result.get(), buffer_size);
 		stream.enqueue.callback(
-			[k](cuda::stream::id_t stream_id, cuda::status_t status) {
+			[k](cuda::stream_t, cuda::status_t status) {
 				std::cout
 					<< "Stream " << k+1 << " of " << num_kernels << " has concluded all work. " << std::endl;
 			}

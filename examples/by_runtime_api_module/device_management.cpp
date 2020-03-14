@@ -11,9 +11,10 @@
  *
  */
 #include "cuda/api/pci_id_impl.hpp"
-#include "cuda/api/device_count.hpp"
+#include "cuda/api/miscellany.hpp"
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
+#include "cuda/api/peer_to_peer.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -90,7 +91,7 @@ int main(int argc, char **argv)
 		<< "Device " << std::to_string(device.id()) << " reports it has:\n"
 		<< free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
 
-	assert(free_memory < total_memory);
+	assert(free_memory <= total_memory);
 
 
 	// Specific attributes and properties with their own API calls:
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
 		auto peer_device = cuda::device::get(peer_id);
 		if (device.can_access(peer_device)) {
 			auto atomics_supported_over_link = cuda::device::peer_to_peer::get_attribute(
-				cudaDevP2PAttrNativeAtomicSupported, device_id, peer_id);
+				cudaDevP2PAttrNativeAtomicSupported, cuda::device::get(device_id), cuda::device::get(peer_id));
 			std::cout
 				<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 				<< "supported over the link from device " << device_id
@@ -186,16 +187,16 @@ int main(int argc, char **argv)
 	if (device_count > 1) {
 		auto device_0 = cuda::device::get(0);
 		auto device_1 = cuda::device::get(1);
-		cuda::device::current::set(device_0.id());
+		cuda::device::current::set(device_0);
 		assert(cuda::device::current::get() == device_0);
-		assert(cuda::device::current::get_id() == device_0.id());
-		cuda::device::current::set(device_1.id());
+		assert(cuda::device::current::detail::get_id() == device_0.id());
+		cuda::device::current::set(device_1);
 		assert(cuda::device::current::get() == device_1);
-		assert(cuda::device::current::get_id() == device_1.id());
+		assert(cuda::device::current::detail::get_id() == device_1.id());
 	}
 
 	try {
-		cuda::device::current::set(device_count);
+		cuda::device::current::detail::set(device_count);
 		die_("Should not have been able to set the current device to "
 			+ std::to_string(device_count) + " since that's the device count, and "
 			+ "the maximum valid ID should be " + std::to_string(device_count - 1)
