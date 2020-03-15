@@ -55,6 +55,8 @@
 
 namespace cuda {
 
+class stream_t;
+
 enum : memory::shared::size_t { no_shared_memory = 0 };
 constexpr grid::dimensions_t single_block() { return 1; }
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
@@ -176,25 +178,23 @@ template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                        thread_block_cooperation,
 	KernelFunction              kernel_function,
-	stream::id_t                stream_id,
+	stream_t&                   stream,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
-{
-	auto unwrapped_kernel_function = device_function::unwrap<KernelFunction, KernelParameters...>(kernel_function);
-		// This helper function is necessary to act differently on device_function_t's and plain simple
-		// function pointers (to __global__ functions), without the compiler complaining. With C++17 we could have
-		// just done: if constexpr (kernel_function is a device_function_t) { use it unwrapped } else { use it as-is }
-	detail::enqueue_launch(thread_block_cooperation, unwrapped_kernel_function, stream_id, launch_configuration, parameters...);
-}
+	KernelParameters...         parameters);
 
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	KernelFunction              kernel_function,
-	stream::id_t                stream_id,
+	stream_t&                   stream,
 	launch_configuration_t      launch_configuration,
 	KernelParameters...         parameters)
 {
-	enqueue_launch(thread_blocks_may_not_cooperate, kernel_function, stream_id, launch_configuration, parameters...);
+	enqueue_launch(
+		thread_blocks_may_not_cooperate,
+		kernel_function,
+		stream,
+		launch_configuration,
+		parameters...);
 }
 
 /**
@@ -206,10 +206,7 @@ template<typename KernelFunction, typename... KernelParameters>
 inline void launch(
 	KernelFunction              kernel_function,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
-{
-	enqueue_launch(kernel_function, stream::default_stream_id, launch_configuration, parameters...);
-}
+	KernelParameters...         parameters);
 
 
 } // namespace cuda
