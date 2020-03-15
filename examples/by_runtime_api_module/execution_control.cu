@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
-			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, device_function, stream.id(), launch_config, bar);
+			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, device_function, stream, launch_config, bar);
 			cuda::device::current::get().synchronize();
 
 		}
