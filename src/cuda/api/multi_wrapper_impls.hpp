@@ -15,6 +15,7 @@
 #include <cuda/api/pointer.hpp>
 #include <cuda/api/unique_ptr.hpp>
 #include <cuda/api/array.hpp>
+#include <cuda/api/kernel_launch.cuh>
 
 namespace cuda {
 
@@ -173,9 +174,9 @@ inline device_t stream_t::device() const
 inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
 #ifndef NDEBUG
-	if (event_.device_id() != device_id_) {
+	if (event_.device_id() != associated_stream.device_id_) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(device_id_) + " wait for an event on another device ("
+			+ std::to_string(associated_stream.device_id_) + " wait for an event on another device ("
 			"device " + std::to_string(event_.device_id()) + ")");
 	}
 #endif
@@ -184,28 +185,28 @@ inline void stream_t::enqueue_t::wait(const event_t& event_)
 	// currently unused
 	constexpr const unsigned int  flags = 0;
 
-	auto status = cudaStreamWaitEvent(stream_id_, event_.id(), flags);
+	auto status = cudaStreamWaitEvent(associated_stream.id_, event_.id(), flags);
 	throw_if_error(status,
 		std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
-		+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-		+ " on CUDA device " + std::to_string(device_id_));
+		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+		+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 
 }
 
 inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
 #ifndef NDEBUG
-	if (existing_event.device_id() != device_id_) {
+	if (existing_event.device_id() != associated_stream.device_id_) {
 		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(device_id_) + " wait for an event on another device ("
+			+ std::to_string(associated_stream.device_id_) + " wait for an event on another device ("
 			"device " + std::to_string(existing_event.device_id()) + ")");
 	}
 #endif
-	auto status = cudaEventRecord(existing_event.id(), stream_id_);
+	auto status = cudaEventRecord(existing_event.id(), associated_stream.id_);
 	throw_if_error(status,
 		"Failed scheduling event " + cuda::detail::ptr_as_hex(existing_event.id()) + " to occur"
-		+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-		+ " on CUDA device " + std::to_string(device_id_));
+		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+		+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 	return existing_event;
 }
 
@@ -214,7 +215,7 @@ inline event_t stream_t::enqueue_t::event(
     bool          records_timing,
     bool          interprocess)
 {
-	event_t ev { event::detail::create(device_id_, uses_blocking_sync, records_timing, interprocess) };
+	event_t ev { event::detail::create(associated_stream.device_id_, uses_blocking_sync, records_timing, interprocess) };
 	// Note that, at this point, the event is not associated with this enqueue object's stream.
 	this->event(ev);
 	return ev;
@@ -383,6 +384,37 @@ inline stream_t create(
 }
 
 } // namespace stream
+
+
+
+template<typename KernelFunction, typename... KernelParameters>
+inline void enqueue_launch(
+	bool                        thread_block_cooperation,
+	KernelFunction              kernel_function,
+	stream_t&                   stream,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+{
+	auto unwrapped_kernel_function = device_function::unwrap<KernelFunction, KernelParameters...>(kernel_function);
+		// This helper function is necessary to act differently on device_function_t's and plain simple
+		// function pointers (to __global__ functions), without the compiler complaining. With C++17 we could have
+		// just done: if constexpr (kernel_function is a device_function_t) { use it unwrapped } else { use it as-is }
+	detail::enqueue_launch(thread_block_cooperation, unwrapped_kernel_function, stream.id(), launch_configuration, parameters...);
+}
+
+template<typename KernelFunction, typename... KernelParameters>
+inline void launch(
+	KernelFunction              kernel_function,
+	launch_configuration_t      launch_configuration,
+	KernelParameters...         parameters)
+{
+	stream_t stream = device::current::get().default_stream();
+	enqueue_launch(
+		kernel_function,
+		stream,
+		launch_configuration,
+		parameters...);
+}
 
 } // namespace cuda
 

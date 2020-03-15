@@ -264,12 +264,10 @@ public: // mutators
 
 	class enqueue_t {
 	protected:
-		const device::id_t& device_id_;
-		const stream::id_t& stream_id_;
+		stream_t& associated_stream;
 
 	public:
-		enqueue_t(const device::id_t& device_id, const stream::id_t& stream_id)
-		: device_id_(device_id), stream_id_(stream_id) {}
+		enqueue_t(stream_t& stream) : associated_stream(stream) {}
 
 		template<typename KernelFunction, typename... KernelParameters>
 		void kernel_launch(
@@ -281,9 +279,13 @@ public: // mutators
 			// Kernel executions cannot be enqueued in streams associated
 			// with devices other than the current one, see:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			DeviceSetter set_device_for_this_scope(device_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 			return cuda::enqueue_launch(
-				thread_block_cooperativity, kernel_function, stream_id_, launch_configuration, parameters...);
+				thread_block_cooperativity,
+				kernel_function,
+				associated_stream,
+				launch_configuration,
+				parameters...);
 		}
 
 		template<typename KernelFunction, typename... KernelParameters>
@@ -299,10 +301,10 @@ public: // mutators
 			// 	kernel_function, stream_id_, launch_configuration, parameters...);
 			//
 
-			DeviceSetter set_device_for_this_scope(device_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 			return cuda::enqueue_launch(
 				cuda::thread_blocks_may_not_cooperate,
-				kernel_function, stream_id_, launch_configuration, parameters...);
+				kernel_function, associated_stream, launch_configuration, parameters...);
 		}
 
 		/**
@@ -321,7 +323,7 @@ public: // mutators
 		{
 			// It is not necessary to make the device current, according to:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			memory::async::detail::copy(destination, source, num_bytes, stream_id_);
+			memory::async::detail::copy(destination, source, num_bytes, associated_stream.id_);
 		}
 
 		/**
@@ -335,8 +337,8 @@ public: // mutators
 		void memset(void *destination, int byte_value, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::detail::set(destination, byte_value, num_bytes, stream_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			memory::device::async::detail::set(destination, byte_value, num_bytes, associated_stream.id_);
 		}
 
 		/**
@@ -353,8 +355,8 @@ public: // mutators
 		void memzero(void *destination, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-			DeviceSetter set_device_for_this_scope(device_id_);
-			memory::device::async::detail::zero(destination, num_bytes, stream_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			memory::device::async::detail::zero(destination, num_bytes, associated_stream.id_);
 		}
 
 		/**
@@ -394,7 +396,7 @@ public: // mutators
 		template <typename Invokable>
 		void callback(Invokable callback_)
 		{
-			DeviceSetter set_device_for_this_scope(device_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 
 			// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
 			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
@@ -406,16 +408,16 @@ public: // mutators
 			// which we were called, we must make a copy of `callback_` on the heap
 			// and pass that as the user-defined data
 			auto raw_callback_extra_argument =
-				new std::pair<device::id_t, Invokable>( device_id_, Invokable(std::move(callback_)) );
+				new std::pair<device::id_t, Invokable>( associated_stream.device_id_, Invokable(std::move(callback_)) );
 
 			// This always registers the static function callback_adapter as the callback -
 			// but what that one will do is call the actual callback we were passed;
 			auto status = cudaStreamAddCallback(
-				stream_id_, &callback_adapter<Invokable>, raw_callback_extra_argument, fixed_flags);
+				associated_stream.id_, &callback_adapter<Invokable>, raw_callback_extra_argument, fixed_flags);
 			throw_if_error(status,
 				std::string("Failed scheduling a callback to be launched")
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-				+ " on CUDA device " + std::to_string(device_id_));
+				+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+				+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 		}
 
 		/**
@@ -437,17 +439,17 @@ public: // mutators
 		 */
 		void memory_attachment(const void* managed_region_start)
 		{
-			DeviceSetter set_device_for_this_scope(device_id_);
+			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
 			constexpr const size_t length = 0;
 			auto status =  cudaStreamAttachMemAsync(
-				stream_id_, managed_region_start, length, cudaMemAttachSingle);
+				associated_stream.id_, managed_region_start, length, cudaMemAttachSingle);
 			throw_if_error(status,
 				std::string("Failed scheduling an attachment of a managed memory region")
-				+ " on stream " + cuda::detail::ptr_as_hex(stream_id_)
-				+ " on CUDA device " + std::to_string(device_id_));
+				+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+				+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 		}
 
 		/**
@@ -465,6 +467,8 @@ public: // mutators
 		void wait(const event_t& event_);
 
 	}; // class enqueue_t
+
+	friend class enqueue_t;
 
 	/**
 	 * Block or busy-wait until all previously-scheduled work
@@ -526,8 +530,10 @@ protected: // data members
 	bool                owning;
 
 public: // data members - which only exist in lieu of namespaces
-	enqueue_t     enqueue { device_id_, id_ };
-
+	enqueue_t     enqueue { *this };
+		// The use of *this here is safe, since enqueue_t doesn't do anything with it
+		// on its own. Any use of enqueue only happens through, well, *this - and
+		// after construction.
 };
 
 inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
