@@ -72,7 +72,7 @@ inline void collect_argument_addresses(void**) { }
 template <typename Arg, typename... Args>
 inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
-	collected_addresses[0] = static_cast<void*>(&arg);
+	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
 	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
 }
 
@@ -84,7 +84,7 @@ inline void enqueue_launch(
 	RawKernelFunction           kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	KernelParameters&&...       parameters)
 #ifndef __CUDACC__
 // If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
 // compilation error, or we just do nothing. For now it's option 2.
@@ -103,7 +103,7 @@ inline void enqueue_launch(
 			launch_configuration.block_dimensions,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id
-			>>>(parameters...);
+			>>>(std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
@@ -123,7 +123,7 @@ inline void enqueue_launch(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail::collect_argument_addresses(argument_ptrs, parameters...);
+		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
@@ -180,21 +180,21 @@ inline void enqueue_launch(
 	KernelFunction              kernel_function,
 	stream_t&                   stream,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters);
+	KernelParameters&&...       parameters);
 
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	KernelFunction              kernel_function,
 	stream_t&                   stream,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	KernelParameters&&...       parameters)
 {
 	enqueue_launch(
 		thread_blocks_may_not_cooperate,
 		kernel_function,
 		stream,
 		launch_configuration,
-		parameters...);
+		std::forward<KernelParameters>(parameters)...);
 }
 
 /**
@@ -206,7 +206,7 @@ template<typename KernelFunction, typename... KernelParameters>
 inline void launch(
 	KernelFunction              kernel_function,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters);
+	KernelParameters&&...       parameters);
 
 
 } // namespace cuda
