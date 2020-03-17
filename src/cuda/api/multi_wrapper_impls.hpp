@@ -393,27 +393,32 @@ inline void enqueue_launch(
 	KernelFunction              kernel_function,
 	stream_t&                   stream,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	KernelParameters&&...       parameters)
 {
 	auto unwrapped_kernel_function = device_function::unwrap<KernelFunction, KernelParameters...>(kernel_function);
 		// This helper function is necessary to act differently on device_function_t's and plain simple
 		// function pointers (to __global__ functions), without the compiler complaining. With C++17 we could have
 		// just done: if constexpr (kernel_function is a device_function_t) { use it unwrapped } else { use it as-is }
-	detail::enqueue_launch(thread_block_cooperation, unwrapped_kernel_function, stream.id(), launch_configuration, parameters...);
+	detail::enqueue_launch(
+		thread_block_cooperation,
+		unwrapped_kernel_function,
+		stream.id(),
+		launch_configuration,
+		std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename KernelFunction, typename... KernelParameters>
 inline void launch(
 	KernelFunction              kernel_function,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	KernelParameters&&...       parameters)
 {
 	stream_t stream = device::current::get().default_stream();
 	enqueue_launch(
 		kernel_function,
 		stream,
 		launch_configuration,
-		parameters...);
+		std::forward<KernelParameters>(parameters)...);
 }
 
 } // namespace cuda
