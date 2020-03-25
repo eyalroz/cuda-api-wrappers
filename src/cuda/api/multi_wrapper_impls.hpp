@@ -17,6 +17,8 @@
 #include <cuda/api/array.hpp>
 #include <cuda/api/kernel_launch.cuh>
 
+#include <type_traits>
+
 namespace cuda {
 
 namespace array {
@@ -385,8 +387,6 @@ inline stream_t create(
 
 } // namespace stream
 
-
-
 template<typename KernelFunction, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                        thread_block_cooperation,
@@ -395,10 +395,22 @@ inline void enqueue_launch(
 	launch_configuration_t      launch_configuration,
 	KernelParameters&&...       parameters)
 {
-	auto unwrapped_kernel_function = device_function::unwrap<KernelFunction, KernelParameters...>(kernel_function);
-		// This helper function is necessary to act differently on device_function_t's and plain simple
-		// function pointers (to __global__ functions), without the compiler complaining. With C++17 we could have
-		// just done: if constexpr (kernel_function is a device_function_t) { use it unwrapped } else { use it as-is }
+	auto unwrapped_kernel_function =
+		device_function::unwrap<
+			KernelFunction,
+			detail::kernel_parameter_decay_t<KernelParameters>...
+		>(kernel_function);
+		// Note: This helper function is necessary since we may have gotten a
+		// device_function_t as KernelFunction, which is type-erased - in
+		// which case we need both to obtain the raw function pointer, and determine
+		// its type, i.e. un-type-erase it. Luckily, we have the KernelParameters pack
+		// which - if we can trust the user - contains more-or-less the function's
+		// parameter types; and kernels return `void`, which settles the whole signature.
+		//
+		// I say "more or less" because the KernelParameter pack may contain some
+		// references, arrays and so on - which CUDA kernels cannot accept; so
+		// we massage those a bit.
+
 	detail::enqueue_launch(
 		thread_block_cooperation,
 		unwrapped_kernel_function,
