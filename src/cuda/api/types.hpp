@@ -421,6 +421,33 @@ enum : bool {
 	do_not_assume_device_is_current = false
 };
 
+/**
+ * @brief adapt a type to be usable as a kernel parameter.
+ *
+ * CUDA kernels don't accept just any parameter type a C++ function may accept.
+ * Specifically: No references, arrays decay (IIANM) and functions pass by address.
+ * However - not all "decaying" of `std::decay` is necessary. Such transformation
+ * can be effected by this type-trait struct.
+ */
+template<typename P>
+struct kernel_parameter_decay {
+private:
+    typedef typename std::remove_reference<P>::type U;
+public:
+    typedef typename std::conditional<
+        std::is_array<U>::value,
+        typename std::remove_extent<U>::type*,
+        typename std::conditional<
+            std::is_function<U>::value,
+            typename std::add_pointer<U>::type,
+            U
+        >::type
+    >::type type;
+};
+
+template<typename P>
+using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
+
 } // namespace detail
 
 /**
@@ -472,6 +499,8 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 };
 
 using native_word_t = unsigned;
+
+
 
 } // namespace cuda
 
