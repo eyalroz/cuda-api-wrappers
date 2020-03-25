@@ -251,14 +251,19 @@ inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 
 namespace detail {
 
-//
-//template<typename KernelFunction, typename... KernelParameters>
-//using raw_device_function_t = void(*)(KernelParameters...);
-//
+template<bool...> struct bool_pack;
+template<bool... bs>
+using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
 template<typename... KernelParameters>
 struct raw_device_function_typegen {
+	static_assert(all_true<std::is_same<KernelParameters, ::cuda::detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
+		"Invalid kernel parameter types" );
 	using type = void(*)(KernelParameters...);
+		// Why no decay? After all, CUDA kernels only takes parameters by value, right?
+		// Well, we're inside `detail::`. You shouldn't call this
+		// nice simple types we can use with CUDA kernels; you should not pass such
+		// parameter types here in the first place.
 };
 
 template<typename KernelFunction, typename... KernelParameters>
