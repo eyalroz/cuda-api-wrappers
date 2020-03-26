@@ -70,6 +70,15 @@ install(
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
+# Put the cuda-api-wrappers-targets.cmake file also into the build directory.
+# Set `cuda-api-wrappers_DIR` to the build directory in your own CMake project
+# to use the wrappers without installing them.
+export(
+	EXPORT cuda-api-wrappers_export
+	NAMESPACE "cuda-api-wrappers::"
+	FILE "${PROJECT_BINARY_DIR}/cuda-api-wrappers-targets.cmake"
+)
+
 install(
 	DIRECTORY src/cuda
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
