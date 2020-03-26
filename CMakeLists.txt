@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
+
 # -----------------------------------
 # Project name, version & build type
 # -----------------------------------
@@ -16,6 +17,8 @@ PROJECT(cuda-api-wrappers
 	VERSION 0.3.0
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
+
+find_package(Threads REQUIRED)
 
 include(FindCUDA) 
 include(GNUInstallDirs)
@@ -43,13 +46,20 @@ target_include_directories(
 # target_link_libraries(cuda-api-wrappers PUBLIC CUDA::CUDALibs)
 # ... but that's not supported.
 target_include_directories(cuda-api-wrappers PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-target_link_libraries(cuda-api-wrappers PUBLIC ${CUDA_LIBRARIES})
+target_link_libraries(cuda-api-wrappers PUBLIC ${CUDA_LIBRARIES}
+	PRIVATE Threads::Threads)
 
 option(BUILD_EXAMPLES "Build example programs" OFF)
 
 if (BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
+
+configure_file("${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake.in"
+	"${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake" @ONLY)
+
+install(FILES "${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers")
 
 install(
 	TARGETS cuda-api-wrappers
@@ -70,9 +80,7 @@ install(
 	EXPORT cuda-api-wrappers_export
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers"
 	NAMESPACE "cuda-api-wrappers::"
-	# In this CMake config file no dependencies are considered. But since we
-	# do not use any `find_package` call here this approach is sufficient.
-	FILE "cuda-api-wrappers-config.cmake"
+	FILE "cuda-api-wrappers-targets.cmake"
 )
 
 include(CMakePackageConfigHelpers)
@@ -88,4 +96,3 @@ install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/cuda-api-wrappers-config-version.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers"
 )
-  
