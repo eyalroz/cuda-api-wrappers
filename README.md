@@ -90,7 +90,8 @@ More detailed documentation / feature walk-through is forthcoming. For now I'm p
 
 To build and run the examples (just as a sanity check), execute the following:
 
-    [user@host:/path/to/cuda-api-wrappers/]$ cmake . && make examples && examples/scripts/run-all-examples
+    [user@host:/path/to/cuda-api-wrappers/]$ cmake -S . -B build -DBUILD_EXAMPLES=ON . && cmake --build build/ && find build/examples/bin -exec "{}" ";"
+
 
 #### Modified CUDA samples
 
