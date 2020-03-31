@@ -313,7 +313,7 @@ inline region_pair allocate(
 	size_t                           size_in_bytes,
 	region_pair::allocation_options  options)
 {
-	return cuda::memory::mapped::allocate(device.id(), size_in_bytes, options);
+	return cuda::memory::mapped::detail::allocate(device.id(), size_in_bytes, options);
 }
 
 } // namespace mapped
