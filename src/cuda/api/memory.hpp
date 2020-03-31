@@ -886,7 +886,7 @@ inline void prefetch(
 
 /**
  * @brief Prefetches a region of managed memory to a specific device, so
- * it can later be used there without waiting for I/O fromm the host or other
+ * it can later be used there without waiting for I/O from the host or other
  * devices.
  */
 inline void prefetch(
@@ -895,6 +895,21 @@ inline void prefetch(
 	cuda::device_t   destination,
 	cuda::stream_t&  stream);
 
+/**
+ * @brief Prefetches a region of managed memory into host memory. It can
+ * later be used there without waiting for I/O from any of the CUDA devices.
+ */
+inline void prefetch_to_host(
+	const void*      managed_ptr,
+	size_t           num_bytes)
+{
+	auto result = cudaMemPrefetchAsync(managed_ptr, num_bytes, cudaCpuDeviceId, stream::default_stream_id);
+		// The stream ID will be ignored by the CUDA runtime API when this pseudo
+		// device indicator is used.
+	throw_if_error(result,
+		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_ptr) + " into host memory");
+}
 
 } // namespace async
 
