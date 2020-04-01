@@ -23,6 +23,7 @@
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/error.hpp>
+#include <cuda/api/miscellany.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -59,6 +60,22 @@ inline void set(device::id_t  device)
 {
 	status_t result = cudaSetDevice(device);
 	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
+}
+
+/**
+ * Set the first possible of several devices to be the current one for the CUDA Runtime API.
+ *
+ * @param[in] device_ids Numeric IDs of the devices to try and make current, in order
+ * @param[in] num_devices The number of device IDs pointed to by @device_ids
+ */
+inline void set(const device::id_t* device_ids, std::size_t num_devices)
+{
+	if (num_devices > static_cast<std::size_t>(cuda::device::count())) {
+		throw cuda::runtime_error(status::invalid_device, "More devices listed than exist on the system");
+	}
+	auto result = cudaSetValidDevices(const_cast<int*>(device_ids), num_devices);
+	throw_if_error(result, "Failure setting the current device to any of the list of "
+		+ std::to_string(num_devices) + " devices specified");
 }
 
 } // namespace detail
