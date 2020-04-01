@@ -330,6 +330,13 @@ public:
 		return properties;
 	}
 
+	static device_t choose_best_match(const properties_t& properties) {
+		device::id_t id;
+		auto status = cudaChooseDevice(&id, &properties);
+		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
+		return device::get(id);
+	}
+
 	/**
 	 * Obtains this device's human-readable name, e.g. "GeForce GTX 650 Ti BOOST".
 	 */
