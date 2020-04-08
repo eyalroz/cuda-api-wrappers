@@ -57,6 +57,20 @@ class texture_view {
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
+	// texture_object is basically an owning pointer, therefor no copies.
+	texture_view(const texture_view&) = delete;
+	texture_view& operator=(const texture_view&) = delete;
+	// Without copies we would like to be able to move a texture_view.
+	texture_view(texture_view&& other)
+		:texture_object(other.texture_object)
+	{
+		other.texture_object = 0;
+	}
+	texture_view& operator=(texture_view&& other)
+	{
+		std::swap(other.texture_object,texture_object);
+		return *this;
+	}
 	~texture_view()
 	{
 		auto status = cudaDestroyTextureObject(texture_object);
