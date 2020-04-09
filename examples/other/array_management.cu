@@ -183,4 +183,6 @@ int main()
 	array_3d_example(device, w, h, d);
 	array_2d_example(device, w, h);
 	device.synchronize();
+
+        std::cout << "SUCCESS\n";
 }
