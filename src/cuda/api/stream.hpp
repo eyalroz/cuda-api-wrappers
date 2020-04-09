@@ -505,7 +505,6 @@ public: // constructors and destructor
 			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);
 			cudaStreamDestroy(id_);
 		}
-		owning = false;
 	}
 
 public: // operators

@@ -87,7 +87,7 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	cuda::launch(
 		kernels::from_3D_texture_to_memory_space,
 		cuda::make_launch_config(grid_dims, block_dims),
-		tv, ptr_out.get(), w, h, d);
+		tv.raw_handle(), ptr_out.get(), w, h, d);
 	device.synchronize();
 	check_output_is_iota("copy from 3D texture into (managed) global memory", ptr_out.get(), arr.size());
 
@@ -148,7 +148,7 @@ void array_2d_example(Device& device, size_t w, size_t h)
 	cuda::launch(
 		kernels::from_2D_texture_to_memory_space,
 		cuda::make_launch_config(grid_dims, block_dims),
-		tv, ptr_out.get(), w, h);
+		tv.raw_handle(), ptr_out.get(), w, h);
 	cuda::memory::copy(ptr_out.get(), arr);
 	device.synchronize();
 	print_2d_array(ptr_out.get(), w, h);
