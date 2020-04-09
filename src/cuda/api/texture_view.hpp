@@ -9,7 +9,11 @@
 
 namespace cuda {
 
+class texture_view;
+
 namespace texture {
+
+using raw_handle_t = cudaTextureObject_t;
 
 struct descriptor_t : public cudaTextureDesc {
 	inline descriptor_t()
@@ -23,6 +27,12 @@ struct descriptor_t : public cudaTextureDesc {
 		this->normalizedCoords = 0;
 	}
 };
+
+namespace detail {
+
+inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept;
+
+}  // namespace detail
 
 }  // namespace texture
 
@@ -40,35 +50,92 @@ struct descriptor_t : public cudaTextureDesc {
  *
  * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory
  * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching
+ *
+ * @note texture_view's are essentially _owning_ - the view is a resource the CUDA
+ * runtime creates for you, which then needs to be freed.
  */
 class texture_view {
-	public:
+	using raw_handle_type = texture::raw_handle_t;
+
+public:
+	bool is_owning() const noexcept { return owning; }
+	raw_handle_type raw_handle() const noexcept { return raw_view_handle; }
+
+public: // constructors and destructors
+
+	texture_view(const texture_view& other) = delete;
+
+	texture_view(texture_view&& other) noexcept :
+		raw_view_handle(other.raw_view_handle), owning(other.raw_view_handle)
+	{
+		other.owning = false;
+	};
+
+
 	template <typename T, size_t NumDimensions>
 	texture_view(
 		const cuda::array_t<T, NumDimensions>& arr,
-		texture::descriptor_t desc = texture::descriptor_t())
+		texture::descriptor_t descriptor = texture::descriptor_t()) :
+		owning(true)
 	{
-		cudaResourceDesc resDesc;
-		memset(&resDesc, 0, sizeof(resDesc));
-		resDesc.resType = cudaResourceTypeArray;
-		resDesc.res.array.array = arr.get();
+		cudaResourceDesc resource_descriptor;
+		memset(&resource_descriptor, 0, sizeof(resource_descriptor));
+		resource_descriptor.resType = cudaResourceTypeArray;
+		resource_descriptor.res.array.array = arr.get();
 
-		auto status = cudaCreateTextureObject(&texture_object, &resDesc, &desc, NULL);
+		auto status = cudaCreateTextureObject(&raw_view_handle, &resource_descriptor, &descriptor, nullptr);
 		throw_if_error(status, "failed creating a CUDA texture object");
     }
 
+public: // operators
+
 	~texture_view()
 	{
-		auto status = cudaDestroyTextureObject(texture_object);
-		throw_if_error(status, "failed destroying texture object");
+		if (owning) {
+			auto status = cudaDestroyTextureObject(raw_view_handle);
+			throw_if_error(status, "failed destroying texture object");
+		}
 	}
 
-	operator cudaTextureObject_t() const noexcept { return texture_object; }
+	texture_view& operator=(const texture_view& other) = delete;
+	texture_view& operator=(texture_view& other) = delete;
 
-	private:
-		cudaTextureObject_t texture_object { } ;
+protected: // constructor
+
+	// Usable by the wrap function
+	texture_view(raw_handle_type handle , bool take_ownership) noexcept
+	: raw_view_handle(handle), owning(take_ownership) { }
+
+public: // friendship
+
+	friend texture_view texture::detail::wrap(raw_handle_type handle, bool take_ownersip) noexcept;
+
+protected:
+	raw_handle_type raw_view_handle { } ;
+	bool owning;
 };
 
+
+inline bool operator==(const texture_view& lhs, const texture_view& rhs) noexcept
+{
+	return lhs.raw_handle() == rhs.raw_handle();
+}
+
+inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcept
+{
+	return not (lhs.raw_handle() == rhs.raw_handle());
+}
+
+namespace texture {
+namespace detail {
+
+inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept
+{
+	return texture_view(handle, take_ownership);
+}
+
+} // namespace detail
+} // namespace texture
 
 }  // namespace cuda
 
