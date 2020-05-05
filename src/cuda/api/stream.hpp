@@ -236,28 +236,55 @@ public: // other non-mutators
 protected: // static methods
 
 	/**
-	 * A function used internally by this class as the immediate CUDA callback; see
-	 * @ref enqueue_t::callback
+	 * A function used internally by this class as the host function to call directly; see
+	 * @ref enqueue_t::host_function_call - but only with CUDA version 10.0 and later.
 	 *
-	 * @param stream_id the ID of the stream for which a callback was triggered - this
+	 * @param stream_id the ID of the stream for which a host function call was triggered - this
 	 * will be passed by the CUDA runtime
-	 * @param status the CUDA status when the callback is triggered - this
-	 * will be passed by the CUDA runtime
-	 * @param type_erased_callback the callback which was passed to @ref enqueue_t::callback,
-	 * and which the programmer actually wants to be called
+	 * @param device_id_stream_id_and_callable a 3-tuple, containing the ID of the device to which the stream launching
+	 * the callable is associated, the ID of that launching stream, and the callable callback which was passed to
+	 * @ref enqueue_t::host_function_call, and which the programmer actually wants to be called.
+
 	 */
-	template <typename Invokable>
-	static void callback_adapter(
+	template <typename Callable>
+	static void stream_launched_host_function_adapter(void * device_id_stream_id_and_callable)
+	{
+		using triplet_type = std::tuple<device::id_t, stream::id_t, Callable>;
+		auto* triplet_ptr = reinterpret_cast<triplet_type*>(device_id_stream_id_and_callable);
+		auto unique_ptr = std::unique_ptr<triplet_type>{triplet_ptr}; // Ensures deletion when we leave this function.
+		auto device_id = std::get<0>(*triplet_ptr);
+		auto stream_id = std::get<1>(*triplet_ptr);
+		auto& callable = std::get<2>(*triplet_ptr);
+		callable( stream_t{device_id, stream_id, stream::dont_take_ownership} );
+	}
+
+	/**
+	 * @brief A function to @ref `host_function_launch_adapter`, for use with the old-style CUDA Runtime API call,
+	 * which passes more arguments to the callable - and calls the host function even on device failures.
+	 *
+	 * @param stream_id the ID of the stream for which a host function call was triggered - this
+	 * will be passed by the CUDA runtime
+	 * @note status indicates the status the CUDA status when the host function call is triggered; anything
+	 * other than @ref `cuda::status::success` means there's been a device error previously - but
+	 * in that case, we won't invoke the callable, as such execution is deprecated; see:
+	 * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM
+	 * @param device_id_and_callable a pair-value, containing the ID of the device to which the stream launching
+	 * the host function call is associated, as well as the callable callback which was passed to
+	 * @ref enqueue_t::host_function_call, and which the programmer actually wants to be called.
+	 */
+	template <typename Callable>
+	static void callback_launch_adapter(
 		stream::id_t  stream_id,
 		status_t      status,
-		void *        extra_args_on_heap)
+		void *        device_id_stream_id_and_callable)
 	{
-		using pair_type = std::pair<device::id_t, Invokable>;
-		auto* pair_ptr = reinterpret_cast<pair_type*>(extra_args_on_heap);
-		auto unique_ptr = std::unique_ptr<pair_type>{pair_ptr}; // Ensures deletion when we leave this function.
-		auto device_id = pair_ptr->first;
-		auto& invokable = pair_ptr->second;
-		invokable( stream_t{device_id, stream_id, stream::dont_take_ownership}, status);
+		(void) stream_id; // it's redundant
+		if (status != cuda::status::success) {
+			using triplet_type = std::tuple<device::id_t, stream::id_t, Callable>;
+			delete reinterpret_cast<triplet_type*>(device_id_stream_id_and_callable);
+			return;
+		}
+		stream_launched_host_function_adapter<Callable>(device_id_stream_id_and_callable);
 	}
 
 public: // mutators
@@ -390,30 +417,42 @@ public: // mutators
 		 *
 		 * @todo avoid the overhead of constructing an std::function
 		 *
-		 * @param callback a function to execute on the host. It must be invokable
+		 * @param callable a function to execute on the host. It must be callable
 		 * with two parameters: `cuda::stream::id_t stream_id, cuda::event::id_t event_id`
 		 */
-		template <typename Invokable>
-		void callback(Invokable callback_)
+		template <typename Callable>
+		void host_function_call(Callable callable_)
 		{
 			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 
-			// The nVIDIA runtime API (upto v8.0) requires flags to be 0, see
-			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
-			//
-			enum : unsigned int { fixed_flags = 0 };
 
-			// Since callback_ will be going out of scope after the enqueueing,
+			// Since callable_ will be going out of scope after the enqueueing,
 			// and we don't know anything about the scope of the original argument with
-			// which we were called, we must make a copy of `callback_` on the heap
-			// and pass that as the user-defined data
-			auto raw_callback_extra_argument =
-				new std::pair<device::id_t, Invokable>( associated_stream.device_id_, Invokable(std::move(callback_)) );
+			// which we were called, we must make a copy of `callable_` on the heap
+			// and pass that as the user-defined data. We also add information about
+			// the enqueueing stream.
+			auto raw_callable_extra_argument = new
+				std::tuple<device::id_t, stream::id_t, Callable>(
+					associated_stream.device_id_,
+					associated_stream.id(),
+					Callable(std::move(callable_))
+				);
 
-			// This always registers the static function callback_adapter as the callback -
-			// but what that one will do is call the actual callback we were passed;
+			// While we always register the same static function, `callback_adapter` as the
+			// callback - what it will actually _do_ is invoke the callback we were passed.
+
+#if CUDART_VERSION >= 10000
+			auto status = cudaLaunchHostFunc(
+				associated_stream.id_, &stream_launched_host_function_adapter<Callable>, raw_callable_extra_argument);
+#else
+			// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
+			// variable, see:
+			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
+			constexpr const unsigned fixed_flags { 0u };
 			auto status = cudaStreamAddCallback(
-				associated_stream.id_, &callback_adapter<Invokable>, raw_callback_extra_argument, fixed_flags);
+				associated_stream.id_, &callback_launch_adapter<Callable>, raw_callable_extra_argument, fixed_flags);
+#endif
+
 			throw_if_error(status,
 				std::string("Failed scheduling a callback to be launched")
 				+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)

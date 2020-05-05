@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 		stream.synchronize();
 	}
 
-	// Everything else - Enqueueing kernels, events, callbacks
+	// Everything else - Enqueueing kernel or host-function launches, events
 	// and memory attachments, recording and waiting on events
 	//--------------------------------------------------------------
 
@@ -128,8 +128,8 @@ int main(int argc, char **argv)
 	auto event_1 = cuda::event::create(device, cuda::event::sync_by_blocking);
 	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
-	stream_1.enqueue.callback(
-		[&buffer](cuda::stream_t, cuda::status_t status) {
+	stream_1.enqueue.host_function_call(
+		[&buffer](cuda::stream_t) {
 			std::cout << "Callback from stream 1!... \n";
 			print_first_char(buffer.get());
 		}
