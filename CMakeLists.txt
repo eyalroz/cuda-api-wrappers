@@ -17,7 +17,7 @@ PROJECT(cuda-api-wrappers
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
-include(FindCUDA) 
+include(FindCUDA)
 include(GNUInstallDirs)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
@@ -88,4 +88,3 @@ install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/cuda-api-wrappers-config-version.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers"
 )
-  
