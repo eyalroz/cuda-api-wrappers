@@ -118,7 +118,7 @@ void name_this_thread(const std::basic_string<CharT>& name)
 		::pthread_self();
 #else
 		::GetCurrentThreadId();
-#endif 
+#endif
 	name_host_thread<CharT>(this_thread_s_native_handle, name);
 }
 

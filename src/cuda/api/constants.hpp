@@ -111,4 +111,4 @@ enum : bool {
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_ 
+#endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_

@@ -22,8 +22,8 @@
 
 #ifndef __CUDACC__
 #ifndef __device__
-#define __device__ 
-#define __host__ 
+#define __device__
+#define __host__
 #endif
 #endif
 
@@ -506,8 +506,8 @@ using native_word_t = unsigned;
 
 #ifndef __CUDACC__
 #ifndef __device__
-#define __device__ 
-#define __host__ 
+#define __device__
+#define __host__
 #endif
 #endif
 
