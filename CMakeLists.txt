@@ -20,7 +20,7 @@ PROJECT(cuda-api-wrappers
 
 find_package(Threads REQUIRED)
 
-include(FindCUDA) 
+include(FindCUDA)
 include(GNUInstallDirs)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
@@ -45,7 +45,6 @@ elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
 	target_compile_definitions(cuda-api-wrappers PUBLIC "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
-
 target_include_directories(
 	cuda-api-wrappers
 	PUBLIC
@@ -58,7 +57,7 @@ target_include_directories(
 # ... but that's not supported.
 target_include_directories(cuda-api-wrappers PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(cuda-api-wrappers
-	PUBLIC ${CUDA_LIBRARIES} 
+	PUBLIC ${CUDA_LIBRARIES}
 	PRIVATE Threads::Threads)
 
 option(BUILD_EXAMPLES "Build example programs" OFF)

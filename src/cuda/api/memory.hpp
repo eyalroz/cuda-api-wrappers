@@ -55,9 +55,9 @@ namespace memory {
 
 /**
  * @namespace mapped
- * Memory regions appearing in both on the host-side and device-side address 
- * spaces with the regions in both spaces mapped to each other (i.e. guaranteed 
- * to have the same contents on access up to synchronization details). See @url 
+ * Memory regions appearing in both on the host-side and device-side address
+ * spaces with the regions in both spaces mapped to each other (i.e. guaranteed
+ * to have the same contents on access up to synchronization details). See @url
  * http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory
  * for more details.
  */

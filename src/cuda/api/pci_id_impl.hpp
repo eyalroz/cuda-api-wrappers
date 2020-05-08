@@ -59,7 +59,7 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& 
 		pci_id.bus = first_field;
 		pci_id.device = second_field;
 		is >> pci_id.function;
-		if (not is.good()) { 
+		if (not is.good()) {
 			throw std::invalid_argument("Failed parsing PCI location ID for a CUDA device 2");
 		}
 		break;

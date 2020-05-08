@@ -227,8 +227,8 @@ namespace memory {
 
 template <typename T>
 inline device_t pointer_t<T>::device() const
-{ 
-	return cuda::device::get(attributes().device); 
+{
+	return cuda::device::get(attributes().device);
 }
 
 namespace async {

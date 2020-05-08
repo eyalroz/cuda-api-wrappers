@@ -123,7 +123,7 @@ using unique_ptr = std::unique_ptr<T, detail::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(
-	size_t                n, 
+	size_t                n,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	return (initial_visibility == initial_visibility_t::to_all_devices) ?
