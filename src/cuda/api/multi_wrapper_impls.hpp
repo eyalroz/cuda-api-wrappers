@@ -28,14 +28,14 @@ namespace detail {
 template<typename T>
 cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
 {
-	device::current::scoped_override_t<> set_device_for_this_scope(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
 template<typename T>
 cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
 {
-	device::current::scoped_override_t<> set_device_for_this_scope(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
@@ -117,11 +117,21 @@ device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
 {
-	device::current::scoped_override_t<> set_device_for_this_scope(id_);
+	device::current::detail::scoped_override_t<> set_device_for_this_scope(id_);
 	constexpr const auto take_ownership = true;
 	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
 		will_synchronize_with_default_stream, priority), take_ownership);
 }
+
+namespace device {
+namespace current {
+
+inline scoped_override_t<cuda::detail::do_not_assume_device_is_current>::scoped_override_t(device_t& device) : parent(device.id()) { }
+inline scoped_override_t<cuda::detail::do_not_assume_device_is_current>::scoped_override_t(device_t&& device) : parent(device.id()) { }
+
+} // namespace current
+} // namespace device
+
 
 namespace detail {
 
@@ -332,7 +342,7 @@ inline void device_function_t::cache_preference(
 	device_t                           device,
 	multiprocessor_cache_preference_t  preference)
 {
-	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
 	cache_preference(preference);
 }
 
@@ -340,7 +350,7 @@ inline void device_function_t::opt_in_to_extra_dynamic_memory(
 	cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
 	device_t                      device)
 {
-	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
 	opt_in_to_extra_dynamic_memory(maximum_shared_memory_required_by_kernel);
 }
 
@@ -348,7 +358,7 @@ inline void device_function_t::set_shared_mem_to_l1_cache_fraction(
 	unsigned  shared_mem_percentage,
 	device_t  device)
 {
-	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
 	set_shared_mem_to_l1_cache_fraction(shared_mem_percentage);
 }
 
@@ -361,7 +371,7 @@ inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
-	device::current::scoped_override_t<> set_device_for_this_context(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
 	int result;
 	unsigned int flags = disable_caching_override ?
 		cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;

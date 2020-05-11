@@ -82,7 +82,7 @@ inline id_t create_on_current_device(
  */
 inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
-	device::current::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
+	device::current::detail::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
 		set_device_for_this_scope(device_id);
 	auto status = cudaStreamQuery(stream_id);
 	switch(status) {
@@ -156,7 +156,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using DeviceSetter = device::current::scoped_override_t<detail::do_not_assume_device_is_current>;
+	using DeviceSetter = device::current::detail::scoped_override_t<detail::do_not_assume_device_is_current>;
 
 
 public: // const getters
@@ -541,7 +541,7 @@ public: // constructors and destructor
 	~stream_t()
 	{
 		if (owning) {
-			device::current::scoped_override_t<> set_device_for_this_scope(device_id_);
+			DeviceSetter set_device_for_this_scope(device_id_);
 			cudaStreamDestroy(id_);
 		}
 	}
@@ -626,7 +626,7 @@ inline stream_t create(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority)
 {
-	device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	auto new_stream_id = cuda::stream::detail::create_on_current_device(
 		synchronizes_with_default_stream, priority);
 	return wrap(device_id, new_stream_id, take_ownership);

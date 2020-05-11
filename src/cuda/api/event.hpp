@@ -301,7 +301,7 @@ inline event_t create(
 	bool          records_timing,
 	bool          interprocess)
 {
-	device::current::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
+	device::current::detail::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
 		set_device_for_this_scope(device_id);
 	return detail::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess);
 }
