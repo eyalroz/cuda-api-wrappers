@@ -78,6 +78,41 @@ inline void set(const device::id_t* device_ids, std::size_t num_devices)
 		+ std::to_string(num_devices) + " devices specified");
 }
 
+/**
+ * @note See the out-of-`detail::` version of this class.
+ */
+template <bool AssumedCurrent = false> class scoped_override_t;
+
+template <>
+class scoped_override_t<cuda::detail::do_not_assume_device_is_current> {
+protected:
+	static inline device::id_t  replace(device::id_t new_device_id)
+	{
+		device::id_t previous_device_id = device::current::detail::get_id();
+		device::current::detail::set(new_device_id);
+		return previous_device_id;
+	}
+
+public:
+	scoped_override_t(device::id_t new_device_id) : previous_device_id(replace(new_device_id)) { }
+	~scoped_override_t() {
+		// Note that we have no guarantee that the current device was not
+		// already replaced while this object was in scope; but - that's life.
+		replace(previous_device_id);
+	}
+private:
+	device::id_t  previous_device_id;
+};
+
+template <>
+class scoped_override_t<cuda::detail::assume_device_is_current> {
+public:
+	scoped_override_t(device::id_t) { };
+	~scoped_override_t() = default;
+};
+
+
+
 } // namespace detail
 
 /**
@@ -97,35 +132,31 @@ void set(device_t device);
  * has not been set; for this reason, the scoped current device override also
  * has this feature (which when set to `true` makes it into a do-nothing
  * object).
+ *
+ * @note Like many constructs in these API wrappers, this class is not
+ * thread-safe, i.e. you must not use it to set the device multiple unsynchronized
+ * threads: While the current device change itself may be atomic, the recording of
+ * the previous current device is not; hence you may end up with a different
+ * current device than expected when going out of the last scope.
  */
 template <bool AssumedCurrent = false> class scoped_override_t;
 
 template <>
-class scoped_override_t<cuda::detail::do_not_assume_device_is_current> {
+class scoped_override_t<cuda::detail::do_not_assume_device_is_current> : private detail::scoped_override_t<cuda::detail::do_not_assume_device_is_current> {
 protected:
-	static inline device::id_t  replace(device::id_t new_device)
-	{
-		device::id_t  previous_device = device::current::detail::get_id();
-		device::current::detail::set(new_device);
-		return previous_device;
-	}
-
+	using parent = detail::scoped_override_t<cuda::detail::do_not_assume_device_is_current>;
 public:
-	scoped_override_t(device::id_t device) : previous_device(replace(device)) { }
-	~scoped_override_t() {
-		// Note that we have no guarantee that the current device was not
-		// already replaced while this object was in scope; but - that's life.
-		replace(previous_device);
-	}
-private:
-	device::id_t  previous_device;
+	scoped_override_t(device_t& device);
+	scoped_override_t(device_t&& device);
+	~scoped_override_t() = default;
 };
 
 template <>
 class scoped_override_t<cuda::detail::assume_device_is_current> {
 public:
-	scoped_override_t(device::id_t) { }
-	~scoped_override_t() { }
+	scoped_override_t(device_t&) { };
+	scoped_override_t(device_t&&) { };
+	~scoped_override_t() = default;
 };
 
 
@@ -135,8 +166,8 @@ public:
  * it as an opaque command, which does not explicitly expose the variable defined under
  * the hood to effect this behavior.
  */
-#define CUDA_DEVICE_FOR_THIS_SCOPE(_device_id) \
-	::cuda::device::current::scoped_override_t<::cuda::detail::do_not_assume_device_is_current> scoped_device_override(_device_id)
+#define CUDA_DEVICE_FOR_THIS_SCOPE(_cuda_device) \
+	::cuda::device::current::scoped_override_t<::cuda::detail::do_not_assume_device_is_current> scoped_device_override(_cuda_device)
 
 
 } // namespace current
