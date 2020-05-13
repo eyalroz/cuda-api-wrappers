@@ -26,14 +26,14 @@ namespace array {
 namespace detail {
 
 template<typename T>
-cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
+inline cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
 template<typename T>
-cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
+inline cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
