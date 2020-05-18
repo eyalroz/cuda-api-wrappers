@@ -29,7 +29,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 add_library(cuda-api-wrappers
-	src/cuda/api/device_properties.cpp
 	src/cuda/api/profiling.cpp
 )
 
