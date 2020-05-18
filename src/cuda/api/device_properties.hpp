@@ -15,6 +15,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <stdexcept>
+
 
 // The following un-definitions avoid warnings about
 // the use of `major` and `minor` in certain versions
@@ -42,54 +44,25 @@ struct compute_architecture_t {
 	/**
 	 * A @ref compute_capability_t has a "major" and a "minor" number,
 	 * with "major" indicating the architecture; so this struct only
-	 * has a "major" numner
+	 * has a "major" number
 	 */
 	unsigned major;
 
-	static const char* name(unsigned major_compute_capability_version);
+	const char* name() const;
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	unsigned max_in_flight_threads_per_processor() const;
+
 	/**
 	 * @note On some architectures, the shared memory / L1 balance is configurable,
 	 * so you might not get the maxima here without making this configuration
 	 * setting
 	 */
 	memory::shared::size_t max_shared_memory_per_block() const;
-	const char* name() const { return name(major); }
 
-	bool is_valid() const noexcept
-	{
-		return (major > 0) and (major < 9999); // Picked this up from the CUDA code somwhere
-	}
+	constexpr bool is_valid() const noexcept;
 
 };
-
-inline bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major == rhs.major;
-}
-inline bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major != rhs.major;
-}
-inline bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major < rhs.major;
-}
-inline bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major < rhs.major;
-}
-inline bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major > rhs.major;
-}
-inline bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
-{
-	return lhs.major > rhs.major;
-}
-
 
 // TODO: Consider making this a non-POD struct,
 // with a proper ctor checking validity, an operator converting to pair etc;
@@ -108,7 +81,13 @@ struct compute_capability_t {
 	compute_architecture_t architecture;
 	unsigned minor_;
 
-	unsigned as_combined_number() const noexcept { return major() * 10 + minor_; }
+	constexpr static compute_capability_t from_combined_number(unsigned combined) noexcept;
+
+	constexpr unsigned major() const { return architecture.major; }
+	unsigned constexpr minor() const { return minor_; }
+
+	constexpr unsigned as_combined_number() const noexcept;
+	constexpr bool is_valid() const noexcept;
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	unsigned max_in_flight_threads_per_processor() const;
@@ -119,59 +98,11 @@ struct compute_capability_t {
 	 */
 	memory::shared::size_t max_shared_memory_per_block() const;
 
-	unsigned major() const { return architecture.major; }
 
-	// We don't really need this method, but it allows for the same access pattern as for the
-	// major number, i.e. major() and minor(). Alternatively, we could have
-	// used a proxy
-	unsigned minor() const { return minor_; }
-
-	bool is_valid() const
-	{
-		return (major() > 0) and (major() < 9999) and (minor_ > 0) and (minor_ < 9999);
-			// Picked this up from the CUDA code somwhere
-	}
-
-	static compute_capability_t from_combined_number(unsigned combined)
-	{
-		return  { combined / 10, combined % 10 };
-	}
 };
 
-inline bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() == rhs.major() and lhs.minor_ == rhs.minor_;
-}
-inline bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() != rhs.major() or lhs.minor_ != rhs.minor_;
-}
-inline bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ < rhs.minor_);
-}
-inline bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ <= rhs.minor_);
-}
-inline bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ > rhs.minor_);
-}
-inline bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
-{
-	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ >= rhs.minor_);
-}
-
-inline compute_capability_t make_compute_capability(unsigned combined) noexcept
-{
-	return compute_capability_t::from_combined_number(combined);
-}
-
-inline compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept
-{
-	return { major, minor };
-}
+inline constexpr compute_capability_t make_compute_capability(unsigned combined) noexcept;
+inline constexpr compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept;
 
 /**
  * @brief A structure holding a collection various properties of a device
@@ -190,11 +121,8 @@ struct properties_t : public cudaDeviceProp {
 	properties_t() = default;
 	properties_t(const cudaDeviceProp& cdp) noexcept : cudaDeviceProp(cdp) { };
 	properties_t(cudaDeviceProp&& cdp) noexcept : cudaDeviceProp(cdp) { };
-	bool usable_for_compute() const noexcept
-	{
-		return computeMode != cudaComputeModeProhibited;
-	}
-	compute_capability_t compute_capability() const { return { (unsigned) major, (unsigned) minor }; }
+	bool usable_for_compute() const noexcept;
+	compute_capability_t compute_capability() const noexcept { return { (unsigned) major, (unsigned) minor }; }
 	compute_architecture_t compute_architecture() const noexcept { return { (unsigned) major }; };
 	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID }; }
 
@@ -212,5 +140,7 @@ struct properties_t : public cudaDeviceProp {
 
 } // namespace device
 } // namespace cuda
+
+#include "detail/device_properties.hpp"
 
 #endif // CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_
