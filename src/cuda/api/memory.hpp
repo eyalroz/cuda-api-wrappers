@@ -21,8 +21,6 @@
  *   The height is 3
  *
  * See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
- *
- *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
@@ -193,25 +191,39 @@ struct deleter {
  *
  * @note The equivalent of @ref std::memset for CUDA device-side memory
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to set, in a CUDA
+ * device's global memory
  * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	auto result = cudaMemset(buffer_start, byte_value, num_bytes);
+	auto result = cudaMemset(start, byte_value, num_bytes);
 	throw_if_error(result, "memsetting an on-device buffer");
 }
 
 /**
  * @brief Sets all bytes in a region of memory to 0 (zero)
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to zero-out,
+ * in a CUDA device's global memory
  * @param num_bytes size of the memory region in bytes
  */
-inline void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes)
 {
-	set(buffer_start, 0, num_bytes);
+	set(start, 0, num_bytes);
+}
+
+/**
+ * @brief Sets all bytes of a single pointed-to value to 0
+ *
+ * @param ptr pointer to a value of a certain type, in a CUDA device's
+ * global memory
+ */
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
 }
 
 } // namespace device
@@ -243,33 +255,55 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * @note The equivalent of @ref std::memset - for any and all CUDA-related
  * memory spaces
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to set;
+ * may be in host-side memory, global CUDA-device-side memory or
+ * CUDA-managed memory.
  * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	pointer_t<void> pointer { buffer_start };
+	pointer_t<void> pointer { start };
 	switch ( pointer.attributes().memory_type() ) {
 	case device_memory:
 	case managed_memory:
-		memory::device::set(buffer_start, byte_value, num_bytes); break;
+		memory::device::set(start, byte_value, num_bytes); break;
 	case unregistered_memory:
 	case host_memory:
-		std::memset(buffer_start, byte_value, num_bytes); break;
+		std::memset(start, byte_value, num_bytes); break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(buffer_start)
+			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(start)
 		);
 	}
 }
 
-inline void zero(void* buffer_start, size_t num_bytes)
+/**
+ * @brief Sets all bytes in a region of memory to 0 (zero)
+ *
+ * @param start starting address of the memory region to zero-out;
+ * may be in host-side memory, global CUDA-device-side memory or
+ * CUDA-managed memory.
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void zero(void* start, size_t num_bytes)
 {
-	return set(buffer_start, 0, num_bytes);
+	return set(start, 0, num_bytes);
 }
 
+/**
+ * @brief Sets all bytes of a single pointed-to value to 0
+ *
+ * @param ptr pointer to a single element of a certain type, which may
+ * be in host-side memory, global CUDA-device-side memory or CUDA-managed
+ * memory
+ */
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
+}
 
 namespace detail {
 
@@ -585,7 +619,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stre
 {
 	// TODO: Double-check that this call doesn't require setting the current device
 	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_id);
-	throw_if_error(result, "memsetting an on-device buffer");
+	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
 inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
@@ -593,24 +627,18 @@ inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
 	set(start, 0, num_bytes, stream_id);
 }
 
-
 } // namespace detail
 
 /**
  * Asynchronously sets all bytes in a stretch of memory to a single value
  *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
+ * @note asynchronous version of @ref memory::zero
  *
- * @note asynchronous version of @ref memory::copy
- *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- * @param stream The stream on which to schedule this action
+ * @param start starting address of the memory region to set,
+ * in a CUDA device's global memory
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ * @param stream stream on which to schedule this action
  */
 inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream);
 
@@ -618,6 +646,23 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream)
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
 inline void zero(void* start, size_t num_bytes, stream_t& stream);
+
+/**
+ * @brief Asynchronously sets all bytes of a single pointed-to value
+ * to 0 (zero).
+ *
+ * @note asynchronous version of @ref memory::zero
+ *
+ * @param start starting address of the memory region to zero-out,
+ * in a CUDA device's global memory
+ * @param num_bytes size of the memory region in bytes
+ * @param stream stream on which to schedule this action
+ */
+template <typename T>
+inline void zero(T* ptr, stream_t& stream)
+{
+	zero(ptr, sizeof(T), stream);
+}
 
 } // namespace async
 
@@ -744,15 +789,31 @@ inline void deregister(void *ptr)
 		"Could not unregister the memory segment starting at address *a");
 }
 
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+/**
+ * @brief Sets all bytes in a stretch of host-side memory to a single value
+ *
+ * @note a wrapper for @ref std::memset
+ *
+ * @param start starting address of the memory region to set,
+ * in host memory; can be either CUDA-allocated or otherwise.
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	std::memset(buffer_start, byte_value, num_bytes);
+	std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
 }
 
-inline void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes)
 {
-	set(buffer_start, 0, num_bytes);
+	set(start, 0, num_bytes);
+}
+
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
 }
 
 
