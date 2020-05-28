@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
 	auto device = cuda::device::get(device_id).make_current();
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
-	cuda::device_function_t device_function(kernel);
+	cuda::device_function_t device_function(device, kernel);
 
 	// ------------------------------------------
 	//  Attributes without a specific API call
@@ -99,10 +99,10 @@ int main(int argc, char **argv)
 	//  L1/shared memory size preference and shared memory bank size
 	// --------------------------------------------------------------
 
-	device_function.cache_preference(
+	device_function.set_cache_preference(
 		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory);
 
-	device_function.shared_memory_bank_size(
+	device_function.set_shared_memory_bank_size(
 		cuda::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
 
 	// You may be wondering why we're only setting these "attributes' but not

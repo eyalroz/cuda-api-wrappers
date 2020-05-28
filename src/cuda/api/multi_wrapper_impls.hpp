@@ -17,6 +17,8 @@
 #include <cuda/api/array.hpp>
 #include <cuda/api/kernel_launch.cuh>
 
+#include <cuda_runtime.h>
+
 #include <type_traits>
 
 namespace cuda {
@@ -330,60 +332,88 @@ inline region_pair allocate(
 
 } // namespace memory
 
+// device_function_t methods
 
-/**
- * @brief Sets a device function's preference of either having more L1 cache or
- * more shared memory space when executing on some device
- *
- * @param device the CUDA device for execution on which the preference is set
- * @param preference value to set for the device function (more cache, more L1 or make the equal)
- */
-inline void device_function_t::cache_preference(
-	device_t                           device,
-	multiprocessor_cache_preference_t  preference)
+void device_function_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
-	cache_preference(preference);
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
+	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
-inline void device_function_t::opt_in_to_extra_dynamic_memory(
-	cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
-	device_t                      device)
+void device_function_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
-	opt_in_to_extra_dynamic_memory(maximum_shared_memory_required_by_kernel);
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+#if CUDART_VERSION >= 9000
+	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, maximum_shared_memory_required_by_kernel);
+	throw_if_error(result, "Trying to opt-in to a (potentially) higher maximum amount of dynamic shared memory");
+#else
+	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#endif
 }
 
-inline void device_function_t::set_shared_mem_to_l1_cache_fraction(
-	unsigned  shared_mem_percentage,
-	device_t  device)
+void device_function_t::set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
-	set_shared_mem_to_l1_cache_fraction(shared_mem_percentage);
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	if (shared_mem_percentage > 100) {
+		throw std::invalid_argument("Percentage value can't exceed 100");
+	}
+#if CUDART_VERSION >= 9000
+	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributePreferredSharedMemoryCarveout, shared_mem_percentage);
+	throw_if_error(result, "Trying to set the carve-out of shared memory/L1 cache memory");
+#else
+	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#endif
 }
 
-namespace device_function {
+inline device_function::attributes_t device_function_t::attributes() const
+{
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device_function::attributes_t function_attributes;
+	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
+	throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
+	return function_attributes;
+}
 
-inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
-	const device_t            device,
-	const device_function_t&  device_function,
+void device_function_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
+{
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
+	throw_if_error(result,
+		"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
+		"CUDA device function");
+}
+
+
+inline void device_function_t::set_shared_memory_bank_size(
+	multiprocessor_shared_memory_bank_size_option_t  config)
+{
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
+	throw_if_error(result);
+}
+
+inline grid::dimension_t device_function_t::maximum_active_blocks_per_multiprocessor(
 	grid::block_dimension_t   num_threads_per_block,
 	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device.id());
+	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	int result;
 	unsigned int flags = disable_caching_override ?
 		cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
 	auto status = cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
-		&result, device_function.ptr(), num_threads_per_block,
+		&result, ptr_, num_threads_per_block,
 		dynamic_shared_memory_per_block, flags);
 	throw_if_error(status, "Failed calculating the maximum occupancy "
 		"of device function blocks per multiprocessor");
 	return result;
 }
 
-} // namespace device_function
+
+template <typename DeviceFunction>
+device_function_t::device_function_t(const device_t& device, DeviceFunction f)
+: device_function_t(device.id(), reinterpret_cast<const void*>(f)) { }
 
 namespace stream {
 

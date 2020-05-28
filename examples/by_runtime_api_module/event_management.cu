@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
 		buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	auto threads_per_block = cuda::device_function_t(increment).attributes().maxThreadsPerBlock;
+	auto threads_per_block = cuda::device_function_t(device, increment).attributes().maxThreadsPerBlock;
 	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 

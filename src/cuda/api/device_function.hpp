@@ -69,25 +69,25 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 /**
  * A non-owning wrapper class for CUDA `__global__` functions
  *
- * @note despite the name, a `device_function_t` is not associated with a specific
- * device - it can't just be _executed_ on a device.
+ * @note The association of a `device_function_t` with an individual device is somewhat tenuous.
+ * That is, the same function pointer could be used with any other device (provided the kernel
+ * was compiled appropriately). However, many/most of the features, attributes and settings
+ * are device-specific.
  */
 class device_function_t {
 public: // getters
 	const void* ptr() const noexcept { return ptr_; }
+	const device_t device() const noexcept;
+
+protected:
+	device::id_t device_id() const noexcept { return device_id_; }
 
 public: // type_conversions
 	operator const void*() noexcept { return ptr_; }
 
 public: // non-mutators
 
-	inline device_function::attributes_t attributes() const
-	{
-		device_function::attributes_t function_attributes;
-		auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
-		throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
-		return function_attributes;
-	}
+	inline device_function::attributes_t attributes() const;
 
 /*
 	// The following are commented out because there are no CUDA API calls for them!
@@ -97,111 +97,79 @@ public: // non-mutators
 	 * Obtains a device function's preference (on the current device probably) of
 	 * either having more L1 cache or more shared memory space
 	 *
-	multiprocessor_cache_preference_t cache_preference() const
-	{
-		throw cuda_inspecific_runtime_error(
-			"There's no CUDA runtime API call for obtaining the cache preference!");
-	}
-
-
-	multiprocessor_shared_memory_bank_size_option_t  shared_memory_bank_size() const
-	{
-		throw cuda_inspecific_runtime_error(
-			"There's no CUDA runtime API call for obtaining the shared memory bank size!");
-	}
+	multiprocessor_cache_preference_t                cache_preference() const;
+	multiprocessor_shared_memory_bank_size_option_t  shared_memory_bank_size() const;
 */
 
+	/**
+	 * @brief Calculates the number of grid blocks which may be "active" on a given GPU
+	 * multiprocessor simultaneously (i.e. with warps from any of these block
+	 * being schedulable concurrently)
+	 *
+	 * @param device
+	 * @param device_function
+	 * @param num_threads_per_block
+	 * @param dynamic_shared_memory_per_block
+	 * @param disable_caching_override On some GPUs, the choice of whether to
+	 * cache memory reads affects occupancy. But what if this caching results in 0
+	 * potential occupancy for a kernel? There are two options, controlled by this flag.
+	 * When it is set to false - the calculator will assume caching is off for the
+	 * purposes of its work; when set to true, it will return 0 for such device functions.
+	 * See also the "Unified L1/Texture Cache" section of the
+	 * <a href="http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell
+	 * tuning guide</a>.
+	 */
+	grid::dimension_t maximum_active_blocks_per_multiprocessor(
+		grid::block_dimension_t   num_threads_per_block,
+		memory::shared::size_t    dynamic_shared_memory_per_block,
+		bool                      disable_caching_override = false);
 
 public: // mutators
-	/**
-	 * @brief Sets a device function's preference (on the current device probably) of
-	 * either having more L1 cache or more shared memory space
-	 */
-	void cache_preference(multiprocessor_cache_preference_t preference)
-	{
-		auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
-		throw_if_error(result,
-			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
-			"CUDA device function");
-	}
+
+	void set_attribute(cudaFuncAttribute attribute, int value);
+	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel);
+	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage);
 
 	/**
 	 * @brief Sets a device function's preference of either having more L1 cache or
 	 * more shared memory space when executing on some device
-     *
+	 *
 	 * @param device the CUDA device for execution on which the preference is set
 	 * @param preference value to set for the device function (more cache, more L1 or make the equal)
 	 */
-	void cache_preference(
-		device_t                           device,
-		multiprocessor_cache_preference_t  preference);
-
-	void set_attribute(cudaFuncAttribute attribute, int value)
-	{
-		auto result = cudaFuncSetAttribute(ptr_, attribute, value);
-		throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
-	}
-
-	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel)
-	{
-#if CUDART_VERSION >= 9000
-		auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, maximum_shared_memory_required_by_kernel);
-		throw_if_error(result, "Trying to opt-in to a (potentially) higher maximum amount of dynamic shared memory");
-#else
-		throw(cuda::runtime_error {cuda::status::not_yet_implemented});
-#endif
-	}
-
-	void opt_in_to_extra_dynamic_memory(
-		cuda::memory::shared::size_t  maximum_shared_memory_required_by_kernel,
-		device_t                      device);
-
-	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage)
-	{
-		if (shared_mem_percentage > 100) {
-			throw std::invalid_argument("Invalid percentage");
-		}
-#if CUDART_VERSION >= 9000
-		auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributePreferredSharedMemoryCarveout, shared_mem_percentage);
-		throw_if_error(result, "Trying to set the carve-out of shared memory/L1 cache memory");
-#else
-		throw(cuda::runtime_error {cuda::status::not_yet_implemented});
-#endif
-	}
-
-	void set_shared_mem_to_l1_cache_fraction(
-		unsigned  shared_mem_percentage,
-		device_t  device);
-
+	void set_cache_preference(multiprocessor_cache_preference_t preference);
 
 	/**
 	 * @brief Sets a device function's preference of shared memory bank size preference
 	 * (for the current device probably)
-     *
+	 *
+	 * @param device the CUDA device for execution on which the preference is set
 	 * @param config bank size setting to make
 	 */
-	void shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config)
-	{
-		auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
-		if (result == cudaErrorInvalidDeviceFunction) { return; }
-		throw_if_error(result);
-	}
+	void set_shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config);
 
-public: // ctors & dtor
-	template <typename DeviceFunction>
-	device_function_t(DeviceFunction f) : ptr_(reinterpret_cast<const void*>(f))
+
+protected: // ctors & dtor
+	device_function_t(device::id_t device_id, const void* f) : device_id_(device_id), ptr_(f)
 	{
 		// TODO: Consider checking whether this actually is a device function
 		// TODO: Consider performing a check for nullptr
 	}
+
+public: // ctors & dtor
+	template <typename DeviceFunction>
+	device_function_t(const device_t& device, DeviceFunction f);
 	~device_function_t() { };
 
-public: // data members
+protected: // data members
+	const device::id_t device_id_;
 	const void* const ptr_;
-
 };
 
 namespace device_function {
+
+
+
 
 /**
  * @brief A 'version' of
@@ -227,31 +195,6 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 	return device_function::maximum_dynamic_shared_memory_per_block(
 		device_function.attributes(), compute_capability);
 }
-
-/**
- * @brief Calculates the number of grid blocks which may be "active" on a given GPU
- * multiprocessor simultaneously (i.e. with warps from any of these block
- * being schedulable concurrently)
- *
- * @param device
- * @param device_function
- * @param num_threads_per_block
- * @param dynamic_shared_memory_per_block
- * @param disable_caching_override On some GPUs, the choice of whether to
- * cache memory reads affects occupancy. But what if this caching results in 0
- * potential occupancy for a kernel? There are two options, controlled by this flag.
- * When it is set to false - the calculator will assume caching is off for the
- * purposes of its work; when set to true, it will return 0 for such device functions.
- * See also the "Unified L1/Texture Cache" section of the
- * <a href="http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell
- * tuning guide</a>.
- */
-inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
-	device_t                  device,
-	const device_function_t&  device_function,
-	grid::block_dimension_t   num_threads_per_block,
-	memory::shared::size_t    dynamic_shared_memory_per_block,
-	bool                      disable_caching_override = false);
 
 
 namespace detail {
