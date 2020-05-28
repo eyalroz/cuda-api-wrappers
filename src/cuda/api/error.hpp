@@ -236,15 +236,17 @@ inline status_t get()   noexcept { return cudaPeekAtLastError(); }
 /**
  * @brief Does nothing (unless throwing an exception)
  *
- * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
+ * @note similar to @ref cuda::throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * @throws cuda::runtime_error if the CUDA runtime API has
  * encountered previously encountered an (uncleared) error
  *
  * @param message Additional message to incldue in the exception thrown
  * @param clear_any_error When true, clears the CUDA Runtime API's state from
- * recalling errors arising from before this oment
+ * recalling errors arising from before this moment
+ *
+ *
  */
 inline void ensure_none(
 	std::string  message,
@@ -274,7 +276,7 @@ inline void ensure_none(
  * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * @throws cuda::runtime_error if the CUDA runtime API has
  * encountered previously encountered an (uncleared) error
  *
  * @param clear_any_error When true, clears the CUDA Runtime API's state from

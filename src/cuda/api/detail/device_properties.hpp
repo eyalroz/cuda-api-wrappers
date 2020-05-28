@@ -10,6 +10,8 @@
 
 #include <cuda/api/device_properties.hpp>
 
+///@cond
+
 namespace cuda {
 namespace device {
 
@@ -292,5 +294,7 @@ inline bool properties_t::usable_for_compute() const noexcept
 
 } // namespace device
 } // namespace cuda
+
+///@endcond
 
 #endif // CUDA_API_WRAPPERS_DETAIL_DEVICE_PROPERTIES_HPP_

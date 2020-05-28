@@ -261,7 +261,7 @@ inline void copy(void* destination, const array_t<T, NumDimensions>& source, str
 template <typename T>
 inline void copy_single(T& destination, const T& source, stream_t& stream)
 {
-	detail::copy(&destination, &source, sizeof(T), stream.id());
+	detail::copy_single(&destination, &source, sizeof(T), stream.id());
 }
 
 } // namespace async
@@ -335,7 +335,7 @@ inline region_pair allocate(
  * @brief Sets a device function's preference of either having more L1 cache or
  * more shared memory space when executing on some device
  *
- * @param device_id the CUDA device for execution on which the preference is set
+ * @param device the CUDA device for execution on which the preference is set
  * @param preference value to set for the device function (more cache, more L1 or make the equal)
  */
 inline void device_function_t::cache_preference(

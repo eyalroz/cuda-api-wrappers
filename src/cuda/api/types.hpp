@@ -73,14 +73,18 @@ namespace array {
 using dimension_t = std::size_t;
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
- * or extents, are not the same as @ref cuda::grid_dimensionts_t ; they may be
+ * or extents, are not the same as @ref cuda::grid::dimensionts_t ; they may be
  * much larger in each axis.
  *
- * @note See also @url https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html
+ * @note See also <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html">
+ * the description of `struct cudaExtent`</a> in the CUDA Runtime API documentation.
  */
 template<std::size_t NumDimensions>
 struct dimensions_t;
 
+/**
+ * Dimensions for 3D CUDA arrays
+ */
 template<>
 struct dimensions_t<3> // this almost-inherits cudaExtent
 {
@@ -127,6 +131,9 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
 };
 
+/**
+ * Dimensions for 2D CUDA arrays
+ */
 template<>
 struct dimensions_t<2>
 {
@@ -279,7 +286,7 @@ namespace shared {
 /**
  * Each physical core ("Symmetric Multiprocessor") on an nVIDIA GPU has a space
  * of shared memory (see
- * @link https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+ * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this blog entry</a>
  * ). This type is large enough to hold its size.
  *
  * @note actually, uint16_t is usually large enough to hold the shared memory

@@ -162,12 +162,12 @@ inline void enqueue_launch(
  * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
- * @param cooperative if true, use CUDA's "cooperative launch" mechanism which enables more flexible
+ * @param thread_block_cooperation if true, use CUDA's "cooperative launch" mechanism which enables more flexible
  * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
  * @ref device_function_t wrapping the raw pointer to the function.
- * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
+ * @param stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
  * the scheduling of the launch and the execution)
  * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
  * shared memory per block in the grid; this defines how the grid will look and what the shared memory

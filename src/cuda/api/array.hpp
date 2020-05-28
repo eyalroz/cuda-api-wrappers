@@ -1,3 +1,10 @@
+/**
+ * @file array.hpp
+ *
+ * @brief Contains a proxy class for CUDA arrays - GPU memory
+ * with 2-D or 3-D locality and hardware support for interpolated value
+ * retrieval); see also @ref texture_view.hpp .
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ARRAY_HPP_
 #define CUDA_API_WRAPPERS_ARRAY_HPP_

@@ -289,6 +289,13 @@ protected: // static methods
 
 public: // mutators
 
+	/**
+	 * @brief A gadget through which commands are enqueued on the stream.
+	 *
+	 * @note this class exists solely as a form of "syntactic sugar", allowing for code such as
+	 *
+	 *   my_stream.enqueue.copy(foo, bar, my_size)
+	 */
 	class enqueue_t {
 	protected:
 		stream_t& associated_stream;
@@ -392,7 +399,7 @@ public: // mutators
 		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
 		 * for continued execution.
 		 *
-		 * @param event A pre-created CUDA event (for the stream's device); any existing
+		 * @param existing_event A pre-created CUDA event (for the stream's device); any existing
 		 * "registration" of the event to occur elsewhere is overwritten.
 		 **/
 		event_t& event(event_t& existing_event);
@@ -415,9 +422,7 @@ public: // mutators
 		 * Execute the specified function on the calling host thread once all
 		 * hereto-scheduled work on this stream has been completed.
 		 *
-		 * @todo avoid the overhead of constructing an std::function
-		 *
-		 * @param callable a function to execute on the host. It must be callable
+		 * @param callable_ a function to execute on the host. It must be callable
 		 * with two parameters: `cuda::stream::id_t stream_id, cuda::event::id_t event_id`
 		 */
 		template <typename Callable>
@@ -499,7 +504,7 @@ public: // mutators
 		 * @note this call will not delay any already-enqueued work on the stream,
 		 * only work enqueued _after_ the call.
 		 *
-		 * @param event_id ID of the event for whose occurrence to wait; the event
+		 * @param event_ the event for whose occurrence to wait; the event
 		 * would typically be recorded on another stream.
 		 *
 		 */

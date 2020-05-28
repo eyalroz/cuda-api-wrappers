@@ -1,3 +1,10 @@
+/**
+ * @file texture_view.hpp
+ *
+ * @brief Contains a "texture view" class, for hardware-accelerated
+ * access to CUDA arrays, and some related standalone functions and
+ * definitions.
+ */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 #define CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
@@ -15,6 +22,14 @@ namespace texture {
 
 using raw_handle_t = cudaTextureObject_t;
 
+/**
+ * A simplifying rudimentary wrapper wrapper for the CUDA runtime API's internal
+ * "texture descriptor" object, allowing the creating of such descriptors without
+ * having to give it too much thought.
+ *
+ * @todo Could be expanded into a richer wrapper class allowing actual settings
+ * of the various fields.
+ */
 struct descriptor_t : public cudaTextureDesc {
 	inline descriptor_t()
 	{
@@ -48,8 +63,8 @@ inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noex
  *
  * See also the following sections in the CUDA programming guide:
  *
- * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory
- * - @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching
+ * - <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-and-surface-memory">texturre and surface memory</a>
+ * - <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-fetching">texture fetching</a>
  *
  * @note texture_view's are essentially _owning_ - the view is a resource the CUDA
  * runtime creates for you, which then needs to be freed.

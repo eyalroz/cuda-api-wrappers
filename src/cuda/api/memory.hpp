@@ -55,9 +55,9 @@ namespace memory {
  * @namespace mapped
  * Memory regions appearing in both on the host-side and device-side address
  * spaces with the regions in both spaces mapped to each other (i.e. guaranteed
- * to have the same contents on access up to synchronization details). See @url
- * http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory
- * for more details.
+ * to have the same contents on access up to synchronization details). Consult the
+ * <a href="http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory">
+ * CUDA C programming guide section on mapped memory</a> for more details.
  */
 namespace mapped {
 
@@ -357,7 +357,7 @@ public:
  *
  * @param destination A 3-dimensional CUDA array
  * @param source A pointer to a a memory region containing as many
- * elements as would fill the @source array, _contiguously_
+ * elements as would fill the @p source array, _contiguously_
  */
 template<typename T>
 void copy(array_t<T, 3>& destination, const void *source)
@@ -372,7 +372,7 @@ void copy(array_t<T, 3>& destination, const void *source)
  * non-array memory, on the device or on the host.
  *
  * @param destination A pointer to a a memory region large enough to fit
- * all elements of the @source array, contiguously
+ * all elements of the @p source array, contiguously
  * @param source A 3-dimensional CUDA array
  */
 template<typename T>
@@ -603,6 +603,7 @@ inline void copy(void* destination, const array_t<T, NumDimensions>& source, str
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
+ * @param stream The CUDA command queue on which this copyijg will be enqueued
  */
 template <typename T>
 inline void copy_single(T& destination, const T& source, stream_t& stream);
@@ -653,9 +654,7 @@ inline void zero(void* start, size_t num_bytes, stream_t& stream);
  *
  * @note asynchronous version of @ref memory::zero
  *
- * @param start starting address of the memory region to zero-out,
- * in a CUDA device's global memory
- * @param num_bytes size of the memory region in bytes
+ * @param ptr a pointer to the value to be to zero
  * @param stream stream on which to schedule this action
  */
 template <typename T>
@@ -900,7 +899,7 @@ inline void* allocate(
  * @brief Allocate a a region of managed memory, accessible with the same
  * address on the host and on CUDA devices
  *
- * @param device_id the initial device which is likely to access the managed
+ * @param device the initial device which is likely to access the managed
  * memory region (and which will certainly have actually allocated for it)
  * @param num_bytes size of each of the regions of memory to allocate
  * @param initial_visibility will the allocated region be visible, using the
