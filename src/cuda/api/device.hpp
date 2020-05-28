@@ -31,11 +31,11 @@ namespace device {
 /**
  * Returns a proxy for the CUDA device with a given id
  *
- * @param id the ID for which to obtain the device proxy
+ * @param device_id the ID for which to obtain the device proxy
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-device_t get(id_t id);
+device_t get(id_t device_id);
 
 namespace current {
 
@@ -181,9 +181,9 @@ public:	// types
 		 * reference</a>)
 		 *
 		 * @param size_in_bytes Size of memory region to allocate
-		 * @param initially_visible_to_host_only if true, only the host (and the
+		 * @param initial_visibility if this equals ,to_supporters_of_concurrent_managed_access\ only the host (and the
 		 * allocating device) will be able to utilize the pointer returned; if false,
-		 * it will be made usable on all CUDA devices on the system
+		 * it will be made usable on all CUDA devices on the systems.
 		 * @return the allocated pointer; never returns null (throws on failure)
 		 */
 		void* allocate_managed(
@@ -230,7 +230,7 @@ public:	// types
 	 * @brief Determine whether this device can access the global memory
 	 * of another CUDA device.
 	 *
-	 * @param peer id of the device which is to be accessed
+	 * @param peer the device which is to be accessed
 	 * @return true iff acesss is possible
 	 */
 	bool can_access(device_t peer) const
@@ -247,7 +247,7 @@ public:	// types
 	 * @brief Enable access by this device to the global memory of another device
 	 *
 	 * @param peer device to have access access to
-	 * @param peer_id id of the device to which to enable access
+	 * @param peer the device to which to enable access
 	 */
 	void enable_access_to(device_t peer)
 	{
@@ -518,8 +518,8 @@ public:
 	}
 
 	/**
-	 * @brief Sets the shared memory bank size, described here:
-	 * @url https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+	 * @brief Sets the shared memory bank size, described in
+	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
 	 *
 	 * @param new_bank_size the shared memory bank size to set, in bytes
 	 */
@@ -531,8 +531,8 @@ public:
 	}
 
 	/**
-	 * @brief Returns the shared memory bank size, described here:
-	 * @url https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+	 * @brief Returns the shared memory bank size, as described in
+	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
 	 *
 	 * @return the shared memory bank size in bytes
 	 */
@@ -745,7 +745,7 @@ inline void set(device_t device) { detail::set(device.id()); }
 /**
  * Returns a proxy for the CUDA device with a given id
  *
- * @param id the ID for which to obtain the device proxy
+ * @param device_id the ID for which to obtain the device proxy
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */

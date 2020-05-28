@@ -129,7 +129,7 @@ public: // mutators
 	 * @brief Sets a device function's preference of either having more L1 cache or
 	 * more shared memory space when executing on some device
      *
-	 * @param device_id the CUDA device for execution on which the preference is set
+	 * @param device the CUDA device for execution on which the preference is set
 	 * @param preference value to set for the device function (more cache, more L1 or make the equal)
 	 */
 	void cache_preference(
@@ -233,13 +233,18 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
  * multiprocessor simultaneously (i.e. with warps from any of these block
  * being schedulable concurrently)
  *
+ * @param device
+ * @param device_function
+ * @param num_threads_per_block
+ * @param dynamic_shared_memory_per_block
  * @param disable_caching_override On some GPUs, the choice of whether to
  * cache memory reads affects occupancy. But what if this caching results in 0
  * potential occupancy for a kernel? There are two options, controlled by this flag.
  * When it is set to false - the calculator will assume caching is off for the
  * purposes of its work; when set to true, it will return 0 for such device functions.
- * See also the "Unified L1/Texture Cache" section of the Maxwell tuning guide:
- * @url http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html
+ * See also the "Unified L1/Texture Cache" section of the
+ * <a href="http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell
+ * tuning guide</a>.
  */
 inline grid::dimension_t maximum_active_blocks_per_multiprocessor(
 	device_t                  device,

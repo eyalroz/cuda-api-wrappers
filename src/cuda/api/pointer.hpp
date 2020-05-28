@@ -52,6 +52,9 @@ enum type_t : std::underlying_type<cudaMemoryType>::type {
 
 namespace pointer {
 
+/**
+ * Holds various CUDA-related attributes of a pointer.
+ */
 struct attributes_t : cudaPointerAttributes {
 
 	/**

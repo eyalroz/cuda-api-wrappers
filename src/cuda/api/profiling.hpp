@@ -18,6 +18,11 @@ namespace cuda {
 
 namespace profiling {
 
+/**
+ * @brief An RGB colorspace color value, with potential transparency, which
+ * may be used to color elements in timelines or other graphical displays of
+ * profiling information.
+ */
 struct color_t {
 	using underlying_type = uint32_t;
 	unsigned char alpha, red, green, blue;

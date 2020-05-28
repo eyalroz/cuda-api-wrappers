@@ -1,5 +1,5 @@
 /**
- * @file device_properties.hpp
+ * @file api/device_properties.hpp
  *
  * @brief Classes for holding CUDA device properties and
  * CUDA compute capability values.
@@ -36,9 +36,8 @@ namespace device {
 /**
  * A numeric designator of an architectural generation of CUDA devices
  *
- * @note See @url https://en.wikipedia.org/wiki/Volta_(microarchitecture)
- * and previous architectures' pages via "previous" links.
- * Also see @ref compute_capability_t .
+ * @note See <a href="https://en.wikipedia.org/wiki/Category:Nvidia_microarchitectures">this listing</a>
+ * of nVIDIA GPU microarchitectures. Also see @ref compute_capability_t .
  */
 struct compute_architecture_t {
 	/**
@@ -73,8 +72,8 @@ struct compute_architecture_t {
 /**
  * A numeric designator of the computational capabilities of a CUDA device
  *
- * @note See @url https://en.wikipedia.org/wiki/CUDA#Version_features_and_specifications
- * for a specification of capabilities by CC values
+ * @note Wikipedia has a <a href="https://en.wikipedia.org/wiki/CUDA#Version_features_and_specifications"</a>table</a>
+ * listing the specific features and capabilities for different CC values.
  */
 struct compute_capability_t {
 
