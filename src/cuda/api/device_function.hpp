@@ -127,7 +127,39 @@ public: // non-mutators
 public: // mutators
 
 	void set_attribute(cudaFuncAttribute attribute, int value);
+
+	/**
+	 * @brief Increase the maximum dynamically available amount of shared memory
+	 *
+	 * Kernels relying on shared memory allocations, which exceed the CUDA default limit per block
+	 * are architecture-specific, as such they must use dynamic shared memory (rather than
+	 * statically sized arrays) and require an explicit opt-in.
+	 */
 	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel);
+
+	/**
+	 * @brief Give a hint to the driver regarding the shared memory usage.
+	 *
+	 * Because the driver is not always aware of the full workload, it is
+	 * sometimes useful for applications to provide additional hints regarding
+	 * the desired shared memory configuration. For example, a kernel with little
+	 * or no shared memory use may request a larger shared_mem_percentage in order to
+	 * encourage concurrent execution with later kernels that require more shared
+	 * memory. E.g.:
+	 *
+	 * shared_mem_percentage |
+	 * ----------------------|-------------------
+	 *  -1                   | CUDA default value
+	 *  0                    | maximize L1 cache size
+	 *  100                  | maximize shared memory size
+	 *  50                   | 50% of the maximum available shared memory size
+	 *
+	 *  If a CUDA kernel with a dynamic size of shared memory is launched the driver
+	 *  can block only specific shared memory sizes, e.g. 0KB, 8KB, 16KB, 32KB, 64KB, 96KB.
+	 *  On certain architectures the L1 cache and the shared memory use the same
+	 *  hardware resources. Thus increasing the size of shared memory might reduce
+	 *  the size of available L1 cache.
+	 */
 	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage);
 
 	/**
