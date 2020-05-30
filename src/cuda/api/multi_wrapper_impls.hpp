@@ -341,18 +341,21 @@ void device_function_t::set_attribute(cudaFuncAttribute attribute, int value)
 	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
-void device_function_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel)
+void device_function_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 #if CUDART_VERSION >= 9000
-	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, maximum_shared_memory_required_by_kernel);
-	throw_if_error(result, "Trying to opt-in to a (potentially) higher maximum amount of dynamic shared memory");
+	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, amount_required_by_kernel);
+	throw_if_error(result,
+		"Trying to opt-in to " + std::to_string(amount_required_by_kernel) + " bytes of dynamic shared memory, "
+		"exceeding the maximum available on device " + std::to_string(device_id_) + " (consider the amount of static shared memory"
+		"in use by the function).");
 #else
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
 #endif
 }
 
-void device_function_t::set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage)
+void device_function_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {

@@ -93,10 +93,6 @@ public: // non-mutators
 	// The following are commented out because there are no CUDA API calls for them!
 	// You may uncomment them if you'd rather get an exception...
 
-	**
-	 * Obtains a device function's preference (on the current device probably) of
-	 * either having more L1 cache or more shared memory space
-	 *
 	multiprocessor_cache_preference_t                cache_preference() const;
 	multiprocessor_shared_memory_bank_size_option_t  shared_memory_bank_size() const;
 */
@@ -127,15 +123,55 @@ public: // non-mutators
 public: // mutators
 
 	void set_attribute(cudaFuncAttribute attribute, int value);
-	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t maximum_shared_memory_required_by_kernel);
-	void set_shared_mem_to_l1_cache_fraction(unsigned shared_mem_percentage);
 
 	/**
-	 * @brief Sets a device function's preference of either having more L1 cache or
-	 * more shared memory space when executing on some device
+	 * @brief Change the hardware resource carve-out between L1 cache and shared memory
+	 * for launches of the device_function to allow for at least the specified amount of
+	 * shared memory.
 	 *
-	 * @param device the CUDA device for execution on which the preference is set
-	 * @param preference value to set for the device function (more cache, more L1 or make the equal)
+	 * On several nVIDIA GPU micro-architectures, the L1 cache and the shared memory in each
+	 * symmetric multiprocessor (=physical core) use the same hardware resources. The
+	 * carve-out between the two uses has a device-wide value (which can be changed), but can
+	 * also be set on the individual device-function level, by specifying the amount of shared
+	 * memory the kernel may require.
+	 */
+	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel);
+
+	/**
+	 * @brief Indicate the desired carve-out between shared memory and L1 cache when launching
+	 * this kernel - with fine granularity.
+	 *
+	 * On several nVIDIA GPU micro-architectures, the L1 cache and the shared memory in each
+	 * symmetric multiprocessor (=physical core) use the same hardware resources. The
+	 * carve-out between the two uses has a device-wide value (which can be changed), but the
+	 * driver can set another value for a specific function. This function doesn't make a demand
+	 * from the CUDA runtime (as in @p opt_in_to_extra_dynamic_memory), but rather indicates
+	 * what is the fraction of L1 to shared memory it would like the kernel scheduler to carve
+	 * out.
+	 *
+	 * @param shared_mem_percentage The percentage - from 0 to 100 - of the combined L1/shared
+	 * memory space the user wishes to assign to shared memory.
+	 *
+	 * @note similar to @ref set_cache_preference() - but with finer granularity.
+	 */
+	void set_preferred_shared_mem_fraction(unsigned shared_mem_percentage);
+
+	/**
+	 * @brief Indicate the desired carve-out between shared memory and L1 cache when launching
+	 * this kernel - with coarse granularity.
+	 *
+	 * On several nVIDIA GPU micro-architectures, the L1 cache and the shared memory in each
+	 * symmetric multiprocessor (=physical core) use the same hardware resources. The
+	 * carve-out between the two uses has a device-wide value (which can be changed), but the
+	 * driver can set another value for a specific function. This function doesn't make a demand
+	 * from the CUDA runtime (as in @p opt_in_to_extra_dynamic_memory), but rather indicates
+	 * what is the fraction of L1 to shared memory it would like the kernel scheduler to carve
+	 * out.
+	 *
+	 * @param preference one of: as much shared memory as possible, as much
+	 * L1 as possible, or no preference (i.e. using the device default).
+	 *
+	 * @note similar to @ref set_preferred_shared_mem_fraction() - but with coarser granularity.
 	 */
 	void set_cache_preference(multiprocessor_cache_preference_t preference);
 
