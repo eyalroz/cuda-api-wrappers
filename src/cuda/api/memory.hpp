@@ -51,20 +51,19 @@ class stream_t;
  */
 namespace memory {
 
+enum class portability_across_contexts : bool {
+	is_portable   = true,
+	isnt_portable = false
+};
+
+enum cpu_write_combining : bool {
+	with_wc    = true,
+	without_wc = false
+};
+
 struct allocation_options {
-	bool portable_across_cuda_contexts;
-	bool cpu_write_combining;
-	bool mapped;
-};
-
-enum : bool {
-	is_portable_across_cuda_contexts   = true,
-	isnt_portable_across_cuda_contexts = false
-};
-
-enum : bool {
-	with_cpu_write_combining    = true,
-	without_cpu_write_combining = false
+	portability_across_contexts  portability;
+	cpu_write_combining          write_combining;
 };
 
 namespace detail {
@@ -72,8 +71,8 @@ namespace detail {
 inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 {
 	return
-		(options.portable_across_cuda_contexts ? cudaHostAllocPortable : 0) &
-		(options.cpu_write_combining ? cudaHostAllocWriteCombined: 0);
+		(options.portability     == portability_across_contexts::is_portable ? cudaHostAllocPortable      : 0) &
+		(options.write_combining == cpu_write_combining::with_wc             ? cudaHostAllocWriteCombined : 0);
 }
 
 } // namespace detail
@@ -692,11 +691,8 @@ namespace host {
  * @return a pointer to the allocated stretch of memory
  */
 inline void* allocate(
-	size_t size_in_bytes,
-	allocation_options  options = {
-		isnt_portable_across_cuda_contexts,
-		without_cpu_write_combining }
-	)
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	void* allocated = nullptr;
 	auto flags = cuda::memory::detail::make_cuda_host_alloc_flags(options);
@@ -707,6 +703,19 @@ inline void* allocate(
 	}
 	throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
+}
+
+inline void* allocate(
+	size_t                       size_in_bytes,
+	portability_across_contexts  portability = portability_across_contexts(false),
+	cpu_write_combining          cpu_wc = cpu_write_combining(false))
+{
+	return allocate(size_in_bytes, allocation_options{ portability, cpu_wc } );
+}
+
+inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
+{
+	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
 }
 
 /**
@@ -1043,13 +1052,28 @@ inline region_pair allocate(
 } // namespace detail
 
 
-inline region_pair allocate(
-	cuda::device_t      device,
+region_pair allocate(
+	cuda::device_t&     device,
 	size_t              size_in_bytes,
-	allocation_options  options = {
-		isnt_portable_across_cuda_contexts,
-		without_cpu_write_combining }
-	);
+	allocation_options  options);
+
+inline region_pair allocate(
+	cuda::device_t&              device,
+	size_t                       size_in_bytes,
+	portability_across_contexts  portability = portability_across_contexts(false),
+	cpu_write_combining          cpu_wc = cpu_write_combining(false))
+{
+	return allocate(device, size_in_bytes, allocation_options{ portability, cpu_wc } );
+}
+
+inline region_pair allocate(
+	cuda::device_t&     device,
+	size_t              size_in_bytes,
+	cpu_write_combining cpu_wc)
+{
+	return allocate(device, size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
+}
+
 
 /**
  * Free a pair of mapped memory regions
