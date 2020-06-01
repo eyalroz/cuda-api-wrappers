@@ -44,7 +44,7 @@
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
-#include <cuda/api/device_function.hpp>
+#include "kernel.hpp"
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>
@@ -77,11 +77,11 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 }
 
 // Note: Unlike the non-detail functions - this one
-// cannot handle type-erased device_function_t's.
-template<typename RawKernelFunction, typename... KernelParameters>
+// cannot handle type-erased kernel_t's.
+template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                        thread_block_cooperation,
-	RawKernelFunction           kernel_function,
+	RawKernel           kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
 	KernelParameters&&...       parameters)
@@ -91,8 +91,8 @@ inline void enqueue_launch(
 	;
 #else
 {
-	static_assert(std::is_function<RawKernelFunction>::value or
-	    (is_function_ptr<RawKernelFunction>::value),
+	static_assert(std::is_function<RawKernel>::value or
+	    (is_function_ptr<RawKernel>::value),
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
@@ -166,7 +166,7 @@ inline void enqueue_launch(
  * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
- * @ref device_function_t wrapping the raw pointer to the function.
+ * @ref kernel_t wrapping the raw pointer to the function.
  * @param stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
  * the scheduling of the launch and the execution)
  * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
@@ -174,20 +174,20 @@ inline void enqueue_launch(
  * allowance will be (see {@ref cuda::launch_configuration_t})
  * @param parameters whatever parameters @p kernel_function takes
  */
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                        thread_block_cooperation,
-	KernelFunction              kernel_function,
-	stream_t&                   stream,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters);
+	bool                    thread_block_cooperation,
+	Kernel                  kernel_function,
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
 
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	KernelFunction              kernel_function,
-	stream_t&                   stream,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters)
+	Kernel                  kernel_function,
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
 	enqueue_launch(
 		thread_blocks_may_not_cooperate,
@@ -202,11 +202,11 @@ inline void enqueue_launch(
  *
  * @note This isn't called `enqueue` since the default stream is synchronous.
  */
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void launch(
-	KernelFunction              kernel_function,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters);
+	Kernel                  kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
 
 
 } // namespace cuda

@@ -332,16 +332,16 @@ inline region_pair allocate(
 
 } // namespace memory
 
-// device_function_t methods
+// kernel_t methods
 
-void device_function_t::set_attribute(cudaFuncAttribute attribute, int value)
+void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
 	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
-void device_function_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
+void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 #if CUDART_VERSION >= 9000
@@ -355,7 +355,7 @@ void device_function_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::siz
 #endif
 }
 
-void device_function_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
+void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {
@@ -369,16 +369,16 @@ void device_function_t::set_preferred_shared_mem_fraction(unsigned shared_mem_pe
 #endif
 }
 
-inline device_function::attributes_t device_function_t::attributes() const
+inline kernel::attributes_t kernel_t::attributes() const
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
-	device_function::attributes_t function_attributes;
+	kernel::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
 	throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
 	return function_attributes;
 }
 
-void device_function_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
+void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
@@ -388,7 +388,7 @@ void device_function_t::set_cache_preference(multiprocessor_cache_preference_t  
 }
 
 
-inline void device_function_t::set_shared_memory_bank_size(
+inline void kernel_t::set_shared_memory_bank_size(
 	multiprocessor_shared_memory_bank_size_option_t  config)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
@@ -396,7 +396,7 @@ inline void device_function_t::set_shared_memory_bank_size(
 	throw_if_error(result);
 }
 
-inline grid::dimension_t device_function_t::maximum_active_blocks_per_multiprocessor(
+inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 	grid::block_dimension_t   num_threads_per_block,
 	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
@@ -415,8 +415,8 @@ inline grid::dimension_t device_function_t::maximum_active_blocks_per_multiproce
 
 
 template <typename DeviceFunction>
-device_function_t::device_function_t(const device_t& device, DeviceFunction f)
-: device_function_t(device.id(), reinterpret_cast<const void*>(f)) { }
+kernel_t::kernel_t(const device_t& device, DeviceFunction f)
+: kernel_t(device.id(), reinterpret_cast<const void*>(f)) { }
 
 namespace stream {
 
@@ -430,21 +430,21 @@ inline stream_t create(
 
 } // namespace stream
 
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                        thread_block_cooperation,
-	KernelFunction              kernel_function,
-	stream_t&                   stream,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters)
+	bool                    thread_block_cooperation,
+	Kernel                  kernel_function,
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
 	auto unwrapped_kernel_function =
-		device_function::unwrap<
-			KernelFunction,
+		kernel::unwrap<
+			Kernel,
 			detail::kernel_parameter_decay_t<KernelParameters>...
 		>(kernel_function);
 		// Note: This helper function is necessary since we may have gotten a
-		// device_function_t as KernelFunction, which is type-erased - in
+		// kernel_t as Kernel, which is type-erased - in
 		// which case we need both to obtain the raw function pointer, and determine
 		// its type, i.e. un-type-erase it. Luckily, we have the KernelParameters pack
 		// which - if we can trust the user - contains more-or-less the function's
@@ -462,11 +462,11 @@ inline void enqueue_launch(
 		std::forward<KernelParameters>(parameters)...);
 }
 
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void launch(
-	KernelFunction              kernel_function,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters)
+	Kernel                  kernel_function,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
 	stream_t stream = device::current::get().default_stream();
 	enqueue_launch(

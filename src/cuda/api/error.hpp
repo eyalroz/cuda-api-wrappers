@@ -34,7 +34,7 @@ enum named_t : std::underlying_type<status_t>::type {
 	prior_launch_failure            = cudaErrorPriorLaunchFailure,
 	launch_timeout                  = cudaErrorLaunchTimeout,
 	launch_out_of_resources         = cudaErrorLaunchOutOfResources,
-	invalid_device_function         = cudaErrorInvalidDeviceFunction,
+	invalid_kernel_function         = cudaErrorInvalidDeviceFunction,
 	invalid_configuration           = cudaErrorInvalidConfiguration,
 	invalid_device                  = cudaErrorInvalidDevice,
 	invalid_value                   = cudaErrorInvalidValue,

@@ -1,17 +1,14 @@
 /**
- * @file device_function.hpp
+ * @file kernel.hpp
  *
  * @brief Functions for querying information and making settings
- * regarding device-side functions - kernels or otherwise.
+ * regarding CUDA kernels (`__global__` functions).
  *
- * @note This file does _not_ have device-side functions itself,
- * nor is it about the device-side part of the runtime API (i.e.
- * API functions which may be called from the device).
- *
+ * @note This file does _not_ define any kernels  itself.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
-#define CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
+#ifndef CUDA_API_WRAPPERS_KERNEL_HPP_
+#define CUDA_API_WRAPPERS_KERNEL_HPP_
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/device_properties.hpp>
@@ -26,7 +23,7 @@ namespace cuda {
 class device_t;
 ///@endcond
 
-namespace device_function {
+namespace kernel {
 
 /**
  * @brief a wrapper around @ref cudaFuncAttributes, offering
@@ -64,17 +61,17 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 	return available_without_static_allocation - statically_allocated_shared_mem;
 }
 
-} // namespace device_function
+} // namespace kernel
 
 /**
  * A non-owning wrapper class for CUDA `__global__` functions
  *
- * @note The association of a `device_function_t` with an individual device is somewhat tenuous.
+ * @note The association of a `kernel_t` with an individual device is somewhat tenuous.
  * That is, the same function pointer could be used with any other device (provided the kernel
  * was compiled appropriately). However, many/most of the features, attributes and settings
  * are device-specific.
  */
-class device_function_t {
+class kernel_t {
 public: // getters
 	const void* ptr() const noexcept { return ptr_; }
 	const device_t device() const noexcept;
@@ -87,7 +84,7 @@ public: // type_conversions
 
 public: // non-mutators
 
-	inline device_function::attributes_t attributes() const;
+	inline kernel::attributes_t attributes() const;
 
 /*
 	// The following are commented out because there are no CUDA API calls for them!
@@ -102,8 +99,6 @@ public: // non-mutators
 	 * multiprocessor simultaneously (i.e. with warps from any of these block
 	 * being schedulable concurrently)
 	 *
-	 * @param device
-	 * @param device_function
 	 * @param num_threads_per_block
 	 * @param dynamic_shared_memory_per_block
 	 * @param disable_caching_override On some GPUs, the choice of whether to
@@ -126,7 +121,7 @@ public: // mutators
 
 	/**
 	 * @brief Change the hardware resource carve-out between L1 cache and shared memory
-	 * for launches of the device_function to allow for at least the specified amount of
+	 * for launches of the kernel to allow for at least the specified amount of
 	 * shared memory.
 	 *
 	 * On several nVIDIA GPU micro-architectures, the L1 cache and the shared memory in each
@@ -186,7 +181,7 @@ public: // mutators
 
 
 protected: // ctors & dtor
-	device_function_t(device::id_t device_id, const void* f) : device_id_(device_id), ptr_(f)
+	kernel_t(device::id_t device_id, const void* f) : device_id_(device_id), ptr_(f)
 	{
 		// TODO: Consider checking whether this actually is a device function
 		// TODO: Consider performing a check for nullptr
@@ -194,15 +189,15 @@ protected: // ctors & dtor
 
 public: // ctors & dtor
 	template <typename DeviceFunction>
-	device_function_t(const device_t& device, DeviceFunction f);
-	~device_function_t() { };
+	kernel_t(const device_t& device, DeviceFunction f);
+	~kernel_t() { };
 
 protected: // data members
 	const device::id_t device_id_;
 	const void* const ptr_;
 };
 
-namespace device_function {
+namespace kernel {
 
 
 
@@ -213,7 +208,7 @@ namespace device_function {
  * for use with a specific device function - which will take its use of
  * static shared memory into account.
  *
- * @param device_function The (`__global__` or `__device__`)
+ * @param kernel
  * function for which to calculate
  * the effective available shared memory per block
  * @param compute_capability on which kind of device the kernel function is to
@@ -221,15 +216,15 @@ namespace device_function {
  * @return the maximum amount of shared memory per block which a launch of the
  * specified function can require
 
- * @todo It's not clear whether this is actually necessary given the {@ref device_function_t}
+ * @todo It's not clear whether this is actually necessary given the {@ref kernel_t}
  * pointer.
  *
  */
 inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
-	const device_function_t& device_function, device::compute_capability_t compute_capability)
+	const kernel_t& kernel, device::compute_capability_t compute_capability)
 {
-	return device_function::maximum_dynamic_shared_memory_per_block(
-		device_function.attributes(), compute_capability);
+	return cuda::kernel::maximum_dynamic_shared_memory_per_block(
+		kernel.attributes(), compute_capability);
 }
 
 
@@ -240,47 +235,46 @@ template<bool... bs>
 using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
 template<typename... KernelParameters>
-struct raw_device_function_typegen {
+struct raw_kernel_typegen {
 	static_assert(all_true<std::is_same<KernelParameters, ::cuda::detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"Invalid kernel parameter types" );
 	using type = void(*)(KernelParameters...);
 		// Why no decay? After all, CUDA kernels only takes parameters by value, right?
-		// Well, we're inside `detail::`. You shouldn't call this
-		// nice simple types we can use with CUDA kernels; you should not pass such
-		// parameter types here in the first place.
+		// Well, we're inside `detail::`. You should be careful to only instantiate this class with
+		// nice simple types we can pass to CUDA kernels.
 };
 
-template<typename KernelFunction, typename... KernelParameters>
-typename raw_device_function_typegen<KernelParameters...>::type unwrap_inner(std::true_type, device_function_t wrapped)
+template<typename Kernel, typename... KernelParameters>
+typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(std::true_type, kernel_t wrapped)
 {
-	using raw_device_function_t = typename raw_device_function_typegen<KernelParameters ...>::type;
-	return reinterpret_cast<raw_device_function_t>(wrapped.ptr());
+	using raw_kernel_t = typename raw_kernel_typegen<KernelParameters ...>::type;
+	return reinterpret_cast<raw_kernel_t>(wrapped.ptr());
 }
 
-template<typename KernelFunction, typename... KernelParameters>
-KernelFunction unwrap_inner(std::false_type, KernelFunction raw_function)
+template<typename Kernel, typename... KernelParameters>
+Kernel unwrap_inner(std::false_type, Kernel raw_function)
 {
 	static_assert(
-		std::is_function<typename std::decay<KernelFunction>::type>::value or
-		(std::is_pointer<KernelFunction>::value and  std::is_function<typename std::remove_pointer<KernelFunction>::type>::value)
-		, "Invalid KernelFunction type - it must be either a function or a pointer-to-a-function");
+		std::is_function<typename std::decay<Kernel>::type>::value or
+		(std::is_pointer<Kernel>::value and std::is_function<typename std::remove_pointer<Kernel>::type>::value)
+		, "Invalid Kernel type - it must be either a function or a pointer-to-a-function");
 	return raw_function;
 }
 
 } // namespace detail
 
-template<typename KernelFunction, typename... KernelParameters>
-auto unwrap(KernelFunction f) -> typename std::conditional<
-	std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value,
-	typename detail::raw_device_function_typegen<KernelParameters...>::type,
-	KernelFunction>::type
+template<typename Kernel, typename... KernelParameters>
+auto unwrap(Kernel f) -> typename std::conditional<
+	std::is_same<typename std::decay<Kernel>::type, kernel_t>::value,
+	typename detail::raw_kernel_typegen<KernelParameters...>::type,
+	Kernel>::type
 {
-	using got_a_device_function_t =
-		std::integral_constant<bool, std::is_same<typename std::decay<KernelFunction>::type, device_function_t>::value>;
-	return detail::unwrap_inner<KernelFunction, KernelParameters...>(got_a_device_function_t{}, f);
+	using got_a_kernel_t =
+		std::integral_constant<bool, std::is_same<typename std::decay<Kernel>::type, kernel_t>::value>;
+	return detail::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
 }
 
-} // namespace device_function
+} // namespace kernel
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_DEVICE_FUNCTION_HPP_
+#endif // CUDA_API_WRAPPERS_KERNEL_HPP_
