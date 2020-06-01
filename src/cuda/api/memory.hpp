@@ -51,6 +51,33 @@ class stream_t;
  */
 namespace memory {
 
+struct allocation_options {
+	bool portable_across_cuda_contexts;
+	bool cpu_write_combining;
+	bool mapped;
+};
+
+enum : bool {
+	is_portable_across_cuda_contexts   = true,
+	isnt_portable_across_cuda_contexts = false
+};
+
+enum : bool {
+	with_cpu_write_combining    = true,
+	without_cpu_write_combining = false
+};
+
+namespace detail {
+
+inline unsigned make_cuda_host_alloc_flags(allocation_options options)
+{
+	return
+		(options.portable_across_cuda_contexts ? cudaHostAllocPortable : 0) &
+		(options.cpu_write_combining ? cudaHostAllocWriteCombined: 0);
+}
+
+} // namespace detail
+
 /**
  * @namespace mapped
  * Memory regions appearing in both on the host-side and device-side address
@@ -73,21 +100,6 @@ namespace mapped {
  */
 struct region_pair {
 
-	enum : bool {
-		is_portable_across_cuda_contexts   = true,
-		isnt_portable_across_cuda_contexts = false
-	};
-
-	enum : bool {
-		with_cpu_write_combining    = true,
-		without_cpu_write_combining = false
-	};
-
-	struct allocation_options {
-		bool portable_across_cuda_contexts;
-		bool cpu_write_combining;
-	};
-
 	void* host_side;
 	void* device_side;
 	// size_t size_in_bytes; // common to both sides
@@ -96,18 +108,6 @@ struct region_pair {
 	// operator std::pair<void*, void*>() { return make_pair(host_side, device_side); }
 	// size_t size() { return size_in_bytes; }
 };
-
-namespace detail {
-
-inline unsigned make_cuda_host_alloc_flags(
-	region_pair::allocation_options options) noexcept
-{
-	return cudaHostAllocMapped &
-		(options.portable_across_cuda_contexts ? cudaHostAllocPortable : 0) &
-		(options.cpu_write_combining ? cudaHostAllocWriteCombined: 0);
-}
-
-} // namespace detail
 
 } // namespace mapped
 
@@ -274,7 +274,7 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(start)
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(start)
 		);
 	}
 }
@@ -691,11 +691,16 @@ namespace host {
  * @param size_in_bytes the amount of memory to allocate, in bytes
  * @return a pointer to the allocated stretch of memory
  */
-inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
+inline void* allocate(
+	size_t size_in_bytes,
+	allocation_options  options = {
+		isnt_portable_across_cuda_contexts,
+		without_cpu_write_combining }
+	)
 {
 	void* allocated = nullptr;
-	// Note: the typed cudaMallocHost also takes its size in bytes, apparently, not in number of elements
-	auto result = cudaMallocHost(&allocated, size_in_bytes);
+	auto flags = cuda::memory::detail::make_cuda_host_alloc_flags(options);
+	auto result = cudaHostAlloc(&allocated, size_in_bytes, flags);
 	if (is_success(result) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
@@ -989,11 +994,12 @@ namespace detail {
  * @return the allocated pair (with both regions being non-null)
  */
 inline region_pair allocate(
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options)
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	region_pair allocated;
-	auto flags = cuda::memory::mapped::detail::make_cuda_host_alloc_flags(options);
+	auto flags = cudaHostAllocMapped &
+		cuda::memory::detail::make_cuda_host_alloc_flags(options);
 	// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
 	// not in number of elements
 	auto status = cudaHostAlloc(&allocated.host_side, size_in_bytes, flags);
@@ -1026,9 +1032,9 @@ inline region_pair allocate(
  */
 
 inline region_pair allocate(
-	cuda::device::id_t               device_id,
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options)
+	cuda::device::id_t  device_id,
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	return detail::allocate(size_in_bytes, options);
@@ -1038,11 +1044,11 @@ inline region_pair allocate(
 
 
 inline region_pair allocate(
-	cuda::device_t                   device,
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options = {
-		region_pair::isnt_portable_across_cuda_contexts,
-		region_pair::without_cpu_write_combining }
+	cuda::device_t      device,
+	size_t              size_in_bytes,
+	allocation_options  options = {
+		isnt_portable_across_cuda_contexts,
+		without_cpu_write_combining }
 	);
 
 /**

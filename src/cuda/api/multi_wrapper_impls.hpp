@@ -321,9 +321,9 @@ inline void* allocate(
 namespace mapped {
 
 inline region_pair allocate(
-	cuda::device_t                   device,
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options)
+	cuda::device_t      device,
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	return cuda::memory::mapped::detail::allocate(device.id(), size_in_bytes, options);
 }
