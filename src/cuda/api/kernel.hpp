@@ -133,6 +133,29 @@ public: // mutators
 	void opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel);
 
 	/**
+	 *
+	 * @param shared_memory_size The amount of dynamic shared memory each grid block will
+	 * need.
+	 * @param block_size_limit do not return a block size above this value; the default, 0,
+	 * means no limit on the returned block size.
+	 * @param disable_caching_override On platforms where global caching affects occupancy,
+	 * and when enabling caching would result in zero occupancy, the occupancy calculator will
+	 * calculate the occupancy as if caching is disabled. Setting this to true makes the
+	 * occupancy calculator return 0 in such cases. More information can be found about this
+	 * feature in the "Unified L1/Texture Cache" section of the
+	 * <a href="https://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell tuning guide</a>.
+	 *
+	 * @return A pair, with the second element being the maximum achievable block size
+	 * (1-dimensional), and the first element being the minimum number of such blocks necessary
+	 * for keeping the GPU "busy" (again, in a 1-dimensional grid).
+	 */
+	std::pair<grid::dimension_t, grid::block_dimension_t>
+	min_grid_params_for_max_occupancy(
+		memory::shared::size_t   dynamic_shared_memory_size = no_shared_memory,
+		grid::block_dimension_t  block_size_limit = 0,
+		bool                     disable_caching_override = false);
+
+	/**
 	 * @brief Indicate the desired carve-out between shared memory and L1 cache when launching
 	 * this kernel - with fine granularity.
 	 *

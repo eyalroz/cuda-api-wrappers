@@ -355,6 +355,35 @@ void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amoun
 #endif
 }
 
+#if defined(__CUDACC__)
+// Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
+// from code compiled with a host-side-only compiler! See cuda_runtime.h for details
+
+std::pair<grid::dimension_t, grid::block_dimension_t>
+kernel_t::min_grid_params_for_max_occupancy(
+	memory::shared::size_t   dynamic_shared_memory_size,
+	grid::block_dimension_t  block_size_limit,
+	bool                     disable_caching_override)
+{
+#if CUDART_VERSION <= 10000
+	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#else
+	int min_grid_size_in_blocks, block_size;
+	auto result = cudaOccupancyMaxPotentialBlockSizeWithFlags(
+		&min_grid_size_in_blocks, &block_size,
+		ptr_,
+		static_cast<std::size_t>(dynamic_shared_memory_size),
+		static_cast<int>(block_size_limit),
+		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
+		);
+	throw_if_error(result,
+		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
+		" on device " + std::to_string(device_id_) + ".");
+	return { min_grid_size_in_blocks, block_size };
+#endif
+}
+#endif
+
 void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
