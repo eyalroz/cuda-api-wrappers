@@ -161,7 +161,6 @@ protected: // type definitions
 
 public: // const getters
 	stream::id_t id() const noexcept { return id_; }
-	device::id_t device_id() const noexcept { return device_id_; }
 	device_t device() const;
 	bool is_owning() const noexcept { return owning; }
 
@@ -538,11 +537,6 @@ public: // constructors and destructor
 		other.owning = false;
 	};
 
-	// Users should generally avoid constructing non-owning streams. At least let's
-	// not let them do so without giving it a bit of thought first.
-	explicit stream_t(device::id_t device_id, stream::id_t stream_id) noexcept
-	: stream_t(device_id, stream_id, false) { }
-
 	~stream_t()
 	{
 		if (owning) {
@@ -560,12 +554,17 @@ public: // operators
 
 protected: // constructor
 
-	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept
+	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership = false) noexcept
 	: device_id_(device_id), id_(stream_id), owning(take_ownership) { }
 
 public: // friendship
 
 	friend stream_t stream::detail::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
+
+	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
+	{
+		return lhs.device_id_ == rhs.device_id_ and lhs.id() == rhs.id();
+	}
 
 protected: // data members
 	const device::id_t  device_id_;
@@ -578,11 +577,6 @@ public: // data members - which only exist in lieu of namespaces
 		// on its own. Any use of enqueue only happens through, well, *this - and
 		// after construction.
 };
-
-inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
-{
-	return lhs.device_id() == rhs.device_id() and lhs.id() == rhs.id();
-}
 
 inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 {

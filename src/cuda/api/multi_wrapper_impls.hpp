@@ -110,8 +110,7 @@ inline void device_t::synchronize(stream_t& stream)
 
 inline stream_t device_t::default_stream() const noexcept
 {
-	// TODO: Perhaps support not-knowing our ID here as well, somehow?
-	return stream_t(id(), stream::default_stream_id);
+	return stream::detail::wrap(id(), stream::default_stream_id);
 }
 
 inline stream_t
