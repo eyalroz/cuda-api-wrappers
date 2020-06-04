@@ -305,8 +305,8 @@ using size_t = unsigned;
  * execution on some stream of some device).
  */
 struct launch_configuration_t {
-	grid::dimensions_t       grid_dimensions { 0 }; /// in blocks
-	grid::block_dimensions_t block_dimensions { 0 }; /// in threads
+	grid::dimensions_t        grid_dimensions { 0 }; /// in blocks
+	grid::block_dimensions_t  block_dimensions { 0 }; /// in threads
 	memory::shared::size_t    dynamic_shared_memory_size { 0u };
 		/// ... in bytes per block
 
@@ -338,9 +338,12 @@ struct launch_configuration_t {
 #endif
 };
 
+/**
+ * @brief a named constructor idiom for a @ref `launch_config_t`
+ */
 inline launch_configuration_t make_launch_config(
-	grid::dimensions_t       grid_dimensions,
-	grid::block_dimensions_t block_dimensions,
+	grid::dimensions_t        grid_dimensions,
+	grid::block_dimensions_t  block_dimensions,
 	memory::shared::size_t    dynamic_shared_memory_size = 0u) noexcept
 {
 	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size };
