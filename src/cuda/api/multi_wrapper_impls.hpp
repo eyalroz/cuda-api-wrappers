@@ -333,6 +333,29 @@ inline region_pair allocate(
 
 // kernel_t methods
 
+template<typename... KernelParameters>
+void kernel_t::launch(
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	auto device = cuda::device::get(device_id_);
+	return device.launch(thread_block_cooperation_, ptr_, launch_configuration, parameters...);
+}
+
+template<typename... KernelParameters>
+void kernel_t::enqueue_launch(
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	cuda::enqueue_launch(
+		thread_block_cooperation_,
+		ptr_,
+		stream,
+		launch_configuration,
+		std::forward<KernelParameters>(parameters)...);
+}
+
 void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
@@ -443,8 +466,8 @@ inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 
 
 template <typename DeviceFunction>
-kernel_t::kernel_t(const device_t& device, DeviceFunction f)
-: kernel_t(device.id(), reinterpret_cast<const void*>(f)) { }
+kernel_t::kernel_t(const device_t& device, DeviceFunction f, bool thread_block_cooperation)
+: kernel_t(device.id(), reinterpret_cast<const void*>(f), thread_block_cooperation) { }
 
 namespace stream {
 
@@ -482,6 +505,10 @@ inline void enqueue_launch(
 		// references, arrays and so on - which CUDA kernels cannot accept; so
 		// we massage those a bit.
 
+#ifdef DEBUG
+	assert(thread_block_cooperation == detail::intrinsic_block_cooperation_value,
+		"mismatched indications of whether thread block should be able to cooperate for a kernel");
+#endif
 	detail::enqueue_launch(
 		thread_block_cooperation,
 		unwrapped_kernel_function,

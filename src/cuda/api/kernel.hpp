@@ -21,6 +21,7 @@ namespace cuda {
 
 ///@cond
 class device_t;
+class stream_t;
 ///@endcond
 
 namespace kernel {
@@ -75,6 +76,7 @@ class kernel_t {
 public: // getters
 	const void* ptr() const noexcept { return ptr_; }
 	const device_t device() const noexcept;
+	bool thread_block_cooperation() const noexcept { return thread_block_cooperation_; }
 
 protected:
 	device::id_t device_id() const noexcept { return device_id_; }
@@ -114,6 +116,23 @@ public: // non-mutators
 		grid::block_dimension_t   num_threads_per_block,
 		memory::shared::size_t    dynamic_shared_memory_per_block,
 		bool                      disable_caching_override = false);
+
+	template<typename... KernelParameters>
+	void enqueue_launch(
+		stream_t&               stream,
+		launch_configuration_t  launch_configuration,
+		KernelParameters&&...   parameters);
+
+	/**
+	 * Variant of @ref enqueue_launch for use with the default stream on the current device.
+	 *
+	 * @note This isn't called `enqueue` since the default stream is synchronous.
+	 */
+	template<typename... KernelParameters>
+	void launch(
+		launch_configuration_t  launch_configuration,
+		KernelParameters&&...   parameters);
+
 
 public: // mutators
 
@@ -204,7 +223,8 @@ public: // mutators
 
 
 protected: // ctors & dtor
-	kernel_t(device::id_t device_id, const void* f) : device_id_(device_id), ptr_(f)
+	kernel_t(device::id_t device_id, const void* f, bool thread_block_cooperation = false)
+	: device_id_(device_id), ptr_(f), thread_block_cooperation_(thread_block_cooperation)
 	{
 		// TODO: Consider checking whether this actually is a device function
 		// TODO: Consider performing a check for nullptr
@@ -212,18 +232,16 @@ protected: // ctors & dtor
 
 public: // ctors & dtor
 	template <typename DeviceFunction>
-	kernel_t(const device_t& device, DeviceFunction f);
+	kernel_t(const device_t& device, DeviceFunction f, bool thread_block_cooperation = false);
 	~kernel_t() { };
 
 protected: // data members
 	const device::id_t device_id_;
 	const void* const ptr_;
+	const bool thread_block_cooperation_;
 };
 
 namespace kernel {
-
-
-
 
 /**
  * @brief A 'version' of
@@ -298,6 +316,7 @@ auto unwrap(Kernel f) -> typename std::conditional<
 }
 
 } // namespace kernel
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_KERNEL_HPP_

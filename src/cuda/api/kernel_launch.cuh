@@ -44,7 +44,7 @@
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
-#include "kernel.hpp"
+#include <cuda/api/kernel.hpp>
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>
@@ -61,6 +61,18 @@ constexpr grid::dimensions_t single_block() { return 1; }
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail {
+
+template<typename Kernel>
+bool intrinsic_block_cooperation_value(const Kernel&)
+{
+	return thread_blocks_may_not_cooperate;
+}
+
+template<>
+bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
+{
+	return(kernel.thread_block_cooperation());
+}
 
 template<typename Fun>
 struct is_function_ptr: std::integral_constant<bool,
@@ -162,7 +174,8 @@ inline void enqueue_launch(
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
  * @param thread_block_cooperation if true, use CUDA's "cooperative launch" mechanism which enables more flexible
- * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
+ * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization). Note that this is a
+ * requirement of the kernel function rather than merely an arbitrary choice.
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
  * @ref kernel_t wrapping the raw pointer to the function.
@@ -172,6 +185,11 @@ inline void enqueue_launch(
  * shared memory per block in the grid; this defines how the grid will look and what the shared memory
  * allowance will be (see {@ref cuda::launch_configuration_t})
  * @param parameters whatever parameters @p kernel_function takes
+ *
+ * @note If the Kernel type is kernel_t, it will already have a thread_block_cooperation setting, so using this
+ * variant of `enqueue_launch` is somewhat redundant; at any rate, the value passed for @p thread_block_cooperation
+ * must match the kernel function's needs, with the kernel_t wrapper is assumed to indicate. Behavior on mismatch
+ * is undefined.
  */
 template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
@@ -189,7 +207,7 @@ inline void enqueue_launch(
 	KernelParameters&&...   parameters)
 {
 	enqueue_launch(
-		thread_blocks_may_not_cooperate,
+		detail::intrinsic_block_cooperation_value(kernel_function),
 		kernel_function,
 		stream,
 		launch_configuration,
