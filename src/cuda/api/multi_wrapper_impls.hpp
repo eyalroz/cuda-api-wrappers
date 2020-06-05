@@ -403,6 +403,31 @@ kernel_t::min_grid_params_for_max_occupancy(
 	return { min_grid_size_in_blocks, block_size };
 #endif
 }
+
+template <typename UnaryFunction>
+std::pair<grid::dimension_t, grid::block_dimension_t>
+kernel_t::min_grid_params_for_max_occupancy(
+	UnaryFunction            block_size_to_dynamic_shared_mem_size,
+	grid::block_dimension_t  block_size_limit,
+	bool                     disable_caching_override)
+{
+#if CUDART_VERSION <= 10000
+	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#else
+	int min_grid_size_in_blocks, block_size;
+	auto result = cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(
+		&min_grid_size_in_blocks, &block_size,
+		ptr_,
+		block_size_to_dynamic_shared_mem_size,
+		static_cast<int>(block_size_limit),
+		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
+		);
+	throw_if_error(result,
+		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
+		" on device " + std::to_string(device_id_) + ".");
+	return { min_grid_size_in_blocks, block_size };
+#endif
+}
 #endif
 
 void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)

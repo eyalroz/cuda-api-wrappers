@@ -174,6 +174,13 @@ public: // mutators
 		grid::block_dimension_t  block_size_limit = 0,
 		bool                     disable_caching_override = false);
 
+	template <typename UnaryFunction>
+	std::pair<grid::dimension_t, grid::block_dimension_t>
+	min_grid_params_for_max_occupancy(
+		UnaryFunction            block_size_to_dynamic_shared_mem_size,
+		grid::block_dimension_t  block_size_limit = 0,
+		bool                     disable_caching_override = false);
+
 	/**
 	 * @brief Indicate the desired carve-out between shared memory and L1 cache when launching
 	 * this kernel - with fine granularity.
