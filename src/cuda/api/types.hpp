@@ -426,11 +426,6 @@ using pair_attribute_t   = cudaDeviceP2PAttr;
 
 namespace detail {
 
-enum : bool {
-	assume_device_is_current        = true,
-	do_not_assume_device_is_current = false
-};
-
 /**
  * @brief adapt a type to be usable as a kernel parameter.
  *

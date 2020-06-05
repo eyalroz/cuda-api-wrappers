@@ -33,12 +33,21 @@ namespace cuda {
 class device_t;
 ///@endcond
 
+namespace detail {
+
+enum : bool {
+	assume_device_is_current        = true,
+	do_not_assume_device_is_current = false
+};
+
+} // namespace detail
 
 namespace device {
 
 namespace current {
 
 namespace detail {
+
 /**
  * Obtains the numeric id of the device set as current for the CUDA Runtime API
  */
