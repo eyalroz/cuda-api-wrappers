@@ -130,6 +130,17 @@ protected:
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
 	using priority_range_t = std::pair<stream::priority_t, stream::priority_t>;
 
+	///@cond
+
+	/**
+	 * Used by wrapper classes to better "hide" their protected constructors, which take plain numbers,
+	 * from user code - so that users don't get "constructor is protected" error if they mistake a number
+	 * for a wrapper object when passing arguments.
+	 */
+	struct wrapping_construction {};
+
+	///@endcond
+
 public:	// types
 
 	/**
@@ -702,7 +713,7 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( device_id ) { }
+	device_t(wrapping_construction, device::id_t device_id) noexcept : id_( device_id ) { }
 
 public: // friends
 	friend device_t device::get(device::id_t);
@@ -737,7 +748,7 @@ namespace device {
  */
 inline device_t get(id_t device_id)
 {
-	return device_t(device_id);
+	return device_t(device_t::wrapping_construction{}, device_id);
 }
 
 namespace current {
