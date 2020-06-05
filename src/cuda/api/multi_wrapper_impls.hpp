@@ -15,11 +15,10 @@
 #include <cuda/api/pointer.hpp>
 #include <cuda/api/unique_ptr.hpp>
 #include <cuda/api/array.hpp>
-#include <cuda/api/kernel_launch.cuh>
-
 #include <cuda_runtime.h>
 
 #include <type_traits>
+#include "kernel_launch.hpp"
 
 namespace cuda {
 

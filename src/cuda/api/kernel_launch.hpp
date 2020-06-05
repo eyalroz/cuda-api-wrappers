@@ -1,5 +1,5 @@
 /**
- * @file kernel_launch.cuh
+ * @file kernel_launch.hpp
  *
  * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
  *
@@ -228,4 +228,4 @@ inline void launch(
 
 } // namespace cuda
 
-#endif // CUDA_KERNEL_LAUNCH_CUH_
+#endif // CUDA_KERNEL_LAUNCH_HPP_

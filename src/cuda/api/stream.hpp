@@ -11,7 +11,6 @@
 #include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/memory.hpp>
-#include <cuda/api/kernel_launch.cuh>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/miscellany.hpp>
 
@@ -20,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include "kernel_launch.hpp"
 
 namespace cuda {
 
