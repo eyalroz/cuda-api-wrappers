@@ -705,7 +705,6 @@ protected: // constructors
 	device_t(device::id_t device_id) noexcept : id_( device_id ) { }
 
 public: // friends
-	friend device_t device::current::get();
 	friend device_t device::get(device::id_t);
 
 protected:
@@ -728,19 +727,6 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 }
 
 namespace device {
-namespace current {
-
-/**
- * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
- */
-inline device_t get() { return { detail::get_id() }; }
-
-/**
- * Tells the CUDA runtime API to consider the specified device as the current one.
- */
-inline void set(device_t device) { detail::set(device.id()); }
-
-} // namespace current
 
 /**
  * Returns a proxy for the CUDA device with a given id
@@ -753,6 +739,20 @@ inline device_t get(id_t device_id)
 {
 	return device_t(device_id);
 }
+
+namespace current {
+
+/**
+ * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
+ */
+inline device_t get() { return device::get(detail::get_id()); }
+
+/**
+ * Tells the CUDA runtime API to consider the specified device as the current one.
+ */
+inline void set(device_t device) { detail::set(device.id()); }
+
+} // namespace current
 
 /**
  * @brief Obtain a proxy to a device using its PCI bus location
