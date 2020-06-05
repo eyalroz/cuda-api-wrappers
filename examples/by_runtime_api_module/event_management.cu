@@ -112,20 +112,20 @@ int main(int argc, char **argv)
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
 		buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	auto threads_per_block = cuda::device_function_t(increment).attributes().maxThreadsPerBlock;
+	auto threads_per_block = cuda::kernel_t(device, increment).attributes().maxThreadsPerBlock;
 	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
 	stream.enqueue.event(event_1);
-	stream.enqueue.callback(
-		[&event_1, &event_2](cuda::stream_t, cuda::status_t status) {
+	stream.enqueue.host_function_call(
+		[&event_1, &event_2](cuda::stream_t) {
 			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
 		}
 	);
 	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
-	stream.enqueue.callback(
-		[&event_1, &event_2](cuda::stream_t, cuda::status_t status) {
+	stream.enqueue.host_function_call(
+		[&event_1, &event_2](cuda::stream_t) {
 		report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);

@@ -31,11 +31,11 @@ namespace device {
 /**
  * Returns a proxy for the CUDA device with a given id
  *
- * @param id the ID for which to obtain the device proxy
+ * @param device_id the ID for which to obtain the device proxy
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-device_t get(id_t id);
+device_t get(id_t device_id);
 
 namespace current {
 
@@ -47,6 +47,63 @@ namespace current {
 device_t get();
 
 } // namespace current
+
+namespace peer_to_peer {
+
+/**
+ * @brief The value of type for all CUDA device "attributes"; see also @ref attribute_t.
+ */
+using attribute_value_t = int;
+
+/**
+ * @brief An identifier of a integral-numeric-value attribute of a CUDA device.
+ *
+ * @note Somewhat annoyingly, CUDA devices have attributes, properties and flags.
+ * Attributes have integral number values; properties have all sorts of values,
+ * including arrays and limited-length strings (see
+ * @ref cuda::device::properties_t), and flags are either binary or
+ * small-finite-domain type fitting into an overall flagss value (see
+ * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
+ * attributes are more one-at-a-time.
+ */
+using attribute_t = cudaDeviceP2PAttr;
+
+/**
+ * Aliases for all CUDA device attributes
+ */
+enum : std::underlying_type<attribute_t>::type {
+		link_performance_rank = cudaDevP2PAttrPerformanceRank, /**< A relative value indicating the performance of the link between two devices */                       //!< link_performance_rank
+		access_support = cudaDevP2PAttrAccessSupported, /**< 1 if access is supported, 0 otherwise */                                                                    //!< access_support
+		native_atomics_support = cudaDevP2PAttrNativeAtomicSupported /**< 1 if the first device can perform native atomic operations on the second device, 0 otherwise *///!< native_atomics_support
+};
+
+/**
+ * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
+ * relating to their interaction
+ *
+ * @note This is the device-pair equivalent of @ref device_t::get_attribute()
+ *
+ * @param attribute identifier of the attribute of interest
+ * @param source source device
+ * @param destination destination device
+ * @return the numeric attribute value
+ */
+inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
+{
+	attribute_value_t value;
+	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
+	throw_if_error(status,
+		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(source) + ", "
+			+ std::to_string(destination) + ')');
+	return value;
+}
+
+inline attribute_value_t get_attribute(
+	attribute_t  attribute,
+	device_t     source,
+	device_t     destination);
+
+} // namespace peer_to_peer
 
 } // namespace device
 
@@ -61,12 +118,9 @@ device_t get();
  * together with @ref cuda::stream_t and @ref cuda::event_t
  */
 class device_t {
-public:
-	// types
-	using scoped_setter_t = device::current::scoped_override_t<>;
-
 protected:
 	// types
+	using scoped_setter_t = device::current::detail::scoped_override_t<>;
 	using properties_t = device::properties_t;
 	using attribute_t = device::attribute_t;
 	using attribute_value_t = device::attribute_value_t;
@@ -75,6 +129,17 @@ protected:
 	using resource_limit_t = size_t;
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
 	using priority_range_t = std::pair<stream::priority_t, stream::priority_t>;
+
+	///@cond
+
+	/**
+	 * Used by wrapper classes to better "hide" their protected constructors, which take plain numbers,
+	 * from user code - so that users don't get "constructor is protected" error if they mistake a number
+	 * for a wrapper object when passing arguments.
+	 */
+	struct wrapping_construction {};
+
+	///@endcond
 
 public:	// types
 
@@ -127,9 +192,9 @@ public:	// types
 		 * reference</a>)
 		 *
 		 * @param size_in_bytes Size of memory region to allocate
-		 * @param initially_visible_to_host_only if true, only the host (and the
+		 * @param initial_visibility if this equals ,to_supporters_of_concurrent_managed_access\ only the host (and the
 		 * allocating device) will be able to utilize the pointer returned; if false,
-		 * it will be made usable on all CUDA devices on the system
+		 * it will be made usable on all CUDA devices on the systems.
 		 * @return the allocated pointer; never returns null (throws on failure)
 		 */
 		void* allocate_managed(
@@ -176,7 +241,7 @@ public:	// types
 	 * @brief Determine whether this device can access the global memory
 	 * of another CUDA device.
 	 *
-	 * @param peer id of the device which is to be accessed
+	 * @param peer the device which is to be accessed
 	 * @return true iff acesss is possible
 	 */
 	bool can_access(device_t peer) const
@@ -193,7 +258,7 @@ public:	// types
 	 * @brief Enable access by this device to the global memory of another device
 	 *
 	 * @param peer device to have access access to
-	 * @param peer_id id of the device to which to enable access
+	 * @param peer the device to which to enable access
 	 */
 	void enable_access_to(device_t peer)
 	{
@@ -271,6 +336,13 @@ public:
 		auto status = cudaGetDeviceProperties(&properties, id());
 		throw_if_error(status, "Failed obtaining device properties for " + device_id_as_str());
 		return properties;
+	}
+
+	static device_t choose_best_match(const properties_t& properties) {
+		device::id_t id;
+		auto status = cudaChooseDevice(&id, &properties);
+		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
+		return device::get(id);
 	}
 
 	/**
@@ -457,8 +529,8 @@ public:
 	}
 
 	/**
-	 * @brief Sets the shared memory bank size, described here:
-	 * @url https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+	 * @brief Sets the shared memory bank size, described in
+	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
 	 *
 	 * @param new_bank_size the shared memory bank size to set, in bytes
 	 */
@@ -470,8 +542,8 @@ public:
 	}
 
 	/**
-	 * @brief Returns the shared memory bank size, described here:
-	 * @url https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+	 * @brief Returns the shared memory bank size, as described in
+	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
 	 *
 	 * @return the shared memory bank size in bytes
 	 */
@@ -641,10 +713,9 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(device::id_t device_id) noexcept : id_( device_id ) { }
+	device_t(wrapping_construction, device::id_t device_id) noexcept : id_( device_id ) { }
 
 public: // friends
-	friend device_t device::current::get();
 	friend device_t device::get(device::id_t);
 
 protected:
@@ -667,12 +738,25 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 }
 
 namespace device {
+
+/**
+ * Returns a proxy for the CUDA device with a given id
+ *
+ * @param device_id the ID for which to obtain the device proxy
+ * @note direct constructor access is blocked so that you don't get the
+ * idea you're actually creating devices
+ */
+inline device_t get(id_t device_id)
+{
+	return device_t(device_t::wrapping_construction{}, device_id);
+}
+
 namespace current {
 
 /**
  * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
  */
-inline device_t get() { return { detail::get_id() }; }
+inline device_t get() { return device::get(detail::get_id()); }
 
 /**
  * Tells the CUDA runtime API to consider the specified device as the current one.
@@ -680,18 +764,6 @@ inline device_t get() { return { detail::get_id() }; }
 inline void set(device_t device) { detail::set(device.id()); }
 
 } // namespace current
-
-/**
- * Returns a proxy for the CUDA device with a given id
- *
- * @param id the ID for which to obtain the device proxy
- * @note direct constructor access is blocked so that you don't get the
- * idea you're actually creating devices
- */
-inline device_t get(id_t device_id)
-{
-	return device_t(device_id);
-}
 
 /**
  * @brief Obtain a proxy to a device using its PCI bus location
@@ -740,7 +812,7 @@ namespace device {
 template<typename T>
 inline unique_ptr<T> make_unique(device_t device, size_t n)
 {
-	typename device_t::scoped_setter_t set_device_for_this_scope(device.id());
+	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
 }
 
@@ -756,7 +828,7 @@ inline unique_ptr<T> make_unique(device_t device, size_t n)
 template <typename T>
 inline unique_ptr<T> make_unique(device_t device)
 {
-	typename device_t::scoped_setter_t set_device_for_this_scope(device.id());
+	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 

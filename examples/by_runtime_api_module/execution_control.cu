@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 		die_("No CUDA devices on this system");
 	}
 
-	const auto kernel = foo;
+	const auto kernel_function = foo;
 	const auto kernel_name = "foo"; // no reflection, sadly...
 
 	// Being very cavalier about our command-line arguments here...
@@ -76,13 +76,13 @@ int main(int argc, char **argv)
 
 	auto device = cuda::device::get(device_id).make_current();
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
-	cuda::device_function_t device_function(kernel);
+	cuda::kernel_t kernel(device, kernel_function);
 
 	// ------------------------------------------
 	//  Attributes without a specific API call
 	// ------------------------------------------
 
-	auto attributes = device_function.attributes();
+	auto attributes = kernel.attributes();
 	std::cout
 		<< "The PTX version used in compiling device function " << kernel_name
 		<< " is " << attributes.ptx_version() << ".\n";
@@ -99,10 +99,10 @@ int main(int argc, char **argv)
 	//  L1/shared memory size preference and shared memory bank size
 	// --------------------------------------------------------------
 
-	device_function.cache_preference(
+	kernel.set_cache_preference(
 		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory);
 
-	device_function.shared_memory_bank_size(
+	kernel.set_shared_memory_bank_size(
 		cuda::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
 
 	// You may be wondering why we're only setting these "attributes' but not
@@ -119,16 +119,16 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
-	cuda::launch(kernel, launch_config, bar);
+	cuda::launch(kernel_function, launch_config, bar);
 	cuda::device::current::get().synchronize();
 
-	// Let's do the same, but when the kernel is wrapped in a device_function_t
+	// Let's do the same, but when the kernel is wrapped in a kernel_t
 	std::cout
 		<< "Launching kernel " << kernel_name
-		<< " wrapped in a device_function_t strcture,"
+		<< " wrapped in a kernel_t strcture,"
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
 
-	cuda::launch(device_function, launch_config, bar);
+	cuda::launch(kernel, launch_config, bar);
 	cuda::device::current::get().synchronize();
 
 	// But there's more than one way to launch! we can also do
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using device.launch()\n" << std::flush;
-	device.launch(kernel, launch_config, bar);
+	device.launch(kernel_function, launch_config, bar);
 	device.synchronize();
 
 	// or via a stream:
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 
 #if __CUDACC_VER_MAJOR__ >= 9
 	try {
-		auto kernel = grid_cooperating_foo;
+		auto kernel_function = grid_cooperating_foo;
 		auto kernel_name = "grid_cooperating_foo";
 #else
 	{
@@ -174,27 +174,27 @@ int main(int argc, char **argv)
 				<< "Launching kernel" << kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
-			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel, launch_config, bar);
+			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel_function, launch_config, bar);
 			stream.synchronize();
 
-/*			// same, but with a device_function_t
+/*			// same, but with a kernel_t
 			std::cout
 				<< "Launching kernel" << kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
 				<< "(but note it does not actually check the cooperativeness).\n" << std::flush;
-			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, device_function, launch_config, bar);
+			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel, launch_config, bar);
 			stream.synchronize();
 */
 			// Same, but using cuda::enqueue_launch
 			// both options
 			std::cout
 				<< "Launching kernel " << kernel_name
-				<< " wrapped in a device_function_t strcture,"
+				<< " wrapped in a kernel_t structure,"
 				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
 				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
-			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, device_function, stream.id(), launch_config, bar);
+			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, kernel_function, stream, launch_config, bar);
 			cuda::device::current::get().synchronize();
 
 		}

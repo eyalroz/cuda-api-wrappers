@@ -1,5 +1,5 @@
 /**
- * @file kernel_launch.cuh
+ * @file kernel_launch.hpp
  *
  * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
  *
@@ -44,7 +44,7 @@
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/constants.hpp>
-#include <cuda/api/device_function.hpp>
+#include <cuda/api/kernel.hpp>
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>
@@ -55,11 +55,24 @@
 
 namespace cuda {
 
-enum : memory::shared::size_t { no_shared_memory = 0 };
+class stream_t;
+
 constexpr grid::dimensions_t single_block() { return 1; }
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail {
+
+template<typename Kernel>
+bool intrinsic_block_cooperation_value(const Kernel&)
+{
+	return thread_blocks_may_not_cooperate;
+}
+
+template<>
+bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
+{
+	return(kernel.thread_block_cooperation());
+}
 
 template<typename Fun>
 struct is_function_ptr: std::integral_constant<bool,
@@ -70,27 +83,27 @@ inline void collect_argument_addresses(void**) { }
 template <typename Arg, typename... Args>
 inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
-	collected_addresses[0] = static_cast<void*>(&arg);
+	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
 	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
 }
 
 // Note: Unlike the non-detail functions - this one
-// cannot handle type-erased device_function_t's.
-template<typename RawKernelFunction, typename... KernelParameters>
+// cannot handle type-erased kernel_t's.
+template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                        thread_block_cooperation,
-	RawKernelFunction           kernel_function,
+	RawKernel           kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	KernelParameters&&...       parameters)
 #ifndef __CUDACC__
 // If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
 // compilation error, or we just do nothing. For now it's option 2.
 	;
 #else
 {
-	static_assert(std::is_function<RawKernelFunction>::value or
-	    (is_function_ptr<RawKernelFunction>::value),
+	static_assert(std::is_function<RawKernel>::value or
+	    (is_function_ptr<RawKernel>::value),
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
@@ -101,7 +114,7 @@ inline void enqueue_launch(
 			launch_configuration.block_dimensions,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id
-			>>>(parameters...);
+			>>>(std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
@@ -121,7 +134,7 @@ inline void enqueue_launch(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail::collect_argument_addresses(argument_ptrs, parameters...);
+		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
@@ -160,41 +173,45 @@ inline void enqueue_launch(
  * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
- * @param cooperative if true, use CUDA's "cooperative launch" mechanism which enables more flexible
- * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization)
+ * @param thread_block_cooperation if true, use CUDA's "cooperative launch" mechanism which enables more flexible
+ * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization). Note that this is a
+ * requirement of the kernel function rather than merely an arbitrary choice.
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
- * @ref device_function_t wrapping the raw pointer to the function.
- * @param stream_id the CUDA hardware command queue on which to place the command to launch the kernel (affects
+ * @ref kernel_t wrapping the raw pointer to the function.
+ * @param stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
  * the scheduling of the launch and the execution)
  * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
  * shared memory per block in the grid; this defines how the grid will look and what the shared memory
  * allowance will be (see {@ref cuda::launch_configuration_t})
  * @param parameters whatever parameters @p kernel_function takes
+ *
+ * @note If the Kernel type is kernel_t, it will already have a thread_block_cooperation setting, so using this
+ * variant of `enqueue_launch` is somewhat redundant; at any rate, the value passed for @p thread_block_cooperation
+ * must match the kernel function's needs, with the kernel_t wrapper is assumed to indicate. Behavior on mismatch
+ * is undefined.
  */
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                        thread_block_cooperation,
-	KernelFunction              kernel_function,
-	stream::id_t                stream_id,
-	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
-{
-	auto unwrapped_kernel_function = device_function::unwrap<KernelFunction, KernelParameters...>(kernel_function);
-		// This helper function is necessary to act differently on device_function_t's and plain simple
-		// function pointers (to __global__ functions), without the compiler complaining. With C++17 we could have
-		// just done: if constexpr (kernel_function is a device_function_t) { use it unwrapped } else { use it as-is }
-	detail::enqueue_launch(thread_block_cooperation, unwrapped_kernel_function, stream_id, launch_configuration, parameters...);
-}
+	bool                    thread_block_cooperation,
+	Kernel                  kernel_function,
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
 
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	KernelFunction              kernel_function,
-	stream::id_t                stream_id,
-	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
+	Kernel                  kernel_function,
+	stream_t&               stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
-	enqueue_launch(thread_blocks_may_not_cooperate, kernel_function, stream_id, launch_configuration, parameters...);
+	enqueue_launch(
+		detail::intrinsic_block_cooperation_value(kernel_function),
+		kernel_function,
+		stream,
+		launch_configuration,
+		std::forward<KernelParameters>(parameters)...);
 }
 
 /**
@@ -202,16 +219,13 @@ inline void enqueue_launch(
  *
  * @note This isn't called `enqueue` since the default stream is synchronous.
  */
-template<typename KernelFunction, typename... KernelParameters>
+template<typename Kernel, typename... KernelParameters>
 inline void launch(
-	KernelFunction              kernel_function,
-	launch_configuration_t      launch_configuration,
-	KernelParameters...         parameters)
-{
-	enqueue_launch(kernel_function, stream::default_stream_id, launch_configuration, parameters...);
-}
+	Kernel                  kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
 
 
 } // namespace cuda
 
-#endif // CUDA_KERNEL_LAUNCH_CUH_
+#endif // CUDA_KERNEL_LAUNCH_HPP_

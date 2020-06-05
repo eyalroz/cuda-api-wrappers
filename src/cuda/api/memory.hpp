@@ -21,8 +21,6 @@
  *   The height is 3
  *
  * See also https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
- *
- *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
@@ -53,13 +51,39 @@ class stream_t;
  */
 namespace memory {
 
+enum class portability_across_contexts : bool {
+	is_portable   = true,
+	isnt_portable = false
+};
+
+enum cpu_write_combining : bool {
+	with_wc    = true,
+	without_wc = false
+};
+
+struct allocation_options {
+	portability_across_contexts  portability;
+	cpu_write_combining          write_combining;
+};
+
+namespace detail {
+
+inline unsigned make_cuda_host_alloc_flags(allocation_options options)
+{
+	return
+		(options.portability     == portability_across_contexts::is_portable ? cudaHostAllocPortable      : 0) &
+		(options.write_combining == cpu_write_combining::with_wc             ? cudaHostAllocWriteCombined : 0);
+}
+
+} // namespace detail
+
 /**
  * @namespace mapped
- * Memory regions appearing in both on the host-side and device-side address 
- * spaces with the regions in both spaces mapped to each other (i.e. guaranteed 
- * to have the same contents on access up to synchronization details). See @url 
- * http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory
- * for more details.
+ * Memory regions appearing in both on the host-side and device-side address
+ * spaces with the regions in both spaces mapped to each other (i.e. guaranteed
+ * to have the same contents on access up to synchronization details). Consult the
+ * <a href="http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory">
+ * CUDA C programming guide section on mapped memory</a> for more details.
  */
 namespace mapped {
 
@@ -75,21 +99,6 @@ namespace mapped {
  */
 struct region_pair {
 
-	enum : bool {
-		is_portable_across_cuda_contexts   = true,
-		isnt_portable_across_cuda_contexts = false
-	};
-
-	enum : bool {
-		with_cpu_write_combining    = true,
-		without_cpu_write_combining = false
-	};
-
-	struct allocation_options {
-		bool portable_across_cuda_contexts;
-		bool cpu_write_combining;
-	};
-
 	void* host_side;
 	void* device_side;
 	// size_t size_in_bytes; // common to both sides
@@ -98,18 +107,6 @@ struct region_pair {
 	// operator std::pair<void*, void*>() { return make_pair(host_side, device_side); }
 	// size_t size() { return size_in_bytes; }
 };
-
-namespace detail {
-
-inline unsigned make_cuda_host_alloc_flags(
-	region_pair::allocation_options options) noexcept
-{
-	return cudaHostAllocMapped &
-		(options.portable_across_cuda_contexts ? cudaHostAllocPortable : 0) &
-		(options.cpu_write_combining ? cudaHostAllocWriteCombined: 0);
-}
-
-} // namespace detail
 
 } // namespace mapped
 
@@ -161,7 +158,7 @@ inline void* allocate(size_t num_bytes)
  */
 inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
-	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	return memory::device::detail::allocate(size_in_bytes);
 }
 
@@ -193,25 +190,39 @@ struct deleter {
  *
  * @note The equivalent of @ref std::memset for CUDA device-side memory
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to set, in a CUDA
+ * device's global memory
  * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	auto result = cudaMemset(buffer_start, byte_value, num_bytes);
+	auto result = cudaMemset(start, byte_value, num_bytes);
 	throw_if_error(result, "memsetting an on-device buffer");
 }
 
 /**
  * @brief Sets all bytes in a region of memory to 0 (zero)
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to zero-out,
+ * in a CUDA device's global memory
  * @param num_bytes size of the memory region in bytes
  */
-inline void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes)
 {
-	set(buffer_start, 0, num_bytes);
+	set(start, 0, num_bytes);
+}
+
+/**
+ * @brief Sets all bytes of a single pointed-to value to 0
+ *
+ * @param ptr pointer to a value of a certain type, in a CUDA device's
+ * global memory
+ */
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
 }
 
 } // namespace device
@@ -243,33 +254,55 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * @note The equivalent of @ref std::memset - for any and all CUDA-related
  * memory spaces
  *
- * @param buffer_start position from where to start
+ * @param start starting address of the memory region to set;
+ * may be in host-side memory, global CUDA-device-side memory or
+ * CUDA-managed memory.
  * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	pointer_t<void> pointer { buffer_start };
+	pointer_t<void> pointer { start };
 	switch ( pointer.attributes().memory_type() ) {
 	case device_memory:
 	case managed_memory:
-		memory::device::set(buffer_start, byte_value, num_bytes); break;
+		memory::device::set(start, byte_value, num_bytes); break;
 	case unregistered_memory:
 	case host_memory:
-		std::memset(buffer_start, byte_value, num_bytes); break;
+		std::memset(start, byte_value, num_bytes); break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + detail::ptr_as_hex(buffer_start)
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(start)
 		);
 	}
 }
 
-inline void zero(void* buffer_start, size_t num_bytes)
+/**
+ * @brief Sets all bytes in a region of memory to 0 (zero)
+ *
+ * @param start starting address of the memory region to zero-out;
+ * may be in host-side memory, global CUDA-device-side memory or
+ * CUDA-managed memory.
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void zero(void* start, size_t num_bytes)
 {
-	return set(buffer_start, 0, num_bytes);
+	return set(start, 0, num_bytes);
 }
 
+/**
+ * @brief Sets all bytes of a single pointed-to value to 0
+ *
+ * @param ptr pointer to a single element of a certain type, which may
+ * be in host-side memory, global CUDA-device-side memory or CUDA-managed
+ * memory
+ */
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
+}
 
 namespace detail {
 
@@ -323,7 +356,7 @@ public:
  *
  * @param destination A 3-dimensional CUDA array
  * @param source A pointer to a a memory region containing as many
- * elements as would fill the @source array, _contiguously_
+ * elements as would fill the @p source array, _contiguously_
  */
 template<typename T>
 void copy(array_t<T, 3>& destination, const void *source)
@@ -338,7 +371,7 @@ void copy(array_t<T, 3>& destination, const void *source)
  * non-array memory, on the device or on the host.
  *
  * @param destination A pointer to a a memory region large enough to fit
- * all elements of the @source array, contiguously
+ * all elements of the @p source array, contiguously
  * @param source A 3-dimensional CUDA array
  */
 template<typename T>
@@ -569,6 +602,7 @@ inline void copy(void* destination, const array_t<T, NumDimensions>& source, str
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
+ * @param stream The CUDA command queue on which this copyijg will be enqueued
  */
 template <typename T>
 inline void copy_single(T& destination, const T& source, stream_t& stream);
@@ -585,7 +619,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stre
 {
 	// TODO: Double-check that this call doesn't require setting the current device
 	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_id);
-	throw_if_error(result, "memsetting an on-device buffer");
+	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
 inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
@@ -593,24 +627,18 @@ inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
 	set(start, 0, num_bytes, stream_id);
 }
 
-
 } // namespace detail
 
 /**
  * Asynchronously sets all bytes in a stretch of memory to a single value
  *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
+ * @note asynchronous version of @ref memory::zero
  *
- * @note asynchronous version of @ref memory::copy
- *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- * @param stream The stream on which to schedule this action
+ * @param start starting address of the memory region to set,
+ * in a CUDA device's global memory
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ * @param stream stream on which to schedule this action
  */
 inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream);
 
@@ -618,6 +646,21 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream)
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
 inline void zero(void* start, size_t num_bytes, stream_t& stream);
+
+/**
+ * @brief Asynchronously sets all bytes of a single pointed-to value
+ * to 0 (zero).
+ *
+ * @note asynchronous version of @ref memory::zero
+ *
+ * @param ptr a pointer to the value to be to zero
+ * @param stream stream on which to schedule this action
+ */
+template <typename T>
+inline void zero(T* ptr, stream_t& stream)
+{
+	zero(ptr, sizeof(T), stream);
+}
 
 } // namespace async
 
@@ -647,17 +690,32 @@ namespace host {
  * @param size_in_bytes the amount of memory to allocate, in bytes
  * @return a pointer to the allocated stretch of memory
  */
-inline void* allocate(size_t size_in_bytes /* write me:, bool recognized_by_all_contexts */)
+inline void* allocate(
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	void* allocated = nullptr;
-	// Note: the typed cudaMallocHost also takes its size in bytes, apparently, not in number of elements
-	auto result = cudaMallocHost(&allocated, size_in_bytes);
+	auto flags = cuda::memory::detail::make_cuda_host_alloc_flags(options);
+	auto result = cudaHostAlloc(&allocated, size_in_bytes, flags);
 	if (is_success(result) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
 	}
 	throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
+}
+
+inline void* allocate(
+	size_t                       size_in_bytes,
+	portability_across_contexts  portability = portability_across_contexts(false),
+	cpu_write_combining          cpu_wc = cpu_write_combining(false))
+{
+	return allocate(size_in_bytes, allocation_options{ portability, cpu_wc } );
+}
+
+inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
+{
+	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
 }
 
 /**
@@ -744,15 +802,31 @@ inline void deregister(void *ptr)
 		"Could not unregister the memory segment starting at address *a");
 }
 
-inline void set(void* buffer_start, int byte_value, size_t num_bytes)
+/**
+ * @brief Sets all bytes in a stretch of host-side memory to a single value
+ *
+ * @note a wrapper for @ref std::memset
+ *
+ * @param start starting address of the memory region to set,
+ * in host memory; can be either CUDA-allocated or otherwise.
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	std::memset(buffer_start, byte_value, num_bytes);
+	std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
 }
 
-inline void zero(void* buffer_start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes)
 {
-	set(buffer_start, 0, num_bytes);
+	set(start, 0, num_bytes);
+}
+
+template <typename T>
+inline void zero(T* ptr)
+{
+	zero(ptr, sizeof(T));
 }
 
 
@@ -829,7 +903,7 @@ inline void* allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
-	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	return detail::allocate(num_bytes, initial_visibility);
 }
 
@@ -839,7 +913,7 @@ inline void* allocate(
  * @brief Allocate a a region of managed memory, accessible with the same
  * address on the host and on CUDA devices
  *
- * @param device_id the initial device which is likely to access the managed
+ * @param device the initial device which is likely to access the managed
  * memory region (and which will certainly have actually allocated for it)
  * @param num_bytes size of each of the regions of memory to allocate
  * @param initial_visibility will the allocated region be visible, using the
@@ -886,15 +960,30 @@ inline void prefetch(
 
 /**
  * @brief Prefetches a region of managed memory to a specific device, so
- * it can later be used there without waiting for I/O fromm the host or other
+ * it can later be used there without waiting for I/O from the host or other
  * devices.
  */
 inline void prefetch(
 	const void*      managed_ptr,
 	size_t           num_bytes,
 	cuda::device_t   destination,
-	cuda::stream_t&  stream_id);
+	cuda::stream_t&  stream);
 
+/**
+ * @brief Prefetches a region of managed memory into host memory. It can
+ * later be used there without waiting for I/O from any of the CUDA devices.
+ */
+inline void prefetch_to_host(
+	const void*      managed_ptr,
+	size_t           num_bytes)
+{
+	auto result = cudaMemPrefetchAsync(managed_ptr, num_bytes, cudaCpuDeviceId, stream::default_stream_id);
+		// The stream ID will be ignored by the CUDA runtime API when this pseudo
+		// device indicator is used.
+	throw_if_error(result,
+		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_ptr) + " into host memory");
+}
 
 } // namespace async
 
@@ -914,11 +1003,12 @@ namespace detail {
  * @return the allocated pair (with both regions being non-null)
  */
 inline region_pair allocate(
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options)
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	region_pair allocated;
-	auto flags = cuda::memory::mapped::detail::make_cuda_host_alloc_flags(options);
+	auto flags = cudaHostAllocMapped &
+		cuda::memory::detail::make_cuda_host_alloc_flags(options);
 	// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
 	// not in number of elements
 	auto status = cudaHostAlloc(&allocated.host_side, size_in_bytes, flags);
@@ -939,8 +1029,6 @@ inline region_pair allocate(
 	return allocated;
 }
 
-} // namespace detail
-
 /**
  * Allocates a mapped pair of memory regions - on a CUDA device
  * and in host memory.
@@ -953,24 +1041,39 @@ inline region_pair allocate(
  */
 
 inline region_pair allocate(
-	cuda::device::id_t               device_id,
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options = {
-		region_pair::isnt_portable_across_cuda_contexts,
-		region_pair::without_cpu_write_combining }
-	)
+	cuda::device::id_t  device_id,
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
-	cuda::device::current::scoped_override_t<> set_device_for_this_scope(device_id);
+	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	return detail::allocate(size_in_bytes, options);
 }
 
+} // namespace detail
+
+
+region_pair allocate(
+	cuda::device_t&     device,
+	size_t              size_in_bytes,
+	allocation_options  options);
+
 inline region_pair allocate(
-	cuda::device_t                   device,
-	size_t                           size_in_bytes,
-	region_pair::allocation_options  options = {
-		region_pair::isnt_portable_across_cuda_contexts,
-		region_pair::without_cpu_write_combining }
-	);
+	cuda::device_t&              device,
+	size_t                       size_in_bytes,
+	portability_across_contexts  portability = portability_across_contexts(false),
+	cpu_write_combining          cpu_wc = cpu_write_combining(false))
+{
+	return allocate(device, size_in_bytes, allocation_options{ portability, cpu_wc } );
+}
+
+inline region_pair allocate(
+	cuda::device_t&     device,
+	size_t              size_in_bytes,
+	cpu_write_combining cpu_wc)
+{
+	return allocate(device, size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
+}
+
 
 /**
  * Free a pair of mapped memory regions

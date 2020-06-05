@@ -57,7 +57,7 @@ template<typename T>
 inline std::unique_ptr<T, deleter>
 make_unique(cuda::device::id_t device_id, size_t n)
 {
-	cuda::device::current::scoped_override_t<
+	cuda::device::current::detail::scoped_override_t<
 		cuda::detail::do_not_assume_device_is_current
 	> set_device_for_this_scope(device_id);
 	return memory::detail::make_unique<T, device::detail::allocator, deleter>(n);
@@ -68,7 +68,7 @@ inline std::unique_ptr<T, deleter>
 make_unique(cuda::device::id_t device_id)
 {
 
-	cuda::device::current::scoped_override_t<
+	cuda::device::current::detail::scoped_override_t<
 		cuda::detail::do_not_assume_device_is_current
 	> set_device_for_this_scope(device_id);
 
@@ -123,7 +123,7 @@ using unique_ptr = std::unique_ptr<T, detail::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(
-	size_t                n, 
+	size_t                n,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	return (initial_visibility == initial_visibility_t::to_all_devices) ?

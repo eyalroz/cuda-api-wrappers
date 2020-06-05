@@ -34,7 +34,7 @@ enum named_t : std::underlying_type<status_t>::type {
 	prior_launch_failure            = cudaErrorPriorLaunchFailure,
 	launch_timeout                  = cudaErrorLaunchTimeout,
 	launch_out_of_resources         = cudaErrorLaunchOutOfResources,
-	invalid_device_function         = cudaErrorInvalidDeviceFunction,
+	invalid_kernel_function         = cudaErrorInvalidDeviceFunction,
 	invalid_configuration           = cudaErrorInvalidConfiguration,
 	invalid_device                  = cudaErrorInvalidDevice,
 	invalid_value                   = cudaErrorInvalidValue,
@@ -203,7 +203,7 @@ private:
  *
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
- */ 
+ */
 inline void throw_if_error(cuda::status_t status, std::string message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
@@ -214,7 +214,7 @@ inline void throw_if_error(cuda::status_t status, std::string message) noexcept(
  * a @ref cuda::runtime_error exception is thrown
  *
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
- */ 
+ */
 inline void throw_if_error(cuda::status_t status) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status); }
@@ -236,15 +236,17 @@ inline status_t get()   noexcept { return cudaPeekAtLastError(); }
 /**
  * @brief Does nothing (unless throwing an exception)
  *
- * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
+ * @note similar to @ref cuda::throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * @throws cuda::runtime_error if the CUDA runtime API has
  * encountered previously encountered an (uncleared) error
  *
  * @param message Additional message to incldue in the exception thrown
  * @param clear_any_error When true, clears the CUDA Runtime API's state from
- * recalling errors arising from before this oment
+ * recalling errors arising from before this moment
+ *
+ *
  */
 inline void ensure_none(
 	std::string  message,
@@ -274,7 +276,7 @@ inline void ensure_none(
  * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws @ref cuda::runtime_error exception if the CUDA runtime API has
+ * @throws cuda::runtime_error if the CUDA runtime API has
  * encountered previously encountered an (uncleared) error
  *
  * @param clear_any_error When true, clears the CUDA Runtime API's state from

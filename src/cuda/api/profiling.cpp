@@ -12,13 +12,13 @@
 
 #include <mutex>
 
-#ifdef __unix__
+#ifdef CUDA_API_WRAPPERS_USE_PTHREADS
 #include <pthread.h>
 #else
-#ifdef _WIN32
+#ifdef CUDA_API_WRAPPERS_USE_WIN32_THREADS
 #include <processthreadsapi.h>
-#endif // _WIN32
-#endif // __unix__
+#endif
+#endif
 
 namespace cuda {
 namespace profiling {
@@ -44,7 +44,7 @@ void point(const std::string& description, color_t color)
 }
 
 range::handle_t range_start(
-	const std::string& description, ::cuda::profiling::range::Type type, color_t color)
+	const std::string& description, ::cuda::profiling::range::type_t type, color_t color)
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
 	std::lock_guard<std::mutex> { detail::profiler_mutex };
@@ -71,7 +71,7 @@ void range_end(range::handle_t range_handle)
 } // namespace mark
 
 
-scoped_range_marker::scoped_range_marker(const std::string& description, profiling::range::Type type)
+scoped_range_marker::scoped_range_marker(const std::string& description, profiling::range::type_t type)
 {
 	range = profiling::mark::range_start(description, type);
 }
@@ -108,21 +108,21 @@ void name_host_thread<wchar_t>(uint32_t thread_id, const std::wstring& name)
 	nvtxNameOsThreadW(thread_id, name.c_str());
 }
 
-#if defined(__unix__) || defined(_WIN32)
+#if defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
 
 template <typename CharT>
 void name_this_thread(const std::basic_string<CharT>& name)
 {
 	auto this_thread_s_native_handle =
-#ifdef __unix__
+#ifdef CUDA_API_WRAPPERS_USE_PTHREADS
 		::pthread_self();
 #else
 		::GetCurrentThreadId();
-#endif // __unix__
+#endif
 	name_host_thread<CharT>(this_thread_s_native_handle, name);
 }
 
-#endif // defined(__unix__) || defined(_WIN32)
+#endif // defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
 
 } // namespace naming
 

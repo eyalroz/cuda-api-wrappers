@@ -190,8 +190,8 @@ inline handle_t export_(event_t& event);
  * from an event handle (or otherwise - have a handle provide both an event ID and
  * a device ID), but that is not currently the case.
  *
- * @param device The device to which the imported event corresponds
- * @param the handle obtained via inter-process communications
+ * @param device the device to which the imported event corresponds
+ * @param handle the handle obtained via inter-process communications
  */
 inline event_t import(device_t& device, const handle_t& handle);
 

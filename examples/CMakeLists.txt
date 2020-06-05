@@ -33,6 +33,7 @@ add_executable(vectorAdd modified_cuda_samples/vectorAdd/vectorAdd.cu)
 add_executable(inlinePTX modified_cuda_samples/inlinePTX/inlinePTX.cu)
 add_executable(simpleStreams modified_cuda_samples/simpleStreams/simpleStreams.cu)
 add_executable(simpleIPC modified_cuda_samples/simpleIPC/simpleIPC.cu)
+add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 #----
 add_custom_target(modified_cuda_samples)
 add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)

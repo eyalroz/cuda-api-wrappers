@@ -86,7 +86,6 @@ inline void disable_bidirectional_access(device_t first, device_t second)
 	disable_access(second, first );
 }
 
-
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
  * relating to their interaction
@@ -94,20 +93,20 @@ inline void disable_bidirectional_access(device_t first, device_t second)
  * @note This is the device-pair equivalent of @ref device_t::get_attribute()
  *
  * @param attribute identifier of the attribute of interest
- * @param source source device
- * @param destination destination device
+ * @param first the device accessing an att
+ * @param second destination device
  * @return the numeric attribute value
  */
 inline attribute_value_t get_attribute(
-	attribute_t  attribute,
-	device_t     accessor,
-	device_t     peer)
+	attribute_t     attribute,
+	const device_t  first,
+	const device_t  second)
 {
 	attribute_value_t value;
-	auto status = cudaDeviceGetP2PAttribute(&value, attribute, accessor.id(), peer.id());
+	auto status = cudaDeviceGetP2PAttribute(&value, attribute, first.id(), second.id());
 	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(accessor.id()) + ", "
-			+ std::to_string(peer.id()) + ')');
+		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(first.id()) + ", "
+			+ std::to_string(second.id()) + ')');
 	return value;
 }
 

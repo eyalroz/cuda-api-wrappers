@@ -18,6 +18,11 @@ namespace cuda {
 
 namespace profiling {
 
+/**
+ * @brief An RGB colorspace color value, with potential transparency, which
+ * may be used to color elements in timelines or other graphical displays of
+ * profiling information.
+ */
 struct color_t {
 	using underlying_type = uint32_t;
 	unsigned char alpha, red, green, blue;
@@ -57,7 +62,7 @@ struct color_t {
 
 namespace range {
 
-enum class Type { unspecified, kernel, pci_express_transfer	};
+enum class type_t { unspecified, kernel, pci_express_transfer	};
 
 /**
  * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
@@ -79,12 +84,12 @@ inline void point (const std::string& message)
 
 range::handle_t range_start (
 	const std::string&  description,
-	range::Type         type,
+	range::type_t         type,
 	color_t             color);
 
 inline range::handle_t range_start (
 	const std::string&  description,
-	range::Type         type)
+	range::type_t         type)
 {
 	return range_start(description, type, color_t::LightRed());
 }
@@ -92,7 +97,7 @@ inline range::handle_t range_start (
 inline range::handle_t range_start (
 	const std::string&  description)
 {
-	return range_start(description, range::Type::unspecified);
+	return range_start(description, range::type_t::unspecified);
 }
 
 void range_end (range::handle_t range);
@@ -110,7 +115,7 @@ class scoped_range_marker {
 public:
 	scoped_range_marker(
 		const std::string& description,
-		profiling::range::Type type = profiling::range::Type::unspecified);
+		profiling::range::type_t type = profiling::range::type_t::unspecified);
 	~scoped_range_marker();
 protected:
 	profiling::range::handle_t range;

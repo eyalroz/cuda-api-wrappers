@@ -22,8 +22,8 @@
 
 #ifndef __CUDACC__
 #ifndef __device__
-#define __device__ 
-#define __host__ 
+#define __device__
+#define __host__
 #endif
 #endif
 
@@ -73,14 +73,18 @@ namespace array {
 using dimension_t = std::size_t;
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
- * or extents, are not the same as @ref cuda::grid_dimensionts_t ; they may be
+ * or extents, are not the same as @ref cuda::grid::dimensionts_t ; they may be
  * much larger in each axis.
  *
- * @note See also @url https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html
+ * @note See also <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html">
+ * the description of `struct cudaExtent`</a> in the CUDA Runtime API documentation.
  */
 template<std::size_t NumDimensions>
 struct dimensions_t;
 
+/**
+ * Dimensions for 3D CUDA arrays
+ */
 template<>
 struct dimensions_t<3> // this almost-inherits cudaExtent
 {
@@ -127,6 +131,9 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
 };
 
+/**
+ * Dimensions for 2D CUDA arrays
+ */
 template<>
 struct dimensions_t<2>
 {
@@ -279,7 +286,7 @@ namespace shared {
 /**
  * Each physical core ("Symmetric Multiprocessor") on an nVIDIA GPU has a space
  * of shared memory (see
- * @link https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/
+ * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this blog entry</a>
  * ). This type is large enough to hold its size.
  *
  * @note actually, uint16_t is usually large enough to hold the shared memory
@@ -298,8 +305,8 @@ using size_t = unsigned;
  * execution on some stream of some device).
  */
 struct launch_configuration_t {
-	grid::dimensions_t       grid_dimensions { 0 }; /// in blocks
-	grid::block_dimensions_t block_dimensions { 0 }; /// in threads
+	grid::dimensions_t        grid_dimensions { 0 }; /// in blocks
+	grid::block_dimensions_t  block_dimensions { 0 }; /// in threads
 	memory::shared::size_t    dynamic_shared_memory_size { 0u };
 		/// ... in bytes per block
 
@@ -331,9 +338,12 @@ struct launch_configuration_t {
 #endif
 };
 
+/**
+ * @brief a named constructor idiom for a @ref `launch_config_t`
+ */
 inline launch_configuration_t make_launch_config(
-	grid::dimensions_t       grid_dimensions,
-	grid::block_dimensions_t block_dimensions,
+	grid::dimensions_t        grid_dimensions,
+	grid::block_dimensions_t  block_dimensions,
 	memory::shared::size_t    dynamic_shared_memory_size = 0u) noexcept
 {
 	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size };
@@ -416,10 +426,32 @@ using pair_attribute_t   = cudaDeviceP2PAttr;
 
 namespace detail {
 
-enum : bool {
-	assume_device_is_current        = true,
-	do_not_assume_device_is_current = false
+/**
+ * @brief adapt a type to be usable as a kernel parameter.
+ *
+ * CUDA kernels don't accept just any parameter type a C++ function may accept.
+ * Specifically: No references, arrays decay (IIANM) and functions pass by address.
+ * However - not all "decaying" of `std::decay` is necessary. Such transformation
+ * can be effected by this type-trait struct.
+ */
+template<typename P>
+struct kernel_parameter_decay {
+private:
+    typedef typename std::remove_reference<P>::type U;
+public:
+    typedef typename std::conditional<
+        std::is_array<U>::value,
+        typename std::remove_extent<U>::type*,
+        typename std::conditional<
+            std::is_function<U>::value,
+            typename std::add_pointer<U>::type,
+            U
+        >::type
+    >::type type;
 };
+
+template<typename P>
+using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
 
 } // namespace detail
 
@@ -473,12 +505,14 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 
 using native_word_t = unsigned;
 
+
+
 } // namespace cuda
 
 #ifndef __CUDACC__
 #ifndef __device__
-#define __device__ 
-#define __host__ 
+#define __device__
+#define __host__
 #endif
 #endif
 
