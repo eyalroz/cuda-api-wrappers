@@ -16,7 +16,6 @@
 #include <cstdlib>
 
 #include "../helper_cuda.h"
-#include "../helper_timer.h"
 
 using namespace std;
 
@@ -205,8 +204,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, int numGPUs, bool test_p2p, P2PD
             *flag = 1;
             streams[i].synchronize();
 
-            using seconds_duration_t = std::chrono::duration<double>;
-            seconds_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
+            using usec_duration_t = std::chrono::duration<double, std::micro>;
+            usec_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
             double gb = numElems * sizeof(int) * repeat / (double)1e9;
             if (i == j) {
@@ -361,7 +360,6 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
 {
     int repeat = 100;
     int numElems = 4; // perform 1-int4 transfer.
-    StopWatchInterface *stopWatch = NULL;
     vector<cuda::memory::device::unique_ptr<int[]>> buffers;
     vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
@@ -371,13 +369,6 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
     auto flag = reinterpret_cast<volatile int *>(
     	cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
     );
-
-    // Note: The following uses code in helper_cuda, which obviously isn't covered by the API wrappers. It is therefore ugly...
-    if (!sdkCreateTimer(&stopWatch)) {
-        std::cout << "Failed to create stop watch\n";
-        exit(EXIT_FAILURE);
-    }
-    sdkStartTimer(&stopWatch);
 
     for (int d = 0; d < numGPUs; d++) {
         auto device = cuda::device::get(d);
@@ -416,7 +407,7 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
             streams[i].enqueue.kernel_launch(delay, single_thread, flag, default_timeout_clocks);
             streams[i].enqueue.event(start[i]);
 
-            sdkResetTimer(&stopWatch);
+            auto time_before_copy = std::chrono::high_resolution_clock::now();
             if (i == j) {
                 // Perform intra-GPU, D2D copies
                 enqueue_p2p_copy(buffers[i].get(), buffersD2D[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
@@ -431,18 +422,19 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
                     enqueue_p2p_copy(buffers[i].get(), buffers[j].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
                 }
             }
-            float cpu_time_ms = sdkGetTimerValue(&stopWatch);
+            auto time_after_copy = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double, std::micro> cpu_duration_ms = time_after_copy - time_before_copy;
 
             streams[i].enqueue.event(stop[i]);
             // Now that the work has been queued up, release the stream
             *flag = 1;
             streams[i].synchronize();
 
-            using seconds_duration_t = std::chrono::duration<float>;
-            seconds_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
+            using usec_duration_t = std::chrono::duration<double, std::micro>;
+            usec_duration_t gpu_duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
-            gpuLatencyMatrix[i * numGPUs + j] = duration.count() / repeat;
-            cpuLatencyMatrix[i * numGPUs + j] = duration.count() / repeat;
+            gpuLatencyMatrix[i * numGPUs + j] = gpu_duration.count() / repeat;
+            cpuLatencyMatrix[i * numGPUs + j] = cpu_duration_ms.count() / repeat;
             if (test_p2p && p2p_access_possible) {
                 cuda::device::peer_to_peer::disable_access(device, peer);
                 cuda::device::peer_to_peer::disable_access(peer, device);
@@ -490,8 +482,6 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
 
         std::cout << "\n";
     }
-
-    sdkDeleteTimer(&stopWatch);
 }
 
 //Check peer-to-peer connectivity
