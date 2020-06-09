@@ -14,7 +14,7 @@ endif()
 
 PROJECT(cuda-api-wrappers
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
-	VERSION 0.3.3
+	VERSION 0.4.0
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
