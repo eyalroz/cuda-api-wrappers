@@ -10,13 +10,14 @@ This library of wrappers around the Runtime API is intended to allow us to embra
 
 - All functions and methods throw **exceptions** on failure - no need to check return values (the exceptions carry the status information).
 - Judicious **namespacing** (and some internal namespace-like classes) for better clarity and for semantically grouping related functionality together.
-- There are **proxy objects** for devices, streams, events and so on, using [RAII](http://en.cppreference.com/w/cpp/language/raii) to relieve you of remembering to free or destroy resources.
+- There are **proxy/wrapper objects** for devices, streams, events, kernels and so on, using [RAII](http://en.cppreference.com/w/cpp/language/raii) to relieve you of remembering to free or destroy resources. 
+- You can  **mostly forget about numeric IDs andhandles**; the proxy classes will fit everywhere.
 - Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators**.
 - Aims for **clarity and straightforwardness** in naming and semantics, so that you don't need to refer to the official documentation to understand what each class and function do.
 - Thin and **lightweight**: 
     - No work done behind your back, no caches or indices or any such thing.
-    - No costly inheritance structure, vtables, virtual methods and so on - vanishes almost entirely on compilation
-    - Doesn't "hide" any of CUDA's complexity or functionality; it only simplifies _use_ of the Runtime API.
+    - No costly inheritance structure, vtables, virtual methods and so on - vanishes almost entirely on compilation.
+    - Doesn't really "hide" any of CUDA's complexity or functionality; it only simplifies _use_ of the Runtime API.
 
 ## Detailed documentation
 
