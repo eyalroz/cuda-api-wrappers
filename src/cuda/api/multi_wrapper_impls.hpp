@@ -270,7 +270,7 @@ namespace device {
 
 inline void* allocate(cuda::device_t device, size_t size_in_bytes)
 {
-	return memory::device::allocate(device, size_in_bytes);
+	return detail::allocate(device.id(), size_in_bytes);
 }
 
 namespace async {
