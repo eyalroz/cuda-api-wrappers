@@ -337,7 +337,7 @@ public:
 	}
 
 	template <typename T>
-	copy_params_t(const void * destination, const array_t<T, 3>& source) :
+	copy_params_t(const T* destination, const array_t<T, 3>& source) :
 		copy_params_t(tag{}, destination, source)
 	{
 		srcArray = source.get();
@@ -348,48 +348,8 @@ public:
 	cudaPitchedPtr pitched_ptr;
 };
 
-} // namespace detail
-
-/**
- * Synchronously copies data from a 3-dimensional CUDA array into
- * non-array memory, on the device or on the host.
- *
- * @param destination A 3-dimensional CUDA array
- * @param source A pointer to a a memory region containing as many
- * elements as would fill the @p source array, _contiguously_
- */
 template<typename T>
-void copy(array_t<T, 3>& destination, const void *source)
-{
-	const auto copy_params = detail::copy_params_t(destination, source);
-	auto result = cudaMemcpy3D(&copy_params);
-	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
-}
-
-/**
- * Synchronously copies data from a 3-dimensional CUDA array into
- * non-array memory, on the device or on the host.
- *
- * @param destination A pointer to a a memory region large enough to fit
- * all elements of the @p source array, contiguously
- * @param source A 3-dimensional CUDA array
- */
-template<typename T>
-void copy(void *destination, const array_t<T, 3>& source)
-{
-	const auto copy_params = detail::copy_params_t(destination, source);
-	auto result = cudaMemcpy3D(&copy_params);
-	throw_if_error(result, "Synchronously copying from a 3-dimensional CUDA array");
-}
-
-/**
- * Synchronously copies data from memory spaces into CUDA arrays.
- *
- * @param destination A CUDA array @ref cuda::array_t
- * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
- */
-template<typename T>
-void copy(array_t<T, 2>& destination, const void *source)
+inline void copy(array_t<T, 2>& destination, const T *source)
 {
 	const auto dimensions = destination.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -407,15 +367,17 @@ void copy(array_t<T, 2>& destination, const void *source)
 	throw_if_error(result, "Synchronously copying into a 2D CUDA array");
 }
 
-/**
- * Synchronously copies data from a 2-dimensional CUDA array into
- * non-array memory, on the device or on the host.
- *
- * @param destination A pointer to a a memory region large enough to fit
- * all elements of the @p source array, contiguously
- * @param source A 2-dimensional CUDA array */
-template<typename T>
-void copy(void* destination, const array_t<T, 2>& source)
+template <typename T>
+inline void copy(array_t<T, 3>& destination, const T *source)
+{
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
+}
+
+
+template <typename T>
+inline void copy(T *destination, const array_t<T, 2>& source)
 {
 	const auto dimensions = source.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -433,8 +395,53 @@ void copy(void* destination, const array_t<T, 2>& source)
 	throw_if_error(result, "Synchronously copying out of a 2D CUDA array");
 }
 
+template <typename T>
+inline void copy(T* destination, const array_t<T, 3>& source)
+{
+	const auto copy_params = detail::copy_params_t(destination, source);
+	auto result = cudaMemcpy3D(&copy_params);
+	throw_if_error(result, "Synchronously copying from a 3-dimensional CUDA array");
+}
+
+} // namespace detail
+
+
 /**
- * Synchronously copies a single (typed) value between memory spaces or within a memory space.
+ * Synchronously copies data from a CUDA array into non-array memory.
+ *
+ * @tparam NumDimensions the number of array dimensions; only 2 and 3 are supported values
+ * @tparam T array element type
+ *
+ * @param destination A {@tparam NumDimensions}-dimensional CUDA array
+ * @param source A pointer to a region of contiguous memory holding `destination.size()` values
+ * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ */
+template <typename T, size_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const T* source)
+{
+	detail::copy(destination, source);
+}
+
+/**
+ * Synchronously copies data into a CUDA array from non-array memory.
+ *
+ * @tparam NumDimensions the number of array dimensions; only 2 and 3 are supported values
+ * @tparam T array element type
+ *
+ * @param destination A pointer to a region of contiguous memory holding `destination.size()` values
+ * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * @param source A {@tparam NumDimensions}-dimensional CUDA array
+ */
+template <typename T, size_t NumDimensions>
+inline void copy(T* destination, const array_t<T, NumDimensions>& source)
+{
+	detail::copy(destination, source);
+}
+
+
+
+/**
+ * Synchronously copies a single (typed) value between two memory locations.
  *
  * @param destination a value residing either in host memory or on any CUDA
  * device's global memory
@@ -477,7 +484,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 }
 
 template<typename T>
-void copy(array_t<T, 3>& destination, const void *source, stream::id_t stream_id)
+void copy(array_t<T, 3>& destination, const T* source, stream::id_t stream_id)
 {
 	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
@@ -485,7 +492,7 @@ void copy(array_t<T, 3>& destination, const void *source, stream::id_t stream_id
 }
 
 template<typename T>
-void copy(void* destination, const array_t<T, 3>& source, stream::id_t stream_id)
+void copy(T* destination, const array_t<T, 3>& source, stream::id_t stream_id)
 {
 	const auto copy_params = memory::detail::copy_params_t(destination, source);
 	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
@@ -493,7 +500,7 @@ void copy(void* destination, const array_t<T, 3>& source, stream::id_t stream_id
 }
 
 template<typename T>
-void copy(array_t<T, 2>& destination, const void *source, stream::id_t stream_id)
+void copy(array_t<T, 2>& destination, const T* source, stream::id_t stream_id)
 {
 	const auto dimensions = destination.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -513,7 +520,7 @@ void copy(array_t<T, 2>& destination, const void *source, stream::id_t stream_id
 }
 
 template<typename T>
-void copy(void* destination, const array_t<T, 2>& source, cuda::stream::id_t stream_id)
+void copy(T* destination, const array_t<T, 2>& source, cuda::stream::id_t stream_id)
 {
 	const auto dimensions = source.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -579,7 +586,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const void *source, stream_t& stream);
+inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream);
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -591,7 +598,7 @@ inline void copy(array_t<T, NumDimensions>& destination, const void *source, str
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions>
-inline void copy(void* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
+inline void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
