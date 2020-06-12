@@ -421,7 +421,7 @@ void copy(void* destination, const array_t<T, 2>& source)
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
 	const auto destination_pitch = width_in_bytes; // i.e. no padding
 	const array::dimensions_t<2> offsets { 0, 0 };
-	auto result = cudaMemcpy2DFromArrayAsync(
+	auto result = cudaMemcpy2DFromArray(
 		destination,
 		destination_pitch,
 		source.get(),
