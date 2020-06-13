@@ -769,9 +769,9 @@ enum mapped_io_space : bool {
 	is_not_mapped_io_space           = false
 };
 
-enum mapped_into_device_memory : bool {
-	is_mapped_into_device_memory     = true,
-	is_not_mapped_into_device_memory = false
+enum map_into_device_memory : bool {
+	map_into_device_memory           = true,
+	do_not_map_into_device_memory    = false
 };
 
 enum accessibility_on_all_devices : bool {
@@ -998,6 +998,25 @@ inline void prefetch_to_host(
 
 namespace mapped {
 
+/**
+ * Obtain a pointer in the device-side memory space (= address range)
+ * for the device-side memory mapped to the host-side pointer @ref host_memory_ptr
+ */
+template <typename T>
+inline T* device_side_pointer_for(T* host_memory_ptr)
+{
+	T* device_side_ptr;
+	auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
+	auto status = cudaHostGetDevicePointer(
+		&device_side_ptr,
+		host_memory_ptr,
+		get_device_pointer_flags);
+	throw_if_error(status,
+		"Failed obtaining the device-side pointer for host-memory pointer "
+		+ cuda::detail::ptr_as_hex(host_memory_ptr) + " supposedly mapped to device memory");
+	return device_side_ptr;
+}
+
 namespace detail {
 
 /**
@@ -1023,16 +1042,10 @@ inline region_pair allocate(
 		// Can this even happen? hopefully not
 		status = cudaErrorUnknown;
 	}
-	if (is_success(status)) {
-		auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
-		status = cudaHostGetDevicePointer(
-			&allocated.device_side,
-			allocated.host_side,
-			get_device_pointer_flags);
-	}
 	throw_if_error(status,
 		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
 			+ " bytes of global memory on device " + std::to_string(cuda::device::current::detail::get_id()));
+	allocated.device_side = device_side_pointer_for(allocated.host_side);
 	return allocated;
 }
 
@@ -1121,6 +1134,7 @@ inline bool is_part_of_a_region_pair(void* ptr)
 	auto wrapped_ptr = pointer_t<void> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
+
 
 } // namespace mapped
 
