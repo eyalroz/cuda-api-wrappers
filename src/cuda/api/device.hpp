@@ -98,7 +98,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 	return value;
 }
 
-inline attribute_value_t get_attribute(
+attribute_value_t get_attribute(
 	attribute_t  attribute,
 	device_t     source,
 	device_t     destination);

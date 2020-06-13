@@ -201,7 +201,7 @@ inline void enqueue_launch(
  * is undefined.
  */
 template<typename Kernel, typename... KernelParameters>
-inline void enqueue_launch(
+void enqueue_launch(
 	bool                    thread_block_cooperation,
 	Kernel                  kernel_function,
 	stream_t&               stream,
@@ -233,7 +233,7 @@ inline void enqueue_launch(
  * @note This isn't called `enqueue` since the default stream is synchronous.
  */
 template<typename Kernel, typename... KernelParameters>
-inline void launch(
+void launch(
 	Kernel                  kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);

@@ -76,7 +76,7 @@ namespace detail {
  * when being destructed itself.
  * @return The constructed `cuda::event_t`.
  */
-inline event_t wrap(
+event_t wrap(
 	device::id_t  device_id,
 	id_t          event_id,
 	bool          take_ownership = false) noexcept;
