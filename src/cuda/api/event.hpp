@@ -227,6 +227,10 @@ protected: // data members
 
 namespace event {
 
+/**
+ * @brief The type used by the CUDA Runtime API to represent the time difference
+ * between pairs of events.
+ */
 using duration_t = std::chrono::duration<float, std::milli>;
 
 /**

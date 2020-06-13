@@ -100,7 +100,16 @@ struct compute_capability_t {
 
 };
 
+/**
+ * @brief A named constructor idiom for {@ref compute_capability_t}
+ *
+ * @param combined A combination of the major and minor version number, e.g. 91 for major 9, minor 1
+ */
 inline constexpr compute_capability_t make_compute_capability(unsigned combined) noexcept;
+
+/**
+ * @brief A named constructor idiom for {@ref compute_capability_t}.
+ */
 inline constexpr compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept;
 
 /**

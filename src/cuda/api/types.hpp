@@ -45,6 +45,9 @@
 #include <ciso646>
 #endif
 
+/**
+ * @brief All definitions and functionality wrapping the CUDA Runtime API.
+ */
 namespace cuda {
 
 /*
@@ -73,7 +76,7 @@ namespace array {
 using dimension_t = std::size_t;
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
- * or extents, are not the same as @ref cuda::grid::dimensionts_t ; they may be
+ * or extents, are not the same as @ref cuda::grid::dimensions_t ; they may be
  * much larger in each axis.
  *
  * @note See also <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html">
@@ -172,11 +175,28 @@ struct dimensions_t<2>
 
 } // namespace array
 
+/**
+ * @brief Definitions and functionality related to CUDA events (not
+ * including the event wrapper type @ref event_t itself)
+ */
 namespace event {
+
+/**
+ * The CUDA Runtime API's numeric handle for events
+ */
 using id_t              = cudaEvent_t;
 } // namespace event
 
+/**
+ * @brief Definitions and functionality related to CUDA streams (not
+ * including the device wrapper type @ref stream_t itself)
+ */
+
 namespace stream {
+
+/**
+ * The CUDA Runtime API's numeric handle for streams
+ */
 using id_t             = cudaStream_t;
 
 /**
@@ -221,11 +241,11 @@ using block_dimension_t  = dimension_t;
 
 
 /**
- * A richer (kind-of-a-)wrapper for CUDA's @ref dim3 class, used
+ * A richer (kind-of-a-)wrapper for CUDA's `dim3` class, used
  * to specify dimensions for blocks (in terms of threads) and of
  * grids(in terms of blocks, or overall).
  *
- * @note Unfortunately, dim3 does not have constexpr methods -
+ * @note Unfortunately, `dim3` does not have constexpr methods -
  * preventing us from having constexpr methods here.
  *
  * @note Unlike 3D dimensions in general, grid dimensions cannot actually
@@ -262,6 +282,7 @@ struct dimensions_t // this almost-inherits dim3
 	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
 };
 
+///@cond
 constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
@@ -270,6 +291,7 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
+///@endcond
 
 
 /**
@@ -280,6 +302,10 @@ using block_dimensions_t = dimensions_t;
 
 } // namespace grid
 
+/**
+ * @brief Management and operations on memory in different CUDA-recognized
+ * spaces.
+ */
 namespace memory {
 namespace shared {
 
@@ -339,7 +365,7 @@ struct launch_configuration_t {
 };
 
 /**
- * @brief a named constructor idiom for a @ref `launch_config_t`
+ * @brief a named constructor idiom for a @ref launch_config_t
  */
 inline launch_configuration_t make_launch_config(
 	grid::dimensions_t        grid_dimensions,
@@ -398,6 +424,10 @@ enum multiprocessor_shared_memory_bank_size_option_t
 	eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
 };
 
+/**
+ * @brief Definitions and functionality related to CUDA devices (not
+ * including the device wrapper type @ref device_t itself)
+ */
 namespace device {
 
 /**
@@ -407,18 +437,18 @@ using id_t               = int;
 
 /**
  * CUDA devices have both "attributes" and "properties". This is the
- * type for attribute identifiers/indices, aliasing {@ref cudaDeviceAttr}.
+ * type for attribute identifiers/indices, aliasing @ref cudaDeviceAttr.
  */
 using attribute_t        = enum cudaDeviceAttr;
 /**
- * All CUDA device attributes (@ref attribute_t) have a value of this type.
+ * All CUDA device attributes (@ref cuda::device::attribute_t) have a value of this type.
  */
 using attribute_value_t  = int;
 
 /**
  * While Individual CUDA devices have individual "attributes" (@ref attribute_t),
  * there are also attributes characterizing pairs; this type is used for
- * identifying/indexing them, aliasing {@ref cudaDeviceP2PAttr}.
+ * identifying/indexing them, aliasing `cudaDeviceP2PAttr`.
  */
 using pair_attribute_t   = cudaDeviceP2PAttr;
 

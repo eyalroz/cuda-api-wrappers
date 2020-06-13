@@ -67,18 +67,27 @@ inline void disable_access(device_t accessor, device_t peer)
 	accessor.disable_access_to(peer);
 }
 
+/**
+ * @brief Determine whether two CUDA devices can currently access each other.
+ */
 inline bool can_access_each_other(const device_t first, const device_t second)
 {
 	return first.can_access(second) and second.can_access(first);
 }
 
 
+/**
+ * @brief Enable access both by the @p first to the @p second device and the other way around.
+ */
 inline void enable_bidirectional_access(device_t first, device_t second)
 {
 	enable_access(first,  second);
 	enable_access(second, first );
 }
 
+/**
+ * @brief Disable access both by the @p first to the @p second device and the other way around.
+ */
 inline void disable_bidirectional_access(device_t first, device_t second)
 {
 	// Note: What happens when first and second have the same id?

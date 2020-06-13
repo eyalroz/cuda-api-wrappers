@@ -51,16 +51,40 @@ class stream_t;
  */
 namespace memory {
 
+/**
+ * A memory allocation setting: Can the allocated memory be used in other
+ * CUDA driver contexts (in addition to the implicit default context we
+ * have with the Runtime API).
+ */
 enum class portability_across_contexts : bool {
-	is_portable   = true,
-	isnt_portable = false
+	is_portable   = true,//!< is_portable
+	isnt_portable = false//!< isnt_portable
 };
 
+/**
+ * A memory allocation setting: Should the allocated memory be configured
+ * as _write-combined_, i.e. a write may not be immediately applied to the
+ * allocated region and propagated (e.g. to caches, over the PCIe bus).
+ * Instead, writes will be applied as convenient, possibly in batch.
+ *
+ * Write-combining memory frees up the host's L1 and L2 cache resources,
+ * making more cache available to the rest of the application. In addition,
+ * write-combining memory is not snooped during transfers across the PCI
+ * Express bus, which can improve transfer performance.
+ *
+ * Reading from write-combining memory from the host is prohibitively slow,
+ * so write-combining memory should in general be used for memory that the
+ * host only writes to.
+ */
 enum cpu_write_combining : bool {
 	with_wc    = true,
 	without_wc = false
 };
 
+/**
+ * @brief options accepted by CUDA's allocator of memory with a host-side aspect
+ * (host-only or managed memory).
+ */
 struct allocation_options {
 	portability_across_contexts  portability;
 	cpu_write_combining          write_combining;
@@ -116,8 +140,7 @@ struct region_pair {
 namespace memory {
 
 /**
- * @namespace device
- * CUDA-Device-global memory on a single device (not accessible from the host)
+ * @brief CUDA-Device-global memory on a single device (not accessible from the host)
  */
 namespace device {
 
@@ -145,17 +168,6 @@ inline void* allocate(size_t num_bytes)
 	return allocated;
 }
 
-/**
- * Allocate device-side memory on a CUDA device.
- *
- * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
- * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
- *
- * @throws cuda::runtime_error if allocation fails for any reason
- *
- * @param size_in_bytes the amount of memory to allocate
- * @return a pointer to the allocated stretch of memory (on the CUDA device)
- */
 inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
 	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
@@ -173,6 +185,18 @@ inline void free(void* ptr)
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
 
+/**
+ * Allocate device-side memory on a CUDA device.
+ *
+ * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
+ * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
+ *
+ * @throws cuda::runtime_error if allocation fails for any reason
+ *
+ * @param device the device on which to allocate memory
+ * @param size_in_bytes the amount of memory to allocate
+ * @return a pointer to the allocated stretch of memory (only usable on the CUDA device)
+ */
 inline void* allocate(cuda::device_t device, size_t size_in_bytes);
 
 namespace detail {
@@ -695,6 +719,9 @@ namespace host {
  * @todo Consider a variant of this supporting the cudaHostAlloc flags
  *
  * @param size_in_bytes the amount of memory to allocate, in bytes
+ * @param options options to pass to the CUDA host-side memory allocator;
+ * see {@ref memory::allocation_options}.
+ *
  * @return a pointer to the allocated stretch of memory
  */
 inline void* allocate(
@@ -764,19 +791,34 @@ inline void register_(void *ptr, size_t size, unsigned flags)
 
 } // namespace detail
 
+/**
+ * Whether or not the registration of the host-side pointer should map
+ * it into the CUDA address space for access on the device. When true,
+ * one can then obtain the device-space pointer using cudaHostGetDevicePointer().
+ */
 enum mapped_io_space : bool {
 	is_mapped_io_space               = true,
 	is_not_mapped_io_space           = false
 };
 
+/**
+ * Whether or not the registration of the host-side pointer should map
+ * it into the CUDA address space for access on the device. When true,
+ * one can then obtain the device-space pointer using cudaHostGetDevicePointer().
+ */
 enum map_into_device_memory : bool {
 	map_into_device_memory           = true,
 	do_not_map_into_device_memory    = false
 };
 
+/**
+ * Whether the allocated host-side memory should be recognized as pinned memory by
+ * all CUDA contexts, not just the (implicit Runtime API) context that performed the
+ * allocation.
+ */
 enum accessibility_on_all_devices : bool {
-	is_accessible_on_all_devices     = true,
-	is_not_accessible_on_all_devices = false
+	is_accessible_on_all_devices     = true,//!< is_accessible_on_all_devices
+	is_not_accessible_on_all_devices = false//!< is_not_accessible_on_all_devices
 };
 
 
@@ -840,7 +882,6 @@ inline void zero(T* ptr)
 } // namespace host
 
 /**
- * @namespace managed
  * This type of memory, also known as _unified_ memory, appears within
  * a unified, all-system address space - and is used with the same
  * address range on the host and on all relevant CUDA devices on a
@@ -1059,7 +1100,6 @@ inline region_pair allocate(
  * the region pair
  * @return the allocated pair (with both regions being non-null)
  */
-
 inline region_pair allocate(
 	cuda::device::id_t  device_id,
 	size_t              size_in_bytes,
@@ -1071,12 +1111,22 @@ inline region_pair allocate(
 
 } // namespace detail
 
-
-region_pair allocate(
+/**
+ * Allocate a pair of memory regions, on the host and on the device, mapped to each other so
+ * that changes to one will be reflected in the other.
+ *
+ * @param device The device on which the device-side region in the pair will be allocated
+ * @param size_in_bytes amount of memory to allocate (in each of the regions)
+ * @param options see @ref allocation_options
+ */
+inline region_pair allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
 	allocation_options  options);
 
+/**
+ * @brief A variant of @ref allocate facilitating only specifying some of the allocation options
+ */
 inline region_pair allocate(
 	cuda::device_t&              device,
 	size_t                       size_in_bytes,
@@ -1086,6 +1136,9 @@ inline region_pair allocate(
 	return allocate(device, size_in_bytes, allocation_options{ portability, cpu_wc } );
 }
 
+/**
+ * @brief A variant of @ref allocate facilitating only specifying some of the allocation options
+ */
 inline region_pair allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
@@ -1134,7 +1187,6 @@ inline bool is_part_of_a_region_pair(void* ptr)
 	auto wrapped_ptr = pointer_t<void> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
-
 
 } // namespace mapped
 
