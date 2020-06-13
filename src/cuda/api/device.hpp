@@ -51,7 +51,7 @@ device_t get();
 namespace peer_to_peer {
 
 /**
- * @brief The value of type for all CUDA device "attributes"; see also @ref attribute_t.
+ * @brief The value of type for all CUDA device "attributes"; see also @ref cuda::device::attribute_t.
  */
 using attribute_value_t = int;
 
@@ -62,7 +62,7 @@ using attribute_value_t = int;
  * Attributes have integral number values; properties have all sorts of values,
  * including arrays and limited-length strings (see
  * @ref cuda::device::properties_t), and flags are either binary or
- * small-finite-domain type fitting into an overall flagss value (see
+ * small-finite-domain type fitting into an overall flags value (see
  * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
  * attributes are more one-at-a-time.
  */
@@ -257,7 +257,6 @@ public:	// types
 	/**
 	 * @brief Enable access by this device to the global memory of another device
 	 *
-	 * @param peer device to have access access to
 	 * @param peer the device to which to enable access
 	 */
 	void enable_access_to(device_t peer)
@@ -273,7 +272,7 @@ public:	// types
 	/**
 	 * @brief Disable access by this device to the global memory of another device
 	 *
-	 * @param peer device to have access disabled to
+	 * @param peer the device to which to disable access
 	 */
 	void disable_access_to(device_t peer)
 	{
@@ -586,7 +585,7 @@ public:
 		stream::priority_t  priority = cuda::stream::default_priority);
 
 	/**
-	 * See @ref event::create()
+	 * See @ref cuda::event::create()
 	 */
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
@@ -726,6 +725,7 @@ protected:
 	device::id_t id_;
 };
 
+///@cond
 inline bool operator==(const device_t& lhs, const device_t& rhs)
 {
 	return lhs.id() == rhs.id();
@@ -736,6 +736,7 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 {
 	return lhs.id() != rhs.id();
 }
+///@endcond
 
 namespace device {
 
