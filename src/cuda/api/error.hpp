@@ -23,7 +23,7 @@ namespace status {
 /**
  * Aliases for CUDA status codes
  *
- * @note unfortunately, this enum can't inherit from @ref status_t
+ * @note unfortunately, this enum can't inherit from @ref cuda::status_t
  */
 enum named_t : std::underlying_type<status_t>::type {
 	success                         = cudaSuccess,
@@ -109,14 +109,23 @@ enum named_t : std::underlying_type<status_t>::type {
 	api_failure_base                = cudaErrorApiFailureBase
 };
 
+///@cond
 constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
 constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
 constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
 constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
+///@endcond
 
 } // namespace status
 
+/**
+ * @brief Determine whether the API call returning the specified status had succeeded
+ */
 constexpr inline bool is_success(status_t status)  { return status == (status_t) status::success; }
+
+/**
+ * @brief Determine whether the API call returning the specified status had failed
+ */
 constexpr inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
 
 /**
@@ -228,9 +237,13 @@ enum : bool {
 namespace outstanding_error {
 
 /**
- * Reset the CUDA status to cuda::status::success.
+ * Reset the CUDA status to @ref cuda::status::success.
  */
 inline status_t clear() noexcept { return cudaGetLastError();    }
+
+/**
+ * Get the code of the last error in a CUDA-related action.
+ */
 inline status_t get()   noexcept { return cudaPeekAtLastError(); }
 
 /**
@@ -257,7 +270,7 @@ inline void ensure_none(
 }
 
 /**
- * @brief A variant of @ref ensure_none(std::string, bool) which takes
+ * @brief A variant of @ref ensure_none() which takes
  * a C-style string.
  *
  * @note exists so as to avoid incorrect overload resolution of

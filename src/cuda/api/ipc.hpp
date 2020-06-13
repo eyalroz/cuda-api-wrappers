@@ -39,6 +39,10 @@ class event_t;
 namespace memory {
 namespace ipc {
 
+/**
+ * The concrete value passed between processes, used to tell
+ * the CUDA Runtime API which memory area is desired.
+ */
 using handle_t = cudaIpcMemHandle_t;
 
 /**
@@ -148,6 +152,10 @@ protected: // data members
 namespace event {
 namespace ipc {
 
+/**
+ * The concrete value passed between processes, used to tell
+ * the CUDA Runtime API which event is desired.
+ */
 using handle_t = cudaIpcEventHandle_t;
 
 namespace detail {

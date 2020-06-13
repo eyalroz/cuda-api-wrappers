@@ -27,7 +27,7 @@ class stream_t;
 namespace kernel {
 
 /**
- * @brief a wrapper around @ref cudaFuncAttributes, offering
+ * @brief a wrapper around `cudaFuncAttributes`, offering
  * a few convenience member functions.
  */
 struct attributes_t : cudaFuncAttributes {
@@ -124,7 +124,7 @@ public: // non-mutators
 		KernelParameters&&...   parameters);
 
 	/**
-	 * Variant of @ref enqueue_launch for use with the default stream on the current device.
+	 * Variant of @ref enqueue_launch() for use with the default stream on the current device.
 	 *
 	 * @note This isn't called `enqueue` since the default stream is synchronous.
 	 */
@@ -153,7 +153,7 @@ public: // mutators
 
 	/**
 	 *
-	 * @param shared_memory_size The amount of dynamic shared memory each grid block will
+	 * @param dynamic_shared_memory_size The amount of dynamic shared memory each grid block will
 	 * need.
 	 * @param block_size_limit do not return a block size above this value; the default, 0,
 	 * means no limit on the returned block size.
@@ -223,7 +223,6 @@ public: // mutators
 	 * @brief Sets a device function's preference of shared memory bank size preference
 	 * (for the current device probably)
 	 *
-	 * @param device the CUDA device for execution on which the preference is set
 	 * @param config bank size setting to make
 	 */
 	void set_shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config);
@@ -311,6 +310,10 @@ Kernel unwrap_inner(std::false_type, Kernel raw_function)
 
 } // namespace detail
 
+/**
+ * Obtain the raw function pointer of any type acceptable as a launchable kernel
+ * by {@ref enqueue_launch}.
+ */
 template<typename Kernel, typename... KernelParameters>
 auto unwrap(Kernel f) -> typename std::conditional<
 	std::is_same<typename std::decay<Kernel>::type, kernel_t>::value,

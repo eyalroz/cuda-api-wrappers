@@ -57,7 +57,16 @@ namespace cuda {
 
 class stream_t;
 
+/**
+ * A named constructor idiom for {@ref grid::dimensions_t},
+ * which, when used, will result in a grid with a single block.
+ */
 constexpr grid::dimensions_t single_block() { return 1; }
+/**
+ * A named constructor idiom for {@ref grid::dimensions_t},
+ * which, when used, will result in a grid whose blocks have
+ * a single thread
+ */
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail {
@@ -199,6 +208,10 @@ inline void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
+/**
+ * A variant of @ref enqueue_launch which uses the default of no cooperation
+ * between thread blocks.
+ */
 template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
 	Kernel                  kernel_function,
