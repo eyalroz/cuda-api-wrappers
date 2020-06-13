@@ -598,7 +598,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream);
+void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream);
 
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
@@ -610,7 +610,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream);
+void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream);
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -622,7 +622,7 @@ inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, size_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
+void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
@@ -969,7 +969,7 @@ inline void* allocate(
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-inline void* allocate(
+void* allocate(
 	cuda::device_t        device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
@@ -1011,7 +1011,7 @@ inline void prefetch(
  * it can later be used there without waiting for I/O from the host or other
  * devices.
  */
-inline void prefetch(
+void prefetch(
 	const void*      managed_ptr,
 	size_t           num_bytes,
 	cuda::device_t   destination,
@@ -1119,7 +1119,7 @@ inline region_pair allocate(
  * @param size_in_bytes amount of memory to allocate (in each of the regions)
  * @param options see @ref allocation_options
  */
-inline region_pair allocate(
+region_pair allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
 	allocation_options  options);

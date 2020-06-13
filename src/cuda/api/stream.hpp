@@ -127,7 +127,7 @@ namespace detail {
  *
  * @return a stream_t proxy for the CUDA stream
  */
-inline stream_t wrap(
+stream_t wrap(
 	device::id_t  device_id,
 	id_t          stream_id,
 	bool          take_ownership = false) noexcept;
@@ -633,7 +633,7 @@ inline stream_t create(
  * @ref device_t::stream_priority_range() .
  * @return The newly-created stream
  */
-inline stream_t create(
+stream_t create(
 	device_t     device,
 	bool         synchronizes_with_default_stream,
 	priority_t   priority = stream::default_priority);
