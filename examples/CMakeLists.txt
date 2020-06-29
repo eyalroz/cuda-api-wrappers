@@ -26,7 +26,7 @@ set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS ON)
 
-link_libraries(cuda-api-wrappers)
+link_libraries(runtime-api)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 add_executable(vectorAdd modified_cuda_samples/vectorAdd/vectorAdd.cu)
