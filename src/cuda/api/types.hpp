@@ -338,12 +338,13 @@ struct launch_configuration_t {
 	memory::shared::size_t    dynamic_shared_memory_size { 0u };
 		/// ... in bytes per block
 
-#if __cplusplus < 201402L
 	// In C++11, an inline initializer for a struct's field costs us a lot
 	// of its defaulted constructors; but - we must initialize the shared
 	// memory size to 0, as otherwise, people might be tempted to initialize
-	// a launch config with { num_blocks, num_threads } - and get an
-	// uninitalized shared memory size which they did not expect.
+	// a launch configuration with { num_blocks, num_threads } - and get an
+	// uninitialized shared memory size which they did not expect. So,
+	// we do have the inline initializers above regardldess of the language
+	// standard version, and we just have to "pay the price" of spelling things out:
 	launch_configuration_t() = delete;
 	launch_configuration_t(const launch_configuration_t&) = default;
 	launch_configuration_t(launch_configuration_t&&) = default;
@@ -356,14 +357,13 @@ struct launch_configuration_t {
 		block_dimensions(block_dims),
 		dynamic_shared_memory_size(dynamic_shared_mem)
 	{ }
-	// A "convenience" ctor to avoid narrowing-conversion warnings
+	// A "convenience" delegating ctor to avoid narrowing-conversion warnings
 	launch_configuration_t(
 		int grid_dims,
 		int block_dims,
 		memory::shared::size_t dynamic_shared_mem = 0u
-	) : launch_configuration_t(grid::dimensions_t(grid_dims), grid::dimensions_t(block_dims), dynamic_shared_mem )
+	) : launch_configuration_t(grid::dimensions_t(grid_dims), grid::dimensions_t(block_dims), dynamic_shared_mem)
 	{ }
-#endif
 };
 
 /**
