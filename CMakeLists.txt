@@ -2,7 +2,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
-
 # -----------------------------------
 # Project name, version & build type
 # -----------------------------------
@@ -18,52 +17,70 @@ PROJECT(cuda-api-wrappers
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
-find_package(Threads REQUIRED)
-
 include(FindCUDA)
 include(GNUInstallDirs)
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+
 find_package(Threads REQUIRED)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
-add_library(cuda-api-wrappers
-	src/cuda/api/profiling.cpp
-)
+# -------------------
+# Our library targets
+# -------------------
 
-set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD 11)
-set_property(TARGET cuda-api-wrappers PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET cuda-api-wrappers PROPERTY CXX_EXTENSIONS OFF)
+add_library(runtime-api INTERFACE) # A header-only library!
+add_library(nvtx)
+set(wrapper-libraries runtime-api nvtx)
+
+foreach(WRAPPER_LIB ${wrapper-libraries})
+	target_compile_features(${WRAPPER_LIB} INTERFACE cxx_std_11) # This means _at least_ C++11
+	target_include_directories(
+		${WRAPPER_LIB}
+		INTERFACE
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
+		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	)
+	# The following line _should_ have been something like:
+	# target_link_libraries(${WRAPPER_LIB} PUBLIC CUDA::CUDALibs)
+	# ... but that's not supported.
+	target_include_directories(${WRAPPER_LIB} INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+	target_link_libraries(${WRAPPER_LIB} INTERFACE ${CUDA_LIBRARIES})
+endforeach()
+
+set_target_properties(nvtx PROPERTIES OUTPUT_NAME "cuda-nvtx-wrappers")
+target_link_libraries(nvtx PUBLIC runtime-api)
+set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
+set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET nvtx PROPERTY CXX_EXTENSIONS OFF)
+
+#target_sources(runtime-api INTERFACE src/cuda/api_wrappers.hpp)
+target_sources(nvtx PRIVATE src/cuda/api/profiling.cpp)
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
 if(DEFINED CMAKE_USE_PTHREADS_INIT)
-	target_compile_definitions(cuda-api-wrappers PUBLIC "" "CUDA_API_WRAPPERS_USE_PTHREADS")
+	target_compile_definitions(nvtx PUBLIC "" "CUDA_API_WRAPPERS_USE_PTHREADS")
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
-	target_compile_definitions(cuda-api-wrappers PUBLIC "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
+	target_compile_definitions(nvtx PUBLIC "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
-target_include_directories(
-	cuda-api-wrappers
-	PUBLIC
-	"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
-	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
+target_link_libraries(nvtx PRIVATE Threads::Threads)
 
-# The following lines _should_ have been something like:
-# target_link_libraries(cuda-api-wrappers PUBLIC CUDA::CUDALibs Threads::Threads)
-# ... but that's not supported.
-target_include_directories(cuda-api-wrappers PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-target_link_libraries(cuda-api-wrappers
-	PUBLIC ${CUDA_LIBRARIES}
-	PRIVATE Threads::Threads)
+# --------
+# Examples
+# --------
 
 option(BUILD_EXAMPLES "Build example programs" OFF)
 
 if (BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
+
+# ------------------------
+# Installing the libraries
+# ------------------------
 
 configure_file("${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake.in"
 	"${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake" @ONLY)
@@ -72,7 +89,7 @@ install(FILES "${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers")
 
 install(
-	TARGETS cuda-api-wrappers
+	TARGETS ${wrapper-libraries}
 	EXPORT cuda-api-wrappers_export
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
