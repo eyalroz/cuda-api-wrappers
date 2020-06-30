@@ -30,6 +30,7 @@ static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be 
 #include <cuda/api/event.hpp>
 
 #include <cuda/api/peer_to_peer.hpp>
+#include <cuda/api/devices.hpp>
 
 #include <cuda/api/pci_id_impl.hpp>
 #include <cuda/api/multi_wrapper_impls.hpp>
