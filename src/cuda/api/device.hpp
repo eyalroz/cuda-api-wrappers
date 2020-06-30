@@ -731,7 +731,6 @@ inline bool operator==(const device_t& lhs, const device_t& rhs)
 	return lhs.id() == rhs.id();
 }
 
-template<bool , bool >
 inline bool operator!=(const device_t& lhs, const device_t& rhs)
 {
 	return lhs.id() != rhs.id();
