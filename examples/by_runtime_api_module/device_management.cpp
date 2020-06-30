@@ -15,6 +15,7 @@
 #include "cuda/api/device.hpp"
 #include "cuda/api/error.hpp"
 #include "cuda/api/peer_to_peer.hpp"
+#include "cuda/api/devices.hpp"
 
 #include <cuda_runtime_api.h>
 
@@ -207,6 +208,20 @@ int main(int argc, char **argv)
 		// We expected to get this exception, just clear it
 		cuda::outstanding_error::clear();
 	}
+
+	// Iterate over all devices
+	// ------------------------
+
+	auto devices = cuda::devices();
+	assert(devices.size() == cuda::device::count());
+	std::cout << "There are " << devices.size() << " 'elements' in devices().\n";
+	std::cout << "Let's count the device IDs... ";
+	for(auto device : cuda::devices()) {
+		std::cout << (int) device.id() << ' ';
+		device.synchronize();
+	}
+	std::cout << '\n';
+
 
 
 	// Synchronize and reset
