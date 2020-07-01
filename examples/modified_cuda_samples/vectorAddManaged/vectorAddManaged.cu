@@ -8,6 +8,9 @@
  *
  * Use this reasonably. If you want to discuss licensing formalities, please
  * contact the author.
+ *
+ * This version differs from the other vectorAdd example in that managed memory is
+ * used instead of regular host and device memory.
  */
 
 #include "cuda/api_wrappers.hpp"
@@ -30,25 +33,15 @@ int main(void)
 	}
 
 	int numElements = 50000;
-	size_t size = numElements * sizeof(float);
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	// If we could rely on C++14, we would  use std::make_unique
-	auto h_A = std::unique_ptr<float>(new float[numElements]);
-	auto h_B = std::unique_ptr<float>(new float[numElements]);
-	auto h_C = std::unique_ptr<float>(new float[numElements]);
+	auto buffer_A = cuda::memory::managed::make_unique<float[]>(numElements);
+	auto buffer_B = cuda::memory::managed::make_unique<float[]>(numElements);
+	auto buffer_C = cuda::memory::managed::make_unique<float[]>(numElements);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(h_A.get(), h_A.get() + numElements, generator);
-	std::generate(h_B.get(), h_B.get() + numElements, generator);
-
-	auto device = cuda::device::current::get();
-	auto d_A = cuda::memory::device::make_unique<float[]>(device, numElements);
-	auto d_B = cuda::memory::device::make_unique<float[]>(device, numElements);
-	auto d_C = cuda::memory::device::make_unique<float[]>(device, numElements);
-
-	cuda::memory::copy(d_A.get(), h_A.get(), size);
-	cuda::memory::copy(d_B.get(), h_B.get(), size);
+	std::generate(buffer_A.get(), buffer_A.get() + numElements, generator);
+	std::generate(buffer_B.get(), buffer_B.get() + numElements, generator);
 
 	// Launch the Vector Add CUDA Kernel
 	int threadsPerBlock = 256;
@@ -60,14 +53,16 @@ int main(void)
 	cuda::launch(
 		vectorAdd,
 		cuda::launch_configuration_t( blocksPerGrid, threadsPerBlock ),
-		d_A.get(), d_B.get(), d_C.get(), numElements
+		buffer_A.get(), buffer_B.get(), buffer_C.get(), numElements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C.get(), size);
+	// Synchronization is necessary here despite the synchronous nature of the default stream -
+	// since the copying-back of data is not something we've waited for
+	cuda::device::current::get().synchronize();
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
+		if (fabs(buffer_A.get()[i] + buffer_B.get()[i] - buffer_C.get()[i]) > 1e-5)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}

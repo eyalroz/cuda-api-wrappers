@@ -30,6 +30,8 @@ link_libraries(runtime-api)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 add_executable(vectorAdd modified_cuda_samples/vectorAdd/vectorAdd.cu)
+add_executable(vectorAddMapped modified_cuda_samples/vectorAddMapped/vectorAddMapped.cu)
+add_executable(vectorAddManaged modified_cuda_samples/vectorAddManaged/vectorAddManaged.cu)
 add_executable(inlinePTX modified_cuda_samples/inlinePTX/inlinePTX.cu)
 add_executable(simpleStreams modified_cuda_samples/simpleStreams/simpleStreams.cu)
 add_executable(simpleIPC modified_cuda_samples/simpleIPC/simpleIPC.cu)
