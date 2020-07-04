@@ -50,6 +50,15 @@ class stream_t;
  */
 namespace memory {
 
+struct region_t {
+	void* start;
+	size_t size_in_bytes;
+
+	size_t size() const { return size_in_bytes; }
+	void* data() const { return start; }
+	void* get() const { return start; }
+};
+
 /**
  * A memory allocation setting: Can the allocated memory be used in other
  * CUDA driver contexts (in addition to the implicit default context we
@@ -121,14 +130,9 @@ namespace mapped {
  * proper memory region abstraction, i.e. it has no size information
  */
 struct region_pair {
-
 	void* host_side;
 	void* device_side;
-	// size_t size_in_bytes; // common to both sides
-	// allocation_options properties;
-
-	// operator std::pair<void*, void*>() { return make_pair(host_side, device_side); }
-	// size_t size() { return size_in_bytes; }
+	size_t size_in_bytes; /// the allocated number of bytes, common to both sides
 };
 
 } // namespace mapped
@@ -150,7 +154,7 @@ namespace detail {
  *
  * @param num_bytes amount of memory to allocate in bytes
  */
-inline void* allocate(size_t num_bytes)
+inline region_t allocate(size_t num_bytes)
 {
 	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
@@ -164,10 +168,10 @@ inline void* allocate(size_t num_bytes)
 		"Failed allocating " + std::to_string(num_bytes) +
 		" bytes of global memory on CUDA device " +
 		std::to_string(cuda::device::current::detail::get_id()));
-	return allocated;
+	return {allocated, num_bytes};
 }
 
-inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+inline region_t allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 {
 	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
 	return memory::device::detail::allocate(size_in_bytes);
@@ -176,13 +180,16 @@ inline void* allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 } // namespace detail
 
 /**
- * Free a region of device-side memory which was allocated with @ref allocate.
+ * Free a region of device-side memory (regardless of how it was allocated)
  */
+///@{
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
+inline void free(region_t region) { free(region.start); }
+///@}
 
 /**
  * Allocate device-side memory on a CUDA device.
@@ -196,12 +203,12 @@ inline void free(void* ptr)
  * @param size_in_bytes the amount of memory to allocate
  * @return a pointer to the allocated stretch of memory (only usable on the CUDA device)
  */
-inline void* allocate(cuda::device_t device, size_t size_in_bytes);
+inline region_t allocate(cuda::device_t device, size_t size_in_bytes);
 
 namespace detail {
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const { return detail::allocate(num_bytes); }
+	void* operator()(size_t num_bytes) const { return detail::allocate(num_bytes).start; }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
@@ -213,9 +220,12 @@ struct deleter {
  *
  * @note The equivalent of @ref std::memset for CUDA device-side memory
  *
+ * @param byte_value value to set the memory region to
+ */
+///@{
+/**
  * @param start starting address of the memory region to set, in a CUDA
  * device's global memory
- * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
@@ -225,16 +235,37 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 }
 
 /**
+ * @param region a region to zero-out, in a CUDA device's global memory
+ */
+inline void set(region_t region, int byte_value)
+{
+	set(region.start, byte_value, region.size_in_bytes);
+}
+///@}
+
+
+/**
  * @brief Sets all bytes in a region of memory to 0 (zero)
- *
- * @param start starting address of the memory region to zero-out,
- * in a CUDA device's global memory
- * @param num_bytes size of the memory region in bytes
+ */
+///@{
+/**
+ * @param region a region to zero-out, in a CUDA device's global memory
  */
 inline void zero(void* start, size_t num_bytes)
 {
 	set(start, 0, num_bytes);
 }
+
+/**
+ * @param start starting address of the memory region to zero-out,
+ * in a CUDA device's global memory
+ * @param num_bytes size of the memory region in bytes
+ */
+inline void zero(region_t region)
+{
+	zero(region.start, region.size_in_bytes);
+}
+///@}
 
 /**
  * @brief Sets all bytes of a single pointed-to value to 0
@@ -256,8 +287,10 @@ inline void zero(T* ptr)
  * @note Since we assume Compute Capability >= 2.0, all devices support the
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
  * where the data is located, and one does not have to specify this.
- *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
+ */
+///@{
+/**
+ *  @param destination A pointer to a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param source A pointer to a a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
@@ -272,31 +305,50 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 }
 
 /**
+ *  @param destination A pointer to a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source A pointer to a a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ */
+inline void copy(region_t destination, region_t source)
+{
+#ifndef NDEBUG
+	if (destination.size_in_bytes < source.size_in_bytes) {
+		throw std::logic_error("Can't copy a large region into a smaller one");
+	}
+#endif
+	auto result = cudaMemcpy(destination.start, source.start, source.size_in_bytes, cudaMemcpyDefault);
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error(result, "Synchronously copying data");
+}
+///@}
+
+/**
  * @brief Sets all bytes in a region of memory to a fixed value
  *
  * @note The equivalent of @ref std::memset - for any and all CUDA-related
  * memory spaces
  *
- * @param start starting address of the memory region to set;
- * may be in host-side memory, global CUDA-device-side memory or
- * CUDA-managed memory.
+ * @param region the memory region to set; may be in host-side memory,
+ * global CUDA-device-side memory or CUDA-managed memory.
  * @param byte_value value to set the memory region to
- * @param num_bytes size of the memory region in bytes
  */
-inline void set(void* start, int byte_value, size_t num_bytes)
+inline void set(region_t region, int byte_value)
 {
-	pointer_t<void> pointer { start };
+	pointer_t<void> pointer { region.start };
 	switch ( pointer.attributes().memory_type() ) {
 	case device_memory:
 	case managed_memory:
-		memory::device::set(start, byte_value, num_bytes); break;
+		memory::device::set(region, byte_value); break;
 	case unregistered_memory:
 	case host_memory:
-		std::memset(start, byte_value, num_bytes); break;
+		std::memset(region.start, byte_value, region.size_in_bytes); break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(start)
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(region.start)
 		);
 	}
 }
@@ -304,14 +356,12 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 /**
  * @brief Sets all bytes in a region of memory to 0 (zero)
  *
- * @param start starting address of the memory region to zero-out;
- * may be in host-side memory, global CUDA-device-side memory or
- * CUDA-managed memory.
- * @param num_bytes size of the memory region in bytes
+ * @param region the memory region to zero-out; may be in host-side memory,
+ * global CUDA-device-side memory or CUDA-managed memory.
  */
-inline void zero(void* start, size_t num_bytes)
+inline void zero(region_t region)
 {
-	return set(start, 0, num_bytes);
+	return set(region, 0);
 }
 
 /**
@@ -461,8 +511,6 @@ inline void copy(T* destination, const array_t<T, NumDimensions>& source)
 	detail::copy(destination, source);
 }
 
-
-
 /**
  * Synchronously copies a single (typed) value between two memory locations.
  *
@@ -490,14 +538,18 @@ namespace detail {
  *
  * @note asynchronous version of @ref memory::copy
  *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream_id A stream on which to enqueue the copy operation
  */
-inline void copy(void *destination, const void *source, size_t num_bytes, stream::id_t stream_id)
+
+///@{
+/**
+* @param destination A pointer to a memory region of size @p num_bytes, either in
+* host memory or on any CUDA device's global memory
+* @param source A pointer to a memory region of size at least @p num_bytes, either in
+* host memory or on any CUDA device's global memory
+* @param num_bytes number of bytes to copy from @p source
+*/
+inline void copy(void* destination, const void* source, size_t num_bytes, stream::id_t stream_id)
 {
 	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_id);
 
@@ -505,6 +557,24 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 	// add this information to the error string
 	throw_if_error(result, "Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
+
+/**
+ *  @param destination a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param stream_id A stream on which to enqueue the copy operation
+ */
+inline void copy(region_t destination, region_t source, stream::id_t stream_id)
+{
+#ifndef NDEBUG
+	if (destination.size_in_bytes < source.size_in_bytes) {
+		throw std::logic_error("Can't copy a large region into a smaller one");
+	}
+#endif
+	copy(destination.start, source.start, source.size_in_bytes, stream_id);
+}
+///@}
 
 template<typename T>
 void copy(array_t<T, 3>& destination, const T* source, stream::id_t stream_id)
@@ -597,7 +667,8 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream);
+void copy(region_t destination, region_t source, size_t num_bytes, stream_t& stream);
+
 
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
@@ -652,9 +723,20 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stre
 	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
+inline void set(region_t region, int byte_value, stream::id_t stream_id)
+{
+	set(region.start, byte_value, region.size_in_bytes, stream_id);
+}
+
+
 inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
 {
 	set(start, 0, num_bytes, stream_id);
+}
+
+inline void zero(region_t region, stream::id_t stream_id)
+{
+	zero(region.start, region.size_in_bytes, stream_id);
 }
 
 } // namespace detail
@@ -913,7 +995,7 @@ enum class attachment_t {
 
 namespace detail {
 
-inline void* allocate(
+inline region_t allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
@@ -929,31 +1011,37 @@ inline void* allocate(
 	}
 	throw_if_error(status,
 		"Failed allocating " + std::to_string(num_bytes) + " bytes of managed CUDA memory");
-	return allocated;
+	return {allocated, num_bytes};
 }
 
 /**
  * Free a region of pinned host memory which was allocated with @ref allocate.
  */
+///@{
 inline void free(void* ptr)
 {
 	auto result = cudaFree(ptr);
 	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
+inline void free(region_t region)
+{
+	free(region.start);
+}
+///@}
 
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 struct allocator {
 	// Allocates on the current device!
 	void* operator()(size_t num_bytes) const
 	{
-		return detail::allocate(num_bytes, InitialVisibility);
+		return detail::allocate(num_bytes, InitialVisibility).start;
 	}
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
 
-inline void* allocate(
+inline region_t allocate(
 	cuda::device::id_t    device_id,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
@@ -976,7 +1064,7 @@ inline void* allocate(
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-void* allocate(
+region_t allocate(
 	cuda::device_t        device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
@@ -995,20 +1083,24 @@ inline void free(void* managed_ptr)
 		+ cuda::detail::ptr_as_hex(managed_ptr));
 }
 
+inline void free(region_t managed_region)
+{
+	free(managed_region.start);
+}
+
 namespace async {
 
 namespace detail {
 
 inline void prefetch(
-	const void*         managed_ptr,
-	size_t              num_bytes,
+	region_t            region,
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
 {
-	auto result = cudaMemPrefetchAsync(managed_ptr, num_bytes, destination, stream_id);
+	auto result = cudaMemPrefetchAsync(region.start, managed_region.size_in_bytes, destination, stream_id);
 	throw_if_error(result,
-		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(managed_ptr) + " to device " + std::to_string(destination));
+		"Prefetching " + std::to_string(managed_region.size_in_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_region.start) + " to device " + std::to_string(destination));
 }
 
 } // namespace detail
@@ -1019,8 +1111,7 @@ inline void prefetch(
  * devices.
  */
 void prefetch(
-	const void*      managed_ptr,
-	size_t           num_bytes,
+	region_t         region,
 	cuda::device_t   destination,
 	cuda::stream_t&  stream);
 
@@ -1028,16 +1119,18 @@ void prefetch(
  * @brief Prefetches a region of managed memory into host memory. It can
  * later be used there without waiting for I/O from any of the CUDA devices.
  */
-inline void prefetch_to_host(
-	const void*      managed_ptr,
-	size_t           num_bytes)
+inline void prefetch_to_host(region_t managed_region)
 {
-	auto result = cudaMemPrefetchAsync(managed_ptr, num_bytes, cudaCpuDeviceId, stream::default_stream_id);
+	auto result = cudaMemPrefetchAsync(
+		managed_region.start,
+		managed_region.size_in_bytes,
+		cudaCpuDeviceId,
+		stream::default_stream_id);
 		// The stream ID will be ignored by the CUDA runtime API when this pseudo
 		// device indicator is used.
 	throw_if_error(result,
-		"Prefetching " + std::to_string(num_bytes) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(managed_ptr) + " into host memory");
+		"Prefetching " + std::to_string(managed_region.size_in_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_region.start) + " into host memory");
 }
 
 } // namespace async
@@ -1081,6 +1174,7 @@ inline region_pair allocate(
 	allocation_options  options)
 {
 	region_pair allocated;
+	allocated.size_in_bytes = size_in_bytes;
 	auto flags = cudaHostAllocMapped &
 		cuda::memory::detail::make_cuda_host_alloc_flags(options);
 	// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
