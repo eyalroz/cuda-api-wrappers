@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                 // number of times each experiment is repeated
 	int n = 16 * 1024 * 1024;       // number of ints in the data set
-	int nbytes = n * sizeof(int);   // number of data bytes
+	std::size_t nbytes = n * sizeof(int);   // number of data bytes
 	dim3 threads, blocks;           // kernel launch configuration
 	float scale_factor = 1.0f;
 
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 	threads=dim3(512,1);
 	blocks=dim3(n/(nstreams*threads.x),1);
 	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
-	cuda::memory::device::zero(d_a.get(), nbytes); // set device memory to all 0s, for testing correctness
+	cuda::memory::device::zero(cuda::memory::region_t{d_a.get(), nbytes}); // set device memory to all 0s, for testing correctness
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)

@@ -345,6 +345,10 @@ public: // mutators
 		 * Have the CUDA device perform an I/O operation between two specified
 		 * memory regions (on or off the actual device)
 		 *
+		 */
+
+		///@{
+		/**
 		 * @param destination destination region into which to copy. May be
 		 * anywhere in which memory can be mapped to the device's memory space (e.g.
 		 * the device's global memory, host memory or the global memory of another device)
@@ -359,6 +363,12 @@ public: // mutators
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
 			memory::async::detail::copy(destination, source, num_bytes, associated_stream.id_);
 		}
+
+		void copy(memory::region_t destination, memory::region_t source)
+		{
+			memory::async::detail::copy(destination, source, associated_stream.id_);
+		}
+		///@}
 
 		/**
 		 * Set all bytes of a certain region in device memory (or unified memory,

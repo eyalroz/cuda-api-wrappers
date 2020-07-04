@@ -233,6 +233,11 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
+inline void copy(region_t destination, region_t source, stream_t& stream)
+{
+	detail::copy(destination, source, stream.id());
+}
+
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream)
 {
@@ -255,7 +260,7 @@ inline void copy_single(T& destination, const T& source, stream_t& stream)
 
 namespace device {
 
-inline void* allocate(cuda::device_t device, size_t size_in_bytes)
+inline region_t allocate(cuda::device_t device, size_t size_in_bytes)
 {
 	return detail::allocate(device.id(), size_in_bytes);
 }
@@ -281,18 +286,17 @@ namespace managed {
 namespace async {
 
 inline void prefetch(
-	const void*      managed_ptr,
-	size_t           num_bytes,
+	region_t         region,
 	cuda::device_t   destination,
 	cuda::stream_t&  stream)
 {
-	detail::prefetch(managed_ptr, num_bytes, destination.id(), stream.id());
+	detail::prefetch(region, destination.id(), stream.id());
 }
 
 } // namespace async
 
 
-inline void* allocate(
+inline region_t allocate(
 	cuda::device_t        device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
@@ -380,7 +384,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 	auto result = cudaOccupancyMaxPotentialBlockSizeWithFlags(
 		&min_grid_size_in_blocks, &block_size,
 		ptr_,
-		static_cast<memory::shared::size_t>(dynamic_shared_memory_size),
+		static_cast<std::size_t>(dynamic_shared_memory_size),
 		static_cast<int>(block_size_limit),
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 		);
