@@ -37,12 +37,12 @@ int main(int argc, char **argv)
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")" << std::endl;
 
 	static const size_t allocation_size { 1024 };
-	auto raw_ptr = device.memory().allocate(allocation_size);
+	auto memory_region = device.memory().allocate(allocation_size);
 
-	auto ptr = cuda::memory::pointer::wrap(raw_ptr);
+	auto ptr = cuda::memory::pointer::wrap(memory_region.start);
 
 	std::cout
-		<< "Verifying a wrapper for raw pointer " << raw_ptr
+		<< "Verifying a wrapper for raw pointer " << memory_region.start
 		<< " allocated on the CUDA device." << std::endl;
 
 	switch (ptr.attributes().memory_type()) {
@@ -59,12 +59,12 @@ int main(int argc, char **argv)
 			"Pointer incorrectly reported as associated with device ID " + std::to_string(ptr_device_id) +
 			" rather than " + std::to_string(device_id) + "\n");
 	}
-	(ptr.get() == raw_ptr) or die_("Invalid get() output");
-	if (ptr.get_for_device() != raw_ptr) {
+	(ptr.get() == memory_region.start) or die_("Invalid get() output");
+	if (ptr.get_for_device() != memory_region.start) {
 		std::stringstream ss;
 		ss
 			<< "Reported device-side address isn't the address we get from allocation: "
-			<< ptr.get_for_device() << " != " << raw_ptr;
+			<< ptr.get_for_device() << " != " << memory_region.start;
 		die_(ss.str());
 	}
 	(ptr.get_for_host() == nullptr) or die_("Unexpected non-nullptr host-side address reported");

@@ -203,7 +203,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		std::vector<cuda::event_t> events;
 		events.reserve(MAX_DEVICES * PROCESSES_PER_DEVICE - 1);
 		int* d_ptr = reinterpret_cast<int*>(
-			device.memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int))
+			device.memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int)).start
 		);
 		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
 		cuda::memory::copy((void *) d_ptr, (void *) h_refData, DATA_BUF_SIZE * sizeof(int));
