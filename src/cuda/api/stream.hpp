@@ -488,7 +488,9 @@ public: // mutators
 		 * @note Attachment happens asynchronously, as an operation on this stream, i.e.
 		 * the attachment goes into effect (some time after) previous scheduled actions have
 		 * concluded.
-		 *
+		 */
+		///@{
+		/**
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
 		 * pass whatever @ref cuda::memory::managed::allocate() (or `cudaMallocManaged()`)
@@ -511,6 +513,19 @@ public: // mutators
 				" on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
 				+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 		}
+
+		/**
+		 * @param region the managed memory region to attach; it cannot be a sub-region -
+		 * you must pass whatever @ref cuda::memory::managed::allocate() returned.
+		 */
+		void memory_attachment(
+			memory::managed::region_t region,
+			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
+		{
+			memory_attachment(region.start, attachment);
+		}
+		///@}
+
 
 		/**
 		 * Will pause all further activity on the stream until the specified event has
