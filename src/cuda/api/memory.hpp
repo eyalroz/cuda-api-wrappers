@@ -36,6 +36,10 @@
 #include <memory>
 #include <cstring> // for std::memset
 
+#include <memory>
+#include <cstring> // for std::memset
+#include <vector>
+
 namespace cuda {
 
 ///@cond
@@ -980,6 +984,73 @@ inline void zero(T* ptr)
  */
 namespace managed {
 
+namespace detail {
+
+template <typename T>
+inline T get_scalar_range_attribute(region_t region, cudaMemRangeAttribute attribute)
+{
+	uint32_t attribute_value { 0 };
+	auto result = cudaMemRangeGetAttribute(
+		&attribute_value, sizeof(attribute_value), attribute, region.start, region.size_in_bytes);
+	throw_if_error(result,
+		"Obtaining an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+	return static_cast<T>(attribute_value);
+}
+
+inline void set_scalar_range_attribute(region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
+{
+	auto result = cudaMemAdvise(region.start, region.size_in_bytes, advice, device_id);
+	throw_if_error(result,
+		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+}
+
+inline void set_scalar_range_attribute(region_t region, cudaMemoryAdvise attribute)
+{
+	cuda::device::id_t ignored_device_index{};
+	set_scalar_range_attribute(region, attribute, ignored_device_index);
+}
+
+} // namespace detail
+
+struct region_t : public memory::region_t {
+	using parent = memory::region_t;
+
+#if __cplusplus < 201703L
+	region_t() = default;
+	region_t(void* start, size_t size_in_bytes) : parent{start, size_in_bytes} { }
+	region_t(const region_t&) = default;
+	region_t(region_t&&) = default;
+	~region_t() = default;
+#endif
+
+	// TODO: Consider using a field proxy
+
+	bool is_read_mostly() const
+	{
+		return detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
+	}
+
+	void designate_read_mostly() const
+	{
+		detail::set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
+	}
+
+	void undesignate_read_mostly() const
+	{
+		detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
+	}
+
+	device_t preferred_location() const;
+	void set_preferred_location(device_t& device) const;
+	void clear_preferred_location() const;
+
+	void advise_expected_access_by(device_t& device) const;
+	void advise_no_access_expected_by(device_t& device) const;
+
+	template <typename Allocator = std::allocator<cuda::device_t> >
+	typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() ) const;
+};
+
 enum class initial_visibility_t {
 	to_all_devices,
 	to_supporters_of_concurrent_managed_access,
@@ -1083,10 +1154,31 @@ inline void free(void* managed_ptr)
 		+ cuda::detail::ptr_as_hex(managed_ptr));
 }
 
-inline void free(region_t managed_region)
+inline void free(region_t region)
 {
-	free(managed_region.start);
+	free(region.start);
 }
+
+namespace advice {
+
+enum device_inspecific_kind_t {
+	read_mostly = cudaMemAdviseSetReadMostly,
+};
+
+enum device_specific_kind_t {
+	preferred_location,
+	accessor,
+};
+
+inline void set(region_t region, device_inspecific_kind_t advice)
+{
+	cuda::device::id_t ignored_device_index{};
+	auto result = cudaMemAdvise(region.start, region.size_in_bytes, (cudaMemoryAdvise) advice, ignored_device_index);
+	throw_if_error(result,
+		"Setting advice on a (managed) memory region at" + cuda::detail::ptr_as_hex(region.start));
+}
+
+} // namespace advice
 
 namespace async {
 
@@ -1097,10 +1189,10 @@ inline void prefetch(
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
 {
-	auto result = cudaMemPrefetchAsync(region.start, managed_region.size_in_bytes, destination, stream_id);
+	auto result = cudaMemPrefetchAsync(region.start, region.size_in_bytes, destination, stream_id);
 	throw_if_error(result,
-		"Prefetching " + std::to_string(managed_region.size_in_bytes) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(managed_region.start) + " to device " + std::to_string(destination));
+		"Prefetching " + std::to_string(region.size_in_bytes) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(region.start) + " to device " + std::to_string(destination));
 }
 
 } // namespace detail
