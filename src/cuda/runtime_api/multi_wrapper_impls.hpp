@@ -20,6 +20,8 @@
 #include <cuda_runtime.h>
 
 #include <type_traits>
+#include <vector>
+#include <algorithm>
 
 namespace cuda {
 
@@ -283,6 +285,56 @@ inline void zero(void* start, size_t num_bytes, stream_t& stream)
 
 namespace managed {
 
+inline device_t region_t::preferred_location() const
+{
+	auto device_id = detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributePreferredLocation);
+	return cuda::device::get(device_id);
+}
+
+inline void region_t::set_preferred_location(device_t& device) const
+{
+	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseSetPreferredLocation, device.id());
+}
+
+inline void region_t::clear_preferred_location() const
+{
+	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
+}
+
+inline void region_t::advise_expected_access_by(device_t& device) const
+{
+	detail::set_scalar_range_attribute(*this, cudaMemAdviseSetAccessedBy, device.id());
+}
+
+inline void region_t::advise_no_access_expected_by(device_t& device) const
+{
+	detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetAccessedBy, device.id());
+}
+
+template <typename Allocator>
+std::vector<device_t, Allocator> region_t::accessors(region_t region, const Allocator& allocator) const
+{
+	static_assert(sizeof(cuda::device::id_t) == sizeof(device_t), "Unexpected size difference between device IDs and their wrapper class, device_t");
+
+	auto num_devices = cuda::device::count();
+	std::vector<device_t, Allocator> devices(num_devices, allocator);
+	auto device_ids = reinterpret_cast<cuda::device::id_t *>(devices.data());
+
+
+	auto status = cudaMemRangeGetAttribute(
+		device_ids, sizeof(device_t) * devices.size(),
+		cudaMemRangeAttributeAccessedBy, region.start, region.size_in_bytes);
+	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
+	// We may have gotten less results that the set of all devices, so let's whittle that down
+
+	if (first_invalid_element - device_ids != num_devices) {
+		devices.resize(first_invalid_element - device_ids);
+	}
+
+	return devices;
+}
+
 namespace async {
 
 inline void prefetch(
@@ -303,7 +355,6 @@ inline region_t allocate(
 {
 	return detail::allocate(device.id(), num_bytes, initial_visibility);
 }
-
 
 } // namespace managed
 
