@@ -18,7 +18,6 @@
 #include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
-
 #include <string>
 #include <type_traits>
 

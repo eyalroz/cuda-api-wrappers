@@ -22,7 +22,6 @@
 #include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
-
 #ifndef NDEBUG
 #include <cassert>
 #endif

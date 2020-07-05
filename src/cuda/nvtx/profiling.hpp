@@ -170,4 +170,4 @@ void name_this_thread(const std::basic_string<CharT>& name);
 
 } // namespace cuda
 
-#endif // CUDA_NVTX_WRAPPERS_PROFILING_HPP_
+#endif // CUDA_API_WRAPPERS_PROFILING_HPP_
