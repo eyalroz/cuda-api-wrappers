@@ -903,6 +903,14 @@ enum class initial_visibility_t {
 	to_supporters_of_concurrent_managed_access,
 };
 
+
+enum class attachment_t {
+	global        = cudaMemAttachGlobal,
+	host          = cudaMemAttachHost,
+	single_stream = cudaMemAttachSingle,
+};
+
+
 namespace detail {
 
 inline void* allocate(
