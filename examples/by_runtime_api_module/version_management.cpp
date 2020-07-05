@@ -5,9 +5,8 @@
  *   Version Management
  *
  */
-#include "cuda/api/versions.hpp"
-#include "cuda/api/miscellany.hpp"
-
+#include <cuda/api/miscellany.hpp>
+#include <cuda/api/versions.hpp>
 #include <iostream>
 #include <string>
 #include <cstdlib>

@@ -26,12 +26,11 @@
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
 #define CUDA_API_WRAPPERS_MEMORY_HPP_
 
-#include <cuda/api/error.hpp>
+#include <cuda/api/array.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/current_device.hpp>
+#include <cuda/api/error.hpp>
 #include <cuda/api/pointer.hpp>
-#include <cuda/api/array.hpp>
-
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
 #include <memory>

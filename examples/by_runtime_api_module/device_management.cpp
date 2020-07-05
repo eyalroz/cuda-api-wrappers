@@ -10,12 +10,12 @@
  * covered by a different program.
  *
  */
-#include "cuda/api/pci_id_impl.hpp"
-#include "cuda/api/miscellany.hpp"
-#include "cuda/api/device.hpp"
-#include "cuda/api/error.hpp"
-#include "cuda/api/peer_to_peer.hpp"
-#include "cuda/api/devices.hpp"
+#include <cuda/api/device.hpp>
+#include <cuda/api/devices.hpp>
+#include <cuda/api/error.hpp>
+#include <cuda/api/miscellany.hpp>
+#include <cuda/api/pci_id_impl.hpp>
+#include <cuda/api/peer_to_peer.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -23,7 +23,6 @@
 #include <string>
 #include <cstdlib>
 #include <cassert>
-
 
 [[noreturn]] void die_(const std::string& message)
 {

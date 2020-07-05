@@ -10,7 +10,8 @@
  * contact the author.
  */
 
-#include <cuda/api_wrappers.hpp>
+#include <cuda/runtime_api.hpp>
+
 #include "ptx.cuh"
 
 #include <iostream>

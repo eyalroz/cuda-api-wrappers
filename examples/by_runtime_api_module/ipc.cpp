@@ -17,9 +17,9 @@
  * about from the other process.
  *
  */
-#include "cuda/api/pci_id.hpp"
-#include "cuda/api/device.hpp"
-#include "cuda/api/error.hpp"
+#include <cuda/runtime_api/device.hpp>
+#include <cuda/runtime_api/error.hpp>
+#include <cuda/runtime_api/pci_id.hpp>
 
 #include <cuda_runtime_api.h>
 

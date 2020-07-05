@@ -62,7 +62,7 @@ const char *sDeviceSyncMethod[] =
 // helper functions and utilities to work with CUDA
 #include "../helper_cuda.h"
 
-#include <cuda/api_wrappers.hpp>
+#include <cuda/runtime_api.hpp>
 
 #ifndef WIN32
 #include <sys/mman.h> // for mmap() / munmap()

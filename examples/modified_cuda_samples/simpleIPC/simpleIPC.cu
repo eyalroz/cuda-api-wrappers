@@ -10,17 +10,16 @@
  * contact the author.
  */
 
-// Includes
+#include "../helper_string.h"
+
+#include <cuda/runtime_api.hpp>
+
 #include <stdio.h>
 #include <assert.h>
 #include <vector>
 
 // CUDA runtime includes
 #include <cuda_runtime_api.h>
-
-#include <cuda/api_wrappers.hpp>
-
-#include "../helper_string.h"
 
 int   *pArgc = NULL;
 char **pArgv = NULL;
