@@ -9,14 +9,16 @@
 #ifndef CUDA_API_WRAPPERS_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_HPP_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/device_properties.hpp>
-#include <cuda/api/memory.hpp>
-#include <cuda/api/current_device.hpp>
-#include <cuda/api/pci_id.hpp>
-#include <cuda/api/unique_ptr.hpp>
+#include <cuda/runtime_api/current_device.hpp>
+#include <cuda/runtime_api/device_properties.hpp>
+#include <cuda/runtime_api/memory.hpp>
+#include <cuda/runtime_api/pci_id.hpp>
+#include <cuda/runtime_api/unique_ptr.hpp>
+
+#include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <string>
 #include <type_traits>
 

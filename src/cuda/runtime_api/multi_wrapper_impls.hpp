@@ -9,16 +9,17 @@
 #ifndef MULTI_WRAPPER_IMPLS_HPP_
 #define MULTI_WRAPPER_IMPLS_HPP_
 
-#include <cuda/api/stream.hpp>
-#include <cuda/api/device.hpp>
-#include <cuda/api/event.hpp>
-#include <cuda/api/pointer.hpp>
-#include <cuda/api/unique_ptr.hpp>
-#include <cuda/api/array.hpp>
+#include <cuda/runtime_api/array.hpp>
+#include <cuda/runtime_api/device.hpp>
+#include <cuda/runtime_api/event.hpp>
+#include <cuda/runtime_api/kernel_launch.hpp>
+#include <cuda/runtime_api/pointer.hpp>
+#include <cuda/runtime_api/stream.hpp>
+#include <cuda/runtime_api/unique_ptr.hpp>
+
 #include <cuda_runtime.h>
 
 #include <type_traits>
-#include "kernel_launch.hpp"
 
 namespace cuda {
 

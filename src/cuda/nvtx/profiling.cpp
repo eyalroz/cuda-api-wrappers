@@ -1,7 +1,7 @@
-#include <cuda/api/profiling.hpp>
-#include <cuda/api/error.hpp>
-
+#include <cuda/nvtx/profiling.hpp>
 #include <cuda_profiler_api.h>
+
+#include <cuda/runtime_api/error.hpp>
 #if CUDART_VERSION >= 1000 && defined(_WIN32)
 #include <nvtx3/nvToolsExt.h>
 #include <nvtx3/nvToolsExtCudaRt.h>

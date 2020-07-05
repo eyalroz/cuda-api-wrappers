@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_
 #define CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_
 
-#include <cuda/api/device.hpp>
+#include <cuda/runtime_api/device.hpp>
 
 namespace cuda {
 namespace device {

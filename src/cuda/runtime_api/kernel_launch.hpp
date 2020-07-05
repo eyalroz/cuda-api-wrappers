@@ -42,9 +42,10 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 #define CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/kernel.hpp>
+#include <cuda/runtime_api/constants.hpp>
+#include <cuda/runtime_api/kernel.hpp>
+
+#include <cuda/common/types.hpp>
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>

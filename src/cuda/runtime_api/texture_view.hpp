@@ -9,8 +9,8 @@
 #ifndef CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 #define CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 
-#include <cuda/api/array.hpp>
-#include <cuda/api/error.hpp>
+#include <cuda/runtime_api/array.hpp>
+#include <cuda/runtime_api/error.hpp>
 
 #include <cuda_runtime.h>
 

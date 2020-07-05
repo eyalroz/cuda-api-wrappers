@@ -16,11 +16,13 @@
 #ifndef CUDA_API_WRAPPERS_POINTER_HPP_
 #define CUDA_API_WRAPPERS_POINTER_HPP_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/error.hpp>
+#include <cuda/runtime_api/constants.hpp>
+#include <cuda/runtime_api/error.hpp>
+
+#include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
+
 #ifndef NDEBUG
 #include <cassert>
 #endif

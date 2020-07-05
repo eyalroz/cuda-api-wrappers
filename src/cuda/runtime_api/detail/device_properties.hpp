@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_DETAIL_DEVICE_PROPERTIES_HPP_
 #define CUDA_API_WRAPPERS_DETAIL_DEVICE_PROPERTIES_HPP_
 
-#include <cuda/api/device_properties.hpp>
+#include <cuda/runtime_api/device_properties.hpp>
 
 ///@cond
 
