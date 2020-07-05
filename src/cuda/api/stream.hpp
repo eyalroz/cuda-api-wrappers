@@ -464,34 +464,41 @@ public: // mutators
 		}
 
 		/**
-		 * Attaches a region of managed memory (i.e. in an address space visible
-		 * on all CUDA devices and the host) to this specific stream on its specific device.
-		 * This is actually a commitment vis-a-vis the CUDA driver and the GPU itself that
-		 * it doesn't need to worry about accesses to this memory from elsewhere, and can
-		 * optimize accordingly. Also, the host will be allowed to read from this memory
-		 * region whenever no kernels are pending on this stream
+		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
+		 * on all CUDA devices and the host) in one of several supported attachment modes.
 		 *
-		 * @note This happens asynchronously, as an operation on this stream, i.e.
-		 * the attachment goes into effect (some time after) after previous stream
-		 * operations have concluded.
+		 * The attachmentis actually a commitment vis-a-vis the CUDA driver and the GPU itself
+		 * that it doesn't need to worry about accesses to this memory from devices other than
+		 * its object of attachment, so that the driver can optimize scheduling accordingly.
+		 *
+		 * @note by default, the memory region is attached to this specific stream on its
+		 * specific device. In this case, the host will be allowed to read from this memory
+		 * region whenever no kernels are pending on this stream.
+		 *
+		 * @note Attachment happens asynchronously, as an operation on this stream, i.e.
+		 * the attachment goes into effect (some time after) previous scheduled actions have
+		 * concluded.
 		 *
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
 		 * pass whatever @ref cuda::memory::managed::allocate() (or `cudaMallocManaged()`)
 		 * returned.
 		 */
-		void memory_attachment(const void* managed_region_start)
+		void memory_attachment(
+			const void* managed_region_start,
+			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
 			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
 			constexpr const size_t length = 0;
+			auto flags = static_cast<unsigned>(attachment);
 			auto status =  cudaStreamAttachMemAsync(
-				associated_stream.id_, managed_region_start, length, cudaMemAttachSingle);
+				associated_stream.id_, managed_region_start, length, flags);
 			throw_if_error(status,
-				std::string("Failed scheduling an attachment of a managed memory region")
-				+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+				"Failed scheduling an attachment of a managed memory region"
+				" on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
 				+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 		}
 
