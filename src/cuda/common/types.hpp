@@ -22,6 +22,7 @@ static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be 
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
+#include <driver_types.h>
 #endif
 
 #include <type_traits>
