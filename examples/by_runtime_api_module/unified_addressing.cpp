@@ -11,10 +11,9 @@
  * about from the other process.
  *
  */
-#include "cuda/api/pointer.hpp"
-#include "cuda/api/device.hpp"
-#include "cuda/api/multi_wrapper_impls.hpp"
-
+#include <cuda/api/device.hpp>
+#include <cuda/api/multi_wrapper_impls.hpp>
+#include <cuda/api/pointer.hpp>
 #include <cuda_runtime_api.h>
 
 #include <iostream>

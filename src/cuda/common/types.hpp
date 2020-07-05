@@ -1,16 +1,14 @@
 /**
  * @file types.hpp
  *
- * @brief Fundamental, plain-old-data, CUDA-related type definitions.
+ * @brief Fundamental CUDA-related type definitions.
 
- * This is a common file for all definitions fundamental,
- * plain-old-data, CUDA-related types - those with no methods, or with
- * only constexpr methods (which, specifically, do not involve making
- * any Runtime API calls).
+ * This is a common file for all definitions of fundamental CUDA-related types,
+ * some shared by different APIs.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_TYPES_HPP_
-#define CUDA_API_WRAPPERS_TYPES_HPP_
+#ifndef CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
+#define CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 
 static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be compiled with C++11 or a later version of the C++ language standard");
 
@@ -21,6 +19,7 @@ static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be 
 
 #include <type_traits>
 #include <cassert>
+#include <cstddef> // for std::size_t
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -548,4 +547,4 @@ using native_word_t = unsigned;
 #endif
 #endif
 
-#endif // CUDA_API_WRAPPERS_TYPES_HPP_
+#endif // CUDA_API_WRAPPERS_COMMON_TYPES_HPP_

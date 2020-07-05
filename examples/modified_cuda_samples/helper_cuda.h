@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <cuda/api_wrappers.hpp>
+#include <cuda/runtime_api.hpp>
 
 #include <iostream>
 #include <iomanip>

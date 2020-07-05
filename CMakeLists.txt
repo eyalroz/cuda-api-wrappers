@@ -55,8 +55,7 @@ set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET nvtx PROPERTY CXX_EXTENSIONS OFF)
 
-#target_sources(runtime-api INTERFACE src/cuda/api_wrappers.hpp)
-target_sources(nvtx PRIVATE src/cuda/api/profiling.cpp)
+target_sources(nvtx PRIVATE src/cuda/nvtx/profiling.cpp)
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those

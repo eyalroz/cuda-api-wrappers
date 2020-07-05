@@ -2,6 +2,8 @@
 #ifndef SRC_CUDA_ON_DEVICE_PTX_CUH_
 #define SRC_CUDA_ON_DEVICE_PTX_CUH_
 
+#include <cstdint>
+
 #ifndef STRINGIFY
 #define STRINGIFY(_q) #_q
 #endif
@@ -18,9 +20,9 @@ namespace special_registers {
 
 #define SIZE_MARKER(kind_of_register) SIZE_MARKER_ ## kind_of_register
 
-#define RETURN_TYPE_u16 uint16_t
-#define RETURN_TYPE_u32 uint32_t
-#define RETURN_TYPE_u64 uint64_t
+#define RETURN_TYPE_u16 std::uint16_t
+#define RETURN_TYPE_u32 std::uint32_t
+#define RETURN_TYPE_u64 std::uint64_t
 #define RETURN_TYPE_f32 float
 #define RETURN_TYPE_f64 double
 

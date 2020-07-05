@@ -7,12 +7,14 @@
  *
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_PROFILING_HPP_
-#define CUDA_API_WRAPPERS_PROFILING_HPP_
+#ifndef CUDA_NVTX_WRAPPERS_PROFILING_HPP_
+#define CUDA_NVTX_WRAPPERS_PROFILING_HPP_
 
-#include <cuda/api/types.hpp>
+#include <cuda/common/types.hpp>
+
 #include <cstdint>
 #include <string>
+#include <cstdint>
 
 namespace cuda {
 
@@ -167,4 +169,4 @@ void name_this_thread(const std::basic_string<CharT>& name);
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_PROFILING_HPP_
+#endif // CUDA_NVTX_WRAPPERS_PROFILING_HPP_
