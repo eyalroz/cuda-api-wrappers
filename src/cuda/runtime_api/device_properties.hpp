@@ -150,6 +150,6 @@ struct properties_t : public cudaDeviceProp {
 } // namespace device
 } // namespace cuda
 
-#include <cuda/runtime_api/detail/device_properties.hpp>
+#include "detail/device_properties.hpp"
 
 #endif // CUDA_API_WRAPPERS_DEVICE_PROPERTIES_HPP_
