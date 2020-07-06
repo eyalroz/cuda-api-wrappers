@@ -1,17 +1,26 @@
 /**
  * @file error.hpp
  *
- * @brief Facilities for exception-based handling of Runtime API
- * errors, including a basic exception class wrapping
- * `::std::runtime_error`.
+ * @brief Facilities for exception-based handling of Runtime
+ * and Driver API errors, including a basic exception class
+ * wrapping `::std::runtime_error`.
+ *
+ * @note Does not - for now - support wrapping errors generated
+ * by other CUDA-related libraries like NVRTC.
+ *
+ * @note Unlike the Runtime API, the driver API has no memory
+ * of "non-sticky" errors, which do not corrupt the current
+ * context.
+ *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
 #define CUDA_API_WRAPPERS_ERROR_HPP_
 
-#include <cuda/common/types.hpp>
-
+#include <cuda/api/types.hpp>
 #include <cuda_runtime_api.h>
+#include <cuda.h>
+
 #include <type_traits>
 #include <string>
 #include <stdexcept>
@@ -28,8 +37,13 @@ namespace status {
 enum named_t : ::std::underlying_type<status_t>::type {
 	success                         = cudaSuccess,
 	missing_configuration           = cudaErrorMissingConfiguration,
-	memory_allocation               = cudaErrorMemoryAllocation,
-	initialization_error            = cudaErrorInitializationError,
+	memory_allocation_failure       = cudaErrorMemoryAllocation, // == CUDA_ERROR_OUT_OF_MEMORY
+	initialization_error            = cudaErrorInitializationError, // == CUDA_ERROR_NOT_INITIALIZED
+	already_deinitialized           = cudaErrorCudartUnloading, // == CUDA_ERROR_DEINITIALIZED
+	profiler_disabled               = cudaErrorProfilerDisabled,
+	profiler_not_initialized        = cudaErrorProfilerNotInitialized,
+	profiler_already_started        = cudaErrorProfilerAlreadyStarted,
+	profiler_already_stopped        = cudaErrorProfilerAlreadyStopped,
 	launch_failure                  = cudaErrorLaunchFailure,
 	prior_launch_failure            = cudaErrorPriorLaunchFailure,
 	launch_timeout                  = cudaErrorLaunchTimeout,
@@ -55,7 +69,6 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	invalid_filter_setting          = cudaErrorInvalidFilterSetting,
 	invalid_norm_setting            = cudaErrorInvalidNormSetting,
 	mixed_device_execution          = cudaErrorMixedDeviceExecution,
-	cuda_runtime_unloading          = cudaErrorCudartUnloading,
 	unknown                         = cudaErrorUnknown,
 	not_yet_implemented             = cudaErrorNotYetImplemented,
 	memory_value_too_large          = cudaErrorMemoryValueTooLarge,
@@ -64,7 +77,7 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	insufficient_driver             = cudaErrorInsufficientDriver,
 	set_on_active_process           = cudaErrorSetOnActiveProcess,
 	invalid_surface                 = cudaErrorInvalidSurface,
-	no_device                       = cudaErrorNoDevice,
+	no_device                       = cudaErrorNoDevice, // == 100
 	ecc_uncorrectable               = cudaErrorECCUncorrectable,
 	shared_object_symbol_not_found  = cudaErrorSharedObjectSymbolNotFound,
 	shared_object_init_failed       = cudaErrorSharedObjectInitFailed,
@@ -76,13 +89,11 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	invalid_kernel_image            = cudaErrorInvalidKernelImage,
 	no_kernel_image_for_device      = cudaErrorNoKernelImageForDevice,
 	incompatible_driver_context     = cudaErrorIncompatibleDriverContext,
+	invalid_context                 = CUDA_ERROR_INVALID_CONTEXT,
+	context_already_current         = CUDA_ERROR_CONTEXT_ALREADY_CURRENT,
 	peer_access_already_enabled     = cudaErrorPeerAccessAlreadyEnabled,
 	peer_access_not_enabled         = cudaErrorPeerAccessNotEnabled,
 	device_already_in_use           = cudaErrorDeviceAlreadyInUse,
-	profiler_disabled               = cudaErrorProfilerDisabled,
-	profiler_not_initialized        = cudaErrorProfilerNotInitialized,
-	profiler_already_started        = cudaErrorProfilerAlreadyStarted,
-	profiler_already_stopped        = cudaErrorProfilerAlreadyStopped,
 	assert                          = cudaErrorAssert,
 	too_many_peers                  = cudaErrorTooManyPeers,
 	host_memory_already_registered  = cudaErrorHostMemoryAlreadyRegistered,
@@ -126,18 +137,27 @@ constexpr inline bool is_success(status_t status)  { return status == (status_t)
 /**
  * @brief Determine whether the API call returning the specified status had failed
  */
-constexpr inline bool is_failure(status_t status)  { return status != (status_t) status::success; }
+constexpr inline bool is_failure(status_t status)  { return not is_success(status); }
 
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
  * or error code.
  */
-inline ::std::string describe(status_t status) { return cudaGetErrorString(status); }
+///@{
+inline ::std::string describe(status_t status)
+{
+	const char* description;
+	auto description_lookup_status = cuGetErrorString(status, &description);
+	return (description_lookup_status != CUDA_SUCCESS) ? nullptr : description;
+}
+inline ::std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
+///@}
+
 
 namespace detail_ {
 
 template <typename I, bool UpperCase = false>
-::std::string as_hex(I x)
+std::string as_hex(I x)
 {
 	static_assert(::std::is_unsigned<I>::value, "only signed representations are supported");
 	unsigned num_hex_digits = 2*sizeof(I);
@@ -162,7 +182,7 @@ template <typename I, bool UpperCase = false>
 template <typename I, bool UpperCase = false>
 inline ::std::string ptr_as_hex(const I* ptr)
 {
-	return as_hex((size_t) ptr);
+	return as_hex(reinterpret_cast<uintptr_t>(ptr));
 }
 
 } // namespace detail_
@@ -173,6 +193,8 @@ inline ::std::string ptr_as_hex(const I* ptr)
  *
  * A CUDA runtime error can be constructed with either just a CUDA error code
  * (=status code), or a code plus an additional message.
+ *
+ * @todo Consider renaming this to avoid confusion with the CUDA Runtime.
  */
 class runtime_error : public ::std::runtime_error {
 public:
@@ -191,11 +213,11 @@ public:
 		runtime_error(error_code, what_arg)
 	{ }
 	///@endcond
-	runtime_error(cuda::status::named_t error_code) :
+	explicit runtime_error(status::named_t error_code) :
 		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(cuda::status::named_t error_code, const ::std::string& what_arg) :
+	runtime_error(status::named_t error_code, const ::std::string& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
-	runtime_error(cuda::status::named_t error_code, ::std::string&& what_arg) :
+	runtime_error(status::named_t error_code, ::std::string&& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
 	/**
@@ -207,7 +229,7 @@ private:
 	status_t code_;
 };
 
-// TODO: The following could use ::std::optiomal arguments - which would
+// TODO: The following could use ::std::optional arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
@@ -223,9 +245,19 @@ inline void throw_if_error(status_t status, const ::std::string& message) noexce
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
+inline void throw_if_error(cudaError_t status, const ::std::string& message) noexcept(false)
+{
+	throw_if_error(static_cast<status_t>(status), message);
+}
+
 inline void throw_if_error(status_t status, ::std::string&& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
+}
+
+inline void throw_if_error(cudaError_t status, ::std::string&& message) noexcept(false)
+{
+	return throw_if_error(static_cast<status_t>(status), message);
 }
 
 /**
@@ -239,44 +271,73 @@ inline void throw_if_error(status_t status) noexcept(false)
 	if (is_failure(status)) { throw runtime_error(status); }
 }
 
+inline void throw_if_error(cudaError_t status) noexcept(false)
+{
+	throw_if_error(static_cast<status_t>(status));
+}
+
 enum : bool {
 	dont_clear_errors = false,
 	do_clear_errors    = true
 };
 
-namespace outstanding_error {
+namespace detail_ {
+
+namespace outstanding_runtime_error {
 
 /**
- * Reset the CUDA status to @ref cuda::status::success.
+ * Clears the current CUDA context's status and return any outstanding error.
+ *
+ * @todo Reconsider what this does w.r.t. driver calls
  */
-inline status_t clear() noexcept { return cudaGetLastError();    }
+inline status_t clear() noexcept
+{
+	return static_cast<status_t>(cudaGetLastError());
+}
 
 /**
  * Get the code of the last error in a CUDA-related action.
+ *
+ * @todo Reconsider what this does w.r.t. driver calls
  */
-inline status_t get()   noexcept { return cudaPeekAtLastError(); }
+inline status_t get() noexcept
+{
+	return static_cast<status_t>(cudaPeekAtLastError());
+}
+
+} // namespace outstanding_runtime_error
+} // namespace detail_
+
+/**
+ * Unlike the Runtime API, where every error is outstanding
+ * until cleared, the Driver API, which we use mostly, only
+ * remembers "sticky" errors - severe errors which corrupt
+ * contexts. Such errors cannot be recovered from / cleared,
+ * and require either context destruction or process termination.
+ */
+namespace outstanding_error {
+
+/**
+ * @return the code of a sticky (= context-corrupting) error,
+ * if the CUDA driver has recently encountered any.
+ */
+inline status_t get()
+{
+	constexpr const unsigned dummy_flags{0};
+	auto status = cuInit(dummy_flags);
+	return static_cast<status_t>(status);
+}
 
 /**
  * @brief Does nothing (unless throwing an exception)
  *
- * @note similar to @ref cuda::throw_if_error, but uses the CUDA Runtime API's internal
- * state
- *
- * @throws cuda::runtime_error if the CUDA runtime API has
- * encountered previously encountered an (uncleared) error
- *
- * @param message Additional message to incldue in the exception thrown
- * @param clear_any_error When true, clears the CUDA Runtime API's state from
- * recalling errors arising from before this moment
- *
- *
+ * @note similar to @ref cuda::throw_if_error, but uses the CUDA driver's
+ * own state regarding whether or not a sticky error has occurred
  */
-inline void ensure_none(
-	::std::string  message,
-	bool         clear_any_error = do_clear_errors) noexcept(false)
+inline void ensure_none(const ::std::string &message) noexcept(false)
 {
-	auto last_status = clear_any_error ? clear() : get();
-	throw_if_error(last_status, message);
+	auto status = get();
+	throw_if_error(status, message);
 }
 
 /**
@@ -286,11 +347,9 @@ inline void ensure_none(
  * @note exists so as to avoid incorrect overload resolution of
  * `ensure_none(my_c_string)` calls.
  */
-inline void ensure_none(
-	const char*  message,
-	bool         clear_any_error = do_clear_errors) noexcept(false)
+inline void ensure_none(const char *message) noexcept(false)
 {
-	return ensure_none(::std::string(message), clear_any_error);
+	return ensure_none(::std::string{message});
 }
 
 /**
@@ -305,31 +364,32 @@ inline void ensure_none(
  * @param clear_any_error When true, clears the CUDA Runtime API's state from
  * recalling errors arising from before this oment
  */
-inline void ensure_none(bool clear_any_error = do_clear_errors) noexcept(false)
+inline void ensure_none() noexcept(false)
 {
-	auto last_status = clear_any_error ? clear() : get();
-	throw_if_error(last_status);
+	auto status = get();
+	throw_if_error(status);
 }
 
 } // namespace outstanding_error
 
+// The following few functions are used in the error messages
+// generated for exceptions thrown by various API wrappers.
+
 namespace device {
 namespace detail_ {
-
-inline ::std::string identify(id_t id)
+inline ::std::string identify(device::id_t device_id)
 {
-	return ::std::string("device ") + std::to_string(id);
+	return ::std::string("device ") + ::std::to_string(device_id);
 }
-
-} // namespace detail
+} // namespace detail_
 } // namespace device
 
-namespace event {
+namespace context {
 namespace detail_ {
 
-inline ::std::string identify(event::handle_t handle)
+inline ::std::string identify(handle_t handle)
 {
-	return ::std::string("event ") + cuda::detail_::ptr_as_hex(handle);
+	return "context " + cuda::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(handle_t handle, device::id_t device_id)
@@ -338,23 +398,122 @@ inline ::std::string identify(handle_t handle, device::id_t device_id)
 }
 
 } // namespace detail_
-} // namespace event
+
+namespace current{
+namespace detail_ {
+inline ::std::string identify(context::handle_t handle)
+{
+	return "current context: " + context::detail_::identify(handle);
+}
+inline ::std::string identify(context::handle_t handle, device::id_t device_id)
+{
+	return "current context: " + context::detail_::identify(handle, device_id);
+}
+} // namespace detail_
+} // namespace current
+
+} // namespace context
+
+namespace device {
+namespace primary_context {
+namespace detail_ {
+
+inline ::std::string identify(handle_t handle, device::id_t device_id)
+{
+	return "context " + context::detail_::identify(handle, device_id);
+}
+inline ::std::string identify(handle_t handle)
+{
+	return "context " + context::detail_::identify(handle);
+}
+} // namespace detail_
+} // namespace primary_context
+} // namespace device
 
 namespace stream {
 namespace detail_ {
-
-inline ::std::string identify(stream::handle_t handle)
+inline ::std::string identify(handle_t handle)
 {
-	return ::std::string("stream ") + cuda::detail_::ptr_as_hex(handle);
+	return "event " + cuda::detail_::ptr_as_hex(handle);
 }
-
-inline ::std::string identify(stream::handle_t handle, device::id_t device_id)
+inline ::std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
-
+inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+{
+	return identify(handle) + " in " + context::detail_::identify(context_handle);
+}
+inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
+}
 } // namespace detail_
 } // namespace stream
+
+namespace event {
+namespace detail_ {
+inline ::std::string identify(handle_t handle)
+{
+	return "event " + cuda::detail_::ptr_as_hex(handle);
+}
+inline ::std::string identify(handle_t handle, device::id_t device_id)
+{
+	return identify(handle) + " on " + device::detail_::identify(device_id);
+}
+inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+{
+	return identify(handle) + " on " + context::detail_::identify(context_handle);
+}
+inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	return identify(handle) + " on " + context::detail_::identify(context_handle, device_id);
+}
+} // namespace detail_
+} // namespace event
+
+namespace kernel {
+namespace detail_ {
+
+inline ::std::string identify(const void* ptr)
+{
+	return "kernel " + cuda::detail_::ptr_as_hex(ptr);
+}
+inline ::std::string identify(const void* ptr, context::handle_t context_handle)
+{
+	return identify(ptr) + " in " + context::detail_::identify(context_handle);
+}
+inline ::std::string identify(const void* ptr, context::handle_t context_handle, device::id_t device_id)
+{
+	return identify(ptr) + " in " + context::detail_::identify(context_handle, device_id);
+}
+inline ::std::string identify(handle_t handle)
+{
+	return "kernel " + cuda::detail_::ptr_as_hex(handle);
+}
+inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+{
+	return identify(handle) + " in " + context::detail_::identify(context_handle);
+}
+inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
+}
+
+} // namespace detail
+} // namespace kernel
+
+namespace memory {
+namespace detail_ {
+
+inline ::std::string identify(region_t region)
+{
+	return ::std::string("memory region at ") + cuda::detail_::ptr_as_hex(region.data())
+		+ " of size " + ::std::to_string(region.size());
+}
+
+} // namespace detail_
+} // namespace memory
 
 } // namespace cuda
 

@@ -3,24 +3,29 @@
  *
  * @brief A proxy class for CUDA streams, providing access to
  * all Runtime API calls involving their use and management.
+ *
+ * @note : Missing functionality: Stream attributes; stream capturing.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_STREAM_HPP_
 #define CUDA_API_WRAPPERS_STREAM_HPP_
 
+#include <cuda/api/current_context.hpp>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/kernel_launch.hpp>
 #include <cuda/api/memory.hpp>
 #include <cuda/api/miscellany.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cuda_runtime_api.h>
+#include <cuda.h>
 
 #include <string>
 #include <memory>
 #include <utility>
 #include <tuple>
+#include <algorithm>
 
 namespace cuda {
 
@@ -40,16 +45,32 @@ enum : bool {
 	nonblocking = async,
 };
 
+enum wait_condition_t : unsigned {
+    greater_or_equal_to            = CU_STREAM_WAIT_VALUE_GEQ,
+    geq                            = CU_STREAM_WAIT_VALUE_GEQ,
+
+    equality                       = CU_STREAM_WAIT_VALUE_EQ,
+    equals                         = CU_STREAM_WAIT_VALUE_EQ,
+
+    nonzero_after_applying_bitmask = CU_STREAM_WAIT_VALUE_AND,
+    one_bits_overlap               = CU_STREAM_WAIT_VALUE_AND,
+    bitwise_and                    = CU_STREAM_WAIT_VALUE_AND,
+
+    zero_bits_overlap              = CU_STREAM_WAIT_VALUE_NOR,
+    bitwise_nor                    = CU_STREAM_WAIT_VALUE_NOR,
+} ;
+
+
 #if CUDA_VERSION >= 11000
 /**
  * Possible synchronization behavior of a host thread when performing a synchronous action
  * on a stream (in particular, synchronizing with a stream).
  */
-enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizationPolicy>::type {
+enum synchronization_policy_t : typename ::std::underlying_type<CUsynchronizationPolicy>::type {
 	/**
 	 * @todo Figure out what this default actually is!
 	 */
-	automatic = cudaSyncPolicyAuto,
+	automatic = CU_SYNC_POLICY_AUTO,
 
 	/**
 	 * @brief Keep control and spin-check for result availability
@@ -59,7 +80,7 @@ enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizatio
 	 * for the device, but may lower the performance of other CPU threads
 	 * working in parallel.
 	 */
-	spin      = cudaSyncPolicySpin,
+	spin      = CU_SYNC_POLICY_SPIN,
 
 	/**
 	 * @brief Yield control while waiting for results.
@@ -70,7 +91,7 @@ enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizatio
 	 * CPU threads performing work in parallel.
 	 *
 	 */
-	yield     = cudaSyncPolicyYield,
+	yield     = CU_SYNC_POLICY_YIELD,
 
 	/**
 	 * @brief Block the thread until the stream has concluded pending actions.
@@ -78,77 +99,53 @@ enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizatio
 	 * Instruct CUDA to block the CPU thread on a synchronization
 	 * primitive when waiting for the stream to finish work.
 	 */
-	block  = cudaSyncPolicyBlockingSync
+	block  = CU_SYNC_POLICY_BLOCKING_SYNC
 };
 #endif // CUDA_VERSION >= 11000
 
 namespace detail_ {
 
-inline handle_t create_on_current_device(
+::std::string identify(const stream_t& stream);
+
+inline handle_t create_in_current_context(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority
 )
 {
 	unsigned int flags = (synchronizes_with_default_stream == sync) ?
-		cudaStreamDefault : cudaStreamNonBlocking;
+		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
-	auto status = cudaStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	cuda::throw_if_error(status, "Failed creating a new stream on current device");
+	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
+	    // We could instead have used an equivalent Driver API call:
+	    // cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
+	cuda::throw_if_error(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
 	return new_stream_handle;
 }
 
-/**
- * Check whether a certain stream is associated with a specific device.
- *
- * @note the stream_t class includes information regarding a stream's
- * device association, so this function only makes sense for CUDA stream
- * identifiers.
- *
- * @param stream_handle the CUDA runtime API handle for the stream whose
- * association is to be checked
- * @param device_id a CUDA device ID
- * @return true if the specified stream is associated with the specified
- * device, false if they are unassociated
- * @throws if the association check returns anything weird
- */
-inline bool is_associated_with(stream::handle_t stream_handle, device::id_t device_id)
+inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
-	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	auto status = cudaStreamQuery(stream_handle);
-	switch(status) {
-	case cudaSuccess:
-	case cudaErrorNotReady:
-		return true;
-	case cudaErrorInvalidResourceHandle:
-		return false;
-	default:
-		throw(::std::logic_error("unexpected status returned from cudaStreamQuery()"));
-	}
+	context::handle_t handle;
+	auto result = cuStreamGetCtx(stream_handle, &handle);
+	throw_if_error(result, "Failed obtaining the context of " + cuda::detail_::ptr_as_hex(stream_handle));
+	return handle;
 }
 
 /**
- * @brief Obtains the device ID with which a stream with a given handle is associated
+ * @brief Obtains the device ID with which a stream with a given ID is associated
  *
- * Strangely enough, CUDA won't tell you which device a stream is associated with,
- * while it can - supposedly - tell this itself when querying stream status. So,
- * let's use that. This is ugly and possibly buggy, but it _might_ just work.
+ * @note No guarantees are made if the input stream handle is the default stream's.
  *
- * @param stream_handle a stream identifier
+ * @param stream_handle a stream handle, other than the default stream for any
+ * device or context
  * @return the identifier of the device for which the stream was created.
  */
-inline device::id_t associated_device(stream::handle_t stream_handle)
-{
-	if (stream_handle == cuda::stream::default_stream_handle) {
-		throw ::std::invalid_argument("Cannot determine device association for the default/null stream");
-	}
-	for(device::id_t device_index = 0; device_index < device::count(); device_index++) {
-		if (is_associated_with(stream_handle, device_index)) { return device_index; }
-	}
-	throw ::std::runtime_error("		""Could not find any device associated with stream "
-		+ stream::detail_::identify(stream_handle));
-}
+inline device::id_t device_id_of(stream::handle_t stream_handle);
 
-inline void record_event_on_current_device(device::id_t current_device_id, stream::handle_t stream_handle, event::handle_t event_handle);
+inline void record_event_in_current_context(
+	device::id_t       current_device_id,
+	context::handle_t  current_context_handle_,
+	stream::handle_t   stream_handle,
+	event::handle_t    event_handle);
 
 /**
  * Wraps a CUDA stream handle in a stream_t proxy instance,
@@ -158,9 +155,20 @@ inline void record_event_on_current_device(device::id_t current_device_id, strea
  * @return a stream_t proxy for the CUDA stream
  */
 stream_t wrap(
-	device::id_t  device_id,
-	handle_t      stream_handle,
-	bool          take_ownership = false) noexcept;
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	handle_t           stream_handle,
+	bool               take_ownership = false) noexcept;
+
+// Providing the same signature to multiple CUDA driver calls, to allow
+// uniform templated use of all of them
+template<typename T>
+CUresult wait_on_value(CUstream stream_handle, CUdeviceptr address, T value, unsigned int flags);
+
+// Providing the same signature to multiple CUDA driver calls, to allow
+// uniform templated use of all of them
+template<typename T>
+CUresult write_value(CUstream stream_handle, CUdeviceptr address, T value, unsigned int flags);
 
 } // namespace detail_
 
@@ -170,6 +178,11 @@ inline void synchronize(const stream_t& stream);
 
 /**
  * @brief Proxy class for a CUDA stream
+ *
+ * @note a stream is specific to a context, and thus also specific to a device.
+ *
+ * @note This class is a "reference type", not a "value type". Therefore, making changes
+ * to properties of the stream is a const-respecting operation on this class.
  */
 class stream_t {
 
@@ -180,14 +193,15 @@ public: // type definitions
 		does_synchronize_with_default_stream     = true,
 	};
 
-protected: // type definitions
-	using device_setter_type = device::current::detail_::scoped_override_t;
-
-
 public: // const getters
-	stream::handle_t handle() const noexcept { return handle_; }
-	device_t device() const noexcept;
-	bool is_owning() const noexcept { return owning; }
+	/**
+	 * The raw CUDA handle for a stream which this class wraps
+	 */
+	stream::handle_t  handle()    const noexcept { return handle_; }
+
+	device_t          device()    const noexcept;
+	context_t         context()   const noexcept;
+	bool              is_owning() const noexcept { return owning; }
 
 public: // other non-mutators
 
@@ -198,24 +212,23 @@ public: // other non-mutators
 	 */
 	bool synchronizes_with_default_stream() const
 	{
-		// Is it necessary to set the device here? I wonder.
-		device_setter_type set_device_for_this_scope(device_id_);
 		unsigned int flags;
-		auto status = cudaStreamGetFlags(handle_, &flags);
-		throw_if_error(status, "Failed obtaining flags for stream"
-			+ stream::detail_::identify(handle_, device_id_));
-
-		return flags & cudaStreamNonBlocking;
+		auto status = cuStreamGetFlags(handle_, &flags);
+		    // Could have used the equivalent Driver API call,
+		    // cuStreamGetFlags(handle_, &flags);
+		throw_if_error(status, "Failed obtaining flags for a stream in "
+				+ context::detail_::identify(context_handle_, device_id_));
+		return flags & CU_STREAM_NON_BLOCKING;
 	}
 
 	stream::priority_t priority() const
 	{
-		// Is it necessary to set the device here? I wonder.
-		device_setter_type set_device_for_this_scope(device_id_);
 		int the_priority;
-		auto status = cudaStreamGetPriority(handle_, &the_priority);
-		throw_if_error(status, "Failure obtaining priority for "
-			+ stream::detail_::identify(handle_, device_id_));
+		auto status = cuStreamGetPriority(handle_, &the_priority);
+			// Could have used the equivalent Runtime API call:
+			// cuStreamGetPriority(handle_, &the_priority);
+		throw_if_error(status, "Failed obtaining priority for a stream in "
+			+ context::detail_::identify(context_handle_, device_id_));
 		return the_priority;
 	}
 
@@ -231,17 +244,18 @@ public: // other non-mutators
 	 */
 	bool has_work_remaining() const
 	{
-		device_setter_type set_device_for_this_scope(device_id_);
-		auto status = cudaStreamQuery(handle_);
+		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		auto status = cuStreamQuery(handle_);
+		    // Could have used the equivalent runtime API call:
+			// cuStreamQuery(handle_);
 		switch(status) {
-		case cudaSuccess:
+		case CUDA_SUCCESS:
 			return false;
-		case cudaErrorNotReady:
+		case CUDA_ERROR_NOT_READY:
 			return true;
 		default:
-			throw(cuda::runtime_error(status,
-				"unexpected status returned from cudaStreamQuery() for "
-				+ stream::detail_::identify(handle_, device_id_)));
+			throw cuda::runtime_error(static_cast<cuda::status::named_t>(status),
+				"unexpected stream status for " + stream::detail_::identify(handle_, device_id_));
 		}
 	}
 
@@ -251,7 +265,7 @@ public: // other non-mutators
 	 * @return true if there is no work pending, false if all
 	 * previously-scheduled work has been completed
 	 */
-	bool is_clear() const { return not has_work_remaining(); }
+	bool is_clear() const { return !has_work_remaining(); }
 
 	/**
 	 * An alias for @ref is_clear() - to conform to how the CUDA runtime
@@ -266,53 +280,52 @@ protected: // static methods
 	 * A function used internally by this class as the host function to call directly; see
 	 * @ref enqueue_t::host_function_call - but only with CUDA version 10.0 and later.
 	 *
-	 * @param stream_handle the handle of the stream for which a host function call was triggered - this
+	 * @param stream_handle the ID of the stream for which a host function call was triggered - this
 	 * will be passed by the CUDA runtime
-	 * @param device_id_stream_handle_and_callable a 3-tuple, containing the ID of the device to which
-	 * the stream launching the callable is associated, the handle of that launching stream, and the
-	 * callable callback which was passed to @ref enqueue_t::host_function_call, and which the programmer
+	 * @param stream_wrapper_members_and_callable a tuple, containing the information necessary to
+	 * recreate the wrapper with which the callback is associated, without any additional CUDA API calls -
+	 * plus the callable which was passed to @ref enqueue_t::host_function_call, and which the programmer
 	 * actually wants to be called.
-
 	 */
 	template <typename Callable>
-	static void stream_launched_host_function_adapter(void * device_id_stream_handle_and_callable)
+	static void stream_launched_host_function_adapter(void * stream_wrapper_members_and_callable)
 	{
-		using triplet_type = ::std::tuple<device::id_t, stream::handle_t, Callable>;
-		auto* triplet_ptr = reinterpret_cast<triplet_type*>(device_id_stream_handle_and_callable);
-		auto unique_ptr = ::std::unique_ptr<triplet_type>{triplet_ptr}; // Ensures deletion when we leave this function.
-		auto device_id = ::std::get<0>(*triplet_ptr);
-		auto stream_handle = ::std::get<1>(*triplet_ptr);
-		auto& callable = ::std::get<2>(*triplet_ptr);
-		callable( stream_t{device_id, stream_handle, do_not_take_ownership} );
+		using tuple_type = ::std::tuple<device::id_t, context::handle_t , stream::handle_t, Callable>;
+		auto* tuple_ptr = reinterpret_cast<tuple_type *>(stream_wrapper_members_and_callable);
+		auto unique_ptr_to_tuple = ::std::unique_ptr<tuple_type>{tuple_ptr}; // Ensures deletion when we leave this function.
+		auto device_id        = ::std::get<0>(*unique_ptr_to_tuple.get());
+		auto context_handle   = ::std::get<1>(*unique_ptr_to_tuple.get());
+		auto stream_handle        = ::std::get<2>(*unique_ptr_to_tuple.get());
+		const auto& callable  = ::std::get<3>(*unique_ptr_to_tuple.get());
+		callable( stream_t{device_id, context_handle, stream_handle, do_not_take_ownership} );
 	}
 
 	/**
 	 * @brief A function to @ref `host_function_launch_adapter`, for use with the old-style CUDA Runtime API call,
 	 * which passes more arguments to the callable - and calls the host function even on device failures.
 	 *
-	 * @param stream_handle the handle of the stream for which a host function call was triggered - this
+	 * @param stream_handle the ID of the stream for which a host function call was triggered - this
 	 * will be passed by the CUDA runtime
 	 * @note status indicates the status the CUDA status when the host function call is triggered; anything
 	 * other than @ref `cuda::status::success` means there's been a device error previously - but
 	 * in that case, we won't invoke the callable, as such execution is deprecated; see:
 	 * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM
-	 * @param device_id_and_callable a pair-value, containing the ID of the device to which the stream
-	 * launching the host function call is associated, as well as the callable callback which was passed to
+	 * @param device_id_and_callable a pair-value, containing the ID of the device to which the stream launching
+	 * the host function call is associated, as well as the callable callback which was passed to
 	 * @ref enqueue_t::host_function_call, and which the programmer actually wants to be called.
 	 */
 	template <typename Callable>
 	static void callback_launch_adapter(
-		stream::handle_t  stream_handle,
+		stream::handle_t,
 		status_t      status,
-		void *        device_id_stream_handle_and_callable)
+		void *        stream_wrapper_members_and_callable)
 	{
-		(void) stream_handle; // it's redundant
 		if (status != cuda::status::success) {
-			using triplet_type = ::std::tuple<device::id_t, stream::handle_t, Callable>;
-			delete reinterpret_cast<triplet_type*>(device_id_stream_handle_and_callable);
+			using tuple_type = ::std::tuple<device::id_t, context::handle_t , stream::handle_t, Callable>;
+			delete reinterpret_cast<tuple_type*>(stream_wrapper_members_and_callable);
 			return;
 		}
-		stream_launched_host_function_adapter<Callable>(device_id_stream_handle_and_callable);
+		stream_launched_host_function_adapter<Callable>(stream_wrapper_members_and_callable);
 	}
 
 public: // mutators
@@ -335,17 +348,17 @@ public: // mutators
 		void kernel_launch(
 			const KernelFunction&       kernel_function,
 			launch_configuration_t      launch_configuration,
-			KernelParameters...         parameters)
+			KernelParameters &&...      parameters)
 		{
 			// Kernel executions cannot be enqueued in streams associated
 			// with devices other than the current one, see:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			return cuda::enqueue_launch(
 				kernel_function,
 				associated_stream,
 				launch_configuration,
-				parameters...);
+				::std::forward<KernelParameters>(parameters)...);
 		}
 
 		/**
@@ -390,6 +403,11 @@ public: // mutators
 		{
 			copy(destination, source, source.size());
 		}
+
+		void copy(void* destination, memory::const_region_t source)
+		{
+			copy(destination, source, source.size());
+		}
 		///@}
 
 		/**
@@ -403,7 +421,7 @@ public: // mutators
 		void memset(void *destination, int byte_value, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
+            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::set(destination, byte_value, num_bytes, associated_stream.handle_);
 		}
 
@@ -420,8 +438,7 @@ public: // mutators
 		 */
 		void memzero(void *destination, size_t num_bytes)
 		{
-			// Is it necessary to set the device? I wonder.
-			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
+            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.handle_);
 		}
 
@@ -466,8 +483,7 @@ public: // mutators
 		template <typename Callable>
 		void host_function_call(Callable callable_)
 		{
-			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
-
+            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
 			// Since callable_ will be going out of scope after the enqueueing,
 			// and we don't know anything about the scope of the original argument with
@@ -475,8 +491,9 @@ public: // mutators
 			// and pass that as the user-defined data. We also add information about
 			// the enqueueing stream.
 			auto raw_callable_extra_argument = new
-				::std::tuple<device::id_t, stream::handle_t, Callable>(
-					associated_stream.device_id_,
+				::std::tuple<device::id_t, context::handle_t, stream::handle_t, Callable>(
+				associated_stream.device_id_,
+				associated_stream.context_handle_,
 				associated_stream.handle(),
 					Callable(::std::move(callable_))
 				);
@@ -485,19 +502,22 @@ public: // mutators
 			// callback - what it will actually _do_ is invoke the callback we were passed.
 
 #if CUDART_VERSION >= 10000
-			auto status = cudaLaunchHostFunc(
+			auto status = cuLaunchHostFunc(
 				associated_stream.handle_, &stream_launched_host_function_adapter<Callable>, raw_callable_extra_argument);
+			    // Could have used the equivalent Driver API call: cuLaunchHostFunc()
 #else
 			// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
 			// variable, see:
 			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
 			constexpr const unsigned fixed_flags { 0u };
-			auto status = cudaStreamAddCallback(
+			auto status = cuStreamAddCallback(
 				associated_stream.handle_, &callback_launch_adapter<Callable>, raw_callable_extra_argument, fixed_flags);
+			    // Could have used the equivalent Driver API call: cuAddStreamCallback()
 #endif
 
 			throw_if_error(status, "Failed scheduling a callback to be launched on "
-				+ stream::detail_::identify(associated_stream.handle(), associated_stream.device().id()));
+				+ stream::detail_::identify(associated_stream.handle_,
+					associated_stream.context_handle_, associated_stream.device_id_));
 		}
 
 
@@ -533,24 +553,24 @@ public: // mutators
 		/**
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-		 * pass whatever @ref cuda::memory::managed::allocate() (or `cudaMallocManaged()`)
-		 * returned.
+		 * pass whatever @ref cuda::memory::managed::allocate() returned.
 		 */
 		void memory_attachment(
 			const void* managed_region_start,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
-			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
 			constexpr const size_t length = 0;
 			auto flags = static_cast<unsigned>(attachment);
-			auto status =  cudaStreamAttachMemAsync(
-				associated_stream.handle_, managed_region_start, length, flags);
-			throw_if_error(status,
-				"Failed scheduling an attachment of a managed memory region on "
-				+ stream::detail_::identify(associated_stream.handle_, associated_stream.device_id_));
+			auto status =  cuStreamAttachMemAsync(
+				associated_stream.handle_,  memory::device::address(managed_region_start), length, flags);
+			    // Could have used the equivalent Driver API call cuStreamAttachMemAsync
+			throw_if_error(status, "Failed scheduling an attachment of a managed memory region on "
+				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
+				associated_stream.device_id_));
 		}
 
 		/**
@@ -574,13 +594,130 @@ public: // mutators
 		 * @note this call will not delay any already-enqueued work on the stream,
 		 * only work enqueued _after_ the call.
 		 *
-		 * @param event the event for whose occurrence to wait; the event
+		 * @param event_ the event for whose occurrence to wait; the event
 		 * would typically be recorded on another stream.
 		 *
 		 */
-		void wait(const event_t& event);
+		void wait(const event_t& event_);
 
-	}; // class enqueue_t
+		/**
+		 * Schedule writing a single value to global device memory after all
+		 * previous work has concluded.
+		 *
+		 * @tparam T the value to schedule a setting of. Can only be a raw
+		 * uint32_t or uint64_t !
+		 * @param address location in global device memory to set at the appropriate time.
+		 * @param value the value to write to @p address.
+		 * @param with_memory_barrier if false, allows reordering of this write operation
+		 * with writes scheduled before it.
+		 */
+		template <typename T>
+		void set_single_value(T* __restrict__ address, T value, bool with_memory_barrier = true)
+        {
+            static_assert(
+                ::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+                "Unsupported type for stream value wait."
+            );
+            unsigned flags = with_memory_barrier ?
+                CU_STREAM_WRITE_VALUE_DEFAULT :
+                CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
+		    auto result = static_cast<status_t>(
+		        stream::detail_::write_value(associated_stream.handle_, address, value, flags));
+		    throw_if_error(result, "Failed scheduling a write to global memory on "
+		        + stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
+                + associated_stream.device_id_));
+        }
+
+        /**
+         * Wait for a value in device global memory to change so as to meet some condition
+         *
+         * @tparam T the value to schedule a setting of. Can only be a raw
+		 * uint32_t or uint64_t !
+		 * @param address location in global device memory to set at the appropriate time.
+		 * @param condition the kind of condition to check against the reference value. Examples:
+         * equal to 5, greater-or-equal to 5, non-zero bitwise-and with 5 etc.
+		 * @param value the condition is checked against this reference value. Example: waiting on
+         * the value at address to be greater-or-equal to this value.
+		 * @param with_memory_barrier If true, all remote writes guaranteed to have reached the device
+         * before the wait is performed will be visible to all operations on this stream/queue scheduled
+         * after the wait.
+         */
+        template <typename T>
+        void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false)
+        {
+            static_assert(
+                ::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+                "Unsupported type for stream value wait."
+            );
+            unsigned flags = static_cast<unsigned>(condition) |
+                (with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
+            auto result = static_cast<status_t>(
+                stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
+            throw_if_error(result, "Failed scheduling a wait  to global memory on "
+                + stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
+				associated_stream.device_id_));
+        }
+
+        /**
+         * Guarantee all remote writes to the specified address are visible to subsequent operations
+         * scheduled on this stream.
+         *
+         * @param address location the previous remote writes to which need to be visible to
+         * subsequent operations.
+         */
+        void flush_remote_writes()
+        {
+            CUstreamBatchMemOpParams flush_op;
+            flush_op.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
+            unsigned count = 1;
+            unsigned flags = 0;
+            // Let's cross our fingers and assume nothing else needs to be set here...
+            cuStreamBatchMemOp(associated_stream.handle_, count, &flush_op, flags);
+        }
+
+        /**
+         * Enqueue multiple single-value write, wait and flush operations to the device
+         * (avoiding the overhead of multiple enqueue calls).
+         *
+         * @note see @ref wait(), @ref set_single_value and @ref flush_remote_writes.
+         *
+         * @{
+         */
+
+        /**
+         * @param ops_begin beginning of a sequence of single-value operation specifications
+         * @param ops_end end of a sequence of single-value operation specifications
+         */
+        template <typename Iterator>
+        void single_value_operations_batch(Iterator ops_begin, Iterator ops_end)
+        {
+            static_assert(::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
+            "Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
+                " CUstreamBatchMemOpParams, as the value type");
+            auto num_ops = ::std::distance(ops_begin, ops_end);
+            if (::std::is_same<typename ::std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
+                "Only accepting containers of the CUDA-driver-API memory operation descriptor, CUstreamBatchMemOpParams")
+            {
+                auto ops_ptr = reinterpret_cast<const CUstreamBatchMemOpParams*>(ops_begin);
+                cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_ptr);
+            }
+            else {
+                auto ops_uptr = ::std::unique_ptr<CUstreamBatchMemOpParams[]>(new CUstreamBatchMemOpParams[num_ops]);
+                ::std::copy(ops_begin, ops_end, ops_uptr.get());
+                cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_uptr.get());
+            }
+        }
+
+        /**
+         * @param single_value_ops A sequence of single-value operation specifiers to enqueue together.
+         */
+        template <typename Container>
+        void single_value_operations_batch(const Container& single_value_ops)
+        {
+            return single_value_operations_batch(single_value_ops.begin(), single_value_ops.end());
+        }
+
+    }; // class enqueue_t
 
 	friend class enqueue_t;
 
@@ -590,43 +727,46 @@ public: // mutators
 	 */
 	void synchronize() const
 	{
-		// Is it necessary to set the device here? I wonder.
-		device_setter_type set_device_for_this_scope(device_id_);
 		cuda::synchronize(*this);
 	}
 
 #if CUDA_VERSION >= 11000
 	stream::synchronization_policy_t synchronization_policy()
 	{
-		device::current::detail_::scoped_override_t set_device_for_this_scope(device_id_);
-		cudaStreamAttrValue wrapped_result{};
-		auto status = cudaStreamGetAttribute(handle_, cudaStreamAttributeSynchronizationPolicy, &wrapped_result);
+		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CUstreamAttrValue wrapped_result{};
+		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
 		throw_if_error(status);
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
 	void set_synchronization_policy(stream::synchronization_policy_t policy)
 	{
-		device::current::detail_::scoped_override_t set_device_for_this_scope(device_id_);
-		cudaStreamAttrValue wrapped_value{};
-		wrapped_value.syncPolicy = static_cast<cudaSynchronizationPolicy>(policy);
-		auto status = cudaStreamSetAttribute(handle_, cudaStreamAttributeSynchronizationPolicy, &wrapped_value);
+		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CUstreamAttrValue wrapped_value{};
+		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
+		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
 		throw_if_error(status);
 	}
 #endif
 
 protected: // constructor
 
-	stream_t(device::id_t device_id, stream::handle_t stream_handle, bool take_ownership = false) noexcept
-	: device_id_(device_id), handle_(stream_handle), owning(take_ownership) { }
+    stream_t(
+        device::id_t       device_id,
+        context::handle_t  context_handle,
+        stream::handle_t   stream_handle,
+        bool               take_ownership = false) noexcept
+	: device_id_(device_id), context_handle_(context_handle), handle_(stream_handle), owning(take_ownership) { }
 
 public: // constructors and destructor
 
-	stream_t(const stream_t& other) noexcept :
-	stream_t(other.device_id_, other.handle_, false) { }
+	stream_t(const stream_t& other) noexcept : 
+		stream_t(other.device_id_, other.context_handle_, other.handle_, false)
+	{ }
 
 	stream_t(stream_t&& other) noexcept : 
-		stream_t(other.device_id_, other.handle_, other.owning)
+		stream_t(other.device_id_, other.context_handle_, other.handle_, other.owning)
 	{
 		other.owning = false;
 	}
@@ -634,29 +774,41 @@ public: // constructors and destructor
 	~stream_t()
 	{
 		if (owning) {
-			device_setter_type set_device_for_this_scope(device_id_);
-			cudaStreamDestroy(handle_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+			cuStreamDestroy(handle_);
 		}
 	}
 
 public: // operators
 
+	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
+	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t& other) = delete;
 	stream_t& operator=(stream_t& other) = delete;
 
 public: // friendship
 
-	friend stream_t stream::detail_::wrap(device::id_t device_id, stream::handle_t stream_handle, bool take_ownership) noexcept;
+	friend stream_t stream::detail_::wrap(
+		device::id_t       device_id,
+		context::handle_t  context_handle,
+		stream::handle_t   stream_handle,
+		bool               take_ownership) noexcept;
 
 	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 	{
-		return lhs.device_id_ == rhs.device_id_ and lhs.handle() == rhs.handle();
+		return
+			lhs.context_handle_ == rhs.context_handle_
+#ifndef NDEBUG
+			and lhs.device_id_ == rhs.device_id_
+#endif
+			and lhs.handle_ == rhs.handle_;
 	}
 
 protected: // data members
-	const device::id_t  device_id_;
-	const stream::handle_t  handle_;
-	bool                owning;
+	const device::id_t       device_id_;
+	const context::handle_t  context_handle_;
+	const stream::handle_t   handle_;
+	bool                     owning;
 
 public: // data members - which only exist in lieu of namespaces
 	enqueue_t     enqueue { *this };
@@ -673,11 +825,12 @@ inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 namespace stream {
 
 namespace detail_ {
+
 /**
  * @brief Wrap an existing stream in a @ref stream_t instance.
  *
  * @param device_id ID of the device for which the stream is defined
- * @param stream_handle handle of the pre-existing stream
+ * @param stream_handle ID of the pre-existing stream
  * @param take_ownership When set to `false`, the stream
  * will not be destroyed along with the wrapper; use this setting
  * when temporarily working with a stream existing irrespective of
@@ -688,22 +841,49 @@ namespace detail_ {
  * device-stream combination.
  */
 inline stream_t wrap(
-	device::id_t  device_id,
-	handle_t          stream_handle,
-	bool          take_ownership /* = false, see declaration */) noexcept
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	stream::handle_t   stream_handle,
+	bool               take_ownership) noexcept
 {
-	return stream_t(device_id, stream_handle, take_ownership);
+	return { device_id, context_handle, stream_handle, take_ownership };
 }
 
 inline stream_t create(
-	device::id_t  device_id,
-	bool          synchronizes_with_default_stream,
-	priority_t    priority = stream::default_priority)
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	bool               synchronizes_with_default_stream,
+	priority_t         priority = stream::default_priority)
 {
-	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	auto new_stream_handle = cuda::stream::detail_::create_on_current_device(
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	auto new_stream_handle = cuda::stream::detail_::create_in_current_context(
 		synchronizes_with_default_stream, priority);
-	return wrap(device_id, new_stream_handle, do_take_ownership);
+	return wrap(device_id, context_handle, new_stream_handle, do_take_ownership);
+}
+
+template<>
+inline CUresult wait_on_value<uint32_t>(CUstream stream_handle, CUdeviceptr address, uint32_t value, unsigned int flags)
+{
+    return cuStreamWaitValue32(stream_handle, address, value, flags);
+}
+
+template<>
+inline CUresult wait_on_value<uint64_t>(CUstream stream_handle, CUdeviceptr address, uint64_t value, unsigned int flags)
+{
+    return cuStreamWaitValue64(stream_handle, address, value, flags);
+}
+
+
+template<>
+inline CUresult write_value<uint32_t>(CUstream stream_handle, CUdeviceptr address, uint32_t value, unsigned int flags)
+{
+    return cuStreamWriteValue32(stream_handle, address, value, flags);
+}
+
+template<>
+inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr address, uint64_t value, unsigned int flags)
+{
+    return cuStreamWriteValue64(stream_handle, address, value, flags);
 }
 
 } // namespace detail_
@@ -721,9 +901,14 @@ inline stream_t create(
  * @return The newly-created stream
  */
 stream_t create(
-	device_t     device,
-	bool         synchronizes_with_default_stream,
-	priority_t   priority = stream::default_priority);
+	const device_t&  device,
+	bool             synchronizes_with_default_stream,
+	priority_t       priority = stream::default_priority);
+
+stream_t create(
+	const context_t&  context,
+	bool              synchronizes_with_default_stream,
+	priority_t        priority = stream::default_priority);
 
 } // namespace stream
 
@@ -732,9 +917,8 @@ using queue_id_t = stream::handle_t;
 
 inline void synchronize(const stream_t& stream)
 {
-	auto status = cudaStreamSynchronize(stream.handle());
-	throw_if_error(status,"Failed synchronizing "
-		+ stream::detail_::identify(stream.handle(), stream.device().id()));
+	auto status = cuStreamSynchronize(stream.handle());
+	throw_if_error(status, "Failed synchronizing " + stream::detail_::identify(stream));
 }
 
 #if CUDA_VERSION >= 11000
@@ -749,17 +933,7 @@ inline void synchronize(const stream_t& stream)
  * settings; see https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#L2_access_policy
  * for details.
  */
-inline void copy_attributes(const stream_t& dest, const stream_t& src)
-{
-#ifndef NDEBUG
-	if (dest.device() != src.device()) {
-		throw std::invalid_argument("Attempt to copy attributes between streams on different devices");
-	}
-#endif
-	device::current::scoped_override_t set_device_for_this_scope(dest.device());
-	auto status = cudaStreamCopyAttributes(dest.id(), src.id());
-	throw_if_error(status);
-}
+void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
 
 } // namespace cuda

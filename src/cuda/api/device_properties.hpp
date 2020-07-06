@@ -11,7 +11,8 @@
 
 #include <cuda/api/constants.hpp>
 #include <cuda/api/pci_id.hpp>
-#include <cuda/common/types.hpp>
+
+#include <cuda/api/types.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -32,6 +33,11 @@
 namespace cuda {
 
 namespace device {
+
+/**
+ * Type of the number of mutiprocessors within a single GPU.
+ */
+using multiprocessor_count_t = int;
 
 /**
  * A numeric designator of an architectural generation of CUDA devices
@@ -96,8 +102,6 @@ struct compute_capability_t {
 	 * setting
 	 */
 	memory::shared::size_t max_shared_memory_per_block() const;
-
-
 };
 
 /**

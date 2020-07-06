@@ -6,14 +6,15 @@
  * This is a common file for all definitions of fundamental CUDA-related types,
  * some shared by different APIs.
  *
- * @note Most types here are defined using "Runtime API terminology", but this is
- * inconsequential, as the corresponding Driver API types are merely aliases of
- * them. For example, in CUDA's own header files, we have:
- *
- *   typedef CUevent_st * CUevent
- *   typedef CUevent_st * cudaEvent_t
- *
+ * @note In this file you'll find several numeric or opaque handle types, e.g.
+ * for devices, streams and events. These are mostly to be ignored; they
+ * appear here to make interaction with the unwrapped API easier and to break
+ * dependencies in the code. Instead, this library offers wrapper classes for
+ * them, in separate header files. For example: `stream.hpp` contains a stream_t
+ * class with its unique stream handle. Those are the ones you will want
+ * to use - they are more convenient and safer.
  */
+
 #pragma once
 #ifndef CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 #define CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
@@ -25,11 +26,16 @@
 #ifndef __CUDACC__
 #include <builtin_types.h>
 #endif
+#include <cuda.h>
 
 #include <type_traits>
+#include <utility>
 #include <cassert>
 #include <cstddef> // for ::std::size_t
 #include <cstdint>
+#ifndef NDEBUG
+#include <stdexcept>
+#endif
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -46,7 +52,6 @@
 #endif
 #endif
 
-
 #ifdef _MSC_VER
 /*
  * Microsoft Visual C++ (upto v2017) does not support the C++
@@ -61,22 +66,15 @@
  */
 namespace cuda {
 
-/*
- * The different id and handle types - for devices, streams events etc. - are
- * just numeric values (mostly useful for breaking dependencies and for
- * interaction with code using the original CUDA APIs); we also have wrapper
- * classes for the entites they identify, constructible from the appropriate
- * handles/id's. These allow convenient access to their related functionality -
- * such as @ref cuda::device_t, @ref cuda::stream_t and @ref cuda::event_t.
- */
-
-
 /**
- * Indicates either the result (success or error index) of a CUDA Runtime API call,
- * or the overall status of the Runtime API (which is typically the last triggered
- * error).
+ * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,
+ * or the overall status of the API (which is typically the last triggered error).
+ *
+ * @note This single type really needs to double as both CUresult for driver API calls and
+ * cudaError_t for runtime API calls. These aren't actually the same type - but they are both enums,
+ * sharing most of the defined values. See also @ref error.hpp where we unify the set of errors.
  */
-using status_t = cudaError_t;
+using status_t = CUresult;
 
 using size_t = ::std::size_t;
 
@@ -89,6 +87,7 @@ using dimensionality_t = unsigned;
 namespace array {
 
 using dimension_t = size_t;
+
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
  * or extents, are not the same as @ref cuda::grid::dimensions_t ; they may be
@@ -117,19 +116,10 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
 		: dimensions_t(other.width, other.height, other.depth) { }
 
-	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
-	{
-		width = other.width; height = other.height; depth = other.depth;
-		return *this;
+	CPP14_CONSTEXPR dimensions_t& operator=(const dimensions_t& other) = default;
+	CPP14_CONSTEXPR dimensions_t& operator=(dimensions_t&& other) = default;
 
-	}
-	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
-	{
-		width = other.width; height = other.height; depth = other.depth;
-		return *this;
-	}
-
-	constexpr __host__ __device__ operator cudaExtent(void) const
+	constexpr __host__ __device__ operator cudaExtent() const
 	{
 		return { width, height, depth };
 			// Note: We're not using make_cudaExtent here because:
@@ -147,6 +137,7 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	// Named constructor idioms
 
 	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+	static constexpr __host__ __device__ dimensions_t zero() { return cube(0); }
 };
 
 /**
@@ -186,6 +177,7 @@ struct dimensions_t<2>
 	// Named constructor idioms
 
 	static constexpr __host__ __device__ dimensions_t square(dimension_t x)   { return dimensions_t{ x, x }; }
+	static constexpr __host__ __device__ dimensions_t zero() { return square(0); }
 };
 
 } // namespace array
@@ -197,9 +189,19 @@ struct dimensions_t<2>
 namespace event {
 
 /**
- * The CUDA Runtime APIs' handle for events
+ * The CUDA Runtime API's numeric handle for events
  */
-using handle_t = cudaEvent_t;
+using handle_t = CUevent;
+
+namespace ipc {
+
+/**
+ * The concrete value passed between processes, used to tell
+ * the CUDA Runtime API which event is desired.
+ */
+using handle_t = CUipcEventHandle;
+
+} // namespace ipc
 
 } // namespace event
 
@@ -211,9 +213,9 @@ using handle_t = cudaEvent_t;
 namespace stream {
 
 /**
- * The CUDA Runtime API's handle for streams
+ * The CUDA API's handle for streams
  */
-using handle_t = cudaStream_t;
+using handle_t             = CUstream;
 
 /**
  * CUDA streams have a scheduling priority, with lower values meaning higher priority.
@@ -340,10 +342,122 @@ constexpr inline bool operator!=(const complete_dimensions_t lhs, const complete
 /**
  * @namespace memory
  *
- * @brief Management and operations on memory in different CUDA-recognized
- * spaces.
+ * @brief Representation, allocation and manipulation of CUDA-related memory, of different
+ * kinds.
  */
 namespace memory {
+
+namespace pointer {
+
+using attribute_t = CUpointer_attribute;
+
+} // namespace pointer
+
+namespace device {
+
+/**
+ * The numeric type which can represent the range of memory addresses on a CUDA device.
+ */
+using address_t = CUdeviceptr;
+
+static_assert(sizeof(void *) == sizeof(device::address_t), "Unexpected address size");
+
+/**
+ * Return a pointers address as a numeric value of the type appropriate for device
+ * @param device_ptr a pointer into device memory
+ * @return a reinterpretation of @p device_ptr as a numeric address.
+ */
+inline address_t address(const void* device_ptr) noexcept
+{
+	static_assert(sizeof(void*) == sizeof(address_t), "Incompatible sizes for a void pointer and memory::device::address_t");
+	return reinterpret_cast<address_t>(device_ptr);
+}
+
+} // namespace device
+
+namespace detail_ {
+
+// Note: T should be either void or void const, nothing else
+template <class T>
+class base_region_t {
+private:
+	T* start_ = nullptr;
+	size_t size_in_bytes_ = 0;
+
+	using char_type = typename std::conditional<std::is_const<T>::value, const char *, char *>::type;
+public:
+	base_region_t() = default;
+	base_region_t(T* start, size_t size_in_bytes)
+		: start_(start), size_in_bytes_(size_in_bytes) {}
+
+	T*& start() { return start_; }
+	size_t& size() { return size_in_bytes_; }
+
+	size_t size() const { return size_in_bytes_; }
+	T* start() const { return start_; }
+	T* data() const { return start(); }
+	T* get() const { return start(); }
+
+	device::address_t device_ptr() const noexcept { return reinterpret_cast<device::address_t>(start_); }
+protected:
+	base_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
+#ifdef NDEBUG
+		noexcept
+#endif
+	{
+#ifndef NDEBUG
+		if (offset_in_bytes >= size_in_bytes_) {
+			throw std::invalid_argument("subregion begins past region end");
+		}
+		else if (offset_in_bytes + size_in_bytes > size_in_bytes_) {
+			throw std::invalid_argument("subregion exceeds original region bounds");
+		}
+#endif
+		return { static_cast<char_type>(start_) + offset_in_bytes, size_in_bytes };
+	}
+};
+
+template <typename T>
+bool operator==(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+{
+	return lhs.start() == rhs.start()
+		and lhs.size() == rhs.size();
+}
+
+template <typename T>
+bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+{
+	return not (lhs == rhs);
+}
+
+
+}  // namespace detail_
+
+struct region_t : public detail_::base_region_t<void> {
+	using base_region_t<void>::base_region_t;
+	region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
+	{
+		auto parent_class_subregion = base_region_t<void>::subregion(offset_in_bytes, size_in_bytes);
+		return { parent_class_subregion.data(), parent_class_subregion.size() };
+	}
+};
+
+struct const_region_t : public detail_::base_region_t<void const> {
+	using base_region_t<void const>::base_region_t;
+	const_region_t(const region_t& r) : base_region_t(r.start(), r.size()) {}
+	const_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
+	{
+		auto parent_class_subregion = base_region_t<void const>::subregion(offset_in_bytes, size_in_bytes);
+		return { parent_class_subregion.data(), parent_class_subregion.size() };
+	}
+};
+
+inline void* as_pointer(device::address_t address) noexcept
+{
+	static_assert(sizeof(void*) == sizeof(device::address_t), "Incompatible sizes for a void pointer and memory::device::address_t");
+	return reinterpret_cast<void*>(address);
+}
+
 namespace shared {
 
 /**
@@ -360,9 +474,19 @@ namespace shared {
  */
 using size_t = unsigned;
 
-using bank_size_configuration_t = cudaSharedMemConfig;
-
 } // namespace shared
+
+namespace managed {
+
+enum class initial_visibility_t {
+	to_all_devices,
+	to_supporters_of_concurrent_managed_access,
+};
+
+using range_attribute_t = CUmem_range_attribute;
+
+} // namespace managed
+
 } // namespace memory
 
 /**
@@ -478,15 +602,15 @@ constexpr inline bool operator!=(const launch_configuration_t lhs, const launch_
  * change the balance in the allocation of L1-cache-like resources between
  * actual L1 cache and shared memory; these are the possible choices.
  */
-enum class multiprocessor_cache_preference_t {
+enum class multiprocessor_cache_preference_t : ::std::underlying_type<CUfunc_cache_enum>::type {
 	/** No preference for more L1 cache or for more shared memory; the API can do as it please */
-	no_preference                 = cudaFuncCachePreferNone,
+	no_preference                 = CU_FUNC_CACHE_PREFER_NONE,
 	/** Divide the cache resources equally between actual L1 cache and shared memory */
-	equal_l1_and_shared_memory    = cudaFuncCachePreferEqual,
+	equal_l1_and_shared_memory    = CU_FUNC_CACHE_PREFER_EQUAL,
 	/** Divide the cache resources to maximize available shared memory at the expense of L1 cache */
-	prefer_shared_memory_over_l1  = cudaFuncCachePreferShared,
+	prefer_shared_memory_over_l1  = CU_FUNC_CACHE_PREFER_SHARED,
 	/** Divide the cache resources to maximize available L1 cache at the expense of shared memory */
-	prefer_l1_over_shared_memory  = cudaFuncCachePreferL1,
+	prefer_l1_over_shared_memory  = CU_FUNC_CACHE_PREFER_L1,
 	// aliases
 	none                          = no_preference,
 	equal                         = equal_l1_and_shared_memory,
@@ -505,11 +629,11 @@ enum class multiprocessor_cache_preference_t {
  * @ref device_t::shared_memory_bank_size .
  */
 enum multiprocessor_shared_memory_bank_size_option_t
-	: ::std::underlying_type<cudaSharedMemConfig>::type
+	: ::std::underlying_type<CUsharedconfig>::type
 {
-	device_default       = cudaSharedMemBankSizeDefault,
-	four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
-	eight_bytes_per_bank = cudaSharedMemBankSizeEightByte
+	device_default       = CU_SHARED_MEM_CONFIG_DEFAULT_BANK_SIZE,
+	four_bytes_per_bank  = CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE,
+	eight_bytes_per_bank = CU_SHARED_MEM_CONFIG_EIGHT_BYTE_BANK_SIZE
 };
 
 /**
@@ -520,58 +644,40 @@ namespace device {
 
 /**
  * @brief Numeric ID of a CUDA device used by the CUDA Runtime API.
+ *
+ * @note at the time of writing and the foreseeable future, this
+ * type should be an int.
  */
-using id_t               = int;
+using id_t               = CUdevice;
 
 /**
  * CUDA devices have both "attributes" and "properties". This is the
- * type for attribute identifiers/indices, aliasing @ref cudaDeviceAttr.
+ * type for attribute identifiers/indices.
  */
-using attribute_t        = cudaDeviceAttr;
+using attribute_t        = CUdevice_attribute;
 /**
  * All CUDA device attributes (@ref cuda::device::attribute_t) have a value of this type.
  */
 using attribute_value_t  = int;
 
+namespace peer_to_peer {
+
 /**
  * While Individual CUDA devices have individual "attributes" (@ref attribute_t),
  * there are also attributes characterizing pairs; this type is used for
- * identifying/indexing them, aliasing `cudaDeviceP2PAttr`.
+ * identifying/indexing them.
  */
-using pair_attribute_t   = cudaDeviceP2PAttr;
+using attribute_t = CUdevice_P2PAttribute;
+
+} // namespace peer_to_peer
 
 } // namespace device
 
-namespace detail_ {
+namespace context {
 
-/**
- * @brief adapt a type to be usable as a kernel parameter.
- *
- * CUDA kernels don't accept just any parameter type a C++ function may accept.
- * Specifically: No references, arrays decay (IIANM) and functions pass by address.
- * However - not all "decaying" of `::std::decay` is necessary. Such transformation
- * can be effected by this type-trait struct.
- */
-template<typename P>
-struct kernel_parameter_decay {
-private:
-    typedef typename ::std::remove_reference<P>::type U;
-public:
-    typedef typename ::std::conditional<
-        ::std::is_array<U>::value,
-        typename ::std::remove_extent<U>::type*,
-        typename ::std::conditional<
-            ::std::is_function<U>::value,
-            typename ::std::add_pointer<U>::type,
-            U
-        >::type
-    >::type type;
-};
+using handle_t = CUcontext;
 
-template<typename P>
-using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
-
-} // namespace detail_
+using flags_t = unsigned;
 
 /**
  * Scheduling policies the Runtime API may use when the host-side
@@ -580,58 +686,91 @@ using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
  */
 enum host_thread_synch_scheduling_policy_t : unsigned int {
 
-	/**
-	 * @brief Default behavior; yield or spin based on a heuristic.
-	 *
-	 * The default value if the flags parameter is zero, uses a heuristic
-	 * based on the number of active CUDA contexts in the process C and
-	 * the number of logical processors in the system P. If C > P, then
-	 * CUDA will yield to other OS threads when waiting for the device,
-	 * otherwise CUDA will not yield while waiting for results and
-	 * actively spin on the processor.
-	 */
-	heuristic = cudaDeviceScheduleAuto,
+    /**
+     * @brief Default behavior; yield or spin based on a heuristic.
+     *
+     * The default value if the flags parameter is zero, uses a heuristic
+     * based on the number of active CUDA contexts in the process C and
+     * the number of logical processors in the system P. If C > P, then
+     * CUDA will yield to other OS threads when waiting for the device,
+     * otherwise CUDA will not yield while waiting for results and
+     * actively spin on the processor.
+     */
+    heuristic = CU_CTX_SCHED_AUTO,
 
 	/**
 	 * @brief Alias for the default behavior; see @ref heuristic .
 	 */
 	default_ = heuristic,
 
-	/**
-	 * @brief Keep control and spin-check for result availability
-	 *
-	 * Instruct CUDA to actively spin when waiting for results from the
-	 * device. This can decrease latency when waiting for the device, but
-	 * may lower the performance of CPU threads if they are performing
-	 * work in parallel with the CUDA thread.
-	 *
-	 */
-	spin      = cudaDeviceScheduleSpin,
+    /**
+     * @brief Keep control and spin-check for result availability
+     *
+     * Instruct CUDA to actively spin when waiting for results from the
+     * device. This can decrease latency when waiting for the device, but
+     * may lower the performance of CPU threads if they are performing
+     * work in parallel with the CUDA thread.
+     *
+     */
+    spin      = CU_CTX_SCHED_SPIN,
 
-	/**
-	 * @brief Block the thread until results are available.
-	 *
-	 * Instruct CUDA to block the CPU thread on a synchronization
-	 * primitive when waiting for the device to finish work.
-	 */
-	block     = cudaDeviceScheduleBlockingSync,
+    /**
+     * @brief Block the thread until results are available.
+     *
+     * Instruct CUDA to block the CPU thread on a synchronization
+     * primitive when waiting for the device to finish work.
+     */
+    block     = CU_CTX_SCHED_BLOCKING_SYNC,
 
-	/**
-	 * @brief Yield control while waiting for results.
-	 *
-	 * Instruct CUDA to yield its thread when waiting for results from
-	 * the device. This can increase latency when waiting for the
-	 * device, but can increase the performance of CPU threads
-	 * performing work in parallel with the device.
-	 *
-	 */
-	yield     = cudaDeviceScheduleYield,
+    /**
+     * @brief Yield control while waiting for results.
+     *
+     * Instruct CUDA to yield its thread when waiting for results from
+     * the device. This can increase latency when waiting for the
+     * device, but can increase the performance of CPU threads
+     * performing work in parallel with the device.
+     *
+     */
+    yield     = CU_CTX_SCHED_YIELD,
 
-	/** see @ref heuristic */
-	automatic = heuristic,
+    /** see @ref heuristic */
+    automatic = heuristic,
 };
 
+} // namespace context
+
+namespace device {
+
+using flags_t = context::flags_t;
+
+namespace primary_context {
+
+using handle_t = cuda::context::handle_t;
+
+} // namespace primary_context
+
+using host_thread_synch_scheduling_policy_t = context::host_thread_synch_scheduling_policy_t;
+
+} // namespace device
+
 using native_word_t = unsigned;
+
+namespace detail_ {
+
+template <typename T, typename U>
+inline T identity_cast(U&& x)
+{
+	static_assert(::std::is_same<
+            typename ::std::remove_reference<T>::type,
+            typename ::std::remove_reference<U>::type
+        >::value,
+        "Casting to a different type - don't use identity_cast");
+	return static_cast<T>(::std::forward<U>(x));
+}
+
+} // namespace detail_
+
+using uuid_t = CUuuid;
 
 /**
  * Object-code symbols
@@ -640,10 +779,21 @@ struct symbol_t {
 	const void* handle;
 };
 
+namespace module {
+
+using handle_t = CUmodule;
+
+} // namespace module
+
 namespace kernel {
 
-using attribute_t = cudaFuncAttribute;
+
+using attribute_t = CUfunction_attribute;
 using attribute_value_t = int;
+
+// TODO: Is this really only for kernels, or can any device-side function be
+// represented by a CUfunction?
+using handle_t = CUfunction;
 
 } // namespace kernel
 

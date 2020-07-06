@@ -8,8 +8,8 @@
 #ifndef CUDA_API_WRAPPERS_PCI_ID_CUH_
 #define CUDA_API_WRAPPERS_PCI_ID_CUH_
 
+#include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
-#include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -25,7 +25,7 @@ namespace device {
  * see @ref properties_t
  */
 struct pci_location_t {
-	// This is simply what we get in CUDA's cudaDeviceProp structure
+	// These are the values CUDA's API provides us with directly
 	int domain;
 	int bus;
 	int device;
@@ -52,7 +52,7 @@ inline id_t resolve_id(pci_location_t pci_id)
 {
 	::std::string as_string { pci_id };
 	id_t cuda_device_id;
-	auto result = cudaDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
+	auto result = cuDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
 	throw_if_error(result,
 		"Failed obtaining a CUDA device ID corresponding to PCI id " + as_string);
 	return cuda_device_id;

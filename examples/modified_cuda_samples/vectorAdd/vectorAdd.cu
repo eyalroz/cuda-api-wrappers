@@ -10,7 +10,9 @@
  * contact the author.
  */
 
-#include <cuda/runtime_api.hpp>
+#include "../../common.hpp"
+
+#include <cuda/api.hpp>
 
 #include <iostream>
 #include <memory>

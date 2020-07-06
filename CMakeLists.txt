@@ -17,14 +17,14 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 PROJECT(cuda-api-wrappers
-	VERSION 0.4.4
+	VERSION 0.5.0
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
 include(GNUInstallDirs)
 
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDAToolkit 11.0 REQUIRED)
 find_package(Threads REQUIRED)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
@@ -35,9 +35,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 # Our library targets
 # -------------------
 
-add_library(runtime-api INTERFACE) # A header-only library!
+add_library(runtime-and-driver INTERFACE) # A header-only library!
 add_library(nvtx)
-set(wrapper-libraries runtime-api nvtx)
+set(wrapper-libraries runtime-and-driver nvtx)
 
 foreach(WRAPPER_LIB ${wrapper-libraries})
 	target_compile_features(${WRAPPER_LIB} INTERFACE cxx_std_11) # This means _at least_ C++11
@@ -47,11 +47,11 @@ foreach(WRAPPER_LIB ${wrapper-libraries})
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
-	target_link_libraries(${WRAPPER_LIB} INTERFACE CUDA::cudart) # CUDA::cuda_driver)
+	target_link_libraries(${WRAPPER_LIB} INTERFACE CUDA::cudart CUDA::nvToolsExt CUDA::cuda_driver)
 endforeach()
 
 set_target_properties(nvtx PROPERTIES OUTPUT_NAME "cuda-nvtx-wrappers")
-target_link_libraries(nvtx PUBLIC runtime-api)
+target_link_libraries(nvtx PUBLIC runtime-and-driver)
 target_link_libraries(nvtx PRIVATE Threads::Threads CUDA::nvToolsExt)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)

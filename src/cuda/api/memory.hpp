@@ -31,7 +31,10 @@
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/error.hpp>
 #include <cuda/api/pointer.hpp>
+#include <cuda/api/current_context.hpp>
+
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
+#include <cuda.h>
 
 #include <memory>
 #include <cstring> // for ::std::memset
@@ -41,47 +44,12 @@ namespace cuda {
 
 ///@cond
 class device_t;
+class context_t;
 class stream_t;
+class module_t;
 ///@endcond
 
-/**
- * @namespace memory
- * Representation, allocation and manipulation of CUDA-related memory, with
- * its various namespaces and kinds of memory regions.
- */
 namespace memory {
-
-namespace detail_ {
-
-template <class T>
-	class base_region_t {
-	private:
-		T* start_ = nullptr;
-		size_t size_in_bytes_ = 0;
-	public:
-		base_region_t() = default;
-		base_region_t(T* start, size_t size_in_bytes)
-		: start_(start), size_in_bytes_(size_in_bytes) {}
-
-		T*& start() { return start_; }
-		size_t& size() { return size_in_bytes_; }
-
-		size_t size() const { return size_in_bytes_; }
-		T* start() const { return start_; }
-		T* data() const { return start(); }
-		T* get() const { return start(); }
-	};
-
-}  // namespace detail_
-
-struct region_t : public detail_::base_region_t<void> {
-	using base_region_t<void>::base_region_t;
-};
-
-struct const_region_t : public detail_::base_region_t<void const> {
-	using base_region_t<void const>::base_region_t;
-	const_region_t(const region_t& r) : base_region_t(r.start(), r.size()) {}
-};
 
 /**
  * A memory allocation setting: Can the allocated memory be used in other
@@ -127,8 +95,8 @@ namespace detail_ {
 inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 {
 	return
-		(options.portability     == portability_across_contexts::is_portable ? cudaHostAllocPortable      : 0) &
-		(options.write_combining == cpu_write_combining::with_wc             ? cudaHostAllocWriteCombined : 0);
+		(options.portability     == portability_across_contexts::is_portable ? CU_MEMHOSTALLOC_PORTABLE      : 0) &
+		(options.write_combining == cpu_write_combining::with_wc             ? CU_MEMHOSTALLOC_WRITECOMBINED : 0);
 }
 
 } // namespace detail_
@@ -161,11 +129,6 @@ struct region_pair {
 
 } // namespace mapped
 
-} // namespace memory
-
-
-namespace memory {
-
 /**
  * @brief CUDA-Device-global memory on a single device (not accessible from the host)
  */
@@ -176,33 +139,30 @@ namespace detail_ {
 /**
  * Allocate memory on current device
  *
- * @param size_in_bytes amount of memory to allocate in bytes
+ * @param num_bytes amount of memory to allocate in bytes
  */
-inline region_t allocate(size_t size_in_bytes)
+inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 {
-	void* allocated = nullptr;
+	device::address_t allocated = 0;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMalloc(&allocated, size_in_bytes);
-	if (is_success(status) && allocated == nullptr) {
+	auto status = cuMemAlloc(&allocated, num_bytes);
+	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
-		status = cudaErrorUnknown;
+		status = (status_t) status::unknown;
 	}
-	throw_if_error(status,
-		"Failed allocating " + ::std::to_string(size_in_bytes) +
-		" bytes of global memory on CUDA device " +
-		::std::to_string(cuda::device::current::detail_::get_id()));
-	return {allocated, size_in_bytes};
+	throw_if_error(status, "Failed allocating " + ::std::to_string(num_bytes) +
+		" bytes of global memory on the current CUDA device");
+	return {as_pointer(allocated), num_bytes};
 }
 
-inline region_t allocate(cuda::device::id_t device_id, size_t size_in_bytes)
+inline region_t allocate(context::handle_t context_handle, size_t size_in_bytes)
 {
-	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	return memory::device::detail_::allocate(size_in_bytes);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	return allocate_in_current_context(size_in_bytes);
 }
 
 } // namespace detail_
-
 
 namespace async {
 
@@ -212,27 +172,27 @@ namespace detail_ {
  * Allocate memory asynchronously on a specified stream.
  */
 inline region_t allocate(
-	cuda::device::id_t  device_id,
-	cuda::stream::handle_t  stream_handle,
-	size_t              size_in_bytes)
+	context::handle_t  context_handle,
+	stream::handle_t       stream_handle,
+	size_t             num_bytes)
 {
 #if CUDART_VERSION >= 11020
-	void* allocated = nullptr;
+	device::address_t allocated = 0;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMallocAsync(&allocated, size_in_bytes, stream_handle);
-	if (is_success(status) && allocated == nullptr) {
+	auto status = cuMemAllocAsync(&allocated, num_bytes, stream_handle);
+	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
-		status = static_cast<decltype(status)>(cuda::status::unknown);
+		status = static_cast<decltype(status)>(status::unknown);
 	}
 	throw_if_error(status,
-		"Failed scheduling an asynchronous allocation of " + ::std::to_string(size_in_bytes) +
-		" bytes of global memory on " + stream::detail_::identify(stream_handle, device_id));
-	return {allocated, size_in_bytes};
+		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
+		" bytes of global memory on " + stream::detail_::identify(stream_handle, context_handle) );
+	return {as_pointer(allocated), num_bytes};
 #else
-	(void) device_id;
+	(void) context_handle;
 	(void) stream_handle;
-	(void) size_in_bytes;
+	(void) num_bytes;
 	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory allocation is not supported with CUDA versions below 11.2");
 #endif
 }
@@ -243,8 +203,7 @@ inline region_t allocate(
  * Schedule an allocation of device-side memory on a CUDA stream.
  *
  * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
- * (CUDA 9.0 Runtime API documentation), and the CUDA programming guide guarantees
- * since at least version 5.0 that the minimum allocation is 256 bytes.
+ * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
  *
  * @throws cuda::runtime_error if scheduling fails for any reason
  *
@@ -253,8 +212,7 @@ inline region_t allocate(
  * @return a pointer to the region of memory which will become allocated once the stream
  * completes all previous tasks and proceeds to also complete the allocation.
  */
-inline region_t allocate(const cuda::stream_t& stream, size_t size_in_bytes);
-
+inline region_t allocate(const stream_t& stream, size_t size_in_bytes);
 
 } // namespace async
 
@@ -265,35 +223,68 @@ inline region_t allocate(const cuda::stream_t& stream, size_t size_in_bytes);
 ///@{
 inline void free(void* ptr)
 {
-	auto result = cudaFree(ptr);
+	auto result = cuMemFree(address(ptr));
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region) { free(region.start()); }
 ///@}
 
 /**
+ * Allocate device-side memory on a CUDA device context.
+ *
+ * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
+ * (CUDA 9.0 Runtime API documentation), and the CUDA programming guide guarantees
+ * since at least version 5.0 that the minimum allocation is 256 bytes.
+ *
+ * @throws cuda::runtime_error if allocation fails for any reason
+ *
+ * @param device the context in which to allocate memory
+ * @param size_in_bytes the amount of global device memory to allocate
+ * @return a pointer to the allocated stretch of memory (only usable within @p context)
+ */
+inline region_t allocate(const context_t& context, size_t size_in_bytes);
+
+/**
  * Allocate device-side memory on a CUDA device.
  *
  * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
- * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
+ * (CUDA 9.0 Runtime API documentation), and the CUDA programming guide guarantees
+ * since at least version 5.0 that the minimum allocation is 256 bytes.
  *
  * @throws cuda::runtime_error if allocation fails for any reason
  *
  * @param device the device on which to allocate memory
- * @param size_in_bytes the amount of memory to allocate
- * @return a pointer to the allocated stretch of memory (only usable on the CUDA device)
+ * @param size_in_bytes the amount of global device memory to allocate
+ * @return a pointer to the allocated stretch of memory (only usable on @p device)
  */
-inline region_t allocate(cuda::device_t device, size_t size_in_bytes);
+inline region_t allocate(const device_t& device, size_t size_in_bytes);
 
 namespace detail_ {
+
+// Note: Allocates _in the current context_! No current context => failure!
 struct allocator {
-	// Allocates on the current device!
-	void* operator()(size_t size_in_bytes) const { return detail_::allocate(size_in_bytes).start(); }
+	void* operator()(size_t num_bytes) const { return detail_::allocate_in_current_context(num_bytes).start(); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
+
 } // namespace detail_
+
+
+/**
+ * @brief Sets consecutive elements of a region of memory to a fixed
+ * value of some width
+ *
+ * @note A generalization of `set()`, for different-size units.
+ *
+ * @tparam T An unsigned integer type of size 1, 2, 4 or 8
+ * @param start The first location to set to @p value ; must be properly aligned.
+ * @param value A (properly aligned) value to set T-elements to.
+ * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
+ */
+template <typename T>
+inline void typed_set(T* start, const T& value, size_t num_elements);
 
 /**
  * @brief Sets all bytes in a region of memory to a fixed value
@@ -304,27 +295,23 @@ struct deleter {
  */
 ///@{
 /**
- * @param start address at which to start setting memory bytes
- *     in global CUDA-device-side memory or CUDA-managed memory.
- * @param byte_value the value to which to set memory bytes
- * @param num_bytes the number of bytes to set to @p byte_value
+ * @param start starting address of the memory region to set, in a CUDA
+ * device's global memory
+ * @param num_bytes size of the memory region in bytes
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	auto result = cudaMemset(start, byte_value, num_bytes);
-	throw_if_error(result, "memsetting an on-device buffer");
+	return typed_set<unsigned char>(static_cast<unsigned char*>(start), byte_value, num_bytes);
 }
 
 /**
- * @param region a stretch of memory whose contents is to be set
- * @param byte_value the value to which to set all bytes of @p region
+ * @param region a region to zero-out, in a CUDA device's global memory
  */
 inline void set(region_t region, int byte_value)
 {
 	set(region.start(), byte_value, region.size());
 }
 ///@}
-
 
 /**
  * @brief Sets all bytes in a region of memory to 0 (zero)
@@ -339,7 +326,9 @@ inline void zero(void* start, size_t num_bytes)
 }
 
 /**
- * @param region the memory region to zero-out
+ * @param start starting address of the memory region to zero-out,
+ * in a CUDA device's global memory
+ * @param num_bytes size of the memory region in bytes
  */
 inline void zero(region_t region)
 {
@@ -376,18 +365,12 @@ inline void zero(T* ptr)
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  */
-inline void copy(void *destination, const void *source, size_t num_bytes)
-{
-	auto result = cudaMemcpy(destination, source, num_bytes, cudaMemcpyDefault);
-	// TODO: Determine whether it was from host to device, device to host etc and
-	// add this information to the error string
-	throw_if_error(result, "Synchronously copying data");
-}
+void copy(void *destination, const void *source, size_t num_bytes);
 
 /**
- * @param destination A memory region of the same size as @p source, in 
+ * @param destination A memory region of size @p num_bytes, either in
  *     host memory or on any CUDA device's global memory
- * @param source A region whose contents is to be copied, either in host memory
+ * @param source A region whose contents is to be copied,  either in host memory
  *     or on any CUDA device's global memory
  */
 inline void copy(void* destination, const_region_t source)
@@ -397,9 +380,9 @@ inline void copy(void* destination, const_region_t source)
 
 /**
  * @param destination A region of memory to which to copy the data in@source, of
- *     size at least that of @p source , either in host memory or on any CUDA
- *     device's global memory.
- * @param source A region whose contents is to be copied, either in host memory
+ *     size @p num_bytes at least, either in host memory or on any CUDA device's
+ *     global memory.
+ * @param source A region whose contents is to be copied,  either in host memory
  *     or on any CUDA device's global memory
  */
 inline void copy(region_t destination, const_region_t source)
@@ -426,13 +409,13 @@ inline void copy(region_t destination, const_region_t source)
  */
 inline void set(void* ptr, int byte_value, size_t num_bytes)
 {
-	pointer_t<void> pointer { ptr };
-	switch ( pointer.attributes(). memory_type() ) {
-		case device_memory:
-		case managed_memory:
+	switch ( type_of(ptr) ) {
+		case device_:
+//		case managed_:
+		case unified_:
 			memory::device::set(ptr, byte_value, num_bytes); break;
-		case unregistered_memory:
-		case host_memory:
+//		case unregistered_:
+		case host_:
 			::std::memset(ptr, byte_value, num_bytes); break;
   		default:
 			throw runtime_error(
@@ -471,9 +454,8 @@ inline void zero(region_t region)
 /**
  * @brief Sets a number of bytes starting in at a given address of memory to 0 (zero)
  *
- * @param start address at which to start setting memory bytes to 0, in
+ * @param region the memory region to zero-out; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
- * @param num_bytes the number of bytes to set to zero
  */
 inline void zero(void* ptr, size_t num_bytes)
 {
@@ -495,101 +477,155 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-/**
- * @note When constructing this class - destination first, source second
- * (otherwise you're implying the opposite direction of transfer).
- */
-struct copy_params_t : cudaMemcpy3DParms {
-	struct tag { };
-protected:
-	template <typename T>
-	copy_params_t(tag, const void *ptr, const array_t<T, 3>& array) :
-		cudaMemcpy3DParms { 0 },
-		pitch(sizeof(T) * array.dimensions().width),
-		pitched_ptr(make_cudaPitchedPtr(
-			const_cast<void*>(ptr),
-			pitch,
-			array.dimensions().width,
-			array.dimensions().height))
-	{
-		kind = cudaMemcpyDefault;
-		extent = array.dimensions();
-	}
+template <dimensionality_t NumDimensions>
+struct base_copy_params;
 
-public:
-	template <typename T>
-	copy_params_t(const array_t<T, 3>& destination, const void *source) :
-		copy_params_t(tag{}, source, destination)
-	{
-		srcPtr = pitched_ptr;
-		dstArray = destination.get();
-	}
+template <> struct base_copy_params<2> { using type = CUDA_MEMCPY2D; };
+template <> struct base_copy_params<3> { using type = CUDA_MEMCPY3D; };
+
+template <dimensionality_t NumDimensions>
+using base_copy_params_t = typename base_copy_params<NumDimensions>::type;
+
+enum class endpoint_t { source, destination };
+
+template <dimensionality_t NumDimensions>
+struct copy_parameters_t : base_copy_params_t<NumDimensions> {
+	// TODO: Perhaps use proxies?
+
+	using dimensions_type = array::dimensions_t<NumDimensions>;
+
+	template <typename T> void set_endpoint(endpoint_t endpoint, const cuda::array_t<T, NumDimensions>& array);
 
 	template <typename T>
-	copy_params_t(const T* destination, const array_t<T, 3>& source) :
-		copy_params_t(tag{}, destination, source)
-	{
-		srcArray = source.get();
-		dstPtr = pitched_ptr;
-	}
+	void set_endpoint(endpoint_t endpoint, T* ptr, array::dimensions_t<NumDimensions> dimensions);
 
-	size_t pitch;
-	cudaPitchedPtr pitched_ptr;
+	// TODO: Perhaps we should have an dimensioned offset type?
+	template <typename T>
+	void set_offset(endpoint_t endpoint, dimensions_type offset);
+
+	template <typename T>
+	void clear_offset(endpoint_t endpoint) { set_offset<T>(endpoint, dimensions_type::zero()); }
+
+	template <typename T>
+	void set_extent(dimensions_type extent);
+		// Sets how much is being copies, as opposed to the sizes of the endpoints which may be larger
+
+	void clear_rest();
+		// Clear any dummy fields which are required to be set to 0. Note that important fields,
+		// which you have not set explicitly, will _not_ be cleared by this method.
 };
 
-template<typename T>
-inline void copy(array_t<T, 2>& destination, const T *source)
+template <> template <typename T>
+void copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 2>& array)
 {
-	const auto dimensions = destination.dimensions();
-	const auto width_in_bytes = sizeof(T) * dimensions.width;
-	const auto source_pitch = width_in_bytes; // i.e. no padding
-	const array::dimensions_t<2> offsets { 0, 0 };
-	auto result = cudaMemcpy2DToArray(
-		destination.get(),
-		offsets.width,
-		offsets.height,
-		source,
-		source_pitch,
-		width_in_bytes,
-		dimensions.height,
-		cudaMemcpyDefault);
-	throw_if_error(result, "Synchronously copying into a 2D CUDA array");
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
+    (endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
 }
 
-template <typename T>
-inline void copy(array_t<T, 3>& destination, const T *source)
+template <> template <typename T> void copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 3>& array)
 {
-	const auto copy_params = detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3D(&copy_params);
-	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
+	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
 }
 
-template <typename T>
-inline void copy(T *destination, const array_t<T, 2>& source)
+template <> template <typename T>
+inline void copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, T* ptr, array::dimensions_t<2> dimensions)
 {
-	const auto dimensions = source.dimensions();
-	const auto width_in_bytes = sizeof(T) * dimensions.width;
-	const auto destination_pitch = width_in_bytes; // i.e. no padding
-	const array::dimensions_t<2> offsets { 0, 0 };
-	auto result = cudaMemcpy2DFromArray(
-		destination,
-		destination_pitch,
-		source.get(),
-		offsets.width,
-		offsets.height,
-		width_in_bytes,
-		dimensions.height,
-		cudaMemcpyDefault);
-	throw_if_error(result, "Synchronously copying out of a 2D CUDA array");
+	auto memory_type = memory::type_of(ptr);
+	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_) {
+		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
+	}
+	else {
+		if (endpoint == endpoint_t::source) { srcHost = ptr; }
+		else { dstHost = ptr; }
+	}
+	(endpoint == endpoint_t::source ? srcPitch : dstPitch) = dimensions.width * sizeof(T);
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype) memory_type;
 }
 
-template <typename T>
-inline void copy(T* destination, const array_t<T, 3>& source)
+template <> template <typename T>
+inline void copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, T* ptr, array::dimensions_t<3> dimensions)
 {
-	const auto copy_params = detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3D(&copy_params);
-	throw_if_error(result, "Synchronously copying from a 3-dimensional CUDA array");
+	cuda::memory::pointer_t<void> wrapped { ptr };
+	auto memory_type = memory::type_of(ptr);
+	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_) {
+		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
+	}
+	else {
+		if (endpoint == endpoint_t::source) { srcHost = ptr; }
+		else { dstHost = ptr; }
+	}
+	(endpoint == endpoint_t::source ? srcPitch : dstPitch) = dimensions.width * sizeof(T);
+	(endpoint == endpoint_t::source ? srcHeight : dstHeight) = dimensions.height;
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype) memory_type;
 }
+
+
+template <> inline void copy_parameters_t<2>::clear_rest() {}
+template <> inline void copy_parameters_t<3>::clear_rest()
+{
+	srcLOD = 0;
+	dstLOD = 0;
+}
+
+template <> template <typename T>
+inline void copy_parameters_t<2>::set_extent(dimensions_type extent)
+{
+	WidthInBytes = extent.width * sizeof(T);
+	Height = extent.height;
+}
+
+template <> template <typename T>
+void copy_parameters_t<3>::set_extent(dimensions_type extent)
+{
+	WidthInBytes = extent.width * sizeof(T);
+	Height = extent.height;
+	Depth = extent.depth;
+}
+
+template <> template <typename T>
+void copy_parameters_t<3>::set_offset(endpoint_t endpoint, dimensions_type offset)
+{
+	(endpoint == endpoint_t::source ? srcXInBytes : dstXInBytes) = offset.width * sizeof(T);
+	(endpoint == endpoint_t::source ? srcY : dstY) = offset.height;
+	(endpoint == endpoint_t::source ? srcZ : dstZ) = offset.depth;
+}
+template <> template <typename T>
+void copy_parameters_t<2>::set_offset(endpoint_t endpoint, dimensions_type offset)
+{
+	(endpoint == endpoint_t::source ? srcXInBytes : dstXInBytes) = offset.width * sizeof(T);
+	(endpoint == endpoint_t::source ? srcY : dstY) = offset.height;
+}
+
+void set_endpoint(endpoint_t endpoint, void* src);
+
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params) {
+	return cuMemcpy2D(&params);
+}
+
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params) {
+	return cuMemcpy3D(&params);
+}
+
+
+template<dimensionality_t NumDimensions>
+status_t multidim_copy(context::handle_t context_handle, copy_parameters_t<NumDimensions> params) {
+	context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{context_handle};
+	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params);
+}
+
+/*// Unused now?
+template <typename D, typename S, size_t NumDimensions>
+copy_parameters_t<NumDimensions>
+make_multidim_copy_params(D destination, S source, array::dimensions_t<NumDimensions> dimensions)
+{
+	copy_parameters_t<NumDimensions> copy_params;
+	copy_params.template clear_offset<T>(endpoint_t::source);
+	copy_params.template clear_offset<T>(endpoint_t::destination);
+	copy_params.set_extent(dimensions);
+	copy_params.clear_rest();
+	return copy_params;
+}*/
 
 } // namespace detail_
 
@@ -604,12 +640,20 @@ inline void copy(T* destination, const array_t<T, 3>& source)
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
  */
-template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source)
+template<typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>& destination, const T *source)
 {
-	detail_::copy(destination, source);
+	detail_::copy_parameters_t<NumDimensions> params{};
+	auto dims = destination.dimensions();
+	params.template clear_offset<T>(detail_::endpoint_t::source);
+    params.template clear_offset<T>(detail_::endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.clear_rest();
+	params.set_endpoint(detail_::endpoint_t::source, const_cast<T*>(source), dims);
+	params.set_endpoint(detail_::endpoint_t::destination, destination);
+	auto status = detail_::multidim_copy<NumDimensions>(destination.context_handle(), params);
+    throw_if_error(status, "Copying from a regular memory region into a CUDA array");
 }
-
 /**
  * Synchronously copies data into a CUDA array from non-array memory.
  *
@@ -621,13 +665,23 @@ inline void copy(array_t<T, NumDimensions>& destination, const T* source)
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  */
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source)
+void copy(T *destination, const array_t<T, NumDimensions>& source)
 {
-	detail_::copy(destination, source);
+	detail_::copy_parameters_t<NumDimensions> params{};
+	auto dims = source.dimensions();
+	params.template clear_offset<T>(detail_::endpoint_t::source);
+	params.template clear_offset<T>(detail_::endpoint_t::destination);
+	params.template set_extent<T>(source.dimensions());
+	params.clear_rest();
+	params.set_endpoint(detail_::endpoint_t::source, source);
+	params.template set_endpoint<T>(detail_::endpoint_t::destination, destination, dims);
+    params.dstPitch = params.srcPitch = dims.width * sizeof(T);
+    auto status = detail_::multidim_copy<NumDimensions>(source.context_handle(), params);
+    throw_if_error(status, "Copying from a CUDA array into a regular memory region");
 }
 
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(region_t destination, const array_t<T, NumDimensions>& source)
+void copy(region_t destination, const array_t<T, NumDimensions>& source)
 {
 	if (source.size_bytes() < destination.size()) {
 		throw ::std::logic_error("Attempt to copy an array into a memory region too small to hold the copy");
@@ -644,7 +698,7 @@ inline void copy(region_t destination, const array_t<T, NumDimensions>& source)
  * device's global memory
  */
 template <typename T>
-inline void copy_single(T* destination, const T* source)
+void copy_single(T* destination, const T* source)
 {
 	copy(destination, source, sizeof(T));
 }
@@ -669,14 +723,14 @@ namespace detail_ {
 /**
 * @param destination A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
-* @param source A pointer to a memory region of size @p num_bytes, either in
+* @param source A pointer to a memory region of size at least @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param num_bytes number of bytes to copy from @p source
  * @param stream_handle The handle of a stream on which to schedule the copy operation
 */
 inline void copy(void* destination, const void* source, size_t num_bytes, stream::handle_t stream_handle)
 {
-	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_handle);
+	auto result = cuMemcpyAsync(device::address(destination), device::address(source), num_bytes, stream_handle);
 
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
@@ -684,77 +738,74 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 }
 
 /**
- * @param destination a memory region of size at least that of @p source, either
- *     in host memory or on any CUDA device's global memory
- * @param source a memory region, either in   host memory or on any CUDA device's
- *     global memory.
+ *  @param destination a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
  * @param stream_handle The handle of a stream on which to schedule the copy operation
  */
 inline void copy(region_t destination, const_region_t source, stream::handle_t stream_handle)
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw std::logic_error("Can't copy a large region into a smaller one");
+		throw ::std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
 	copy(destination.start(), source.start(), source.size(), stream_handle);
 }
 ///@}
 
-template<typename T>
-void copy(array_t<T, 3>& destination, const T* source, stream::handle_t stream_handle)
-{
-	const auto copy_params = memory::detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3DAsync(&copy_params, stream_handle);
-	throw_if_error(result, "Scheduling a memory copy into a 3D CUDA array on " + stream::detail_::identify(stream_handle));
+using memory::detail_::copy_parameters_t;
+
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, stream::handle_t stream_handle) {
+	return cuMemcpy2DAsync(&params, stream_handle);
 }
 
-template<typename T>
-void copy(T* destination, const array_t<T, 3>& source, stream::handle_t stream_handle)
-{
-	const auto copy_params = memory::detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3DAsync(&copy_params, stream_handle);
-	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on " + stream::detail_::identify(stream_handle));
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, stream::handle_t stream_handle) {
+	return cuMemcpy3DAsync(&params, stream_handle);
 }
 
-template<typename T>
-void copy(array_t<T, 2>& destination, const T* source, stream::handle_t stream_handle)
-{
-	const auto dimensions = destination.dimensions();
-	const auto width_in_bytes = sizeof(T) * dimensions.width;
-	const auto source_pitch = width_in_bytes; // i.e. no padding
-	const array::dimensions_t<2> offsets { 0, 0 };
-	auto result = cudaMemcpy2DToArrayAsync(
-		destination.get(),
-		offsets.width,
-		offsets.height,
-		source,
-		source_pitch,
-		width_in_bytes,
-		dimensions.height,
-		cudaMemcpyDefault,
-		stream_handle);
-	throw_if_error(result, "Scheduling a memory copy into a 2D CUDA array on " + stream::detail_::identify(stream_handle));
+template<dimensionality_t NumDimensions>
+status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t stream_handle) {
+	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
-template<typename T>
-void copy(T* destination, const array_t<T, 2>& source, cuda::stream::handle_t stream_handle)
+
+template <typename T, dimensionality_t NumDimensions>
+void copy(T *destination, const array_t<T, NumDimensions>& source, stream::handle_t stream_handle)
 {
-	const auto dimensions = source.dimensions();
-	const auto width_in_bytes = sizeof(T) * dimensions.width;
-	const auto destination_pitch = width_in_bytes; // i.e. no padding
-	const array::dimensions_t<2> offsets { 0, 0 };
-	auto result = cudaMemcpy2DFromArrayAsync(
-		destination,
-		destination_pitch,
-		source.get(),
-		offsets.width,
-		offsets.height,
-		width_in_bytes,
-		dimensions.height,
-		cudaMemcpyDefault,
-		stream_handle);
-	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on " + stream::detail_::identify(stream_handle));
+	using  memory::detail_::endpoint_t;
+	auto dims = source.dimensions();
+	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
+	detail_::copy_parameters_t<NumDimensions> params{};
+	params.template clear_offset<T>(endpoint_t::source);
+	params.template clear_offset<T>(endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.clear_rest();
+	params.set_endpoint(endpoint_t::source, source);
+	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
+    params.dstPitch = dims.width * sizeof(T);
+    auto status = multidim_copy<NumDimensions>(params, stream_handle);
+    throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
+}
+
+
+template <typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream::handle_t stream_handle)
+{
+	using  memory::detail_::endpoint_t;
+	auto dims = destination.dimensions();
+	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
+	detail_::copy_parameters_t<NumDimensions> params{};
+	params.template clear_offset<T>(endpoint_t::source);
+	params.template clear_offset<T>(endpoint_t::destination);
+	params.template set_extent<T>(destination.dimensions());
+    params.srcPitch = dims.width * sizeof(T);
+	params.clear_rest();
+	params.set_endpoint(endpoint_t::source, const_cast<T*>(source), dims);
+	params.set_endpoint(endpoint_t::destination, destination);
+    auto status = multidim_copy<NumDimensions>(params, stream_handle);
+    throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
 }
 
 /**
@@ -769,7 +820,7 @@ void copy(T* destination, const array_t<T, 2>& source, cuda::stream::handle_t st
  * @param stream_handle A stream on which to enqueue the copy operation
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source, stream::handle_t stream_handle)
+void copy_single(T& destination, const T& source, stream::handle_t stream_handle)
 {
 	copy(&destination, &source, sizeof(T), stream_handle);
 }
@@ -785,10 +836,10 @@ inline void copy_single(T& destination, const T& source, stream::handle_t stream
  *
  * @note asynchronous version of @ref memory::copy
  *
- * @param destination A pointer to a memory region of size @p num_bytes, 
- *     either in host memory or on any CUDA device's global memory.
- * @param source A pointer to a a memory region of size at least @p num_bytes, 
- *     either in host memory or on any CUDA device's global memory
+ * @param destination A pointer to a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source A pointer to a a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
@@ -827,12 +878,14 @@ inline void copy(region_t destination, const_region_t source, const stream_t& st
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
  *
- * @param destination A CUDA array (see @ref cuda::array_t )
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A CUDA array @ref cuda::array_t
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
+void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
 
 template <typename T, dimensionality_t NumDimensions>
 void copy(array_t<T, NumDimensions>& destination, const_region_t source, const stream_t& stream)
@@ -864,7 +917,7 @@ template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
 #ifndef NDEBUG
-	size_t required_size = destination.size() * sizeof(T);
+	size_t required_size = source.size() * sizeof(T);
 	if (destination.size() < required_size) {
 		throw ::std::invalid_argument(
 			"Attempt to copy " + ::std::to_string(required_size) + " bytes from an array into a "
@@ -899,7 +952,7 @@ namespace detail_ {
 inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t stream_handle)
 {
 	// TODO: Double-check that this call doesn't require setting the current device
-	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_handle);
+	auto result = cuMemsetD8Async(address(start), byte_value, num_bytes, stream_handle);
 	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
@@ -919,7 +972,41 @@ inline void zero(region_t region, stream::handle_t stream_handle)
 	zero(region.start(), region.size(), stream_handle);
 }
 
+template <typename T>
+inline void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t stream_handle)
+{
+	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
+	static_assert(
+		sizeof(T) == 1 or sizeof(T) == 2 or
+		sizeof(T) == 4 or sizeof(T) == 8,
+		"Unsupported type size - only sizes 1, 2 and 4 are supported");
+	// TODO: Consider checking for alignment when compiling without NDEBUG
+	auto result {CUDA_SUCCESS};
+	switch(sizeof(T)) {
+		case(1): result = cuMemsetD8Async (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements, stream_handle); break;
+		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements, stream_handle); break;
+		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements, stream_handle); break;
+	}
+	throw_if_error(result, "Setting global device memory bytes");
+}
+
 } // namespace detail_
+
+
+/**
+ * @brief Sets consecutive elements of a region of memory to a fixed
+ * value of some width
+ *
+ * @note A generalization of `async::set()`, for different-size units.
+ *
+ * @tparam T An unsigned integer type of size 1, 2, 4 or 8
+ * @param start The first location to set to @p value ; must be properly aligned.
+ * @param value A (properly aligned) value to set T-elements to.
+ * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
+ * @param stream The stream on which to enqueue the operation.
+ */
+template <typename T>
+void typed_set(T* start, const T& value, size_t num_elements, const stream_t& stream);
 
 /**
  * Asynchronously sets all bytes in a stretch of memory to a single value
@@ -932,7 +1019,10 @@ inline void zero(region_t region, stream::handle_t stream_handle)
  * @param num_bytes size of the memory region in bytes
  * @param stream stream on which to schedule this action
  */
-inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream);
+inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
+{
+	return typed_set<unsigned char>(static_cast<unsigned char*>(start), byte_value, num_bytes, stream);
+}
 
 /**
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
@@ -956,6 +1046,105 @@ inline void zero(T* ptr, const stream_t& stream)
 
 } // namespace async
 
+namespace peer_to_peer {
+
+namespace detail_ {
+
+inline void copy(
+    void *             destination_address,
+    context::handle_t  destination_context,
+    const void *       source_address,
+    context::handle_t  source_context,
+    size_t             num_bytes)
+{
+    auto status = cuMemcpyPeer(
+            reinterpret_cast<device::address_t>(destination_address),
+            destination_context,
+            reinterpret_cast<device::address_t>(source_address),
+            source_context, num_bytes);
+    throw_if_error(status,
+        ::std::string("Failed copying data between devices: From address ")
+		+ cuda::detail_::ptr_as_hex(source_address) + " in "
+		+ context::detail_::identify(source_context) + " to address "
+		+ cuda::detail_::ptr_as_hex(destination_address) + " in "
+		+ context::detail_::identify(destination_context) );
+}
+
+} // namespace detail_
+
+void copy(
+	void *             destination,
+	const context_t&   destination_context,
+	const void *       source_address,
+	const context_t&   source_context,
+	size_t             num_bytes);
+
+inline void copy(
+	void *             destination,
+	const context_t&   destination_context,
+	const_region_t     source,
+	const context_t&   source_context)
+{
+	copy(destination, destination_context, source.start(), source_context, source.size());
+}
+
+inline void copy(
+	region_t           destination,
+	const context_t&   destination_context,
+	const_region_t     source,
+	const context_t&   source_context)
+{
+#ifndef NDEBUG
+	if (destination.size() < destination.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a region of " + ::std::to_string(source.size()) +
+			" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
+	}
+#endif
+	copy(destination.start(), destination_context, source, source_context);
+}
+
+namespace async {
+
+namespace detail_ {
+
+inline void copy(
+    stream::handle_t       stream_handle,
+    void *             destination_address,
+    context::handle_t  destination_context,
+    const void *       source_address,
+    context::handle_t  source_context,
+    size_t             num_bytes)
+{
+    auto status = cuMemcpyPeerAsync(
+        reinterpret_cast<device::address_t>(destination_address),
+        destination_context,
+        reinterpret_cast<device::address_t>(source_address),
+        source_context,
+        num_bytes,
+        stream_handle);
+    throw_if_error(status,
+        ::std::string("Failed copying data between devices: From address ")
+		+ cuda::detail_::ptr_as_hex(source_address) + " in "
+		+ context::detail_::identify(source_context) + " to address "
+		+ cuda::detail_::ptr_as_hex(destination_address) + " in "
+		+ context::detail_::identify(destination_context) );
+}
+
+} // namespace async
+
+inline void copy(
+    void *             destination_address,
+    const context_t&   destination_context,
+    const void *       source_address,
+    const context_t&   source_context,
+    size_t             num_bytes,
+    const stream_t&    stream);
+
+} // namespace peer_to_peer
+
+} // namespace device
+
 } // namespace device
 
 /**
@@ -968,12 +1157,13 @@ namespace host {
 /**
  * Allocate pinned host memory
  *
- * @note "Pinned" memory is excepted from virtual memory swapping-out,
- * and is allocated in contiguous physical RAM addresses, making it
- * possible to copy to and from it to the the GPU using DMA without
- * assistance from the GPU. Typically for PCIe 3.0, the effective
- * bandwidth is twice as fast as copying from or to naively-allocated
- * host memory.
+ * @note This function will fail if
+ *
+ * @note "Pinned" memory is allocated in contiguous physical RAM
+ * addresses, making it possible to copy to and from it to the the
+ * GPU using DMA without assistance from the GPU. This improves
+ * the copying bandwidth significantly over naively-allocated
+ * host memory, and reduces overhead for the CPU.
  *
  * @throws cuda::runtime_error if allocation fails for any reason
  *
@@ -985,20 +1175,10 @@ namespace host {
  *
  * @return a pointer to the allocated stretch of memory
  */
-inline void* allocate(
+void* allocate(
 	size_t              size_in_bytes,
-	allocation_options  options)
-{
-	void* allocated = nullptr;
-	auto flags = cuda::memory::detail_::make_cuda_host_alloc_flags(options);
-	auto result = cudaHostAlloc(&allocated, size_in_bytes, flags);
-	if (is_success(result) && allocated == nullptr) {
-		// Can this even happen? hopefully not
-		result = cudaErrorUnknown;
-	}
-	throw_if_error(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
-	return allocated;
-}
+	allocation_options  options);
+
 
 inline void* allocate(
 	size_t                       size_in_bytes,
@@ -1018,14 +1198,14 @@ inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
  */
 inline void free(void* host_ptr)
 {
-	auto result = cudaFreeHost(host_ptr);
-	throw_if_error(result, "Freeing pinned host memory at 0x" + cuda::detail_::ptr_as_hex(host_ptr));
+	auto result = cuMemFreeHost(host_ptr);
+	throw_if_error(result, "Freeing pinned host memory at " + cuda::detail_::ptr_as_hex(host_ptr));
 }
 
 namespace detail_ {
 
 struct allocator {
-	void* operator()(size_t size_in_bytes) const { return cuda::memory::host::allocate(size_in_bytes); }
+	void* operator()(size_t num_bytes) const { return cuda::memory::host::allocate(num_bytes); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::host::free(ptr); }
@@ -1036,8 +1216,8 @@ struct deleter {
  * @brief Makes a preallocated memory region behave as though it were allocated with @ref host::allocate.
  *
  * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
- * flags. This memory range also is added to the same tracking mechanism as cudaHostAlloc() to
- * automatically accelerate calls to functions such as cudaMemcpy().
+ * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
+ * automatically accelerate calls to functions such as cuMemcpy().
  *
  * @param ptr A pre-allocated stretch of host memory
  * @param size the size in bytes the memory region to register/pin
@@ -1045,7 +1225,7 @@ struct deleter {
  */
 inline void register_(const void *ptr, size_t size, unsigned flags)
 {
-	auto result = cudaHostRegister(const_cast<void *>(ptr), size, flags);
+	auto result = cuMemHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error(result,
 		"Could not register and page-lock the region of " + ::std::to_string(size) +
 		" bytes of host memory at " + cuda::detail_::ptr_as_hex(ptr));
@@ -1097,9 +1277,9 @@ inline void register_(const void *ptr, size_t size,
 {
 	detail_::register_(
 		ptr, size,
-		  (register_mapped_io_space ? cudaHostRegisterIoMemory : 0)
-		| (map_into_device_space ? cudaHostRegisterMapped : 0)
-		| (make_device_side_accesible_to_all ? cudaHostRegisterPortable : 0)
+		(register_mapped_io_space ? CU_MEMHOSTREGISTER_IOMEMORY : 0)
+		| (map_into_device_space ? CU_MEMHOSTREGISTER_DEVICEMAP : 0)
+		| (make_device_side_accesible_to_all ? CU_MEMHOSTREGISTER_PORTABLE : 0)
 	);
 }
 
@@ -1120,7 +1300,8 @@ inline void register_(
 
 inline void register_(void const *ptr, size_t size)
 {
-	detail_::register_(ptr, size, cudaHostRegisterDefault);
+	unsigned no_flags_set { 0 };
+	detail_::register_(ptr, size, no_flags_set);
 }
 
 inline void register_(const_region_t region)
@@ -1133,7 +1314,7 @@ inline void register_(const_region_t region)
 // just ended
 inline void deregister(const void *ptr)
 {
-	auto result = cudaHostUnregister(const_cast<void *>(ptr));
+	auto result = cuMemHostUnregister(const_cast<void *>(ptr));
 	throw_if_error(result,
 		"Could not unregister the memory segment starting at address *a");
 }
@@ -1149,9 +1330,9 @@ inline void deregister(const_region_t region)
  * @note a wrapper for @ref ::std::memset
  *
  * @param start starting address of the memory region to set,
- *     in host memory; can be either CUDA-allocated or otherwise.
+ * in host memory; can be either CUDA-allocated or otherwise.
  * @param byte_value value to set the memory region to
- * @param num_bytes number of bytes at @p address to be set
+ * @param num_bytes size of the memory region in bytes
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
@@ -1195,11 +1376,13 @@ struct const_region_t;
 
 namespace detail_ {
 
-template <typename T>
-inline T get_scalar_range_attribute(managed::const_region_t region, cudaMemRangeAttribute attribute);
+using advice_t = CUmem_advise;
 
-inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id);
-inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise attribute);
+template <typename T>
+inline T get_scalar_range_attribute(managed::const_region_t region, range_attribute_t attribute);
+
+inline void advise(managed::const_region_t region, advice_t advice, cuda::device::id_t device_id);
+// inline void advise(managed::const_region_t region, advice_t attribute);
 
 template <typename T>
 struct base_region_t : public memory::detail_::base_region_t<T> {
@@ -1208,17 +1391,17 @@ struct base_region_t : public memory::detail_::base_region_t<T> {
 
 	bool is_read_mostly() const
 	{
-		return get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
+		return get_scalar_range_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	void designate_read_mostly() const
 	{
-		set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
+		set_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	void undesignate_read_mostly() const
 	{
-		detail_::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
+		unset_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	device_t preferred_location() const;
@@ -1244,69 +1427,89 @@ void advise_expected_access_by(managed::const_region_t region, device_t& device)
 void advise_no_access_expected_by(managed::const_region_t region, device_t& device);
 
 template <typename Allocator = ::std::allocator<cuda::device_t> >
-typename ::std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
+	typename ::std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail_ {
 
 template <typename T>
-inline T get_scalar_range_attribute(managed::const_region_t region, cudaMemRangeAttribute attribute)
+inline T get_scalar_range_attribute(managed::const_region_t region, range_attribute_t attribute)
 {
 	uint32_t attribute_value { 0 };
-	auto result = cudaMemRangeGetAttribute(
-		&attribute_value, sizeof(attribute_value), attribute, region.start(), region.size());
+	auto result = cuMemRangeGetAttribute(
+		&attribute_value, sizeof(attribute_value), attribute, device::address(region.start()), region.size());
 	throw_if_error(result,
 		"Obtaining an attribute for a managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
 	return static_cast<T>(attribute_value);
 }
 
-inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
+// CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
+// not called cuMemRangeSetAttribute, and uses a different enum.
+inline void advise(managed::const_region_t region, advice_t advice, cuda::device::id_t device_id)
 {
-	auto result = cudaMemAdvise(region.start(), region.size(), advice, device_id);
-	throw_if_error(result,
-		"Setting an attribute for a managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
+	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
+	throw_if_error(result, "Setting an attribute for a managed memory range at "
+	+ cuda::detail_::ptr_as_hex(region.start()));
 }
 
-inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise attribute)
+// inline void set_range_attribute(managed::const_region_t region, range_attribute_t attribute, cuda::device::handle_t device_id)
+
+inline advice_t as_advice(range_attribute_t attribute, bool set)
 {
-	cuda::device::id_t ignored_device_index{};
-	set_scalar_range_attribute(region, attribute, ignored_device_index);
+	switch (attribute) {
+	case CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY:
+		return set ? CU_MEM_ADVISE_SET_READ_MOSTLY : CU_MEM_ADVISE_UNSET_READ_MOSTLY;
+	case CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION:
+		return set ? CU_MEM_ADVISE_SET_PREFERRED_LOCATION : CU_MEM_ADVISE_UNSET_PREFERRED_LOCATION;
+	case CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY:
+		return set ? CU_MEM_ADVISE_SET_ACCESSED_BY : CU_MEM_ADVISE_UNSET_ACCESSED_BY;
+	default:
+		throw std::invalid_argument(
+			"CUDA memory range attribute does not correspond to any range advice value");
+	}
+}
+
+inline void set_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute, cuda::device::id_t device_id)
+{
+	constexpr const bool set { true };
+	advise(region, as_advice(settable_attribute, set), device_id);
+}
+
+inline void unset_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute)
+{
+	constexpr const bool unset { false };
+	constexpr const cuda::device::id_t dummy_device_id { 0 };
+	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
 }
 
 } // namespace detail_
 
 
-enum class initial_visibility_t {
-	to_all_devices,
-	to_supporters_of_concurrent_managed_access,
-};
-
-
-enum class attachment_t {
-	global        = cudaMemAttachGlobal,
-	host          = cudaMemAttachHost,
-	single_stream = cudaMemAttachSingle,
-};
+enum class attachment_t : unsigned {
+	global        = CU_MEM_ATTACH_GLOBAL,
+	host          = CU_MEM_ATTACH_HOST,
+	single_stream = CU_MEM_ATTACH_SINGLE,
+	};
 
 
 namespace detail_ {
 
-inline region_t allocate(
-	size_t                size_in_bytes,
+inline region_t allocate_in_current_context(
+	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
-	void* allocated = nullptr;
+	device::address_t allocated = 0;
 	auto flags = (initial_visibility == initial_visibility_t::to_all_devices) ?
-		cudaMemAttachGlobal : cudaMemAttachHost;
+		attachment_t::global : attachment_t::host;
 	// Note: Despite the templating by T, the size is still in bytes,
 	// not in number of T's
-	auto status = cudaMallocManaged(&allocated, size_in_bytes, flags);
-	if (is_success(status) && allocated == nullptr) {
+	auto status = cuMemAllocManaged(&allocated, num_bytes, (unsigned) flags);
+	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
-	throw_if_error(status,
-		"Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of managed CUDA memory");
-	return {allocated, size_in_bytes};
+	throw_if_error(status, "Failed allocating "
+		+ ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
+	return {as_pointer(allocated), num_bytes};
 }
 
 /**
@@ -1315,7 +1518,7 @@ inline region_t allocate(
 ///@{
 inline void free(void* ptr)
 {
-	auto result = cudaFree(ptr);
+	auto result = cuMemFree(device::address(ptr));
 	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region)
@@ -1326,44 +1529,74 @@ inline void free(region_t region)
 
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 struct allocator {
-	// Allocates on the current device!
-	void* operator()(size_t size_in_bytes) const
+	// Allocates in the current context!
+	void* operator()(size_t num_bytes) const
 	{
-		return detail_::allocate(size_in_bytes, InitialVisibility).start();
+		return detail_::allocate_in_current_context(num_bytes, InitialVisibility).start();
 	}
 };
+
 struct deleter {
-	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
+	void operator()(void* ptr) const { memory::device::free(ptr); }
 };
 
 inline region_t allocate(
-	cuda::device::id_t    device_id,
-	size_t                size_in_bytes,
+	context::handle_t     context_handle,
+	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
-	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	return detail_::allocate(size_in_bytes, initial_visibility);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	return allocate_in_current_context(num_bytes, initial_visibility);
 }
 
 } // namespace detail_
 
 /**
  * @brief Allocate a a region of managed memory, accessible with the same
- * address on the host and on CUDA devices
+ * address on the host and on CUDA devices.
  *
- * @param device the initial device which is likely to access the managed
- * memory region (and which will certainly have actually allocated for it)
- * @param size_in_bytes size of each of the regions of memory to allocate
+ * @param context the initial context which is likely to access the managed
+ * memory region (and which will certainly have the region actually allocated
+ * for it)
+ * @param num_bytes size of each of the regions of memory to allocate
  * @param initial_visibility will the allocated region be visible, using the
  * common address, to all CUDA device (= more overhead, more work for the CUDA
  * runtime) or just to those devices with some hardware features to assist in
  * this task (= less overhead)?
  */
-region_t allocate(
-	cuda::device_t        device,
-	size_t                size_in_bytes,
-	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
-);
+inline region_t allocate(
+	const context_t&      context,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @brief Allocate a a region of managed memory, accessible with the same
+ * address on the host and on CUDA devices
+ *
+ * @param device the initial device which is likely to access the managed
+ * memory region (and which will certainly have the region actually allocated
+ * for it)
+ * @param num_bytes size of each of the regions of memory to allocate
+ * @param initial_visibility will the allocated region be visible, using the
+ * common address, to all CUDA device (= more overhead, more work for the CUDA
+ * runtime) or just to those devices with some hardware features to assist in
+ * this task (= less overhead)?
+ */
+inline region_t allocate(
+	device_t              device,
+	size_t                num_bytes,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @brief Allocate a a region of managed memory, accessible with the same
+ * address on the host and on all CUDA devices.
+ *
+ * @note While the allocated memory should be available universally, the
+ * allocation itself does require some GPU context. This will be the current
+ * context, if one exists, or the primary context on the runtime-defined current
+ * device.
+ */
+region_t allocate(size_t num_bytes);
 
 /**
  * Free a managed memory region (host-side and device-side regions on all devices
@@ -1372,7 +1605,7 @@ region_t allocate(
  */
 inline void free(void* managed_ptr)
 {
-	auto result = cudaFree(managed_ptr);
+	auto result = cuMemFree(device::address(managed_ptr));
 	throw_if_error(result,
 		"Freeing managed memory (host and device regions) at address 0x"
 		+ cuda::detail_::ptr_as_hex(managed_ptr));
@@ -1385,22 +1618,25 @@ inline void free(region_t region)
 
 namespace advice {
 
-enum device_inspecific_kind_t {
-	read_mostly = cudaMemAdviseSetReadMostly,
+enum kind_t {
+	read_mostly = CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY,
+	preferred_location = CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION,
+	accessor = CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY,
+	// Note: CU_MEM_RANGE_ATTRIBUTE_LAST_PREFETCH_LOCATION is never set
 };
 
-enum device_specific_kind_t {
-	preferred_location,
-	accessor,
-};
+namespace detail_ {
 
-inline void set(const_region_t region, device_inspecific_kind_t advice)
+inline void set(const_region_t region, kind_t advice, cuda::device::id_t device_id)
 {
-	cuda::device::id_t ignored_device_index{};
-	auto result = cudaMemAdvise(region.start(), region.size(), (cudaMemoryAdvise) advice, ignored_device_index);
-	throw_if_error(result,
-		"Setting advice on a (managed) memory region at" + cuda::detail_::ptr_as_hex(region.start()));
+	auto result = cuMemAdvise(device::address(region.start()), region.size(), (managed::detail_::advice_t) advice, device_id);
+	throw_if_error(result, "Setting advice on a (managed) memory region at"
+		+ cuda::detail_::ptr_as_hex(region.start()) + " w.r.t. " + cuda::device::detail_::identify(device_id));
 }
+
+} // namespace detail_
+
+void set(const_region_t region, kind_t advice, const device_t& device);
 
 } // namespace advice
 
@@ -1411,12 +1647,13 @@ namespace detail_ {
 inline void prefetch(
 	const_region_t      region,
 	cuda::device::id_t  destination,
-	stream::handle_t        stream_handle)
+	stream::handle_t    source_stream_handle)
 {
-	auto result = cudaMemPrefetchAsync(region.start(), region.size(), destination, stream_handle);
+	auto result = cuMemPrefetchAsync(device::address(region.start()), region.size(), destination, source_stream_handle);
 	throw_if_error(result,
 		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
-		 + cuda::detail_::ptr_as_hex(region.start()) + " to device " + ::std::to_string(destination));
+		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + (
+		 	(destination == CU_DEVICE_CPU) ? "the host" : cuda::device::detail_::identify(destination))  );
 }
 
 } // namespace detail_
@@ -1427,27 +1664,17 @@ inline void prefetch(
  * devices.
  */
 void prefetch(
-	const_region_t   region,
-	cuda::device_t   destination,
-	const stream_t&  stream);
+	const_region_t         region,
+	const cuda::device_t&  destination,
+	const stream_t&        stream);
 
 /**
  * @brief Prefetches a region of managed memory into host memory. It can
  * later be used there without waiting for I/O from any of the CUDA devices.
  */
-inline void prefetch_to_host(const_region_t managed_region)
-{
-	auto result = cudaMemPrefetchAsync(
-		managed_region.start(),
-		managed_region.size(),
-		cudaCpuDeviceId,
-		stream::default_stream_handle);
-		// The stream handle will be ignored by the CUDA runtime API when this pseudo
-		// device indicator is used.
-	throw_if_error(result,
-		"Prefetching " + ::std::to_string(managed_region.size()) + " bytes of managed memory at address "
-		 + cuda::detail_::ptr_as_hex(managed_region.start()) + " into host memory");
-}
+void prefetch_to_host(
+	const_region_t   region,
+	const stream_t&  stream);
 
 } // namespace async
 
@@ -1462,75 +1689,86 @@ namespace mapped {
 template <typename T>
 inline T* device_side_pointer_for(T* host_memory_ptr)
 {
-	T* device_side_ptr;
+	device::address_t device_side_ptr;
 	auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
-	auto status = cudaHostGetDevicePointer(
+	auto status = cuMemHostGetDevicePointer(
 		&device_side_ptr,
 		host_memory_ptr,
 		get_device_pointer_flags);
 	throw_if_error(status,
 		"Failed obtaining the device-side pointer for host-memory pointer "
 		+ cuda::detail_::ptr_as_hex(host_memory_ptr) + " supposedly mapped to device memory");
-	return device_side_ptr;
+	return as_pointer(device_side_ptr);
 }
 
 namespace detail_ {
 
 /**
- * Allocates a mapped pair of memory regions - on the current device
- * and in host memory.
+ * Allocates a mapped pair of memory regions - in the current
+ * context and in host and device memory.
  *
  * @param size_in_bytes size of each of the two regions, in bytes.
  * @param options indication of how the CUDA driver will manage
  * the region pair
  * @return the allocated pair (with both regions being non-null)
  */
-inline region_pair allocate(
+inline region_pair allocate_in_current_context(
+	context::handle_t   current_context_handle,
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	region_pair allocated;
+	region_pair allocated {};
+	// The default initialization is unnecessary, but let's play it safe
 	allocated.size_in_bytes = size_in_bytes;
-	auto flags = cudaHostAllocMapped &
+	auto flags = CU_MEMHOSTALLOC_DEVICEMAP &
 		cuda::memory::detail_::make_cuda_host_alloc_flags(options);
-	// Note: the typed cudaHostAlloc also takes its size in bytes, apparently,
-	// not in number of elements
-	auto status = cudaHostAlloc(&allocated.host_side, size_in_bytes, flags);
+	auto status = cuMemHostAlloc(&allocated.host_side, size_in_bytes, flags);
 	if (is_success(status) && (allocated.host_side == nullptr)) {
 		// Can this even happen? hopefully not
-		status = cudaErrorUnknown;
+		status = (status_t) status::named_t::unknown;
 	}
 	throw_if_error(status,
 		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)
-			+ " bytes of global memory on device " + ::std::to_string(cuda::device::current::detail_::get_id()));
+		+ " bytes of global memory in " + context::detail_::identify(current_context_handle));
 	allocated.device_side = device_side_pointer_for(allocated.host_side);
 	return allocated;
 }
 
-/**
- * Allocates a mapped pair of memory regions - on a CUDA device
- * and in host memory.
- *
- * @param device_id The device on which to allocate the device-side region
- * @param size_in_bytes size of each of the two regions, in bytes.
- * @param options indication of how the CUDA driver will manage
- * the region pair
- * @return the allocated pair (with both regions being non-null)
- */
 inline region_pair allocate(
-	cuda::device::id_t  device_id,
+	context::handle_t   context_handle,
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	return detail_::allocate(size_in_bytes, options);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	return detail_::allocate_in_current_context(context_handle, size_in_bytes, options);
+}
+
+inline void free(void* host_side_pair)
+{
+	auto result = cuMemFreeHost(host_side_pair);
+	throw_if_error(result, "Freeing a mapped memory region pair with host-side address "
+		+ cuda::detail_::ptr_as_hex(host_side_pair));
 }
 
 } // namespace detail_
 
 /**
- * Allocate a pair of memory regions, on the host and on the device, mapped to each other so
- * that changes to one will be reflected in the other.
+ * Allocate a memory region on the host, which is also mapped to a memory region in
+ * a context of some CUDA device - so that changes to one will be reflected in the other.
+ *
+ * @param context The device context in which the device-side region in the pair will be
+ *     allocated.
+ * @param size_in_bytes amount of memory to allocate (in each of the regions)
+ * @param options see @ref allocation_options
+ */
+region_pair allocate(
+	cuda::context_t&    context,
+	size_t              size_in_bytes,
+	allocation_options  options);
+
+/**
+ * Allocate a memory region on the host, which is also mapped to a memory region in
+ * the global memory of a CUDA device - so that changes to one will be reflected in the other.
  *
  * @param device The device on which the device-side region in the pair will be allocated
  * @param size_in_bytes amount of memory to allocate (in each of the regions)
@@ -1539,30 +1777,7 @@ inline region_pair allocate(
 region_pair allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
-	allocation_options  options);
-
-/**
- * @brief A variant of @ref allocate facilitating only specifying some of the allocation options
- */
-inline region_pair allocate(
-	cuda::device_t&              device,
-	size_t                       size_in_bytes,
-	portability_across_contexts  portability = portability_across_contexts(false),
-	cpu_write_combining          cpu_wc = cpu_write_combining(false))
-{
-	return allocate(device, size_in_bytes, allocation_options{ portability, cpu_wc } );
-}
-
-/**
- * @brief A variant of @ref allocate facilitating only specifying some of the allocation options
- */
-inline region_pair allocate(
-	cuda::device_t&     device,
-	size_t              size_in_bytes,
-	cpu_write_combining cpu_wc)
-{
-	return allocate(device, size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
-}
+	allocation_options  options = allocation_options{});
 
 
 /**
@@ -1573,8 +1788,7 @@ inline region_pair allocate(
  */
 inline void free(region_pair pair)
 {
-	auto result = cudaFreeHost(pair.host_side);
-	throw_if_error(result, "Could not free mapped memory region pair.");
+	detail_::free(pair.host_side);
 }
 
 /**
@@ -1585,14 +1799,20 @@ inline void free(region_pair pair)
  */
 inline void free_region_pair_of(void* ptr)
 {
-	auto wrapped_ptr = pointer_t<void> { ptr };
-	auto result = cudaFreeHost(wrapped_ptr.get_for_host());
-	throw_if_error(result, "Could not free mapped memory region pair.");
+	// TODO: What if the pointer is not part of a mapped region pair?
+	// We could check this...
+	void* host_side_ptr;
+	auto status = cuPointerGetAttribute (&host_side_ptr, CU_POINTER_ATTRIBUTE_HOST_POINTER, memory::device::address(ptr));
+	throw_if_error(status, "Failed obtaining the host-side address of supposedly-device-side pointer "
+		+ cuda::detail_::ptr_as_hex(ptr));
+	detail_::free(host_side_ptr);
 }
 
 /**
  * Determine whether a given stretch of memory was allocated as part of
  * a mapped pair of host and device memory regions
+ *
+ * @todo What if it's a managed pointer?
  *
  * @param ptr the beginning of a memory region - in either host or device
  * memory - to check

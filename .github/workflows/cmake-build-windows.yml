@@ -66,18 +66,18 @@ jobs:
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
-          - os: windows-2019
-            cuda: "10.2.89"
-            visual-studio: "Visual Studio 16 2019"
-            shell: "powershell"
-            os-type: "windows"
-            cmake-platform-flag: "-A x64"
-          - os: windows-2019
-            cuda: "10.1.243"
-            visual-studio: "Visual Studio 16 2019"
-            shell: "powershell"
-            os-type: "windows"
-            cmake-platform-flag: "-A x64"
+#          - os: windows-2019
+#            cuda: "10.2.89"
+#            visual-studio: "Visual Studio 16 2019"
+#            shell: "powershell"
+#            os-type: "windows"
+#            cmake-platform-flag: "-A x64"
+#          - os: windows-2019
+#            cuda: "10.1.243"
+#            visual-studio: "Visual Studio 16 2019"
+#            shell: "powershell"
+#            os-type: "windows"
+#            cmake-platform-flag: "-A x64"
 
           # Windows2016 & VS 2017 supports 10.0+
           # - os: windows-2016
