@@ -24,7 +24,7 @@ public:
 	using reference = value_type; // device_t is already a reference type; and there is no instance-of-device_t here to reference
 	using const_reference = const value_type; // ditto
 	using size_type = decltype(device::count());
-	using difference_type = typename std::make_signed<size_type>::type;
+	using difference_type = typename ::std::make_signed<size_type>::type;
 
 	class index_based_iterator {
 	public:
@@ -119,6 +119,11 @@ public:
 				throw ::std::logic_error("Out of range");
 			}
 			return index_based_iterator(num_devices_, index_ - n);
+		}
+
+		difference_type operator-(const index_based_iterator& other) const
+		{
+			return this->index_ - other.index_;
 		}
 
 		size_type index() const { return index_; }

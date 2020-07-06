@@ -97,8 +97,8 @@ int main(int argc, char **argv)
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
 		device, buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	auto wrapped_kernel = cuda::kernel::wrap(device, increment);
-	cuda::grid::block_dimension_t threads_per_block = wrapped_kernel.attributes().maxThreadsPerBlock;
+	auto wrapped_kernel = cuda::kernel::get(device, increment);
+	cuda::grid::block_dimension_t threads_per_block = wrapped_kernel.maximum_threads_per_block();
 	cuda::grid::dimension_t num_blocks = div_rounding_up(buffer_size, threads_per_block);
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 

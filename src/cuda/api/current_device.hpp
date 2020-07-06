@@ -21,9 +21,9 @@
 #define CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 
 #include <cuda/api/constants.hpp>
-#include <cuda/api/error.hpp>
 #include <cuda/api/miscellany.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/current_context.hpp>
+#include <cuda/api/primary_context.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -44,22 +44,71 @@ namespace detail_ {
  */
 inline id_t get_id()
 {
-	id_t  device;
-	status_t result = cudaGetDevice(&device);
-	throw_if_error(result, "Failure obtaining current device index");
-	return device;
+	constexpr const id_t default_device_id { 0 };
+	context::handle_t current_context_handle;
+	auto status = cuCtxGetCurrent(&current_context_handle);
+	if (status == CUDA_ERROR_NOT_INITIALIZED) {
+		initialize_driver();
+		// Should we activate and push the default device's context? probably not.
+		return default_device_id;
+	}
+	throw_if_error(status, "Failed obtaining the current context for determining which "
+		"device is active");
+
+	if (current_context_handle == context::detail_::none) {
+		// Should we activate and push the default device's context? probably not.
+		return default_device_id;
+	}
+	return cuda::context::current::detail_::get_device_id();
+	// ... which is the equivalent of doing:
+	//
+//	handle_t  device_id;
+//	auto status = cudaGetDevice(&device_id);
+//	throw_if_error(status, "Failure obtaining current device id");
+//	return device_id;
 }
 
 /**
  * Set a device as the current one for the CUDA Runtime API (so that API calls
  * not specifying a device apply to it.)
  *
+ * @note This replaces the current CUDA context (rather than pushing a context
+ * onto the stack), so use with care.
+ *
+ * @note This causes a primary context for the device to be created, if it
+ * doesn't already exist. I'm not entirely sure regarding the conditions under
+ * which it will be destroyed, however.
+ *
  * @param[in] device Numeric ID of the device to make current
  */
-inline void set(id_t device)
+inline void set(id_t device_id)
 {
-	status_t result = cudaSetDevice(device);
-	throw_if_error(result, "Failure setting current device to " + ::std::to_string(device));
+	context::handle_t current_context_handle;
+	bool have_current_context;
+	auto status = cuCtxGetCurrent(&current_context_handle);
+	if (status == CUDA_ERROR_NOT_INITIALIZED) {
+		initialize_driver();
+		// Should we activate and PUSH the default device's context? probably not.
+		have_current_context = false;
+	}
+	else {
+		have_current_context = (current_context_handle != context::detail_::none);
+	}
+	if (have_current_context) {
+		auto current_context_device_id = context::detail_::get_device_id(current_context_handle);
+		if (current_context_device_id == device_id) {
+			return;
+		}
+	}
+	auto device_pc_is_active = device::primary_context::detail_::is_active(device_id);
+	bool need_refcount_increase = not device_pc_is_active;
+	auto dev_pc_handle = device::primary_context::detail_::get_handle(device_id, need_refcount_increase);
+	context::current::detail_::set(dev_pc_handle);
+
+
+	// ... which is the equivalent of doing:
+	// auto status = cudaSetDevice(device_id);
+	// throw_if_error(status, "Failure setting current device to " + ::std::to_string(device_id));
 }
 
 /**
@@ -67,6 +116,9 @@ inline void set(id_t device)
  *
  * @param[in] device_ids Numeric IDs of the devices to try and make current, in order
  * @param[in] num_devices The number of device IDs pointed to by @device_ids
+ *
+ * @note this replaces the current CUDA context (rather than pushing a context
+ * onto the stack), so use with care.
  */
 inline void set(const id_t* device_ids, size_t num_devices)
 {
@@ -80,25 +132,55 @@ inline void set(const id_t* device_ids, size_t num_devices)
 
 /**
  * @note See the out-of-`detail_::` version of this class.
+ *
+ * @note Perhaps it would be better to keep a copy of the current context ID in a
+ * member of this class, instead of on the stack?
+ *
+ * @note we have no guarantee that the context stack is not altered during
+ * the lifetime of this object; but - we assume it wasn't, and it's up to the users
+ * of this class to assure that's the case or face the consequences.
+ *
+ * @note We don't want to use the cuda::context::detail_scoped_override_t
+ * as the implementation, since we're not simply pushing and popping
  */
-class scoped_override_t {
-protected:
-	static id_t  replace(id_t new_device_id)
-	{
-		id_t previous_device_id = device::current::detail_::get_id();
-		device::current::detail_::set(new_device_id);
-		return previous_device_id;
-	}
 
+class scoped_context_override_t {
 public:
-	scoped_override_t(id_t new_device_id) : previous_device_id(replace(new_device_id)) { }
-	~scoped_override_t() {
-		// Note that we have no guarantee that the current device was not
-		// already replaced while this object was in scope; but - that's life.
-		replace(previous_device_id);
+	explicit scoped_context_override_t(id_t device_id) :
+		device_id_(device_id),
+		refcount_was_nonzero(device::primary_context::detail_::is_active(device_id))
+	{
+		auto top_of_context_stack = context::current::detail_::get_handle();
+		if (top_of_context_stack != context::detail_::none) {
+			context::current::detail_::push(top_of_context_stack); // Yes, we're pushing a copy of the same context
+		}
+		device::current::detail_::set(device_id); // ... which now gets overwritten at the top of the stack
+		primary_context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id);
+
+//		auto top_of_context_stack = context::current::detail_::get_handle();
+//		device::current::detail_::set(device_id); // ... which now gets overwritten at the top of the stack
+//		primary_context = device::primary_context::detail_::get_handle(device_id);
+//		context::current::detail_::push(primary_context);
 	}
-private:
-	id_t  previous_device_id;
+	~scoped_context_override_t() {
+		context::current::detail_::pop();
+//#else
+//		auto popped_context_handle = context::current::detail_::pop();
+//		if (popped_context_handle != primary_context_handle) {
+//			throw ::std::logic_error("Expected the top of the context stack to hold the primary context of "
+//				+ device::detail_::identify(device_id_));
+//		}
+//#endif
+		if (refcount_was_nonzero) {
+			device::primary_context::detail_::decrease_refcount(device_id_);
+			// We intentionally "leak" a refcount, as otherwise, the primary context
+			// gets destroyed after we have created it - and we don't want that happening.
+		}
+
+	}
+	device::id_t device_id_;
+	primary_context::handle_t primary_context_handle;
+	bool refcount_was_nonzero;
 };
 
 
@@ -109,26 +191,21 @@ private:
  */
 inline void set_to_default() { return detail_::set(device::default_device_id); }
 
-/**
- * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
- */
-inline device_t get();
+void set(const device_t& device);
 
 /**
- * Tells the CUDA runtime API to consider the specified device as the current one.
- */
-inline void set(device_t device);
-
-/**
- * A RAII-based mechanism for setting the CUDA Runtime API's current device for
+ * A RAII-like mechanism for setting the CUDA Runtime API's current device for
  * what remains of the current scope, and changing it back to its previous value
  * when exiting the scope.
+ *
+ * @note The description says "RAII-like" because the reality is more complex. The
+ * runtime API sets a device by overwriting the current
  */
-class scoped_override_t : private detail_::scoped_override_t {
+class scoped_override_t : private detail_::scoped_context_override_t {
 protected:
-	using parent = detail_::scoped_override_t;
+	using parent = detail_::scoped_context_override_t;
 public:
-	scoped_override_t(device_t& device);
+	scoped_override_t(const device_t& device);
 	scoped_override_t(device_t&& device);
 	~scoped_override_t() = default;
 };

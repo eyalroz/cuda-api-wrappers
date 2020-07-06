@@ -2,7 +2,8 @@
  * @file ipc.hpp
  *
  * @brief wrappers for CUDA's facilities for sharing on-device
- * memory addresses and CUDA events between host processes
+ * memory addresses and CUDA events between host processes (Inter-
+ * Process Communication)
  *
  * CUDA addresses into device memory are not valid across different
  * host processes - somewhat, but not entirely, similarly to the
@@ -23,9 +24,8 @@
 #ifndef CUDA_API_WRAPPERS_IPC_HPP_
 #define CUDA_API_WRAPPERS_IPC_HPP_
 
-#include <cuda/api/device.hpp>
+#include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
-#include <cuda/common/types.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -43,7 +43,7 @@ namespace ipc {
  * The concrete value passed between processes, used to tell
  * the CUDA Runtime API which memory area is desired.
  */
-using handle_t = cudaIpcMemHandle_t;
+using handle_t = CUipcMemHandle;
 
 /**
  * Obtain a handle for a region of on-device memory which can
@@ -59,9 +59,9 @@ using handle_t = cudaIpcMemHandle_t;
  */
 inline handle_t export_(void* device_ptr) {
 	handle_t handle;
-	auto status = cudaIpcGetMemHandle(&handle, device_ptr);
-		cuda::throw_if_error(status,
-			"Failed producing an IPC memory handle for device pointer " + cuda::detail_::ptr_as_hex(device_ptr));
+	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
+	cuda::throw_if_error(status, "Failed producing an IPC memory handle for device pointer "
+		+ cuda::detail_::ptr_as_hex(device_ptr));
 	return handle;
 }
 
@@ -69,7 +69,7 @@ inline handle_t export_(void* device_ptr) {
  * @brief Obtain a CUDA pointer from a handle passed
  * by inter-process communication
  *
- * @note the couterpart of @ref memory::ipc::unmap.
+ * @note the counterpart of @ref memory::ipc::unmap.
  *
  * @param handle the handle which allows us access to the on-device address
  * @return a pointer to the relevant address (which may not have the same value
@@ -78,10 +78,9 @@ inline handle_t export_(void* device_ptr) {
 template <typename T = void>
 inline T* import(const handle_t& handle)
 {
-	void* device_ptr;
-	auto status = cudaIpcOpenMemHandle(&device_ptr, handle, cudaIpcMemLazyEnablePeerAccess);
-	cuda::throw_if_error(status,
-		"Failed obtaining a device pointer from an IPC memory handle");
+	CUdeviceptr device_ptr;
+	auto status = cuIpcOpenMemHandle(&device_ptr, handle, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
+	cuda::throw_if_error(status, "Failed obtaining a device pointer from an IPC memory handle");
 	return reinterpret_cast<T*>(device_ptr);
 }
 
@@ -92,10 +91,8 @@ inline T* import(const handle_t& handle)
  */
 inline void unmap(void* ipc_mapped_ptr)
 {
-	auto status = cudaIpcCloseMemHandle(ipc_mapped_ptr);
-	cuda::throw_if_error(status,
-		"Failed unmapping IPC memory mapped to " +
-		cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
+	auto status = cuIpcCloseMemHandle(device::address(ipc_mapped_ptr));
+	cuda::throw_if_error(status, "Failed unmapping IPC memory mapped to " + cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
 }
 
 /**
@@ -109,7 +106,7 @@ inline void unmap(void* ipc_mapped_ptr)
 template <typename T = void>
 class imported_t {
 public: // constructors & destructor
-	imported_t(const handle_t& handle) : ptr_(import<T>(handle))
+	explicit imported_t(const handle_t& handle) : ptr_(import<T>(handle))
 	{
 		if (ptr_ == nullptr) {
 			throw ::std::logic_error("IPC memory handle yielded a null pointer");
@@ -156,25 +153,24 @@ namespace ipc {
  * The concrete value passed between processes, used to tell
  * the CUDA Runtime API which event is desired.
  */
-using handle_t = cudaIpcEventHandle_t;
+using handle_t = CUipcEventHandle;
 
 namespace detail_ {
 
 inline handle_t export_(event::handle_t event_handle)
 {
 	handle_t ipc_handle;
-	auto status = cudaIpcGetEventHandle(&ipc_handle, event_handle);
-	cuda::throw_if_error(status,
-		"Failed obtaining an IPC event handle for " + event::detail_::identify(event_handle));
+	auto status = cuIpcGetEventHandle(&ipc_handle, event_handle);
+	cuda::throw_if_error(status, "Failed obtaining an IPC event handle for " +
+		event::detail_::identify(event_handle));
 	return ipc_handle;
 }
 
 inline event::handle_t import(const handle_t& handle)
 {
 	event::handle_t event_handle;
-	auto status = cudaIpcOpenEventHandle(&event_handle, handle);
-	cuda::throw_if_error(status,
-		"Failed obtaining an event handle from an IPC event handle");
+	auto status = cuIpcOpenEventHandle(&event_handle, handle);
+	cuda::throw_if_error(status, "Failed obtaining an event handle from an IPC event handle");
 	return event_handle;
 }
 
@@ -188,7 +184,7 @@ inline event::handle_t import(const handle_t& handle)
  * may obtain a proper CUDA event
  *
  */
-inline handle_t export_(event_t& event);
+inline handle_t export_(const event_t& event);
 
 /**
  * Obtain a proper CUDA event, corresponding to an event created by another
@@ -198,10 +194,19 @@ inline handle_t export_(event_t& event);
  * from an event handle (or otherwise - have a handle provide both an event handle and
  * a device ID), but that is not currently the case.
  *
- * @param device the device to which the imported event corresponds
- * @param handle the handle obtained via inter-process communications
+ * @param event_ipc_handle the handle obtained via inter-process communications
  */
-inline event_t import(device_t& device, const handle_t& handle);
+///@{
+ /**
+  * @param device the device with which the imported event is associated
+  */
+inline event_t import(const device_t& device, const handle_t& event_ipc_handle);
+
+/**
+ * @param context the device-context with which the imported event is associated
+ */
+inline event_t import(const context_t& device, const handle_t& event_ipc_handle);
+///@}
 
 } // namespace ipc
 } // namespace event

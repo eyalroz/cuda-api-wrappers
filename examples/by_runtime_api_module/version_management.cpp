@@ -5,11 +5,11 @@
  *   Version Management
  *
  */
-#include <cuda/api/miscellany.hpp>
-#include <cuda/api/versions.hpp>
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <cuda/api/miscellany.hpp>
+#include <cuda/api/versions.hpp>
 
 [[noreturn]] void die_(const std::string& message)
 {
@@ -27,7 +27,7 @@ int main(int, char **)
 	auto runtime_version = cuda::version_numbers::runtime();
 	std::cout << "Using CUDA runtime version " << runtime_version << ".\n";
 
-	auto driver_supported_version = cuda::version_numbers::maximum_supported_by_driver();
+	auto driver_supported_version = cuda::version_numbers::driver();
 	if (driver_supported_version == cuda::version_numbers::none()) {
 		std::cout << "There is no CUDA driver installed, so no CUDA runtime version is supported\n";
 	}
