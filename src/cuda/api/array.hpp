@@ -72,7 +72,7 @@ cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions);
  *
  * @note CUDA only supports arrays of 2 or 3 dimensions.
  */
-template <typename T, std::size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 class array_t {
 	static_assert(NumDimensions == 2 or NumDimensions == 3, "CUDA only supports 2D and 3D arrays");
 
