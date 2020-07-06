@@ -233,13 +233,13 @@ inline void copy(void *destination, const void *source, size_t num_bytes, stream
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
 }
 
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
@@ -380,7 +380,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 	auto result = cudaOccupancyMaxPotentialBlockSizeWithFlags(
 		&min_grid_size_in_blocks, &block_size,
 		ptr_,
-		static_cast<std::size_t>(dynamic_shared_memory_size),
+		static_cast<memory::shared::size_t>(dynamic_shared_memory_size),
 		static_cast<int>(block_size_limit),
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 		);

@@ -440,7 +440,7 @@ inline void copy(T* destination, const array_t<T, 3>& source)
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
  */
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source)
 {
 	detail::copy(destination, source);
@@ -456,7 +456,7 @@ inline void copy(array_t<T, NumDimensions>& destination, const T* source)
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  */
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source)
 {
 	detail::copy(destination, source);
@@ -609,7 +609,7 @@ void copy(void *destination, const void *source, size_t num_bytes, stream_t& str
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream);
 
 /**
@@ -621,7 +621,7 @@ void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& str
  * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation into this CUDA stream
  */
-template <typename T, size_t NumDimensions>
+template <typename T, dimensionality_t NumDimensions>
 void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
 
 /**

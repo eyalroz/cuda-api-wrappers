@@ -77,9 +77,9 @@ inline void set(device::id_t  device)
  * @param[in] device_ids Numeric IDs of the devices to try and make current, in order
  * @param[in] num_devices The number of device IDs pointed to by @device_ids
  */
-inline void set(const device::id_t* device_ids, std::size_t num_devices)
+inline void set(const device::id_t* device_ids, size_t num_devices)
 {
-	if (num_devices > static_cast<std::size_t>(cuda::device::count())) {
+	if (num_devices > static_cast<size_t>(cuda::device::count())) {
 		throw cuda::runtime_error(status::invalid_device, "More devices listed than exist on the system");
 	}
 	auto result = cudaSetValidDevices(const_cast<int*>(device_ids), num_devices);

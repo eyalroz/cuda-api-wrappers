@@ -87,7 +87,7 @@ public: // constructors and destructors
 	};
 
 
-	template <typename T, size_t NumDimensions>
+	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
 		const cuda::array_t<T, NumDimensions>& arr,
 		texture::descriptor_t descriptor = texture::descriptor_t()) :
