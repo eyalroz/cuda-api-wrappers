@@ -12,8 +12,7 @@
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIGURATION_CUH_
 
 #include <cuda/api/constants.hpp>
-#include <cuda/api/kernel.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>

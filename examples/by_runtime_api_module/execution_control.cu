@@ -63,16 +63,15 @@ int main(int argc, char **argv)
 
 	auto device = cuda::device::get(device_id).make_current();
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
-	auto kernel = cuda::kernel::wrap(device, kernel_function);
+	auto kernel = cuda::kernel::get(device, kernel_function);
 
 	// ------------------------------------------
 	//  Attributes without a specific API call
 	// ------------------------------------------
 
-	auto attributes = kernel.attributes();
 	std::cout
 		<< "The PTX version used in compiling device function " << kernel_name
-		<< " is " << attributes.ptx_version() << ".\n";
+		<< " is " << kernel.ptx_version() << ".\n";
 
 	std::string cache_preference_names[] = {
 		"No preference",
@@ -102,11 +101,12 @@ int main(int argc, char **argv)
 
 	const int bar = 123;
 	const unsigned num_blocks = 3;
-	auto max_threads_per_block = attributes.maxThreadsPerBlock;
+	std::cout << "Getting kernel attibute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
+	auto max_threads_per_block = kernel.get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	auto launch_config = cuda::make_launch_config(num_blocks, max_threads_per_block);
 	std::cout
 		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
+		<< " with " << num_blocks << " blocks, using cuda::launch()" << std::endl;
 	{
 		// Copy and move construction and assignment of launch configurations
 		auto launch_config_2 = cuda::make_launch_config(2, 2, 2);
@@ -185,10 +185,12 @@ int main(int argc, char **argv)
 		if (not (e.code() == cuda::status::not_supported)) {
 			throw e;
 		}
-		cuda::outstanding_error::clear();
+		// We should really not have a sticky error at this point, but lets' make
+		// extra sure.
+		cuda::outstanding_error::ensure_none();
 	}
 #endif
-	auto non_cooperative_kernel = cuda::kernel::wrap(device, kernel_function);
+	auto non_cooperative_kernel = cuda::kernel::get(device, kernel_function);
 	auto non_cooperative_config = launch_config;
 	non_cooperative_config.block_cooperation = true;
 	std::cout

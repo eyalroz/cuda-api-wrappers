@@ -117,7 +117,7 @@ int main(int argc, const char **argv)
 	stream.enqueue.memzero(d_numOfOdds.get(), sizeof(int));
 	stream.enqueue.memzero(d_sumOfOddEvenElems.get(), sizeof(int)*2);
 
-	auto kernel = cuda::kernel::wrap(device, oddEvenCountAndSumCG);
+	auto kernel = cuda::kernel::get(device, oddEvenCountAndSumCG);
 	auto dims = kernel.min_grid_params_for_max_occupancy();
 	auto launch_config = cuda::make_launch_config(dims);
 		// Note: While the kernel uses the "cooperative groups" CUDA-C++ headers,

@@ -17,16 +17,15 @@
  * about from the other process.
  *
  */
-#include <cuda/runtime_api/device.hpp>
-#include <cuda/runtime_api/error.hpp>
-#include <cuda/runtime_api/pci_id.hpp>
-
 #include <cuda_runtime_api.h>
 
 #include <iostream>
 #include <string>
 #include <cstdlib>
 #include <cassert>
+#include <cuda/api/device.hpp>
+#include <cuda/api/error.hpp>
+#include <cuda/api/pci_id.hpp>
 
 
 [[noreturn]] void die_(const std::string& message)

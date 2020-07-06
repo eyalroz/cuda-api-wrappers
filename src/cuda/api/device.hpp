@@ -9,15 +9,18 @@
 #ifndef CUDA_API_WRAPPERS_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_DEVICE_HPP_
 
+#include <cuda/api/types.hpp>
 #include <cuda/api/current_device.hpp>
 #include <cuda/api/device_properties.hpp>
 #include <cuda/api/memory.hpp>
 #include <cuda/api/pci_id.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/primary_context.hpp>
+#include <cuda/api/error.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <string>
+#include <cstring>
 #include <type_traits>
 
 namespace cuda {
@@ -28,108 +31,80 @@ class stream_t;
 class device_t;
 ///@endcond
 
-namespace device {
-
 /**
- * Returns a proxy for the CUDA device with a given id
- *
- * @param device_id the ID for which to obtain the device proxy
- * @note This is the only function allowed to construct device_t's
- * directly. We could have let device::get() and others do so
- * (see below) - but chose not too for consistency with other wrappers
- * and to avoid requiring multiple friend functions.
- */
-device_t wrap(id_t id) noexcept;
-
-namespace peer_to_peer {
-
-/**
- * @brief The value of type for all CUDA device "attributes"; see also @ref cuda::device::attribute_t.
- */
-using attribute_value_t = int;
-
-/**
- * @brief An identifier of a integral-numeric-value attribute of a CUDA device.
- *
- * @note Somewhat annoyingly, CUDA devices have attributes, properties and flags.
- * Attributes have integral number values; properties have all sorts of values,
- * including arrays and limited-length strings (see
- * @ref cuda::device::properties_t), and flags are either binary or
- * small-finite-domain type fitting into an overall flags value (see
- * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
- * attributes are more one-at-a-time.
- */
-using attribute_t = cudaDeviceP2PAttr;
-
-/**
- * Aliases for all CUDA device attributes
- */
-enum : ::std::underlying_type<attribute_t>::type {
-		link_performance_rank = cudaDevP2PAttrPerformanceRank, /**< A relative value indicating the performance of the link between two devices */                       //!< link_performance_rank
-		access_support = cudaDevP2PAttrAccessSupported, /**< 1 if access is supported, 0 otherwise */                                                                    //!< access_support
-		native_atomics_support = cudaDevP2PAttrNativeAtomicSupported /**< 1 if the first device can perform native atomic operations on the second device, 0 otherwise *///!< native_atomics_support
-};
-
-/**
- * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
- * relating to their interaction
- *
- * @note This is the device-pair equivalent of @ref device_t::get_attribute()
- *
- * @param attribute identifier of the attribute of interest
- * @param source source device
- * @param destination destination device
- * @return the numeric attribute value
- */
-inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t destination)
-{
-	attribute_value_t value;
-	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
-	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + ::std::to_string(source) + ", "
-			+ ::std::to_string(destination) + ')');
-	return value;
-}
-
-attribute_value_t get_attribute(
-	attribute_t  attribute,
-	device_t     source,
-	device_t     destination);
-
-} // namespace peer_to_peer
-
-/**
- * A range of priorities supported by a CUDA device; ranges from the
- * higher numeric value to the lower.
- */
-struct stream_priority_range_t {
-	stream::priority_t least; /// Higher numeric value, lower priority
-	stream::priority_t greatest; /// Lower numeric value, higher priority
-
-	/**
-	 * When true, stream prioritization is not supported, i.e. all streams have
-	 * "the same" priority - the default one.
-	 */
-	constexpr bool is_trivial() const {
-		return least == stream::default_priority and greatest == stream::default_priority;
-	}
-};
-
-} // namespace device
-
-
-/**
- * @brief Suspends execution until all previously-scheduled tasks on
- * the specified device (all contexts, all streams) have concluded.
+ * @brief Waits for all previously-scheduled tasks on all streams (= queues)
+ * on a specified device to conclude.
  *
  * Depending on the host_thread_synch_scheduling_policy_t set for this
  * device, the thread calling this method will either yield, spin or block
- * until this completion.
+ * until all tasks scheduled previously scheduled on this device have been
+ * concluded.
  */
-inline void synchronize(device_t device);
+void synchronize(const device_t& device);
+
+namespace device {
+
+///@cond
+class primary_context_t;
+///@cendond
+
+using limit_t = context::limit_t;
+using limit_value_t = context::limit_value_t;
+using shared_memory_bank_size_t = context::shared_memory_bank_size_t;
+
+namespace detail_ {
+
+device_t wrap(id_t id, primary_context::handle_t primary_context_handle = context::detail_::none) noexcept;
+
+} // namespace detail
 
 /**
- * @brief Proxy class for a CUDA device
+ * Returns a wrapper for the CUDA device with a given id
+ *
+ * @param id the ID of the device for which to obtain the wrapper
+ *
+ * @note Effectively, this is an alias of the @ref get function.
+ */
+device_t wrap(id_t id) noexcept;
+
+using stream_priority_range_t = context::stream_priority_range_t;
+
+namespace detail_ {
+
+inline ::std::string get_name(id_t id)
+{
+	initialize_driver();
+	using size_type = int; // Yes, an int, that's what cuDeviceName takes
+	constexpr const size_type initial_size_reservation { 100 };
+	constexpr const size_type larger_size { 1000 }; // Just in case
+	char stack_buffer[initial_size_reservation];
+	char* buffer = stack_buffer;
+	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));
+	auto try_getting_name = [&](char* buffer, size_type buffer_size) -> size_type {
+		auto status =  cuDeviceGetName(buffer, buffer_size-1, id);
+		throw_if_error(status, "Failed obtaining the CUDA device name");
+		buffer[buffer_size-1] = '\0';
+		return (size_type) ::std::strlen(buffer);
+	};
+	auto prospective_name_length = try_getting_name(buffer, initial_size_reservation);
+	if (prospective_name_length >= buffer_size - 1) {
+		// This should really not happen, but just for the off chance...
+		if (buffer != stack_buffer) { delete buffer; }
+		buffer = new char[larger_size];
+		prospective_name_length = try_getting_name(buffer, buffer_size);
+	}
+	if (prospective_name_length >= buffer_size - 1) {
+		throw ::std::runtime_error("CUDA device name longer than expected maximum size " + ::std::to_string(larger_size));
+	}
+	return { buffer, (::std::size_t) prospective_name_length };
+}
+
+} // namespace detail
+
+} // namespace device
+
+/**
+ * @brief Wrapper class for a CUDA device
  *
  * Use this class - built around a device ID, or for the current device - to
  * perform almost, if not all, device-related operations, as opposed to passing
@@ -137,111 +112,29 @@ inline void synchronize(device_t device);
  *
  * @note this is one of the three main classes in the Runtime API wrapper library,
  * together with @ref cuda::stream_t and @ref cuda::event_t
+ *
+ * @note obtaining device LUID's is not supported (those are too graphics-specific)
+ * @note This class is a "reference type", not a "value type". Therefore, making changes
+ * to properties of the device is a const-respecting operation on this class.
  */
 class device_t {
 public: // types
 	using properties_t = device::properties_t;
 	using attribute_value_t = device::attribute_value_t;
-	using limit_t = size_t;
+	using flags_type = device::flags_t;
 
-	using resource_id_t = cudaLimit;
+	// TODO: Consider a scoped/unscoped dichotomy
+	context_t::global_memory_type memory() const { return primary_context(unscoped_).memory(); }
 
 protected: // types
-	using scoped_setter_t = device::current::detail_::scoped_override_t;
-	using flags_t = unsigned;
+	using context_setter_type = context::current::detail_::scoped_override_t;
+		// Note the context setter only affects the _currency_ of a context, not the
+		// activity of a primary context
 
-public:	// types
+protected: // constants
+    enum : bool { scoped_ = true, unscoped_ = false };
 
-	/**
-	 * @brief A class to create a faux member in a @ref device_t, in lieu of an in-class
-	 * namespace (which C++ does not support); whenever you see a function
-	 * `my_dev.memory::foo()`, think of it as a `my_dev::memory::foo()`.
-	 */
-	class global_memory_t {
-	protected:
-		const device::id_t device_id_;
-
-		using deleter = memory::device::detail_::deleter;
-		using allocator = memory::device::detail_::allocator;
-
-	public:
-		///@cond
-		explicit global_memory_t(device::id_t id) : device_id_(id) { }
-		///@endcond
-
-		cuda::device_t associated_device() const { return device::wrap(device_id_); }
-
-		/**
-		 * Allocate a region of memory on the device
-		 *
-		 * @param size_in_bytes size in bytes of the region of memory to allocate
-		 * @return a non-null (device-side) pointer to the allocated memory
-		 */
-		memory::region_t allocate(size_t size_in_bytes) const
-		{
-			scoped_setter_t set_device_for_this_scope(device_id_);
-			return memory::device::detail_::allocate(size_in_bytes);
-		}
-
-		// Perhaps drop this? it should really go into a managed namespace
-		using initial_visibility_t  = cuda::memory::managed::initial_visibility_t;
-
-		/**
-		 * Allocates memory on the device whose pointer is also visible on the host,
-		 * and possibly on other devices as well - with the same address. This is
-		 * nVIDIA's "managed memory" mechanism.
-		 *
-		 * @note Managed memory isn't as "strongly associated" with a single device
-		 * as the result of allocate(), since it can be read or written from any
-		 * device or from the host. However, the actual space is allocated on
-		 * some device, so its creation is a device (device_t) object method.
-		 *
-		 * @note for a more complete description see the
-		 * <a href="http://docs.nvidia.com/cuda/cuda-runtime-api/">CUDA Runtime API
-		 * reference</a>)
-		 *
-		 * @param size_in_bytes Size of memory region to allocate
-		 * @param initial_visibility if this equals ,to_supporters_of_concurrent_managed_access\ only the host (and the
-		 * allocating device) will be able to utilize the pointer returned; if false,
-		 * it will be made usable on all CUDA devices on the systems.
-		 * @return the allocated pointer; never returns null (throws on failure)
-		 */
-		memory::region_t allocate_managed(
-			size_t size_in_bytes,
-			initial_visibility_t initial_visibility =
-				initial_visibility_t::to_supporters_of_concurrent_managed_access) const
-		{
-			scoped_setter_t set_device_for_this_scope(device_id_);
-			return cuda::memory::managed::detail_::allocate(size_in_bytes, initial_visibility);
-		}
-
-		/**
-		 * Amount of total global memory on the CUDA device.
-		 */
-		size_t amount_total() const
-		{
-			scoped_setter_t set_device_for_this_scope(device_id_);
-			size_t total_mem_in_bytes;
-			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
-			throw_if_error(status, "Failed determining amount of total memory for " + device::detail_::identify(device_id_));
-			return total_mem_in_bytes;
-		}
-
-		/**
-		 * Amount of memory on the CUDA device which is free and may be
-		 * allocated for other uses.
-		 *
-		 * @note No guarantee of this free memory being contigous.
-		 */
-		size_t amount_free() const
-		{
-			scoped_setter_t set_device_for_this_scope(device_id_);
-			size_t free_mem_in_bytes;
-			auto status = cudaMemGetInfo(&free_mem_in_bytes, nullptr);
-			throw_if_error(status, "Failed determining amount of free memory for CUDA " + device::detail_::identify(device_id_));
-			return free_mem_in_bytes;
-		}
-	}; // class global_memory_t
+public:
 
 	/**
 	 * @brief Determine whether this device can access the global memory
@@ -252,10 +145,12 @@ public:	// types
 	 */
 	bool can_access(device_t peer) const
 	{
+		context_setter_type set_for_this_scope(primary_context_handle());
 		int result;
-		auto status = cudaDeviceCanAccessPeer(&result, id(), peer.id());
-		throw_if_error(status, "Failed determining whether CUDA device " + device::detail_::identify(id()) + " can access CUDA device "
-		+ device::detail_::identify(peer.id()));
+		auto status = cuDeviceCanAccessPeer(&result, id(), peer.id());
+		throw_if_error(status, "Failed determining whether "
+			+ device::detail_::identify(id_) + " can access "
+			+ device::detail_::identify(peer.id_));
 		return (result == 1);
 	}
 
@@ -264,14 +159,9 @@ public:	// types
 	 *
 	 * @param peer the device to which to enable access
 	 */
-	void enable_access_to(device_t peer) const
+	void enable_access_to(const device_t& peer) const
 	{
-		enum : unsigned {fixed_flags = 0 };
-		// No flags are supported as of CUDA 8.0
-		scoped_setter_t set_device_for_this_scope(id());
-		auto status = cudaDeviceEnablePeerAccess(peer.id(), fixed_flags);
-		throw_if_error(status,
-					   "Failed enabling access of " + device::detail_::identify(id()) + " to " + ::std::to_string(peer.id()));
+		primary_context(scoped_).enable_access_to(peer.primary_context(scoped_));
 	}
 
 	/**
@@ -279,48 +169,68 @@ public:	// types
 	 *
 	 * @param peer the device to which to disable access
 	 */
-	void disable_access_to(device_t peer) const
+	void disable_access_to(const device_t& peer) const
 	{
-		scoped_setter_t set_device_for_this_scope(id());
-		auto status = cudaDeviceDisablePeerAccess(peer.id());
-		throw_if_error(status,
-			"Failed disabling access of device " + ::std::to_string(id()) + " to device " + ::std::to_string(peer.id()));
+		primary_context(scoped_).disable_access_to(peer.primary_context(scoped_));
+	}
+
+
+	uuid_t uuid () const {
+		uuid_t result;
+		auto status = cuDeviceGetUuid(&result, id_);
+		throw_if_error(status, "Failed obtaining UUID for " + device::detail_::identify(id_));
+		return result;
 	}
 
 protected:
-	void set_flags(flags_t new_flags) const
-	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaSetDeviceFlags(new_flags);
-		throw_if_error(status, "Failed setting the flags for " + device::detail_::identify(id_));
+	void cache_and_ensure_primary_context_activation() const {
+        if (primary_context_handle_ == context::detail_::none) {
+            primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
+            // The refcount should now be non-zero until we destruct this device_t!
+        }
 	}
 
-	void set_flags(
-		host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
-		bool                                   keep_larger_local_mem_after_resize) const
-	{
-		set_flags( (flags_t)
-			  synch_scheduling_policy // this enum value is also a valid bitmask
-			| (keep_larger_local_mem_after_resize    ? cudaDeviceLmemResizeToMax : 0));
-	}
+    context::handle_t primary_context_handle() const
+    {
+		cache_and_ensure_primary_context_activation();
+        return primary_context_handle_;
+    }
 
-	flags_t flags() const
-	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		flags_t flags;
-		auto status = cudaGetDeviceFlags(&flags);
-		throw_if_error(status, "Failed obtaining the flags for  " + device::detail_::identify(id_));
-		return flags;
-	}
 
 public:
 	/**
-	 * @brief Obtains a proxy for the device's global memory
+	 * Produce a proxy for the device's primary context - the one used by runtime API calls.
+	 *
+	 * @param scoped When true, the primary proxy object returned will not perform its
+	 * own reference accounting, and will assume the primary context is active while
+	 * this device object exists. When false, the returned primary context proxy object
+	 * _will_ take care of its own reference count unit, and can outlive this object.
 	 */
-	global_memory_t memory() const { return global_memory_t{ id_ }; };
+	device::primary_context_t primary_context(bool scoped) const;
+
+
+public:
+	/**
+	 * Produce a proxy for the device's primary context - the one used by runtime API calls.
+	 *
+	 * @note The CUDA driver reference counting for the primary scope is "taken core of"
+	 * with this call, i.e. the caller does not need to add/decrease the refcount, and the
+	 * object can safely outlive the device_t proxy object which created it.
+	 */
+	device::primary_context_t primary_context() const { return primary_context(unscoped_); }
+
+	void set_flags(flags_type new_flags) const
+	{
+		auto status = cuDevicePrimaryCtxSetFlags(id(), new_flags);
+		throw_if_error(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
+	}
+
+public:
 
 	/**
 	 * Obtains the (mostly) non-numeric properties for this device.
+	 *
+	 * @todo get rid of this in favor of individual properties only.
 	 */
 	properties_t properties() const
 	{
@@ -330,8 +240,7 @@ public:
 		return properties;
 	}
 
-	static device_t choose_best_match(const properties_t& properties)
-	{
+	static device_t choose_best_match(const properties_t& properties) {
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
 		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
@@ -343,42 +252,10 @@ public:
 	 */
 	::std::string name() const
 	{
-		// I could get the name directly, but that would require
-		// direct use of the driver, and I'm not ready for that
-		// just yet
-		return properties().name;
-	}
-
-	/**
-	 * Obtains this device's location on the PCI express bus in terms of
-	 * domain, bus and device id, e.g. (0, 1, 0)
-	 */
-	device::pci_location_t pci_id() const
-	{
-		auto pci_domain_id = get_attribute(cudaDevAttrPciDomainId);
-		auto pci_bus_id = get_attribute(cudaDevAttrPciBusId);
-		auto pci_device_id = get_attribute(cudaDevAttrPciDeviceId);
-		return {pci_domain_id, pci_bus_id, pci_device_id};
-	}
-
-	/**
-	 * Obtains the device's hardware architecture generation numeric
-	 * designator see @ref cuda::device::compute_architecture_t
-	 */
-	device::compute_architecture_t architecture() const
-	{
-		unsigned major = get_attribute(cudaDevAttrComputeCapabilityMajor);
-		return {major};
-	}
-
-	/**
-	 * Obtains the device's compute capability; see @ref cuda::device::compute_capability_t
-	 */
-	device::compute_capability_t compute_capability() const
-	{
-		auto arch = architecture();
-		unsigned minor = get_attribute(cudaDevAttrComputeCapabilityMinor);
-		return {arch, minor};
+		// If I were lazy, I would just write:
+		// return properties().name;
+		// and let you wait for all of that to get populated. But not me!
+		return cuda::device::detail_::get_name(id_);
 	}
 
 	/**
@@ -390,9 +267,62 @@ public:
 	attribute_value_t get_attribute(device::attribute_t attribute) const
 	{
 		attribute_value_t attribute_value;
-		auto ret = cudaDeviceGetAttribute(&attribute_value, attribute, id());
-		throw_if_error(ret, "Failed obtaining device properties for " + device::detail_::identify(id_));
+		auto status = cuDeviceGetAttribute(&attribute_value, attribute, id_);
+		throw_if_error(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
 		return attribute_value;
+	}
+
+	/**
+	 * Obtains this device's location on the PCI express bus in terms of
+	 * domain, bus and device id, e.g. (0, 1, 0)
+	 */
+	device::pci_location_t pci_id() const
+	{
+		auto pci_domain_id = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID);
+		auto pci_bus_id    = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID);
+		auto pci_device_id = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID);
+		return {pci_domain_id, pci_bus_id, pci_device_id};
+	}
+
+	device::multiprocessor_count_t multiprocessor_count() const
+	{
+		return get_attribute(CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT);
+	}
+
+#if CUDA_VERSION >= 10020
+	/**
+	 * True if the device supports the facilities under namespace @ref memory::virtual_
+	 * including the separation of memory allocation from address range mapping, and
+	 * the possibility of changing mapping after allocation.
+	 */
+	bool supports_virtual_memory_management() const
+	{
+#if CUDA_VERSION >= 11030
+		return get_attribute(CU_DEVICE_ATTRIBUTE_VIRTUAL_MEMORY_MANAGEMENT_SUPPORTED);
+#else
+		return get_attribute(CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED);
+#endif // CUDA_VERSION >= 11030
+	}
+#endif // CUDA_VERSION >= 10020
+
+	/**
+	 * Obtains the device's hardware architecture generation numeric
+	 * designator see @ref cuda::device::compute_architecture_t
+	 */
+	device::compute_architecture_t architecture() const
+	{
+		unsigned major = get_attribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR);
+		return { major };
+	}
+
+	/**
+	 * Obtains the device's compute capability; see @ref cuda::device::compute_capability_t
+	 */
+	device::compute_capability_t compute_capability() const
+	{
+		auto major = architecture();
+		unsigned minor = get_attribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR);
+		return {major, minor};
 	}
 
 	/**
@@ -401,7 +331,7 @@ public:
 	 */
 	bool supports_concurrent_managed_access() const
 	{
-		return get_attribute(cudaDevAttrConcurrentManagedAccess);
+		return (get_attribute(CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS) != 0);
 	}
 
 	/**
@@ -410,7 +340,7 @@ public:
 	 */
 	bool supports_block_cooperation() const
 	{
-		return get_attribute(cudaDevAttrCooperativeLaunch);
+		return get_attribute(CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH);
 	}
 
 	/**
@@ -419,22 +349,18 @@ public:
 	 *
 	 * @param resource which resource's limit to obtain
 	 */
-	limit_t get_limit(resource_id_t resource) const
+	device::limit_value_t get_limit(device::limit_t limit) const
 	{
-		limit_t limit;
-		auto status = cudaDeviceGetLimit(&limit, resource);
-		throw_if_error(status, "Failed obtaining a resource limit for " + device::detail_::identify(id_));
-		return limit;
+		return primary_context(scoped_).get_limit(limit);
 	}
 
 	/**
 	 * Set the upper limit of one of the named numeric resources
 	 * on this device
 	 */
-	void set_limit(resource_id_t resource, limit_t new_limit) const
+	void set_limit(device::limit_t limit, device::limit_value_t new_value) const
 	{
-		auto status = cudaDeviceSetLimit(resource, new_limit);
-		throw_if_error(status, "Failed setting a resource limit for  " + device::detail_::identify(id_));
+		primary_context(scoped_).set_limit(limit, new_value);
 	}
 
 	/**
@@ -446,9 +372,28 @@ public:
 	 * until all tasks scheduled previously scheduled on this device have been
 	 * concluded.
 	 */
-	void synchronize() const
+	const device_t& synchronize() const
 	{
 		cuda::synchronize(*this);
+		return *this;
+	}
+
+	device_t& synchronize()
+	{
+		cuda::synchronize(*this);
+		return *this;
+	}
+
+	const device_t& make_current() const
+	{
+		device::current::set(*this);
+		return *this;
+	}
+
+	device_t& make_current()
+	{
+		device::current::set(*this);
+		return *this;
 	}
 
 	/**
@@ -459,9 +404,20 @@ public:
 	 */
 	void reset() const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		status_t status = cudaDeviceReset();
-		throw_if_error(status, "Resetting  " + device::detail_::identify(id_));
+		// Notes:
+		//
+		// 1. We _cannot_ use cuDevicePrimaryCtxReset() - because that one only affects
+		// the device's primary context, while cudaDeviceReset() destroys _all_ contexts for
+		// the device.
+		// 2. We don't need the primary context to be active here, so not using the usual
+		//    primary_context_handle() getter mechanism.
+
+	    auto pc_handle = (primary_context_handle_ == context::detail_::none) ?
+	        device::primary_context::detail_::obtain_and_increase_refcount(id_) :
+	        primary_context_handle_;
+		context_setter_type set_context_for_this_scope{pc_handle};
+		auto status = cudaDeviceReset();
+		throw_if_error(status, "Resetting " + device::detail_::identify(id_));
 	}
 
 	/**
@@ -472,10 +428,7 @@ public:
 	 */
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaDeviceSetCacheConfig((cudaFuncCache) preference);
-		throw_if_error(status,
-			"Setting the multiprocessor L1/Shared Memory cache distribution preference for " + device::detail_::identify(id_));
+		primary_context(scoped_).set_cache_preference(preference);
 	}
 
 	/**
@@ -484,12 +437,7 @@ public:
 	 */
 	multiprocessor_cache_preference_t cache_preference() const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		cudaFuncCache raw_preference;
-		auto status = cudaDeviceGetCacheConfig(&raw_preference);
-		throw_if_error(status,
-			"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + device::detail_::identify(id_));
-		return (multiprocessor_cache_preference_t) raw_preference;
+		return primary_context(scoped_).cache_preference();
 	}
 
 	/**
@@ -498,11 +446,9 @@ public:
 	 *
 	 * @param new_bank_size the shared memory bank size to set, in bytes
 	 */
-	void set_shared_memory_bank_size(memory::shared::bank_size_configuration_t new_bank_size) const
+	void set_shared_memory_bank_size(device::shared_memory_bank_size_t new_bank_size) const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
-		throw_if_error(status, "Setting the multiprocessor shared memory bank size for " + device::detail_::identify(id_));
+		primary_context(scoped_).set_shared_memory_bank_size(new_bank_size);
 	}
 
 	/**
@@ -511,13 +457,9 @@ public:
 	 *
 	 * @return the shared memory bank size in bytes
 	 */
-	memory::shared::bank_size_configuration_t shared_memory_bank_size() const
+	device::shared_memory_bank_size_t shared_memory_bank_size() const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		memory::shared::bank_size_configuration_t bank_size;
-		auto status = cudaDeviceGetSharedMemConfig(&bank_size);
-		throw_if_error(status, "Obtaining the multiprocessor shared memory bank size for  " + device::detail_::identify(id_));
-		return bank_size;
+		return primary_context(scoped_).shared_memory_bank_size();
 	}
 
 	// For some reason, there is no cudaFuncGetCacheConfig. Weird.
@@ -530,21 +472,16 @@ public:
 	 * Return the proxied device's ID
 	 *
 	 */
-	device::id_t id() const
+	device::id_t id() const noexcept
 	{
 		return id_;
 	}
 
-	stream_t default_stream() const noexcept;
+	stream_t default_stream() const;
 
-	// I'm a worried about the creation of streams with the assumption
-	// that theirs is the current device, so I'm just forbidding it
-	// outright here - even though it's very natural to want to write
-	//
-	//   cuda::device::curent::get().create_stream()
-	//
-	// (sigh)... safety over convenience I guess
-	//
+	/**
+	 * See @ref cuda::stream::create()
+	 */
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
 		stream::priority_t  priority = cuda::stream::default_priority) const;
@@ -555,7 +492,11 @@ public:
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
-		bool interprocess       = event::not_interprocess) const;
+		bool interprocess       = event::not_interprocess);
+
+	context_t create_context(
+		context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy = context::heuristic,
+		bool                                            keep_larger_local_mem_after_resize = false) const;
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(
@@ -572,97 +513,105 @@ public:
 	 */
 	device::stream_priority_range_t stream_priority_range() const
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		stream::priority_t least, greatest;
-		auto status = cudaDeviceGetStreamPriorityRange(&least, &greatest);
-		throw_if_error(status, "Failed obtaining stream priority range for " + device::detail_::identify(id_));
-		return {least, greatest};
+		return primary_context(scoped_).stream_priority_range();
 	}
 
 public:
+    context::flags_t flags() const
+    {
+        return device::primary_context::detail_::flags(id_);
+    }
 
-	host_thread_synch_scheduling_policy_t synch_scheduling_policy() const
+	context::host_thread_synch_scheduling_policy_t synch_scheduling_policy() const
 	{
-		return (host_thread_synch_scheduling_policy_t) (flags() & cudaDeviceScheduleMask);
+		return context::host_thread_synch_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
 	}
 
-	void set_synch_scheduling_policy(host_thread_synch_scheduling_policy_t new_policy) const
+	void set_synch_scheduling_policy(context::host_thread_synch_scheduling_policy_t new_policy)
 	{
-		auto other_flags = flags() & ~cudaDeviceScheduleMask;
-		set_flags(other_flags | (flags_t) new_policy);
+        auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
+        set_flags(other_flags | (flags_type) new_policy);
 	}
 
 	bool keeping_larger_local_mem_after_resize() const
 	{
-		return flags() & cudaDeviceLmemResizeToMax;
+	    return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
-	void keep_larger_local_mem_after_resize(bool keep = true) const
+	void keep_larger_local_mem_after_resize(bool keep = true)
 	{
-		auto flags_ = flags();
-		if (keep) {
-			flags_ |= cudaDeviceLmemResizeToMax;
-		} else {
-			flags_ &= ~cudaDeviceLmemResizeToMax;
-		}
-		set_flags(flags_);
+        auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
+        flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
+        set_flags(new_flags);
 	}
 
-	void dont_keep_larger_local_mem_after_resize() const
+	void dont_keep_larger_local_mem_after_resize()
 	{
 		keep_larger_local_mem_after_resize(false);
 	}
 
-public:
-
-	/**
-	 * @brief Makes this device the CUDA Runtime API's current device
-	 *
-	 * @note a non-current device becoming current will not stop its methods from
-	 * always expressly setting the current device before doing anything(!)
-	 */
-	device_t& make_current()
+protected:
+	void maybe_decrease_primary_context_refcount() const
 	{
-		device::current::detail_::set(id());
-		return *this;
+		if (primary_context_handle_ != context::detail_::none) {
+			device::primary_context::detail_::decrease_refcount(id_);
+		}
 	}
-
-    const device_t& make_current() const
-    {
-        device::current::detail_::set(id());
-        return *this;
-    }
 
 public: 	// constructors and destructor
 
-	~device_t() noexcept = default;
-	device_t(device_t&& other) noexcept = default;
-	device_t(const device_t& other) noexcept = default;
+	friend void swap(device_t& lhs, device_t& rhs) noexcept
+	{
+		::std::swap(lhs.id_, rhs.id_);
+		::std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
+	}
+	~device_t() { maybe_decrease_primary_context_refcount(); }
+	device_t(device_t&& other) noexcept : id_(other.id_)
+	{
+		swap(*this, other);
+	}
+
+	device_t(const device_t& other) noexcept : id_(other.id_) { }
 		// Device proxies are not owning - as devices aren't allocated nor de-allocated.
-		// Also, the proxies don't hold any state - it's the devices _themselves_ which
-		// have state. ; so there's no problem copying the proxies around. This is
-		// unlike events and streams, which get created and destroyed.
-	device_t& operator=(const device_t& other) noexcept = default;
-	device_t& operator=(device_t&& other) noexcept = default;
+		// Also, the proxies don't hold any state (except for one bit regarding whether
+		// or not the device proxy has increased the primary context refcount); it's
+		// the devices _themselves_ which have state; so there's no problem copying
+		// the proxies around. This is unlike events and streams, which get created
+		// and destroyed.
+
+	device_t& operator=(const device_t& other) noexcept
+	{
+		maybe_decrease_primary_context_refcount();
+		id_ = other.id_;
+		primary_context_handle_ = other.primary_context_handle_;
+		return *this;
+	}
+
+	device_t& operator=(device_t&& other) noexcept
+	{
+		swap(*this, other);
+		return *this;
+	}
 
 protected: // constructors
 
 	/**
-	 * @note Only @ref device::current::get() and @ref device::get() should be
+	 * @note Only @ref device::wrap() and @ref device::get() should be
 	 * calling this one.
 	 */
-	explicit device_t(device::id_t device_id) noexcept  : id_( device_id ) { }
+	explicit device_t(
+		device::id_t device_id,
+		device::primary_context::handle_t primary_context_handle = context::detail_::none) noexcept
+	: id_(device_id), primary_context_handle_(primary_context_handle) { }
 
 public: // friends
-	friend device_t device::wrap(device::id_t) noexcept;
+	friend device_t device::detail_::wrap(device::id_t, device::primary_context::handle_t handle) noexcept;
 
-protected:
-	// data members
-
-	/**
-	 * The numeric ID of the proxied device.
-	 */
-	device::id_t id_;
+protected: // data members
+	device::id_t id_; /// Numeric ID of the proxied device.
+	mutable device::primary_context::handle_t primary_context_handle_ { context::detail_::none };
+		/// Most work involving a device actually occurs using its primary context; we cache the handle
+		/// to this context here - albeit not necessary on construction
 };
 
 ///@cond
@@ -679,9 +628,18 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 
 namespace device {
 
+namespace detail_ {
+
+inline device_t wrap(id_t id, primary_context::handle_t primary_context_handle) noexcept
+{
+	return device_t{ id, primary_context_handle };
+}
+
+} // namespace detail_
+
 inline device_t wrap(id_t id) noexcept
 {
-	return device_t{ id };
+	return detail_::wrap(id);
 }
 
 /**
@@ -691,21 +649,36 @@ inline device_t wrap(id_t id) noexcept
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-inline device_t get(id_t device_id) noexcept
+inline device_t get(id_t id) noexcept
 {
-	return wrap(device_id);
+	ensure_driver_is_initialized(); // The device_t class mostly assumes the driver has been initialized
+	return wrap(id);
 }
+
+/**
+ * A named constructor idiom for a "dummy" CUDA device representing the CPU.
+ *
+ * @note Only use this idiom when comparing the results of functions returning
+ * locations, which can be either a GPU device or the CPU; any other use will likely
+ * result in a runtime error being thrown.
+ */
+inline device_t cpu() { return get(CU_DEVICE_CPU); }
 
 namespace current {
 
 /**
- * Returns the current device in a wrapper which assumes it is indeed
- * current, i.e. which will not set the current device before performing any
- * other actions.
+ * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
  */
-inline device_t get() { return device::wrap(detail_::get_id()); }
+inline device_t get()
+{
+	ensure_driver_is_initialized();
+	return device::get(detail_::get_id());
+}
 
-inline void set(device_t device) { detail_::set(device.id()); }
+/**
+ * Tells the CUDA runtime API to consider the specified device as the current one.
+ */
+inline void set(const device_t& device) { detail_::set(device.id()); }
 
 } // namespace current
 
@@ -739,15 +712,6 @@ inline device_t get(const ::std::string& pci_id_str)
 }
 
 } // namespace device
-
-inline void synchronize(device_t device)
-{
-	auto device_id = device.id();
-	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	auto status = cudaDeviceSynchronize();
-	throw_if_error(status, "Failed synchronizing " + ::std::to_string(device_id));
-}
-
 
 } // namespace cuda
 

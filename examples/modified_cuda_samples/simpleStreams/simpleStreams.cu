@@ -40,18 +40,18 @@ const char *sEventSyncMethod[] =
 	NULL
 };
 
-// System includes
-
 // helper functions and utilities to work with CUDA
 #include "../helper_cuda.hpp"
-
-#include <cuda/runtime_api.hpp>
+#include "../../common.hpp"
 
 #include <cstdlib>
 
 #include <vector>
 #include <iostream>
 #include <algorithm>
+
+using synch_policy_type = cuda::context::host_thread_synch_scheduling_policy_t;
+
 
 
 // Macro to aligned up to the memory size in question
@@ -83,11 +83,11 @@ void printHelp()
 {
 	std::cout
 		<< "Usage: " << sSDKsample << " [options below]\n"
-		<< "\t--sync_method (" << (int) cuda::host_thread_synch_scheduling_policy_t::default_ << ") for CPU thread synchronization with GPU work."
-		<< "\t             Possible values: " << (int) cuda::host_thread_synch_scheduling_policy_t::heuristic << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::spin << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::yield << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::block << ".\n"
+		<< "\t--sync_method (" << (int) synch_policy_type::default_ << ") for CPU thread synchronization with GPU work."
+		<< "\t             Possible values: " << (int) synch_policy_type::heuristic << ", "
+		<< (int) synch_policy_type::spin << ", "
+		<< (int) synch_policy_type::yield << ", "
+		<< (int) synch_policy_type::block << ".\n"
 		<< "\t--use_generic_memory (default) use generic page-aligned host memory allocation\n"
 		<< "\t--use_cuda_malloc_host (optional) use pinned host memory allocation\n";
 }
@@ -103,7 +103,6 @@ int main(int argc, char **argv)
 
 	// allocate generic memory and pin it laster instead of using cudaHostAlloc()
 
-	using synch_policy_type = cuda::host_thread_synch_scheduling_policy_t;
 	auto synch_policy = synch_policy_type::block;
 
 	int niterations;    // number of iterations for the loop inside the kernel
@@ -121,14 +120,14 @@ int main(int argc, char **argv)
 		|| synch_policy_arg == synch_policy_type::block)
 	{
 		synch_policy = (synch_policy_type) synch_policy_arg;
-			std::cout << "Device synchronization method set to = " <<
+			std::cout << "Device synchronization method set to: " <<
 				  (synch_policy_type) synch_policy << "\n";
 		std::cout << "Setting reps to 100 to demonstrate steady state\n";
 		nreps = 100;
 	}
 	else
 	{
-		std::cout << "Invalid command line option sync_method=\"" << synch_policy << "\"\n";
+		std::cout << "Invalid command line option sync_method \"" << synch_policy << "\"\n";
 		return EXIT_FAILURE;
 	}
 
@@ -148,7 +147,7 @@ int main(int argc, char **argv)
 	auto compute_capability = properties.compute_capability();
 
 	if (compute_capability < cuda::device::compute_capability_t({1, 1}) ) {
-		std::cout << properties.name << " does not have Compute Capability 1.1 or newer.  Reducing workload.\n";
+		std::cout << properties.name << " does not have Compute Capability 1.1 or newer. Reducing workload.\n";
 	}
 
 	if (compute_capability.major() >= 2) {
@@ -187,7 +186,7 @@ int main(int argc, char **argv)
 	std::cout << "> array_size   = " << n << "\n\n";
 
 	// enable use of blocking sync, to reduce CPU usage
-	std::cout << "> Using CPU/GPU Device Synchronization method " << synch_policy << "\n";
+	std::cout << "> Using CPU/GPU Device Synchronization method " << synch_policy << std::endl;
 
 	synch_policy_type  policy;
 	switch(synch_policy) {

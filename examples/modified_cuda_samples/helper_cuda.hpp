@@ -88,7 +88,6 @@ inline int get_device_with_highest_gflops()
 	return *iterator;
 }
 
-
 // Initialization code to find the best CUDA Device
 // Unlike in NVIDIA's original helper_cuda.h, this does _not_
 // make the chosen device current.

@@ -10,26 +10,9 @@
  * contact the author.
  */
 
-#include <cuda/runtime_api.hpp>
+#include "../../common.hpp"
 
 #include "ptx.cuh"
-
-#include <iostream>
-#include <memory>
-
-// Note: This will only work correctly for positive values
-template <typename U1, typename U2>
-typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
-{
-	return dividend / divisor + !!(dividend % divisor);
-}
-
-[[noreturn]] void die_(const std::string& message)
-{
-	std::cerr << message << "\n";
-	exit(EXIT_FAILURE);
-}
-
 
 __global__ void sequence_gpu(int *d_ptr, int length)
 {
@@ -48,7 +31,6 @@ void sequence_cpu(int *h_ptr, int length)
 		h_ptr[elemID] = elemID % cuda::warp_size;
 	}
 }
-
 
 int main(int, char **)
 {

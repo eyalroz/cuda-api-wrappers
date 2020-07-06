@@ -10,7 +10,7 @@
 #ifndef CUDA_API_WRAPPERS_CONSTANTS_HPP_
 #define CUDA_API_WRAPPERS_CONSTANTS_HPP_
 
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 namespace cuda {
 
@@ -115,6 +115,16 @@ enum : bool {
 	do_take_ownership = true,
 	do_not_take_ownership = false,
 };
+
+namespace context {
+
+namespace detail_ {
+
+constexpr const CUcontext none { 0 };
+
+} // namespace detail_
+
+} // namespace context
 
 } // namespace cuda
 

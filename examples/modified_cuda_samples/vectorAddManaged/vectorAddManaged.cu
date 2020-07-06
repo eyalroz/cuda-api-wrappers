@@ -13,10 +13,9 @@
  * used instead of regular host and device memory.
  */
 
-#include <cuda/runtime_api.hpp>
+#include <cuda/api.hpp>
 
 #include <iostream>
-#include <memory>
 #include <algorithm>
 
 __global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)

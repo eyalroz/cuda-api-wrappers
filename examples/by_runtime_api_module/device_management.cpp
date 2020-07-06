@@ -41,7 +41,7 @@ void attributes_and_properties()
 {
 	auto device = cuda::device::current::get();
 
-	auto max_registers_per_block = device.get_attribute(cudaDevAttrMaxRegistersPerBlock);
+	auto max_registers_per_block = device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK);
 	std::cout
 	<< "Maximum number of registers per block on this device: "
 	<< max_registers_per_block << "\n";
@@ -55,7 +55,7 @@ void pci_bus_id()
 	auto pci_id = device.pci_id();
 	std::string pci_id_str(pci_id);
 
-	cuda::outstanding_error::ensure_none(cuda::do_clear_errors);
+	cuda::outstanding_error::ensure_none();
 
 	auto re_obtained_device = cuda::device::get(pci_id_str);
 	assert_(re_obtained_device == device);
@@ -67,20 +67,18 @@ void global_memory()
 	auto device = cuda::device::current::get();
 
 	auto device_global_mem = device.memory();
-
-	assert_(device_global_mem.associated_device() == device);
-
-    if (device.id() != device.memory().associated_device().id()) {
-        die_("The device's reported ID and the device's memory object's reported device ID differ: "
-        + std::to_string(device.id()) + " !=" +  std::to_string(device.memory().associated_device().id()));
-    }
-
 	auto total_memory = device_global_mem.amount_total();
 	auto free_memory = device_global_mem.amount_total();
 
-	std::cout
-	    << "Device " << std::to_string(device.id()) << " reports it has:\n"
-	    << free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
+	std::cout 
+		<< "Device " << std::to_string(device.id()) << " reports it has "
+		<< free_memory << " bytes free out of " << total_memory << " bytes total global memory "
+		<< "(" << (total_memory - free_memory) << " bytes used).\n";
+
+    if (device != device.memory().associated_device()) {
+        die_("The device's reported ID and the device's memory object's reported devices differ: "
+        + std::to_string(device.id()) + " !=" +  std::to_string(device.memory().associated_device().id()));
+    }
 
 	assert_(free_memory <= total_memory);
 }
@@ -91,9 +89,13 @@ void global_memory()
 void shared_memory()
 {
 	auto device = cuda::device::current::get();
+//	auto primary_context = device.primary_context();
+//	report_context_stack("After getting the current device (which is " + std::to_string(device.id()) + ')');
 
 	auto reported_cache_preference = device.cache_preference();
 	std::cout << "The cache preference for device " << device.id() << " is: \""	<<  reported_cache_preference << "\".\n";
+
+//	report_context_stack("After getting the cache preference for device " + std::to_string(device.id()));
 
 	auto applied_cache_preference =
 		reported_cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
@@ -101,6 +103,7 @@ void shared_memory()
 		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
 	device.set_cache_preference(applied_cache_preference);
 
+//	report_context_stack("After setting cache pref");
 	reported_cache_preference = device.cache_preference();
 	if (reported_cache_preference != applied_cache_preference) {
 		std::cerr << "After setting cache preference to \""
@@ -119,8 +122,8 @@ void shared_memory()
 	std::cout << "The reported shared memory bank size for device " << device.id() << " is: "
 			  << bank_size_names[reported_shared_mem_bank_size] << '.' << std::endl;
 	auto applied_shared_mem_bank_size =
-		(reported_shared_mem_bank_size == cudaSharedMemBankSizeFourByte) ?
-		    cudaSharedMemBankSizeEightByte : cudaSharedMemBankSizeFourByte;
+		(reported_shared_mem_bank_size == CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE) ?
+		CU_SHARED_MEM_CONFIG_EIGHT_BYTE_BANK_SIZE : CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE;
 	device.set_shared_memory_bank_size(applied_shared_mem_bank_size);
 
 	// We can't reliably check the bank size setting succeeded, since some devices, which
@@ -155,12 +158,12 @@ void limits()
 {
 	auto device = cuda::device::current::get();
 
-	auto printf_fifo_size = device.get_limit(cudaLimitPrintfFifoSize);
+	auto printf_fifo_size = device.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	std::cout << "The printf FIFO size for device " << device.id() << " is " << printf_fifo_size << ".\n";
 	decltype(printf_fifo_size) new_printf_fifo_size =
 		(printf_fifo_size <= 1024) ?  2 * printf_fifo_size : printf_fifo_size - 512;
-	device.set_limit(cudaLimitPrintfFifoSize, new_printf_fifo_size);
-	printf_fifo_size = device.get_limit(cudaLimitPrintfFifoSize);
+	device.set_limit(CU_LIMIT_PRINTF_FIFO_SIZE, new_printf_fifo_size);
+	printf_fifo_size = device.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	assert_(printf_fifo_size == new_printf_fifo_size);
 }
 
@@ -187,7 +190,7 @@ void peer_to_peer(std::pair<cuda::device::id_t,cuda::device::id_t> peer_ids)
 	auto peer = cuda::device::get(peer_ids.second);
 	if (device.can_access(peer)) {
 		auto atomics_supported_over_link = cuda::device::peer_to_peer::get_attribute(
-			cudaDevP2PAttrNativeAtomicSupported, device, peer);
+			cuda::device::peer_to_peer::native_atomics_support, device, peer);
 		std::cout
 		<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 		<< "supported over the link from device " << device.id()
@@ -225,7 +228,9 @@ void current_device_manipulation()
 		(void) e; // This avoids a spurious warning in MSVC 16.11
 		assert_(e.code() == cuda::status::invalid_device);
 		// We expected to get this exception, just clear it
-		cuda::outstanding_error::clear();
+		cuda::outstanding_error::ensure_none(
+			"The attempt to set the current device to an invalid value should not "
+			"create an outstanding error");
 	}
 
 	// Iterate over all devices

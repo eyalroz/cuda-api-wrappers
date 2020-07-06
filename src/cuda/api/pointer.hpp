@@ -18,9 +18,10 @@
 
 #include <cuda/api/constants.hpp>
 #include <cuda/api/error.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cuda_runtime_api.h>
+#include <cuda.h>
 
 #ifndef NDEBUG
 #include <cassert>
@@ -30,6 +31,7 @@ namespace cuda {
 
 ///@cond
 class device_t;
+class context_t;
 ///@endcond
 
 namespace memory {
@@ -38,56 +40,73 @@ namespace memory {
 /**
  * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
  */
-enum type_t : ::std::underlying_type<cudaMemoryType>::type {
-    host_memory         = cudaMemoryTypeHost,
-    device_memory       = cudaMemoryTypeDevice,
+enum type_t : ::std::underlying_type<CUmemorytype>::type {
+    host_         = CU_MEMORYTYPE_HOST,
+    device_       = CU_MEMORYTYPE_DEVICE,
+	array         = CU_MEMORYTYPE_ARRAY,
+    unified_      = CU_MEMORYTYPE_UNIFIED,
+	managed_      = CU_MEMORYTYPE_UNIFIED, // an alias (more like the runtime API name)
 #if CUDART_VERSION >= 10000
-    unregistered_memory = cudaMemoryTypeUnregistered,
-    managed_memory      = cudaMemoryTypeManaged,
+	// TODO: Why doesn't the driver API have this?
+    // unregistered_ = cudaMemoryTypeUnregistered,
 #else
-    unregistered_memory,
-    managed_memory,
+    unregistered_
 #endif // CUDART_VERSION >= 10000
 };
 
+#if CUDA_VERSION >= 11020
+namespace pool {
+/**
+ * @note Unsupported for now
+ */
+using handle_t = CUmemoryPool;
+} // namespace pool
+#endif // CUDA_VERSION >= 11020
 
 namespace pointer {
 
-/**
- * Holds various CUDA-related attributes of a pointer.
- */
-struct attributes_t : cudaPointerAttributes {
+namespace detail_ {
 
-	/**
-	 * @brief indicates a choice memory space, management and access type -
-	 * from among the options in @ref type_t .
-	 *
-	 * @return A value whose semantics are those introduced in CUDA 10.0,
-	 * rather than those of CUDA 9 and earlier, where `type_t::device`
-	 * actually signifies either device-only or `type_t::managed`.
-	 */
-	type_t memory_type() const
-	{
-	    // TODO: For some strange reason, g++ 6.x claims that converting
-	    // to the underlying type is a "narrowing conversion", and doesn't
-		// like some other conversions I've tried - so let's cast
-		// more violently instead
-		// Note: In CUDA v10.0, the semantics changed to what we're supporting
+// Note: We could theoretically template this, but - there don't seem to be a lot of "clients" for this
+// function right now, and I would rather not drag in <tuple>
+void get_attributes(unsigned num_attributes, pointer::attribute_t* attributes, void** value_ptrs, const void* ptr);
 
-#if CUDART_VERSION >= 10000
-	    return (type_t)cudaPointerAttributes::type;
-#else // CUDART_VERSION < 10000
-		using utype = typename ::std::underlying_type<cudaMemoryType>::type;
-		if ( ((utype) memoryType == utype {type_t::device_memory}) and cudaPointerAttributes::isManaged) 
-		{
-			return type_t::managed_memory;
-		}
-	    return (type_t)(memoryType);
-#endif // CUDART_VERSION >= 10000
-	}
-};
+template <attribute_t attribute> struct attribute_value {};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_CONTEXT>                    { using type = context::handle_t;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>                { using type = memory::type_t;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>             { using type = void*;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_HOST_POINTER>               { using type = void*;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_P2P_TOKENS>                 { using type = struct CUDA_POINTER_ATTRIBUTE_P2P_TOKEN;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_SYNC_MEMOPS>                { using type = int;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_BUFFER_ID>                  { using type = unsigned long long;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_IS_MANAGED>                 { using type = int;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>             { using type = cuda::device::id_t;};
+#if CUDA_VERSION >= 10020
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>           { using type = void*;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_RANGE_SIZE>                 { using type = size_t;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MAPPED>                     { using type = int;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_IS_LEGACY_CUDA_IPC_CAPABLE> { using type = int;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES>       { using type = uint64_t;};
+#if CUDA_VERSION >= 11030
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>             { using type = pool::handle_t;};
+#endif // CUDA_VERSION >= 11030
+#endif // CUDA_VERSION >= 10020
+
+template <CUpointer_attribute attribute>
+using attribute_value_type_t = typename attribute_value<attribute>::type;
+
+template <attribute_t attribute>
+attribute_value_type_t<attribute> get_attribute(const void* ptr);
+
+} // namespace detail_
 
 } // namespace pointer
+
+inline memory::type_t type_of(const void* ptr)
+{
+	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
+}
+
 
 /**
  * A convenience wrapper around a raw pointer "known" to the CUDA runtime
@@ -105,47 +124,72 @@ public: // getters and operators
 	T* get() const { return ptr_; }
 	operator T*() const { return ptr_; }
 
-public: // other non-mutators
-	pointer::attributes_t attributes() const
+protected:
+	template <pointer::attribute_t attribute>
+	pointer::detail_::attribute_value_type_t<attribute> get_attribute() const
 	{
-		pointer::attributes_t the_attributes;
-		auto status = cudaPointerGetAttributes (&the_attributes, ptr_);
-		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail_::ptr_as_hex(ptr_));
-		return the_attributes;
+		return pointer::detail_::get_attribute<attribute>(ptr_);
 	}
-	device_t device() const noexcept;
+
+public: // other non-mutators
+
+	/**
+	 * Returns a proxy for the device into whose global memory the pointer points.
+	 */
+	device_t device() const;
+
+	/**
+	 * Returns a proxy for the context in which the memory area, into which the pointer
+	 * points, was allocated.
+	 */
+	context_t context() const;
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
 	 * CUDA ensures that, for pointers to memory not accessible on the CUDA device, `nullptr`
 	 * is returned.
+	 *
+	 * @note With unified memory, this will typically return the same value as the original pointer.
 	 */
-	T* get_for_device() const { return attributes().devicePointer; }
+	T* get_for_device() const
+	{
+		return (T*) pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(ptr_);
+	}
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
 	 * CUDA ensures that, for pointers to memory not accessible on the CUDA device, `nullptr`
 	 * is returned.
+	 *
+	 * @note With unified memory, this will typically return the same value as the original pointer.
 	 */
-	T* get_for_host() const { return attributes().hostPointer; }
+	T* get_for_host() const
+	{
+		return (T*) pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_HOST_POINTER>(ptr_);
+	}
+
+#if CUDA_VERSION >= 10020
+	region_t containing_range() const
+	{
+		// TODO: Consider checking the alignment
+		auto range_start = pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>(ptr_);
+		auto range_size = pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_SIZE>(ptr_);
+		return { range_start, range_size};
+	}
+#endif
 
 	/**
 	 * @returns For a mapped-memory pointer, returns the other side of the mapping,
 	 * i.e. if this is the device pointer, returns the host pointer, otherwise
-	 * returns the device pointer. For a managed-memory pointer, returns the
-	 * single pointer usable on both device and host. In other cases returns `nullptr`.
+	 * returns the device pointer. For a managed-memory pointer, or in a unified setting,
+	 * returns the single pointer usable on both device and host. In other cases
+	 * returns `nullptr`.
 	 *
 	 * @note this relies on either the device and host pointers being `nullptr` in
 	 * the case of a non-mapped pointer; and on the device and host pointers being
 	 * identical to ptr_ for managed-memory pointers.
 	 */
-	pointer_t other_side_of_region_pair() const {
-	    auto attrs = attributes();
-#ifndef NDEBUG
-	    assert(attrs.devicePointer == ptr_ or attrs.hostPointer == ptr_);
-#endif
-	    return pointer_t { ptr_ == attrs.devicePointer ? attrs.hostPointer : ptr_ };
-	}
+	pointer_t other_side_of_region_pair() const;
 
 public: // constructors
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }
@@ -165,7 +209,7 @@ namespace pointer {
  * to be wrapped.
  */
 template<typename T>
-inline pointer_t<T> wrap(T* ptr) noexcept { return pointer_t<T>(ptr); }
+inline pointer_t<T> wrap(T* ptr) noexcept { return { ptr }; }
 
 } // namespace pointer
 } // namespace memory
