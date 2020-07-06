@@ -5,6 +5,14 @@
 
  * This is a common file for all definitions of fundamental CUDA-related types,
  * some shared by different APIs.
+ *
+ * @note Most types here are defined using "Runtime API terminology", but this is
+ * inconsequential, as the corresponding Driver API types are merely aliases of
+ * them. For example, in CUDA's own header files, we have:
+ *
+ *   typedef CUevent_st * CUevent
+ *   typedef CUevent_st * cudaEvent_t
+ *
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
@@ -14,12 +22,12 @@ static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be 
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
-#include <driver_types.h>
 #endif
 
 #include <type_traits>
 #include <cassert>
 #include <cstddef> // for std::size_t
+#include <cstdint>
 
 #ifndef __CUDACC__
 #ifndef __device__
@@ -69,12 +77,19 @@ namespace cuda {
  * or the overall status of the Runtime API (which is typically the last triggered
  * error).
  */
-using status_t                = cudaError_t;
+using status_t = cudaError_t;
 
+using size_t = std::size_t;
+
+/**
+ * The index or number of dimensions of an entity (as opposed to the extent in any
+ * dimension) - typically just 0, 1, 2 or 3.
+ */
+using dimensionality_t = unsigned;
 
 namespace array {
 
-using dimension_t = std::size_t;
+using dimension_t = size_t;
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
  * or extents, are not the same as @ref cuda::grid::dimensions_t ; they may be
@@ -83,7 +98,7 @@ using dimension_t = std::size_t;
  * @note See also <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html">
  * the description of `struct cudaExtent`</a> in the CUDA Runtime API documentation.
  */
-template<std::size_t NumDimensions>
+template<dimensionality_t NumDimensions>
 struct dimensions_t;
 
 /**
@@ -123,9 +138,9 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 			// 2. It doesn't do anything except construct the plain struct - as of CUDA 10 at least
 	}
 
-	constexpr __host__ __device__ std::size_t volume() const { return width * height * depth; }
-	constexpr __host__ __device__ std::size_t size() const { return volume(); }
-	constexpr __host__ __device__ unsigned char dimensionality() const
+	constexpr __host__ __device__ size_t volume() const { return width * height * depth; }
+	constexpr __host__ __device__ size_t size() const { return volume(); }
+	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((width > 1) + (height> 1) + (depth > 1));
 	}
@@ -162,9 +177,9 @@ struct dimensions_t<2>
 		return *this;
 	}
 
-	constexpr __host__ __device__ std::size_t area() const { return width * height; }
-	constexpr __host__ __device__ std::size_t size() const { return area(); }
-	constexpr __host__ __device__ unsigned char dimensionality() const
+	constexpr __host__ __device__ size_t area() const { return width * height; }
+	constexpr __host__ __device__ size_t size() const { return area(); }
+	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((width > 1) + (height> 1));
 	}
@@ -269,8 +284,8 @@ struct dimensions_t // this almost-inherits dim3
 	// as constexpr, so it isn't
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    constexpr __host__ __device__ std::size_t volume() const { return (std::size_t) x * y * z; }
-    constexpr __host__ __device__ unsigned char dimensionality() const
+    constexpr __host__ __device__ size_t volume() const { return (size_t) x * y * z; }
+    constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1));
 	}

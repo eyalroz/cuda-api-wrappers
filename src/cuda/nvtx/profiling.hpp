@@ -26,15 +26,16 @@ namespace profiling {
  * profiling information.
  */
 struct color_t {
-	using underlying_type = uint32_t;
-	unsigned char alpha, red, green, blue;
+	using underlying_type = std::uint32_t;
+	using channel_value = std::uint8_t;
+	channel_value alpha, red, green, blue;
 
 	static constexpr color_t from_hex(underlying_type raw_argb) noexcept {
 		return {
-			(unsigned char) ((raw_argb >> 24) & 0xFF),
-			(unsigned char) ((raw_argb >> 16) & 0xFF),
-			(unsigned char) ((raw_argb >>  8) & 0xFF),
-			(unsigned char) ((raw_argb >>  0) & 0xFF),
+			(channel_value) ((raw_argb >> 24) & 0xFF),
+			(channel_value) ((raw_argb >> 16) & 0xFF),
+			(channel_value) ((raw_argb >>  8) & 0xFF),
+			(channel_value) ((raw_argb >>  0) & 0xFF),
 		};
 	}
 	operator underlying_type() const noexcept { return as_hex(); }
@@ -71,7 +72,7 @@ enum class type_t { unspecified, kernel, pci_express_transfer	};
  * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
  * and can leave them within the implementation only.
  */
-using handle_t = uint64_t;
+using handle_t = std::uint64_t;
 
 } // namespace range
 
@@ -156,7 +157,7 @@ namespace naming {
  * @param[in] name The string identifier to use for the specified thread
  */
 template <typename CharT>
-void name_host_thread(uint32_t thread_id, const std::basic_string<CharT>& name);
+void name_host_thread(std::uint32_t thread_id, const std::basic_string<CharT>& name);
 
 #if defined(__unix__) || defined(_WIN32)
 template <typename CharT>
