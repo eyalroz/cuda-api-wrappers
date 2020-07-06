@@ -9,15 +9,15 @@
 #ifndef CUDA_API_WRAPPERS_EVENT_HPP_
 #define CUDA_API_WRAPPERS_EVENT_HPP_
 
-#include <cuda/api/constants.hpp>
-#include <cuda/api/current_device.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/ipc.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <chrono> // for duration types
+#include <cuda/api/constants.hpp>
+#include <cuda/api/current_device.hpp>
+#include <cuda/api/error.hpp>
+#include <cuda/api/ipc.hpp>
 
 namespace cuda {
 
@@ -38,18 +38,18 @@ namespace detail_ {
  * @param event_handle Event to be made to occur on stream @ref stream_handle
  */
 inline void enqueue(stream::handle_t stream_handle, handle_t event_handle) {
-	auto status = cudaEventRecord(event_handle, stream_handle);
+	auto status = cuEventRecord(event_handle, stream_handle);
 	cuda::throw_if_error(status,
-		"Failed recording event " + event::detail_::identify(event_handle)
+		"Failed recording " + event::detail_::identify(event_handle)
 		+ " on " + stream::detail_::identify(stream_handle));
 }
 
 constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
 {
 	return
-		  ( uses_blocking_sync  ? cudaEventBlockingSync : 0  )
-		| ( records_timing      ? 0 : cudaEventDisableTiming )
-		| ( interprocess        ? cudaEventInterprocess : 0  );
+		  ( uses_blocking_sync  ? CU_EVENT_BLOCKING_SYNC : 0  )
+		| ( records_timing      ? 0 : CU_EVENT_DISABLE_TIMING )
+		| ( interprocess        ? CU_EVENT_INTERPROCESS : 0  );
 }
 
 } // namespace detail_
@@ -63,30 +63,35 @@ class event_t;
 namespace event {
 
 /**
- * Obtain a proxy object for an already-existing CUDA event
+ * @brief Wrap an existing CUDA event in a @ref event_t instance.
  *
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new event is _not_ created.
  *
- * @param device_id Device to which the event is related
- * @param event_handle of the event for which to obtain a proxy
- * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
- * the event when it destructs (making an "owning" event wrapper; otherwise, it is
- * assume that some other code "owns" the event and will destroy it when necessary
- * (and not while the wrapper is being used!)
+ * @param context_handle Handle of the context in which this event was created
+ * @param event_handle handle of the pre-existing event
+ * @param take_ownership When set to `false`, the CUDA event
+ * will not be destroyed along with proxy; use this setting
+ * when temporarily working with a stream existing irrespective of
+ * the current context and outlasting it. When set to `true`,
+ * the proxy class will act as it does usually, destroying the event
+ * when being destructed itself.
  * @return an event wrapper associated with the specified event
  */
 event_t wrap(
-	device::id_t  device_id,
-	handle_t      event_handle,
-	bool          take_ownership = false) noexcept;
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	handle_t           event_handle,
+	bool               take_ownership = false) noexcept;
+
+::std::string identify(const event_t& event);
 
 } // namespace event
 
 inline void synchronize(const event_t& event);
 
 /**
- * @brief Proxy class for a CUDA event
+ * @brief Wrapper class for a CUDA event
  *
  * Use this class - built around an event handle - to perform almost, if not all,
  * event-related operations the CUDA Runtime API is capable of.
@@ -98,31 +103,31 @@ inline void synchronize(const event_t& event);
  *
  * @note this is one of the three main classes in the Runtime API wrapper library,
  * together with @ref cuda::device_t and @ref cuda::stream_t
+ * @note This class is a "reference type", not a "value type". Therefore, making changes
+ * to the event is a const-respecting operation on this class.
  */
 class event_t {
+
 public: // data member non-mutator getters
-	/**
-	 * The CUDA handle this object is wrapping
-	 */
-	event::handle_t  handle() const noexcept{ return handle_; }
+	/// The raw CUDA ID for the device w.r.t. which the event is defined
+	device::id_t      device_id()       const noexcept { return device_id_; };
 
-	/**
-	 * ID of the device with which this event is associated (and on whose
-	 * streams this event can be enqueued)
-	 */
-	device::id_t device_id() const noexcept { return device_id_; }
+	/// The raw CUDA handle for the context in which the represented stream is defined.
+	context::handle_t context_handle()  const noexcept { return context_handle_; }
 
-	/**
-	 * The device with which this event is associated (i.e. on whose stream
-	 * this event can be enqueued)
-	 */
-	device_t device() const noexcept;
+	/// The raw CUDA handle for this event
+	event::handle_t   handle()          const noexcept { return handle_; }
 
-	/**
-	 * Is this wrapper responsible for having the CUDA Runtime API destroy
-	 * the event when it destructs?
-	 */
-	bool is_owning() const noexcept { return owning; }
+	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
+	bool              is_owning()       const noexcept { return owning; }
+
+	/// The device w.r.t. which the event is defined
+	device_t          device()          const;
+
+	/// The context in which this stream was defined.
+	context_t         context()         const;
+
+
 
 public: // other non-mutator methods
 
@@ -139,11 +144,11 @@ public: // other non-mutator methods
 	 */
 	bool has_occurred() const
 	{
-		auto status = cudaEventQuery(handle_);
+		auto status = cuEventQuery(handle_);
 		if (status == cuda::status::success) return true;
 		if (status == cuda::status::not_ready) return false;
 		throw cuda::runtime_error(status,
-			"Could not determine whether " + event::detail_::identify(handle_, device_id_)
+			"Could not determine whether " + event::detail_::identify(handle_)
 			+ "has already occurred or not.");
 	}
 
@@ -156,14 +161,13 @@ public: // other non-mutator methods
 
 public: // other mutator methods
 
-
 	/**
 	 * Schedule a specified event to occur (= to fire) when all activities
 	 * already scheduled on the event's device's default stream have concluded.
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record()
+	void record() const
 	{
 		event::detail_::enqueue(stream::default_stream_handle, handle_);
 	}
@@ -174,7 +178,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record(const stream_t& stream);
+	void record(const stream_t& stream) const;
 
 	/**
 	 * Records the event and ensures it has occurred before returning
@@ -182,39 +186,43 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void fire(const stream_t& stream);
+	void fire(const stream_t& stream) const;
 
 	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and
 	 * return only after this event has occurred (see @ref has_occurred() ).
 	 */
-	void synchronize()
+	void synchronize() const
 	{
 		return cuda::synchronize(*this);
 	}
 
 protected: // constructors
 
-	event_t(device::id_t device_id, event::handle_t event_handle, bool take_ownership) noexcept
-	: device_id_(device_id), handle_(event_handle), owning(take_ownership) { }
+	event_t(device::id_t device_id, context::handle_t context_handle, event::handle_t event_handle, bool take_ownership) noexcept
+	: device_id_(device_id), context_handle_(context_handle), handle_(event_handle), owning(take_ownership) { }
 
 public: // friendship
 
-	friend event_t event::wrap(device::id_t device_id, event::handle_t event_handle, bool take_ownership) noexcept;
+	friend event_t event::wrap(device::id_t, context::handle_t context_handle, event::handle_t event_handle, bool take_ownership) noexcept;
 
 public: // constructors and destructor
 
-	event_t(const event_t& other) noexcept : event_t(other.device_id_, other.handle_, false) { }
+	event_t(const event_t& other) noexcept : event_t(other.device_id_, other.context_handle_, other.handle_, false) { }
 
 	event_t(event_t&& other) noexcept :
-		event_t(other.device_id_, other.handle_, other.owning)
+		event_t(other.device_id_, other.context_handle_, other.handle_, other.owning)
 	{
 		other.owning = false;
 	};
 
 	~event_t()
 	{
-		if (owning) { cudaEventDestroy(handle_); }
+		if (owning) {
+			cuEventDestroy(handle_);
+				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// because the context cannot possibly exist after this call.
+		}
 	}
 
 public: // operators
@@ -223,9 +231,10 @@ public: // operators
 	event_t& operator=(event_t&& other) = delete;
 
 protected: // data members
-	const device::id_t  device_id_;
-	const event::handle_t   handle_;
-	bool                owning;
+	const device::id_t       device_id_;
+	const context::handle_t  context_handle_;
+	const event::handle_t    handle_;
+	bool                     owning;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
 };
@@ -251,37 +260,45 @@ using duration_t = ::std::chrono::duration<float, ::std::milli>;
 inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 {
 	float elapsed_milliseconds;
-	auto status = cudaEventElapsedTime(&elapsed_milliseconds, start.handle(), end.handle());
+	auto status = cuEventElapsedTime(&elapsed_milliseconds, start.handle(), end.handle());
 	cuda::throw_if_error(status, "determining the time elapsed between events");
 	return duration_t { elapsed_milliseconds };
 }
 
 inline event_t wrap(
-	device::id_t  device_id,
-	handle_t      event_handle,
-	bool          take_ownership) noexcept
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	handle_t           event_handle,
+	bool               take_ownership) noexcept
 {
-	return event_t(device_id, event_handle, take_ownership);
+	return { device_id, context_handle, event_handle, take_ownership };
 }
 
 namespace detail_ {
 
+inline ::std::string identify(const event_t& event)
+{
+	return identify(event.handle(), event.context_handle(), event.device_id());
+}
+
 // Note: For now, event_t's need their device's ID - even if it's the current device;
 // that explains the requirement in this function's interface
-inline event_t create_on_current_device(
-	device::id_t  current_device_id,
-	bool          uses_blocking_sync,
-	bool          records_timing,
-	bool          interprocess)
+inline event_t create_in_current_context(
+	device::id_t       current_device_id,
+	context::handle_t  current_context_handle,
+	bool               uses_blocking_sync,
+	bool               records_timing,
+	bool               interprocess)
 {
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
 	cuda::event::handle_t new_event_handle;
-	auto status = cudaEventCreateWithFlags(&new_event_handle, flags);
+	auto status = cuEventCreate(&new_event_handle, flags);
 	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
 	// Note: We're trusting CUDA to actually have succeeded if it reports success,
 	// so we're not checking the newly-created event handle - which is really just
 	// a pointer - for nullness
-	return wrap(current_device_id, new_event_handle, do_take_ownership);
+	bool take_ownership = true;
+	return wrap(current_device_id, current_context_handle, new_event_handle, take_ownership);
 }
 
 /**
@@ -289,14 +306,14 @@ inline event_t create_on_current_device(
  */
 
 inline event_t create(
-	device::id_t  device_id,
-	bool          uses_blocking_sync,
-	bool          records_timing,
-	bool          interprocess)
+	device::id_t       device_id,
+	context::handle_t  context_handle,
+	bool               uses_blocking_sync,
+	bool               records_timing,
+	bool               interprocess)
 {
-	device::current::detail_::scoped_override_t
-		set_device_for_this_scope(device_id);
-	return detail_::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	return detail_::create_in_current_context(device_id, context_handle, uses_blocking_sync, records_timing, interprocess);
 }
 
 } // namespace detail_
@@ -313,10 +330,10 @@ inline event_t create(
  * @note Creating an event
  */
 inline event_t create(
-	device_t  device,
-	bool      uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool      records_timing     = do_record_timings,
-	bool      interprocess       = not_interprocess);
+	device_t&  device,
+	bool       uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool       records_timing     = do_record_timings,
+	bool       interprocess       = not_interprocess);
 
 } // namespace event
 
@@ -325,18 +342,18 @@ inline event_t create(
  * to the calling code.
  *
  * @todo Determine how this waiting takes place (as opposed to stream
- * synchrnoization).
+ * synchronization).
  *
  * @param event the event for whose occurrence to wait; must be scheduled
  * to occur on some stream (possibly the different stream)
  */
 inline void synchronize(const event_t& event)
 {
-	auto device_id = event.device_id();
+	auto context_handle = event.context_handle();
 	auto event_handle = event.handle();
-	device::current::detail_::scoped_override_t device_for_this_scope(device_id);
-	auto status = cudaEventSynchronize(event_handle);
-	throw_if_error(status, "Failed synchronizing " + event::detail_::identify(event_handle, device_id));
+	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
+	auto status = cuEventSynchronize(event_handle);
+	throw_if_error(status, "Failed synchronizing " + event::detail_::identify(event));
 }
 
 } // namespace cuda

@@ -11,7 +11,7 @@
 
 #include "../helper_string.h"
 
-#include <cuda/runtime_api.hpp>
+#include <cuda/api.hpp>
 
 #include <stdio.h>
 #include <assert.h>
@@ -38,8 +38,8 @@ typedef struct ipcCUDA_st
 {
 	int device;
 	pid_t pid;
-	cudaIpcEventHandle_t eventHandle;
-	cudaIpcMemHandle_t memHandle;
+	cuda::event::ipc::handle_t eventHandle;
+	cuda::memory::ipc::handle_t memHandle;
 } ipcCUDA_t;
 
 typedef struct ipcDevices_st
@@ -187,7 +187,8 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		h_refData[i] = rand();
 	}
 
-	auto device = cuda::device::get(s_mem[index].device).make_current();
+	auto device = cuda::device::get(s_mem[index].device);
+	cuda::device::current::set(device);
 
 	if (index == 0)
 	{

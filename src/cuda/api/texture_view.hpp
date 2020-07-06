@@ -19,7 +19,7 @@ class texture_view;
 
 namespace texture {
 
-using raw_handle_t = cudaTextureObject_t;
+using raw_handle_t = CUtexObject;
 
 /**
  * A simplifying rudimentary wrapper wrapper for the CUDA runtime API's internal
@@ -29,16 +29,17 @@ using raw_handle_t = cudaTextureObject_t;
  * @todo Could be expanded into a richer wrapper class allowing actual settings
  * of the various fields.
  */
-struct descriptor_t : public cudaTextureDesc {
+struct descriptor_t : public CUDA_TEXTURE_DESC {
 	inline descriptor_t()
 	{
-		memset(static_cast<cudaTextureDesc*>(this), 0, sizeof(cudaTextureDesc));
-		this->addressMode[0] = cudaAddressModeBorder;
-		this->addressMode[1] = cudaAddressModeBorder;
-		this->addressMode[2] = cudaAddressModeBorder;
-		this->filterMode = cudaFilterModePoint;
-		this->readMode = cudaReadModeElementType;
-		this->normalizedCoords = 0;
+		using parent = CUDA_TEXTURE_DESC;
+		memset(static_cast<parent*>(this), 0, sizeof(parent));
+		// Note: This should set the fields directly listed in the CUDA Runtime API
+		// version of this structure to 0.
+		this->addressMode[0] = CU_TR_ADDRESS_MODE_BORDER;
+		this->addressMode[1] = CU_TR_ADDRESS_MODE_BORDER;
+		this->addressMode[2] = CU_TR_ADDRESS_MODE_BORDER;
+		this->filterMode = CU_TR_FILTER_MODE_POINT;
 	}
 };
 
@@ -48,7 +49,8 @@ struct descriptor_t : public cudaTextureDesc {
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new texture view is _not_ created.
  *
- * @param device_id Device on which the texture is located
+ * @param id device on which the texture is located
+ * @param context_handle handle of the context in which the texture_view was created
  * @param handle raw CUDA API handle for the texture view
  * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
  * the texture view when it destructs (making an "owning" texture view wrapper;
@@ -56,7 +58,10 @@ struct descriptor_t : public cudaTextureDesc {
  * destroy it when necessary (and not while the wrapper is being used!)
  * @return a  wrapper object associated with the specified texture view
  */
- inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept;
+inline texture_view wrap(
+	context::handle_t      context_handle_,
+	texture::raw_handle_t  handle,
+	bool                   take_ownership) noexcept;
 
 }  // namespace texture
 
@@ -80,20 +85,18 @@ struct descriptor_t : public cudaTextureDesc {
  */
 class texture_view {
 	using raw_handle_type = texture::raw_handle_t;
+	using scoped_context_setter = cuda::context::current::detail_::scoped_override_t;
 
 public:
 	bool is_owning() const noexcept { return owning; }
-    raw_handle_type raw_handle() const noexcept { return raw_handle_; }
-    device_t associated_device() const noexcept;
+	raw_handle_type raw_handle() const noexcept { return raw_view_handle; }
 
 public: // constructors and destructors
 
 	texture_view(const texture_view& other) = delete;
 
 	texture_view(texture_view&& other) noexcept :
-		device_id_(other.device_id_),
-		raw_handle_(other.raw_handle_),
-		owning(other.raw_handle_)
+		raw_view_handle(other.raw_view_handle), owning(other.raw_view_handle)
 	{
 		other.owning = false;
 	};
@@ -102,14 +105,26 @@ public: // constructors and destructors
 	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
 		const cuda::array_t<T, NumDimensions>& arr,
-		texture::descriptor_t descriptor = texture::descriptor_t());
+		texture::descriptor_t descriptor = texture::descriptor_t()) :
+		context_handle_(arr.context_handle()), owning(true)
+	{
+		scoped_context_setter set_context(context_handle_);
+		CUDA_RESOURCE_DESC resource_descriptor;
+		memset(&resource_descriptor, 0, sizeof(resource_descriptor));
+		resource_descriptor.resType = CU_RESOURCE_TYPE_ARRAY;
+		resource_descriptor.res.array.hArray = arr.get();
+
+		auto status = cuTexObjectCreate(&raw_view_handle, &resource_descriptor, &descriptor, nullptr);
+		throw_if_error(status, "failed creating a CUDA texture object");
+    }
 
 public: // operators
 
 	~texture_view()
 	{
 		if (owning) {
-			auto status = cudaDestroyTextureObject(raw_handle_);
+			scoped_context_setter set_context(context_handle_);
+			auto status = cuTexObjectDestroy(raw_view_handle);
 			throw_if_error(status, "failed destroying texture object");
 		}
 	}
@@ -120,16 +135,21 @@ public: // operators
 protected: // constructor
 
 	// Usable by the wrap function
-	texture_view(device::id_t device_id, raw_handle_type handle , bool take_ownership) noexcept
-	:   device_id_(device_id), raw_handle_(handle), owning(take_ownership) { }
+	texture_view(context::handle_t context_handle, raw_handle_type handle , bool take_ownership) noexcept
+		: context_handle_(context_handle), raw_view_handle(handle), owning(take_ownership) { }
+
+public: // non-mutating getters
+
+	context_t context() const;
+	device_t device() const;
 
 public: // friendship
 
-	friend texture_view texture::wrap(device::id_t, raw_handle_type, bool) noexcept;
+	friend texture_view texture::wrap(context::handle_t, raw_handle_type, bool) noexcept;
 
 protected:
-    device::id_t device_id_;
-	raw_handle_type raw_handle_ { } ;
+	context::handle_t context_handle_ { } ;
+	raw_handle_type raw_view_handle { } ;
 	bool owning;
 };
 
@@ -141,18 +161,21 @@ inline bool operator==(const texture_view& lhs, const texture_view& rhs) noexcep
 
 inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcept
 {
-	return not (lhs.raw_handle() == rhs.raw_handle());
+	return lhs.raw_handle() != rhs.raw_handle();
 }
 
 namespace texture {
 
-inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept
+inline texture_view wrap(
+	context::handle_t      context_handle_,
+	texture::raw_handle_t  handle,
+	bool                   take_ownership) noexcept
 {
-	return texture_view { device_id, handle, take_ownership };
+	return { context_handle_, handle, take_ownership };
 }
 
 } // namespace texture
 
-}  // namespace cuda
+} // namespace cuda
 
 #endif  // CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP

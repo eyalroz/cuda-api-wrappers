@@ -63,21 +63,21 @@ jobs:
           gcc: 9 # may fail with gcc-10 due to an internal compiler error
           shell: "bash"
           cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.2"
-          gcc: 8
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.1"
-          gcc: 8
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.0"
-          gcc: 7 # fails with GCC 8 - no supported in CUDA 10.0
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
+#        - os: ubuntu-18.04
+#          cuda: "10.2"
+#          gcc: 8
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
+#        - os: ubuntu-18.04
+#          cuda: "10.1"
+#          gcc: 8
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
+#        - os: ubuntu-18.04
+#          cuda: "10.0"
+#          gcc: 7 # fails with GCC 8 - no supported in CUDA 10.0
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
 # GitHub has remoted ubuntu-16.04 runnings,
 # so we're not testing builds with older CUDA versions
 #       - os: ubuntu-16.04

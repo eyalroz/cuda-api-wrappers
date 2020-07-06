@@ -1,4 +1,4 @@
-#include <cuda/runtime_api.hpp>
+#include <cuda/api.hpp>
 
 cuda::device::id_t get_current_device_id()
 {

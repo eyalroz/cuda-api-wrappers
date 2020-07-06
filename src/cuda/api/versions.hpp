@@ -11,6 +11,7 @@
 #define CUDA_API_WRAPPERS_VERSIONS_HPP_
 
 #include <cuda/api/error.hpp>
+
 #include <ostream>
 #include <utility>
 
@@ -123,23 +124,24 @@ inline version_t make(int major, int minor) noexcept
  * @todo In future CUDA versions which support C++17 - return
  * an optional
  *
+ *
  * @return If an nVIDIA GPU driver is installed on this system,
  * the maximum CUDA version it supports is returned.
  * If no version is supported, @ref version_numbers::none() is returned.
  */
-inline version_t maximum_supported_by_driver() {
+inline version_t driver() {
 	combined_version_t version;
-	auto status = cudaDriverGetVersion(&version);
-	throw_if_error(status, "Failed obtaining the maximum CUDA version supported by the nVIDIA GPU driver");
+	auto status = cuDriverGetVersion(&version);
+		// The same value would be returned using cuDriverGetVersion()
+	throw_if_error(status, "Failed obtaining the CUDA driver version");
 	return version_t::from_single_number(version);
 }
 
 /**
  * Obtains the CUDA Runtime version
  *
- * @note unlike {@ref maximum_supported_by_driver()}, 0 cannot be returned,
- * as we are actually using the runtime to obtain the version, so it does
- * have _some_ version.
+ * @note unlike {@ref driver()}, the value of @ref none() cannot be returned,
+ * as we are actually using the runtime to obtain the version.
  */
 inline version_t runtime() {
 	combined_version_t version;

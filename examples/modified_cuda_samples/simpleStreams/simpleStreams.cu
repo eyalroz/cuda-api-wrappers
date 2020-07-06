@@ -40,18 +40,17 @@ const char *sEventSyncMethod[] =
 	NULL
 };
 
-// System includes
-
 // helper functions and utilities to work with CUDA
 #include "../helper_cuda.hpp"
-
-#include <cuda/runtime_api.hpp>
 
 #include <cstdlib>
 
 #include <vector>
 #include <iostream>
 #include <algorithm>
+
+using synch_policy_type = cuda::context::host_thread_synch_scheduling_policy_t;
+
 
 
 // Macro to aligned up to the memory size in question
@@ -83,11 +82,11 @@ void printHelp()
 {
 	std::cout
 		<< "Usage: " << sSDKsample << " [options below]\n"
-		<< "\t--sync_method (" << (int) cuda::host_thread_synch_scheduling_policy_t::default_ << ") for CPU thread synchronization with GPU work."
-		<< "\t             Possible values: " << (int) cuda::host_thread_synch_scheduling_policy_t::heuristic << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::spin << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::yield << ", "
-		<< (int) cuda::host_thread_synch_scheduling_policy_t::block << ".\n"
+		<< "\t--sync_method (" << (int) synch_policy_type::default_ << ") for CPU thread synchronization with GPU work."
+		<< "\t             Possible values: " << (int) synch_policy_type::heuristic << ", "
+		<< (int) synch_policy_type::spin << ", "
+		<< (int) synch_policy_type::yield << ", "
+		<< (int) synch_policy_type::block << ".\n"
 		<< "\t--use_generic_memory (default) use generic page-aligned host memory allocation\n"
 		<< "\t--use_cuda_malloc_host (optional) use pinned host memory allocation\n";
 }
@@ -103,7 +102,6 @@ int main(int argc, char **argv)
 
 	// allocate generic memory and pin it laster instead of using cudaHostAlloc()
 
-	using synch_policy_type = cuda::host_thread_synch_scheduling_policy_t;
 	auto synch_policy = synch_policy_type::block;
 
 	int niterations;    // number of iterations for the loop inside the kernel

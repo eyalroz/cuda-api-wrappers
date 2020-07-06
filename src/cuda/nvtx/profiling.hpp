@@ -10,7 +10,7 @@
 #ifndef CUDA_NVTX_WRAPPERS_PROFILING_HPP_
 #define CUDA_NVTX_WRAPPERS_PROFILING_HPP_
 
-#include <cuda/common/types.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cstdint>
 #include <string>

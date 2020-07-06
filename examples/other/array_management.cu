@@ -68,7 +68,7 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
-    assert_(tv.associated_device() == device);
+    assert_(tv.device() == device);
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
 	constexpr auto block_dims = cuda::grid::block_dimensions_t::cube(block_dim);
 	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());

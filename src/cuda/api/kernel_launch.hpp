@@ -17,7 +17,7 @@
  * and sticking to proper C++; in other words, the wrappers are "ugly"
  * instead of client code having to be.
  * <li>Avoiding some of the "parameter soup" of launching a kernel: It's
- * rather easy to mix up shared memory sizes with stream IDs; grid and
+ * not so difficult to mix up shared memory sizes with stream handles; grid and
  * block dimensions with each other; and even grid/block dimensions with
  * the scalar parameters - since a `dim3` is constructible from
  * integral values. Instead, we enforce a launch configuration structure:
@@ -42,9 +42,8 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 #define CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 
-#include <cuda/api/constants.hpp>
 #include <cuda/api/kernel.hpp>
-#include <cuda/common/types.hpp>
+#include <cuda/api/apriori_compiled_kernel.hpp>
 
 #if (__CUDACC_VER_MAJOR__ >= 9)
 #include <cooperative_groups.h>
@@ -73,6 +72,38 @@ constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail_ {
 
+template<bool...> struct bool_pack;
+
+template<bool... bs>
+using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
+
+/**
+ * @brief adapt a type to be usable as a kernel parameter.
+ *
+ * CUDA kernels don't accept just any parameter type a C++ function may accept.
+ * Specifically: No references, arrays decay (IIANM) and functions pass by address.
+ * However - not all "decaying" of `::std::decay` is necessary. Such transformation
+ * can be effected by this type-trait struct.
+ */
+template<typename P>
+struct kernel_parameter_decay {
+private:
+    typedef typename ::std::remove_reference<P>::type U;
+public:
+    typedef typename ::std::conditional<
+        ::std::is_array<U>::value,
+        typename ::std::remove_extent<U>::type*,
+        typename ::std::conditional<
+            ::std::is_function<U>::value,
+            typename ::std::add_pointer<U>::type,
+            U
+        >::type
+    >::type type;
+};
+
+template<typename P>
+using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
+
 template<typename Fun>
 struct is_function_ptr: ::std::integral_constant<bool,
     ::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
@@ -86,25 +117,46 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);
 }
 
-// Note: Unlike the non-detail_ functions - this one
-// cannot handle type-erased kernel_t's.
-template<typename RawKernel, typename... KernelParameters>
-inline void enqueue_launch(
-	RawKernel                   kernel_function,
-	stream::handle_t            stream_handle,
-	launch_configuration_t      launch_configuration,
-	KernelParameters&&...       parameters)
+// For partial template specialization on WrappedKernel...
+template<typename Kernel, typename... KernelParameters>
+struct enqueue_launch_helper {
+	void operator()(
+		Kernel                  kernel_function,
+		const stream_t &        stream,
+		launch_configuration_t  launch_configuration,
+		KernelParameters &&...  parameters);
+};
+
+template<typename Kernel, typename... KernelParameters>
+void enqueue_launch(
+	::std::integral_constant<bool, false>,
+	Kernel                  kernel_function,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
+
+template<typename Kernel, typename... KernelParameters>
+void enqueue_launch(
+	::std::integral_constant<bool, true>,
+	Kernel                  kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
+
+template<typename KernelFunction, typename... KernelParameters>
+void enqueue_raw_kernel_launch(
+	KernelFunction          kernel_function,
+	stream::handle_t        stream_handle,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 #ifndef __CUDACC__
 // If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
 // compilation error, or we just do nothing. For now it's option 2.
-	;
+;
 #else
 {
-	static_assert(::std::is_function<RawKernel>::value or
-	    (is_function_ptr<RawKernel>::value),
-	    "Only a bona fide function can be a CUDA kernel and be launched; "
-	    "you were attempting to enqueue a launch of something other than a function");
-
+	static_assert(::std::is_function<KernelFunction>::value or (is_function_ptr<KernelFunction>::value),
+		"Only a bona fide function can be launched as a CUDA kernel");
 	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<
@@ -112,11 +164,11 @@ inline void enqueue_launch(
 			launch_configuration.dimensions.block,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle
-			>>>(::std::forward<KernelParameters>(parameters)...);
+		>>>(::std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
-#if __CUDACC_VER_MAJOR__ >= 9
+#if  __CUDACC_VER_MAJOR__ >= 9
 		// Cooperative launches cannot be made using the triple-chevron syntax,
 		// nor is there a variadic-template of the launch API call, so we need to
 		// a bit of useless work here. We could have done exactly the same thing
@@ -133,13 +185,18 @@ inline void enqueue_launch(
 		// of the two terms is confusing here and depends on how you
 		// look at things.
 		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
-		auto status = cudaLaunchCooperativeKernel(
-			(const void*) kernel_function,
-			launch_configuration.dimensions.grid,
-			launch_configuration.dimensions.block,
-			argument_ptrs,
+		kernel::handle_t kernel_function_handle = kernel::detail_::get_handle( (const void*) kernel_function);
+		auto status = cuLaunchCooperativeKernel(
+			kernel_function_handle,
+			launch_configuration.dimensions.grid.x,
+			launch_configuration.dimensions.grid.y,
+			launch_configuration.dimensions.grid.z,
+			launch_configuration.dimensions.block.x,
+			launch_configuration.dimensions.block.y,
+			launch_configuration.dimensions.block.z,
 			launch_configuration.dynamic_shared_memory_size,
-			stream_handle);
+			stream_handle,
+			argument_ptrs);
 		throw_if_error(status, "Cooperative kernel launch failed");
 
 #else
@@ -152,6 +209,59 @@ inline void enqueue_launch(
 
 
 } // namespace detail_
+
+
+namespace kernel {
+
+namespace detail_ {
+
+// The helper code here is intended for re-imbuing kernel-related classes with the types
+// of the kernel parameters. This is necessary since kernel wrappers may be type-erased
+// (which makes it much easier to work with them and avoids a bunch of code duplication).
+//
+// Note: The type-unerased kernel must be a non-const function pointer. Why? Not sure.
+// even though function pointers can't get written through, for some reason they are
+// expected not to be const.
+
+
+template<typename... KernelParameters>
+struct raw_kernel_typegen {
+	// You should be careful to only instantiate this class with nice simple types we can pass to CUDA kernels.
+//	static_assert(
+//		all_true<
+//		    ::std::is_same<
+//		    	KernelParameters,
+//		    	::cuda::detail_::kernel_parameter_decay_t<KernelParameters>>::value...
+//		    >::value,
+//		"All kernel parameter types must be decay-invariant" );
+	using type = void(*)(cuda::detail_::kernel_parameter_decay_t<KernelParameters>...);
+};
+
+} // namespace detail_
+
+template<typename... KernelParameters>
+typename detail_::raw_kernel_typegen<KernelParameters...>::type
+unwrap(apriori_compiled_kernel_t kernel)
+{
+	using raw_kernel_t = typename detail_::raw_kernel_typegen<KernelParameters ...>::type;
+	return reinterpret_cast<raw_kernel_t>(const_cast<void *>(kernel.ptr()));
+}
+
+} // namespace kernel
+
+namespace detail_ {
+
+template<typename... KernelParameters>
+struct enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...> {
+	void operator()(
+		apriori_compiled_kernel_t  wrapped_kernel,
+		const stream_t &           stream,
+		launch_configuration_t     launch_configuration,
+		KernelParameters &&...     parameters);
+};
+
+} // namespace detail_
+
 
 /**
  * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
@@ -171,9 +281,8 @@ inline void enqueue_launch(
  * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
- * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
+ * @param kernel the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
- * @ref kernel_t wrapping the raw pointer to the function.
  * @param stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
  * the scheduling of the launch and the execution)
  * @param launch_configuration not all launches of the same kernel are identical: The launch may be configured
@@ -184,13 +293,28 @@ inline void enqueue_launch(
  */
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	Kernel                  kernel_function,
+	Kernel                  kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   parameters)
+{
+	static_assert(
+		detail_::all_true<
+		::std::is_trivially_copyable<detail_::kernel_parameter_decay_t<KernelParameters>>::value...
+		>::value,
+		"All kernel parameter types must be of a trivially copyable (decayed) type." );
+	constexpr const bool wrapped_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
+	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
+	// function for each of them will basically be just a one-liner :-(
+	detail_::enqueue_launch<Kernel, KernelParameters...>(
+		::std::integral_constant<bool, wrapped_kernel>{},
+		::std::forward<Kernel>(kernel), stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
+}
 
 /**
- * Variant of @ref enqueue_launch for use with the default stream on the current device.
+ * Variant of @ref enqueue_launch for use with the default stream in the current context.
  *
  * @note This isn't called `enqueue` since the default stream is synchronous.
  */
