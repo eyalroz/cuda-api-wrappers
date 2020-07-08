@@ -355,14 +355,14 @@ void kernel_t::enqueue_launch(
 		std::forward<KernelParameters>(parameters)...);
 }
 
-void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
+inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
 	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
-void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
+inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 #if CUDART_VERSION >= 9000
@@ -430,7 +430,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 }
 #endif
 
-void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
+inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {
@@ -453,7 +453,7 @@ inline kernel::attributes_t kernel_t::attributes() const
 	return function_attributes;
 }
 
-void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
+inline void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
 {
 	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);

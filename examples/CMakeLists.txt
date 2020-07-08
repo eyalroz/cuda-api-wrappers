@@ -49,4 +49,4 @@ add_executable(event_management by_runtime_api_module/event_management.cu)
 add_executable(unified_addressing by_runtime_api_module/unified_addressing.cpp)
 add_executable(array_management other/array_management.cu)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
-
+add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp )

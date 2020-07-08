@@ -69,7 +69,7 @@ bool intrinsic_block_cooperation_value(const Kernel&)
 }
 
 template<>
-bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
+inline bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
 {
 	return(kernel.thread_block_cooperation());
 }
