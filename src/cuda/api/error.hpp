@@ -213,7 +213,7 @@ private:
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(cuda::status_t status, std::string message) noexcept(false)
+inline void throw_if_error(cuda::status_t status, const std::string& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
