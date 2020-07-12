@@ -32,14 +32,14 @@ namespace detail {
 template<typename T>
 inline cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
+	device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
 template<typename T>
 inline cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
+	device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
@@ -104,7 +104,7 @@ device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_scope(id_);
+	device::current::detail::scoped_override_t set_device_for_this_scope(id_);
 	constexpr const auto take_ownership = true;
 	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
 		will_synchronize_with_default_stream, priority), take_ownership);
@@ -113,8 +113,8 @@ device_t::create_stream(
 namespace device {
 namespace current {
 
-inline scoped_override_t<cuda::detail::do_not_assume_device_is_current>::scoped_override_t(device_t& device) : parent(device.id()) { }
-inline scoped_override_t<cuda::detail::do_not_assume_device_is_current>::scoped_override_t(device_t&& device) : parent(device.id()) { }
+inline scoped_override_t::scoped_override_t(device_t& device) : parent(device.id()) { }
+inline scoped_override_t::scoped_override_t(device_t&& device) : parent(device.id()) { }
 
 } // namespace current
 } // namespace device
@@ -399,14 +399,14 @@ void kernel_t::enqueue_launch(
 
 inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
 	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
 inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 #if CUDART_VERSION >= 9000
 	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, amount_required_by_kernel);
 	throw_if_error(result,
@@ -474,7 +474,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 
 inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {
 		throw std::invalid_argument("Percentage value can't exceed 100");
 	}
@@ -488,7 +488,7 @@ inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_perc
 
 inline kernel::attributes_t kernel_t::attributes() const
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	kernel::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
 	throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
@@ -497,7 +497,7 @@ inline kernel::attributes_t kernel_t::attributes() const
 
 inline void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
 	throw_if_error(result,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
@@ -508,7 +508,7 @@ inline void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  pr
 inline void kernel_t::set_shared_memory_bank_size(
 	multiprocessor_shared_memory_bank_size_option_t  config)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
 	throw_if_error(result);
 }
@@ -518,7 +518,7 @@ inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_context(device_id_);
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	int result;
 	unsigned int flags = disable_caching_override ?
 		cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;

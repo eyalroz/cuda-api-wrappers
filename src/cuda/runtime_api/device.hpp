@@ -121,7 +121,7 @@ attribute_value_t get_attribute(
 class device_t {
 protected:
 	// types
-	using scoped_setter_t = device::current::detail::scoped_override_t<>;
+	using scoped_setter_t = device::current::detail::scoped_override_t;
 	using properties_t = device::properties_t;
 	using attribute_t = device::attribute_t;
 	using attribute_value_t = device::attribute_value_t;
@@ -813,7 +813,7 @@ namespace device {
 template<typename T>
 inline unique_ptr<T> make_unique(device_t device, size_t n)
 {
-	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
+	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
 }
 
@@ -829,7 +829,7 @@ inline unique_ptr<T> make_unique(device_t device, size_t n)
 template <typename T>
 inline unique_ptr<T> make_unique(device_t device)
 {
-	cuda::device::current::detail::scoped_override_t<> set_device_for_this_scope(device.id());
+	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
 }
 
