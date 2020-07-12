@@ -82,8 +82,7 @@ inline id_t create_on_current_device(
  */
 inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
-	device::current::detail::scoped_override_t<cuda::detail::do_not_assume_device_is_current>
-		set_device_for_this_scope(device_id);
+	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
 	auto status = cudaStreamQuery(stream_id);
 	switch(status) {
 	case cudaSuccess:
@@ -156,7 +155,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using DeviceSetter = device::current::detail::scoped_override_t<detail::do_not_assume_device_is_current>;
+	using device_setter_type = device::current::detail::scoped_override_t;
 
 
 public: // const getters
@@ -203,7 +202,7 @@ public: // other non-mutators
 	 */
 	bool has_work_remaining() const
 	{
-		DeviceSetter set_device_for_this_scope(device_id_);
+		device_setter_type set_device_for_this_scope(device_id_);
 		auto status = cudaStreamQuery(id_);
 		switch(status) {
 		case cudaSuccess:
@@ -312,7 +311,7 @@ public: // mutators
 			// Kernel executions cannot be enqueued in streams associated
 			// with devices other than the current one, see:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 			return cuda::enqueue_launch(
 				thread_block_cooperativity,
 				kernel_function,
@@ -334,7 +333,7 @@ public: // mutators
 			// 	kernel_function, stream_id_, launch_configuration, parameters...);
 			//
 
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 			return cuda::enqueue_launch(
 				cuda::thread_blocks_may_not_cooperate,
 				kernel_function, associated_stream, launch_configuration, parameters...);
@@ -380,7 +379,7 @@ public: // mutators
 		void memset(void *destination, int byte_value, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 			memory::device::async::detail::set(destination, byte_value, num_bytes, associated_stream.id_);
 		}
 
@@ -398,7 +397,7 @@ public: // mutators
 		void memzero(void *destination, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 			memory::device::async::detail::zero(destination, num_bytes, associated_stream.id_);
 		}
 
@@ -437,7 +436,7 @@ public: // mutators
 		template <typename Callable>
 		void host_function_call(Callable callable_)
 		{
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 
 
 			// Since callable_ will be going out of scope after the enqueueing,
@@ -500,7 +499,7 @@ public: // mutators
 			const void* managed_region_start,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
-			DeviceSetter set_device_for_this_scope(associated_stream.device_id_);
+			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
@@ -551,7 +550,7 @@ public: // mutators
 	 */
 	void synchronize()
 	{
-		DeviceSetter set_device_for_this_scope(device_id_);
+		device_setter_type set_device_for_this_scope(device_id_);
 		// TODO: some kind of string representation for the stream
 		auto status = cudaStreamSynchronize(id_);
 		throw_if_error(status,
@@ -572,7 +571,7 @@ public: // constructors and destructor
 	~stream_t()
 	{
 		if (owning) {
-			DeviceSetter set_device_for_this_scope(device_id_);
+			device_setter_type set_device_for_this_scope(device_id_);
 			cudaStreamDestroy(id_);
 		}
 	}
@@ -645,7 +644,7 @@ inline stream_t create(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority)
 {
-	device::current::detail::scoped_override_t<> set_device_for_this_scope(device_id);
+	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
 	auto new_stream_id = cuda::stream::detail::create_on_current_device(
 		synchronizes_with_default_stream, priority);
 	return wrap(device_id, new_stream_id, take_ownership);
