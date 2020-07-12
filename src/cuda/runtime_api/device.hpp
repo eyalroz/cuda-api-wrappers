@@ -119,17 +119,18 @@ attribute_value_t get_attribute(
  * together with @ref cuda::stream_t and @ref cuda::event_t
  */
 class device_t {
-protected:
-	// types
-	using scoped_setter_t = device::current::detail::scoped_override_t;
+public: // types
 	using properties_t = device::properties_t;
 	using attribute_t = device::attribute_t;
 	using attribute_value_t = device::attribute_value_t;
-	using flags_t = unsigned;
-	using resource_id_t = cudaLimit;
 	using resource_limit_t = size_t;
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
 	using priority_range_t = std::pair<stream::priority_t, stream::priority_t>;
+	using resource_id_t = cudaLimit;
+
+protected: // types
+	using scoped_setter_t = device::current::detail::scoped_override_t;
+	using flags_t = unsigned;
 
 	///@cond
 
