@@ -108,6 +108,17 @@ attribute_value_t get_attribute(
 
 } // namespace device
 
+
+/**
+ * @brief Suspends execution until all previously-scheduled tasks on
+ * the specified device (all contexts, all streams) have concluded.
+ *
+ * Depending on the host_thread_synch_scheduling_policy_t set for this
+ * device, the thread calling this method will either yield, spin or block
+ * until this completion.
+ */
+inline void synchronize(device_t& device);
+
 /**
  * @brief Proxy class for a CUDA device
  *
@@ -447,46 +458,8 @@ public:
 	 */
 	void synchronize()
 	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaDeviceSynchronize();
-		throw_if_error(status, "Failed synchronizing " + device_id_as_str());
+		cuda::synchronize(*this);
 	}
-
-	/**
-	 * @brief Waits for all previously-scheduled tasks on a certain stream
-	 * (queue) of this device to conclude.
-	 *
-	 * Depending on the host_thread_synch_scheduling_policy_t set for this
-	 * device, the thread calling this method will either yield, spin or block
-	 * until all tasks scheduled on the stream with @p stream_id have
-	 * been completed.
-	 *
-	 * @param stream_id The stream for whose currently-scheduled tasks'
-	 * conclusion to wait for
-	 */
-	void synchronize_stream(stream::id_t stream_id)
-	{
-		scoped_setter_t set_device_for_this_scope(id_);
-		auto status = cudaStreamSynchronize(stream_id);
-		throw_if_error(status, "Failed synchronizing a stream on " + device_id_as_str());
-	}
-
-	/**
-	 *
-	 * @param stream
-	 */
-	void synchronize(stream_t& stream);
-
-	/**
-	 * Waits for a specified event to conclude before returning control
-	 * to the calling code.
-	 *
-	 * @todo Determine how this waiting takes place (as opposed to stream
-	 * synchrnoization).
-	 *
-	 * @param event the event to wait for
-	 */
-	void synchronize(event_t& event);
 
 	/**
 	 * Invalidates all memory allocations and resets all state regarding this
@@ -836,6 +809,14 @@ inline unique_ptr<T> make_unique(device_t device)
 
 } // namespace device
 } // namespace memory
+
+inline void synchronize(device_t& device)
+{
+	auto device_id = device.id();
+	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+	auto status = cudaDeviceSynchronize();
+	throw_if_error(status, "Failed synchronizing " + std::to_string(device_id));
+}
 
 
 } // namespace cuda

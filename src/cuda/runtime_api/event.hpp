@@ -86,6 +86,8 @@ event_t wrap(
 
 } // namespace event
 
+inline void synchronize(const event_t& event);
+
 /**
  * @brief Proxy class for a CUDA event
  *
@@ -184,9 +186,7 @@ public: // other mutator methods
 	 */
 	void synchronize()
 	{
-		auto status = cudaEventSynchronize(id_);
-		cuda::throw_if_error(status,
-			"Failed synchronizing on event " + detail::ptr_as_hex(id_));
+		return cuda::synchronize(*this);
 	}
 
 protected: // constructors
@@ -331,6 +331,26 @@ inline event_t create(
 	bool       interprocess       = not_interprocess);
 
 } // namespace event
+
+/**
+ * Waits for a specified event to conclude before returning control
+ * to the calling code.
+ *
+ * @todo Determine how this waiting takes place (as opposed to stream
+ * synchrnoization).
+ *
+ * @param event the event for whose occurrence to wait; must be scheduled
+ * to occur on some stream (possibly the different stream)
+ */
+inline void synchronize(const event_t& event)
+{
+	auto device_id = event.device_id();
+	auto event_id = event.id();
+	device::current::detail::scoped_override_t device_for_this_scope(device_id);
+	auto status = cudaEventSynchronize(event_id);
+	throw_if_error(status, "Failed synchronizing the event with id "
+		+ cuda::detail::ptr_as_hex(event_id) + " on   " + std::to_string(device_id));
+}
 
 } // namespace cuda
 

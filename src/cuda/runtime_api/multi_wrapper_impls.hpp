@@ -81,19 +81,6 @@ inline event_t import(device_t& device, const handle_t& handle)
 
 // device_t methods
 
-inline void device_t::synchronize(event_t& event)
-{
-	scoped_setter_t set_device_for_this_scope(id_);
-	auto status = cudaEventSynchronize(event.id());
-	throw_if_error(status, "Failed synchronizing the event with id "
-		+ detail::ptr_as_hex(event.id()) + " on   " + device_id_as_str());
-}
-
-inline void device_t::synchronize(stream_t& stream)
-{
-	return synchronize_stream(stream.id());
-}
-
 inline stream_t device_t::default_stream() const noexcept
 {
 	return stream::detail::wrap(id(), stream::default_stream_id);
