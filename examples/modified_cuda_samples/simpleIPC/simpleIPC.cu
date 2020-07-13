@@ -221,7 +221,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 		for (int i = 1; i < g_processCount; i++)
 		{
-			device.synchronize(events[i-1]);
+			cuda::synchronize(events[i-1]);
 		}
 
 		//-------------------------------------------

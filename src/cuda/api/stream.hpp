@@ -135,6 +135,8 @@ stream_t wrap(
 
 } // namespace stream
 
+inline void synchronize(stream_t& stream);
+
 /**
  * @brief Proxy class for a CUDA stream
  *
@@ -550,12 +552,7 @@ public: // mutators
 	 */
 	void synchronize()
 	{
-		device_setter_type set_device_for_this_scope(device_id_);
-		// TODO: some kind of string representation for the stream
-		auto status = cudaStreamSynchronize(id_);
-		throw_if_error(status,
-			std::string("Failed synchronizing a stream")
-			+ " on CUDA device " + std::to_string(device_id_));
+		cuda::synchronize(*this);
 	}
 
 public: // constructors and destructor
@@ -673,6 +670,15 @@ stream_t create(
 
 using queue_t = stream_t;
 using queue_id_t = stream::id_t;
+
+inline void synchronize(stream_t& stream)
+{
+	auto status = cudaStreamSynchronize(stream.id());
+	throw_if_error(status,
+		std::string("Failed synchronizing a stream")
+		+ " on CUDA device " + std::to_string(stream.device().id()));
+}
+
 
 } // namespace cuda
 
