@@ -32,7 +32,7 @@ namespace special_registers {
 __forceinline__ __device__ RETURN_TYPE(kind_of_register) special_register_name() \
 { \
 	RETURN_TYPE(kind_of_register) ret;  \
-	asm volatile ("mov." STRINGIFY(kind_of_register) "%0, %" STRINGIFY(special_register_name) ";" : "=" SIZE_MARKER(kind_of_register) (ret)); \
+	asm volatile ("mov." STRINGIFY(kind_of_register) "%0, %%" STRINGIFY(special_register_name) ";" : "=" SIZE_MARKER(kind_of_register) (ret)); \
 	return ret; \
 } \
 
