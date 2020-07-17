@@ -208,7 +208,7 @@ inline constexpr bool compute_capability_t::is_valid() const noexcept
 
 inline constexpr compute_capability_t compute_capability_t::from_combined_number(unsigned combined) noexcept
 {
-	return  { combined / 10, combined % 10 };
+	return  compute_capability_t{ { combined / 10 }, combined % 10 };
 }
 
 inline constexpr unsigned compute_capability_t::as_combined_number() const noexcept { return major() * 10 + minor_; }
@@ -221,7 +221,7 @@ inline constexpr compute_capability_t make_compute_capability(unsigned combined)
 
 inline constexpr compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept
 {
-	return { major, minor };
+	return { {major}, minor };
 }
 
 namespace detail {
