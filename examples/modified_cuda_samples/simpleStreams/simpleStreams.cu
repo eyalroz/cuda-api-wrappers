@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 	// Anything that is less than 32 Cores will have scaled down workload
 	auto faux_cores_per_sm = compute_capability.max_in_flight_threads_per_processor();
 	auto faux_cores_overall = properties.max_in_flight_threads_on_device();
-	scale_factor = max((32.0f / faux_cores_overall), 1.0f);
+	scale_factor = std::max((32.0f / faux_cores_overall), 1.0f);
 	n = (int)rint((float)n / scale_factor);
 
 	std::cout << "> CUDA Capable: SM " << compute_capability.major() << "." << compute_capability.minor() << " hardware\n";
