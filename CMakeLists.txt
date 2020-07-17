@@ -11,10 +11,21 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+# Set additonal project information via parameters if supported
+set(PROJECT_EXTRA_PARAMS "")
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
+	list(APPEND PROJECT_EXTRA_PARAMS
+		DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
+	)
+endif()
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+	list(APPEND PROJECT_EXTRA_PARAMS
+		HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
+	)
+endif()
 PROJECT(cuda-api-wrappers
-	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
+	${PROJECT_EXTRA_PARAMS}
 	VERSION 0.4.0
-	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
 include(FindCUDA)
@@ -121,10 +132,17 @@ install(
 
 include(CMakePackageConfigHelpers)
 
+# The SameMinorVersion parameter requires CMake 3.11.
+# If not supported, fall back to SameMajorVersion.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+	set(COMPAT_SETTING SameMinorVersion)
+else()
+	set(COMPAT_SETTING SameMajorVersion)
+endif()
 write_basic_package_version_file(
 	"cuda-api-wrappers-config-version.cmake"
 	VERSION ${PROJECT_VERSION}
-	COMPATIBILITY SameMinorVersion
+	COMPATIBILITY ${COMPAT_SETTING}
 )
 
 install(
