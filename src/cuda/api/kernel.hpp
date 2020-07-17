@@ -295,7 +295,10 @@ template<typename Kernel, typename... KernelParameters>
 typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(std::true_type, kernel_t wrapped)
 {
 	using raw_kernel_t = typename raw_kernel_typegen<KernelParameters ...>::type;
-	return reinterpret_cast<raw_kernel_t>(wrapped.ptr());
+	return reinterpret_cast<raw_kernel_t>(const_cast<void*>(wrapped.ptr()));
+		// The inner cast here is because we store the pointer as const void* - as an extra precaution
+		// against anybody trying to write through it. Now, function pointers can't get written through,
+		// but are still for some reason not considered const.
 }
 
 template<typename Kernel, typename... KernelParameters>
