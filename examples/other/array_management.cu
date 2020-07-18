@@ -184,5 +184,5 @@ int main()
 	array_2d_example(device, w, h);
 	device.synchronize();
 
-        std::cout << "SUCCESS\n";
+	std::cout << "SUCCESS\n";
 }
