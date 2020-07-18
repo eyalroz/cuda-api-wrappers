@@ -1,11 +1,16 @@
 #include <cuda/runtime_api.hpp>
 
 #include <cstdlib>
+#include <iostream>
 
 cuda::device::id_t get_current_device_id();
 
 int main() 
 {
-	if (cuda::device::count() == 0) { exit(EXIT_SUCCESS); }
-	return get_current_device_id();
+	auto count = cuda::device::count();
+
+	if (count > 0) { 
+		get_current_device_id();
+	}
+	std::cout << "SUCCESS\n";
 }
