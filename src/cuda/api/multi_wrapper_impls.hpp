@@ -380,7 +380,7 @@ inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_
 // Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
 // from code compiled with a host-side-only compiler! See cuda_runtime.h for details
 
-std::pair<grid::dimension_t, grid::block_dimension_t>
+inline std::pair<grid::dimension_t, grid::block_dimension_t>
 kernel_t::min_grid_params_for_max_occupancy(
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
