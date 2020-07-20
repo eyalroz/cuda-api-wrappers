@@ -77,8 +77,8 @@ struct attributes_t : cudaPointerAttributes {
 	    return (type_t)cudaPointerAttributes::type;
 #else // CUDART_VERSION < 10000
 		using utype = typename std::underlying_type<cudaMemoryType>::type;
-		if (((utype) memoryType == utype {type_t::device_memory}) and
-    		cudaPointerAttributes::isManaged) {
+		if ( ((utype) memoryType == utype {type_t::device_memory}) and cudaPointerAttributes::isManaged) 
+		{
 			return type_t::managed_memory;
 		}
 	    return (type_t)(memoryType);

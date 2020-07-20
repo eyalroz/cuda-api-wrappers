@@ -67,7 +67,7 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& 
 		pci_id.domain = first_field;
 		pci_id.bus = second_field;
 		is >> pci_id.device;
-		if (is.peek() != '.') {	
+		if (is.peek() != '.') {
 			// It's the second format.
 			pci_id.function = pci_location_t::unused; // Is this a reasonable choice? I woudld  have liked that...
 			is.flags(format_flags);
