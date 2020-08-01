@@ -64,8 +64,6 @@ inline id_t create_on_current_device(
 	return new_stream_id;
 }
 
-} // namespace detail
-
 /**
  * Check whether a certain stream is associated with a specific device.
  *
@@ -116,8 +114,6 @@ inline device::id_t associated_device(stream::id_t stream_id)
 	throw std::runtime_error(
 		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
 }
-
-namespace detail {
 
 /**
  * Wraps a CUDA stream ID in a stream_t proxy instance,
