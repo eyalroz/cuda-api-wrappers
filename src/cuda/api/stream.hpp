@@ -158,7 +158,7 @@ protected: // type definitions
 
 public: // const getters
 	stream::id_t id() const noexcept { return id_; }
-	device_t device() const;
+	device_t device() const noexcept;
 	bool is_owning() const noexcept { return owning; }
 
 public: // other non-mutators

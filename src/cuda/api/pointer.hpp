@@ -113,7 +113,7 @@ public: // other non-mutators
 		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
-	device_t device() const;
+	device_t device() const noexcept;
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).

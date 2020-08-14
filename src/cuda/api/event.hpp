@@ -112,7 +112,7 @@ public: // data member non-mutator getters
 	 * this event can be enqueued)
 	 */
 	device::id_t device_id()          const noexcept { return device_id_;          }
-	device_t     device() const;
+	device_t     device() const noexcept;
 	/**
 	 * Is this wrapper responsible for having the CUDA Runtime API destroy
 	 * the event when it destructs?
