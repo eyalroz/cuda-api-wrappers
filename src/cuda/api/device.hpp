@@ -36,7 +36,7 @@ namespace device {
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-device_t get(id_t device_id);
+device_t get(id_t device_id) noexcept;
 
 namespace current {
 
@@ -690,7 +690,7 @@ protected: // constructors
 	device_t(wrapping_construction, device::id_t device_id) noexcept : id_( device_id ) { }
 
 public: // friends
-	friend device_t device::get(device::id_t);
+	friend device_t device::get(device::id_t) noexcept;
 
 protected:
 	// data members
@@ -721,7 +721,7 @@ namespace device {
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-inline device_t get(id_t device_id)
+inline device_t get(id_t device_id) noexcept
 {
 	return device_t(device_t::wrapping_construction{}, device_id);
 }
