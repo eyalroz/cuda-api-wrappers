@@ -75,7 +75,7 @@ inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
 class kernel_t {
 public: // getters
 	const void* ptr() const noexcept { return ptr_; }
-	const device_t device() const noexcept;
+	device_t device() const noexcept;
 	bool thread_block_cooperation() const noexcept { return thread_block_cooperation_; }
 
 protected:

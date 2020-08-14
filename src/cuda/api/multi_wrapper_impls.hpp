@@ -363,6 +363,11 @@ inline region_pair allocate(
 
 // kernel_t methods
 
+inline device_t kernel_t::device() const noexcept
+{
+	return device::get(device_id_);
+}
+
 template<typename... KernelParameters>
 void kernel_t::launch(
 	launch_configuration_t  launch_configuration,
