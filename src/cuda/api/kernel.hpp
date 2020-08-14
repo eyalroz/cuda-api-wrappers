@@ -117,23 +117,6 @@ public: // non-mutators
 		memory::shared::size_t    dynamic_shared_memory_per_block,
 		bool                      disable_caching_override = false);
 
-	template<typename... KernelParameters>
-	void enqueue_launch(
-		stream_t&               stream,
-		launch_configuration_t  launch_configuration,
-		KernelParameters&&...   parameters);
-
-	/**
-	 * Variant of @ref enqueue_launch() for use with the default stream on the current device.
-	 *
-	 * @note This isn't called `enqueue` since the default stream is synchronous.
-	 */
-	template<typename... KernelParameters>
-	void launch(
-		launch_configuration_t  launch_configuration,
-		KernelParameters&&...   parameters);
-
-
 public: // mutators
 
 	void set_attribute(cudaFuncAttribute attribute, int value);

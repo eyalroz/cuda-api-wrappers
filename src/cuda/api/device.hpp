@@ -570,7 +570,8 @@ public:
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(
 		bool thread_block_cooperativity,
-		const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
+		KernelFunction kernel_function,
+		launch_configuration_t launch_configuration,
 		KernelParameters ... parameters);
 
 	template<typename KernelFunction, typename ... KernelParameters>

@@ -101,7 +101,7 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                        thread_block_cooperation,
-	RawKernel           kernel_function,
+	RawKernel                   kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
 	KernelParameters&&...       parameters)
@@ -237,7 +237,6 @@ void launch(
 	Kernel                  kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
-
 
 } // namespace cuda
 

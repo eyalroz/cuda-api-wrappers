@@ -113,7 +113,7 @@ namespace detail {
 template <typename KernelFunction, typename ... KernelParameters>
 void device_t::launch(
 	bool thread_block_cooperativity,
-	const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
+	KernelFunction kernel_function, launch_configuration_t launch_configuration,
 	KernelParameters ... parameters)
 {
 	return default_stream().enqueue.kernel_launch(
@@ -362,34 +362,6 @@ inline region_pair allocate(
 } // namespace memory
 
 // kernel_t methods
-
-inline device_t kernel_t::device() const noexcept
-{
-	return device::get(device_id_);
-}
-
-template<typename... KernelParameters>
-void kernel_t::launch(
-	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
-{
-	auto device = cuda::device::get(device_id_);
-	return device.launch(thread_block_cooperation_, ptr_, launch_configuration, parameters...);
-}
-
-template<typename... KernelParameters>
-void kernel_t::enqueue_launch(
-	stream_t&               stream,
-	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
-{
-	cuda::enqueue_launch(
-		thread_block_cooperation_,
-		ptr_,
-		stream,
-		launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
-}
 
 inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
