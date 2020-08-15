@@ -41,27 +41,6 @@ struct attributes_t : cudaFuncAttributes {
 	}
 };
 
-/**
- * @brief Calculate the effective maximum size of allocatable (dynamic)
- * shared memory in a grid block
- *
- * @param attributes Attributes of the `__global__` kernel function
- * for which we wish to determine the allocation limit
- * @param compute_capability the GPU device's compute capability figure (e.g. 3.5
- * or 5.0), which fully determines the maximum allocation size
- */
-inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
-	attributes_t attributes, device::compute_capability_t compute_capability)
-{
-	auto available_without_static_allocation = compute_capability.max_shared_memory_per_block();
-	auto statically_allocated_shared_mem = attributes.sharedSizeBytes;
-	if (statically_allocated_shared_mem > available_without_static_allocation) {
-		throw std::logic_error("More static shared memory has been allocated for a device function"
-		" than seems to be available on devices with the specified compute capability.");
-	}
-	return available_without_static_allocation - statically_allocated_shared_mem;
-}
-
 } // namespace kernel
 
 /**
@@ -231,32 +210,6 @@ protected: // data members
 };
 
 namespace kernel {
-
-/**
- * @brief A 'version' of
- * @ref cuda::compute_capability_t::maximum_dynamic_shared_memory_per_block()
- * for use with a specific device function - which will take its use of
- * static shared memory into account.
- *
- * @param kernel
- * function for which to calculate
- * the effective available shared memory per block
- * @param compute_capability on which kind of device the kernel function is to
- * be launched;
- * @return the maximum amount of shared memory per block which a launch of the
- * specified function can require
-
- * @todo It's not clear whether this is actually necessary given the {@ref kernel_t}
- * pointer.
- *
- */
-inline memory::shared::size_t maximum_dynamic_shared_memory_per_block(
-	const kernel_t& kernel, device::compute_capability_t compute_capability)
-{
-	return cuda::kernel::maximum_dynamic_shared_memory_per_block(
-		kernel.attributes(), compute_capability);
-}
-
 
 namespace detail {
 
