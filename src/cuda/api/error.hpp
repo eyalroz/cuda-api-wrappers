@@ -489,11 +489,15 @@ inline ::std::string identify(const void* ptr, context::handle_t context_handle,
 }
 inline ::std::string identify(handle_t handle)
 {
-	return "kernel " + cuda::detail_::ptr_as_hex(handle);
+	return "kernel at " + cuda::detail_::ptr_as_hex(handle);
 }
 inline ::std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle);
+}
+inline ::std::string identify(handle_t handle,  device::id_t device_id)
+{
+	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
 inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {

@@ -351,6 +351,8 @@ inline context_t event_t::context() const
 	return context::detail_::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 
+
+
 inline void event_t::record(const stream_t& stream) const
 {
 	// Note:
@@ -1439,7 +1441,7 @@ inline device_t context_t::global_memory_type::associated_device() const
 inline context_t context_t::global_memory_type::associated_context() const
 {
     constexpr const bool non_owning { false };
-    return context::detail_::wrap(device_id_, context_handle_, non_owning);
+    return cuda::context::detail_::wrap(device_id_, context_handle_, non_owning);
 }
 
 

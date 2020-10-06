@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 __global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)
 {
@@ -61,7 +62,7 @@ int main()
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (fabs(buffer_A.get()[i] + buffer_B.get()[i] - buffer_C.get()[i]) > 1e-5)  {
+		if (std::fabs(buffer_A.get()[i] + buffer_B.get()[i] - buffer_C.get()[i]) > 1e-5)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
