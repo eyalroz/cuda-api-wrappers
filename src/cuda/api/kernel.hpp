@@ -45,6 +45,8 @@ kernel_t wrap(
 
 namespace detail_ {
 
+inline ::std::string identify(const kernel_t& kernel);
+
 #ifndef NDEBUG
 static const char* attribute_name(int attribute_index)
 {
@@ -321,9 +323,8 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	);
 
 	throw_if_error(result,
-		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle)
-			+ " on " + device::detail_::identify(device_id) + " with maximum occupancy given dynamic shared "
-			"memory and block size data");
+		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
+		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 #endif // CUDART_VERSION <= 10000
 }
@@ -408,6 +409,14 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 
 } // namespace occupancy
 
+namespace detail_ {
+
+inline ::std::string identify(const kernel_t& kernel)
+{
+	return kernel::detail_::identify(kernel.handle()) + " in " + context::detail_::identify(kernel.context());
+}
+
+} // namespace detail_
 } // namespace kernel
 
 inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(

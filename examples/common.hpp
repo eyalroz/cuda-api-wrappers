@@ -13,10 +13,20 @@
 #include <string>
 #include <iostream>
 
+namespace cuda {
+namespace rtc {
+
+struct compilation_options_t;
+
+} // namespace rtc
+} // namespace cuda
+
 void report_current_context(const std::string& prefix);
 void report_context_stack(const std::string& prefix);
+inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options);
 
 #include <cuda/api.hpp>
+#include <cuda/nvrtc.hpp>
 
 #include <cstdio>
 #include <fstream>
@@ -140,7 +150,6 @@ void report_current_context(const std::string& prefix = "")
 	}
 }
 
-
 void print_context_stack()
 {
 	if (not cuda::context::current::exists()) {
@@ -195,6 +204,15 @@ template <typename U1, typename U2>
 typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 {
 	return dividend / divisor + !!(dividend % divisor);
+}
+
+inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options)
+{
+	auto marshalled = compilation_options.marshal();
+	std::cout << "Compiling with" << marshalled.option_ptrs().size() << " compilation options:\n";
+	for (auto opt: marshalled.option_ptrs()) {
+		std::cout << "Option: " << opt << '\n';
+	}
 }
 
 
