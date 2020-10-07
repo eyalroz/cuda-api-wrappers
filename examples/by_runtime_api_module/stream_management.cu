@@ -78,7 +78,8 @@ __global__ void increment(char* data, size_t length)
 
 int main(int argc, char **argv)
 {
-	static constexpr size_t N = 40;
+	constexpr const size_t N = 50;
+	cuda::launch_configuration_t single_thread_config { 1, 1 };
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
@@ -99,9 +100,16 @@ int main(int argc, char **argv)
 		std::cout
 			<< "A new CUDA stream with no priority specified defaults to having priority "
 			<< stream.priority() << ".\n";
-		stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I can see my house!"));
+		stream.enqueue.kernel_launch(print_message<N,1>, single_thread_config, message<N>("I can see my house!"));
 		stream.synchronize();
 	}
+
+	// Use of the default stream as an rvalue
+	// ---------------------------------------------
+	cuda::enqueue_launch(
+		print_message<N,2>, device.default_stream(), single_thread_config, 
+		message<N>("I was launched on the default stream.")
+	);
 
 	// Everything else - Enqueueing kernel or host-function launches, events
 	// and memory attachments, recording and waiting on events
@@ -126,7 +134,7 @@ int main(int argc, char **argv)
 	print_first_char(buffer.get());
 
 	auto event_1 = cuda::event::create(device, cuda::event::sync_by_blocking);
-	stream_1.enqueue.kernel_launch(print_message<N,2>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue.kernel_launch(print_message<N,3>, single_thread_config, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
 	stream_1.enqueue.host_function_call(
 		[&buffer](cuda::stream_t) {
@@ -142,10 +150,10 @@ int main(int argc, char **argv)
 	stream_1.enqueue.memory_attachment(buffer.get());
 	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	event_1.record(stream_1);
-	stream_1.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I'm on stream 1"));
+	stream_1.enqueue.kernel_launch(print_message<N,4>, single_thread_config, message<N>("I'm on stream 1"));
 	stream_2.enqueue.wait(event_1);
 	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());
-	stream_2.enqueue.kernel_launch(print_message<N,5>, { 1, 1 }, message<N>("I'm on stream 2"));
+	stream_2.enqueue.kernel_launch(print_message<N,5>, single_thread_config, message<N>("I'm on stream 2"));
 	bool idleness_1 = stream_2.has_work_remaining();
 	device.synchronize();
 	print_first_char(buffer.get());

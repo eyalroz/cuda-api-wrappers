@@ -169,7 +169,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record(stream_t& stream);
+	void record(const stream_t& stream);
 
 	/**
 	 * Records the event and ensures it has occurred before returning
@@ -177,7 +177,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void fire(stream_t& stream);
+	void fire(const stream_t& stream);
 
 	/**
 	 * Have the calling thread wait - either busy-waiting or blocking - and

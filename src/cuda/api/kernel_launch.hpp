@@ -204,7 +204,7 @@ template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	bool                    thread_block_cooperation,
 	Kernel                  kernel_function,
-	stream_t&               stream,
+	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
@@ -215,7 +215,7 @@ void enqueue_launch(
 template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
 	Kernel                  kernel_function,
-	stream_t&               stream,
+	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
