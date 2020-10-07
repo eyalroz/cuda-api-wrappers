@@ -135,7 +135,7 @@ inline device_t event_t::device() const noexcept
 	return cuda::device::get(device_id_);
 }
 
-inline void event_t::record(stream_t& stream)
+inline void event_t::record(const stream_t& stream)
 {
 	// Note:
 	// TODO: Perhaps check the device ID here, rather than
@@ -143,7 +143,7 @@ inline void event_t::record(stream_t& stream)
 	event::detail::enqueue(stream.id(), id_);
 }
 
-inline void event_t::fire(stream_t& stream)
+inline void event_t::fire(const stream_t& stream)
 {
 	record(stream);
 	stream.synchronize();
@@ -217,30 +217,30 @@ inline device_t pointer_t<T>::device() const noexcept
 
 namespace async {
 
-inline void copy(void *destination, const void *source, size_t num_bytes, stream_t& stream)
+inline void copy(void *destination, const void *source, size_t num_bytes, const stream_t& stream)
 {
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-inline void copy(region_t destination, region_t source, stream_t& stream)
+inline void copy(region_t destination, region_t source, const stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
 }
 
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream)
+inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
 }
 
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream)
+inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
 }
 
 template <typename T>
-inline void copy_single(T& destination, const T& source, stream_t& stream)
+inline void copy_single(T& destination, const T& source, const stream_t& stream)
 {
 	detail::copy_single(&destination, &source, sizeof(T), stream.id());
 }
@@ -256,12 +256,12 @@ inline region_t allocate(cuda::device_t device, size_t size_in_bytes)
 
 namespace async {
 
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream)
+inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
 	detail::set(start, byte_value, num_bytes, stream.id());
 }
 
-inline void zero(void* start, size_t num_bytes, stream_t& stream)
+inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 {
 	detail::zero(start, num_bytes, stream.id());
 }
@@ -327,7 +327,7 @@ namespace async {
 inline void prefetch(
 	region_t         region,
 	cuda::device_t   destination,
-	cuda::stream_t&  stream)
+	const stream_t&  stream)
 {
 	detail::prefetch(region, destination.id(), stream.id());
 }
@@ -515,7 +515,7 @@ template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
 	bool                    thread_block_cooperation,
 	Kernel                  kernel_function,
-	stream_t&               stream,
+	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {

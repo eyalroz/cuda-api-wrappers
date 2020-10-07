@@ -671,7 +671,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(region_t destination, region_t source, size_t num_bytes, stream_t& stream);
+void copy(region_t destination, region_t source, size_t num_bytes, const stream_t& stream);
 
 
 /**
@@ -684,7 +684,7 @@ void copy(region_t destination, region_t source, size_t num_bytes, stream_t& str
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& stream);
+void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -696,7 +696,7 @@ void copy(array_t<T, NumDimensions>& destination, const T* source, stream_t& str
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& stream);
+void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream);
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
@@ -710,7 +710,7 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, stream_t& str
  * @param stream The CUDA command queue on which this copyijg will be enqueued
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source, stream_t& stream);
+inline void copy_single(T& destination, const T& source, const stream_t& stream);
 
 } // namespace async
 
@@ -756,12 +756,12 @@ inline void zero(region_t region, stream::id_t stream_id)
  * @param num_bytes size of the memory region in bytes
  * @param stream stream on which to schedule this action
  */
-inline void set(void* start, int byte_value, size_t num_bytes, stream_t& stream);
+inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream);
 
 /**
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
-inline void zero(void* start, size_t num_bytes, stream_t& stream);
+inline void zero(void* start, size_t num_bytes, const stream_t& stream);
 
 /**
  * @brief Asynchronously sets all bytes of a single pointed-to value
@@ -773,7 +773,7 @@ inline void zero(void* start, size_t num_bytes, stream_t& stream);
  * @param stream stream on which to schedule this action
  */
 template <typename T>
-inline void zero(T* ptr, stream_t& stream)
+inline void zero(T* ptr, const stream_t& stream)
 {
 	zero(ptr, sizeof(T), stream);
 }
@@ -1205,7 +1205,7 @@ inline void prefetch(
 void prefetch(
 	region_t         region,
 	cuda::device_t   destination,
-	cuda::stream_t&  stream);
+	const stream_t&  stream);
 
 /**
  * @brief Prefetches a region of managed memory into host memory. It can

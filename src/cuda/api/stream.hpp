@@ -122,7 +122,7 @@ stream_t wrap(
 
 } // namespace stream
 
-inline void synchronize(stream_t& stream);
+inline void synchronize(const stream_t& stream);
 
 /**
  * @brief Proxy class for a CUDA stream
@@ -285,10 +285,10 @@ public: // mutators
 	 */
 	class enqueue_t {
 	protected:
-		stream_t& associated_stream;
+		const stream_t& associated_stream;
 
 	public:
-		enqueue_t(stream_t& stream) : associated_stream(stream) {}
+		enqueue_t(const stream_t& stream) : associated_stream(stream) {}
 
 		template<typename KernelFunction, typename... KernelParameters>
 		void kernel_launch(
@@ -537,7 +537,7 @@ public: // mutators
 	 * Block or busy-wait until all previously-scheduled work
 	 * on this stream has been completed
 	 */
-	void synchronize()
+	void synchronize() const
 	{
 		cuda::synchronize(*this);
 	}
@@ -658,7 +658,7 @@ stream_t create(
 using queue_t = stream_t;
 using queue_id_t = stream::id_t;
 
-inline void synchronize(stream_t& stream)
+inline void synchronize(const stream_t& stream)
 {
 	auto status = cudaStreamSynchronize(stream.id());
 	throw_if_error(status,
