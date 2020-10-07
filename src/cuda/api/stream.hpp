@@ -38,15 +38,6 @@ enum : bool {
 	async = no_implicit_synchronization_with_default_stream,
 };
 
-
-/**
- * Use these for the third argument of @ref cuda::stream::wrap()
- */
-enum : bool {
-	dont_take_ownership = false,
-	take_ownership      = true,
-};
-
 namespace detail {
 
 inline id_t create_on_current_device(
@@ -251,7 +242,7 @@ protected: // static methods
 		auto device_id = std::get<0>(*triplet_ptr);
 		auto stream_id = std::get<1>(*triplet_ptr);
 		auto& callable = std::get<2>(*triplet_ptr);
-		callable( stream_t{device_id, stream_id, stream::dont_take_ownership} );
+		callable( stream_t{device_id, stream_id, do_not_take_ownership} );
 	}
 
 	/**
@@ -640,7 +631,7 @@ inline stream_t create(
 	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
 	auto new_stream_id = cuda::stream::detail::create_on_current_device(
 		synchronizes_with_default_stream, priority);
-	return wrap(device_id, new_stream_id, take_ownership);
+	return wrap(device_id, new_stream_id, do_take_ownership);
 }
 
 } // namespace detail

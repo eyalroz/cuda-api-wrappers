@@ -69,7 +69,6 @@ inline handle_t export_(event_t& event)
 
 inline event_t import(device_t& device, const handle_t& handle)
 {
-	bool do_not_take_ownership { false };
 	return event::detail::wrap(device.id(), detail::import(handle), do_not_take_ownership);
 }
 
@@ -91,9 +90,8 @@ device_t::create_stream(
 	stream::priority_t  priority)
 {
 	device::current::detail::scoped_override_t set_device_for_this_scope(id_);
-	constexpr const auto take_ownership = true;
 	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
-		will_synchronize_with_default_stream, priority), take_ownership);
+		will_synchronize_with_default_stream, priority), do_take_ownership);
 }
 
 namespace device {

@@ -111,6 +111,11 @@ enum : bool {
 
 enum : memory::shared::size_t { no_shared_memory = 0 };
 
+enum : bool {
+	do_take_ownership = true,
+	do_not_take_ownership = false,
+};
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_
