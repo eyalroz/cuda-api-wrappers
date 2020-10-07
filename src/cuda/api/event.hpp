@@ -291,8 +291,7 @@ inline event_t create_on_current_device(
 	// Note: We're trusting CUDA to actually have succeeded if it reports success,
 	// so we're not checking the newly-created event id - which is really just
 	// a pointer - for nullness
-	bool take_ownership = true;
-	return wrap(current_device_id, new_event_id, take_ownership);
+	return wrap(current_device_id, new_event_id, do_take_ownership);
 }
 
 /**
