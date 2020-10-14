@@ -159,40 +159,30 @@ inline device_t stream_t::device() const noexcept
 
 inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
-#ifndef NDEBUG
-	if (event_.device_id() != associated_stream.device_id_) {
-		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(associated_stream.device_id_) + " wait for an event on another device ("
-			"device " + std::to_string(event_.device_id()) + ")");
-	}
-#endif
+	auto device_id = associated_stream.device_id_;
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id);
 
-	// Required by the CUDA runtime API; the flags value is
-	// currently unused
-	constexpr const unsigned int  flags = 0;
+	// Required by the CUDA runtime API; the flags value is currently unused
+	constexpr const unsigned int flags = 0;
 
 	auto status = cudaStreamWaitEvent(associated_stream.id_, event_.id(), flags);
 	throw_if_error(status,
 		std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
 		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
-		+ " on CUDA device " + std::to_string(associated_stream.device_id_));
+		+ " on CUDA device " + std::to_string(device_id));
 
 }
 
 inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
-#ifndef NDEBUG
-	if (existing_event.device_id() != associated_stream.device_id_) {
-		throw std::invalid_argument("Attempt to have a stream on CUDA device "
-			+ std::to_string(associated_stream.device_id_) + " wait for an event on another device ("
-			"device " + std::to_string(existing_event.device_id()) + ")");
+	auto device_id = associated_stream.device_id_;
+	if (existing_event.device_id() != device_id) {
+		throw std::invalid_argument("Attempt to enqueue a CUDA event associated with device "
+			+ std::to_string(existing_event.device_id()) + " to be triggered by a stream on CUDA device "
+			+ std::to_string(device_id ) );
 	}
-#endif
-	auto status = cudaEventRecord(existing_event.id(), associated_stream.id_);
-	throw_if_error(status,
-		"Failed scheduling event " + cuda::detail::ptr_as_hex(existing_event.id()) + " to occur"
-		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
-		+ " on CUDA device " + std::to_string(associated_stream.device_id_));
+	device::current::detail::scoped_override_t set_device_for_this_context(device_id);
+	stream::detail::record_event_on_current_device(device_id, associated_stream.id_, existing_event.id());
 	return existing_event;
 }
 
@@ -201,9 +191,12 @@ inline event_t stream_t::enqueue_t::event(
     bool          records_timing,
     bool          interprocess)
 {
-	event_t ev { event::detail::create(associated_stream.device_id_, uses_blocking_sync, records_timing, interprocess) };
+	auto device_id = associated_stream.device_id_;
+	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+
+	event_t ev { event::detail::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess) };
 	// Note that, at this point, the event is not associated with this enqueue object's stream.
-	this->event(ev);
+	stream::detail::record_event_on_current_device(device_id, associated_stream.id_, ev.id());
 	return ev;
 }
 
@@ -508,6 +501,18 @@ inline stream_t create(
 {
 	return detail::create(device.id(), synchronizes_with_default_stream, priority);
 }
+
+namespace detail {
+
+inline void record_event_on_current_device(device::id_t device_id, stream::id_t stream_id, event::id_t event_id)
+{
+	auto status = cudaEventRecord(event_id, stream_id);
+	throw_if_error(status,
+		"Failed scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
+		+ " on stream " + cuda::detail::ptr_as_hex(stream_id)
+		+ " on CUDA device " + std::to_string(device_id));
+}
+} // namespace detail
 
 } // namespace stream
 

@@ -106,6 +106,8 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
 }
 
+inline void record_event_on_current_device(device::id_t current_device_id, stream::id_t stream_id, event::id_t event_id);
+
 /**
  * Wraps a CUDA stream ID in a stream_t proxy instance,
  * possibly also taking on the responsibility of eventually
@@ -398,6 +400,9 @@ public: // mutators
 		 *
 		 * @param existing_event A pre-created CUDA event (for the stream's device); any existing
 		 * "registration" of the event to occur elsewhere is overwritten.
+		 *
+		 * @note It is possible to wait for events across devices, but it is _not_ possible to
+		 * trigger events across devices.
 		 **/
 		event_t& event(event_t& existing_event);
 
@@ -408,6 +413,9 @@ public: // mutators
 		 * for continued execution.
 		 *
 		 * @note the parameters are the same as for @ref event::create()
+		 *
+		 * @note It is possible to wait for events across devices, but it is _not_ possible to
+		 * trigger events across devices.
 		 *
 		 **/
 		event_t event(
