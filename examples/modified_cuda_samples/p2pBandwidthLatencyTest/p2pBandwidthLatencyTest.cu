@@ -39,6 +39,12 @@ struct command_line_options {
 
 constexpr const unsigned long long default_timeout_clocks = 10000000ull;
 
+namespace bandwidth {
+	constexpr const int precision { 2 };
+	constexpr const int integral_digits { 3 };
+	constexpr const int field_width { precision + 1 + integral_digits };
+} // namespace bandwidth
+
 __global__ void delay(volatile int *flag, unsigned long long timeout_clocks = default_timeout_clocks)
 {
     // Wait until the application notifies us that it has completed queuing up the
@@ -93,7 +99,7 @@ void checkP2Paccess(int numGPUs)
         for (auto peer : cuda::devices()) {
             if ((cuda::device_t)device != (cuda::device_t)peer) {
                 auto access = cuda::device::peer_to_peer::can_access(device, peer);
-                std::cout << "Device=" << device.id() << (access ? "CAN" : "CANNOT") << " access Peer Device " << peer.id() << "\n";
+                std::cout << "Device " << device.id() << (access ? " CAN" : " CANNOT") << " access Peer Device " << peer.id() << "\n";
             }
         }
     }
@@ -217,21 +223,21 @@ void outputBandwidthMatrix(P2PEngine mechanism, int numGPUs, bool test_p2p, P2PD
         }
     }
 
-    std::cout << "Unidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth " << (p2p_method == P2P_READ ? "(P2P Reads)" : "") << " Matrix (GB/s)\n";
+    std::cout << "Unidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth " << (p2p_method == P2P_READ ? "(P2P Reads) " : "") << "Matrix (GB/s)\n";
 
-    std::cout << "   D\\D";
+    std::cout << "   D\\D ";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
     }
 
     std::cout << "\n";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
 
         for (auto peer : cuda::devices()) {
-            std::cout << std::setprecision(2) << std::setw(9) << bandwidthMatrix[device.id() * numGPUs + peer.id()];
+            std::cout << std::fixed << std::setprecision(bandwidth::precision) << std::setw(bandwidth::field_width) << bandwidthMatrix[device.id() * numGPUs + peer.id()] << ' ';
         }
 
         std::cout << "\n";
@@ -309,8 +315,8 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, int numGPUs, bo
             // Notify stream0 that stream1 is complete and record the time of
             // the total transaction
             streams_1[j].enqueue.event(stop[j]);
-            streams_0[j].enqueue.wait(stop[j]);
-            streams_0[j].enqueue.event(stop[i]);
+            streams_0[i].enqueue.wait(stop[j]);
+            streams_0[i].enqueue.event(stop[i]);
 
             // Release the queued operations
             *flag = 1;
@@ -337,16 +343,16 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, int numGPUs, bo
     std::cout << "   D\\D";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
     }
 
     std::cout << "\n";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
 
         for (auto peer : cuda::devices()) {
-            std::cout << std::setprecision(2) << std::setw(9) << bandwidthMatrix[device.id() * numGPUs + peer.id()];
+            std::cout << std::setprecision(bandwidth::precision) << std::setw(bandwidth::field_width) << bandwidthMatrix[device.id() * numGPUs + peer.id()];
         }
 
         std::cout << "\n";
@@ -441,40 +447,40 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, int numGPUs, bool test_p2p, P2
 
     std::cout
         << "P2P=" << (test_p2p ? "Enabled": "Disabled") << " Latency "
-        << (test_p2p ? (p2p_method == P2P_READ ? "(P2P Reads) " : "(P2P Writes)") : "")
-        << " Matrix (us)\n";
+        << (test_p2p ? (p2p_method == P2P_READ ? "(P2P Reads) " : "(P2P Writes) ") : "")
+        << "Matrix (us)\n";
 
-    std::cout << "   GPU";
+    std::cout << "   GPU ";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
     }
 
     std::cout << "\n";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
 
         for (auto peer : cuda::devices()) {
-            std::cout << std::setprecision(2) << std::setw(9) << gpuLatencyMatrix[device.id() * numGPUs + peer.id()];
+            std::cout << std::setprecision(bandwidth::precision) << std::setw(bandwidth::field_width) << gpuLatencyMatrix[device.id() * numGPUs + peer.id()] << ' ';
         }
 
         std::cout << "\n";
     }
 
-    std::cout << "\n   CPU";
+    std::cout << "\n   CPU ";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
     }
 
     std::cout << "\n";
 
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
 
         for (auto peer : cuda::devices()) {
-            std::cout << std::setprecision(2) << std::setw(9) << cpuLatencyMatrix[device.id() * numGPUs + peer.id()];
+            std::cout << std::setprecision(bandwidth::precision) << std::setw(bandwidth::field_width) << cpuLatencyMatrix[device.id() * numGPUs + peer.id()] << ' ';
         }
 
         std::cout << "\n";
@@ -486,20 +492,21 @@ void print_connectivity_matrix(const cuda::device::id_t numGPUs)
 {
     //Check peer-to-peer connectivity
     std::cout << "P2P Connectivity Matrix\n";
-    std::cout << "     D\\D";
+    std::cout << "   D\\D ";
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << ' ';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
     }
     std::cout << "\n";
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(6) << device.id() << '\t';
+        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
         for (auto peer : cuda::devices()) {
             if (device != peer) {
                 auto access = cuda::device::peer_to_peer::can_access(device, peer);
-                std::cout << std::setw(1) << ((access) ? 1 : 0);
+                std::cout << std::setw(bandwidth::field_width) << ((access) ? 1 : 0);
             } else {
-                std::cout << std::setw(1) << 1;
+                std::cout << std::setw(bandwidth::field_width) << 1;
             }
+            std::cout << ' ';
         }
         std::cout << "\n";
     }
