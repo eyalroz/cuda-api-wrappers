@@ -550,15 +550,21 @@ public: // mutators
 		cuda::synchronize(*this);
 	}
 
+protected: // constructor
+
+	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership = false) noexcept
+	: device_id_(device_id), id_(stream_id), owning(take_ownership) { }
+
 public: // constructors and destructor
 
-	stream_t(const stream_t& other) = delete;
+	stream_t(const stream_t& other) noexcept :
+	stream_t(other.device_id_, other.id_, false) { }
 
-	stream_t(stream_t&& other) noexcept :
-		device_id_(other.device_id_), id_(other.id_), owning(other.owning)
+	stream_t(stream_t&& other) noexcept : 
+		stream_t(other.device_id_, other.id_, other.owning)
 	{
 		other.owning = false;
-	};
+	}
 
 	~stream_t()
 	{
@@ -570,15 +576,8 @@ public: // constructors and destructor
 
 public: // operators
 
-	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
-	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t& other) = delete;
 	stream_t& operator=(stream_t& other) = delete;
-
-protected: // constructor
-
-	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership = false) noexcept
-	: device_id_(device_id), id_(stream_id), owning(take_ownership) { }
 
 public: // friendship
 

@@ -199,7 +199,7 @@ public: // friendship
 
 public: // constructors and destructor
 
-	event_t(const event_t&) = delete;
+	event_t(const event_t& other) noexcept : event_t(other.device_id_, other.id_, false) { }
 
 	event_t(event_t&& other) noexcept :
 		event_t(other.device_id_, other.id_, other.owning)
