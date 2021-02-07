@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+if(${CMAKE_VERSION} VERSION_GREATER "3.18.0")
+    cmake_policy(SET CMP0104 OLD)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 enable_language(CXX)
 enable_language(CUDA)
@@ -11,6 +15,7 @@ endif()
 include(FindCUDA) 
 
 cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_TMP Auto)
+
 set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS_TMP} CACHE STRING "CUDA -gencode parameters")
 string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
