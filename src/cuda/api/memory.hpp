@@ -984,31 +984,15 @@ inline void zero(T* ptr)
  */
 namespace managed {
 
+class region_t;
+
 namespace detail {
 
 template <typename T>
-inline T get_scalar_range_attribute(region_t region, cudaMemRangeAttribute attribute)
-{
-	uint32_t attribute_value { 0 };
-	auto result = cudaMemRangeGetAttribute(
-		&attribute_value, sizeof(attribute_value), attribute, region.start, region.size_in_bytes);
-	throw_if_error(result,
-		"Obtaining an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
-	return static_cast<T>(attribute_value);
-}
+inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttribute attribute);
 
-inline void set_scalar_range_attribute(region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
-{
-	auto result = cudaMemAdvise(region.start, region.size_in_bytes, advice, device_id);
-	throw_if_error(result,
-		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
-}
-
-inline void set_scalar_range_attribute(region_t region, cudaMemoryAdvise attribute)
-{
-	cuda::device::id_t ignored_device_index{};
-	set_scalar_range_attribute(region, attribute, ignored_device_index);
-}
+inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id);
+inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise attribute);
 
 } // namespace detail
 
@@ -1050,6 +1034,36 @@ struct region_t : public memory::region_t {
 	template <typename Allocator = std::allocator<cuda::device_t> >
 	typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() ) const;
 };
+
+
+namespace detail {
+
+template <typename T>
+inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttribute attribute)
+{
+	uint32_t attribute_value { 0 };
+	auto result = cudaMemRangeGetAttribute(
+		&attribute_value, sizeof(attribute_value), attribute, region.start, region.size_in_bytes);
+	throw_if_error(result,
+		"Obtaining an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+	return static_cast<T>(attribute_value);
+}
+
+inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
+{
+	auto result = cudaMemAdvise(region.start, region.size_in_bytes, advice, device_id);
+	throw_if_error(result,
+		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+}
+
+inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise attribute)
+{
+	cuda::device::id_t ignored_device_index{};
+	set_scalar_range_attribute(region, attribute, ignored_device_index);
+}
+
+} // namespace detail
+
 
 enum class initial_visibility_t {
 	to_all_devices,
