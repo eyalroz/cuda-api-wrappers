@@ -8,8 +8,6 @@
 #ifndef CUDA_RUNTIME_API_WRAPPERS_HPP_
 #define CUDA_RUNTIME_API_WRAPPERS_HPP_
 
-static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be compiled with C++11 or a later version of the C++ language standard");
-
 #include <cuda/common/types.hpp>
 #include <cuda/api/array.hpp>
 #include <cuda/api/constants.hpp>

@@ -18,7 +18,9 @@
 #ifndef CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 #define CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 
-static_assert(__cplusplus >= 201103L, "The CUDA Runtime API headers can only be compiled with C++11 or a later version of the C++ language standard");
+#if (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
+#error "The CUDA Runtime API headers can only be compiled with C++11 or a later version of the C++ language standard"
+#endif
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
