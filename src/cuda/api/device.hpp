@@ -132,7 +132,6 @@ inline void synchronize(device_t& device);
 class device_t {
 public: // types
 	using properties_t = device::properties_t;
-	using attribute_t = device::attribute_t;
 	using attribute_value_t = device::attribute_value_t;
 	using resource_limit_t = size_t;
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
@@ -406,7 +405,7 @@ public:
 	 * @note See @ref device::attribute_t for explanation about attributes,
 	 * properties and flags.
 	 */
-	attribute_value_t get_attribute(attribute_t attribute) const
+	attribute_value_t get_attribute(device::attribute_t attribute) const
 	{
 		attribute_value_t attribute_value;
 		auto ret = cudaDeviceGetAttribute(&attribute_value, attribute, id());

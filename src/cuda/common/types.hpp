@@ -470,7 +470,7 @@ using id_t               = int;
  * CUDA devices have both "attributes" and "properties". This is the
  * type for attribute identifiers/indices, aliasing @ref cudaDeviceAttr.
  */
-using attribute_t        = enum cudaDeviceAttr;
+using attribute_t        = cudaDeviceAttr;
 /**
  * All CUDA device attributes (@ref cuda::device::attribute_t) have a value of this type.
  */
