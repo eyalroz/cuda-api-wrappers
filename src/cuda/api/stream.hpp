@@ -20,6 +20,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <tuple>
 
 namespace cuda {
 
