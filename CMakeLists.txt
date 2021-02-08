@@ -41,6 +41,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 # Our library targets
 # -------------------
 
+if(MSVC)
+    # force MSVC to define correct values for __cplusplus macro
+    string(APPEND CMAKE_CXX_FLAGS " /Zc:__cplusplus")
+    string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=\"/Zc:__cplusplus\"")
+endif()
+
 add_library(runtime-api INTERFACE) # A header-only library!
 add_library(nvtx)
 set(wrapper-libraries runtime-api nvtx)
