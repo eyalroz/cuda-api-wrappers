@@ -124,14 +124,16 @@ int main(int argc, char **argv)
 			cudaSharedMemBankSizeEightByte : cudaSharedMemBankSizeFourByte;
 	device.set_shared_memory_bank_size(shared_mem_bank_size);
 	auto stream_priority_range = device.stream_priority_range();
-	std::cout << "Streams on device " << device.id() << " have priorities between "
-		<< stream_priority_range.first << " and " <<
-		(stream_priority_range.second == cuda::stream::unbounded_priority ? "(unbounded)" :
-		std::to_string(stream_priority_range.second)) << ".\n";
-	assert(
-		stream_priority_range.second == cuda::stream::unbounded_priority ||
-		stream_priority_range.first <= stream_priority_range.second
-		);
+	if (stream_priority_range.is_trivial()) {
+		std::cout << "Device " << device.id() << " does not support stream priorities. "
+			"All streams will have the same (default) priority.\n";
+	}
+	else {
+		std::cout << "Streams on device " << device.id() << " have priorities between "
+			<< stream_priority_range.least << " (highest numeric value, least prioritized) and "
+			<< std::to_string(stream_priority_range.greatest) << "(lowest numeric values, most prioritized).\n";
+		assert(stream_priority_range.least > stream_priority_range.greatest);
+	}
 
 	// Resource limits
 	// --------------------

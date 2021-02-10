@@ -228,8 +228,8 @@ enum : priority_t {
 	 * the scheduling priority of a stream created without specifying any other priority
 	 * value
 	 */
-	default_priority   = 0,
-	unbounded_priority = -1 };
+	default_priority   = 0
+};
 
 } // namespace stream
 

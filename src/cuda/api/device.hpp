@@ -106,6 +106,23 @@ attribute_value_t get_attribute(
 
 } // namespace peer_to_peer
 
+/**
+ * A range of priorities supported by a CUDA device; ranges from the
+ * higher numeric value to the lower.
+ */
+struct stream_priority_range_t {
+	stream::priority_t least; /// Higher numeric value, lower priority
+	stream::priority_t greatest; /// Lower numeric value, higher priority
+
+	/**
+	 * When true, stream prioritization is not supported, i.e. all streams have
+	 * "the same" priority - the default one.
+	 */
+	constexpr bool is_trivial() const {
+		return least == stream::default_priority and greatest == stream::default_priority;
+	}
+};
+
 } // namespace device
 
 
@@ -135,7 +152,7 @@ public: // types
 	using attribute_value_t = device::attribute_value_t;
 	using resource_limit_t = size_t;
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
-	using priority_range_t = std::pair<stream::priority_t, stream::priority_t>;
+
 	using resource_id_t = cudaLimit;
 
 protected: // types
@@ -582,7 +599,14 @@ public:
 			cuda::thread_blocks_may_not_cooperate, kernel_function, launch_configuration, parameters...);
 	}
 
-	priority_range_t stream_priority_range() const
+	/**
+	 * Determines the range of possible priorities for streams on this device.
+	 *
+	 * @return a priority range, whose semantics are a bit confusing; see @ref priority_range_t . If
+	 * the device does not support stream priorities, a 'trivial' range  of priority values will be
+	 * returned.
+	 */
+	device::stream_priority_range_t stream_priority_range() const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		stream::priority_t least, greatest;
