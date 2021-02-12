@@ -261,6 +261,40 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 
 } // namespace async
 
+/**
+ * @brief Create a variant of std::unique_pointer for an array in
+ * device-global memory
+ *
+ * @tparam T  an array type; _not_ the type of individual elements
+ *
+ * @param device        on which to construct the array of elements
+ * @param num_elements  the number of elements to allocate
+ * @return an std::unique_ptr pointing to the constructed T array
+ */
+template<typename T>
+inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
+{
+	static_assert(std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
+	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
+	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(num_elements);
+}
+
+/**
+ * @brief Create a variant of std::unique_pointer for a single value
+ * in device-global memory
+ *
+ * @tparam T  the type of value to construct in device memory
+ *
+ * @param device  on which to construct the T element
+ * @return an std::unique_ptr pointing to the allocated memory
+ */
+template <typename T>
+inline unique_ptr<T> make_unique(device_t device)
+{
+	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
+	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
+}
+
 } // namespace device
 
 namespace managed {

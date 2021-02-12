@@ -35,9 +35,6 @@
 
 #include <memory>
 #include <cstring> // for std::memset
-
-#include <memory>
-#include <cstring> // for std::memset
 #include <vector>
 
 namespace cuda {
