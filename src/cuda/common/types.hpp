@@ -566,7 +566,12 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 
 using native_word_t = unsigned;
 
-
+/**
+ * Object-code symbols
+ */
+struct symbol_t {
+	const void* handle;
+};
 
 } // namespace cuda
 
