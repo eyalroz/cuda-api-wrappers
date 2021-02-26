@@ -132,7 +132,7 @@ public: // mutators
 	 */
 	std::pair<grid::dimension_t, grid::block_dimension_t>
 	min_grid_params_for_max_occupancy(
-		memory::shared::size_t   dynamic_shared_memory_size = no_shared_memory,
+		memory::shared::size_t   dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t  block_size_limit = 0,
 		bool                     disable_caching_override = false);
 

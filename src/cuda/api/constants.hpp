@@ -109,7 +109,7 @@ enum : bool {
 	thread_blocks_may_not_cooperate = false
 };
 
-enum : memory::shared::size_t { no_shared_memory = 0 };
+enum : memory::shared::size_t { no_dynamic_shared_memory = 0 };
 
 enum : bool {
 	do_take_ownership = true,
