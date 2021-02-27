@@ -180,6 +180,63 @@ inline region_t allocate(cuda::device::id_t device_id, size_t size_in_bytes)
 
 } // namespace detail
 
+
+namespace async {
+
+namespace detail {
+
+/**
+ * Allocate memory asynchronously on a specified stream.
+ */
+inline region_t allocate(
+	cuda::device::id_t  device_id,
+	cuda::stream::id_t  stream_id,
+	size_t              num_bytes)
+{
+#if CUDART_VERSION >= 11020
+	void* allocated = nullptr;
+	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
+	// not in number of elements
+	auto status = cudaMallocAsync(&allocated, num_bytes, stream_id);
+	if (is_success(status) && allocated == nullptr) {
+		// Can this even happen? hopefully not
+		status = static_cast<decltype(status)>(cuda::status::unknown);
+	}
+	throw_if_error(status,
+		"Failed scheduling an asynchronous allocation of " + std::to_string(num_bytes) +
+		" bytes of global memory "
+		+ " on stream " + cuda::detail::ptr_as_hex(stream_id)
+		+ " on CUDA device " + std::to_string(device_id));
+	return {allocated, num_bytes};
+#else
+	(void) device_id;
+	(void) stream_id;
+	(void) num_bytes;
+	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory allocation is not supported with CUDA versions below 11.2");
+#endif
+}
+
+} // namespace detail
+
+/**
+ * Schedule an allocation of device-side memory on a CUDA stream.
+ *
+ * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
+ * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
+ *
+ * @throws cuda::runtime_error if scheduling fails for any reason
+ *
+ * @param stream the stream on which to register the allocation
+ * @param size_in_bytes the amount of memory to allocate
+ * @return a pointer to the region of memory which will become allocated once the stream
+ * completes all previous tasks and proceeds to also complete the allocation.
+ */
+inline region_t allocate(const cuda::stream_t& stream, size_t size_in_bytes);
+
+
+} // namespace async
+
+
 /**
  * Free a region of device-side memory (regardless of how it was allocated)
  */

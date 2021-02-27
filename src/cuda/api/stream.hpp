@@ -470,6 +470,19 @@ public: // mutators
 				+ " on CUDA device " + std::to_string(associated_stream.device_id_));
 		}
 
+
+		/**
+		 * Allocate a specified amount of memory.
+		 *
+		 * @param num_bytes amount of memory to allocate
+		 * @return a region whose location is set when scheduling, but the memory of which
+		 * only become allocated for use once the allocation task is actually reached by
+		 * the stream and completed.
+		 */
+		memory::region_t memory_allocation(size_t num_bytes) {
+			return memory::device::async::allocate(associated_stream, num_bytes);
+		}
+
 		/**
 		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
 		 * on all CUDA devices and the host) in one of several supported attachment modes.

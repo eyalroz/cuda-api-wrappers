@@ -249,6 +249,11 @@ inline region_t allocate(cuda::device_t device, size_t size_in_bytes)
 
 namespace async {
 
+inline region_t allocate(const stream_t& stream, size_t size_in_bytes)
+{
+	return detail::allocate(stream.device().id(), stream.id(), size_in_bytes);
+}
+
 inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
 	detail::set(start, byte_value, num_bytes, stream.id());
