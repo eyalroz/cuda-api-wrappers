@@ -354,7 +354,7 @@ public: // mutators
 			memory::async::detail::copy(destination, source, num_bytes, associated_stream.id_);
 		}
 
-		void copy(memory::region_t destination, memory::region_t source)
+		void copy(memory::region_t destination, const memory::region_t source)
 		{
 			memory::async::detail::copy(destination, source, associated_stream.id_);
 		}
@@ -532,7 +532,7 @@ public: // mutators
 			memory::managed::region_t region,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
-			memory_attachment(region.start, attachment);
+			memory_attachment(region.start(), attachment);
 		}
 		///@}
 

@@ -51,13 +51,31 @@ class stream_t;
  */
 namespace memory {
 
+class const_region_t;
+
 struct region_t {
-	void* start;
+	void* start_;
 	size_t size_in_bytes;
 
+	size_t& size() { return size_in_bytes; }
+	void*& start() { return start_; }
+	void*& data()  { return start(); }
+	void*& get()   { return start(); }
+};
+
+struct const_region_t : protected region_t {
+	const_region_t() = default;
+	const_region_t(const void* start, size_t size_in_bytes) {
+		start_ = const_cast<void*>(start);
+		region_t::size_in_bytes = size_in_bytes;
+	}
+	const_region_t(region_t other) : region_t(other) { }
+
+	using region_t::size;
 	size_t size() const { return size_in_bytes; }
-	void* data() const { return start; }
-	void* get() const { return start; }
+	const void* start() const { return start_; }
+	const void* data()  const { return start_; }
+	const void* get()   const { return start_; }
 };
 
 /**
@@ -246,7 +264,7 @@ inline void free(void* ptr)
 	auto result = cudaFree(ptr);
 	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail::ptr_as_hex(ptr));
 }
-inline void free(region_t region) { free(region.start); }
+inline void free(region_t region) { free(region.start()); }
 ///@}
 
 /**
@@ -266,7 +284,7 @@ inline region_t allocate(cuda::device_t device, size_t size_in_bytes);
 namespace detail {
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const { return detail::allocate(num_bytes).start; }
+	void* operator()(size_t num_bytes) const { return detail::allocate(num_bytes).start(); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
@@ -297,7 +315,7 @@ inline void set(void* start, int byte_value, size_t num_bytes)
  */
 inline void set(region_t region, int byte_value)
 {
-	set(region.start, byte_value, region.size_in_bytes);
+	set(region.start(), byte_value, region.size());
 }
 ///@}
 
@@ -321,7 +339,7 @@ inline void zero(void* start, size_t num_bytes)
  */
 inline void zero(region_t region)
 {
-	zero(region.start, region.size_in_bytes);
+	zero(region.start(), region.size());
 }
 ///@}
 
@@ -369,14 +387,14 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
  * host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  */
-inline void copy(region_t destination, region_t source)
+inline void copy(region_t destination, const_region_t source)
 {
 #ifndef NDEBUG
-	if (destination.size_in_bytes < source.size_in_bytes) {
+	if (destination.size() < source.size()) {
 		throw std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
-	auto result = cudaMemcpy(destination.start, source.start, source.size_in_bytes, cudaMemcpyDefault);
+	auto result = cudaMemcpy(destination.start(), source.start(), source.size(), cudaMemcpyDefault);
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
 	throw_if_error(result, "Synchronously copying data");
@@ -395,18 +413,18 @@ inline void copy(region_t destination, region_t source)
  */
 inline void set(region_t region, int byte_value)
 {
-	pointer_t<void> pointer { region.start };
+	pointer_t<void> pointer { region.start() };
 	switch ( pointer.attributes().memory_type() ) {
 	case device_memory:
 	case managed_memory:
 		memory::device::set(region, byte_value); break;
 	case unregistered_memory:
 	case host_memory:
-		std::memset(region.start, byte_value, region.size_in_bytes); break;
+		std::memset(region.start(), byte_value, region.size()); break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(region.start)
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail::ptr_as_hex(region.start())
 		);
 	}
 }
@@ -623,14 +641,14 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
  * host memory or on any CUDA device's global memory
  * @param stream_id A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, region_t source, stream::id_t stream_id)
+inline void copy(region_t destination, const_region_t source, stream::id_t stream_id)
 {
 #ifndef NDEBUG
-	if (destination.size_in_bytes < source.size_in_bytes) {
+	if (destination.size() < source.size()) {
 		throw std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
-	copy(destination.start, source.start, source.size_in_bytes, stream_id);
+	copy(destination.start(), source.start(), source.size(), stream_id);
 }
 ///@}
 
@@ -725,7 +743,7 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(region_t destination, region_t source, size_t num_bytes, const stream_t& stream);
+void copy(region_t destination, const_region_t source, size_t num_bytes, const stream_t& stream);
 
 
 /**
@@ -783,7 +801,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stre
 
 inline void set(region_t region, int byte_value, stream::id_t stream_id)
 {
-	set(region.start, byte_value, region.size_in_bytes, stream_id);
+	set(region.start(), byte_value, region.size(), stream_id);
 }
 
 
@@ -794,7 +812,7 @@ inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
 
 inline void zero(region_t region, stream::id_t stream_id)
 {
-	zero(region.start, region.size_in_bytes, stream_id);
+	zero(region.start(), region.size(), stream_id);
 }
 
 } // namespace detail
@@ -1089,7 +1107,6 @@ struct region_t : public memory::region_t {
 	typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() ) const;
 };
 
-
 namespace detail {
 
 template <typename T>
@@ -1097,17 +1114,17 @@ inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttrib
 {
 	uint32_t attribute_value { 0 };
 	auto result = cudaMemRangeGetAttribute(
-		&attribute_value, sizeof(attribute_value), attribute, region.start, region.size_in_bytes);
+		&attribute_value, sizeof(attribute_value), attribute, region.start(), region.size());
 	throw_if_error(result,
-		"Obtaining an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+		"Obtaining an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
 	return static_cast<T>(attribute_value);
 }
 
 inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
 {
-	auto result = cudaMemAdvise(region.start, region.size_in_bytes, advice, device_id);
+	auto result = cudaMemAdvise(region.start(), region.size(), advice, device_id);
 	throw_if_error(result,
-		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
 }
 
 inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise attribute)
@@ -1164,7 +1181,7 @@ inline void free(void* ptr)
 }
 inline void free(region_t region)
 {
-	free(region.start);
+	free(region.start());
 }
 ///@}
 
@@ -1173,7 +1190,7 @@ struct allocator {
 	// Allocates on the current device!
 	void* operator()(size_t num_bytes) const
 	{
-		return detail::allocate(num_bytes, InitialVisibility).start;
+		return detail::allocate(num_bytes, InitialVisibility).start();
 	}
 };
 struct deleter {
@@ -1224,7 +1241,7 @@ inline void free(void* managed_ptr)
 
 inline void free(region_t region)
 {
-	free(region.start);
+	free(region.start());
 }
 
 namespace advice {
@@ -1241,9 +1258,9 @@ enum device_specific_kind_t {
 inline void set(region_t region, device_inspecific_kind_t advice)
 {
 	cuda::device::id_t ignored_device_index{};
-	auto result = cudaMemAdvise(region.start, region.size_in_bytes, (cudaMemoryAdvise) advice, ignored_device_index);
+	auto result = cudaMemAdvise(region.start(), region.size(), (cudaMemoryAdvise) advice, ignored_device_index);
 	throw_if_error(result,
-		"Setting advice on a (managed) memory region at" + cuda::detail::ptr_as_hex(region.start));
+		"Setting advice on a (managed) memory region at" + cuda::detail::ptr_as_hex(region.start()));
 }
 
 } // namespace advice
@@ -1257,10 +1274,10 @@ inline void prefetch(
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
 {
-	auto result = cudaMemPrefetchAsync(region.start, region.size_in_bytes, destination, stream_id);
+	auto result = cudaMemPrefetchAsync(region.start(), region.size(), destination, stream_id);
 	throw_if_error(result,
-		"Prefetching " + std::to_string(region.size_in_bytes) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(region.start) + " to device " + std::to_string(destination));
+		"Prefetching " + std::to_string(region.size()) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(region.start()) + " to device " + std::to_string(destination));
 }
 
 } // namespace detail
@@ -1282,15 +1299,15 @@ void prefetch(
 inline void prefetch_to_host(region_t managed_region)
 {
 	auto result = cudaMemPrefetchAsync(
-		managed_region.start,
-		managed_region.size_in_bytes,
+		managed_region.start(),
+		managed_region.size(),
 		cudaCpuDeviceId,
 		stream::default_stream_id);
 		// The stream ID will be ignored by the CUDA runtime API when this pseudo
 		// device indicator is used.
 	throw_if_error(result,
-		"Prefetching " + std::to_string(managed_region.size_in_bytes) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(managed_region.start) + " into host memory");
+		"Prefetching " + std::to_string(managed_region.size()) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(managed_region.start()) + " into host memory");
 }
 
 } // namespace async
@@ -1443,9 +1460,9 @@ inline void free_region_pair_of(void* ptr)
  * @return `true` iff the region was allocated as one side of a mapped
  * memory region pair
  */
-inline bool is_part_of_a_region_pair(void* ptr)
+inline bool is_part_of_a_region_pair(const void* ptr)
 {
-	auto wrapped_ptr = pointer_t<void> { ptr };
+	auto wrapped_ptr = pointer_t<const void> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
 
@@ -1458,12 +1475,13 @@ inline bool is_part_of_a_region_pair(void* ptr)
  */
 inline region_t locate(symbol_t symbol)
 {
-	region_t result;
-	auto api_call_result = cudaGetSymbolAddress(&result.start, symbol.handle);
+	void* start;
+	size_t symbol_size;
+	auto api_call_result = cudaGetSymbolAddress(&start, symbol.handle);
 	throw_if_error(api_call_result, "Could not locate the device memory address for symbol " + cuda::detail::ptr_as_hex(symbol.handle));
-	api_call_result = cudaGetSymbolSize(&result.size_in_bytes, symbol.handle);
+	api_call_result = cudaGetSymbolSize(&symbol_size, symbol.handle);
 	throw_if_error(api_call_result, "Could not locate the device memory address for symbol " + cuda::detail::ptr_as_hex(symbol.handle));
-	return result;
+	return {start, symbol_size};
 }
 
 } // namespace memory

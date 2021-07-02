@@ -215,7 +215,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, const 
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-inline void copy(region_t destination, region_t source, const stream_t& stream)
+inline void copy(region_t destination, const_region_t source, const stream_t& stream)
 {
 	detail::copy(destination, source, stream.id());
 }
@@ -342,8 +342,8 @@ std::vector<device_t, Allocator> region_t::accessors(region_t region, const Allo
 
 	auto status = cudaMemRangeGetAttribute(
 		device_ids, sizeof(device_t) * devices.size(),
-		cudaMemRangeAttributeAccessedBy, region.start, region.size_in_bytes);
-	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start));
+		cudaMemRangeAttributeAccessedBy, region.start(), region.size_in_bytes);
+	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
 	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
