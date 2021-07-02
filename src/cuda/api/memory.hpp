@@ -1100,12 +1100,13 @@ struct region_t : public memory::region_t {
 	void set_preferred_location(device_t& device) const;
 	void clear_preferred_location() const;
 
-	void advise_expected_access_by(device_t& device) const;
-	void advise_no_access_expected_by(device_t& device) const;
-
-	template <typename Allocator = std::allocator<cuda::device_t> >
-	typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() ) const;
 };
+
+void advise_expected_access_by(region_t region, device_t& device);
+void advise_no_access_expected_by(region_t region, device_t& device);
+
+template <typename Allocator = std::allocator<cuda::device_t> >
+typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail {
 

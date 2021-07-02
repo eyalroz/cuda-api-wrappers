@@ -320,18 +320,18 @@ inline void region_t::clear_preferred_location() const
 	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
 }
 
-inline void region_t::advise_expected_access_by(device_t& device) const
+inline void advise_expected_access_by(region_t region, device_t& device)
 {
-	detail::set_scalar_range_attribute(*this, cudaMemAdviseSetAccessedBy, device.id());
+	detail::set_scalar_range_attribute(region, cudaMemAdviseSetAccessedBy, device.id());
 }
 
-inline void region_t::advise_no_access_expected_by(device_t& device) const
+inline void advise_no_access_expected_by(region_t region, device_t& device)
 {
-	detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetAccessedBy, device.id());
+	detail::set_scalar_range_attribute(region, cudaMemAdviseUnsetAccessedBy, device.id());
 }
 
 template <typename Allocator>
-std::vector<device_t, Allocator> region_t::accessors(region_t region, const Allocator& allocator) const
+std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator)
 {
 	static_assert(sizeof(cuda::device::id_t) == sizeof(device_t), "Unexpected size difference between device IDs and their wrapper class, device_t");
 
