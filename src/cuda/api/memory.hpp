@@ -51,31 +51,30 @@ class stream_t;
  */
 namespace memory {
 
-class const_region_t;
-
 struct region_t {
 	void* start_;
 	size_t size_in_bytes;
 
-	size_t& size() { return size_in_bytes; }
 	void*& start() { return start_; }
-	void*& data()  { return start(); }
-	void*& get()   { return start(); }
+	size_t& size() { return size_in_bytes; }
+
+	size_t size() const { return size_in_bytes; }
+	void* start() const { return start_; }
+	void* data()  const { return start(); }
+	void* get()   const { return start(); }
 };
 
 struct const_region_t : protected region_t {
 	const_region_t() = default;
-	const_region_t(const void* start, size_t size_in_bytes) {
-		start_ = const_cast<void*>(start);
-		region_t::size_in_bytes = size_in_bytes;
-	}
+	const_region_t(const void* start, size_t size_in_bytes)
+		: region_t { const_cast<void*>(start), size_in_bytes } { }
 	const_region_t(region_t other) : region_t(other) { }
 
 	using region_t::size;
-	size_t size() const { return size_in_bytes; }
-	const void* start() const { return start_; }
-	const void* data()  const { return start_; }
-	const void* get()   const { return start_; }
+	void const *& start() { return const_cast<void const*&>(start_); }
+	void const * start() const { return start_; }
+	void const * data()  const { return start(); }
+	void const * get()   const { return start(); }
 };
 
 /**
@@ -1056,62 +1055,88 @@ inline void zero(T* ptr)
  */
 namespace managed {
 
-class region_t;
+class const_region_t;
 
 namespace detail {
 
 template <typename T>
-inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttribute attribute);
+inline T get_scalar_range_attribute(managed::const_region_t region, cudaMemRangeAttribute attribute);
 
-inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id);
-inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise attribute);
+inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id);
+inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise attribute);
 
 } // namespace detail
 
 struct region_t : public memory::region_t {
 	using parent = memory::region_t;
 
-#if __cplusplus < 201703L
 	region_t() = default;
 	region_t(void* start, size_t size_in_bytes) : parent{start, size_in_bytes} { }
 	region_t(const region_t&) = default;
 	region_t(region_t&&) = default;
 	~region_t() = default;
-#endif
 
 	// TODO: Consider using a field proxy
 
-	bool is_read_mostly() const
-	{
-		return detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
-	}
+	bool is_read_mostly() const;
 
-	void designate_read_mostly() const
-	{
-		detail::set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
-	}
-
-	void undesignate_read_mostly() const
-	{
-		detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
-	}
+	void designate_read_mostly() const;
+	void undesignate_read_mostly() const;
 
 	device_t preferred_location() const;
 	void set_preferred_location(device_t& device) const;
 	void clear_preferred_location() const;
+};
+
+struct const_region_t : protected region_t {
+	using parent = region_t;
+
+	const_region_t() = default;
+	const_region_t(const void *start, size_t size_in_bytes)
+	: managed::region_t { const_cast<void*>(start), size_in_bytes } { }
+	const_region_t(managed::region_t other)	: managed::region_t(other) { }
+
+	using region_t::size;
+
+	size_t size() const { return size_in_bytes; }
+	const void *start() const { return start_; }
+	const void *data() const { return start_; }
+	const void *get() const { return start_; }
+
+	using parent::is_read_mostly;
+	using parent::designate_read_mostly;
+	using parent::undesignate_read_mostly;
+	using parent::preferred_location;
+	using parent::clear_preferred_location;
 
 };
 
-void advise_expected_access_by(region_t region, device_t& device);
-void advise_no_access_expected_by(region_t region, device_t& device);
+inline bool region_t::is_read_mostly() const
+{
+	return detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
+}
+
+inline void region_t::designate_read_mostly() const
+{
+	detail::set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
+}
+
+inline void region_t::undesignate_read_mostly() const
+{
+	detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
+}
+
+
+void advise_expected_access_by(managed::const_region_t region, device_t& device);
+void advise_no_access_expected_by(managed::const_region_t region, device_t& device);
 
 template <typename Allocator = std::allocator<cuda::device_t> >
-typename std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator = Allocator() );
+typename std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail {
 
 template <typename T>
-inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttribute attribute)
+inline T get_scalar_range_attribute(managed::const_region_t region, cudaMemRangeAttribute attribute)
 {
 	uint32_t attribute_value { 0 };
 	auto result = cudaMemRangeGetAttribute(
@@ -1121,14 +1146,14 @@ inline T get_scalar_range_attribute(managed::region_t region, cudaMemRangeAttrib
 	return static_cast<T>(attribute_value);
 }
 
-inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
+inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id)
 {
 	auto result = cudaMemAdvise(region.start(), region.size(), advice, device_id);
 	throw_if_error(result,
 		"Setting an attribute for a managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
 }
 
-inline void set_scalar_range_attribute(managed::region_t region, cudaMemoryAdvise attribute)
+inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise attribute)
 {
 	cuda::device::id_t ignored_device_index{};
 	set_scalar_range_attribute(region, attribute, ignored_device_index);
@@ -1256,7 +1281,7 @@ enum device_specific_kind_t {
 	accessor,
 };
 
-inline void set(region_t region, device_inspecific_kind_t advice)
+inline void set(const_region_t region, device_inspecific_kind_t advice)
 {
 	cuda::device::id_t ignored_device_index{};
 	auto result = cudaMemAdvise(region.start(), region.size(), (cudaMemoryAdvise) advice, ignored_device_index);
@@ -1271,7 +1296,7 @@ namespace async {
 namespace detail {
 
 inline void prefetch(
-	region_t            region,
+	const_region_t      region,
 	cuda::device::id_t  destination,
 	stream::id_t        stream_id)
 {
@@ -1289,7 +1314,7 @@ inline void prefetch(
  * devices.
  */
 void prefetch(
-	region_t         region,
+	const_region_t   region,
 	cuda::device_t   destination,
 	const stream_t&  stream);
 

@@ -320,18 +320,18 @@ inline void region_t::clear_preferred_location() const
 	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
 }
 
-inline void advise_expected_access_by(region_t region, device_t& device)
+inline void advise_expected_access_by(const_region_t region, device_t& device)
 {
 	detail::set_scalar_range_attribute(region, cudaMemAdviseSetAccessedBy, device.id());
 }
 
-inline void advise_no_access_expected_by(region_t region, device_t& device)
+inline void advise_no_access_expected_by(const_region_t region, device_t& device)
 {
 	detail::set_scalar_range_attribute(region, cudaMemAdviseUnsetAccessedBy, device.id());
 }
 
 template <typename Allocator>
-std::vector<device_t, Allocator> accessors(region_t region, const Allocator& allocator)
+std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator)
 {
 	static_assert(sizeof(cuda::device::id_t) == sizeof(device_t), "Unexpected size difference between device IDs and their wrapper class, device_t");
 
@@ -342,7 +342,7 @@ std::vector<device_t, Allocator> accessors(region_t region, const Allocator& all
 
 	auto status = cudaMemRangeGetAttribute(
 		device_ids, sizeof(device_t) * devices.size(),
-		cudaMemRangeAttributeAccessedBy, region.start(), region.size_in_bytes);
+		cudaMemRangeAttributeAccessedBy, region.start(), region.size());
 	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
 	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
@@ -357,7 +357,7 @@ std::vector<device_t, Allocator> accessors(region_t region, const Allocator& all
 namespace async {
 
 inline void prefetch(
-	region_t         region,
+	const_region_t   region,
 	cuda::device_t   destination,
 	const stream_t&  stream)
 {
