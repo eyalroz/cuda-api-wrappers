@@ -1,5 +1,10 @@
-# We need version 3.8 for native CUDA support in CMake
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+# Does your system only have an older version of CMake? Not to worry!
+# CMake offers download-and-use binary packages, with no installation 
+# necessary...  Visit https://cmake.org/download/ and grab one for 
+# your platform. They are not finicky with library dependencies, so
+# compatability is very likely. Also, the package's CMake binary will
+# not mistake any other local CMake-related files for its own.
+cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 # -----------------------------------
@@ -11,26 +16,15 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-# Set additonal project information via parameters if supported
-set(PROJECT_EXTRA_PARAMS "")
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
-	list(APPEND PROJECT_EXTRA_PARAMS
-		DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
-	)
-endif()
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-	list(APPEND PROJECT_EXTRA_PARAMS
-		HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
-	)
-endif()
 PROJECT(cuda-api-wrappers
-	${PROJECT_EXTRA_PARAMS}
-	VERSION 0.4.2
+	VERSION 0.4.3
+	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
+	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
-include(FindCUDA)
 include(GNUInstallDirs)
 
+find_package(CUDAToolkit REQUIRED)
 find_package(Threads REQUIRED)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
@@ -53,11 +47,7 @@ foreach(WRAPPER_LIB ${wrapper-libraries})
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
-	# The following line _should_ have been something like:
-	# target_link_libraries(${WRAPPER_LIB} PUBLIC CUDA::CUDALibs)
-	# ... but that's not supported.
-	target_include_directories(${WRAPPER_LIB} INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(${WRAPPER_LIB} INTERFACE ${CUDA_LIBRARIES})
+	target_link_libraries(${WRAPPER_LIB} INTERFACE CUDA::cudart) # CUDA::cuda_driver)
 endforeach()
 
 set_target_properties(nvtx PROPERTIES OUTPUT_NAME "cuda-nvtx-wrappers")
@@ -65,15 +55,14 @@ target_link_libraries(nvtx PUBLIC runtime-api)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET nvtx PROPERTY CXX_EXTENSIONS OFF)
-
 target_sources(nvtx PRIVATE src/cuda/nvtx/profiling.cpp)
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
 if(DEFINED CMAKE_USE_PTHREADS_INIT)
-	target_compile_definitions(nvtx PUBLIC "" "CUDA_API_WRAPPERS_USE_PTHREADS")
+	target_compile_definitions(nvtx PRIVATE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
-	target_compile_definitions(nvtx PUBLIC "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
+	target_compile_definitions(nvtx PRIVATE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
 target_link_libraries(nvtx PRIVATE Threads::Threads)

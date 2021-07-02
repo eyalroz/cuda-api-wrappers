@@ -9,41 +9,99 @@ matrix:
   include:
     - name: CUDA 9.2
       env:
+      - CUDA_MAJOR_VERSION=9
+      - CUDA_MINOR_VERSION=2
       - CUDA=9.2.148-1
       - CUDA_SHORT=9.2
       - CUDA_APT=9-2
+      - CORE_PACKAGE_SUFFIX="core-"
       - UBUNTU_VERSION=ubuntu1604
       dist: xenial
     - name: CUDA 10.1
       env:
+      - CUDA_MAJOR_VERSION=10
+      - CUDA_MINOR_VERSION=1
       - CUDA=10.1.105-1
       - CUDA_APT=10-1
       - CUDA_SHORT=10.1
       - UBUNTU_VERSION=ubuntu1804
+      - CUDAARCHS="52;53;60;61;62;70;72;75"
       dist: bionic
     - name: CUDA 10.2
       env:
+      - CUDA_MAJOR_VERSION=10
+      - CUDA_MINOR_VERSION=2
       - CUDA=10.2.89-1
       - CUDA_APT=10-2
       - CUDA_SHORT=10.2
       - UBUNTU_VERSION=ubuntu1804
+      - CUDAARCHS="52;53;60;61;62;70;72;75"
       dist: bionic
+    - name: CUDA 11.3
+      env:
+      - CUDA_MAJOR_VERSION=11
+      - CUDA_MINOR_VERSION=3
+      - CUDA=11.3.0-1
+      - CUDA_APT=11-3
+      - CUDA_SHORT=11.3
+      - UBUNTU_VERSION=ubuntu2004
+      - CUDAARCHS="52;53;60;61;62;70;72;75;80"
+    - name: CUDA 11.4
+      env:
+      - CUDA_MAJOR_VERSION=11
+      - CUDA_MINOR_VERSION=4
+      - CUDA=11.4.0-1
+      - CUDA_APT=11-4
+      - CUDA_SHORT=11.4
+      - UBUNTU_VERSION=ubuntu2004
+      - CUDAARCHS="52;53;60;61;62;70;72;75;80"
+      dist: focal
 
 before_install:
-  - INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
-  - wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
-  - sudo dpkg -i ${INSTALLER}
+  - BASE_URL=https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64
+  - if (( CUDA_MAJOR_VERSION >= 11 )); then
+      wget ${BASE_URL}/cuda-ubuntu2004.pin;
+      sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600;
+    fi
   - wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
   - sudo apt-key add 7fa2af80.pub
-  - sudo apt update -qq
-  - sudo apt install -y cuda-core-${CUDA_APT} cuda-cudart-dev-${CUDA_APT} cuda-nvtx-${CUDA_APT}
-  - sudo apt clean
+  - if (( CUDA_MAJOR_VERSION >= 11 )); then
+      sudo add-apt-repository "deb ${BASE_URL}/ /";
+    else
+      INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb;
+      wget ${BASE_URL}/${INSTALLER};
+      sudo dpkg -i ${INSTALLER};
+    fi
+  - sudo apt update
+  - if (( CUDA_MAJOR_VERSION >= 11 )); then
+      apt-cache policy cuda-drivers;
+      apt-cache search cuda-runtime;
+      apt-cache search nvidia-settings;
+      sudo apt install -y cuda-runtime-${CUDA_APT} cuda-toolkit-${CUDA_APT} cuda-compiler-${CUDA_APT} cuda-drivers=470.42.01-1 cuda-drivers-470 libnvidia-gl-470 libnvidia-ifr1-470 nvidia-driver-470 xserver-xorg-video-nvidia-470 nvidia-settings;
+    else
+      sudo apt install -y cuda-core-${CUDA_APT};
+    fi
+  - sudo apt install -y cuda-cudart-dev-${CUDA_APT} cuda-nvtx-${CUDA_APT}
+#  - sudo apt clean
   - CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
-  - LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
-  - PATH=${CUDA_HOME}/bin:${PATH}
-  
+  - LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+  - PATH="${CUDA_HOME}/bin:${PATH}"
+
+install:
+  - CMAKE_ARCHIVE_FILE_BASENAME="cmake-3.17.5-Linux-x86_64"
+  - CMAKE_ARCHIVE_FILENAME="${CMAKE_ARCHIVE_FILE_BASENAME}.tar.gz"
+  - echo "c240abaaa4df5a7441915b3f6ecd636b  ${CMAKE_ARCHIVE_FILENAME}" > cmake_md5.txt
+  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.17/${CMAKE_ARCHIVE_FILENAME}
+  - md5sum -c cmake_md5.txt
+  - export DEPS_DIR="$(pwd)/travis-deps/"
+  - mkdir -p "${DEPS_DIR}"
+  - tar xvf ${CMAKE_ARCHIVE_FILENAME} -C "${DEPS_DIR}" > /dev/null
+  - PATH="${DEPS_DIR}/${CMAKE_ARCHIVE_FILE_BASENAME}/bin:$PATH"
+
+
 before_script:
-    - mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON ..
+  - mkdir build
+  - cd build; cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON ..
 
 script: 
-    - VERBOSE=1 make
+  - VERBOSE=1 make

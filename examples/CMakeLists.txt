@@ -1,23 +1,31 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
-if(${CMAKE_VERSION} VERSION_GREATER "3.18.0")
-    cmake_policy(SET CMP0104 OLD)
-endif()
-
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 enable_language(CXX)
 enable_language(CUDA)
 
-if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	# Avoid a build failure when the BUILD_SHARED_LIBS variable is set to true.
-	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+include(FindCUDA/select_compute_arch)
+# This _should_ work with CMake 3.18 and later...:
+#
+#if((NOT DEFINED CUDA_ARCH_LIST) OR ("${CUDA_ARCH_LIST}" STREQUAL ""))
+#	CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+#	string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+#	string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+#	string(REPLACE "." "" INSTALLED_GPU_CC_LIST "${INSTALLED_GPU_CCS_3}")
+#	set(CUDA_ARCH_LIST "${INSTALLED_GPU_CC_LIST}" CACHE STRING "GPU Architecture / Compute Capability codes to use; semicolon-separates" FORCE)
+#
+#endif()
+#LIST(APPEND CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+#
+# ... but it doesn't, for some versions of CUDA, and on some platforms. Somehow, the script messes up the flags passed to NVCC
+# So, for now, we're falling back on the old-style method of directly appending to CMAKE_CUDA_FLAGS rather than going through CUDA_ARCHITECTURES.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+	cmake_policy(SET CMP0104 OLD)
 endif()
-
-include(FindCUDA) 
-
-cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_TMP Auto)
-
-set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS_TMP} CACHE STRING "CUDA -gencode parameters")
-string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
+if((NOT DEFINED CUDA_ARCH_FLAGS) OR ("${CUDA_ARCH_FLAGS}" STREQUAL ""))
+	cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_1 Auto)
+	set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA -gencode parameters")
+	string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
+else()
+	set(CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
+endif()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
 
 include(CompileWithWarnings)
@@ -58,10 +66,10 @@ add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_str
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp )
 
 if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
-    # A weird NVCC-only linking issue
-    set_target_properties(execution_control PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+	# A weird NVCC-only linking issue
+	set_target_properties(execution_control PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-    # __nv_tex_surf_handler not yet implemented in Clang (as of 11.0)
-    # https://reviews.llvm.org/D76365
-    add_executable(array_management other/array_management.cu)
+	# __nv_tex_surf_handler not yet implemented in Clang (as of 11.0)
+	# https://reviews.llvm.org/D76365
+	add_executable(array_management other/array_management.cu)
 endif()
