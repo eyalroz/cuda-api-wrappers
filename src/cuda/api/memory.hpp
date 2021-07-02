@@ -665,13 +665,14 @@ namespace detail_ {
  * @param stream_id A stream on which to enqueue the copy operation
  */
 
+///@{
 /**
 * @param destination A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param source A pointer to a memory region of size at least @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param num_bytes number of bytes to copy from @p source
-* @parem stream_id The stream on which to schedule the copying
+ * @param stream_id The handle of a stream on which to schedule the copy operation
 */
 inline void copy(void* destination, const void* source, size_t num_bytes, stream::id_t stream_id)
 {
@@ -681,6 +682,24 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 	// add this information to the error string
 	throw_if_error(result, "Scheduling a memory copy on stream " + cuda::detail_::ptr_as_hex(stream_id));
 }
+
+/**
+ *  @param destination a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param stream_id The handle of a stream on which to schedule the copy operation
+ */
+inline void copy(region_t destination, const_region_t source, stream::id_t stream_id)
+{
+#ifndef NDEBUG
+	if (destination.size() < source.size()) {
+		throw std::logic_error("Can't copy a large region into a smaller one");
+	}
+#endif
+	copy(destination.start(), source.start(), source.size(), stream_id);
+}
+///@}
 
 template<typename T>
 void copy(array_t<T, 3>& destination, const T* source, stream::id_t stream_id)
@@ -1114,7 +1133,7 @@ inline void register_(const_region_t region)
 // the CUDA API calls this "unregister", but that's semantically
 // inaccurate. The registration is not undone, rolled back, it's
 // just ended
-inline void deregister(void const *ptr)
+inline void deregister(const void *ptr)
 {
 	auto result = cudaHostUnregister(const_cast<void *>(ptr));
 	throw_if_error(result,
@@ -1584,7 +1603,7 @@ inline void free_region_pair_of(void* ptr)
  */
 inline bool is_part_of_a_region_pair(const void* ptr)
 {
-	auto wrapped_ptr = pointer_t<void const> { ptr };
+	auto wrapped_ptr = pointer_t<const void> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
 
