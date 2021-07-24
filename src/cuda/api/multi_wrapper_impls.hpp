@@ -215,11 +215,6 @@ inline void copy(void *destination, const void *source, size_t num_bytes, const 
 	detail::copy(destination, source, num_bytes, stream.id());
 }
 
-inline void copy(region_t destination, const_region_t source, const stream_t& stream)
-{
-	detail::copy(destination, source, stream.id());
-}
-
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream)
 {

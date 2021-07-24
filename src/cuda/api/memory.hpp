@@ -380,11 +380,22 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 }
 
 /**
- *  @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param destination A memory region of size @p num_bytes, either in
+ *     host memory or on any CUDA device's global memory
+ * @param source A region whose contents is to be copied,  either in host memory
+ *     or on any CUDA device's global memory
+ */
+inline void copy(void* destination, const_region_t source)
+{
+	return copy(destination, source.start(), source.size());
+}
+
+/**
+ * @param destination A region of memory to which to copy the data in@source, of
+ *     size @p num_bytes at least, either in host memory or on any CUDA device's
+ *     global memory.
+ * @param source A region whose contents is to be copied,  either in host memory
+ *     or on any CUDA device's global memory
  */
 inline void copy(region_t destination, const_region_t source)
 {
@@ -393,10 +404,7 @@ inline void copy(region_t destination, const_region_t source)
 		throw std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
-	auto result = cudaMemcpy(destination.start(), source.start(), source.size(), cudaMemcpyDefault);
-	// TODO: Determine whether it was from host to device, device to host etc and
-	// add this information to the error string
-	throw_if_error(result, "Synchronously copying data");
+	return copy(destination.start(), source);
 }
 ///@}
 
@@ -523,7 +531,6 @@ inline void copy(array_t<T, 3>& destination, const T *source)
 	throw_if_error(result, "Synchronously copying into a 3-dimensional CUDA array");
 }
 
-
 template <typename T>
 inline void copy(T *destination, const array_t<T, 2>& source)
 {
@@ -616,13 +623,13 @@ namespace detail {
  * @param stream_id A stream on which to enqueue the copy operation
  */
 
-///@{
 /**
 * @param destination A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param source A pointer to a memory region of size at least @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param num_bytes number of bytes to copy from @p source
+* @parem stream_id The stream on which to schedule the copying
 */
 inline void copy(void* destination, const void* source, size_t num_bytes, stream::id_t stream_id)
 {
@@ -632,24 +639,6 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 	// add this information to the error string
 	throw_if_error(result, "Scheduling a memory copy on stream " + cuda::detail::ptr_as_hex(stream_id));
 }
-
-/**
- *  @param destination a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param stream_id A stream on which to enqueue the copy operation
- */
-inline void copy(region_t destination, const_region_t source, stream::id_t stream_id)
-{
-#ifndef NDEBUG
-	if (destination.size() < source.size()) {
-		throw std::logic_error("Can't copy a large region into a smaller one");
-	}
-#endif
-	copy(destination.start(), source.start(), source.size(), stream_id);
-}
-///@}
 
 template<typename T>
 void copy(array_t<T, 3>& destination, const T* source, stream::id_t stream_id)
@@ -742,8 +731,37 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(region_t destination, const_region_t source, size_t num_bytes, const stream_t& stream);
+void copy(void* destination, void const* source, size_t num_bytes, const stream_t& stream);
 
+inline void copy(void* destination, const_region_t source, size_t num_bytes, const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (source.size() < num_bytes) {
+		throw std::logic_error("Attempt to copy more than the source region's size");
+	}
+#endif
+	copy(destination, source.start(), num_bytes, stream);
+}
+
+inline void copy(region_t destination, const_region_t source, size_t num_bytes, const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (destination.size() < num_bytes) {
+		throw std::logic_error("Attempt to copy beyond the end of the destination region");
+	}
+#endif
+	copy(destination.start(), source.start(), num_bytes, stream);
+}
+
+inline void copy(void* destination, const_region_t source, const stream_t& stream)
+{
+	copy(destination, source, source.size(), stream);
+}
+
+inline void copy(region_t destination, const_region_t source, const stream_t& stream)
+{
+	copy(destination, source, source.size(), stream);
+}
 
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
@@ -755,7 +773,21 @@ void copy(region_t destination, const_region_t source, size_t num_bytes, const s
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
+inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
+
+template <typename T, dimensionality_t NumDimensions>
+void copy(array_t<T, NumDimensions>& destination, const_region_t source, const stream_t& stream)
+{
+#ifndef NDEBUG
+	size_t required_size = destination.size() * sizeof(T);
+	if (source.size() != required_size) {
+		throw std::invalid_argument(
+			"Attempt to copy a region of " + std::to_string(source.size()) +
+			" bytes into an array of size " + std::to_string(required_size) + " bytes");
+	}
+#endif
+	copy(destination, source.start(), stream);
+}
 
 /**
  * Asynchronously copies data from CUDA arrays into memory spaces.
@@ -769,6 +801,20 @@ void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_
 template <typename T, dimensionality_t NumDimensions>
 void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream);
 
+template <typename T, dimensionality_t NumDimensions>
+void copy(region_t destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
+{
+#ifndef NDEBUG
+	size_t required_size = destination.size() * sizeof(T);
+	if (destination.size() < required_size) {
+		throw std::invalid_argument(
+			"Attempt to copy " + std::to_string(required_size) + " bytes from an array into a "
+			"region of smaller size (" + std::to_string(destination.size()) + " bytes)");
+	}
+#endif
+	copy(destination.start(), source, stream);
+}
+
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
  *
@@ -781,7 +827,7 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_
  * @param stream The CUDA command queue on which this copyijg will be enqueued
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source, const stream_t& stream);
+void copy_single(T& destination, const T& source, const stream_t& stream);
 
 } // namespace async
 
@@ -938,11 +984,17 @@ struct deleter {
  * @param size the size in bytes the memory region to register/pin
  * @param flags
  */
-inline void register_(void *ptr, size_t size, unsigned flags)
+inline void register_(void const *ptr, size_t size, unsigned flags)
 {
-	auto result = cudaHostRegister(ptr, size, flags);
+	auto result = cudaHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error(result,
-		"Could not register a region of page-locked host memory");
+		"Could not register and page-lock the region of " + std::to_string(size) +
+		" bytes of host memory at " + cuda::detail::ptr_as_hex(ptr));
+}
+
+inline void register_(const_region_t region, unsigned flags)
+{
+	register_(region.start(), region.size(), flags);
 }
 
 } // namespace detail
@@ -992,19 +1044,44 @@ inline void register_(void *ptr, size_t size,
 	);
 }
 
-inline void register_(void *ptr, size_t size)
+inline void register_(
+	const_region_t region,
+	bool register_mapped_io_space,
+	bool map_into_device_space,
+	bool make_device_side_accesible_to_all)
+{
+	register_(
+		const_cast<void *>(region.start()),
+		region.size(),
+		register_mapped_io_space,
+		map_into_device_space,
+		make_device_side_accesible_to_all);
+}
+
+
+inline void register_(void const *ptr, size_t size)
 {
 	detail::register_(ptr, size, cudaHostRegisterDefault);
+}
+
+inline void register_(const_region_t region)
+{
+	register_(region.start(), region.size());
 }
 
 // the CUDA API calls this "unregister", but that's semantically
 // inaccurate. The registration is not undone, rolled back, it's
 // just ended
-inline void deregister(void *ptr)
+inline void deregister(void const *ptr)
 {
-	auto result = cudaHostUnregister(ptr);
+	auto result = cudaHostUnregister(const_cast<void *>(ptr));
 	throw_if_error(result,
 		"Could not unregister the memory segment starting at address *a");
+}
+
+inline void deregister(const_region_t region)
+{
+	deregister(region.start());
 }
 
 /**
@@ -1093,15 +1170,15 @@ struct const_region_t : protected region_t {
 
 	const_region_t() = default;
 	const_region_t(const void *start, size_t size_in_bytes)
-	: managed::region_t { const_cast<void*>(start), size_in_bytes } { }
+		: managed::region_t { const_cast<void*>(start), size_in_bytes } { }
 	const_region_t(managed::region_t other)	: managed::region_t(other) { }
 
 	using region_t::size;
 
-	size_t size() const { return size_in_bytes; }
-	const void *start() const { return start_; }
-	const void *data() const { return start_; }
-	const void *get() const { return start_; }
+	void const *& start() { return const_cast<void const*&>(start_); }
+	void const * start() const { return start_; }
+	void const * data()  const { return start(); }
+	void const * get()   const { return start(); }
 
 	using parent::is_read_mostly;
 	using parent::designate_read_mostly;
@@ -1322,7 +1399,7 @@ void prefetch(
  * @brief Prefetches a region of managed memory into host memory. It can
  * later be used there without waiting for I/O from any of the CUDA devices.
  */
-inline void prefetch_to_host(region_t managed_region)
+inline void prefetch_to_host(const_region_t managed_region)
 {
 	auto result = cudaMemPrefetchAsync(
 		managed_region.start(),

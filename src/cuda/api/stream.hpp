@@ -26,7 +26,6 @@ namespace cuda {
 
 class device_t;
 class event_t;
-
 class stream_t;
 
 namespace stream {
@@ -354,9 +353,24 @@ public: // mutators
 			memory::async::detail::copy(destination, source, num_bytes, associated_stream.id_);
 		}
 
-		void copy(memory::region_t destination, const memory::region_t source)
+		void copy(void* destination, memory::const_region_t source, size_t num_bytes)
 		{
-			memory::async::detail::copy(destination, source, associated_stream.id_);
+#ifndef NDEBUG
+			if (source.size() < num_bytes) {
+				throw std::logic_error("Attempt to copy more than the source region's size");
+			}
+#endif
+			copy(destination, source.start(), num_bytes);
+		}
+
+		void copy(memory::region_t destination, memory::const_region_t source, size_t num_bytes)
+		{
+			copy(destination.start(), source, num_bytes);
+		}
+
+		void copy(memory::region_t destination, memory::const_region_t source)
+		{
+			copy(destination, source, source.size());
 		}
 		///@}
 
