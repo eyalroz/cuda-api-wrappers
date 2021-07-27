@@ -299,21 +299,29 @@ inline unique_ptr<T> make_unique(device_t device)
 
 namespace managed {
 
-inline device_t region_t::preferred_location() const
+namespace detail {
+
+template <typename T>
+inline device_t base_region_t<T>::preferred_location() const
 {
 	auto device_id = detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributePreferredLocation);
 	return cuda::device::get(device_id);
 }
 
-inline void region_t::set_preferred_location(device_t& device) const
+template <typename T>
+inline void base_region_t<T>::set_preferred_location(device_t& device) const
 {
 	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseSetPreferredLocation, device.id());
 }
 
-inline void region_t::clear_preferred_location() const
+template <typename T>
+inline void base_region_t<T>::clear_preferred_location() const
 {
 	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
 }
+
+} // namespace detail
+
 
 inline void advise_expected_access_by(const_region_t region, device_t& device)
 {

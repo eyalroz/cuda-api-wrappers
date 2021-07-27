@@ -51,30 +51,36 @@ class stream_t;
  */
 namespace memory {
 
-struct region_t {
-	void* start_;
-	size_t size_in_bytes;
+namespace detail {
 
-	void*& start() { return start_; }
-	size_t& size() { return size_in_bytes; }
+template <class T>
+	class base_region_t {
+	private:
+		T* start_ = nullptr;
+		size_t size_in_bytes_ = 0;
+	public:
+		base_region_t() = default;
+		base_region_t(T* start, size_t size_in_bytes)
+		: start_(start), size_in_bytes_(size_in_bytes) {}
 
-	size_t size() const { return size_in_bytes; }
-	void* start() const { return start_; }
-	void* data()  const { return start(); }
-	void* get()   const { return start(); }
+		T*& start() { return start_; }
+		size_t& size() { return size_in_bytes_; }
+
+		size_t size() const { return size_in_bytes_; }
+		T* start() const { return start_; }
+		T* data() const { return start(); }
+		T* get() const { return start(); }
+	};
+
+}  // namespace detail
+
+struct region_t : public detail::base_region_t<void> {
+	using base_region_t<void>::base_region_t;
 };
 
-struct const_region_t : protected region_t {
-	const_region_t() = default;
-	const_region_t(const void* start, size_t size_in_bytes)
-		: region_t { const_cast<void*>(start), size_in_bytes } { }
-	const_region_t(region_t other) : region_t(other) { }
-
-	using region_t::size;
-	void const *& start() { return const_cast<void const*&>(start_); }
-	void const * start() const { return start_; }
-	void const * data()  const { return start(); }
-	void const * get()   const { return start(); }
+struct const_region_t : public detail::base_region_t<void const> {
+	using base_region_t<void const>::base_region_t;
+	const_region_t(const region_t& r) : base_region_t(r.start(), r.size()) {}
 };
 
 /**
@@ -984,7 +990,7 @@ struct deleter {
  * @param size the size in bytes the memory region to register/pin
  * @param flags
  */
-inline void register_(void const *ptr, size_t size, unsigned flags)
+inline void register_(const void *ptr, size_t size, unsigned flags)
 {
 	auto result = cudaHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error(result,
@@ -1031,7 +1037,7 @@ enum accessibility_on_all_devices : bool {
 
 
 // Can't use register(), since that's a reserved word
-inline void register_(void *ptr, size_t size,
+inline void register_(const void *ptr, size_t size,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
 	bool make_device_side_accesible_to_all)
@@ -1051,7 +1057,7 @@ inline void register_(
 	bool make_device_side_accesible_to_all)
 {
 	register_(
-		const_cast<void *>(region.start()),
+		region.start(),
 		region.size(),
 		register_mapped_io_space,
 		map_into_device_space,
@@ -1142,67 +1148,44 @@ inline T get_scalar_range_attribute(managed::const_region_t region, cudaMemRange
 inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise advice, cuda::device::id_t device_id);
 inline void set_scalar_range_attribute(managed::const_region_t region, cudaMemoryAdvise attribute);
 
-} // namespace detail
+template <typename T>
+struct base_region_t : public memory::detail::base_region_t<T> {
+	using parent = memory::detail::base_region_t<T>;
+	using parent::parent;
 
-struct region_t : public memory::region_t {
-	using parent = memory::region_t;
+	bool is_read_mostly() const
+	{
+		return get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
+	}
 
-	region_t() = default;
-	region_t(void* start, size_t size_in_bytes) : parent{start, size_in_bytes} { }
-	region_t(const region_t&) = default;
-	region_t(region_t&&) = default;
-	~region_t() = default;
+	void designate_read_mostly() const
+	{
+		set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
+	}
 
-	// TODO: Consider using a field proxy
-
-	bool is_read_mostly() const;
-
-	void designate_read_mostly() const;
-	void undesignate_read_mostly() const;
+	void undesignate_read_mostly() const
+	{
+		detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
+	}
 
 	device_t preferred_location() const;
 	void set_preferred_location(device_t& device) const;
 	void clear_preferred_location() const;
+
+	// TODO: Consider using a field proxy
 };
 
-struct const_region_t : protected region_t {
-	using parent = region_t;
+} // namespace detail
 
-	const_region_t() = default;
-	const_region_t(const void *start, size_t size_in_bytes)
-		: managed::region_t { const_cast<void*>(start), size_in_bytes } { }
-	const_region_t(managed::region_t other)	: managed::region_t(other) { }
-
-	using region_t::size;
-
-	void const *& start() { return const_cast<void const*&>(start_); }
-	void const * start() const { return start_; }
-	void const * data()  const { return start(); }
-	void const * get()   const { return start(); }
-
-	using parent::is_read_mostly;
-	using parent::designate_read_mostly;
-	using parent::undesignate_read_mostly;
-	using parent::preferred_location;
-	using parent::clear_preferred_location;
-
+struct region_t : public detail::base_region_t<void> {
+	using base_region_t<void>::base_region_t;
+	operator memory::region_t() { return memory::region_t{ start(), size() }; }
 };
 
-inline bool region_t::is_read_mostly() const
-{
-	return detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributeReadMostly);
-}
-
-inline void region_t::designate_read_mostly() const
-{
-	detail::set_scalar_range_attribute(*this, cudaMemAdviseSetReadMostly);
-}
-
-inline void region_t::undesignate_read_mostly() const
-{
-	detail::set_scalar_range_attribute(*this, cudaMemAdviseUnsetReadMostly);
-}
-
+struct const_region_t : public detail::base_region_t<void const> {
+	using base_region_t<void const>::base_region_t;
+	const_region_t(const region_t& r) : detail::base_region_t<void const>(r.start(), r.size()) {}
+};
 
 void advise_expected_access_by(managed::const_region_t region, device_t& device);
 void advise_no_access_expected_by(managed::const_region_t region, device_t& device);
@@ -1565,7 +1548,7 @@ inline void free_region_pair_of(void* ptr)
  */
 inline bool is_part_of_a_region_pair(const void* ptr)
 {
-	auto wrapped_ptr = pointer_t<const void> { ptr };
+	auto wrapped_ptr = pointer_t<void const> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
 
