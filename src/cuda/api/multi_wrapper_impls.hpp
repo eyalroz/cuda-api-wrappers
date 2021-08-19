@@ -167,9 +167,9 @@ inline void stream_t::enqueue_t::wait(const event_t& event_)
 
 	auto status = cudaStreamWaitEvent(associated_stream.id_, event_.id(), flags);
 	throw_if_error(status,
-		std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
+		::std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
 		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
-		+ " on CUDA device " + std::to_string(device_id));
+		+ " on CUDA device " + ::std::to_string(device_id));
 
 }
 
@@ -177,9 +177,9 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
 	auto device_id = associated_stream.device_id_;
 	if (existing_event.device_id() != device_id) {
-		throw std::invalid_argument("Attempt to enqueue a CUDA event associated with device "
-			+ std::to_string(existing_event.device_id()) + " to be triggered by a stream on CUDA device "
-			+ std::to_string(device_id ) );
+		throw ::std::invalid_argument("Attempt to enqueue a CUDA event associated with device "
+			+ ::std::to_string(existing_event.device_id()) + " to be triggered by a stream on CUDA device "
+			+ ::std::to_string(device_id ) );
 	}
 	device::current::detail::scoped_override_t set_device_for_this_context(device_id);
 	stream::detail::record_event_on_current_device(device_id, associated_stream.id_, existing_event.id());
@@ -262,31 +262,31 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 } // namespace async
 
 /**
- * @brief Create a variant of std::unique_pointer for an array in
+ * @brief Create a variant of ::std::unique_pointer for an array in
  * device-global memory
  *
  * @tparam T  an array type; _not_ the type of individual elements
  *
  * @param device        on which to construct the array of elements
  * @param num_elements  the number of elements to allocate
- * @return an std::unique_ptr pointing to the constructed T array
+ * @return an ::std::unique_ptr pointing to the constructed T array
  */
 template<typename T>
 inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
 {
-	static_assert(std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
+	static_assert(::std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
 	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
 	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(num_elements);
 }
 
 /**
- * @brief Create a variant of std::unique_pointer for a single value
+ * @brief Create a variant of ::std::unique_pointer for a single value
  * in device-global memory
  *
  * @tparam T  the type of value to construct in device memory
  *
  * @param device  on which to construct the T element
- * @return an std::unique_ptr pointing to the allocated memory
+ * @return an ::std::unique_ptr pointing to the allocated memory
  */
 template <typename T>
 inline unique_ptr<T> make_unique(device_t device)
@@ -334,12 +334,12 @@ inline void advise_no_access_expected_by(const_region_t region, device_t& device
 }
 
 template <typename Allocator>
-std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator)
+::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator)
 {
 	static_assert(sizeof(cuda::device::id_t) == sizeof(device_t), "Unexpected size difference between device IDs and their wrapper class, device_t");
 
 	auto num_devices = cuda::device::count();
-	std::vector<device_t, Allocator> devices(num_devices, allocator);
+	::std::vector<device_t, Allocator> devices(num_devices, allocator);
 	auto device_ids = reinterpret_cast<cuda::device::id_t *>(devices.data());
 
 
@@ -347,7 +347,7 @@ std::vector<device_t, Allocator> accessors(const_region_t region, const Allocato
 		device_ids, sizeof(device_t) * devices.size(),
 		cudaMemRangeAttributeAccessedBy, region.start(), region.size());
 	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
-	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
+	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
 	if (first_invalid_element - device_ids != num_devices) {
@@ -400,7 +400,7 @@ inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
 	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
-	throw_if_error(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
+	throw_if_error(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
 }
 
 inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
@@ -409,8 +409,8 @@ inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_
 #if CUDART_VERSION >= 9000
 	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, amount_required_by_kernel);
 	throw_if_error(result,
-		"Trying to opt-in to " + std::to_string(amount_required_by_kernel) + " bytes of dynamic shared memory, "
-		"exceeding the maximum available on device " + std::to_string(device_id_) + " (consider the amount of static shared memory"
+		"Trying to opt-in to " + ::std::to_string(amount_required_by_kernel) + " bytes of dynamic shared memory, "
+		"exceeding the maximum available on device " + ::std::to_string(device_id_) + " (consider the amount of static shared memory"
 		"in use by the function).");
 #else
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
@@ -421,7 +421,7 @@ inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_
 // Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
 // from code compiled with a host-side-only compiler! See cuda_runtime.h for details
 
-inline std::pair<grid::dimension_t, grid::block_dimension_t>
+inline ::std::pair<grid::dimension_t, grid::block_dimension_t>
 kernel_t::min_grid_params_for_max_occupancy(
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
@@ -434,19 +434,19 @@ kernel_t::min_grid_params_for_max_occupancy(
 	auto result = cudaOccupancyMaxPotentialBlockSizeWithFlags(
 		&min_grid_size_in_blocks, &block_size,
 		ptr_,
-		static_cast<std::size_t>(dynamic_shared_memory_size),
+		static_cast<::std::size_t>(dynamic_shared_memory_size),
 		static_cast<int>(block_size_limit),
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 		);
 	throw_if_error(result,
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
-		" on device " + std::to_string(device_id_) + ".");
+		" on device " + ::std::to_string(device_id_) + ".");
 	return { min_grid_size_in_blocks, block_size };
 #endif
 }
 
 template <typename UnaryFunction>
-std::pair<grid::dimension_t, grid::block_dimension_t>
+::std::pair<grid::dimension_t, grid::block_dimension_t>
 kernel_t::min_grid_params_for_max_occupancy(
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t  block_size_limit,
@@ -465,7 +465,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 		);
 	throw_if_error(result,
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
-		" on device " + std::to_string(device_id_) + ".");
+		" on device " + ::std::to_string(device_id_) + ".");
 	return { min_grid_size_in_blocks, block_size };
 #endif
 }
@@ -475,7 +475,7 @@ inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_perc
 {
 	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {
-		throw std::invalid_argument("Percentage value can't exceed 100");
+		throw ::std::invalid_argument("Percentage value can't exceed 100");
 	}
 #if CUDART_VERSION >= 9000
 	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributePreferredSharedMemoryCarveout, shared_mem_percentage);
@@ -552,7 +552,7 @@ inline void record_event_on_current_device(device::id_t device_id, stream::id_t 
 	throw_if_error(status,
 		"Failed scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id)
-		+ " on CUDA device " + std::to_string(device_id));
+		+ " on CUDA device " + ::std::to_string(device_id));
 }
 } // namespace detail
 
@@ -591,7 +591,7 @@ inline void enqueue_launch(
 		unwrapped_kernel_function,
 		stream.id(),
 		launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -605,7 +605,7 @@ inline void launch(
 		kernel_function,
 		stream,
 		launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 } // namespace cuda

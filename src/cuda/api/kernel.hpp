@@ -130,14 +130,14 @@ public: // mutators
 	 * (1-dimensional), and the first element being the minimum number of such blocks necessary
 	 * for keeping the GPU "busy" (again, in a 1-dimensional grid).
 	 */
-	std::pair<grid::dimension_t, grid::block_dimension_t>
+	::std::pair<grid::dimension_t, grid::block_dimension_t>
 	min_grid_params_for_max_occupancy(
 		memory::shared::size_t   dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t  block_size_limit = 0,
 		bool                     disable_caching_override = false);
 
 	template <typename UnaryFunction>
-	std::pair<grid::dimension_t, grid::block_dimension_t>
+	::std::pair<grid::dimension_t, grid::block_dimension_t>
 	min_grid_params_for_max_occupancy(
 		UnaryFunction            block_size_to_dynamic_shared_mem_size,
 		grid::block_dimension_t  block_size_limit = 0,
@@ -215,11 +215,11 @@ namespace detail {
 
 template<bool...> struct bool_pack;
 template<bool... bs>
-using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
+using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
 template<typename... KernelParameters>
 struct raw_kernel_typegen {
-	static_assert(all_true<std::is_same<KernelParameters, ::cuda::detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
+	static_assert(all_true<::std::is_same<KernelParameters, ::cuda::detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"Invalid kernel parameter types" );
 	using type = void(*)(KernelParameters...);
 		// Why no decay? After all, CUDA kernels only takes parameters by value, right?
@@ -228,7 +228,7 @@ struct raw_kernel_typegen {
 };
 
 template<typename Kernel, typename... KernelParameters>
-typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(std::true_type, kernel_t wrapped)
+typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(::std::true_type, kernel_t wrapped)
 {
 	using raw_kernel_t = typename raw_kernel_typegen<KernelParameters ...>::type;
 	return reinterpret_cast<raw_kernel_t>(const_cast<void*>(wrapped.ptr()));
@@ -238,11 +238,11 @@ typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(std::true_ty
 }
 
 template<typename Kernel, typename... KernelParameters>
-Kernel unwrap_inner(std::false_type, Kernel raw_function)
+Kernel unwrap_inner(::std::false_type, Kernel raw_function)
 {
 	static_assert(
-		std::is_function<typename std::decay<Kernel>::type>::value or
-		(std::is_pointer<Kernel>::value and std::is_function<typename std::remove_pointer<Kernel>::type>::value)
+		::std::is_function<typename ::std::decay<Kernel>::type>::value or
+		(::std::is_pointer<Kernel>::value and ::std::is_function<typename ::std::remove_pointer<Kernel>::type>::value)
 		, "Invalid Kernel type - it must be either a function or a pointer-to-a-function");
 	return raw_function;
 }
@@ -254,13 +254,13 @@ Kernel unwrap_inner(std::false_type, Kernel raw_function)
  * by {@ref enqueue_launch}.
  */
 template<typename Kernel, typename... KernelParameters>
-auto unwrap(Kernel f) -> typename std::conditional<
-	std::is_same<typename std::decay<Kernel>::type, kernel_t>::value,
+auto unwrap(Kernel f) -> typename ::std::conditional<
+	::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value,
 	typename detail::raw_kernel_typegen<KernelParameters...>::type,
 	Kernel>::type
 {
 	using got_a_kernel_t =
-		std::integral_constant<bool, std::is_same<typename std::decay<Kernel>::type, kernel_t>::value>;
+		::std::integral_constant<bool, ::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value>;
 	return detail::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
 }
 

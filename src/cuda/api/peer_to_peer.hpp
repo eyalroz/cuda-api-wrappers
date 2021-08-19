@@ -114,8 +114,8 @@ inline attribute_value_t get_attribute(
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, first.id(), second.id());
 	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(first.id()) + ", "
-			+ std::to_string(second.id()) + ')');
+		"Failed obtaining peer-to-peer device attribute for device pair (" + ::std::to_string(first.id()) + ", "
+			+ ::std::to_string(second.id()) + ')');
 	return value;
 }
 

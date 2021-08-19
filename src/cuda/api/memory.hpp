@@ -34,7 +34,7 @@
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
 
 #include <memory>
-#include <cstring> // for std::memset
+#include <cstring> // for ::std::memset
 #include <vector>
 
 namespace cuda {
@@ -189,9 +189,9 @@ inline region_t allocate(size_t num_bytes)
 		status = cudaErrorUnknown;
 	}
 	throw_if_error(status,
-		"Failed allocating " + std::to_string(num_bytes) +
+		"Failed allocating " + ::std::to_string(num_bytes) +
 		" bytes of global memory on CUDA device " +
-		std::to_string(cuda::device::current::detail::get_id()));
+		::std::to_string(cuda::device::current::detail::get_id()));
 	return {allocated, num_bytes};
 }
 
@@ -226,10 +226,10 @@ inline region_t allocate(
 		status = static_cast<decltype(status)>(cuda::status::unknown);
 	}
 	throw_if_error(status,
-		"Failed scheduling an asynchronous allocation of " + std::to_string(num_bytes) +
+		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
 		" bytes of global memory "
 		+ " on stream " + cuda::detail::ptr_as_hex(stream_id)
-		+ " on CUDA device " + std::to_string(device_id));
+		+ " on CUDA device " + ::std::to_string(device_id));
 	return {allocated, num_bytes};
 #else
 	(void) device_id;
@@ -299,7 +299,7 @@ struct deleter {
 /**
  * @brief Sets all bytes in a region of memory to a fixed value
  *
- * @note The equivalent of @ref std::memset for CUDA device-side memory
+ * @note The equivalent of @ref ::std::memset for CUDA device-side memory
  *
  * @param byte_value value to set the memory region to
  */
@@ -407,7 +407,7 @@ inline void copy(region_t destination, const_region_t source)
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw std::logic_error("Can't copy a large region into a smaller one");
+		throw ::std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
 	return copy(destination.start(), source);
@@ -417,7 +417,7 @@ inline void copy(region_t destination, const_region_t source)
 /**
  * @brief Sets all bytes in a region of memory to a fixed value
  *
- * @note The equivalent of @ref std::memset - for any and all CUDA-related
+ * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
  * memory spaces
  *
  * @param region the memory region to set; may be in host-side memory,
@@ -433,7 +433,7 @@ inline void set(region_t region, int byte_value)
 		memory::device::set(region, byte_value); break;
 	case unregistered_memory:
 	case host_memory:
-		std::memset(region.start(), byte_value, region.size()); break;
+		::std::memset(region.start(), byte_value, region.size()); break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
@@ -743,7 +743,7 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, con
 {
 #ifndef NDEBUG
 	if (source.size() < num_bytes) {
-		throw std::logic_error("Attempt to copy more than the source region's size");
+		throw ::std::logic_error("Attempt to copy more than the source region's size");
 	}
 #endif
 	copy(destination, source.start(), num_bytes, stream);
@@ -753,7 +753,7 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
-		throw std::logic_error("Attempt to copy beyond the end of the destination region");
+		throw ::std::logic_error("Attempt to copy beyond the end of the destination region");
 	}
 #endif
 	copy(destination.start(), source.start(), num_bytes, stream);
@@ -787,9 +787,9 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, const s
 #ifndef NDEBUG
 	size_t required_size = destination.size() * sizeof(T);
 	if (source.size() != required_size) {
-		throw std::invalid_argument(
-			"Attempt to copy a region of " + std::to_string(source.size()) +
-			" bytes into an array of size " + std::to_string(required_size) + " bytes");
+		throw ::std::invalid_argument(
+			"Attempt to copy a region of " + ::std::to_string(source.size()) +
+			" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
 	}
 #endif
 	copy(destination, source.start(), stream);
@@ -813,9 +813,9 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, const s
 #ifndef NDEBUG
 	size_t required_size = destination.size() * sizeof(T);
 	if (destination.size() < required_size) {
-		throw std::invalid_argument(
-			"Attempt to copy " + std::to_string(required_size) + " bytes from an array into a "
-			"region of smaller size (" + std::to_string(destination.size()) + " bytes)");
+		throw ::std::invalid_argument(
+			"Attempt to copy " + ::std::to_string(required_size) + " bytes from an array into a "
+			"region of smaller size (" + ::std::to_string(destination.size()) + " bytes)");
 	}
 #endif
 	copy(destination.start(), source, stream);
@@ -943,7 +943,7 @@ inline void* allocate(
 		// Can this even happen? hopefully not
 		result = cudaErrorUnknown;
 	}
-	throw_if_error(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
+	throw_if_error(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
 }
 
@@ -994,7 +994,7 @@ inline void register_(const void *ptr, size_t size, unsigned flags)
 {
 	auto result = cudaHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error(result,
-		"Could not register and page-lock the region of " + std::to_string(size) +
+		"Could not register and page-lock the region of " + ::std::to_string(size) +
 		" bytes of host memory at " + cuda::detail::ptr_as_hex(ptr));
 }
 
@@ -1093,7 +1093,7 @@ inline void deregister(const_region_t region)
 /**
  * @brief Sets all bytes in a stretch of host-side memory to a single value
  *
- * @note a wrapper for @ref std::memset
+ * @note a wrapper for @ref ::std::memset
  *
  * @param start starting address of the memory region to set,
  * in host memory; can be either CUDA-allocated or otherwise.
@@ -1102,7 +1102,7 @@ inline void deregister(const_region_t region)
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	std::memset(start, byte_value, num_bytes);
+	::std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
 }
 
@@ -1190,8 +1190,8 @@ struct const_region_t : public detail::base_region_t<void const> {
 void advise_expected_access_by(managed::const_region_t region, device_t& device);
 void advise_no_access_expected_by(managed::const_region_t region, device_t& device);
 
-template <typename Allocator = std::allocator<cuda::device_t> >
-typename std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
+template <typename Allocator = ::std::allocator<cuda::device_t> >
+typename ::std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail {
 
@@ -1252,7 +1252,7 @@ inline region_t allocate(
 		status = (status_t) status::unknown;
 	}
 	throw_if_error(status,
-		"Failed allocating " + std::to_string(num_bytes) + " bytes of managed CUDA memory");
+		"Failed allocating " + ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
 	return {allocated, num_bytes};
 }
 
@@ -1362,8 +1362,8 @@ inline void prefetch(
 {
 	auto result = cudaMemPrefetchAsync(region.start(), region.size(), destination, stream_id);
 	throw_if_error(result,
-		"Prefetching " + std::to_string(region.size()) + " bytes of managed memory at address "
-		 + cuda::detail::ptr_as_hex(region.start()) + " to device " + std::to_string(destination));
+		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
+		 + cuda::detail::ptr_as_hex(region.start()) + " to device " + ::std::to_string(destination));
 }
 
 } // namespace detail
@@ -1392,7 +1392,7 @@ inline void prefetch_to_host(const_region_t managed_region)
 		// The stream ID will be ignored by the CUDA runtime API when this pseudo
 		// device indicator is used.
 	throw_if_error(result,
-		"Prefetching " + std::to_string(managed_region.size()) + " bytes of managed memory at address "
+		"Prefetching " + ::std::to_string(managed_region.size()) + " bytes of managed memory at address "
 		 + cuda::detail::ptr_as_hex(managed_region.start()) + " into host memory");
 }
 
@@ -1448,8 +1448,8 @@ inline region_pair allocate(
 		status = cudaErrorUnknown;
 	}
 	throw_if_error(status,
-		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
-			+ " bytes of global memory on device " + std::to_string(cuda::device::current::detail::get_id()));
+		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)
+			+ " bytes of global memory on device " + ::std::to_string(cuda::device::current::detail::get_id()));
 	allocated.device_side = device_side_pointer_for(allocated.host_side);
 	return allocated;
 }

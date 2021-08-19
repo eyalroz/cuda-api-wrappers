@@ -10,7 +10,7 @@
  * This may change in the future.
  *
  * @todo Consider allowing for storing attributes within the class,
- * lazily (e.g. with an std::optional).
+ * lazily (e.g. with an ::std::optional).
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_POINTER_HPP_
@@ -38,7 +38,7 @@ namespace memory {
 /**
  * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
  */
-enum type_t : std::underlying_type<cudaMemoryType>::type {
+enum type_t : ::std::underlying_type<cudaMemoryType>::type {
     host_memory         = cudaMemoryTypeHost,
     device_memory       = cudaMemoryTypeDevice,
 #if CUDART_VERSION >= 10000
@@ -77,7 +77,7 @@ struct attributes_t : cudaPointerAttributes {
 #if CUDART_VERSION >= 10000
 	    return (type_t)cudaPointerAttributes::type;
 #else // CUDART_VERSION < 10000
-		using utype = typename std::underlying_type<cudaMemoryType>::type;
+		using utype = typename ::std::underlying_type<cudaMemoryType>::type;
 		if ( ((utype) memoryType == utype {type_t::device_memory}) and cudaPointerAttributes::isManaged) 
 		{
 			return type_t::managed_memory;

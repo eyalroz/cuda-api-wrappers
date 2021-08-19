@@ -231,7 +231,7 @@ namespace event {
  * @brief The type used by the CUDA Runtime API to represent the time difference
  * between pairs of events.
  */
-using duration_t = std::chrono::duration<float, std::milli>;
+using duration_t = ::std::chrono::duration<float, ::std::milli>;
 
 /**
  * Determine (inaccurately) the elapsed time between two events
@@ -347,7 +347,7 @@ inline void synchronize(const event_t& event)
 	device::current::detail::scoped_override_t device_for_this_scope(device_id);
 	auto status = cudaEventSynchronize(event_id);
 	throw_if_error(status, "Failed synchronizing the event with id "
-		+ cuda::detail::ptr_as_hex(event_id) + " on   " + std::to_string(device_id));
+		+ cuda::detail::ptr_as_hex(event_id) + " on   " + ::std::to_string(device_id));
 }
 
 } // namespace cuda

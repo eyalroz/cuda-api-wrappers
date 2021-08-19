@@ -57,7 +57,7 @@ cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions);
  * @brief Owning wrapper for CUDA 2D and 3D arrays
  *
  * A CUDA array is a multi-dimensional structure on CUDA GPUs with specific
- * GPU hardware support. CUDA arrays are _not_ equivalent to `std::array`s,
+ * GPU hardware support. CUDA arrays are _not_ equivalent to `::std::array`s,
  * nor to C/C++ arrays! Please read the relevant sections of the CUDA
  * programming guide for information regarding the uses of these arrays:
  * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-arrays
@@ -110,8 +110,8 @@ public:
 
 	cudaArray* get() const noexcept { return raw_array_; }
 	array::dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
-	std::size_t size() const noexcept { return dimensions().size(); }
-	std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
+	::std::size_t size() const noexcept { return dimensions().size(); }
+	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 protected:
 	array::dimensions_t<NumDimensions> dimensions_;

@@ -112,7 +112,7 @@ public: // constructors & destructor
 	imported_t(const handle_t& handle) : ptr_(import<T>(handle))
 	{
 		if (ptr_ == nullptr) {
-			throw std::logic_error("IPC memory handle yielded a null pointer");
+			throw ::std::logic_error("IPC memory handle yielded a null pointer");
 		}
 	}
 

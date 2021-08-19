@@ -26,8 +26,8 @@ namespace profiling {
  * profiling information.
  */
 struct color_t {
-	using underlying_type = std::uint32_t;
-	using channel_value = std::uint8_t;
+	using underlying_type = ::std::uint32_t;
+	using channel_value = ::std::uint8_t;
 	channel_value alpha, red, green, blue;
 
 	static constexpr color_t from_hex(underlying_type raw_argb) noexcept {
@@ -72,33 +72,33 @@ enum class type_t { unspecified, kernel, pci_express_transfer	};
  * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
  * and can leave them within the implementation only.
  */
-using handle_t = std::uint64_t;
+using handle_t = ::std::uint64_t;
 
 } // namespace range
 
 namespace mark {
 
-void point (const std::string& message, color_t color);
+void point (const ::std::string& message, color_t color);
 
-inline void point (const std::string& message)
+inline void point (const ::std::string& message)
 {
 	point(message, color_t::Black());
 }
 
 range::handle_t range_start (
-	const std::string&  description,
+	const ::std::string&  description,
 	range::type_t         type,
 	color_t             color);
 
 inline range::handle_t range_start (
-	const std::string&  description,
+	const ::std::string&  description,
 	range::type_t         type)
 {
 	return range_start(description, type, color_t::LightRed());
 }
 
 inline range::handle_t range_start (
-	const std::string&  description)
+	const ::std::string&  description)
 {
 	return range_start(description, range::type_t::unspecified);
 }
@@ -117,7 +117,7 @@ void range_end (range::handle_t range);
 class scoped_range_marker {
 public:
 	scoped_range_marker(
-		const std::string& description,
+		const ::std::string& description,
 		profiling::range::type_t type = profiling::range::type_t::unspecified);
 	~scoped_range_marker();
 protected:
@@ -157,11 +157,11 @@ namespace naming {
  * @param[in] name The string identifier to use for the specified thread
  */
 template <typename CharT>
-void name_host_thread(std::uint32_t thread_id, const std::basic_string<CharT>& name);
+void name_host_thread(::std::uint32_t thread_id, const ::std::basic_string<CharT>& name);
 
 #if defined(__unix__) || defined(_WIN32)
 template <typename CharT>
-void name_this_thread(const std::basic_string<CharT>& name);
+void name_this_thread(const ::std::basic_string<CharT>& name);
 #endif
 
 } // namespace naming

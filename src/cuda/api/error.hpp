@@ -3,7 +3,7 @@
  *
  * @brief Facilities for exception-based handling of Runtime API
  * errors, including a basic exception class wrapping
- * `std::runtime_error`.
+ * `::std::runtime_error`.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
@@ -25,7 +25,7 @@ namespace status {
  *
  * @note unfortunately, this enum can't inherit from @ref cuda::status_t
  */
-enum named_t : std::underlying_type<status_t>::type {
+enum named_t : ::std::underlying_type<status_t>::type {
 	success                         = cudaSuccess,
 	missing_configuration           = cudaErrorMissingConfiguration,
 	memory_allocation               = cudaErrorMemoryAllocation,
@@ -132,14 +132,14 @@ constexpr inline bool is_failure(status_t status)  { return status != (status_t)
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
  * or error code.
  */
-inline std::string describe(status_t status) { return cudaGetErrorString(status); }
+inline ::std::string describe(status_t status) { return cudaGetErrorString(status); }
 
 namespace detail {
 
 template <typename I, bool UpperCase = false>
-std::string as_hex(I x)
+::std::string as_hex(I x)
 {
-	static_assert(std::is_unsigned<I>::value, "only signed representations are supported");
+	static_assert(::std::is_unsigned<I>::value, "only signed representations are supported");
 	unsigned num_hex_digits = 2*sizeof(I);
 	if (x == 0) return "0x0";
 
@@ -147,20 +147,20 @@ std::string as_hex(I x)
 	static const char* digit_characters =
 		UpperCase ? "0123456789ABCDEF" : "0123456789abcdef" ;
 
-	std::string result(num_hex_digits,'0');
+	::std::string result(num_hex_digits,'0');
 	for (unsigned digit_index = 0; digit_index < num_hex_digits ; digit_index++)
 	{
 		size_t bit_offset = (num_hex_digits - 1 - digit_index) * bits_per_hex_digit;
 		auto hexadecimal_digit = (x >> bit_offset) & 0xF;
 		result[digit_index] = digit_characters[hexadecimal_digit];
 	}
-	return "0x0" + result.substr(result.find_first_not_of('0'), std::string::npos);
+	return "0x0" + result.substr(result.find_first_not_of('0'), ::std::string::npos);
 }
 
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
 // be called for pointer types as well? Would be easier with boost's uint<T>...
 template <typename I, bool UpperCase = false>
-inline std::string ptr_as_hex(const I* ptr)
+inline ::std::string ptr_as_hex(const I* ptr)
 {
 	return as_hex((size_t) ptr);
 }
@@ -174,23 +174,23 @@ inline std::string ptr_as_hex(const I* ptr)
  * A CUDA runtime error can be constructed with either just a CUDA error code
  * (=status code), or a code plus an additional message.
  */
-class runtime_error : public std::runtime_error {
+class runtime_error : public ::std::runtime_error {
 public:
 	///@cond
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(cuda::status_t error_code) :
-		std::runtime_error(describe(error_code)),
+		::std::runtime_error(describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(cuda::status_t error_code, const std::string& what_arg) :
-		std::runtime_error(what_arg + ": " + describe(error_code)),
+	runtime_error(cuda::status_t error_code, const ::std::string& what_arg) :
+		::std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	///@endcond
 	runtime_error(cuda::status::named_t error_code) :
 		runtime_error(static_cast<cuda::status_t>(error_code)) { }
-	runtime_error(cuda::status::named_t error_code, const std::string& what_arg) :
+	runtime_error(cuda::status::named_t error_code, const ::std::string& what_arg) :
 		runtime_error(static_cast<cuda::status_t>(error_code), what_arg) { }
 
 	/**
@@ -202,7 +202,7 @@ private:
 	status_t code_;
 };
 
-// TODO: The following could use std::optiomal arguments - which would
+// TODO: The following could use ::std::optiomal arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
@@ -213,7 +213,7 @@ private:
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(cuda::status_t status, const std::string& message) noexcept(false)
+inline void throw_if_error(cuda::status_t status, const ::std::string& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
@@ -262,7 +262,7 @@ inline status_t get()   noexcept { return cudaPeekAtLastError(); }
  *
  */
 inline void ensure_none(
-	std::string  message,
+	::std::string  message,
 	bool         clear_any_error = do_clear_errors) noexcept(false)
 {
 	auto last_status = clear_any_error ? clear() : get();
@@ -280,7 +280,7 @@ inline void ensure_none(
 	const char*  message,
 	bool         clear_any_error = do_clear_errors) noexcept(false)
 {
-	return ensure_none(std::string(message), clear_any_error);
+	return ensure_none(::std::string(message), clear_any_error);
 }
 
 /**

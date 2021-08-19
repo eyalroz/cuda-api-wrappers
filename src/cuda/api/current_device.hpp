@@ -59,7 +59,7 @@ inline id_t get_id()
 inline void set(id_t device)
 {
 	status_t result = cudaSetDevice(device);
-	throw_if_error(result, "Failure setting current device to " + std::to_string(device));
+	throw_if_error(result, "Failure setting current device to " + ::std::to_string(device));
 }
 
 /**
@@ -75,7 +75,7 @@ inline void set(const id_t* device_ids, size_t num_devices)
 	}
 	auto result = cudaSetValidDevices(const_cast<int*>(device_ids), num_devices);
 	throw_if_error(result, "Failure setting the current device to any of the list of "
-		+ std::to_string(num_devices) + " devices specified");
+		+ ::std::to_string(num_devices) + " devices specified");
 }
 
 /**

@@ -71,7 +71,7 @@ using attribute_t = cudaDeviceP2PAttr;
 /**
  * Aliases for all CUDA device attributes
  */
-enum : std::underlying_type<attribute_t>::type {
+enum : ::std::underlying_type<attribute_t>::type {
 		link_performance_rank = cudaDevP2PAttrPerformanceRank, /**< A relative value indicating the performance of the link between two devices */                       //!< link_performance_rank
 		access_support = cudaDevP2PAttrAccessSupported, /**< 1 if access is supported, 0 otherwise */                                                                    //!< access_support
 		native_atomics_support = cudaDevP2PAttrNativeAtomicSupported /**< 1 if the first device can perform native atomic operations on the second device, 0 otherwise *///!< native_atomics_support
@@ -93,8 +93,8 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 	attribute_value_t value;
 	auto status = cudaDeviceGetP2PAttribute(&value, attribute, source, destination);
 	throw_if_error(status,
-		"Failed obtaining peer-to-peer device attribute for device pair (" + std::to_string(source) + ", "
-			+ std::to_string(destination) + ')');
+		"Failed obtaining peer-to-peer device attribute for device pair (" + ::std::to_string(source) + ", "
+			+ ::std::to_string(destination) + ')');
 	return value;
 }
 
@@ -243,7 +243,7 @@ public:	// types
 			size_t total_mem_in_bytes;
 			auto status = cudaMemGetInfo(nullptr, &total_mem_in_bytes);
 			throw_if_error(status,
-				std::string("Failed determining amount of total memory "
+				::std::string("Failed determining amount of total memory "
 					"for CUDA device ") + device_id_as_str(device_id_));
 			return total_mem_in_bytes;
 		}
@@ -277,8 +277,8 @@ public:	// types
 		int result;
 		auto status = cudaDeviceCanAccessPeer(&result, id(), peer.id());
 		throw_if_error(status,
-			"Failed determining whether CUDA device " + std::to_string(id()) + " can access CUDA device "
-				+ std::to_string(peer.id()));
+			"Failed determining whether CUDA device " + ::std::to_string(id()) + " can access CUDA device "
+				+ ::std::to_string(peer.id()));
 		return (result == 1);
 	}
 
@@ -294,7 +294,7 @@ public:	// types
 		scoped_setter_t set_device_for_this_scope(id());
 		auto status = cudaDeviceEnablePeerAccess(peer.id(), fixed_flags);
 		throw_if_error(status,
-			"Failed enabling access of device " + std::to_string(id()) + " to device " + std::to_string(peer.id()));
+			"Failed enabling access of device " + ::std::to_string(id()) + " to device " + ::std::to_string(peer.id()));
 	}
 
 	/**
@@ -307,7 +307,7 @@ public:	// types
 		scoped_setter_t set_device_for_this_scope(id());
 		auto status = cudaDeviceDisablePeerAccess(peer.id());
 		throw_if_error(status,
-			"Failed disabling access of device " + std::to_string(id()) + " to device " + std::to_string(peer.id()));
+			"Failed disabling access of device " + ::std::to_string(id()) + " to device " + ::std::to_string(peer.id()));
 	}
 
 protected:
@@ -329,12 +329,12 @@ protected:
 			| (allow_pinned_mapped_memory_allocation ? cudaDeviceMapHost         : 0));
 	}
 
-	static std::string device_id_as_str(device::id_t id)
+	static ::std::string device_id_as_str(device::id_t id)
 	{
-		return "device " + std::to_string(id);
+		return "device " + ::std::to_string(id);
 	}
 
-	std::string device_id_as_str() const
+	::std::string device_id_as_str() const
 	{
 		return device_id_as_str(id_);
 	}
@@ -375,7 +375,7 @@ public:
 	/**
 	 * Obtains this device's human-readable name, e.g. "GeForce GTX 650 Ti BOOST".
 	 */
-	std::string name() const
+	::std::string name() const
 	{
 		// I could get the name directly, but that would require
 		// direct use of the driver, and I'm not ready for that
@@ -786,7 +786,7 @@ inline device_t get(pci_location_t pci_id)
  * make IMHO. But - it's convenient for now and there's no immediate risk
  * from some other obvious source of CUDA-device-identifying strings.
  */
-inline device_t get(const std::string& pci_id_str)
+inline device_t get(const ::std::string& pci_id_str)
 {
 	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);
@@ -799,7 +799,7 @@ inline void synchronize(device_t& device)
 	auto device_id = device.id();
 	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
 	auto status = cudaDeviceSynchronize();
-	throw_if_error(status, "Failed synchronizing " + std::to_string(device_id));
+	throw_if_error(status, "Failed synchronizing " + ::std::to_string(device_id));
 }
 
 

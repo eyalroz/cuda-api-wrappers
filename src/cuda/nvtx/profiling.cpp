@@ -26,12 +26,12 @@ namespace profiling {
 namespace mark {
 
 namespace detail {
-static std::mutex profiler_mutex; // To prevent multiple threads from accessing the profiler simultaneously
+static ::std::mutex profiler_mutex; // To prevent multiple threads from accessing the profiler simultaneously
 }
 
-void point(const std::string& description, color_t color)
+void point(const ::std::string& description, color_t color)
 {
-	std::lock_guard<std::mutex> { detail::profiler_mutex };
+	::std::lock_guard<::std::mutex> { detail::profiler_mutex };
 	// logging?
 	nvtxEventAttributes_t eventAttrib = {0};
 	eventAttrib.version = NVTX_VERSION;
@@ -44,10 +44,10 @@ void point(const std::string& description, color_t color)
 }
 
 range::handle_t range_start(
-	const std::string& description, ::cuda::profiling::range::type_t type, color_t color)
+	const ::std::string& description, ::cuda::profiling::range::type_t type, color_t color)
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
-	std::lock_guard<std::mutex> { detail::profiler_mutex };
+	::std::lock_guard<::std::mutex> { detail::profiler_mutex };
 	nvtxEventAttributes_t range_attributes;
 	range_attributes.version   = NVTX_VERSION;
 	range_attributes.size      = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
@@ -56,14 +56,14 @@ range::handle_t range_start(
 	range_attributes.messageType = NVTX_MESSAGE_TYPE_ASCII;
 	range_attributes.message.ascii = description.c_str();
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&range_attributes);
-	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
+	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
 		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	return range_handle;
 }
 
 void range_end(range::handle_t range_handle)
 {
-	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
+	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
 		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	nvtxRangeEnd(range_handle);
 }
@@ -71,7 +71,7 @@ void range_end(range::handle_t range_handle)
 } // namespace mark
 
 
-scoped_range_marker::scoped_range_marker(const std::string& description, profiling::range::type_t type)
+scoped_range_marker::scoped_range_marker(const ::std::string& description, profiling::range::type_t type)
 {
 	range = profiling::mark::range_start(description, type);
 }
@@ -97,13 +97,13 @@ void stop()
 namespace naming {
 
 template <>
-void name_host_thread<char>(uint32_t thread_id, const std::string& name)
+void name_host_thread<char>(uint32_t thread_id, const ::std::string& name)
 {
 	nvtxNameOsThreadA(thread_id, name.c_str());
 }
 
 template <>
-void name_host_thread<wchar_t>(uint32_t thread_id, const std::wstring& name)
+void name_host_thread<wchar_t>(uint32_t thread_id, const ::std::wstring& name)
 {
 	nvtxNameOsThreadW(thread_id, name.c_str());
 }
@@ -111,7 +111,7 @@ void name_host_thread<wchar_t>(uint32_t thread_id, const std::wstring& name)
 #if defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
 
 template <typename CharT>
-void name_this_thread(const std::basic_string<CharT>& name)
+void name_this_thread(const ::std::basic_string<CharT>& name)
 {
 	auto this_thread_s_native_handle =
 #ifdef CUDA_API_WRAPPERS_USE_PTHREADS

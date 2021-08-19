@@ -84,8 +84,8 @@ inline bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
 }
 
 template<typename Fun>
-struct is_function_ptr: std::integral_constant<bool,
-    std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
+struct is_function_ptr: ::std::integral_constant<bool,
+    ::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
 
 inline void collect_argument_addresses(void**) { }
 
@@ -93,7 +93,7 @@ template <typename Arg, typename... Args>
 inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
 	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
-	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
+	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);
 }
 
 // Note: Unlike the non-detail functions - this one
@@ -111,7 +111,7 @@ inline void enqueue_launch(
 	;
 #else
 {
-	static_assert(std::is_function<RawKernel>::value or
+	static_assert(::std::is_function<RawKernel>::value or
 	    (is_function_ptr<RawKernel>::value),
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
@@ -123,7 +123,7 @@ inline void enqueue_launch(
 			launch_configuration.block_dimensions,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_id
-			>>>(std::forward<KernelParameters>(parameters)...);
+			>>>(::std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
@@ -143,7 +143,7 @@ inline void enqueue_launch(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
+		detail::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
@@ -174,7 +174,7 @@ inline void enqueue_launch(
  * called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
  * compiler, the callee compiled by nvcc).
  *
- * <p>This function is similar to C++17's `std::apply`, or to a a beta-reduction in Lambda calculus:
+ * <p>This function is similar to C++17's `::std::apply`, or to a a beta-reduction in Lambda calculus:
  * It applies a function to its arguments; the difference is in the nature of the function (a CUDA kernel)
  * and in that the function application requires setting additional CUDA-related launch parameters,
  * additional to the function's own.
@@ -224,7 +224,7 @@ inline void enqueue_launch(
 		kernel_function,
 		stream,
 		launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 /**

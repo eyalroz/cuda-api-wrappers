@@ -56,7 +56,7 @@ template <typename T>
 inline T ensure_arch_property_validity(T v, const compute_architecture_t& arch)
 {
 	if (v == detail::invalid_architecture_return) {
-		throw std::invalid_argument("No architecture numbered " + std::to_string(arch.major));
+		throw ::std::invalid_argument("No architecture numbered " + ::std::to_string(arch.major));
 	}
 	return v;
 }
@@ -65,7 +65,7 @@ template <>
 inline const char* ensure_arch_property_validity<const char*>(const char* v, const compute_architecture_t& arch)
 {
 	if (v == nullptr) {
-		throw std::invalid_argument("No architecture numbered " + std::to_string(arch.major));
+		throw ::std::invalid_argument("No architecture numbered " + ::std::to_string(arch.major));
 	}
 	return v;
 }

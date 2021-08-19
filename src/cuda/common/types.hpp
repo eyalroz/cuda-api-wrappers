@@ -28,7 +28,7 @@
 
 #include <type_traits>
 #include <cassert>
-#include <cstddef> // for std::size_t
+#include <cstddef> // for ::std::size_t
 #include <cstdint>
 
 #ifndef __CUDACC__
@@ -81,7 +81,7 @@ namespace cuda {
  */
 using status_t = cudaError_t;
 
-using size_t = std::size_t;
+using size_t = ::std::size_t;
 
 /**
  * The index or number of dimensions of an entity (as opposed to the extent in any
@@ -448,7 +448,7 @@ enum class multiprocessor_cache_preference_t {
  * @ref device_t::shared_memory_bank_size .
  */
 enum multiprocessor_shared_memory_bank_size_option_t
-	: std::underlying_type<cudaSharedMemConfig>::type
+	: ::std::underlying_type<cudaSharedMemConfig>::type
 {
 	device_default       = cudaSharedMemBankSizeDefault,
 	four_bytes_per_bank  = cudaSharedMemBankSizeFourByte,
@@ -492,20 +492,20 @@ namespace detail {
  *
  * CUDA kernels don't accept just any parameter type a C++ function may accept.
  * Specifically: No references, arrays decay (IIANM) and functions pass by address.
- * However - not all "decaying" of `std::decay` is necessary. Such transformation
+ * However - not all "decaying" of `::std::decay` is necessary. Such transformation
  * can be effected by this type-trait struct.
  */
 template<typename P>
 struct kernel_parameter_decay {
 private:
-    typedef typename std::remove_reference<P>::type U;
+    typedef typename ::std::remove_reference<P>::type U;
 public:
-    typedef typename std::conditional<
-        std::is_array<U>::value,
-        typename std::remove_extent<U>::type*,
-        typename std::conditional<
-            std::is_function<U>::value,
-            typename std::add_pointer<U>::type,
+    typedef typename ::std::conditional<
+        ::std::is_array<U>::value,
+        typename ::std::remove_extent<U>::type*,
+        typename ::std::conditional<
+            ::std::is_function<U>::value,
+            typename ::std::add_pointer<U>::type,
             U
         >::type
     >::type type;

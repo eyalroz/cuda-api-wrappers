@@ -65,8 +65,8 @@ struct compute_architecture_t {
 
 // TODO: Consider making this a non-POD struct,
 // with a proper ctor checking validity, an operator converting to pair etc;
-// however, that would require including at least std::utility, if not other
-// stuff (e.g. for an std::hash specialization)
+// however, that would require including at least ::std::utility, if not other
+// stuff (e.g. for an ::std::hash specialization)
 // TODO: If we constrained this to versions we know about, we could make the
 // methods noexcept
 /**

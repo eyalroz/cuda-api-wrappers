@@ -25,10 +25,10 @@ namespace device {
 
 ///@cond
 
-inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& pci_id)
+inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location_t& pci_id)
 {
 	auto format_flags(is.flags());
-	is >> std::hex;
+	is >> ::std::hex;
 
 	// There are 3 acceptable formats:
 	//
@@ -44,7 +44,7 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& 
 		auto c = is.get();
 	//	if (c == istream::traits_type::eof() or  ) {
 		if (c != ':') {
-			throw std::invalid_argument("Invalid format of a PCI location for a CUDA device 1");
+			throw ::std::invalid_argument("Invalid format of a PCI location for a CUDA device 1");
 		}
 	};
 	get_colon();
@@ -59,7 +59,7 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& 
 		pci_id.device = second_field;
 		is >> pci_id.function;
 		if (not is.good()) {
-			throw std::invalid_argument("Failed parsing PCI location ID for a CUDA device 2");
+			throw ::std::invalid_argument("Failed parsing PCI location ID for a CUDA device 2");
 		}
 		break;
 	case ':': {
@@ -82,13 +82,13 @@ inline std::istream& operator>>(std::istream& is, cuda::device::pci_location_t& 
 	}
 	}
 	is.flags(format_flags);
-	throw std::invalid_argument("Failed parsing PCI location ID for a CUDA device");
+	throw ::std::invalid_argument("Failed parsing PCI location ID for a CUDA device");
 }
 
-inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_location_t& pci_id)
+inline ::std::ostream& operator<<(::std::ostream& os, const cuda::device::pci_location_t& pci_id)
 {
 	auto format_flags(os.flags());
-	os << std::hex;
+	os << ::std::hex;
 	if (pci_id.domain != pci_location_t::unused) { os  << pci_id.domain << ':'; }
 	os << pci_id.bus << ':' << pci_id.device;
 	if (pci_id.function != pci_location_t::unused) { os << '.' << pci_id.function; }
@@ -96,16 +96,16 @@ inline std::ostream& operator<<(std::ostream& os, const cuda::device::pci_locati
 	return os;
 }
 
-inline pci_location_t::operator std::string() const
+inline pci_location_t::operator ::std::string() const
 {
-	std::ostringstream oss;
+	::std::ostringstream oss;
 	oss << (*this);
 	return oss.str();
 }
 
-inline pci_location_t pci_location_t::parse(const std::string& id_str)
+inline pci_location_t pci_location_t::parse(const ::std::string& id_str)
 {
-	std::istringstream iss(id_str);
+	::std::istringstream iss(id_str);
 	pci_location_t id;
 	iss >> id;
 	return id;
@@ -113,7 +113,7 @@ inline pci_location_t pci_location_t::parse(const std::string& id_str)
 
 inline pci_location_t pci_location_t::parse(const char* id_str)
 {
-	std::istringstream iss(id_str);
+	::std::istringstream iss(id_str);
 	pci_location_t id;
 	iss >> id;
 	return id;

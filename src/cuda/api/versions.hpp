@@ -32,44 +32,44 @@ struct version_t {
 		return { combined_version / 1000, (combined_version % 100) / 10 };
 	}
 
-	operator std::pair<int, int>() const noexcept { return { major, minor }; }
+	operator ::std::pair<int, int>() const noexcept { return { major, minor }; }
 
 };
 
 ///@cond
-inline std::ostream& operator<<(std::ostream& os, version_t v)
+inline ::std::ostream& operator<<(::std::ostream& os, version_t v)
 {
 	return os << v.major << '.' << v.minor;
 }
 
 inline bool operator==(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() == rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() == rhs.operator ::std::pair<int, int>();
 }
 
 inline bool operator!=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() != rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() != rhs.operator ::std::pair<int, int>();
 }
 
 inline bool operator<(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() < rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() < rhs.operator ::std::pair<int, int>();
 }
 
 inline bool operator<=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() <= rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() <= rhs.operator ::std::pair<int, int>();
 }
 
 inline bool operator>(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() > rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() > rhs.operator ::std::pair<int, int>();
 }
 
 inline bool operator>=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
+	return lhs.operator ::std::pair<int, int>() >= rhs.operator ::std::pair<int, int>();
 }
 
 // comparison with single integers - as major versions
