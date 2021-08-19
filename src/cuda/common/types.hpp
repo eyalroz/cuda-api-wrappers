@@ -362,10 +362,10 @@ struct launch_configuration_t {
 	// we do have the inline initializers above regardless of the language
 	// standard version, and we just have to "pay the price" of spelling things out:
 	launch_configuration_t() = delete;
-	launch_configuration_t(const launch_configuration_t&) = default;
-	launch_configuration_t(launch_configuration_t&&) = default;
+	constexpr launch_configuration_t(const launch_configuration_t&) = default;
+	constexpr launch_configuration_t(launch_configuration_t&&) = default;
 
-	launch_configuration_t(
+	constexpr launch_configuration_t(
 		grid::dimensions_t grid_dims,
 		grid::dimensions_t block_dims,
 		memory::shared::size_t dynamic_shared_mem = 0u
@@ -376,7 +376,7 @@ struct launch_configuration_t {
 	{ }
 
 	// A "convenience" delegating ctor to avoid narrowing-conversion warnings
-	launch_configuration_t(
+	constexpr launch_configuration_t(
 		int grid_dims,
 		int block_dims,
 		memory::shared::size_t dynamic_shared_mem = 0u
@@ -386,7 +386,7 @@ struct launch_configuration_t {
 	/**
 	 * @brief The overall dimensions, in thread, of the launch grid
 	 */
-	grid::dimensions_t combined_grid_dimensions() const {
+	constexpr grid::dimensions_t combined_grid_dimensions() const {
 		return {
 			block_dimensions.x * grid_dimensions.x,
 			block_dimensions.y * grid_dimensions.y,
@@ -398,7 +398,7 @@ struct launch_configuration_t {
 /**
  * @brief a named constructor idiom for a @ref launch_config_t
  */
-inline launch_configuration_t make_launch_config(
+constexpr inline launch_configuration_t make_launch_config(
 	grid::dimensions_t        grid_dimensions,
 	grid::block_dimensions_t  block_dimensions,
 	memory::shared::size_t    dynamic_shared_memory_size = 0u) noexcept
@@ -406,7 +406,7 @@ inline launch_configuration_t make_launch_config(
 	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size };
 }
 
-inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+constexpr inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return
 		lhs.grid_dimensions    == rhs.grid_dimensions    and
