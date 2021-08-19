@@ -485,7 +485,7 @@ using pair_attribute_t   = cudaDeviceP2PAttr;
 
 } // namespace device
 
-namespace detail {
+namespace detail_ {
 
 /**
  * @brief adapt a type to be usable as a kernel parameter.
@@ -514,7 +514,7 @@ public:
 template<typename P>
 using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * Scheduling policies the Runtime API may use when the host-side

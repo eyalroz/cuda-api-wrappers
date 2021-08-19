@@ -37,7 +37,7 @@ namespace device {
 
 namespace current {
 
-namespace detail {
+namespace detail_ {
 
 /**
  * Obtains the numeric id of the device set as current for the CUDA Runtime API
@@ -79,14 +79,14 @@ inline void set(const id_t* device_ids, size_t num_devices)
 }
 
 /**
- * @note See the out-of-`detail::` version of this class.
+ * @note See the out-of-`detail_::` version of this class.
  */
 class scoped_override_t {
 protected:
 	static id_t  replace(id_t new_device_id)
 	{
-		id_t previous_device_id = device::current::detail::get_id();
-		device::current::detail::set(new_device_id);
+		id_t previous_device_id = device::current::detail_::get_id();
+		device::current::detail_::set(new_device_id);
 		return previous_device_id;
 	}
 
@@ -102,12 +102,12 @@ private:
 };
 
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * Reset the CUDA Runtime API's current device to its default value - the default device
  */
-inline void set_to_default() { return detail::set(device::default_device_id); }
+inline void set_to_default() { return detail_::set(device::default_device_id); }
 
 void set(device_t device);
 
@@ -116,9 +116,9 @@ void set(device_t device);
  * what remains of the current scope, and changing it back to its previous value
  * when exiting the scope.
  */
-class scoped_override_t : private detail::scoped_override_t {
+class scoped_override_t : private detail_::scoped_override_t {
 protected:
-	using parent = detail::scoped_override_t;
+	using parent = detail_::scoped_override_t;
 public:
 	scoped_override_t(device_t& device);
 	scoped_override_t(device_t&& device);

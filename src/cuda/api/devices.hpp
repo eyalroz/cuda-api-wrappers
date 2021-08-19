@@ -11,7 +11,7 @@
 
 namespace cuda {
 
-namespace detail {
+namespace detail_ {
 
 // Note that while nothing constrains you from instantiating
 // this class many times, all instances are the same (as CUDA
@@ -203,11 +203,11 @@ inline bool operator!= (
 	return not (lhs == rhs);
 }
 
-} // namespace detail
+} // namespace detail_
 
-inline detail::all_devices devices()
+inline detail_::all_devices devices()
 {
-	return detail::all_devices();
+	return detail_::all_devices();
 }
 
 } // namespace cuda

@@ -1,5 +1,5 @@
 /**
- * @file detail/device_properties.hpp
+ * @file detail_/device_properties.hpp
  *
  * @brief Implementation of methods and helper functions for device-property-related classes.
  *
@@ -47,7 +47,7 @@ inline constexpr bool operator >=(const compute_architecture_t& lhs, const compu
 	return lhs.major > rhs.major;
 }
 
-namespace detail {
+namespace detail_ {
 
 constexpr const int invalid_architecture_return { 0 };
 enum : memory::shared::size_t { KiB = 1024 };
@@ -55,7 +55,7 @@ enum : memory::shared::size_t { KiB = 1024 };
 template <typename T>
 inline T ensure_arch_property_validity(T v, const compute_architecture_t& arch)
 {
-	if (v == detail::invalid_architecture_return) {
+	if (v == detail_::invalid_architecture_return) {
 		throw ::std::invalid_argument("No architecture numbered " + ::std::to_string(arch.major));
 	}
 	return v;
@@ -147,30 +147,30 @@ inline constexpr unsigned max_in_flight_threads_per_processor(const compute_arch
 		invalid_architecture_return;
 }
 
-} // namespace detail
+} // namespace detail_
 
 inline const char* compute_architecture_t::name() const {
-	return detail::ensure_arch_property_validity(detail::architecture_name(*this), *this);
+	return detail_::ensure_arch_property_validity(detail_::architecture_name(*this), *this);
 }
 
 inline unsigned compute_architecture_t::max_in_flight_threads_per_processor() const
 {
-	return detail::ensure_arch_property_validity(detail::max_in_flight_threads_per_processor(*this), *this);
+	return detail_::ensure_arch_property_validity(detail_::max_in_flight_threads_per_processor(*this), *this);
 }
 
 inline unsigned compute_architecture_t::max_shared_memory_per_block() const
 {
-	return detail::ensure_arch_property_validity(detail::max_shared_memory_per_block(*this), *this);
+	return detail_::ensure_arch_property_validity(detail_::max_shared_memory_per_block(*this), *this);
 }
 
 inline unsigned compute_architecture_t::max_resident_warps_per_processor() const
 {
-	return detail::ensure_arch_property_validity(detail::max_resident_warps_per_processor(*this), *this);
+	return detail_::ensure_arch_property_validity(detail_::max_resident_warps_per_processor(*this), *this);
 }
 
 inline unsigned compute_architecture_t::max_warp_schedulings_per_processor_cycle() const
 {
-	return detail::ensure_arch_property_validity(detail::max_warp_schedulings_per_processor_cycle(*this), *this);
+	return detail_::ensure_arch_property_validity(detail_::max_warp_schedulings_per_processor_cycle(*this), *this);
 }
 
 // compute_capability_t-related
@@ -224,7 +224,7 @@ inline constexpr compute_capability_t make_compute_capability(unsigned major, un
 	return { {major}, minor };
 }
 
-namespace detail {
+namespace detail_ {
 
 inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
 {
@@ -262,26 +262,26 @@ inline constexpr unsigned max_resident_warps_per_processor(const compute_capabil
 		max_resident_warps_per_processor(cc.architecture);
 }
 
-} // namespace detail
+} // namespace detail_
 
 inline unsigned compute_capability_t::max_in_flight_threads_per_processor() const
 {
-	return detail::ensure_arch_property_validity(detail::max_in_flight_threads_per_processor(*this), architecture);
+	return detail_::ensure_arch_property_validity(detail_::max_in_flight_threads_per_processor(*this), architecture);
 }
 
 inline unsigned compute_capability_t::max_warp_schedulings_per_processor_cycle() const
 {
-	return detail::ensure_arch_property_validity(detail::max_warp_schedulings_per_processor_cycle(*this), architecture);
+	return detail_::ensure_arch_property_validity(detail_::max_warp_schedulings_per_processor_cycle(*this), architecture);
 }
 
 inline unsigned compute_capability_t::max_shared_memory_per_block() const
 {
-	return detail::ensure_arch_property_validity(detail::max_shared_memory_per_block(*this), architecture);
+	return detail_::ensure_arch_property_validity(detail_::max_shared_memory_per_block(*this), architecture);
 }
 
 inline unsigned compute_capability_t::max_resident_warps_per_processor() const
 {
-	return detail::ensure_arch_property_validity(detail::max_resident_warps_per_processor(*this), architecture);
+	return detail_::ensure_arch_property_validity(detail_::max_resident_warps_per_processor(*this), architecture);
 }
 
 // properties_t-related

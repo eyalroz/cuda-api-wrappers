@@ -155,7 +155,7 @@ public: // types
 	using resource_id_t = cudaLimit;
 
 protected: // types
-	using scoped_setter_t = device::current::detail::scoped_override_t;
+	using scoped_setter_t = device::current::detail_::scoped_override_t;
 	using flags_t = unsigned;
 
 	///@cond
@@ -180,8 +180,8 @@ public:	// types
 	protected:
 		const device::id_t device_id_;
 
-		using deleter = memory::device::detail::deleter;
-		using allocator = memory::device::detail::allocator;
+		using deleter = memory::device::detail_::deleter;
+		using allocator = memory::device::detail_::allocator;
 
 	public:
 		///@cond
@@ -199,7 +199,7 @@ public:	// types
 		memory::region_t allocate(size_t size_in_bytes)
 		{
 			scoped_setter_t set_device_for_this_scope(device_id_);
-			return memory::device::detail::allocate(size_in_bytes);
+			return memory::device::detail_::allocate(size_in_bytes);
 		}
 
 		// Perhaps drop this? it should really go into a managed namespace
@@ -231,7 +231,7 @@ public:	// types
 				initial_visibility_t::to_supporters_of_concurrent_managed_access)
 		{
 			scoped_setter_t set_device_for_this_scope(device_id_);
-			return cuda::memory::managed::detail::allocate(size_in_bytes, initial_visibility);
+			return cuda::memory::managed::detail_::allocate(size_in_bytes, initial_visibility);
 		}
 
 		/**
@@ -688,7 +688,7 @@ public:
 	 */
 	device_t& make_current()
 	{
-		device::current::detail::set(id());
+		device::current::detail_::set(id());
 		return *this;
 	}
 
@@ -754,12 +754,12 @@ namespace current {
 /**
  * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
  */
-inline device_t get() { return device::get(detail::get_id()); }
+inline device_t get() { return device::get(detail_::get_id()); }
 
 /**
  * Tells the CUDA runtime API to consider the specified device as the current one.
  */
-inline void set(device_t device) { detail::set(device.id()); }
+inline void set(device_t device) { detail_::set(device.id()); }
 
 } // namespace current
 
@@ -771,7 +771,7 @@ inline void set(device_t device) { detail::set(device.id()); }
  */
 inline device_t get(pci_location_t pci_id)
 {
-	auto resolved_id = device::detail::resolve_id(pci_id);
+	auto resolved_id = device::detail_::resolve_id(pci_id);
 	return get(resolved_id);
 }
 
@@ -797,7 +797,7 @@ inline device_t get(const ::std::string& pci_id_str)
 inline void synchronize(device_t& device)
 {
 	auto device_id = device.id();
-	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
 	auto status = cudaDeviceSynchronize();
 	throw_if_error(status, "Failed synchronizing " + ::std::to_string(device_id));
 }

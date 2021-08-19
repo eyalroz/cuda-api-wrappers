@@ -13,7 +13,7 @@
 
 namespace cuda {
 namespace memory {
-namespace detail {
+namespace detail_ {
 
 
 template<typename T, typename Deleter>
@@ -29,15 +29,15 @@ template<typename T, size_t N, typename Deleter> struct make_unique_selector<T[N
  * @note Only trivially-constructible types are supported
  */
 template<typename T, typename Allocator, typename Deleter>
-inline typename detail::make_unique_selector<T, Deleter>::non_array make_unique()
+inline typename detail_::make_unique_selector<T, Deleter>::non_array make_unique()
 {
 	static_assert(::std::is_trivially_constructible<T>::value,
 		"Allocating with non-trivial construction on the device is not supported.");
 	auto space_ptr = Allocator()(sizeof(T));
-	return typename detail::make_unique_selector<T, Deleter>::non_array(static_cast<T*>(space_ptr));
+	return typename detail_::make_unique_selector<T, Deleter>::non_array(static_cast<T*>(space_ptr));
 }
 template<typename T, typename Allocator, typename Deleter>
-inline typename detail::make_unique_selector<T, Deleter>::unbounded_array make_unique(size_t num_elements)
+inline typename detail_::make_unique_selector<T, Deleter>::unbounded_array make_unique(size_t num_elements)
 {
 	// If this function is instantiated, T is of the form "element_type[]"
 	using element_type = typename ::std::remove_extent<T>::type;
@@ -46,19 +46,19 @@ inline typename detail::make_unique_selector<T, Deleter>::unbounded_array make_u
 	static_assert(::std::is_trivially_constructible<element_type>::value,
 		"Allocating with non-trivial construction on the device is not supported.");
 	void* space_ptr = Allocator()(sizeof(element_type) * num_elements);
-	return typename detail::make_unique_selector<T, Deleter>::unbounded_array(static_cast<element_type*>(space_ptr));
+	return typename detail_::make_unique_selector<T, Deleter>::unbounded_array(static_cast<element_type*>(space_ptr));
 }
 template<typename T, typename Allocator, typename Deleter, typename... Args>
-inline typename detail::make_unique_selector<T, Deleter>::bounded_array make_unique(Args&&...) = delete;
+inline typename detail_::make_unique_selector<T, Deleter>::bounded_array make_unique(Args&&...) = delete;
 
-using deleter = device::detail::deleter;
+using deleter = device::detail_::deleter;
 
 template<typename T>
 inline ::std::unique_ptr<T, deleter>
 make_unique(cuda::device::id_t device_id, size_t n)
 {
-	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
-	return memory::detail::make_unique<T, device::detail::allocator, deleter>(n);
+	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
+	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>(n);
 }
 
 template<typename T>
@@ -66,17 +66,17 @@ inline ::std::unique_ptr<T, deleter>
 make_unique(cuda::device::id_t device_id)
 {
 
-	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
 
-	return memory::detail::make_unique<T, device::detail::allocator, deleter>();
+	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>();
 }
 
-} // namespace detail
+} // namespace detail_
 
 namespace device {
 
 template<typename T>
-using unique_ptr = ::std::unique_ptr<T, detail::deleter>;
+using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(cuda::device_t device, size_t n);
@@ -96,18 +96,18 @@ inline unique_ptr<T> make_unique(T* raw_ptr)
 namespace host {
 
 template<typename T>
-using unique_ptr = ::std::unique_ptr<T, detail::deleter>;
+using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(size_t n)
 {
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(n);
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(n);
 }
 
 template<typename T>
 inline unique_ptr<T> make_unique()
 {
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>();
 }
 
 } // namespace host
@@ -115,7 +115,7 @@ inline unique_ptr<T> make_unique()
 namespace managed {
 
 template<typename T>
-using unique_ptr = ::std::unique_ptr<T, detail::deleter>;
+using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(
@@ -123,11 +123,11 @@ inline unique_ptr<T> make_unique(
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	return (initial_visibility == initial_visibility_t::to_all_devices) ?
-		cuda::memory::detail::make_unique<T, detail::allocator<
-			initial_visibility_t::to_all_devices>, detail::deleter
+		cuda::memory::detail_::make_unique<T, detail_::allocator<
+			initial_visibility_t::to_all_devices>, detail_::deleter
 		>(n) :
-		cuda::memory::detail::make_unique<T, detail::allocator<
-			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail::deleter
+		cuda::memory::detail_::make_unique<T, detail_::allocator<
+			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail_::deleter
 		>(n);
 }
 
@@ -136,11 +136,11 @@ inline unique_ptr<T> make_unique(
 	initial_visibility_t initial_visibility = initial_visibility_t::to_all_devices)
 {
 	return (initial_visibility == initial_visibility_t::to_all_devices) ?
-		cuda::memory::detail::make_unique<T, detail::allocator<
-			initial_visibility_t::to_all_devices>, detail::deleter
+		cuda::memory::detail_::make_unique<T, detail_::allocator<
+			initial_visibility_t::to_all_devices>, detail_::deleter
 		>() :
-		cuda::memory::detail::make_unique<T, detail::allocator<
-			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail::deleter
+		cuda::memory::detail_::make_unique<T, detail_::allocator<
+			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail_::deleter
 		>();
 
 }

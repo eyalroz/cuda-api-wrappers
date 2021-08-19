@@ -61,7 +61,7 @@ inline handle_t export_(void* device_ptr) {
 	handle_t handle;
 	auto status = cudaIpcGetMemHandle(&handle, device_ptr);
 		cuda::throw_if_error(status,
-			"Failed producing an IPC memory handle for device pointer " + cuda::detail::ptr_as_hex(device_ptr));
+			"Failed producing an IPC memory handle for device pointer " + cuda::detail_::ptr_as_hex(device_ptr));
 	return handle;
 }
 
@@ -95,7 +95,7 @@ inline void unmap(void* ipc_mapped_ptr)
 	auto status = cudaIpcCloseMemHandle(ipc_mapped_ptr);
 	cuda::throw_if_error(status,
 		"Failed unmapping IPC memory mapped to " +
-		cuda::detail::ptr_as_hex(ipc_mapped_ptr));
+		cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
 }
 
 /**
@@ -158,14 +158,14 @@ namespace ipc {
  */
 using handle_t = cudaIpcEventHandle_t;
 
-namespace detail {
+namespace detail_ {
 
 inline handle_t export_(id_t event_id)
 {
 	handle_t ipc_handle;
 	auto status = cudaIpcGetEventHandle(&ipc_handle, event_id);
 	cuda::throw_if_error(status,
-		"Failed obtaining an IPC event handle for event " + cuda::detail::ptr_as_hex(event_id));
+		"Failed obtaining an IPC event handle for event " + cuda::detail_::ptr_as_hex(event_id));
 	return ipc_handle;
 }
 
@@ -178,7 +178,7 @@ inline event::id_t import(const handle_t& handle)
 	return event_id;
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * Enable use of an event which this process created by other processes

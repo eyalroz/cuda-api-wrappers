@@ -38,7 +38,7 @@ enum : bool {
 	async = no_implicit_synchronization_with_default_stream,
 };
 
-namespace detail {
+namespace detail_ {
 
 inline id_t create_on_current_device(
 	bool          synchronizes_with_default_stream,
@@ -51,7 +51,7 @@ inline id_t create_on_current_device(
 	auto status = cudaStreamCreateWithPriority(&new_stream_id, flags, priority);
 	cuda::throw_if_error(status,
 		::std::string("Failed creating a new stream on CUDA device ")
-		+ ::std::to_string(device::current::detail::get_id()));
+		+ ::std::to_string(device::current::detail_::get_id()));
 	return new_stream_id;
 }
 
@@ -71,7 +71,7 @@ inline id_t create_on_current_device(
  */
 inline bool is_associated_with(stream::id_t stream_id, device::id_t device_id)
 {
-	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
 	auto status = cudaStreamQuery(stream_id);
 	switch(status) {
 	case cudaSuccess:
@@ -103,7 +103,7 @@ inline device::id_t associated_device(stream::id_t stream_id)
 		if (is_associated_with(stream_id, device_index)) { return device_index; }
 	}
 	throw ::std::runtime_error(
-		"Could not find any device associated with stream " + cuda::detail::ptr_as_hex(stream_id));
+		"Could not find any device associated with stream " + cuda::detail_::ptr_as_hex(stream_id));
 }
 
 inline void record_event_on_current_device(device::id_t current_device_id, stream::id_t stream_id, event::id_t event_id);
@@ -120,7 +120,7 @@ stream_t wrap(
 	id_t          stream_id,
 	bool          take_ownership = false) noexcept;
 
-} // namespace detail
+} // namespace detail_
 
 } // namespace stream
 
@@ -146,7 +146,7 @@ public: // type definitions
 	};
 
 protected: // type definitions
-	using device_setter_type = device::current::detail::scoped_override_t;
+	using device_setter_type = device::current::detail_::scoped_override_t;
 
 
 public: // const getters
@@ -203,7 +203,7 @@ public: // other non-mutators
 		default:
 			throw(cuda::runtime_error(status,
 				"unexpected status returned from cudaStreamQuery() for stream "
-				+ detail::ptr_as_hex(id_)));
+				+ detail_::ptr_as_hex(id_)));
 		}
 	}
 
@@ -350,7 +350,7 @@ public: // mutators
 		{
 			// It is not necessary to make the device current, according to:
 			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			memory::async::detail::copy(destination, source, num_bytes, associated_stream.id_);
+			memory::async::detail_::copy(destination, source, num_bytes, associated_stream.id_);
 		}
 
 		void copy(void* destination, memory::const_region_t source, size_t num_bytes)
@@ -386,7 +386,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
-			memory::device::async::detail::set(destination, byte_value, num_bytes, associated_stream.id_);
+			memory::device::async::detail_::set(destination, byte_value, num_bytes, associated_stream.id_);
 		}
 
 		/**
@@ -404,7 +404,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			device_setter_type set_device_for_this_scope(associated_stream.device_id_);
-			memory::device::async::detail::zero(destination, num_bytes, associated_stream.id_);
+			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.id_);
 		}
 
 		/**
@@ -480,7 +480,7 @@ public: // mutators
 
 			throw_if_error(status,
 				::std::string("Failed scheduling a callback to be launched")
-				+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+				+ " on stream " + cuda::detail_::ptr_as_hex(associated_stream.id_)
 				+ " on CUDA device " + ::std::to_string(associated_stream.device_id_));
 		}
 
@@ -534,7 +534,7 @@ public: // mutators
 				associated_stream.id_, managed_region_start, length, flags);
 			throw_if_error(status,
 				"Failed scheduling an attachment of a managed memory region"
-				" on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+				" on stream " + cuda::detail_::ptr_as_hex(associated_stream.id_)
 				+ " on CUDA device " + ::std::to_string(associated_stream.device_id_));
 		}
 
@@ -609,7 +609,7 @@ public: // operators
 
 public: // friendship
 
-	friend stream_t stream::detail::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
+	friend stream_t stream::detail_::wrap(device::id_t device_id, stream::id_t stream_id, bool take_ownership) noexcept;
 
 	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 	{
@@ -635,7 +635,7 @@ inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 
 namespace stream {
 
-namespace detail {
+namespace detail_ {
 /**
  * @brief Wrap an existing stream in a @ref stream_t instance.
  *
@@ -663,13 +663,13 @@ inline stream_t create(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority)
 {
-	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
-	auto new_stream_id = cuda::stream::detail::create_on_current_device(
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
+	auto new_stream_id = cuda::stream::detail_::create_on_current_device(
 		synchronizes_with_default_stream, priority);
 	return wrap(device_id, new_stream_id, do_take_ownership);
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * @brief Create a new stream (= queue) on a CUDA device.

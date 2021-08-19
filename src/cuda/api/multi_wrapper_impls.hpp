@@ -26,23 +26,23 @@ namespace cuda {
 
 namespace array {
 
-namespace detail {
+namespace detail_ {
 
 template<typename T>
 inline cudaArray* allocate(device_t& device, array::dimensions_t<3> dimensions)
 {
-	device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
 template<typename T>
 inline cudaArray* allocate(device_t& device, array::dimensions_t<2> dimensions)
 {
-	device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
 	return allocate_on_current_device<T>(dimensions);
 }
 
-} // namespace detail
+} // namespace detail_
 
 } // namespace array
 
@@ -57,19 +57,19 @@ inline event_t create(
 	auto device_id = device.id();
 		// Yes, we need the ID explicitly even on the current device,
 		// because event_t's don't have an implicit device ID.
-	return event::detail::create(device_id , uses_blocking_sync, records_timing, interprocess);
+	return event::detail_::create(device_id , uses_blocking_sync, records_timing, interprocess);
 }
 
 namespace ipc {
 
 inline handle_t export_(event_t& event)
 {
-	return detail::export_(event.id());
+	return detail_::export_(event.id());
 }
 
 inline event_t import(device_t& device, const handle_t& handle)
 {
-	return event::detail::wrap(device.id(), detail::import(handle), do_not_take_ownership);
+	return event::detail_::wrap(device.id(), detail_::import(handle), do_not_take_ownership);
 }
 
 } // namespace ipc
@@ -81,7 +81,7 @@ inline event_t import(device_t& device, const handle_t& handle)
 
 inline stream_t device_t::default_stream() const noexcept
 {
-	return stream::detail::wrap(id(), stream::default_stream_id);
+	return stream::detail_::wrap(id(), stream::default_stream_id);
 }
 
 inline stream_t
@@ -89,8 +89,8 @@ device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority)
 {
-	device::current::detail::scoped_override_t set_device_for_this_scope(id_);
-	return stream::detail::wrap(id(), stream::detail::create_on_current_device(
+	device::current::detail_::scoped_override_t set_device_for_this_scope(id_);
+	return stream::detail_::wrap(id(), stream::detail_::create_on_current_device(
 		will_synchronize_with_default_stream, priority), do_take_ownership);
 }
 
@@ -104,9 +104,9 @@ inline scoped_override_t::scoped_override_t(device_t&& device) : parent(device.i
 } // namespace device
 
 
-namespace detail {
+namespace detail_ {
 
-} // namespace detail
+} // namespace detail_
 
 template <typename KernelFunction, typename ... KernelParameters>
 void device_t::launch(
@@ -140,7 +140,7 @@ inline void event_t::record(const stream_t& stream)
 	// Note:
 	// TODO: Perhaps check the device ID here, rather than
 	// have the Runtime API call fail?
-	event::detail::enqueue(stream.id(), id_);
+	event::detail_::enqueue(stream.id(), id_);
 }
 
 inline void event_t::fire(const stream_t& stream)
@@ -160,15 +160,15 @@ inline device_t stream_t::device() const noexcept
 inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
 	auto device_id = associated_stream.device_id_;
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id);
 
 	// Required by the CUDA runtime API; the flags value is currently unused
 	constexpr const unsigned int flags = 0;
 
 	auto status = cudaStreamWaitEvent(associated_stream.id_, event_.id(), flags);
 	throw_if_error(status,
-		::std::string("Failed scheduling a wait for event ") + cuda::detail::ptr_as_hex(event_.id())
-		+ " on stream " + cuda::detail::ptr_as_hex(associated_stream.id_)
+		::std::string("Failed scheduling a wait for event ") + cuda::detail_::ptr_as_hex(event_.id())
+		+ " on stream " + cuda::detail_::ptr_as_hex(associated_stream.id_)
 		+ " on CUDA device " + ::std::to_string(device_id));
 
 }
@@ -181,8 +181,8 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 			+ ::std::to_string(existing_event.device_id()) + " to be triggered by a stream on CUDA device "
 			+ ::std::to_string(device_id ) );
 	}
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id);
-	stream::detail::record_event_on_current_device(device_id, associated_stream.id_, existing_event.id());
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id);
+	stream::detail_::record_event_on_current_device(device_id, associated_stream.id_, existing_event.id());
 	return existing_event;
 }
 
@@ -192,11 +192,11 @@ inline event_t stream_t::enqueue_t::event(
     bool          interprocess)
 {
 	auto device_id = associated_stream.device_id_;
-	device::current::detail::scoped_override_t set_device_for_this_scope(device_id);
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
 
-	event_t ev { event::detail::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess) };
+	event_t ev { event::detail_::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess) };
 	// Note that, at this point, the event is not associated with this enqueue object's stream.
-	stream::detail::record_event_on_current_device(device_id, associated_stream.id_, ev.id());
+	stream::detail_::record_event_on_current_device(device_id, associated_stream.id_, ev.id());
 	return ev;
 }
 
@@ -212,25 +212,25 @@ namespace async {
 
 inline void copy(void *destination, const void *source, size_t num_bytes, const stream_t& stream)
 {
-	detail::copy(destination, source, num_bytes, stream.id());
+	detail_::copy(destination, source, num_bytes, stream.id());
 }
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream)
 {
-	detail::copy(destination, source, stream.id());
+	detail_::copy(destination, source, stream.id());
 }
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
-	detail::copy(destination, source, stream.id());
+	detail_::copy(destination, source, stream.id());
 }
 
 template <typename T>
 inline void copy_single(T& destination, const T& source, const stream_t& stream)
 {
-	detail::copy_single(&destination, &source, sizeof(T), stream.id());
+	detail_::copy_single(&destination, &source, sizeof(T), stream.id());
 }
 
 } // namespace async
@@ -239,24 +239,24 @@ namespace device {
 
 inline region_t allocate(cuda::device_t device, size_t size_in_bytes)
 {
-	return detail::allocate(device.id(), size_in_bytes);
+	return detail_::allocate(device.id(), size_in_bytes);
 }
 
 namespace async {
 
 inline region_t allocate(const stream_t& stream, size_t size_in_bytes)
 {
-	return detail::allocate(stream.device().id(), stream.id(), size_in_bytes);
+	return detail_::allocate(stream.device().id(), stream.id(), size_in_bytes);
 }
 
 inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
-	detail::set(start, byte_value, num_bytes, stream.id());
+	detail_::set(start, byte_value, num_bytes, stream.id());
 }
 
 inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 {
-	detail::zero(start, num_bytes, stream.id());
+	detail_::zero(start, num_bytes, stream.id());
 }
 
 } // namespace async
@@ -275,8 +275,8 @@ template<typename T>
 inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
 {
 	static_assert(::std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
-	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>(num_elements);
+	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(num_elements);
 }
 
 /**
@@ -291,46 +291,46 @@ inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
 template <typename T>
 inline unique_ptr<T> make_unique(device_t device)
 {
-	cuda::device::current::detail::scoped_override_t set_device_for_this_scope(device.id());
-	return cuda::memory::detail::make_unique<T, detail::allocator, detail::deleter>();
+	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>();
 }
 
 } // namespace device
 
 namespace managed {
 
-namespace detail {
+namespace detail_ {
 
 template <typename T>
 inline device_t base_region_t<T>::preferred_location() const
 {
-	auto device_id = detail::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributePreferredLocation);
+	auto device_id = detail_::get_scalar_range_attribute<bool>(*this, cudaMemRangeAttributePreferredLocation);
 	return cuda::device::get(device_id);
 }
 
 template <typename T>
 inline void base_region_t<T>::set_preferred_location(device_t& device) const
 {
-	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseSetPreferredLocation, device.id());
+	detail_::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseSetPreferredLocation, device.id());
 }
 
 template <typename T>
 inline void base_region_t<T>::clear_preferred_location() const
 {
-	detail::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
+	detail_::set_scalar_range_attribute(*this, (cudaMemoryAdvise) cudaMemAdviseUnsetPreferredLocation);
 }
 
-} // namespace detail
+} // namespace detail_
 
 
 inline void advise_expected_access_by(const_region_t region, device_t& device)
 {
-	detail::set_scalar_range_attribute(region, cudaMemAdviseSetAccessedBy, device.id());
+	detail_::set_scalar_range_attribute(region, cudaMemAdviseSetAccessedBy, device.id());
 }
 
 inline void advise_no_access_expected_by(const_region_t region, device_t& device)
 {
-	detail::set_scalar_range_attribute(region, cudaMemAdviseUnsetAccessedBy, device.id());
+	detail_::set_scalar_range_attribute(region, cudaMemAdviseUnsetAccessedBy, device.id());
 }
 
 template <typename Allocator>
@@ -346,7 +346,7 @@ template <typename Allocator>
 	auto status = cudaMemRangeGetAttribute(
 		device_ids, sizeof(device_t) * devices.size(),
 		cudaMemRangeAttributeAccessedBy, region.start(), region.size());
-	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail::ptr_as_hex(region.start()));
+	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
 	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
@@ -364,7 +364,7 @@ inline void prefetch(
 	cuda::device_t   destination,
 	const stream_t&  stream)
 {
-	detail::prefetch(region, destination.id(), stream.id());
+	detail_::prefetch(region, destination.id(), stream.id());
 }
 
 } // namespace async
@@ -375,7 +375,7 @@ inline region_t allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	return detail::allocate(device.id(), num_bytes, initial_visibility);
+	return detail_::allocate(device.id(), num_bytes, initial_visibility);
 }
 
 } // namespace managed
@@ -387,7 +387,7 @@ inline region_pair allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	return cuda::memory::mapped::detail::allocate(device.id(), size_in_bytes, options);
+	return cuda::memory::mapped::detail_::allocate(device.id(), size_in_bytes, options);
 }
 
 } // namespace mapped
@@ -398,14 +398,14 @@ inline region_pair allocate(
 
 inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);
 	throw_if_error(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
 }
 
 inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_t amount_required_by_kernel)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 #if CUDART_VERSION >= 9000
 	auto result = cudaFuncSetAttribute(ptr_, cudaFuncAttributeMaxDynamicSharedMemorySize, amount_required_by_kernel);
 	throw_if_error(result,
@@ -439,7 +439,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 		);
 	throw_if_error(result,
-		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
+		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr_) +
 		" on device " + ::std::to_string(device_id_) + ".");
 	return { min_grid_size_in_blocks, block_size };
 #endif
@@ -464,7 +464,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 		);
 	throw_if_error(result,
-		"Failed obtaining parameters for a minimum-size grid for kernel " + detail::ptr_as_hex(ptr_) +
+		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr_) +
 		" on device " + ::std::to_string(device_id_) + ".");
 	return { min_grid_size_in_blocks, block_size };
 #endif
@@ -473,7 +473,7 @@ kernel_t::min_grid_params_for_max_occupancy(
 
 inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_percentage)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	if (shared_mem_percentage > 100) {
 		throw ::std::invalid_argument("Percentage value can't exceed 100");
 	}
@@ -487,7 +487,7 @@ inline void kernel_t::set_preferred_shared_mem_fraction(unsigned shared_mem_perc
 
 inline kernel::attributes_t kernel_t::attributes() const
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	kernel::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
 	throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
@@ -496,7 +496,7 @@ inline kernel::attributes_t kernel_t::attributes() const
 
 inline void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  preference)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
 	throw_if_error(result,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
@@ -507,7 +507,7 @@ inline void kernel_t::set_cache_preference(multiprocessor_cache_preference_t  pr
 inline void kernel_t::set_shared_memory_bank_size(
 	multiprocessor_shared_memory_bank_size_option_t  config)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
 	throw_if_error(result);
 }
@@ -517,7 +517,7 @@ inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 	memory::shared::size_t    dynamic_shared_memory_per_block,
 	bool                      disable_caching_override)
 {
-	device::current::detail::scoped_override_t set_device_for_this_context(device_id_);
+	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	int result;
 	unsigned int flags = disable_caching_override ?
 		cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
@@ -541,20 +541,20 @@ inline stream_t create(
 	bool        synchronizes_with_default_stream,
 	priority_t  priority)
 {
-	return detail::create(device.id(), synchronizes_with_default_stream, priority);
+	return detail_::create(device.id(), synchronizes_with_default_stream, priority);
 }
 
-namespace detail {
+namespace detail_ {
 
 inline void record_event_on_current_device(device::id_t device_id, stream::id_t stream_id, event::id_t event_id)
 {
 	auto status = cudaEventRecord(event_id, stream_id);
 	throw_if_error(status,
-		"Failed scheduling event " + cuda::detail::ptr_as_hex(event_id) + " to occur"
-		+ " on stream " + cuda::detail::ptr_as_hex(stream_id)
+		"Failed scheduling event " + cuda::detail_::ptr_as_hex(event_id) + " to occur"
+		+ " on stream " + cuda::detail_::ptr_as_hex(stream_id)
 		+ " on CUDA device " + ::std::to_string(device_id));
 }
-} // namespace detail
+} // namespace detail_
 
 } // namespace stream
 
@@ -569,7 +569,7 @@ inline void enqueue_launch(
 	auto unwrapped_kernel_function =
 		kernel::unwrap<
 			Kernel,
-			detail::kernel_parameter_decay_t<KernelParameters>...
+			detail_::kernel_parameter_decay_t<KernelParameters>...
 		>(kernel_function);
 		// Note: This helper function is necessary since we may have gotten a
 		// kernel_t as Kernel, which is type-erased - in
@@ -583,10 +583,10 @@ inline void enqueue_launch(
 		// we massage those a bit.
 
 #ifdef DEBUG
-	assert(thread_block_cooperation == detail::intrinsic_block_cooperation_value,
+	assert(thread_block_cooperation == detail_::intrinsic_block_cooperation_value,
 		"mismatched indications of whether thread block should be able to cooperate for a kernel");
 #endif
-	detail::enqueue_launch(
+	detail_::enqueue_launch(
 		thread_block_cooperation,
 		unwrapped_kernel_function,
 		stream.id(),

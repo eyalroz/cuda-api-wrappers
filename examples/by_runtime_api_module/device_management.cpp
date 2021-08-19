@@ -191,14 +191,14 @@ int main(int argc, char **argv)
 		auto device_1 = cuda::device::get(1);
 		cuda::device::current::set(device_0);
 		assert(cuda::device::current::get() == device_0);
-		assert(cuda::device::current::detail::get_id() == device_0.id());
+		assert(cuda::device::current::detail_::get_id() == device_0.id());
 		cuda::device::current::set(device_1);
 		assert(cuda::device::current::get() == device_1);
-		assert(cuda::device::current::detail::get_id() == device_1.id());
+		assert(cuda::device::current::detail_::get_id() == device_1.id());
 	}
 
 	try {
-		cuda::device::current::detail::set(device_count);
+		cuda::device::current::detail_::set(device_count);
 		die_("Should not have been able to set the current device to "
 			+ std::to_string(device_count) + " since that's the device count, and "
 			+ "the maximum valid ID should be " + std::to_string(device_count - 1)

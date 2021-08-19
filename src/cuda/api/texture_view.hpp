@@ -42,11 +42,11 @@ struct descriptor_t : public cudaTextureDesc {
 	}
 };
 
-namespace detail {
+namespace detail_ {
 
 inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept;
 
-}  // namespace detail
+}  // namespace detail_
 
 }  // namespace texture
 
@@ -122,7 +122,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend texture_view texture::detail::wrap(raw_handle_type handle, bool take_ownersip) noexcept;
+	friend texture_view texture::detail_::wrap(raw_handle_type handle, bool take_ownersip) noexcept;
 
 protected:
 	raw_handle_type raw_view_handle { } ;
@@ -141,14 +141,14 @@ inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcep
 }
 
 namespace texture {
-namespace detail {
+namespace detail_ {
 
 inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept
 {
 	return texture_view(handle, take_ownership);
 }
 
-} // namespace detail
+} // namespace detail_
 } // namespace texture
 
 }  // namespace cuda

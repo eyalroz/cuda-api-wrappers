@@ -69,7 +69,7 @@ constexpr grid::dimensions_t single_block() { return 1; }
  */
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
-namespace detail {
+namespace detail_ {
 
 template<typename Kernel>
 bool intrinsic_block_cooperation_value(const Kernel&)
@@ -96,7 +96,7 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);
 }
 
-// Note: Unlike the non-detail functions - this one
+// Note: Unlike the non-detail_ functions - this one
 // cannot handle type-erased kernel_t's.
 template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
@@ -143,7 +143,7 @@ inline void enqueue_launch(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
+		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
 			launch_configuration.grid_dimensions,
@@ -162,7 +162,7 @@ inline void enqueue_launch(
 #endif
 
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * @brief Enqueues a kernel on a stream (=queue) on the current CUDA device.
@@ -220,7 +220,7 @@ inline void enqueue_launch(
 	KernelParameters&&...   parameters)
 {
 	enqueue_launch(
-		detail::intrinsic_block_cooperation_value(kernel_function),
+		detail_::intrinsic_block_cooperation_value(kernel_function),
 		kernel_function,
 		stream,
 		launch_configuration,

@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 	}
 
 	try {
-		cuda::device::current::detail::set(device_count);
+		cuda::device::current::detail_::set(device_count);
 		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error& e) {
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	// clearing the error
 
 	try {
-		cuda::device::current::detail::set(device_count);
+		cuda::device::current::detail_::set(device_count);
 		die_("An exception should have be thrown");
 	}
 	catch(cuda::runtime_error&) { }

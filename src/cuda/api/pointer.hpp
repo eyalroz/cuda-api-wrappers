@@ -110,7 +110,7 @@ public: // other non-mutators
 	{
 		pointer::attributes_t the_attributes;
 		auto status = cudaPointerGetAttributes (&the_attributes, ptr_);
-		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail::ptr_as_hex(ptr_));
+		throw_if_error(status, "Failed obtaining attributes of pointer " + cuda::detail_::ptr_as_hex(ptr_));
 		return the_attributes;
 	}
 	device_t device() const noexcept;

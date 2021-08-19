@@ -40,7 +40,7 @@ public:
 		// In lieu of making this class a variant with 3 type combinations.
 };
 
-namespace detail {
+namespace detail_ {
 
 /**
  * Obtain a CUDA device id for a PCIe bus device
@@ -58,7 +58,7 @@ inline id_t resolve_id(pci_location_t pci_id)
 	return cuda_device_id;
 }
 
-} // namespace detail
+} // namespace detail_
 
 
 } // namespace device

@@ -28,7 +28,7 @@ class stream_t;
 
 namespace event {
 
-namespace detail {
+namespace detail_ {
 
 /**
  * Schedule a specified event to occur (= to fire) when all activities
@@ -40,8 +40,8 @@ namespace detail {
 inline void enqueue(stream::id_t stream_id, id_t event_id) {
 	auto status = cudaEventRecord(event_id, stream_id);
 	cuda::throw_if_error(status,
-		"Failed recording event " + cuda::detail::ptr_as_hex(event_id)
-		+ " on stream " + cuda::detail::ptr_as_hex(stream_id));
+		"Failed recording event " + cuda::detail_::ptr_as_hex(event_id)
+		+ " on stream " + cuda::detail_::ptr_as_hex(stream_id));
 }
 
 constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
@@ -52,7 +52,7 @@ constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timin
 		| ( interprocess        ? cudaEventInterprocess : 0  );
 }
 
-} // namespace detail
+} // namespace detail_
 
 } // namespace event
 
@@ -62,7 +62,7 @@ class event_t;
 
 namespace event {
 
-namespace detail {
+namespace detail_ {
 /**
  * @brief Wrap an existing CUDA event in a @ref event_t instance.
  *
@@ -81,7 +81,7 @@ event_t wrap(
 	id_t          event_id,
 	bool          take_ownership = false) noexcept;
 
-} // namespace detail
+} // namespace detail_
 
 } // namespace event
 
@@ -138,7 +138,7 @@ public: // other non-mutator methods
 		if (status == cuda::status::success) return true;
 		if (status == cuda::status::not_ready) return false;
 		throw cuda::runtime_error(status,
-			"Could not determine whether event " + detail::ptr_as_hex(id_)
+			"Could not determine whether event " + detail_::ptr_as_hex(id_)
 			+ "has already occurred or not.");
 	}
 
@@ -160,7 +160,7 @@ public: // other mutator methods
 	 */
 	void record()
 	{
-		event::detail::enqueue(stream::default_stream_id, id_);
+		event::detail_::enqueue(stream::default_stream_id, id_);
 	}
 
 	/**
@@ -195,7 +195,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend event_t event::detail::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
+	friend event_t event::detail_::wrap(device::id_t device_id, event::id_t event_id, bool take_ownership) noexcept;
 
 public: // constructors and destructor
 
@@ -251,7 +251,7 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
-namespace detail {
+namespace detail_ {
 
 /**
  * Obtain a proxy object for an already-existing CUDA event
@@ -304,12 +304,12 @@ inline event_t create(
 	bool          records_timing,
 	bool          interprocess)
 {
-	device::current::detail::scoped_override_t
+	device::current::detail_::scoped_override_t
 		set_device_for_this_scope(device_id);
-	return detail::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess);
+	return detail_::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess);
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * @brief creates a new execution stream on a device.
@@ -344,10 +344,10 @@ inline void synchronize(const event_t& event)
 {
 	auto device_id = event.device_id();
 	auto event_id = event.id();
-	device::current::detail::scoped_override_t device_for_this_scope(device_id);
+	device::current::detail_::scoped_override_t device_for_this_scope(device_id);
 	auto status = cudaEventSynchronize(event_id);
 	throw_if_error(status, "Failed synchronizing the event with id "
-		+ cuda::detail::ptr_as_hex(event_id) + " on   " + ::std::to_string(device_id));
+		+ cuda::detail_::ptr_as_hex(event_id) + " on   " + ::std::to_string(device_id));
 }
 
 } // namespace cuda

@@ -211,7 +211,7 @@ protected: // data members
 
 namespace kernel {
 
-namespace detail {
+namespace detail_ {
 
 template<bool...> struct bool_pack;
 template<bool... bs>
@@ -219,11 +219,11 @@ using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
 template<typename... KernelParameters>
 struct raw_kernel_typegen {
-	static_assert(all_true<::std::is_same<KernelParameters, ::cuda::detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
+	static_assert(all_true<::std::is_same<KernelParameters, ::cuda::detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"Invalid kernel parameter types" );
 	using type = void(*)(KernelParameters...);
 		// Why no decay? After all, CUDA kernels only takes parameters by value, right?
-		// Well, we're inside `detail::`. You should be careful to only instantiate this class with
+		// Well, we're inside `detail_::`. You should be careful to only instantiate this class with
 		// nice simple types we can pass to CUDA kernels.
 };
 
@@ -247,7 +247,7 @@ Kernel unwrap_inner(::std::false_type, Kernel raw_function)
 	return raw_function;
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * Obtain the raw function pointer of any type acceptable as a launchable kernel
@@ -256,12 +256,12 @@ Kernel unwrap_inner(::std::false_type, Kernel raw_function)
 template<typename Kernel, typename... KernelParameters>
 auto unwrap(Kernel f) -> typename ::std::conditional<
 	::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value,
-	typename detail::raw_kernel_typegen<KernelParameters...>::type,
+	typename detail_::raw_kernel_typegen<KernelParameters...>::type,
 	Kernel>::type
 {
 	using got_a_kernel_t =
 		::std::integral_constant<bool, ::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value>;
-	return detail::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
+	return detail_::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
 }
 
 } // namespace kernel

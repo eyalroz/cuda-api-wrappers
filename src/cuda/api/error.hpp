@@ -134,7 +134,7 @@ constexpr inline bool is_failure(status_t status)  { return status != (status_t)
  */
 inline ::std::string describe(status_t status) { return cudaGetErrorString(status); }
 
-namespace detail {
+namespace detail_ {
 
 template <typename I, bool UpperCase = false>
 ::std::string as_hex(I x)
@@ -165,7 +165,7 @@ inline ::std::string ptr_as_hex(const I* ptr)
 	return as_hex((size_t) ptr);
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * A (base?) class for exceptions raised by CUDA code; these errors are thrown by
