@@ -71,18 +71,6 @@ constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail_ {
 
-template<typename Kernel>
-bool intrinsic_block_cooperation_value(const Kernel&)
-{
-	return thread_blocks_may_not_cooperate;
-}
-
-template<>
-inline bool intrinsic_block_cooperation_value<kernel_t>(const kernel_t& kernel)
-{
-	return(kernel.thread_block_cooperation());
-}
-
 template<typename Fun>
 struct is_function_ptr: ::std::integral_constant<bool,
     ::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
@@ -100,7 +88,6 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 // cannot handle type-erased kernel_t's.
 template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                        thread_block_cooperation,
 	RawKernel                   kernel_function,
 	stream::id_t                stream_id,
 	launch_configuration_t      launch_configuration,
@@ -116,7 +103,7 @@ inline void enqueue_launch(
 	    "Only a bona fide function can be a CUDA kernel and be launched; "
 	    "you were attempting to enqueue a launch of something other than a function");
 
-	if (thread_block_cooperation == thread_blocks_may_not_cooperate) {
+	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<
 			launch_configuration.grid_dimensions,
@@ -182,50 +169,23 @@ inline void enqueue_launch(
  * <p>As kernels do not return values, neither does this function. It also contains no hooks, logging
  * commands etc. - if you want those, write an additional wrapper (perhaps calling this one in turn).
  *
- * @param thread_block_cooperation if true, use CUDA's "cooperative launch" mechanism which enables more flexible
- * synchronization capabilities (see CUDA C Programming Guide C.3. Grid Synchronization). Note that this is a
- * requirement of the kernel function rather than merely an arbitrary choice.
  * @param kernel_function the kernel to apply. Pass it just as-it-is, as though it were any other function. Note:
  * If the kernel is templated, you must pass it fully-instantiated. Alternatively, you can pass a
  * @ref kernel_t wrapping the raw pointer to the function.
  * @param stream the CUDA hardware command queue on which to place the command to launch the kernel (affects
  * the scheduling of the launch and the execution)
- * @param launch_configuration a kernel is launched on a grid of blocks of thread, and with an allowance of
- * shared memory per block in the grid; this defines how the grid will look and what the shared memory
- * allowance will be (see {@ref cuda::launch_configuration_t})
+ * @param launch_configuration not all launches of the same kernel are identical: The launch may be configured
+ * to use more of less blocks in the grid, to allow blocks dynamic memory, to control the block's dimensions
+ * etc; this parameter defines that extra configuration outside the kernels' actual source. See also
+ * {@ref cuda::launch_configuration_t}.
  * @param parameters whatever parameters @p kernel_function takes
- *
- * @note If the Kernel type is kernel_t, it will already have a thread_block_cooperation setting, so using this
- * variant of `enqueue_launch` is somewhat redundant; at any rate, the value passed for @p thread_block_cooperation
- * must match the kernel function's needs, with the kernel_t wrapper is assumed to indicate. Behavior on mismatch
- * is undefined.
  */
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	bool                    thread_block_cooperation,
 	Kernel                  kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
-
-/**
- * A variant of @ref enqueue_launch which uses the default of no cooperation
- * between thread blocks.
- */
-template<typename Kernel, typename... KernelParameters>
-inline void enqueue_launch(
-	Kernel                  kernel_function,
-	const stream_t&         stream,
-	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
-{
-	enqueue_launch(
-		detail_::intrinsic_block_cooperation_value(kernel_function),
-		kernel_function,
-		stream,
-		launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
-}
 
 /**
  * Variant of @ref enqueue_launch for use with the default stream on the current device.

@@ -55,7 +55,6 @@ class kernel_t {
 public: // getters
 	const void* ptr() const noexcept { return ptr_; }
 	device_t device() const noexcept;
-	bool thread_block_cooperation() const noexcept { return thread_block_cooperation_; }
 
 protected:
 	device::id_t device_id() const noexcept { return device_id_; }
@@ -191,8 +190,8 @@ public: // mutators
 
 
 protected: // ctors & dtor
-	kernel_t(device::id_t device_id, const void* f, bool thread_block_cooperation = false)
-	: device_id_(device_id), ptr_(f), thread_block_cooperation_(thread_block_cooperation)
+	kernel_t(device::id_t device_id, const void* f)
+	: device_id_(device_id), ptr_(f)
 	{
 		// TODO: Consider checking whether this actually is a device function
 		// TODO: Consider performing a check for nullptr
@@ -200,13 +199,12 @@ protected: // ctors & dtor
 
 public: // ctors & dtor
 	template <typename DeviceFunction>
-	kernel_t(const device_t& device, DeviceFunction f, bool thread_block_cooperation = false);
+	kernel_t(const device_t& device, DeviceFunction f);
 	~kernel_t() { };
 
 protected: // data members
 	const device::id_t device_id_;
 	const void* const ptr_;
-	const bool thread_block_cooperation_;
 };
 
 namespace kernel {

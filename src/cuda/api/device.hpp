@@ -584,19 +584,9 @@ public:
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(
-		bool thread_block_cooperativity,
-		KernelFunction kernel_function,
-		launch_configuration_t launch_configuration,
-		KernelParameters ... parameters);
-
-	template<typename KernelFunction, typename ... KernelParameters>
-	void launch(
-		const KernelFunction& kernel_function, launch_configuration_t launch_configuration,
-		KernelParameters ... parameters)
-	{
-		return launch(
-			cuda::thread_blocks_may_not_cooperate, kernel_function, launch_configuration, parameters...);
-	}
+		KernelFunction          kernel_function,
+		launch_configuration_t  launch_configuration,
+		KernelParameters...     parameters);
 
 	/**
 	 * Determines the range of possible priorities for streams on this device.

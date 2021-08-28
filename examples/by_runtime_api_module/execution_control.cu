@@ -171,11 +171,13 @@ int main(int argc, char **argv)
 			       // so "false" is good enough.
 #endif
 		if (can_launch_cooperatively) {
+			auto cooperative_config = launch_config;
+			cooperative_config.block_cooperation = true;
 			std::cout
 				<< "Launching kernel" << kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
-			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel_function, launch_config, bar);
+			stream.enqueue.kernel_launch(kernel_function, cooperative_config, bar);
 			stream.synchronize();
 
 /*			// same, but with a kernel_t
@@ -195,9 +197,8 @@ int main(int argc, char **argv)
 				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
-			cuda::enqueue_launch((bool) cuda::thread_blocks_may_cooperate, kernel_function, stream, launch_config, bar);
+			cuda::enqueue_launch(kernel_function, stream, cooperative_config, bar);
 			cuda::device::current::get().synchronize();
-
 		}
 		else {
 			std::cout
@@ -218,7 +219,7 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
-	stream.enqueue.kernel_launch(cuda::thread_blocks_may_not_cooperate, kernel, launch_config, bar);
+	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
 	std::cout << "\nSUCCESS\n";
