@@ -110,12 +110,11 @@ namespace detail_ {
 
 template <typename KernelFunction, typename ... KernelParameters>
 void device_t::launch(
-	bool thread_block_cooperativity,
 	KernelFunction kernel_function, launch_configuration_t launch_configuration,
 	KernelParameters ... parameters)
 {
 	return default_stream().enqueue.kernel_launch(
-		thread_block_cooperativity, kernel_function, launch_configuration, parameters...);
+		kernel_function, launch_configuration, parameters...);
 }
 
 inline event_t device_t::create_event(
@@ -148,7 +147,6 @@ inline void event_t::fire(const stream_t& stream)
 	record(stream);
 	stream.synchronize();
 }
-
 
 // stream_t methods
 
@@ -531,10 +529,10 @@ inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 
 
 template <typename DeviceFunction>
-kernel_t::kernel_t(const device_t& device, DeviceFunction f, bool thread_block_cooperation)
-: kernel_t(device.id(), reinterpret_cast<const void*>(f), thread_block_cooperation) { }
-
+kernel_t::kernel_t(const device_t& device, DeviceFunction f)
+: kernel_t(device.id(), reinterpret_cast<const void*>(f)) { }
 namespace stream {
+
 
 inline stream_t create(
 	device_t    device,
@@ -560,7 +558,6 @@ inline void record_event_on_current_device(device::id_t device_id, stream::id_t 
 
 template<typename Kernel, typename... KernelParameters>
 inline void enqueue_launch(
-	bool                    thread_block_cooperation,
 	Kernel                  kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -582,12 +579,8 @@ inline void enqueue_launch(
 		// references, arrays and so on - which CUDA kernels cannot accept; so
 		// we massage those a bit.
 
-#ifdef DEBUG
-	assert(thread_block_cooperation == detail_::intrinsic_block_cooperation_value,
-		"mismatched indications of whether thread block should be able to cooperate for a kernel");
-#endif
+
 	detail_::enqueue_launch(
-		thread_block_cooperation,
 		unwrapped_kernel_function,
 		stream.id(),
 		launch_configuration,
