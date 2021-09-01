@@ -415,6 +415,35 @@ inline void copy(region_t destination, const_region_t source)
 ///@}
 
 /**
+ * @brief Sets a number of bytes in memory to a fixed value
+ *
+ * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
+ * memory spaces
+ *
+ * @param ptr Address of the first byte in memory to set. May be in host-side
+ *     memory, global CUDA-device-side memory or CUDA-managed memory.
+ * @param byte_value value to set the memory region to
+ * @param num_bytes The amount of memory to set to @p byte_value
+ */
+inline void set(void* ptr, int byte_value, size_t num_bytes)
+{
+	pointer_t<void> pointer { ptr };
+	switch ( pointer.attributes(). memory_type() ) {
+		case device_memory:
+		case managed_memory:
+			memory::device::set(ptr, byte_value, num_bytes); break;
+		case unregistered_memory:
+		case host_memory:
+			::std::memset(ptr, byte_value, num_bytes); break;
+  		default:
+			throw runtime_error(
+				cuda::status::invalid_value,
+				"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail_::ptr_as_hex(ptr));
+	}
+}
+
+
+/**
  * @brief Sets all bytes in a region of memory to a fixed value
  *
  * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
@@ -426,20 +455,7 @@ inline void copy(region_t destination, const_region_t source)
  */
 inline void set(region_t region, int byte_value)
 {
-	pointer_t<void> pointer { region.start() };
-	switch ( pointer.attributes().memory_type() ) {
-	case device_memory:
-	case managed_memory:
-		memory::device::set(region, byte_value); break;
-	case unregistered_memory:
-	case host_memory:
-		::std::memset(region.start(), byte_value, region.size()); break;
-	default:
-		throw runtime_error(
-			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail_::ptr_as_hex(region.start())
-		);
-	}
+	return set(region.start(), byte_value, region.size());
 }
 
 /**
@@ -451,6 +467,17 @@ inline void set(region_t region, int byte_value)
 inline void zero(region_t region)
 {
 	return set(region, 0);
+}
+
+/**
+ * @brief Sets a number of bytes starting in at a given address of memory to 0 (zero)
+ *
+ * @param region the memory region to zero-out; may be in host-side memory,
+ * global CUDA-device-side memory or CUDA-managed memory.
+ */
+inline void zero(void* ptr, size_t num_bytes)
+{
+	return set(ptr, 0, num_bytes);
 }
 
 /**
@@ -597,6 +624,15 @@ template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source)
 {
 	detail_::copy(destination, source);
+}
+
+template <typename T, dimensionality_t NumDimensions>
+inline void copy(region_t destination, const array_t<T, NumDimensions>& source)
+{
+	if (source.size_bytes() < destination.size()) {
+		throw ::std::logic_error("Attempt to copy an array into a memory region too small to hold the copy");
+	}
+	copy(destination.start(), source);
 }
 
 /**
