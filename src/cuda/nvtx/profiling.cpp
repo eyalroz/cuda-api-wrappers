@@ -57,14 +57,14 @@ range::handle_t range_start(
 	range_attributes.message.ascii = description.c_str();
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&range_attributes);
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
-		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+		"cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	return range_handle;
 }
 
 void range_end(range::handle_t range_handle)
 {
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
-		"range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+		"cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	nvtxRangeEnd(range_handle);
 }
 
@@ -85,13 +85,13 @@ scoped_range_marker::~scoped_range_marker()
 void start()
 {
 	auto status = cudaProfilerStart();
-	throw_if_error(status, "Starting to profile");
+	throw_if_error(status, "Starting CUDA profiling");
 }
 
 void stop()
 {
 	auto status = cudaProfilerStop();
-	throw_if_error(status, "Starting to profile");
+	throw_if_error(status, "Stopping CUDA profiling");
 }
 
 namespace naming {
