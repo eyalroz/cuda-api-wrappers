@@ -63,12 +63,11 @@ void check_output_is_iota(std::string name, const T* actual, size_t length) noex
 	if (failed) { std::cerr << '\n'; }
 }
 
-template<class Device>
-void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
+void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	namespace grid = cuda::grid;
 
 	const cuda::array::dimensions_t<3> dims = {w, h, d};
-	cuda::array_t<float, 3> arr(device, dims);
+	auto arr = cuda::array::create<float>(device, dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
 	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
@@ -92,7 +91,7 @@ void array_3d_example(Device& device, size_t w, size_t h, size_t d) {
 	check_output_is_iota("copy from 3D texture into (managed) global memory", ptr_out.get(), arr.size());
 
 	// copy between arrays and memory spaces
-	cuda::array_t<float, 3> other_arr(device, dims);
+	auto other_arr = cuda::array::create<float>(device, dims);
 	cuda::memory::copy(other_arr, ptr_out.get());
 	cuda::memory::copy(ptr_in.get(), other_arr);
 
@@ -117,13 +116,12 @@ void print_2d_array(const T* a, size_t width, size_t height)
 	}
 }
 
-template<class Device>
-void array_2d_example(Device& device, size_t w, size_t h)
+void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 {
 	namespace grid = cuda::grid;
 
 	const cuda::array::dimensions_t<2> dims = {w, h};
-	cuda::array_t<float, 2> arr(device , dims);
+	auto arr = cuda::array::create<float>(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
 	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
@@ -156,7 +154,7 @@ void array_2d_example(Device& device, size_t w, size_t h)
 	check_output_is_iota("copy from 2D texture into (managed) global memory", ptr_out.get(), arr.size());
 
 	// copy between arrays and memory spaces
-	cuda::array_t<float, 2> other_arr(device, dims);
+	auto other_arr = cuda::array::create<float>(device, dims);
 	cuda::memory::copy(other_arr, ptr_out.get());
 	cuda::memory::copy(ptr_in.get(), other_arr);
 

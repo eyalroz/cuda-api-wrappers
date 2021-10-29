@@ -4,6 +4,9 @@
  * @brief Contains a proxy class for CUDA arrays - GPU memory
  * with 2-D or 3-D locality and hardware support for interpolated value
  * retrieval); see also @ref texture_view.hpp .
+ *
+ * @note Not all kinds of arrays are supported: Only non-layered, non-cubemap
+ * arrays of 2 or 3 dimensions.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ARRAY_HPP_
@@ -18,38 +21,53 @@ namespace cuda {
 
 class device_t;
 
+template <typename T, dimensionality_t NumDimensions>
+class array_t;
+
 namespace array {
 
 using handle_t = cudaArray*;
 
+/**
+ * @brief Wrap an existing CUDA array in an @ref array_t instance.
+ */
+template <typename T, dimensionality_t NumDimensions>
+array_t<T, NumDimensions> wrap(
+	handle_t                     handle,
+	dimensions_t<NumDimensions>  dimensions) noexcept;
+
 namespace detail_ {
 
 template<typename T>
-handle_t allocate_on_current_device(array::dimensions_t<3> dimensions)
+handle_t create_on_current_device(dimensions_t<3> dimensions)
 {
 	auto channel_descriptor = cudaCreateChannelDesc<T>();
 	cudaExtent extent = dimensions;
 	handle_t handle;
 	auto status = cudaMalloc3DArray(&handle, &channel_descriptor, extent);
-	throw_if_error(status, "failed allocating 3D CUDA array");
+	throw_if_error(status, "Failed allocating 3D CUDA array");
 	return handle;
 }
 
 template<typename T>
-handle_t allocate_on_current_device(array::dimensions_t<2> dimensions)
+handle_t create_on_current_device(dimensions_t<2> dimensions)
 {
 	auto channel_desc = cudaCreateChannelDesc<T>();
 	handle_t handle;
 	auto status = cudaMallocArray(&handle, &channel_desc, dimensions.width, dimensions.height);
-	throw_if_error(status, "failed allocating 2D CUDA array");
+	throw_if_error(status, "Failed allocating 2D CUDA array");
 	return handle;
 }
 
-template<typename T>
-handle_t allocate(device_t& device, array::dimensions_t<3> dimensions);
+template <typename T, dimensionality_t NumDimensions>
+handle_t create(const device_t& device, dimensions_t<NumDimensions> dimensions);
 
-template<typename T>
-handle_t allocate(device_t& device, array::dimensions_t<2> dimensions);
+template <typename T, dimensionality_t NumDimensions>
+handle_t create(device::id_t device_id, dimensions_t<NumDimensions> dimensions)
+{
+	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
+	return create_on_current_device<T>(dimensions);
+}
 
 } // namespace detail_
 
@@ -80,21 +98,18 @@ class array_t {
 
 public:
 	using handle_type = array::handle_t;
+	using dimensions_type = array::dimensions_t<NumDimensions>;
+
 	/**
 	 * Constructs a CUDA array wrapper from the raw type used by the CUDA
 	 * Runtime API - and takes ownership of the array
 	 */
-	array_t(handle_type handle, array::dimensions_t<NumDimensions> dimensions) :
+	array_t(handle_type handle, dimensions_type dimensions) :
 	    dimensions_(dimensions), handle_(handle)
 	{
 		assert(handle != nullptr);
 	}
 
-	/**
-	 * Creates and wraps a new CUDA array.
-	 */
-	array_t(device_t& device, array::dimensions_t<NumDimensions> dimensions)
-		: array_t(array::detail_::allocate<T>(device, dimensions), dimensions) {}
 	array_t(const array_t& other) = delete;
 	array_t(array_t&& other) noexcept : array_t(other.handle_, other.dimensions_)
 	{
@@ -107,19 +122,42 @@ public:
 			auto status = cudaFreeArray(handle_);
 			// Note: Throwing in a noexcept destructor; if the free'ing fails, the program
 			// will likely terminate
-			throw_if_error(status, "failed freeing CUDA array");
+			throw_if_error(status, "Failed freeing CUDA array");
 		}
 	}
 
+	friend array_t array::wrap<T, NumDimensions>(handle_type handle, dimensions_type dimensions) noexcept;
+
 	handle_type get() const noexcept { return handle_; }
-	array::dimensions_t<NumDimensions> dimensions() const noexcept { return dimensions_; }
+	dimensions_type dimensions() const noexcept { return dimensions_; }
 	::std::size_t size() const noexcept { return dimensions().size(); }
 	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 protected:
-	array::dimensions_t<NumDimensions> dimensions_;
-	handle_type                        handle_;
+	dimensions_type  dimensions_;
+	handle_type      handle_;
 };
+
+namespace array {
+
+template <typename T, dimensionality_t NumDimensions>
+inline array_t<T, NumDimensions> wrap(
+	handle_t                     handle,
+	dimensions_t<NumDimensions>  dimensions) noexcept
+{
+	return array_t<T, NumDimensions>(handle, dimensions);
+}
+
+template <typename T, dimensionality_t NumDimensions>
+array_t<T, NumDimensions> create(
+	const device_t&              device,
+	dimensions_t<NumDimensions>  dimensions)
+{
+	handle_t handle { detail_::create<T, NumDimensions>(device, dimensions) };
+	return wrap<T>(handle, dimensions);
+}
+
+} // namespace array
 
 } // namespace cuda
 
