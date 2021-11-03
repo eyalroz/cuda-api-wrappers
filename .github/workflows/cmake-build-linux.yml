@@ -1,0 +1,164 @@
+name: CMake-based build on (Ubuntu) Linux
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [ master, development, driver-wrappers, workflows ]
+    paths:
+      - "**"
+      - "!.github/**"
+      - ".github/action-scripts/install-cuda-linux.ps1"
+      - ".github/workflows/cmake-build-linux.yml"
+
+  pull_request:
+    branches: [ master, development, driver-wrappers, workflows ]
+    paths:
+      - "**"
+      - "!.github/**"
+      - ".github/action-scripts/install-cuda-linux.ps1"
+      - ".github/workflows/cmake-build-linux.yml"
+
+env:
+  build_type: "Release"      
+  build_examples: "ON"      
+  makeflags: "--no-print-directory"
+
+jobs:
+  build:
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # explicit include-based build matrix, of known valid options
+      matrix:
+        include:
+        - os: ubuntu-20.04
+          cuda: "11.5"
+          gcc: 10
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.4"
+          gcc: 10
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.3"
+          gcc: 9 # may fail with gcc-10 due to an internal compiler error
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.2"
+          gcc: 9 # may fail with gcc-10 due to an internal compiler error
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.1"
+          gcc: 9 # may fail with gcc-10 due to an internal compiler error
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.0"
+          gcc: 9 # may fail with gcc-10 due to an internal compiler error
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-18.04
+          cuda: "10.2"
+          gcc: 8
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-18.04
+          cuda: "10.1"
+          gcc: 8
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-18.04
+          cuda: "10.0"
+          gcc: 7 # fails with GCC 8 - no supported in CUDA 10.0
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+# GitHub has remoted ubuntu-16.04 runnings,
+# so we're not testing builds with older CUDA versions
+#       - os: ubuntu-16.04
+#         cuda: "9.2"
+#         gcc: 6
+#         shell: "bash"
+#         cmake-generator: "Unix Makefiles"
+#       - os: ubuntu-16.04
+#         cuda: "9.1"
+#         gcc: 6
+#         shell: "bash"
+#         cmake-generator: "Unix Makefiles"
+#       - os: ubuntu-16.04
+#         cuda: "9.0"
+#         gcc: 6
+#         shell: "bash"
+#         cmake-generator: "Unix Makefiles"
+#       - os: ubuntu-16.04
+#         cuda: "8.0"
+#         gcc: 6
+#         shell: "bash"
+#         cmake-generator: "Unix Makefiles"
+    env:
+      build_dir: "build"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install CUDA on Ubuntu systems
+        if: contains(matrix.os, 'ubuntu')
+        env:
+          cuda: ${{ matrix.cuda }}
+        run: .github/action-scripts/install-cuda-ubuntu.sh
+        shell: bash
+
+      - name: Install CUDA on Windows
+        if: contains(matrix.os, 'windows')
+        env:
+          cuda: ${{ matrix.cuda }}
+        run: .github\action-scripts\install-cuda-windows.ps1
+        shell: powershell
+
+      - name: Install/Select GCC and G++
+        if: ${{ matrix.os-type == 'ubuntu' }}
+        run: |
+          sudo apt-get install -y gcc-${{ matrix.gcc }} g++-${{ matrix.gcc }}
+          echo "CC=/usr/bin/gcc-${{ matrix.gcc }}" >> $GITHUB_ENV
+          echo "CXX=/usr/bin/g++-${{ matrix.gcc }}" >> $GITHUB_ENV
+          echo "CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}" >> $GITHUB_ENV
+
+      # - name: Log the CMake version
+      #   run: cmake --version
+
+      - name: CMake configure
+        id: configure
+        run: cmake -B ${{ env.build_dir }} -G "${{ matrix.cmake-generator }}" ${{ matrix.platform-flag }} -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DBUILD_EXAMPLES=ON
+
+      - name: Process potential errors in CMake configuration
+        if: ${{ failure() && steps.configure.outcome == 'failure' }}
+        working-directory: ${{ env.build_dir }}
+        run: |
+          if [[ -f "CMakeFiles/CMakeOutput.log" ]]; then
+            echo "---- CMakeFiles/CMakeOutput.log"
+            cat CMakeFiles/CMakeOutput.log
+            echo "----"
+          fi
+          if [[ -f "CMakeFiles/CMakeError.log" ]]; then
+            echo "---- CMakeFiles/CMakeError.log"
+            cat CMakeFiles/CMakeError.log
+            echo "----"
+          fi
+
+      - name: Build
+        env:
+          MAKEFLAGS: "--no-print-dir"
+        # Note: `--config` will do nothing with single-config generation, e.g. GNU Make.
+        run: cmake --build ${{env.build_dir}} --config ${{ env.build_type }} --verbose --parallel `nproc`
+
+      # - name: Test
+        # working-directory: ${{github.workspace}}/build
+        # There are currently no unit tests defined by the cmake configuration!
+        # ... plus, the tests will be mostly useless on a machine without a GPU,
+        # so we can't really test.
+        # run: ctest -C ${{env.BUILD_TYPE}}
+      
