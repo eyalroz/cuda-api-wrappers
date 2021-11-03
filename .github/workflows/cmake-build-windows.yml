@@ -1,0 +1,158 @@
+name: CMake-based build on Windows
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [ master, development, driver-wrappers, workflows ]
+    paths:
+      - "**"
+      - "!.github/**"
+      - ".github/action-scripts/install-cuda-windows.ps1"
+      - ".github/workflows/cmake-build-windows.yml"
+
+  pull_request:
+    branches: [ master, development, driver-wrappers, workflows ]
+    paths:
+      - "**"
+      - "!.github/**"
+      - ".github/action-scripts/install-cuda-windows.ps1"
+      - ".github/workflows/cmake-build-windows.yml"
+
+
+jobs:
+  build:
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # explicit include-based build matrix, of known valid options
+      matrix:
+        include:
+          # Windows2019 & VS 2019 supports 10.1+
+          - os: windows-2019
+            cuda: "11.5.0"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.4.0"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.3.0"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.2.2"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.1.1"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.0.3"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "10.2.89"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "10.1.243"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+
+          # Windows2016 & VS 2017 supports 10.0+
+          # - os: windows-2016
+          #   cuda: "11.0.167"
+          #   visual-studio: "Visual Studio 15 2017"
+          # - os: windows-2016
+          #   cuda: "10.2.89"
+          #   visual-studio: "Visual Studio 15 2017"
+          # - os: windows-2016
+          #   cuda: "10.1.243"
+          #   visual-studio: "Visual Studio 15 2017"
+          #- os: windows-2016
+          #  cuda: "10.0.130"
+          #  visual-studio: "Visual Studio 15 2017"
+    env:
+      build_type: "Release"      
+      cmake-generator: "${{ matrix.visual-studio }}"
+      visual_studio: "${{ matrix.visual-studio }}"
+      build_dir: "build"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install CUDA on Ubuntu systems
+        if: contains(matrix.os, 'ubuntu')
+        env:
+          cuda: ${{ matrix.cuda }}
+        run: .github/action-scripts/install-cuda-ubuntu.sh
+        shell: bash
+
+      - name: Install CUDA on Windows
+        if: contains(matrix.os, 'windows')
+        env:
+          cuda: ${{ matrix.cuda }}
+        run: .github\action-scripts\install-cuda-windows.ps1
+        shell: powershell
+
+
+      # - name: Check CUDA installation has succeeded - by logging some paths
+      # - if ${{ matrix.os-type == 'windows' }}
+      #   run: |
+      #     nvcc -V
+      #     ls $env:CUDA_PATH
+      #     ls $env:CUDA_PATH\bin
+      #     ls $env:CUDA_PATH\include
+
+      # - name: Log the CMake version
+      #  run: cmake --version
+
+      - name: CMake configure
+        id: configure
+        run: cmake -B ${{ env.build_dir }} -G "${{ env.cmake-generator }}" ${{ matrix.cmake-platform-flag }} -DBUILD_EXAMPLES=ON
+
+      - name: Process potential errors in CMake configuration
+        if: ${{ failure() && steps.configure.outcome == 'failure' }}
+        working-directory: ${{ env.build_dir }}
+        run: |
+          if [[ -f "CMakeFiles/CMakeOutput.log" ]]; then
+            echo "---- CMakeFiles/CMakeOutput.log"
+            cat CMakeFiles/CMakeOutput.log
+            echo "----"
+          fi
+          if [[ -f "CMakeFiles/CMakeError.log" ]]; then
+            echo "---- CMakeFiles/CMakeError.log"
+            cat CMakeFiles/CMakeError.log
+            echo "----"
+          fi
+        shell: bash
+
+      - name: Build
+        run: cmake --build ${{ env.build_dir }} --config ${{ env.build_type }} --verbose
+
+      # - name: Test
+        # working-directory: ${{github.workspace}}/build
+        # There are currently no unit tests defined by the cmake configuration!
+        # ... plus, the tests will be mostly useless on a machine without a GPU,
+        # so we can't really test.
+        # run: ctest -C ${{env.BUILD_TYPE}}
+      
