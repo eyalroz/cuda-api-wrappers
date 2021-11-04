@@ -30,10 +30,6 @@
  *
  */
 
-#ifndef EXIT_WAIVED
-#define EXIT_WAIVED 2
-#endif
-
 const char *sSDKsample = "simpleStreams";
 
 const char *sEventSyncMethod[] =
@@ -63,10 +59,6 @@ const char *sDeviceSyncMethod[] =
 #include "../helper_cuda.h"
 
 #include <cuda/runtime_api.hpp>
-
-#ifndef WIN32
-#include <sys/mman.h> // for mmap() / munmap()
-#endif
 
 #include <cstdlib>
 
