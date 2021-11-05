@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 			num_elements);
 		stream.enqueue.copy(buffer_set.host_result.get(), buffer_set.device_result.get(), buffer_size);
 		stream.enqueue.host_function_call(
-			[k](cuda::stream_t) {
+			[=](cuda::stream_t) {
 				std::cout
 					<< "Stream " << k+1 << " of " << num_kernels << " has concluded all work. " << std::endl;
 			}
