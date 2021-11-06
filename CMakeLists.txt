@@ -4,7 +4,7 @@
 # your platform. They are not finicky with library dependencies, so
 # compatability is very likely. Also, the package's CMake binary will
 # not mistake any other local CMake-related files for its own.
-cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 # -----------------------------------

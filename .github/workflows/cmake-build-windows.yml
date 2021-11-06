@@ -123,9 +123,6 @@ jobs:
       #     ls $env:CUDA_PATH\bin
       #     ls $env:CUDA_PATH\include
 
-      # - name: Log the CMake version
-      #  run: cmake --version
-
       - name: CMake configure
         id: configure
         run: cmake -B ${{ env.build_dir }} -G "${{ env.cmake-generator }}" ${{ matrix.cmake-platform-flag }} -DBUILD_EXAMPLES=ON
@@ -134,6 +131,7 @@ jobs:
         if: ${{ failure() && steps.configure.outcome == 'failure' }}
         working-directory: ${{ env.build_dir }}
         run: |
+          cmake --version
           if [[ -f "CMakeFiles/CMakeOutput.log" ]]; then
             echo "---- CMakeFiles/CMakeOutput.log"
             cat CMakeFiles/CMakeOutput.log
