@@ -23,10 +23,12 @@ template<typename T, size_t N, typename Deleter> struct make_unique_selector<T[N
 
 
 /**
- * A CUDA equivalent of the ::std::make_unique, using cuda::memory::unique_ptr
- * rather than ::std::unique_ptr (i.e. using cuda::memory::free() for freeing
+ * A CUDA equivalent of the ::std::make_unique (or, to be exact, make_unique_for_overwrite),
+ * using cuda::memory::unique_ptr rather than ::std::unique_ptr (i.e. using
+ * cuda::memory::free() for freeing).
  *
- * @note Only trivially-constructible types are supported
+ * @note Only trivially-constructible types are supported, to fudge the difference between
+ * make_unique and make_unique_for_overwrite somewhat.
  */
 template<typename T, typename Allocator, typename Deleter>
 inline typename detail_::make_unique_selector<T, Deleter>::non_array make_unique()

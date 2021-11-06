@@ -24,7 +24,7 @@ public:
 	using reference = value_type; // device_t is already a reference type; and there is no instance-of-device_t here to reference
 	using const_reference = const value_type; // ditto
 	using size_type = decltype(device::count());
-	using difference_type = ::std::ptrdiff_t;
+	using difference_type = typename std::make_signed<size_type>::type;
 
 	class index_based_iterator {
 	public:
@@ -82,21 +82,25 @@ public:
 		// Random access iterator requirements
 		reference operator[](difference_type n) const
 		{
-			return device::get(index_ + n);
+			return device::get(device::id_t (index_ + n));
 		}
 
 		index_based_iterator& operator+=(difference_type n)
 		{
+#ifndef NDEBUG
 			if (index_ + n > num_devices_) { throw ::std::logic_error("Out of range"); }
+#endif
 			index_ += n;
 			return *this;
 		}
 
 		index_based_iterator operator+(difference_type n) const
 		{
+#ifndef NDEBUG
 			if (n + index_ > num_devices_) {
 				throw ::std::logic_error("Out of range");
 			}
+#endif
 			return index_based_iterator(num_devices_, index_ + n);
 		}
 

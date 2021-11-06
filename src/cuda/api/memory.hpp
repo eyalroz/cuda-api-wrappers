@@ -1193,7 +1193,7 @@ inline void zero(T* ptr)
  */
 namespace managed {
 
-class const_region_t;
+struct const_region_t;
 
 namespace detail_ {
 
