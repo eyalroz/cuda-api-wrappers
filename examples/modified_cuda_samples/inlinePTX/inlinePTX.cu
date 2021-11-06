@@ -42,7 +42,7 @@ void sequence_cpu(int *h_ptr, int length)
 	}
 }
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	if (cuda::device::count() == 0) {
 		die_("No CUDA devices on this system");

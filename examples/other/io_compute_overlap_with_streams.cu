@@ -39,6 +39,12 @@ __global__ void add(
 	}
 }
 
+template <typename I, typename I2>
+constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
+{
+	return (dividend / divisor) + !!(dividend % divisor);
+}
+
 /*
  * Produce a launch configuration with one thread covering each element
  */
@@ -47,10 +53,11 @@ cuda::launch_configuration_t make_linear_launch_config(
 	size_t                length)
 {
 	auto threads_per_block = device.properties().max_threads_per_block();
-	cuda::grid::dimension_t num_blocks =
-		(length / threads_per_block) +
-		(length % threads_per_block == 0 ? 0 : 1);
-	return cuda::make_launch_config(num_blocks, threads_per_block, cuda::no_dynamic_shared_memory);
+	auto num_blocks =  div_rounding_up(length, threads_per_block);
+	if (num_blocks > std::numeric_limits<cuda::grid::dimension_t>::max()) {
+		throw std::invalid_argument("Specified length exceeds CUDA's support for a linear grid");
+	}
+	return cuda::make_launch_config((cuda::grid::dimensions_t) num_blocks, threads_per_block, cuda::no_dynamic_shared_memory);
 }
 
 struct buffer_set_t {
@@ -90,7 +97,7 @@ std::vector<buffer_set_t> generate_buffers(
 	return buffers;
 }
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	constexpr size_t num_kernels     = 5;
 	constexpr size_t num_elements    = 1e7;

@@ -222,6 +222,7 @@ void current_device_manipulation()
 		+ " (one less)");
 	}
 	catch(cuda::runtime_error& e) {
+		(void) e; // This avoids a spurious warning in MSVC 16.11
 		assert(e.code() == cuda::status::invalid_device);
 		// We expected to get this exception, just clear it
 		cuda::outstanding_error::clear();

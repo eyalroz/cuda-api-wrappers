@@ -44,7 +44,7 @@ bool correct_output(int *data, const int n, const int x)
 	return true;
 }
 
-int main(int argc, char *argv[])
+int main(int, char *argv[])
 {
 	std::cout << "[" << argv[0] << "] - Starting...\n";
 

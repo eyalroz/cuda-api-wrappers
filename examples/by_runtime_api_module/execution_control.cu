@@ -152,15 +152,7 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
-#if __CUDACC_VER_MAJOR__ >= 9
 	try {
-		auto kernel_function = grid_cooperating_foo;
-		auto kernel_name = "grid_cooperating_foo";
-#else
-	{
-#endif
-		// And finally, some "cooperative" vs ""uncooperative"  kernel launches:
-
 		auto can_launch_cooperatively =
 #if __CUDACC_VER_MAJOR__ >= 9
 			(cuda::device::current::get().get_attribute(cudaDevAttrCooperativeLaunch) > 0);
@@ -171,33 +163,26 @@ int main(int argc, char **argv)
 			       // so "false" is good enough.
 #endif
 		if (can_launch_cooperatively) {
+			auto cooperative_kernel_function = grid_cooperating_foo;
+			auto cooperative_kernel_name = "grid_cooperating_foo";
 			auto cooperative_config = launch_config;
 			cooperative_config.block_cooperation = true;
 			std::cout
-				<< "Launching kernel" << kernel_name
+			<< "Launching kernel" << cooperative_kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
-			stream.enqueue.kernel_launch(kernel_function, cooperative_config, bar);
+			stream.enqueue.kernel_launch(cooperative_kernel_function, cooperative_config, bar);
 			stream.synchronize();
 
-/*			// same, but with a kernel_t
-			std::cout
-				<< "Launching kernel" << kernel_name
-				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
-				<< "(but note it does not actually check the cooperativeness).\n" << std::flush;
-			stream.enqueue.kernel_launch(cuda::thread_blocks_may_cooperate, kernel, launch_config, bar);
-			stream.synchronize();
-*/
 			// Same, but using cuda::enqueue_launch
-			// both options
 			std::cout
-				<< "Launching kernel " << kernel_name
+			<< "Launching kernel " << cooperative_kernel_name
 				<< " wrapped in a kernel_t structure,"
 				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
 				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
-			cuda::enqueue_launch(kernel_function, stream, cooperative_config, bar);
+			cuda::enqueue_launch(cooperative_kernel_function, stream, cooperative_config, bar);
 			cuda::device::current::get().synchronize();
 		}
 		else {
@@ -207,14 +192,12 @@ int main(int argc, char **argv)
 		}
 
 	}
-#if __CUDACC_VER_MAJOR__ >= 9
 	catch(cuda::runtime_error& e) {
 		if (not (e.code() == cuda::status::not_supported)) {
 			throw e;
 		}
 		cuda::outstanding_error::clear();
 	}
-#endif
 
 	std::cout
 		<< "Launching kernel " << kernel_name
