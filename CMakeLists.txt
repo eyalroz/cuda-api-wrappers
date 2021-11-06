@@ -52,6 +52,7 @@ endforeach()
 
 set_target_properties(nvtx PROPERTIES OUTPUT_NAME "cuda-nvtx-wrappers")
 target_link_libraries(nvtx PUBLIC runtime-api)
+target_link_libraries(nvtx PRIVATE Threads::Threads CUDA::nvToolsExt)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
 set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET nvtx PROPERTY CXX_EXTENSIONS OFF)
@@ -64,8 +65,6 @@ if(DEFINED CMAKE_USE_PTHREADS_INIT)
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
 	target_compile_definitions(nvtx PRIVATE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
-
-target_link_libraries(nvtx PRIVATE Threads::Threads)
 
 # --------
 # Examples
