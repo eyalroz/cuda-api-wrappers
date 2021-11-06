@@ -28,7 +28,7 @@ Detailed nearly-complete Doxygen-genereated documentation is [available](https:/
 
 - CUDA v8.0 or later is recommended and v7.5 should be supported (but is untested). CUDA 6.x should probably be Ok as well.
 - A C++11-capable compiler compatible with your version of CUDA.
-- CMake v3.17 or later - although most of the library will work as simple headers with no building.
+- CMake v3.18 or later - although most of the library will work as simple headers with no building.
 
 ## Coverage of the Runtime API
 

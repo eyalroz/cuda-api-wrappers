@@ -53,10 +53,10 @@ $CUDA_PACKAGES_IN = @(
     "visual_studio_integration";
     "curand_dev";
     "nvrtc_dev";
-    "cudart";
-    "cupti";
-    "nvprof";
     "nvtx";
+    "cudart";
+    "visual_studio_integration";
+	"nsight_nvtx";
 )
 
 
