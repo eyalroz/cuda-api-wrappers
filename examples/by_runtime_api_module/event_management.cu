@@ -112,8 +112,8 @@ int main(int argc, char **argv)
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
 		buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	auto threads_per_block = cuda::kernel_t(device, increment).attributes().maxThreadsPerBlock;
-	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
+	cuda::grid::block_dimension_t threads_per_block = cuda::kernel_t(device, increment).attributes().maxThreadsPerBlock;
+	cuda::grid::dimension_t num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
@@ -142,6 +142,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 
 	} catch(cuda::runtime_error& e) {
+		(void) e; // This avoids a spurious warning in MSVC 16.11
 		assert(e.code() == cuda::status::not_ready);
 	}
 	event_2.synchronize();

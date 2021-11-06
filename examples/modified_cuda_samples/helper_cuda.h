@@ -104,7 +104,7 @@ inline int gpuGetMaxGflopsDeviceId()
 
 	std::vector<cuda::device::id_t> device_ids(device_count);
 	std::iota(device_ids.begin(), device_ids.end(), 0);
-	std::remove_if(device_ids.begin(), device_ids.end(),
+	(void) std::remove_if(device_ids.begin(), device_ids.end(),
 		[](cuda::device::id_t id) {
 			auto properties = cuda::device::get(id).properties();
 			return !properties.usable_for_compute()
@@ -125,7 +125,7 @@ inline int gpuGetMaxGflopsDeviceId()
 	);
 	auto best_sm_arch =	cuda::device::get(*iterator).properties().major;
 	if (best_sm_arch > 2) {
-		std::remove_if(device_ids.begin(), device_ids.end(),
+		(void) std::remove_if(device_ids.begin(), device_ids.end(),
 			[best_sm_arch](cuda::device::id_t id) {
 				return cuda::device::get(id).properties().compute_capability().major() < (unsigned) best_sm_arch;
 			}

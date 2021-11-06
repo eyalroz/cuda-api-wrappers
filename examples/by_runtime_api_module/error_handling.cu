@@ -20,7 +20,7 @@ using std::flush;
 	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	auto device_count = cuda::device::count();
 	if (device_count == 0) {
