@@ -148,16 +148,16 @@ void stream_priority_range()
 	}
 }
 
-void resource_limits()
+void limits()
 {
 	auto device = cuda::device::current::get();
 
-	auto printf_fifo_size = device.get_resource_limit(cudaLimitPrintfFifoSize);
+	auto printf_fifo_size = device.get_limit(cudaLimitPrintfFifoSize);
 	std::cout << "The printf FIFO size for device " << device.id() << " is " << printf_fifo_size << ".\n";
 	decltype(printf_fifo_size) new_printf_fifo_size =
 		(printf_fifo_size <= 1024) ?  2 * printf_fifo_size : printf_fifo_size - 512;
-	device.set_resource_limit(cudaLimitPrintfFifoSize, new_printf_fifo_size);
-	printf_fifo_size = device.get_resource_limit(cudaLimitPrintfFifoSize);
+	device.set_limit(cudaLimitPrintfFifoSize, new_printf_fifo_size);
+	printf_fifo_size = device.get_limit(cudaLimitPrintfFifoSize);
 	assert(printf_fifo_size == new_printf_fifo_size);
 }
 
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 	tests::global_memory();
 	tests::shared_memory();
 	tests::stream_priority_range();
-	tests::resource_limits();
+	tests::limits();
 
 	if (cuda::devices().size() > 1) {
 		auto peer_id = (argc > 2) ?

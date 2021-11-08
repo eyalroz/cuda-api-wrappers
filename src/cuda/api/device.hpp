@@ -158,7 +158,7 @@ class device_t {
 public: // types
 	using properties_t = device::properties_t;
 	using attribute_value_t = device::attribute_value_t;
-	using resource_limit_t = size_t;
+	using limit_t = size_t;
 	using shared_memory_bank_size_t = cudaSharedMemConfig;
 
 	using resource_id_t = cudaLimit;
@@ -439,9 +439,9 @@ public:
 	 *
 	 * @param resource which resource's limit to obtain
 	 */
-	resource_limit_t get_resource_limit(resource_id_t resource) const
+	limit_t get_limit(resource_id_t resource) const
 	{
-		resource_limit_t limit;
+		limit_t limit;
 		auto status = cudaDeviceGetLimit(&limit, resource);
 		throw_if_error(status, "Failed obtaining a resource limit for " + device::detail_::identify(id_));
 		return limit;
@@ -451,7 +451,7 @@ public:
 	 * Set the upper limit of one of the named numeric resources
 	 * on this device
 	 */
-	void set_resource_limit(resource_id_t resource, resource_limit_t new_limit)
+	void set_limit(resource_id_t resource, limit_t new_limit)
 	{
 		auto status = cudaDeviceSetLimit(resource, new_limit);
 		throw_if_error(status, "Failed setting a resource limit for  " + device::detail_::identify(id_));
