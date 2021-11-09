@@ -17,7 +17,10 @@
 #include <cuda_runtime_api.h>
 
 #if __CUDACC_VER_MAJOR__ >= 9
+#define TEST_COOPERATIVE_GROUPS 1
 #include <cooperative_groups.h>
+#else
+#define TEST_COOPERATIVE_GROUPS 0
 #endif
 
 #include <iostream>
@@ -37,7 +40,7 @@ __global__ void foo(int bar)
 	}
 }
 
-#if __CUDACC_VER_MAJOR__ >= 9
+#if TEST_COOPERATIVE_GROUPS
 __global__ void grid_cooperating_foo(int bar)
 {
 #ifdef _CG_HAS_GRID_GROUP
@@ -152,16 +155,10 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
+#if TEST_COOPERATIVE_GROUPS
 	try {
 		auto can_launch_cooperatively =
-#if __CUDACC_VER_MAJOR__ >= 9
 			(cuda::device::current::get().get_attribute(cudaDevAttrCooperativeLaunch) > 0);
-#else
-			false; // This is not strictly true, since the device might support it, but
-			       // 1. We can't check and
-			       // 2. We don't have a cooperative launch API before CUDA 9
-			       // so "false" is good enough.
-#endif
 		if (can_launch_cooperatively) {
 			auto cooperative_kernel_function = grid_cooperating_foo;
 			auto cooperative_kernel_name = "grid_cooperating_foo";
@@ -176,7 +173,7 @@ int main(int argc, char **argv)
 
 			// Same, but using cuda::enqueue_launch
 			std::cout
-			<< "Launching kernel " << cooperative_kernel_name
+				<< "Launching kernel " << cooperative_kernel_name
 				<< " wrapped in a kernel_t structure,"
 				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
 				<< " and allowing thread block cooperation\n"
@@ -198,11 +195,14 @@ int main(int argc, char **argv)
 		}
 		cuda::outstanding_error::clear();
 	}
-
+#endif
+	cuda::kernel_t non_cooperative_kernel(device, kernel_function);
+	auto non_cooperative_config = launch_config;
+	non_cooperative_config.block_cooperation = true;
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
-	stream.enqueue.kernel_launch(kernel, launch_config, bar);
+	stream.enqueue.kernel_launch(non_cooperative_kernel, non_cooperative_config, bar);
 	stream.synchronize();
 
 	std::cout << "\nSUCCESS\n";
