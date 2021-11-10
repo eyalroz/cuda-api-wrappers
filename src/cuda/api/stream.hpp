@@ -38,6 +38,48 @@ enum : bool {
 	async = no_implicit_synchronization_with_default_stream,
 };
 
+#if CUDA_VERSION >= 11000
+/**
+ * Possible synchronization behavior of a host thread when performing a synchronous action
+ * on a stream (in particular, synchronizing with a stream).
+ */
+enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizationPolicy>::type {
+	/**
+	 * @todo Figure out what this default actually is!
+	 */
+	automatic = cudaSyncPolicyAuto,
+
+	/**
+	 * @brief Keep control and spin-check for result availability
+	 *
+	 * Instruct CUDA to actively spin when waiting for the stream to
+	 * complete pending actions. This can decrease latency when waiting
+	 * for the device, but may lower the performance of other CPU threads
+	 * working in parallel.
+	 */
+	spin      = cudaSyncPolicySpin,
+
+	/**
+	 * @brief Yield control while waiting for results.
+	 *
+	 * Instruct CUDA to yield its thread when waiting for the stream
+	 * to complete pending actions. This can increase latency when
+	 * waiting for the device, but can increase the performance of other
+	 * CPU threads performing work in parallel.
+	 *
+	 */
+	yield     = cudaSyncPolicyYield,
+
+	/**
+	 * @brief Block the thread until the stream has concluded pending actions.
+	 *
+	 * Instruct CUDA to block the CPU thread on a synchronization
+	 * primitive when waiting for the stream to finish work.
+	 */
+	block  = cudaSyncPolicyBlockingSync
+};
+#endif // CUDA_VERSION >= 11000
+
 namespace detail_ {
 
 inline id_t create_on_current_device(
@@ -556,6 +598,26 @@ public: // mutators
 		cuda::synchronize(*this);
 	}
 
+#if CUDA_VERSION >= 11000
+	stream::synchronization_policy_t synchronization_policy()
+	{
+		device::current::detail_::scoped_override_t set_device_for_this_scope(device_id_);
+		cudaStreamAttrValue wrapped_result{};
+		auto status = cudaStreamGetAttribute(id_, cudaStreamAttributeSynchronizationPolicy, &wrapped_result);
+		throw_if_error(status);
+		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
+	}
+
+	void set_synchronization_policy(stream::synchronization_policy_t policy)
+	{
+		device::current::detail_::scoped_override_t set_device_for_this_scope(device_id_);
+		cudaStreamAttrValue wrapped_value{};
+		wrapped_value.syncPolicy = static_cast<cudaSynchronizationPolicy>(policy);
+		auto status = cudaStreamSetAttribute(id_, cudaStreamAttributeSynchronizationPolicy, &wrapped_value);
+		throw_if_error(status);
+	}
+#endif
+
 protected: // constructor
 
 	stream_t(device::id_t device_id, stream::id_t stream_id, bool take_ownership = false) noexcept
@@ -679,6 +741,30 @@ inline void synchronize(const stream_t& stream)
 		+ " on CUDA device " + ::std::to_string(stream.device().id()));
 }
 
+#if CUDA_VERSION >= 11000
+/**
+ * Overwrite all "attributes" of one stream with those of another
+ *
+ * @param dest The stream whose attributes will be overwritten
+ * @param src The stream whose attributes are to be copied
+ *
+ * @note As of CUDA 11.5, the "attributes" are the thread
+ * synchronization policy and the various L2 access policy window
+ * settings; see https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#L2_access_policy
+ * for details.
+ */
+inline void copy_attributes(const stream_t& dest, const stream_t& src)
+{
+#ifndef NDEBUG
+	if (dest.device() != src.device()) {
+		throw std::invalid_argument("Attempt to copy attributes between streams on different devices");
+	}
+#endif
+	device::current::scoped_override_t set_device_for_this_scope(dest.device());
+	auto status = cudaStreamCopyAttributes(dest.id(), src.id());
+	throw_if_error(status);
+}
+#endif // CUDA_VERSION >= 11000
 
 } // namespace cuda
 

@@ -538,6 +538,7 @@ using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
  * device
  */
 enum host_thread_synch_scheduling_policy_t : unsigned int {
+
 	/**
 	 * @brief Default behavior; yield or spin based on a heuristic.
 	 *
@@ -549,6 +550,7 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 	 * actively spin on the processor.
 	 */
 	heuristic = cudaDeviceScheduleAuto,
+
 	/**
 	 * @brief Keep control and spin-check for result availability
 	 *
@@ -559,6 +561,15 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 	 *
 	 */
 	spin      = cudaDeviceScheduleSpin,
+
+	/**
+	 * @brief Block the thread until results are available.
+	 *
+	 * Instruct CUDA to block the CPU thread on a synchronization
+	 * primitive when waiting for the device to finish work.
+	 */
+	block     = cudaDeviceScheduleBlockingSync,
+
 	/**
 	 * @brief Yield control while waiting for results.
 	 *
@@ -568,14 +579,8 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 	 * performing work in parallel with the device.
 	 *
 	 */
-	block     = cudaDeviceScheduleBlockingSync,
-	/**
-	 * @brief Block the thread until results are available.
-	 *
-	 * Instruct CUDA to block the CPU thread on a synchronization
-	 * primitive when waiting for the device to finish work.
-	 */
 	yield     = cudaDeviceScheduleYield,
+
 	/** see @ref heuristic */
 	automatic = heuristic,
 };

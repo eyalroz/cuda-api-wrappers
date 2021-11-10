@@ -76,6 +76,20 @@ __global__ void increment(char* data, size_t length)
 	data[global_index]++;
 }
 
+#if CUDA_VERSION >= 11000
+const char* get_policy_name(cuda::stream::synchronization_policy_t policy)
+{
+	switch(policy) {
+		case cuda::stream::automatic: return "automatic";
+		case cuda::stream::spin: return "spin";
+		case cuda::stream::yield: return "yield";
+		case cuda::stream::block: return "block";
+		default:
+			return "unknown policy";
+	}
+}
+#endif // CUDA_VERSION >= 11000
+
 int main(int argc, char **argv)
 {
 	constexpr const size_t N = 50;
@@ -122,6 +136,38 @@ int main(int argc, char **argv)
 		cuda::stream::default_priority + 1,
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 
+#if CUDA_VERSION >= 11000
+	// Stream synchronization policy and attribute copying
+
+	auto initial_policy = stream_1.synchronization_policy();
+	std::cout
+		<< "Initial stream synchronization policy is "
+		<< get_policy_name(initial_policy) << " (numeric value: " << (int) initial_policy << ")\n";
+	if (initial_policy != stream_2.synchronization_policy()) {
+		throw std::logic_error("Different synchronization policies for streams created the same way");
+	}
+	cuda::stream::synchronization_policy_t alt_policy =
+		(initial_policy == cuda::stream::yield) ? cuda::stream::block : cuda::stream::yield;
+	stream_2.set_synchronization_policy(alt_policy);
+	auto new_s2_policy = stream_2.synchronization_policy();
+	if (alt_policy != new_s2_policy) {
+		std::stringstream ss;
+		ss
+			<< "Got a different synchronization policy (" << get_policy_name(new_s2_policy) << ")"
+			<< " than the one we set the stream to (" << get_policy_name(alt_policy) << ")\n";
+		throw std::logic_error(ss.str());
+	}
+	std::cout << "Overwriting all attributes of stream 1 with those of stream 2.\n";
+	cuda::copy_attributes(stream_1, stream_2);
+	auto s1_policy_after_copy = stream_1.synchronization_policy();
+	if (alt_policy != s1_policy_after_copy) {
+		std::stringstream ss;
+		ss
+			<< "Got a different synchronization policy (" << get_policy_name(s1_policy_after_copy) << ")"
+			<< " than the one we expected after attribute-copying (" << get_policy_name(alt_policy) << ")\n";
+		throw std::logic_error(ss.str());
+	}
+#endif
 
 	constexpr auto buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
