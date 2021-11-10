@@ -118,3 +118,6 @@ if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
 	# https://reviews.llvm.org/D76365
 	add_executable(array_management other/array_management.cu)
 endif()
+
+add_subdirectory(multi-gpu-programming-models) # "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/multi-gpu-programming-models")
+
