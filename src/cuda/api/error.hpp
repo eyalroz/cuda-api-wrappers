@@ -178,20 +178,25 @@ class runtime_error : public ::std::runtime_error {
 public:
 	///@cond
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
-	runtime_error(cuda::status_t error_code) :
-		::std::runtime_error(describe(error_code)),
-		code_(error_code)
+	runtime_error(status_t error_code) :
+		::std::runtime_error(describe(error_code)), code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(cuda::status_t error_code, const ::std::string& what_arg) :
+	runtime_error(status_t error_code, const ::std::string& what_arg) :
 		::std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
+	// I wonder if I should do this the other way around
+	runtime_error(status_t error_code, ::std::string&& what_arg) :
+		runtime_error(error_code, what_arg)
+	{ }
 	///@endcond
 	runtime_error(cuda::status::named_t error_code) :
-		runtime_error(static_cast<cuda::status_t>(error_code)) { }
+		runtime_error(static_cast<status_t>(error_code)) { }
 	runtime_error(cuda::status::named_t error_code, const ::std::string& what_arg) :
-		runtime_error(static_cast<cuda::status_t>(error_code), what_arg) { }
+		runtime_error(static_cast<status_t>(error_code), what_arg) { }
+	runtime_error(cuda::status::named_t error_code, ::std::string&& what_arg) :
+		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
 	/**
 	 * Obtain the CUDA status code which resulted in this error being thrown.
@@ -213,7 +218,12 @@ private:
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(cuda::status_t status, const ::std::string& message) noexcept(false)
+inline void throw_if_error(status_t status, const ::std::string& message) noexcept(false)
+{
+	if (is_failure(status)) { throw runtime_error(status, message); }
+}
+
+inline void throw_if_error(status_t status, ::std::string&& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
@@ -224,7 +234,7 @@ inline void throw_if_error(cuda::status_t status, const ::std::string& message) 
  *
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  */
-inline void throw_if_error(cuda::status_t status) noexcept(false)
+inline void throw_if_error(status_t status) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status); }
 }
