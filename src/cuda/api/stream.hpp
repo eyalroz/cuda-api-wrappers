@@ -128,17 +128,10 @@ inline void synchronize(const stream_t& stream);
 
 /**
  * @brief Proxy class for a CUDA stream
- *
- * Use this class - built around an event ID - to perform almost, if not all
- * operations related to CUDA events,
- *
- * @note this is one of the three main classes in the Runtime API wrapper library,
- * together with @ref cuda::device_t and @ref cuda::event_t
  */
 class stream_t {
 
 public: // type definitions
-	using priority_t = stream::priority_t;
 
 	enum : bool {
 		doesnt_synchronizes_with_default_stream  = false,
@@ -163,6 +156,8 @@ public: // other non-mutators
 	 */
 	bool synchronizes_with_default_stream() const
 	{
+		// Is it necessary to set the device here? I wonder.
+		device_setter_type set_device_for_this_scope(device_id_);
 		unsigned int flags;
 		auto status = cudaStreamGetFlags(id_, &flags);
 		throw_if_error(status,
@@ -171,8 +166,10 @@ public: // other non-mutators
 		return flags & cudaStreamNonBlocking;
 	}
 
-	priority_t priority() const
+	stream::priority_t priority() const
 	{
+		// Is it necessary to set the device here? I wonder.
+		device_setter_type set_device_for_this_scope(device_id_);
 		int the_priority;
 		auto status = cudaStreamGetPriority(id_, &the_priority);
 		throw_if_error(status,
@@ -213,7 +210,7 @@ public: // other non-mutators
 	 * @return true if there is no work pending, false if all
 	 * previously-scheduled work has been completed
 	 */
-	bool is_clear() const { return !has_work_remaining(); }
+	bool is_clear() const { return not has_work_remaining(); }
 
 	/**
 	 * An alias for @ref is_clear() - to conform to how the CUDA runtime
@@ -554,6 +551,8 @@ public: // mutators
 	 */
 	void synchronize() const
 	{
+		// Is it necessary to set the device here? I wonder.
+		device_setter_type set_device_for_this_scope(device_id_);
 		cuda::synchronize(*this);
 	}
 
