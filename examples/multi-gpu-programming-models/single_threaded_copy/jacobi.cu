@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
     constexpr int dim_block_x = 32;
     constexpr int dim_block_y = 32;
     int iter = 0;
-    bool calculate_norm;
+    bool calculate_norm = false;
     real l2_norm = 1.0;
 
     for (int dev_id = 0; dev_id < num_devices; ++dev_id) {

@@ -32,6 +32,14 @@
 
 #include <mpi.h>
 
+#ifndef SKIP_CUDA_AWARENESS_CHECK
+#include <mpi-ext.h>
+#if !defined(MPIX_CUDA_AWARE_SUPPORT) || !MPIX_CUDA_AWARE_SUPPORT
+#error "The used MPI Implementation does not have CUDA-aware support or CUDA-aware \
+support can't be determined. Define SKIP_CUDA_AWARENESS_CHECK to skip this check."
+#endif
+#endif
+
 #define MPI_CALL(call)                                                                \
     {                                                                                 \
         int mpi_status = call;                                                        \
@@ -104,6 +112,7 @@ constexpr real tol = 1.0e-8;
 
 const real PI = 2.0 * std::asin(1.0);
 
+#if 1
 void launch_initialize_boundaries(real* __restrict__ const a_new, real* __restrict__ const a,
                                   const real pi, const int offset, const int nx, const int my_ny,
                                   const int ny);
@@ -111,6 +120,15 @@ void launch_initialize_boundaries(real* __restrict__ const a_new, real* __restri
 void launch_jacobi_kernel(real* __restrict__ const a_new, const real* __restrict__ const a,
                           real* __restrict__ const l2_norm, const int iy_start, const int iy_end,
                           const int nx, const bool calculate_norm, cudaStream_t stream);
+#else
+void launch_initialize_boundaries(real* __restrict__ const , real* __restrict__ const ,
+                                  const real , const int , const int , const int ,
+                                  const int ) { }
+
+void launch_jacobi_kernel(real* __restrict__ const , const real* __restrict__ const ,
+                          real* __restrict__ const , const int , const int ,
+                          const int , const bool , cudaStream_t ) { }
+#endif
 
 double single_gpu(const int nx, const int ny, const int iter_max, real* const a_ref_h,
                   const int nccheck, const bool print);
@@ -135,6 +153,12 @@ bool get_arg(char** begin, char** end, const std::string& arg) {
 }
 
 int main(int argc, char* argv[]) {
+#if !defined(SKIP_CUDA_AWARENESS_CHECK) && defined(MPIX_CUDA_AWARE_SUPPORT)
+    if (1 != MPIX_Query_cuda_support()) {
+        fprintf(stderr, "The used MPI Implementation does not have CUDA-aware support enabled!\n");
+        return -1;
+    }
+#endif
     MPI_CALL(MPI_Init(&argc, &argv));
     int rank;
     MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
@@ -242,8 +266,8 @@ int main(int argc, char* argv[]) {
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm;  // boolean to store whether l2 norm will be calculated in
-                          //   an iteration or not
+    bool calculate_norm = true; // boolean to store whether l2 norm will be calculated in
+                                // an iteration or not
 
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     double start = MPI_Wtime();
@@ -391,7 +415,7 @@ double single_gpu(const int nx, const int ny, const int iter_max, real* const a_
 
     int iter = 0;
     real l2_norm = 1.0;
-    bool calculate_norm;
+    bool calculate_norm = true;
 
     double start = MPI_Wtime();
     PUSH_RANGE("Jacobi solve", 0)

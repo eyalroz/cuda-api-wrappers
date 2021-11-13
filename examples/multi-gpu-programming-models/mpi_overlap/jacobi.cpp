@@ -272,13 +272,13 @@ int main(int argc, char* argv[]) {
         CUDA_RT_CALL(cudaMemsetAsync(l2_norm_d, 0, sizeof(real), compute_stream));
         CUDA_RT_CALL(cudaEventRecord(reset_l2norm_done, compute_stream));
 
+        calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
         if (use_hp_streams) {
             launch_jacobi_kernel(a_new, a, l2_norm_d, (iy_start + 1), (iy_end - 1), nx,
                                  calculate_norm, compute_stream);
         }
 
         CUDA_RT_CALL(cudaStreamWaitEvent(push_top_stream, reset_l2norm_done, 0));
-        calculate_norm = (iter % nccheck) == 0 || (!csv && (iter % 100) == 0);
         launch_jacobi_kernel(a_new, a, l2_norm_d, iy_start, (iy_start + 1), nx, calculate_norm,
                              push_top_stream);
         CUDA_RT_CALL(cudaEventRecord(push_top_done, push_top_stream));
