@@ -1,30 +1,20 @@
 enable_language(CXX)
 enable_language(CUDA)
 
-include(FindCUDA/select_compute_arch)
-# This _should_ work with CMake 3.18 and later...:
-#
-#if((NOT DEFINED CUDA_ARCH_LIST) OR ("${CUDA_ARCH_LIST}" STREQUAL ""))
-#	CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
-#	string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-#	string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-#	string(REPLACE "." "" INSTALLED_GPU_CC_LIST "${INSTALLED_GPU_CCS_3}")
-#	set(CUDA_ARCH_LIST "${INSTALLED_GPU_CC_LIST}" CACHE STRING "GPU Architecture / Compute Capability codes to use; semicolon-separates" FORCE)
-#
-#endif()
-#LIST(APPEND CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-#
-# ... but it doesn't, for some versions of CUDA, and on some platforms. Somehow, the script messes up the flags passed to NVCC
-# So, for now, we're falling back on the old-style method of directly appending to CMAKE_CUDA_FLAGS rather than going through CUDA_ARCHITECTURES.
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
-	cmake_policy(SET CMP0104 OLD)
-endif()
-if((NOT DEFINED CUDA_ARCH_FLAGS) OR ("${CUDA_ARCH_FLAGS}" STREQUAL ""))
-	cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_1 Auto)
-	set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA -gencode parameters")
-	string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
-else()
-	set(CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}")
+if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
+	include(FindCUDA/select_compute_arch)
+	# After having trouble going through CUDA_ARCHITECTURES, we're falling back on the old-style method of directly appending to CMAKE_CUDA_FLAGS.
+	if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+		cmake_policy(SET CMP0104 OLD)
+	endif()
+	if((NOT DEFINED CUDA_ARCH_FLAGS) OR ("${CUDA_ARCH_FLAGS}" STREQUAL ""))
+		cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_1 Auto)
+		set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA -gencode parameters")
+		string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR_ "${CUDA_ARCH_FLAGS}")
+		set(CUDA_ARCH_FLAGS_STR ${CUDA_ARCH_FLAGS_STR_} CACHE INTERNAL "CUDA Architecture flags")
+	else()
+		set(CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}" CACHE INTERNAL "CUDA Architecture flags")
+	endif()
 endif()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
 
