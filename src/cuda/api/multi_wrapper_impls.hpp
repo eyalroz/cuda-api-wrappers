@@ -16,6 +16,7 @@
 #include <cuda/api/pointer.hpp>
 #include <cuda/api/stream.hpp>
 #include <cuda/api/unique_ptr.hpp>
+#include <cuda/api/texture_view.hpp>
 #include <cuda_runtime.h>
 
 #include <type_traits>
@@ -23,6 +24,32 @@
 #include <algorithm>
 
 namespace cuda {
+
+template <typename T, dimensionality_t NumDimensions>
+device_t array_t<T, NumDimensions>::associated_device() const noexcept
+{
+    return device::get(device_id_);
+}
+
+template <typename T, dimensionality_t NumDimensions>
+texture_view::texture_view(
+    const cuda::array_t<T, NumDimensions>&  arr,
+    texture::descriptor_t                   descriptor)
+    : device_id_(arr.associated_device().id()), owning(true)
+{
+    cudaResourceDesc resource_descriptor;
+    memset(&resource_descriptor, 0, sizeof(resource_descriptor));
+    resource_descriptor.resType = cudaResourceTypeArray;
+    resource_descriptor.res.array.array = arr.get();
+
+    auto status = cudaCreateTextureObject(&raw_handle_, &resource_descriptor, &descriptor, nullptr);
+    throw_if_error(status, "failed creating a CUDA texture object");
+}
+
+inline device_t texture_view::associated_device() const noexcept
+{
+    return cuda::device::get(device_id_);
+}
 
 namespace array {
 
@@ -35,6 +62,15 @@ handle_t create(const device_t& device, dimensions_t<NumDimensions> dimensions)
 }
 
 } // namespace detail_
+
+template <typename T, dimensionality_t NumDimensions>
+array_t<T, NumDimensions> create(
+    const device_t&              device,
+    dimensions_t<NumDimensions>  dimensions)
+{
+    handle_t handle { detail_::create<T, NumDimensions>(device, dimensions) };
+    return wrap<T>(device.id(), handle, dimensions);
+}
 
 } // namespace array
 

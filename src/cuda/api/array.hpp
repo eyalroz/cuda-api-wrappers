@@ -33,6 +33,7 @@ using handle_t = cudaArray*;
  */
 template <typename T, dimensionality_t NumDimensions>
 array_t<T, NumDimensions> wrap(
+    device::id_t                 device_id,
 	handle_t                     handle,
 	dimensions_t<NumDimensions>  dimensions) noexcept;
 
@@ -104,14 +105,14 @@ public:
 	 * Constructs a CUDA array wrapper from the raw type used by the CUDA
 	 * Runtime API - and takes ownership of the array
 	 */
-	array_t(handle_type handle, dimensions_type dimensions) :
-	    dimensions_(dimensions), handle_(handle)
+	array_t(device::id_t device_id, handle_type handle, dimensions_type dimensions) :
+	    device_id_(device_id), dimensions_(dimensions), handle_(handle)
 	{
 		assert(handle != nullptr);
 	}
 
 	array_t(const array_t& other) = delete;
-	array_t(array_t&& other) noexcept : array_t(other.handle_, other.dimensions_)
+	array_t(array_t&& other) noexcept : array_t(other.device_id_, other.handle_, other.dimensions_)
 	{
 		other.handle_ = nullptr;
 	}
@@ -126,9 +127,10 @@ public:
 		}
 	}
 
-	friend array_t array::wrap<T, NumDimensions>(handle_type handle, dimensions_type dimensions) noexcept;
+	friend array_t array::wrap<T, NumDimensions>(device::id_t, handle_type, dimensions_type) noexcept;
 
-	handle_type get() const noexcept { return handle_; }
+    handle_type get() const noexcept { return handle_; }
+    device_t associated_device() const noexcept;
 	dimensions_type dimensions() const noexcept { return dimensions_; }
 	::std::size_t size() const noexcept { return dimensions().size(); }
 	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
@@ -136,26 +138,24 @@ public:
 protected:
 	dimensions_type  dimensions_;
 	handle_type      handle_;
+	device::id_t     device_id_;
 };
 
 namespace array {
 
 template <typename T, dimensionality_t NumDimensions>
 inline array_t<T, NumDimensions> wrap(
+    device::id_t                 device_id,
 	handle_t                     handle,
 	dimensions_t<NumDimensions>  dimensions) noexcept
 {
-	return array_t<T, NumDimensions>(handle, dimensions);
+	return array_t<T, NumDimensions> { device_id, handle, dimensions };
 }
 
 template <typename T, dimensionality_t NumDimensions>
 array_t<T, NumDimensions> create(
 	const device_t&              device,
-	dimensions_t<NumDimensions>  dimensions)
-{
-	handle_t handle { detail_::create<T, NumDimensions>(device, dimensions) };
-	return wrap<T>(handle, dimensions);
-}
+	dimensions_t<NumDimensions>  dimensions);
 
 } // namespace array
 

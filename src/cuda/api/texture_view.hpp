@@ -44,7 +44,7 @@ struct descriptor_t : public cudaTextureDesc {
 
 namespace detail_ {
 
-inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept;
+inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept;
 
 }  // namespace detail_
 
@@ -73,14 +73,17 @@ class texture_view {
 
 public:
 	bool is_owning() const noexcept { return owning; }
-	raw_handle_type raw_handle() const noexcept { return raw_view_handle; }
+    raw_handle_type raw_handle() const noexcept { return raw_handle_; }
+    device_t associated_device() const noexcept;
 
 public: // constructors and destructors
 
 	texture_view(const texture_view& other) = delete;
 
 	texture_view(texture_view&& other) noexcept :
-		raw_view_handle(other.raw_view_handle), owning(other.raw_view_handle)
+		device_id_(other.device_id_),
+		raw_handle_(other.raw_handle_),
+		owning(other.raw_handle_)
 	{
 		other.owning = false;
 	};
@@ -89,24 +92,14 @@ public: // constructors and destructors
 	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
 		const cuda::array_t<T, NumDimensions>& arr,
-		texture::descriptor_t descriptor = texture::descriptor_t()) :
-		owning(true)
-	{
-		cudaResourceDesc resource_descriptor;
-		memset(&resource_descriptor, 0, sizeof(resource_descriptor));
-		resource_descriptor.resType = cudaResourceTypeArray;
-		resource_descriptor.res.array.array = arr.get();
-
-		auto status = cudaCreateTextureObject(&raw_view_handle, &resource_descriptor, &descriptor, nullptr);
-		throw_if_error(status, "failed creating a CUDA texture object");
-    }
+		texture::descriptor_t descriptor = texture::descriptor_t());
 
 public: // operators
 
 	~texture_view()
 	{
 		if (owning) {
-			auto status = cudaDestroyTextureObject(raw_view_handle);
+			auto status = cudaDestroyTextureObject(raw_handle_);
 			throw_if_error(status, "failed destroying texture object");
 		}
 	}
@@ -117,15 +110,16 @@ public: // operators
 protected: // constructor
 
 	// Usable by the wrap function
-	texture_view(raw_handle_type handle , bool take_ownership) noexcept
-	: raw_view_handle(handle), owning(take_ownership) { }
+	texture_view(device::id_t device_id, raw_handle_type handle , bool take_ownership) noexcept
+	:   device_id_(device_id), raw_handle_(handle), owning(take_ownership) { }
 
 public: // friendship
 
-	friend texture_view texture::detail_::wrap(raw_handle_type handle, bool take_ownersip) noexcept;
+	friend texture_view texture::detail_::wrap(device::id_t, raw_handle_type, bool) noexcept;
 
 protected:
-	raw_handle_type raw_view_handle { } ;
+    device::id_t device_id_;
+	raw_handle_type raw_handle_ { } ;
 	bool owning;
 };
 
@@ -143,9 +137,9 @@ inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcep
 namespace texture {
 namespace detail_ {
 
-inline texture_view wrap(texture::raw_handle_t handle, bool take_ownership) noexcept
+inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept
 {
-	return texture_view(handle, take_ownership);
+	return texture_view { device_id, handle, take_ownership };
 }
 
 } // namespace detail_

@@ -1,4 +1,4 @@
-#include <cuda/runtime_api.hpp>
+#include "../common.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -68,11 +68,13 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 
 	const cuda::array::dimensions_t<3> dims = {w, h, d};
 	auto arr = cuda::array::create<float>(device, dims);
+	assert_(arr.associated_device() == device);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
 	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
+    assert_(tv.associated_device() == device);
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
 	constexpr auto block_dims = cuda::grid::block_dimensions_t::cube(block_dim);
 	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
