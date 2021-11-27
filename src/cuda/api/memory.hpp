@@ -245,7 +245,8 @@ inline region_t allocate(
  * Schedule an allocation of device-side memory on a CUDA stream.
  *
  * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
- * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
+ * (CUDA 9.0 Runtime API documentation), and the CUDA programming guide guarantees
+ * since at least version 5.0 that the minimum allocation is 256 bytes.
  *
  * @throws cuda::runtime_error if scheduling fails for any reason
  *
