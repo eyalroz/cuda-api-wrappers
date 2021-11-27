@@ -35,11 +35,6 @@ void basics(cuda::device::id_t device_id)
 		die_("The device's reported ID and the ID for which we created the device differ: "
 		+ std::to_string(device.id()) + " !=" +  std::to_string(device_id));
 	}
-
-	if (device.id() != device.memory().device_id()) {
-		die_("The device's reported ID and the device's memory object's reported device ID differ: "
-		+ std::to_string(device.id()) + " !=" +  std::to_string(device.memory().device_id()));
-	}
 }
 
 void attributes_and_properties()
@@ -72,12 +67,20 @@ void global_memory()
 	auto device = cuda::device::current::get();
 
 	auto device_global_mem = device.memory();
+
+	assert_(device_global_mem.associated_device() == device);
+
+    if (device.id() != device.memory().associated_device().id()) {
+        die_("The device's reported ID and the device's memory object's reported device ID differ: "
+        + std::to_string(device.id()) + " !=" +  std::to_string(device.memory().associated_device().id()));
+    }
+
 	auto total_memory = device_global_mem.amount_total();
 	auto free_memory = device_global_mem.amount_total();
 
 	std::cout
-	<< "Device " << std::to_string(device.id()) << " reports it has:\n"
-	<< free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
+	    << "Device " << std::to_string(device.id()) << " reports it has:\n"
+	    << free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
 
 	assert_(free_memory <= total_memory);
 }

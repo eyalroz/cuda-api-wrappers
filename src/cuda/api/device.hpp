@@ -197,7 +197,7 @@ public:	// types
 		global_memory_t(device::id_t id) : device_id_(id) { }
 		///@endcond
 
-		cuda::device::id_t device_id() const { return device_id_; }
+		cuda::device_t associated_device() const { return device::get(device_id_); }
 
 		/**
 		 * Allocate a region of memory on the device
