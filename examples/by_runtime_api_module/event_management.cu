@@ -5,20 +5,7 @@
  *   Event Management
  *
  */
-#include <cuda/runtime_api.hpp>
-
-#include <cuda_runtime_api.h>
-
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <cassert>
-
-[[noreturn]] void die_(const std::string& message)
-{
-	std::cerr << message << "\n";
-	exit(EXIT_FAILURE);
-}
+#include "../common.hpp"
 
 template <typename T, size_t N>
 struct poor_mans_array {

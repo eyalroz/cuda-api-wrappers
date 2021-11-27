@@ -125,7 +125,7 @@ void checkP2Paccess()
             }
         }
     }
-    std::cout << "\n***NOTE: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.\nSo you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.\n\n";
+    std::cout << "\nNote: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.\nSo you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.\n\n";
 }
 
 void enqueue_p2p_copy(
