@@ -10,25 +10,10 @@
  * covered by a different program.
  *
  */
-#include <cuda/api/device.hpp>
-#include <cuda/api/devices.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/miscellany.hpp>
-#include <cuda/api/pci_id_impl.hpp>
-#include <cuda/api/peer_to_peer.hpp>
 
-#include <cuda_runtime_api.h>
-
-#include <iostream>
 #include <string>
-#include <cstdlib>
-#include <cassert>
 
-[[noreturn]] void die_(const std::string& message)
-{
-	std::cerr << message << "\n";
-	exit(EXIT_FAILURE);
-}
+#include "../common.hpp"
 
 namespace tests {
 
@@ -65,7 +50,7 @@ void attributes_and_properties()
 	std::cout
 	<< "Maximum number of registers per block on this device: "
 	<< max_registers_per_block << "\n";
-	assert(device.properties().regsPerBlock == max_registers_per_block);
+	assert_(device.properties().regsPerBlock == max_registers_per_block);
 }
 
 void pci_bus_id()
@@ -78,7 +63,7 @@ void pci_bus_id()
 	cuda::outstanding_error::ensure_none(cuda::do_clear_errors);
 
 	auto re_obtained_device = cuda::device::get(pci_id_str);
-	assert(re_obtained_device == device);
+	assert_(re_obtained_device == device);
 
 }
 
@@ -94,7 +79,7 @@ void global_memory()
 	<< "Device " << std::to_string(device.id()) << " reports it has:\n"
 	<< free_memory << " Bytes free out of " << total_memory << " Bytes total global memory.\n";
 
-	assert(free_memory <= total_memory);
+	assert_(free_memory <= total_memory);
 }
 
 // Specific attributes and properties with their own API calls:
@@ -104,31 +89,46 @@ void shared_memory()
 {
 	auto device = cuda::device::current::get();
 
-	std::string cache_preference_names[] = {
-		"No preference",
-		"Equal L1 and shared memory",
-		"Prefer shared memory over L1",
-		"Prefer L1 over shared memory",
-		};
+	auto reported_cache_preference = device.cache_preference();
+	std::cout << "The cache preference for device " << device.id() << " is: \""	<<  reported_cache_preference << "\".\n";
 
-	auto cache_preference = device.cache_preference();
-	std::cout << "The cache preference for device " << device.id() << " is: "
-	<< cache_preference_names[(unsigned) cache_preference] << ".\n";
-
-	auto new_cache_preference =
-		cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
+	auto applied_cache_preference =
+		reported_cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
 		cuda::multiprocessor_cache_preference_t::prefer_shared_memory_over_l1 :
 		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
-	device.set_cache_preference(new_cache_preference);
-	cache_preference = device.cache_preference();
-	assert(cache_preference == new_cache_preference);
+	device.set_cache_preference(applied_cache_preference);
 
-	auto shared_mem_bank_size = device.shared_memory_bank_size();
-	shared_mem_bank_size =
-		(shared_mem_bank_size == cudaSharedMemBankSizeFourByte) ?
-		cudaSharedMemBankSizeEightByte : cudaSharedMemBankSizeFourByte;
-	device.set_shared_memory_bank_size(shared_mem_bank_size);
+	reported_cache_preference = device.cache_preference();
+	if (reported_cache_preference != applied_cache_preference) {
+		std::cerr << "After setting cache preference to \""
+				  << applied_cache_preference
+				  << "\", the reported cache preference for device " << device.id() << " is: \""
+				  << reported_cache_preference << "\"." << std::endl;
+		assert_(reported_cache_preference == applied_cache_preference);
+	}
 
+	std::string bank_size_names[] = {
+		"default", "4 bytes", "8 bytes"
+	};
+
+
+	auto reported_shared_mem_bank_size = device.shared_memory_bank_size();
+	std::cout << "The reported shared memory bank size for device " << device.id() << " is: "
+			  << bank_size_names[reported_shared_mem_bank_size] << '.' << std::endl;
+	auto applied_shared_mem_bank_size =
+		(reported_shared_mem_bank_size == cudaSharedMemBankSizeFourByte) ?
+		    cudaSharedMemBankSizeEightByte : cudaSharedMemBankSizeFourByte;
+	device.set_shared_memory_bank_size(applied_shared_mem_bank_size);
+
+	// We can't reliably check the bank size setting succeeded, since some devices, which
+	// only support a fixed bank size, will simply _ignore_ the set call.
+
+//	reported_shared_mem_bank_size = device.shared_memory_bank_size();
+//	if (reported_shared_mem_bank_size != applied_shared_mem_bank_size) {
+//		std::cerr << "After setting shared memory bank size to " << applied_shared_mem_bank_size
+//				  << ", the reported shared memory bank size for device " << device.id() << " is: "
+//				  << reported_shared_mem_bank_size << '.' << std::endl;
+//	}
 }
 
 void stream_priority_range()
@@ -144,7 +144,7 @@ void stream_priority_range()
 		std::cout << "Streams on device " << device.id() << " have priorities between "
 		<< std::to_string(stream_priority_range.greatest) << " (lowest value, most prioritized) and "
 		<< stream_priority_range.least << " (highest value, least prioritized)\n";
-		assert(stream_priority_range.least > stream_priority_range.greatest);
+		assert_(stream_priority_range.least > stream_priority_range.greatest);
 	}
 }
 
@@ -158,7 +158,7 @@ void limits()
 		(printf_fifo_size <= 1024) ?  2 * printf_fifo_size : printf_fifo_size - 512;
 	device.set_limit(cudaLimitPrintfFifoSize, new_printf_fifo_size);
 	printf_fifo_size = device.get_limit(cudaLimitPrintfFifoSize);
-	assert(printf_fifo_size == new_printf_fifo_size);
+	assert_(printf_fifo_size == new_printf_fifo_size);
 }
 
 // Flags - yes, they're yet another kind of attribute/property
@@ -207,11 +207,11 @@ void current_device_manipulation()
 		auto device_0 = cuda::device::get(0);
 		auto device_1 = cuda::device::get(1);
 		cuda::device::current::set(device_0);
-		assert(cuda::device::current::get() == device_0);
-		assert(cuda::device::current::detail_::get_id() == device_0.id());
+		assert_(cuda::device::current::get() == device_0);
+		assert_(cuda::device::current::detail_::get_id() == device_0.id());
 		cuda::device::current::set(device_1);
-		assert(cuda::device::current::get() == device_1);
-		assert(cuda::device::current::detail_::get_id() == device_1.id());
+		assert_(cuda::device::current::get() == device_1);
+		assert_(cuda::device::current::detail_::get_id() == device_1.id());
 	}
 
 	try {
@@ -223,7 +223,7 @@ void current_device_manipulation()
 	}
 	catch(cuda::runtime_error& e) {
 		(void) e; // This avoids a spurious warning in MSVC 16.11
-		assert(e.code() == cuda::status::invalid_device);
+		assert_(e.code() == cuda::status::invalid_device);
 		// We expected to get this exception, just clear it
 		cuda::outstanding_error::clear();
 	}
@@ -232,7 +232,7 @@ void current_device_manipulation()
 	// ------------------------
 
 	auto devices = cuda::devices();
-	assert(devices.size() == cuda::device::count());
+	assert_(devices.size() == cuda::device::count());
 	std::cout << "There are " << devices.size() << " 'elements' in devices().\n";
 	std::cout << "Let's count the device IDs... ";
 	for(auto device : cuda::devices()) {
@@ -242,17 +242,19 @@ void current_device_manipulation()
 	std::cout << '\n';
 }
 
-
 } // namespace tests
 
 int main(int argc, char **argv)
 {
+	// TODO: cudaChooseDevice
+
 	if (cuda::device::count() == 0) {
 		die_("No CUDA devices on this system");
 	}
-
 	cuda::device::id_t device_id =  (argc > 1) ?
 		std::stoi(argv[1]) : cuda::device::default_device_id;
+
+	// Being very cavalier about our command-line arguments here...
 
 	tests::basics(device_id);
 	tests::attributes_and_properties();

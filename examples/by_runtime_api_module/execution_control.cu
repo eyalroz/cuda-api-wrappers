@@ -12,9 +12,7 @@
  *   cudaSetDoubleForHost
  *
  */
-#include <cuda/runtime_api.hpp>
-
-#include <cuda_runtime_api.h>
+#include "../common.hpp"
 
 #if __CUDACC_VER_MAJOR__ >= 9
 #define TEST_COOPERATIVE_GROUPS 1
@@ -22,16 +20,6 @@
 #else
 #define TEST_COOPERATIVE_GROUPS 0
 #endif
-
-#include <iostream>
-#include <string>
-#include <cassert>
-
-[[noreturn]] void die_(const std::string& message)
-{
-	std::cerr << message << "\n";
-	exit(EXIT_FAILURE);
-}
 
 __global__ void foo(int bar)
 {
@@ -55,11 +43,6 @@ __global__ void grid_cooperating_foo(int bar)
 	}
 }
 #endif
-
-std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc)
-{
-	return os << cc.major() << '.' << cc.minor();
-}
 
 int main(int argc, char **argv)
 {
