@@ -159,7 +159,6 @@ public: // types
 	using properties_t = device::properties_t;
 	using attribute_value_t = device::attribute_value_t;
 	using limit_t = size_t;
-	using shared_memory_bank_size_t = cudaSharedMemConfig;
 
 	using resource_id_t = cudaLimit;
 
@@ -519,7 +518,7 @@ public:
 	 *
 	 * @param new_bank_size the shared memory bank size to set, in bytes
 	 */
-	void set_shared_memory_bank_size(shared_memory_bank_size_t new_bank_size) const
+	void set_shared_memory_bank_size(memory::shared::bank_size_configuration_t new_bank_size) const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
@@ -532,10 +531,10 @@ public:
 	 *
 	 * @return the shared memory bank size in bytes
 	 */
-	shared_memory_bank_size_t shared_memory_bank_size() const
+	memory::shared::bank_size_configuration_t shared_memory_bank_size() const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
-		shared_memory_bank_size_t bank_size;
+		memory::shared::bank_size_configuration_t bank_size;
 		auto status = cudaDeviceGetSharedMemConfig(&bank_size);
 		throw_if_error(status, "Obtaining the multiprocessor shared memory bank size for  " + device::detail_::identify(id_));
 		return bank_size;

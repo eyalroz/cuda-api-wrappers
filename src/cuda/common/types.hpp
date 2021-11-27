@@ -341,6 +341,8 @@ namespace shared {
  */
 using size_t = unsigned;
 
+using bank_size_configuration_t = cudaSharedMemConfig;
+
 } // namespace shared
 } // namespace memory
 
