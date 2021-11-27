@@ -87,6 +87,13 @@ template<typename T>
 inline unique_ptr<T> make_unique(cuda::device_t device);
 
 template<typename T>
+inline unique_ptr<T> make_unique(size_t n);
+
+template<typename T>
+inline unique_ptr<T> make_unique();
+
+
+template<typename T>
 inline unique_ptr<T> make_unique(T* raw_ptr)
 {
 	// We should not have to care about single-elements vs arrays here. I think
@@ -144,8 +151,19 @@ inline unique_ptr<T> make_unique(
 		cuda::memory::detail_::make_unique<T, detail_::allocator<
 			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail_::deleter
 		>();
-
 }
+
+template<typename T>
+inline unique_ptr<T> make_unique(
+    device_t              device,
+    size_t                n,
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+template<typename T>
+inline unique_ptr<T> make_unique(
+    device_t              device,
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
 } // namespace managed
 
 } // namespace memory

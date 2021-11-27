@@ -253,6 +253,22 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 
 /**
  * @brief Create a variant of ::std::unique_pointer for an array in
+ * the current device's global memory
+ *
+ * @tparam T  an array type; _not_ the type of individual elements
+ *
+ * @param num_elements  the number of elements to allocate
+ * @return an ::std::unique_ptr pointing to the constructed T array
+ */
+template<typename T>
+inline unique_ptr<T> make_unique(size_t num_elements)
+{
+	static_assert(::std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(num_elements);
+}
+
+/**
+ * @brief Create a variant of ::std::unique_pointer for an array in
  * device-global memory
  *
  * @tparam T  an array type; _not_ the type of individual elements
@@ -260,13 +276,25 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
  * @param device        on which to construct the array of elements
  * @param num_elements  the number of elements to allocate
  * @return an ::std::unique_ptr pointing to the constructed T array
- */
-template<typename T>
+ */template<typename T>
 inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
 {
-	static_assert(::std::is_array<T>::value, "make_unique<T>(device, num_elements) can only be invoked for T being an array type, T = U[]");
-	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
-	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(num_elements);
+    cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
+    return make_unique<T>(num_elements);
+}
+
+/**
+ * @brief Create a variant of ::std::unique_pointer for a single value
+ * in the current device's global memory
+ *
+ * @tparam T  the type of value to construct in device memory
+ *
+ * @return an ::std::unique_ptr pointing to the allocated memory
+ */
+template <typename T>
+inline unique_ptr<T> make_unique()
+{
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>();
 }
 
 /**
@@ -281,8 +309,8 @@ inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
 template <typename T>
 inline unique_ptr<T> make_unique(device_t device)
 {
-	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
-	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>();
+    cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device.id());
+    return make_unique<T>();
 }
 
 } // namespace device
@@ -366,6 +394,25 @@ inline region_t allocate(
 	initial_visibility_t  initial_visibility)
 {
 	return detail_::allocate(device.id(), num_bytes, initial_visibility);
+}
+
+template<typename T>
+inline unique_ptr<T> make_unique(
+    device_t              device,
+    size_t                n,
+    initial_visibility_t  initial_visibility)
+{
+    cuda::device::current::detail_::scoped_override_t(device.id());
+    return make_unique<T>(n, initial_visibility);
+}
+
+template<typename T>
+inline unique_ptr<T> make_unique(
+    device_t              device,
+    initial_visibility_t  initial_visibility)
+{
+    cuda::device::current::detail_::scoped_override_t(device.id());
+    return make_unique<T>(initial_visibility);
 }
 
 } // namespace managed
