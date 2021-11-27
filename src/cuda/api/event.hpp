@@ -323,10 +323,10 @@ inline event_t create(
  * @note Creating an event
  */
 inline event_t create(
-	device_t&  device,
-	bool       uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool       records_timing     = do_record_timings,
-	bool       interprocess       = not_interprocess);
+	device_t  device,
+	bool      uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool      records_timing     = do_record_timings,
+	bool      interprocess       = not_interprocess);
 
 } // namespace event
 

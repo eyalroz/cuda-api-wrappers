@@ -77,7 +77,7 @@ array_t<T, NumDimensions> create(
 namespace event {
 
 inline event_t create(
-	device_t&  device,
+	device_t   device,
 	bool       uses_blocking_sync,
 	bool       records_timing,
 	bool       interprocess)
@@ -115,7 +115,7 @@ inline stream_t device_t::default_stream() const noexcept
 inline stream_t
 device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
-	stream::priority_t  priority)
+	stream::priority_t  priority) const
 {
 	device::current::detail_::scoped_override_t set_device_for_this_scope(id_);
 	return stream::detail_::wrap(id(), stream::detail_::create_on_current_device(
@@ -139,7 +139,7 @@ namespace detail_ {
 template <typename KernelFunction, typename ... KernelParameters>
 void device_t::launch(
 	KernelFunction kernel_function, launch_configuration_t launch_configuration,
-	KernelParameters ... parameters)
+	KernelParameters ... parameters) const
 {
 	return default_stream().enqueue.kernel_launch(
 		kernel_function, launch_configuration, parameters...);
@@ -148,7 +148,7 @@ void device_t::launch(
 inline event_t device_t::create_event(
 	bool          uses_blocking_sync,
 	bool          records_timing,
-	bool          interprocess)
+	bool          interprocess) const
 {
 	// The current implementation of event::create is not super-smart,
 	// but it's probably not worth it trying to improve just this function

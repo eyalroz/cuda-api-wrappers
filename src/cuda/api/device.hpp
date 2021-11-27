@@ -142,7 +142,7 @@ inline ::std::string identify(device::id_t id)
  * device, the thread calling this method will either yield, spin or block
  * until this completion.
  */
-inline void synchronize(device_t& device);
+inline void synchronize(device_t device);
 
 /**
  * @brief Proxy class for a CUDA device
@@ -205,7 +205,7 @@ public:	// types
 		 * @param size_in_bytes size in bytes of the region of memory to allocate
 		 * @return a non-null (device-side) pointer to the allocated memory
 		 */
-		memory::region_t allocate(size_t size_in_bytes)
+		memory::region_t allocate(size_t size_in_bytes) const
 		{
 			scoped_setter_t set_device_for_this_scope(device_id_);
 			return memory::device::detail_::allocate(size_in_bytes);
@@ -237,7 +237,7 @@ public:	// types
 		memory::region_t allocate_managed(
 			size_t size_in_bytes,
 			initial_visibility_t initial_visibility =
-				initial_visibility_t::to_supporters_of_concurrent_managed_access)
+				initial_visibility_t::to_supporters_of_concurrent_managed_access) const
 		{
 			scoped_setter_t set_device_for_this_scope(device_id_);
 			return cuda::memory::managed::detail_::allocate(size_in_bytes, initial_visibility);
@@ -292,7 +292,7 @@ public:	// types
 	 *
 	 * @param peer the device to which to enable access
 	 */
-	void enable_access_to(device_t peer)
+	void enable_access_to(device_t peer) const
 	{
 		enum : unsigned {fixed_flags = 0 };
 		// No flags are supported as of CUDA 8.0
@@ -307,7 +307,7 @@ public:	// types
 	 *
 	 * @param peer the device to which to disable access
 	 */
-	void disable_access_to(device_t peer)
+	void disable_access_to(device_t peer) const
 	{
 		scoped_setter_t set_device_for_this_scope(id());
 		auto status = cudaDeviceDisablePeerAccess(peer.id());
@@ -316,7 +316,7 @@ public:	// types
 	}
 
 protected:
-	void set_flags(flags_t new_flags)
+	void set_flags(flags_t new_flags) const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaSetDeviceFlags(new_flags);
@@ -326,7 +326,7 @@ protected:
 	void set_flags(
 		host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
 		bool                                   keep_larger_local_mem_after_resize,
-		bool                                   allow_pinned_mapped_memory_allocation)
+		bool                                   allow_pinned_mapped_memory_allocation) const
 	{
 		set_flags( (flags_t)
 			  synch_scheduling_policy // this enum value is also a valid bitmask
@@ -347,7 +347,7 @@ public:
 	/**
 	 * @brief Obtains a proxy for the device's global memory
 	 */
-	global_memory_t memory() { return global_memory_t(id_); };
+	global_memory_t memory() const { return global_memory_t(id_); };
 
 	/**
 	 * Obtains the (mostly) non-numeric properties for this device.
@@ -360,7 +360,8 @@ public:
 		return properties;
 	}
 
-	static device_t choose_best_match(const properties_t& properties) {
+	static device_t choose_best_match(const properties_t& properties)
+	{
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
 		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
@@ -451,7 +452,7 @@ public:
 	 * Set the upper limit of one of the named numeric resources
 	 * on this device
 	 */
-	void set_limit(resource_id_t resource, limit_t new_limit)
+	void set_limit(resource_id_t resource, limit_t new_limit) const
 	{
 		auto status = cudaDeviceSetLimit(resource, new_limit);
 		throw_if_error(status, "Failed setting a resource limit for  " + device::detail_::identify(id_));
@@ -466,7 +467,7 @@ public:
 	 * until all tasks scheduled previously scheduled on this device have been
 	 * concluded.
 	 */
-	void synchronize()
+	void synchronize() const
 	{
 		cuda::synchronize(*this);
 	}
@@ -477,7 +478,7 @@ public:
      *
      * @todo Determine whether this actually performs a hardware reset or not
 	 */
-	void reset()
+	void reset() const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		status_t status = cudaDeviceReset();
@@ -490,7 +491,7 @@ public:
 	 *
 	 * @param preference the preferred balance between L1 and shared memory
 	 */
-	void set_cache_preference(multiprocessor_cache_preference_t preference)
+	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetCacheConfig((cudaFuncCache) preference);
@@ -518,7 +519,7 @@ public:
 	 *
 	 * @param new_bank_size the shared memory bank size to set, in bytes
 	 */
-	void set_shared_memory_bank_size(shared_memory_bank_size_t new_bank_size)
+	void set_shared_memory_bank_size(shared_memory_bank_size_t new_bank_size) const
 	{
 		scoped_setter_t set_device_for_this_scope(id_);
 		auto status = cudaDeviceSetSharedMemConfig(new_bank_size);
@@ -567,7 +568,7 @@ public:
 	//
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
-		stream::priority_t  priority = cuda::stream::default_priority);
+		stream::priority_t  priority = cuda::stream::default_priority) const;
 
 	/**
 	 * See @ref cuda::event::create()
@@ -575,13 +576,13 @@ public:
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
-		bool interprocess       = event::not_interprocess);
+		bool interprocess       = event::not_interprocess) const;
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(
 		KernelFunction          kernel_function,
 		launch_configuration_t  launch_configuration,
-		KernelParameters...     parameters);
+		KernelParameters...     parameters) const;
 
 	/**
 	 * Determines the range of possible priorities for streams on this device.
@@ -606,7 +607,7 @@ public:
 		return (host_thread_synch_scheduling_policy_t) (flags() & cudaDeviceScheduleMask);
 	}
 
-	void set_synch_scheduling_policy(host_thread_synch_scheduling_policy_t new_policy)
+	void set_synch_scheduling_policy(host_thread_synch_scheduling_policy_t new_policy) const
 	{
 		auto other_flags = flags() & ~cudaDeviceScheduleMask;
 		set_flags(other_flags | (flags_t) new_policy);
@@ -617,7 +618,7 @@ public:
 		return flags() & cudaDeviceLmemResizeToMax;
 	}
 
-	void keep_larger_local_mem_after_resize(bool keep = true)
+	void keep_larger_local_mem_after_resize(bool keep = true) const
 	{
 		auto flags_ = flags();
 		if (keep) {
@@ -628,7 +629,7 @@ public:
 		set_flags(flags_);
 	}
 
-	void dont_keep_larger_local_mem_after_resize()
+	void dont_keep_larger_local_mem_after_resize() const
 	{
 		keep_larger_local_mem_after_resize(false);
 	}
@@ -644,7 +645,7 @@ public:
 	/**
 	 * Control whether this device will support allocation of mapped pinned memory
 	 */
-	void enable_mapping_host_memory(bool allow = true)
+	void enable_mapping_host_memory(bool allow = true) const
 	{
 		auto flags_ = flags();
 		if (allow) {
@@ -658,7 +659,7 @@ public:
 	/**
 	 * See @ref enable_mapping_host_memory
 	 */
-	void disable_mapping_host_memory()
+	void disable_mapping_host_memory() const
 	{
 		enable_mapping_host_memory(false);
 	}
@@ -676,6 +677,12 @@ public:
 		device::current::detail_::set(id());
 		return *this;
 	}
+
+    const device_t& make_current() const
+    {
+        device::current::detail_::set(id());
+        return *this;
+    }
 
 public: 	// constructors and destructor
 
@@ -779,7 +786,7 @@ inline device_t get(const ::std::string& pci_id_str)
 
 } // namespace device
 
-inline void synchronize(device_t& device)
+inline void synchronize(device_t device)
 {
 	auto device_id = device.id();
 	device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
