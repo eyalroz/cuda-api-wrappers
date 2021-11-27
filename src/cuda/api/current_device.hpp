@@ -109,7 +109,15 @@ private:
  */
 inline void set_to_default() { return detail_::set(device::default_device_id); }
 
-void set(device_t device);
+/**
+ * Obtains (a proxy for) the device which the CUDA runtime API considers to be current.
+ */
+inline device_t get();
+
+/**
+ * Tells the CUDA runtime API to consider the specified device as the current one.
+ */
+inline void set(device_t device);
 
 /**
  * A RAII-based mechanism for setting the CUDA Runtime API's current device for
