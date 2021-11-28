@@ -57,10 +57,10 @@ using deleter = device::detail_::deleter;
 
 template<typename T>
 inline ::std::unique_ptr<T, deleter>
-make_unique(cuda::device::id_t device_id, size_t n)
+make_unique(cuda::device::id_t device_id, size_t num_elements)
 {
 	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>(n);
+	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>(num_elements);
 }
 
 template<typename T>
@@ -81,13 +81,13 @@ template<typename T>
 using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
-inline unique_ptr<T> make_unique(cuda::device_t device, size_t n);
+inline unique_ptr<T> make_unique(cuda::device_t device, size_t num_elements);
 
 template<typename T>
 inline unique_ptr<T> make_unique(cuda::device_t device);
 
 template<typename T>
-inline unique_ptr<T> make_unique(size_t n);
+inline unique_ptr<T> make_unique(size_t num_elements);
 
 template<typename T>
 inline unique_ptr<T> make_unique();
@@ -108,9 +108,9 @@ template<typename T>
 using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
-inline unique_ptr<T> make_unique(size_t n)
+inline unique_ptr<T> make_unique(size_t num_elements)
 {
-	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(n);
+	return cuda::memory::detail_::make_unique<T, detail_::allocator, detail_::deleter>(num_elements);
 }
 
 template<typename T>
@@ -128,16 +128,16 @@ using unique_ptr = ::std::unique_ptr<T, detail_::deleter>;
 
 template<typename T>
 inline unique_ptr<T> make_unique(
-	size_t                n,
+	size_t                num_elements,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	return (initial_visibility == initial_visibility_t::to_all_devices) ?
 		cuda::memory::detail_::make_unique<T, detail_::allocator<
 			initial_visibility_t::to_all_devices>, detail_::deleter
-		>(n) :
+		>(num_elements) :
 		cuda::memory::detail_::make_unique<T, detail_::allocator<
 			initial_visibility_t::to_supporters_of_concurrent_managed_access>, detail_::deleter
-		>(n);
+		>(num_elements);
 }
 
 template<typename T>
@@ -156,7 +156,7 @@ inline unique_ptr<T> make_unique(
 template<typename T>
 inline unique_ptr<T> make_unique(
     device_t              device,
-    size_t                n,
+    size_t                num_elements,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 template<typename T>
