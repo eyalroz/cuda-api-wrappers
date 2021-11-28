@@ -176,23 +176,23 @@ namespace detail_ {
 /**
  * Allocate memory on current device
  *
- * @param num_bytes amount of memory to allocate in bytes
+ * @param size_in_bytes amount of memory to allocate in bytes
  */
-inline region_t allocate(size_t num_bytes)
+inline region_t allocate(size_t size_in_bytes)
 {
 	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMalloc(&allocated, num_bytes);
+	auto status = cudaMalloc(&allocated, size_in_bytes);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = cudaErrorUnknown;
 	}
 	throw_if_error(status,
-		"Failed allocating " + ::std::to_string(num_bytes) +
+		"Failed allocating " + ::std::to_string(size_in_bytes) +
 		" bytes of global memory on CUDA device " +
 		::std::to_string(cuda::device::current::detail_::get_id()));
-	return {allocated, num_bytes};
+	return {allocated, size_in_bytes};
 }
 
 inline region_t allocate(cuda::device::id_t device_id, size_t size_in_bytes)
@@ -214,27 +214,27 @@ namespace detail_ {
 inline region_t allocate(
 	cuda::device::id_t  device_id,
 	cuda::stream::id_t  stream_id,
-	size_t              num_bytes)
+	size_t              size_in_bytes)
 {
 #if CUDART_VERSION >= 11020
 	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMallocAsync(&allocated, num_bytes, stream_id);
+	auto status = cudaMallocAsync(&allocated, size_in_bytes, stream_id);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = static_cast<decltype(status)>(cuda::status::unknown);
 	}
 	throw_if_error(status,
-		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
+		"Failed scheduling an asynchronous allocation of " + ::std::to_string(size_in_bytes) +
 		" bytes of global memory "
 		+ " on stream " + cuda::detail_::ptr_as_hex(stream_id)
 		+ " on CUDA device " + ::std::to_string(device_id));
-	return {allocated, num_bytes};
+	return {allocated, size_in_bytes};
 #else
 	(void) device_id;
 	(void) stream_id;
-	(void) num_bytes;
+	(void) size_in_bytes;
 	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory allocation is not supported with CUDA versions below 11.2");
 #endif
 }
@@ -290,7 +290,7 @@ inline region_t allocate(cuda::device_t device, size_t size_in_bytes);
 namespace detail_ {
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const { return detail_::allocate(num_bytes).start(); }
+	void* operator()(size_t size_in_bytes) const { return detail_::allocate(size_in_bytes).start(); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
@@ -306,9 +306,10 @@ struct deleter {
  */
 ///@{
 /**
- * @param start starting address of the memory region to set, in a CUDA
- * device's global memory
- * @param num_bytes size of the memory region in bytes
+ * @param start address at which to start setting memory bytes
+ *     in global CUDA-device-side memory or CUDA-managed memory.
+ * @param byte_value the value to which to set memory bytes
+ * @param num_bytes the number of bytes to set to @p byte_value
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
@@ -317,7 +318,8 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 }
 
 /**
- * @param region a region to zero-out, in a CUDA device's global memory
+ * @param region a stretch of memory whose contents is to be set
+ * @param byte_value the value to which to set all bytes of @p region
  */
 inline void set(region_t region, int byte_value)
 {
@@ -339,9 +341,7 @@ inline void zero(void* start, size_t num_bytes)
 }
 
 /**
- * @param start starting address of the memory region to zero-out,
- * in a CUDA device's global memory
- * @param num_bytes size of the memory region in bytes
+ * @param region the memory region to zero-out
  */
 inline void zero(region_t region)
 {
@@ -387,9 +387,9 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 }
 
 /**
- * @param destination A memory region of size @p num_bytes, either in
+ * @param destination A memory region of the same size as @p source, in 
  *     host memory or on any CUDA device's global memory
- * @param source A region whose contents is to be copied,  either in host memory
+ * @param source A region whose contents is to be copied, either in host memory
  *     or on any CUDA device's global memory
  */
 inline void copy(void* destination, const_region_t source)
@@ -399,9 +399,9 @@ inline void copy(void* destination, const_region_t source)
 
 /**
  * @param destination A region of memory to which to copy the data in@source, of
- *     size @p num_bytes at least, either in host memory or on any CUDA device's
- *     global memory.
- * @param source A region whose contents is to be copied,  either in host memory
+ *     size at least that of @p source , either in host memory or on any CUDA
+ *     device's global memory.
+ * @param source A region whose contents is to be copied, either in host memory
  *     or on any CUDA device's global memory
  */
 inline void copy(region_t destination, const_region_t source)
@@ -473,8 +473,9 @@ inline void zero(region_t region)
 /**
  * @brief Sets a number of bytes starting in at a given address of memory to 0 (zero)
  *
- * @param region the memory region to zero-out; may be in host-side memory,
+ * @param start address at which to start setting memory bytes to 0, in
  * global CUDA-device-side memory or CUDA-managed memory.
+ * @param num_bytes the number of bytes to set to zero
  */
 inline void zero(void* ptr, size_t num_bytes)
 {
@@ -670,7 +671,7 @@ namespace detail_ {
 /**
 * @param destination A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
-* @param source A pointer to a memory region of size at least @p num_bytes, either in
+* @param source A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param num_bytes number of bytes to copy from @p source
  * @param stream_id The handle of a stream on which to schedule the copy operation
@@ -685,10 +686,10 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 }
 
 /**
- *  @param destination a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
+ * @param destination a memory region of size at least that of @p source, either
+ *     in host memory or on any CUDA device's global memory
+ * @param source a memory region, either in   host memory or on any CUDA device's
+ *     global memory.
  * @param stream_id The handle of a stream on which to schedule the copy operation
  */
 inline void copy(region_t destination, const_region_t source, stream::id_t stream_id)
@@ -786,10 +787,10 @@ inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
  *
  * @note asynchronous version of @ref memory::copy
  *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
+ * @param destination A pointer to a memory region of size @p num_bytes, 
+ *     either in host memory or on any CUDA device's global memory.
+ * @param source A pointer to a a memory region of size at least @p num_bytes, 
+ *     either in host memory or on any CUDA device's global memory
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
@@ -828,9 +829,7 @@ inline void copy(region_t destination, const_region_t source, const stream_t& st
 /**
  * Asynchronously copies data from memory spaces into CUDA arrays.
  *
- * @note asynchronous version of @ref memory::copy
- *
- * @param destination A CUDA array @ref cuda::array_t
+ * @param destination A CUDA array (see @ref cuda::array_t )
  * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
@@ -1028,7 +1027,7 @@ inline void free(void* host_ptr)
 namespace detail_ {
 
 struct allocator {
-	void* operator()(size_t num_bytes) const { return cuda::memory::host::allocate(num_bytes); }
+	void* operator()(size_t size_in_bytes) const { return cuda::memory::host::allocate(size_in_bytes); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::host::free(ptr); }
@@ -1152,9 +1151,9 @@ inline void deregister(const_region_t region)
  * @note a wrapper for @ref ::std::memset
  *
  * @param start starting address of the memory region to set,
- * in host memory; can be either CUDA-allocated or otherwise.
+ *     in host memory; can be either CUDA-allocated or otherwise.
  * @param byte_value value to set the memory region to
- * @param num_bytes size of the memory region in bytes
+ * @param num_bytes number of bytes at @p address to be set
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
@@ -1294,7 +1293,7 @@ enum class attachment_t {
 namespace detail_ {
 
 inline region_t allocate(
-	size_t                num_bytes,
+	size_t                size_in_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	void* allocated = nullptr;
@@ -1302,14 +1301,14 @@ inline region_t allocate(
 		cudaMemAttachGlobal : cudaMemAttachHost;
 	// Note: Despite the templating by T, the size is still in bytes,
 	// not in number of T's
-	auto status = cudaMallocManaged(&allocated, num_bytes, flags);
+	auto status = cudaMallocManaged(&allocated, size_in_bytes, flags);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
 	throw_if_error(status,
-		"Failed allocating " + ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
-	return {allocated, num_bytes};
+		"Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of managed CUDA memory");
+	return {allocated, size_in_bytes};
 }
 
 /**
@@ -1330,9 +1329,9 @@ inline void free(region_t region)
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 struct allocator {
 	// Allocates on the current device!
-	void* operator()(size_t num_bytes) const
+	void* operator()(size_t size_in_bytes) const
 	{
-		return detail_::allocate(num_bytes, InitialVisibility).start();
+		return detail_::allocate(size_in_bytes, InitialVisibility).start();
 	}
 };
 struct deleter {
@@ -1341,11 +1340,11 @@ struct deleter {
 
 inline region_t allocate(
 	cuda::device::id_t    device_id,
-	size_t                num_bytes,
+	size_t                size_in_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
 	cuda::device::current::detail_::scoped_override_t set_device_for_this_scope(device_id);
-	return detail_::allocate(num_bytes, initial_visibility);
+	return detail_::allocate(size_in_bytes, initial_visibility);
 }
 
 } // namespace detail_
@@ -1356,7 +1355,7 @@ inline region_t allocate(
  *
  * @param device the initial device which is likely to access the managed
  * memory region (and which will certainly have actually allocated for it)
- * @param num_bytes size of each of the regions of memory to allocate
+ * @param size_in_bytes size of each of the regions of memory to allocate
  * @param initial_visibility will the allocated region be visible, using the
  * common address, to all CUDA device (= more overhead, more work for the CUDA
  * runtime) or just to those devices with some hardware features to assist in
@@ -1364,7 +1363,7 @@ inline region_t allocate(
  */
 region_t allocate(
 	cuda::device_t        device,
-	size_t                num_bytes,
+	size_t                size_in_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices
 );
 
