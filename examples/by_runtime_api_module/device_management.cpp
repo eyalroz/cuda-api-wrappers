@@ -175,9 +175,6 @@ void flags()
 	std::cout << "Device " << device.id() << " is set to "
 	<< (device.keeping_larger_local_mem_after_resize() ? "keeps" : "discards")
 	<< " shared memory allocation after launch.\n";
-	std::cout << "Device " << device.id()
-	<< " is set " << (device.can_map_host_memory() ? "to allow" : "not to allow")
-	<< " pinned mapped memory.\n";
 	// TODO: Change the settings as well obtaining them
 }
 
