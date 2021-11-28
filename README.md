@@ -2,7 +2,7 @@
 
 Branch Build Status: Master [![Master Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=master)](https://travis-ci.com/eyalroz/cuda-api-wrappers) | Development: [![Development Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=development)](https://travis-ci.com/eyalroz/cuda-api-wrappers)
 
-nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for [CUDA](http://www.nvidia.com/object/cuda_home_new.html) is intended for use both in C and C++ code. As such, it uses a C-style API, the lowest common denominator (with a few [notable exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
+nVIDIA's [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) for [CUDA](https://developer.nvidia.com/cuda-zone) is intended for use both in C and C++ code. As such, it uses a C-style API, the lowest common denominator (with a few [notable exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
 
 This library of wrappers around the Runtime API is intended to allow us to embrace many of the features of C++ (including some C++11) for using the runtime API - but without reducing expressivity or increasing the level of abstraction (as in, e.g., the [Thrust](https://thrust.github.io/) library). Using cuda-api-wrappers, you still have your devices, streams, events and so on - but they will be more convenient to work with in more C++-idiomatic ways.
 
@@ -18,6 +18,7 @@ This library of wrappers around the Runtime API is intended to allow us to embra
     - No work done behind your back, no caches or indices or any such thing.
     - No costly inheritance structure, vtables, virtual methods and so on - vanishes almost entirely on compilation.
     - Doesn't really "hide" any of CUDA's complexity or functionality; it only simplifies _use_ of the Runtime API.
+- Permissive free software license: [3-BSD](https://github.com/eyalroz/cuda-api-wrappers/blob/master/LICENSE).
 
 ## Detailed documentation
 
