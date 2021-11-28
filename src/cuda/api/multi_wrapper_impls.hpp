@@ -426,10 +426,10 @@ inline void prefetch(
 
 inline region_t allocate(
 	cuda::device_t        device,
-	size_t                num_bytes,
+	size_t                size_in_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	return detail_::allocate(device.id(), num_bytes, initial_visibility);
+	return detail_::allocate(device.id(), size_in_bytes, initial_visibility);
 }
 
 template<typename T>
