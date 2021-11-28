@@ -324,13 +324,11 @@ protected:
 
 	void set_flags(
 		host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
-		bool                                   keep_larger_local_mem_after_resize,
-		bool                                   allow_pinned_mapped_memory_allocation) const
+		bool                                   keep_larger_local_mem_after_resize) const
 	{
 		set_flags( (flags_t)
 			  synch_scheduling_policy // this enum value is also a valid bitmask
-			| (keep_larger_local_mem_after_resize    ? cudaDeviceLmemResizeToMax : 0)
-			| (allow_pinned_mapped_memory_allocation ? cudaDeviceMapHost         : 0));
+			| (keep_larger_local_mem_after_resize    ? cudaDeviceLmemResizeToMax : 0));
 	}
 
 	flags_t flags() const
@@ -631,36 +629,6 @@ public:
 	void dont_keep_larger_local_mem_after_resize() const
 	{
 		keep_larger_local_mem_after_resize(false);
-	}
-
-	/**
-	 * Can we allocated mapped pinned memory on this device?
-	 */
-	bool can_map_host_memory() const
-	{
-		return flags() & cudaDeviceMapHost;
-	}
-
-	/**
-	 * Control whether this device will support allocation of mapped pinned memory
-	 */
-	void enable_mapping_host_memory(bool allow = true) const
-	{
-		auto flags_ = flags();
-		if (allow) {
-			flags_ |= cudaDeviceMapHost;
-		} else {
-			flags_ &= ~cudaDeviceMapHost;
-		}
-		set_flags(flags_);
-	}
-
-	/**
-	 * See @ref enable_mapping_host_memory
-	 */
-	void disable_mapping_host_memory() const
-	{
-		enable_mapping_host_memory(false);
 	}
 
 public:

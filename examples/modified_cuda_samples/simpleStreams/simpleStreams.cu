@@ -225,7 +225,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	current_device.set_synch_scheduling_policy(policy);
-	current_device.enable_mapping_host_memory();
+	// Not necessary: Since CUDA 3.2 (which is below the minimum supported
+	// version for the API wrappers, all contexts allow such mapping.
+	// current_device.enable_mapping_host_memory();
 
 	// allocate host memory
 	int c = 5;                      // value to which the array will be initialized
