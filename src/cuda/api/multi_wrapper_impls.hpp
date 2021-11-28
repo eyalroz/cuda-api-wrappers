@@ -435,11 +435,11 @@ inline region_t allocate(
 template<typename T>
 inline unique_ptr<T> make_unique(
     device_t              device,
-    size_t                n,
+    size_t                num_elements,
     initial_visibility_t  initial_visibility)
 {
     cuda::device::current::detail_::scoped_override_t(device.id());
-    return make_unique<T>(n, initial_visibility);
+    return make_unique<T>(num_elements, initial_visibility);
 }
 
 template<typename T>
