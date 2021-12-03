@@ -469,7 +469,7 @@ inline region_pair allocate(
 
 // kernel_t methods
 
-inline void kernel_t::set_attribute(cudaFuncAttribute attribute, int value)
+inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value)
 {
 	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
 	auto result = cudaFuncSetAttribute(ptr_, attribute, value);

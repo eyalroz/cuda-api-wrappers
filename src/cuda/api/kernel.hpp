@@ -97,7 +97,7 @@ public: // non-mutators
 
 public: // mutators
 
-	void set_attribute(cudaFuncAttribute attribute, int value);
+	void set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value);
 
 	/**
 	 * @brief Change the hardware resource carve-out between L1 cache and shared memory

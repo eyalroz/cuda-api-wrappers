@@ -596,6 +596,13 @@ struct symbol_t {
 	const void* handle;
 };
 
+namespace kernel {
+
+using attribute_t = cudaFuncAttribute;
+using attribute_value_t = int;
+
+} // namespace kernel
+
 } // namespace cuda
 
 #ifndef __CUDACC__
