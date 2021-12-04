@@ -5,7 +5,7 @@
 #include <numeric>
 #include <limits>
 
-using std::size_t;
+using cuda::size_t;
 
 namespace kernels {
 
@@ -31,12 +31,12 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 		threadIdx.x + blockIdx.x * blockDim.x,
 		threadIdx.y + blockIdx.y * blockDim.y
 	};
-	const auto gtid_serliazed = gtid.x + gtid.y * static_cast<unsigned>(w);
+	const auto gtid_serialized = gtid.x + gtid.y * static_cast<unsigned>(w);
 
 	if (gtid.x < w && gtid.y < h) {
 		const float x = tex2D<float>(texture_source, gtid.x, gtid.y);
-		printf("Thread %u %u, reading value %4f, and writing to index %3u\n", gtid.x, gtid.y, x, gtid_serliazed);
-		destination[gtid_serliazed] = x;
+//		printf("Thread %u %u, reading value %.4g, and writing to index %3u\n", gtid.x, gtid.y, x, gtid_serliazed);
+		destination[gtid_serialized] = x;
 	}
 }
 
@@ -108,8 +108,9 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 }
 
 template <typename T>
-void print_2d_array(const T* a, size_t width, size_t height)
+void print_2d_array(const char* title, const T* a, size_t width, size_t height)
 {
+    std::cout << title << ":\n";
 	for (size_t i = 0; i < height; ++i) {
 		for (size_t j = 0; j < width; ++j) {
 			std::cout << a[j + i * width] << ' ';
@@ -126,11 +127,10 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	auto arr = cuda::array::create<float>(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
 	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
-	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 
 	std::cout << std::endl;
 
-	print_2d_array(ptr_in.get(), w, h);
+    print_2d_array("Data at ptr_in after initialization", ptr_in.get(), w, h);
 
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
@@ -145,13 +145,19 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 		1
 	};
 
+    auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
+    // The following is to make it easier to notice if nothing get copied
+    // to the output
+    std::iota(ptr_out.get(), ptr_out.get() + arr.size(), 90);
+//    print_2d_array("Data at ptr_out after initialization", ptr_out.get(), w, h);
+
 	cuda::launch(
 		kernels::from_2D_texture_to_memory_space,
 		cuda::make_launch_config(grid_dims, block_dims),
 		tv.raw_handle(), ptr_out.get(), w, h);
 	cuda::memory::copy(ptr_out.get(), arr);
 	device.synchronize();
-	print_2d_array(ptr_out.get(), w, h);
+	print_2d_array("Data at ptr_out after execution of 'from_2D_texture_to_memory_space'", ptr_out.get(), w, h);
 
 	check_output_is_iota("copy from 2D texture into (managed) global memory", ptr_out.get(), arr.size());
 
@@ -161,9 +167,9 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	cuda::memory::copy(ptr_in.get(), other_arr);
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array", ptr_in.get(), arr.size());
-	
+
 	// also asynchronously
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = cuda::stream::create(device, cuda::stream::async);
 	cuda::memory::async::copy(other_arr, ptr_out.get(), stream);
 	cuda::memory::async::copy(ptr_in.get(), other_arr, stream);
 	device.synchronize();
@@ -184,5 +190,5 @@ int main()
 	array_2d_example(device, w, h);
 	device.synchronize();
 
-	std::cout << "SUCCESS\n";
+	std::cout << "\nSUCCESS\n";
 }
