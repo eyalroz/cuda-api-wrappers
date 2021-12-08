@@ -160,22 +160,22 @@ using handle_t = cudaIpcEventHandle_t;
 
 namespace detail_ {
 
-inline handle_t export_(id_t event_id)
+inline handle_t export_(event::handle_t event_handle)
 {
 	handle_t ipc_handle;
-	auto status = cudaIpcGetEventHandle(&ipc_handle, event_id);
+	auto status = cudaIpcGetEventHandle(&ipc_handle, event_handle);
 	cuda::throw_if_error(status,
-		"Failed obtaining an IPC event handle for event " + cuda::detail_::ptr_as_hex(event_id));
+		"Failed obtaining an IPC event handle for " + event::detail_::identify(event_handle));
 	return ipc_handle;
 }
 
-inline event::id_t import(const handle_t& handle)
+inline event::handle_t import(const handle_t& handle)
 {
-	event::id_t event_id;
-	auto status = cudaIpcOpenEventHandle(&event_id, handle);
+	event::handle_t event_handle;
+	auto status = cudaIpcOpenEventHandle(&event_handle, handle);
 	cuda::throw_if_error(status,
-		"Failed obtaining an event ID from an IPC event handle");
-	return event_id;
+		"Failed obtaining an event handle from an IPC event handle");
+	return event_handle;
 }
 
 } // namespace detail_
@@ -195,7 +195,7 @@ inline handle_t export_(event_t& event);
  * process, using a handle communicated via operating-system inter-process communications
  *
  * @note IMHO, the CUDA runtime API should allow for obtaining the device
- * from an event handle (or otherwise - have a handle provide both an event ID and
+ * from an event handle (or otherwise - have a handle provide both an event handle and
  * a device ID), but that is not currently the case.
  *
  * @param device the device to which the imported event corresponds

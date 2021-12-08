@@ -92,7 +92,7 @@ namespace ipc {
 
 inline handle_t export_(event_t& event)
 {
-	return detail_::export_(event.id());
+	return detail_::export_(event.handle());
 }
 
 inline event_t import(device_t& device, const handle_t& handle)
@@ -109,7 +109,7 @@ inline event_t import(device_t& device, const handle_t& handle)
 
 inline stream_t device_t::default_stream() const noexcept
 {
-	return stream::detail_::wrap(id(), stream::default_stream_id);
+	return stream::detail_::wrap(id(), stream::default_stream_handle);
 }
 
 inline stream_t
@@ -167,7 +167,7 @@ inline void event_t::record(const stream_t& stream)
 	// Note:
 	// TODO: Perhaps check the device ID here, rather than
 	// have the Runtime API call fail?
-	event::detail_::enqueue(stream.id(), id_);
+	event::detail_::enqueue(stream.handle(), handle_);
 }
 
 inline void event_t::fire(const stream_t& stream)
@@ -183,7 +183,7 @@ inline device_t stream_t::device() const noexcept
 	return cuda::device::get(device_id_);
 }
 
-inline void stream_t::enqueue_t::wait(const event_t& event_)
+inline void stream_t::enqueue_t::wait(const event_t& event)
 {
 	auto device_id = associated_stream.device_id_;
 	device::current::detail_::scoped_override_t set_device_for_this_context(device_id);
@@ -191,11 +191,10 @@ inline void stream_t::enqueue_t::wait(const event_t& event_)
 	// Required by the CUDA runtime API; the flags value is currently unused
 	constexpr const unsigned int flags = 0;
 
-	auto status = cudaStreamWaitEvent(associated_stream.id_, event_.id(), flags);
+	auto status = cudaStreamWaitEvent(associated_stream.handle_, event.handle(), flags);
 	throw_if_error(status,
-		::std::string("Failed scheduling a wait for event ") + cuda::detail_::ptr_as_hex(event_.id())
-		+ " on stream " + cuda::detail_::ptr_as_hex(associated_stream.id_)
-		+ " on CUDA device " + ::std::to_string(device_id));
+		::std::string("Failed scheduling a wait for " + event::detail_::identify(event.handle())
+		+ " on stream " + stream::detail_::identify(associated_stream.handle_, associated_stream.device_id_)));
 
 }
 
@@ -203,12 +202,12 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 {
 	auto device_id = associated_stream.device_id_;
 	if (existing_event.device_id() != device_id) {
-		throw ::std::invalid_argument("Attempt to enqueue a CUDA event associated with device "
-			+ ::std::to_string(existing_event.device_id()) + " to be triggered by a stream on CUDA device "
-			+ ::std::to_string(device_id ) );
+		throw ::std::invalid_argument("Attempt to enqueue a CUDA event associated with "
+			+ device::detail_::identify(existing_event.device_id()) + " to be triggered by a stream on "
+			+ device::detail_::identify(device_id));
 	}
 	device::current::detail_::scoped_override_t set_device_for_this_context(device_id);
-	stream::detail_::record_event_on_current_device(device_id, associated_stream.id_, existing_event.id());
+	stream::detail_::record_event_on_current_device(device_id, associated_stream.handle_, existing_event.handle());
 	return existing_event;
 }
 
@@ -222,7 +221,7 @@ inline event_t stream_t::enqueue_t::event(
 
 	event_t ev { event::detail_::create_on_current_device(device_id, uses_blocking_sync, records_timing, interprocess) };
 	// Note that, at this point, the event is not associated with this enqueue object's stream.
-	stream::detail_::record_event_on_current_device(device_id, associated_stream.id_, ev.id());
+	stream::detail_::record_event_on_current_device(device_id, associated_stream.handle_, ev.handle());
 	return ev;
 }
 
@@ -238,25 +237,25 @@ namespace async {
 
 inline void copy(void *destination, const void *source, size_t num_bytes, const stream_t& stream)
 {
-	detail_::copy(destination, source, num_bytes, stream.id());
+	detail_::copy(destination, source, num_bytes, stream.handle());
 }
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream)
 {
-	detail_::copy(destination, source, stream.id());
+	detail_::copy(destination, source, stream.handle());
 }
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
-	detail_::copy(destination, source, stream.id());
+	detail_::copy(destination, source, stream.handle());
 }
 
 template <typename T>
 inline void copy_single(T& destination, const T& source, const stream_t& stream)
 {
-	detail_::copy_single(&destination, &source, sizeof(T), stream.id());
+	detail_::copy_single(&destination, &source, sizeof(T), stream.handle());
 }
 
 } // namespace async
@@ -272,17 +271,17 @@ namespace async {
 
 inline region_t allocate(const stream_t& stream, size_t size_in_bytes)
 {
-	return detail_::allocate(stream.device().id(), stream.id(), size_in_bytes);
+	return detail_::allocate(stream.device().id(), stream.handle(), size_in_bytes);
 }
 
 inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
-	detail_::set(start, byte_value, num_bytes, stream.id());
+	detail_::set(start, byte_value, num_bytes, stream.handle());
 }
 
 inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 {
-	detail_::zero(start, num_bytes, stream.id());
+	detail_::zero(start, num_bytes, stream.handle());
 }
 
 } // namespace async
@@ -418,7 +417,7 @@ inline void prefetch(
 	cuda::device_t   destination,
 	const stream_t&  stream)
 {
-	detail_::prefetch(region, destination.id(), stream.id());
+	detail_::prefetch(region, destination.id(), stream.handle());
 }
 
 } // namespace async
@@ -619,13 +618,12 @@ inline stream_t create(
 
 namespace detail_ {
 
-inline void record_event_on_current_device(device::id_t device_id, stream::id_t stream_id, event::id_t event_id)
+inline void record_event_on_current_device(device::id_t device_id, stream::handle_t stream_handle, event::handle_t event_handle)
 {
-	auto status = cudaEventRecord(event_id, stream_id);
+	auto status = cudaEventRecord(event_handle, stream_handle);
 	throw_if_error(status,
-		"Failed scheduling event " + cuda::detail_::ptr_as_hex(event_id) + " to occur"
-		+ " on stream " + cuda::detail_::ptr_as_hex(stream_id)
-		+ " on CUDA device " + ::std::to_string(device_id));
+		"Failed scheduling " + event::detail_::identify(event_handle) + " to occur"
+		+ " on stream " + stream::detail_::identify(stream_handle, device_id));
 }
 } // namespace detail_
 
@@ -657,7 +655,7 @@ inline void enqueue_launch(
 
 	detail_::enqueue_launch(
 		unwrapped_kernel_function,
-		stream.id(),
+		stream.handle(),
 		launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }

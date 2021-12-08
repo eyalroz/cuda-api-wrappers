@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	threads=dim3(512, 1);
 	blocks=dim3(n / threads.x, 1);
 	start_event.record();
-	init_array<<<blocks, threads, 0, streams[0].id()>>>(d_a.get(), d_c.get(), niterations);
+	init_array<<<blocks, threads, 0, streams[0].handle()>>>(d_a.get(), d_c.get(), niterations);
 	stop_event.record();
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 		// asynchronously launch nstreams kernels, each operating on its own portion of data
 		for (int i = 0; i < nstreams; i++)
 		{
-			init_array<<<blocks, threads, 0, streams[i].id()>>>(d_a.get() + i *n / nstreams, d_c.get(), niterations);
+			init_array<<<blocks, threads, 0, streams[i].handle()>>>(d_a.get() + i *n / nstreams, d_c.get(), niterations);
 		}
 
 		// asynchronously launch nstreams memcopies.  Note that memcopy in stream x will only

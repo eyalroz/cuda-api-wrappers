@@ -313,6 +313,48 @@ inline void ensure_none(bool clear_any_error = do_clear_errors) noexcept(false)
 
 } // namespace outstanding_error
 
+namespace device {
+namespace detail_ {
+
+inline ::std::string identify(id_t id)
+{
+	return ::std::string("device ") + std::to_string(id);
+}
+
+} // namespace detail
+} // namespace device
+
+namespace event {
+namespace detail_ {
+
+inline ::std::string identify(event::handle_t handle)
+{
+	return ::std::string("event ") + cuda::detail_::ptr_as_hex(handle);
+}
+
+inline ::std::string identify(handle_t handle, device::id_t device_id)
+{
+	return identify(handle) + " on " + device::detail_::identify(device_id);
+}
+
+} // namespace detail_
+} // namespace event
+
+namespace stream {
+namespace detail_ {
+
+inline ::std::string identify(stream::handle_t handle)
+{
+	return ::std::string("stream ") + cuda::detail_::ptr_as_hex(handle);
+}
+
+inline ::std::string identify(stream::handle_t handle, device::id_t device_id)
+{
+	return identify(handle) + " on " + device::detail_::identify(device_id);
+}
+
+} // namespace detail_
+} // namespace stream
 
 } // namespace cuda
 

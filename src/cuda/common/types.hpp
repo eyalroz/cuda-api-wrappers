@@ -62,15 +62,12 @@
 namespace cuda {
 
 /*
- * The 3 ID types - for devices, streams and events - in this file are just
- * numeric identifiers (mostly useful for breaking dependencies and for
+ * The different id and handle types - for devices, streams events etc. - are
+ * just numeric values (mostly useful for breaking dependencies and for
  * interaction with code using the original CUDA APIs); we also have wrapper
- * classes for them (each constructible by the corresponding numeric ID type)
- * which allow convenient access to their related functionality: these are
- * @ref cuda::device_t, @ref cuda::stream_t and @ref cuda::event_t.
- *
- * TODO: Perhaps we should call them cuda::device::type,
- * cuda::stream::type and cuda::event::type,
+ * classes for the entites they identify, constructible from the appropriate
+ * handles/id's. These allow convenient access to their related functionality -
+ * such as @ref cuda::device_t, @ref cuda::stream_t and @ref cuda::event_t.
  */
 
 
@@ -200,9 +197,10 @@ struct dimensions_t<2>
 namespace event {
 
 /**
- * The CUDA Runtime API's numeric handle for events
+ * The CUDA Runtime APIs' handle for events
  */
-using id_t              = cudaEvent_t;
+using handle_t = cudaEvent_t;
+
 } // namespace event
 
 /**
@@ -213,9 +211,9 @@ using id_t              = cudaEvent_t;
 namespace stream {
 
 /**
- * The CUDA Runtime API's numeric handle for streams
+ * The CUDA Runtime API's handle for streams
  */
-using id_t             = cudaStream_t;
+using handle_t = cudaStream_t;
 
 /**
  * CUDA streams have a scheduling priority, with lower values meaning higher priority.
