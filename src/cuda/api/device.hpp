@@ -122,15 +122,6 @@ struct stream_priority_range_t {
 	}
 };
 
-namespace detail_ {
-
-inline ::std::string identify(device::id_t id)
-{
-	return "device " + ::std::to_string(id);
-}
-
-} // namespace detail_
-
 } // namespace device
 
 

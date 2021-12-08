@@ -89,7 +89,7 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
 	RawKernel                   kernel_function,
-	stream::id_t                stream_id,
+	stream::handle_t                stream_handle,
 	launch_configuration_t      launch_configuration,
 	KernelParameters&&...       parameters)
 #ifndef __CUDACC__
@@ -109,7 +109,7 @@ inline void enqueue_launch(
 			launch_configuration.grid_dimensions,
 			launch_configuration.block_dimensions,
 			launch_configuration.dynamic_shared_memory_size,
-			stream_id
+			stream_handle
 			>>>(::std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
@@ -137,7 +137,7 @@ inline void enqueue_launch(
 			launch_configuration.block_dimensions,
 			argument_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
-			stream_id);
+			stream_handle);
 		throw_if_error(status, "Cooperative kernel launch failed");
 
 #else

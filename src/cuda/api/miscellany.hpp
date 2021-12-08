@@ -38,7 +38,7 @@ namespace device {
  * Get the number of CUDA devices usable on the system (with the current CUDA
  * library and kernel driver)
  *
- * @note This _should_ be returning an unsigned value; unfortunately, device::id_t  is
+ * @note This _should_ be returning an unsigned value; unfortunately, device::handle_t  is
  * signed in CUDA for some reason and we maintain compatibility (although this might
  * change in the future). So... the returned type is the same as in cudaGetDeviceCount,
  * a signed integer.

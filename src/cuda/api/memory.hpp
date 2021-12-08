@@ -213,27 +213,25 @@ namespace detail_ {
  */
 inline region_t allocate(
 	cuda::device::id_t  device_id,
-	cuda::stream::id_t  stream_id,
+	cuda::stream::handle_t  stream_handle,
 	size_t              size_in_bytes)
 {
 #if CUDART_VERSION >= 11020
 	void* allocated = nullptr;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
-	auto status = cudaMallocAsync(&allocated, size_in_bytes, stream_id);
+	auto status = cudaMallocAsync(&allocated, size_in_bytes, stream_handle);
 	if (is_success(status) && allocated == nullptr) {
 		// Can this even happen? hopefully not
 		status = static_cast<decltype(status)>(cuda::status::unknown);
 	}
 	throw_if_error(status,
 		"Failed scheduling an asynchronous allocation of " + ::std::to_string(size_in_bytes) +
-		" bytes of global memory "
-		+ " on stream " + cuda::detail_::ptr_as_hex(stream_id)
-		+ " on CUDA device " + ::std::to_string(device_id));
+		" bytes of global memory on " + stream::detail_::identify(stream_handle, device_id));
 	return {allocated, size_in_bytes};
 #else
 	(void) device_id;
-	(void) stream_id;
+	(void) stream_handle;
 	(void) size_in_bytes;
 	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory allocation is not supported with CUDA versions below 11.2");
 #endif
@@ -664,7 +662,7 @@ namespace detail_ {
  *
  * @note asynchronous version of @ref memory::copy
  *
- * @param stream_id A stream on which to enqueue the copy operation
+ * @param stream_handle A stream on which to enqueue the copy operation
  */
 
 ///@{
@@ -674,15 +672,15 @@ namespace detail_ {
 * @param source A pointer to a memory region of size @p num_bytes, either in
 * host memory or on any CUDA device's global memory
 * @param num_bytes number of bytes to copy from @p source
- * @param stream_id The handle of a stream on which to schedule the copy operation
+ * @param stream_handle The handle of a stream on which to schedule the copy operation
 */
-inline void copy(void* destination, const void* source, size_t num_bytes, stream::id_t stream_id)
+inline void copy(void* destination, const void* source, size_t num_bytes, stream::handle_t stream_handle)
 {
-	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_id);
+	auto result = cudaMemcpyAsync(destination, source, num_bytes, cudaMemcpyDefault, stream_handle);
 
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
-	throw_if_error(result, "Scheduling a memory copy on stream " + cuda::detail_::ptr_as_hex(stream_id));
+	throw_if_error(result, "Scheduling a memory copy on " + stream::detail_::identify(stream_handle));
 }
 
 /**
@@ -690,37 +688,37 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
  *     in host memory or on any CUDA device's global memory
  * @param source a memory region, either in   host memory or on any CUDA device's
  *     global memory.
- * @param stream_id The handle of a stream on which to schedule the copy operation
+ * @param stream_handle The handle of a stream on which to schedule the copy operation
  */
-inline void copy(region_t destination, const_region_t source, stream::id_t stream_id)
+inline void copy(region_t destination, const_region_t source, stream::handle_t stream_handle)
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
 		throw std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
-	copy(destination.start(), source.start(), source.size(), stream_id);
+	copy(destination.start(), source.start(), source.size(), stream_handle);
 }
 ///@}
 
 template<typename T>
-void copy(array_t<T, 3>& destination, const T* source, stream::id_t stream_id)
+void copy(array_t<T, 3>& destination, const T* source, stream::handle_t stream_handle)
 {
 	const auto copy_params = memory::detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
-	throw_if_error(result, "Scheduling a memory copy into a 3D CUDA array on stream " + cuda::detail_::ptr_as_hex(stream_id));
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_handle);
+	throw_if_error(result, "Scheduling a memory copy into a 3D CUDA array on " + stream::detail_::identify(stream_handle));
 }
 
 template<typename T>
-void copy(T* destination, const array_t<T, 3>& source, stream::id_t stream_id)
+void copy(T* destination, const array_t<T, 3>& source, stream::handle_t stream_handle)
 {
 	const auto copy_params = memory::detail_::copy_params_t(destination, source);
-	auto result = cudaMemcpy3DAsync(&copy_params, stream_id);
-	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail_::ptr_as_hex(stream_id));
+	auto result = cudaMemcpy3DAsync(&copy_params, stream_handle);
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on " + stream::detail_::identify(stream_handle));
 }
 
 template<typename T>
-void copy(array_t<T, 2>& destination, const T* source, stream::id_t stream_id)
+void copy(array_t<T, 2>& destination, const T* source, stream::handle_t stream_handle)
 {
 	const auto dimensions = destination.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -735,12 +733,12 @@ void copy(array_t<T, 2>& destination, const T* source, stream::id_t stream_id)
 		width_in_bytes,
 		dimensions.height,
 		cudaMemcpyDefault,
-		stream_id);
-	throw_if_error(result, "Scheduling a memory copy into a 2D CUDA array on stream " + cuda::detail_::ptr_as_hex(stream_id));
+		stream_handle);
+	throw_if_error(result, "Scheduling a memory copy into a 2D CUDA array on " + stream::detail_::identify(stream_handle));
 }
 
 template<typename T>
-void copy(T* destination, const array_t<T, 2>& source, cuda::stream::id_t stream_id)
+void copy(T* destination, const array_t<T, 2>& source, cuda::stream::handle_t stream_handle)
 {
 	const auto dimensions = source.dimensions();
 	const auto width_in_bytes = sizeof(T) * dimensions.width;
@@ -755,8 +753,8 @@ void copy(T* destination, const array_t<T, 2>& source, cuda::stream::id_t stream
 		width_in_bytes,
 		dimensions.height,
 		cudaMemcpyDefault,
-		stream_id);
-	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on stream " + cuda::detail_::ptr_as_hex(stream_id));
+		stream_handle);
+	throw_if_error(result, "Scheduling a memory copy out of a 3D CUDA array on " + stream::detail_::identify(stream_handle));
 }
 
 /**
@@ -768,12 +766,12 @@ void copy(T* destination, const array_t<T, 2>& source, cuda::stream::id_t stream
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
- * @param stream_id A stream on which to enqueue the copy operation
+ * @param stream_handle A stream on which to enqueue the copy operation
  */
 template <typename T>
-inline void copy_single(T& destination, const T& source, stream::id_t stream_id)
+inline void copy_single(T& destination, const T& source, stream::handle_t stream_handle)
 {
-	copy(&destination, &source, sizeof(T), stream_id);
+	copy(&destination, &source, sizeof(T), stream_handle);
 }
 
 } // namespace detail_
@@ -898,27 +896,27 @@ namespace async {
 
 namespace detail_ {
 
-inline void set(void* start, int byte_value, size_t num_bytes, stream::id_t stream_id)
+inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t stream_handle)
 {
 	// TODO: Double-check that this call doesn't require setting the current device
-	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_id);
+	auto result = cudaMemsetAsync(start, byte_value, num_bytes, stream_handle);
 	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
-inline void set(region_t region, int byte_value, stream::id_t stream_id)
+inline void set(region_t region, int byte_value, stream::handle_t stream_handle)
 {
-	set(region.start(), byte_value, region.size(), stream_id);
+	set(region.start(), byte_value, region.size(), stream_handle);
 }
 
 
-inline void zero(void* start, size_t num_bytes, stream::id_t stream_id)
+inline void zero(void* start, size_t num_bytes, stream::handle_t stream_handle)
 {
-	set(start, 0, num_bytes, stream_id);
+	set(start, 0, num_bytes, stream_handle);
 }
 
-inline void zero(region_t region, stream::id_t stream_id)
+inline void zero(region_t region, stream::handle_t stream_handle)
 {
-	zero(region.start(), region.size(), stream_id);
+	zero(region.start(), region.size(), stream_handle);
 }
 
 } // namespace detail_
@@ -1413,9 +1411,9 @@ namespace detail_ {
 inline void prefetch(
 	const_region_t      region,
 	cuda::device::id_t  destination,
-	stream::id_t        stream_id)
+	stream::handle_t        stream_handle)
 {
-	auto result = cudaMemPrefetchAsync(region.start(), region.size(), destination, stream_id);
+	auto result = cudaMemPrefetchAsync(region.start(), region.size(), destination, stream_handle);
 	throw_if_error(result,
 		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
 		 + cuda::detail_::ptr_as_hex(region.start()) + " to device " + ::std::to_string(destination));
@@ -1443,8 +1441,8 @@ inline void prefetch_to_host(const_region_t managed_region)
 		managed_region.start(),
 		managed_region.size(),
 		cudaCpuDeviceId,
-		stream::default_stream_id);
-		// The stream ID will be ignored by the CUDA runtime API when this pseudo
+		stream::default_stream_handle);
+		// The stream handle will be ignored by the CUDA runtime API when this pseudo
 		// device indicator is used.
 	throw_if_error(result,
 		"Prefetching " + ::std::to_string(managed_region.size()) + " bytes of managed memory at address "
