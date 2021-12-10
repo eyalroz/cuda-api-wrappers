@@ -137,9 +137,9 @@ void enqueue_p2p_copy(
     P2PEngine p2p_mechanism,
     cuda::stream_t& stream)
 {
-    auto copy_kernel = cuda::kernel_t(stream.device(), copyp2p);
-    auto params = copy_kernel.min_grid_params_for_max_occupancy();
-    auto launch_config = cuda::make_launch_config(params.first, params.second);
+    auto copy_kernel = cuda::kernel::wrap(stream.device(), copyp2p);
+    auto grid_and_block_dims = copy_kernel.min_grid_params_for_max_occupancy();
+    auto launch_config = cuda::make_launch_config(grid_and_block_dims);
 
 
     if (p2p_mechanism == SM && p2paccess)
@@ -423,7 +423,7 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
             // relatively low.  Higher repeatitions will cause the delay kernel
             // to timeout and lead to unstable results.
             *flag = 0;
-            auto single_thread = cuda::make_launch_config(cuda::grid::dimensions_t::point(), cuda::grid::dimensions_t::point());
+            auto single_thread = cuda::make_launch_config(cuda::grid::dimensions_t::point(), cuda::grid::block_dimensions_t::point());
             streams[i].enqueue.kernel_launch(delay, single_thread, flag, default_timeout_clocks);
             streams[i].enqueue.event(start[i]);
 

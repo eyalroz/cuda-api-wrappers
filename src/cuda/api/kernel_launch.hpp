@@ -89,7 +89,7 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 template<typename RawKernel, typename... KernelParameters>
 inline void enqueue_launch(
 	RawKernel                   kernel_function,
-	stream::handle_t                stream_handle,
+	stream::handle_t            stream_handle,
 	launch_configuration_t      launch_configuration,
 	KernelParameters&&...       parameters)
 #ifndef __CUDACC__
@@ -106,8 +106,8 @@ inline void enqueue_launch(
 	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<
-			launch_configuration.grid_dimensions,
-			launch_configuration.block_dimensions,
+			launch_configuration.dimensions.grid,
+			launch_configuration.dimensions.block,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle
 			>>>(::std::forward<KernelParameters>(parameters)...);
@@ -133,8 +133,8 @@ inline void enqueue_launch(
 		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
 		auto status = cudaLaunchCooperativeKernel(
 			(const void*) kernel_function,
-			launch_configuration.grid_dimensions,
-			launch_configuration.block_dimensions,
+			launch_configuration.dimensions.grid,
+			launch_configuration.dimensions.block,
 			argument_ptrs,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle);

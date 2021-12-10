@@ -251,7 +251,7 @@ using dimension_t        = decltype(dim3::x);
  *
  * @note At the time of writing, a grid dimension value cannot exceed 2^31
  * on any axis (even lower on the y and z axes), so signed 32-bit integers
- * are "usable" even though this type is unsigned.
+ * can may be safely narrowing-cast into from this type.
  */
 using block_dimension_t  = dimension_t;
 
@@ -316,6 +316,21 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
  */
 using block_dimensions_t = dimensions_t;
 
+struct complete_dimensions_t {
+	grid::dimensions_t grid;
+	grid::block_dimensions_t block;
+};
+
+constexpr inline bool operator==(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept
+{
+	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
+}
+
+constexpr inline bool operator!=(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept
+{
+	return not (lhs == rhs);
+}
+
 } // namespace grid
 
 /**
@@ -349,12 +364,11 @@ using bank_size_configuration_t = cudaSharedMemConfig;
  * execution on some stream of some device).
  */
 struct launch_configuration_t {
-	grid::dimensions_t        grid_dimensions { 0 }; /// in blocks
-	grid::block_dimensions_t  block_dimensions { 0 }; /// in threads
+	grid::complete_dimensions_t dimensions { 0 , 0 };
 	memory::shared::size_t    dynamic_shared_memory_size { 0u };
 		/// The number of bytes each grid block may use, in addition to the statically-allocated
 		/// shared memory data inherent in the compiled kernel.
-	bool                      block_cooperation {false };
+	bool                      block_cooperation { false };
 	/// When true, CUDA's "cooperative launch" mechanism will be used, enabling
 	/// more flexible device-wide synchronization capabilities; see CUDA Programming
 	/// Guide section C.7, Grid Synchronization. (The section talks about "cooperative
@@ -373,15 +387,24 @@ struct launch_configuration_t {
 	constexpr launch_configuration_t(launch_configuration_t&&) = default;
 
 	constexpr launch_configuration_t(
+		grid::complete_dimensions_t grid_and_block_dimensions,
+		memory::shared::size_t dynamic_shared_mem = 0u,
+		bool thread_block_cooperation = false
+	) :
+		dimensions{grid_and_block_dimensions},
+		dynamic_shared_memory_size{dynamic_shared_mem},
+		block_cooperation{thread_block_cooperation}
+	{ }
+
+	constexpr launch_configuration_t(
 		grid::dimensions_t grid_dims,
 		grid::dimensions_t block_dims,
 		memory::shared::size_t dynamic_shared_mem = 0u,
 		bool thread_block_cooperation = false
-	) :
-		grid_dimensions(grid_dims),
-		block_dimensions(block_dims),
-		dynamic_shared_memory_size(dynamic_shared_mem),
-		block_cooperation(thread_block_cooperation)
+	) : launch_configuration_t(
+			{grid_dims, block_dims},
+			dynamic_shared_mem,
+			thread_block_cooperation)
 	{ }
 
 	// A "convenience" delegating ctor to avoid narrowing-conversion warnings
@@ -391,10 +414,10 @@ struct launch_configuration_t {
 		memory::shared::size_t dynamic_shared_mem = 0u,
 		bool thread_block_cooperation = false
 	) : launch_configuration_t(
-		grid::dimensions_t(grid_dims),
-		grid::dimensions_t(block_dims),
-		dynamic_shared_mem,
-		thread_block_cooperation)
+			grid::dimensions_t(grid_dims),
+			grid::block_dimensions_t(block_dims),
+			dynamic_shared_mem,
+			thread_block_cooperation)
 	{ }
 
 	/**
@@ -402,9 +425,9 @@ struct launch_configuration_t {
 	 */
 	constexpr grid::dimensions_t combined_grid_dimensions() const {
 		return {
-			block_dimensions.x * grid_dimensions.x,
-			block_dimensions.y * grid_dimensions.y,
-			block_dimensions.z * grid_dimensions.z
+			dimensions.block.x * dimensions.grid.x,
+			dimensions.block.y * dimensions.grid.y,
+			dimensions.block.z * dimensions.grid.z
 		};
 	}
 };
@@ -413,21 +436,33 @@ struct launch_configuration_t {
  * @brief a named constructor idiom for a @ref launch_config_t
  */
 constexpr inline launch_configuration_t make_launch_config(
-	grid::dimensions_t        grid_dimensions,
-	grid::block_dimensions_t  block_dimensions,
-	memory::shared::size_t    dynamic_shared_memory_size = 0u,
-	bool block_cooperation = false) noexcept
+	grid::complete_dimensions_t grid_and_block_dimensions,
+	memory::shared::size_t      dynamic_shared_memory_size = 0u,
+	bool                        block_cooperation = false) noexcept
 {
-	return cuda::launch_configuration_t{ grid_dimensions, block_dimensions, dynamic_shared_memory_size, block_cooperation };
+	return { grid_and_block_dimensions, dynamic_shared_memory_size, block_cooperation };
+}
+
+constexpr inline launch_configuration_t make_launch_config(
+	grid::dimensions_t         grid_dimensions,
+	grid::block_dimensions_t   block_dimensions,
+	memory::shared::size_t     dynamic_shared_memory_size = 0u,
+	bool                       block_cooperation = false) noexcept
+{
+	return { { grid_dimensions, block_dimensions }, dynamic_shared_memory_size, block_cooperation };
 }
 
 constexpr inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return
-		lhs.grid_dimensions    == rhs.grid_dimensions    and
-		lhs.block_dimensions   == rhs.block_dimensions   and
+		lhs.dimensions == rhs.dimensions and
 		lhs.dynamic_shared_memory_size == rhs.dynamic_shared_memory_size and
 		lhs.block_cooperation == rhs.block_cooperation;
+}
+
+constexpr inline bool operator!=(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+{
+	return not (lhs == rhs);
 }
 
 /**

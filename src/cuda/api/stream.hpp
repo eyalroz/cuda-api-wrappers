@@ -36,6 +36,8 @@ enum : bool {
 	no_implicit_synchronization_with_default_stream = false,
 	sync = implicitly_synchronizes_with_default_stream,
 	async = no_implicit_synchronization_with_default_stream,
+	blocking = sync,
+	nonblocking = async,
 };
 
 #if CUDA_VERSION >= 11000
