@@ -56,7 +56,7 @@ const char *sDeviceSyncMethod[] =
 #include "cuda_runtime.h"
 
 // helper functions and utilities to work with CUDA
-#include "../helper_cuda.h"
+#include "../helper_cuda.hpp"
 
 #include <cuda/runtime_api.hpp>
 

@@ -23,7 +23,7 @@
 #include <stdio.h>
 
 // includes, project
-#include "../helper_cuda.h"
+#include "../helper_cuda.hpp"
 
 using datum = int;
 

@@ -15,7 +15,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "../helper_cuda.h"
+#include "../helper_cuda.hpp"
 
 using namespace std;
 
