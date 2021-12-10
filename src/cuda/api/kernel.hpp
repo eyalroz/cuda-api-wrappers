@@ -22,9 +22,16 @@ namespace cuda {
 ///@cond
 class device_t;
 class stream_t;
+class kernel_t;
 ///@endcond
 
 namespace kernel {
+
+namespace detail_ {
+
+inline kernel_t wrap(device::id_t device_id, const void* ptr);
+
+} // namespace detail
 
 /**
  * @brief a wrapper around `cudaFuncAttributes`, offering
@@ -129,15 +136,13 @@ public: // mutators
 	 * (1-dimensional), and the first element being the minimum number of such blocks necessary
 	 * for keeping the GPU "busy" (again, in a 1-dimensional grid).
 	 */
-	::std::pair<grid::dimension_t, grid::block_dimension_t>
-	min_grid_params_for_max_occupancy(
+	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		memory::shared::size_t   dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t  block_size_limit = 0,
 		bool                     disable_caching_override = false);
 
 	template <typename UnaryFunction>
-	::std::pair<grid::dimension_t, grid::block_dimension_t>
-	min_grid_params_for_max_occupancy(
+	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		UnaryFunction            block_size_to_dynamic_shared_mem_size,
 		grid::block_dimension_t  block_size_limit = 0,
 		bool                     disable_caching_override = false);
@@ -198,9 +203,9 @@ protected: // ctors & dtor
 	}
 
 public: // ctors & dtor
-	template <typename DeviceFunction>
-	kernel_t(const device_t& device, DeviceFunction f);
-	~kernel_t() { };
+	~kernel_t() = default;
+
+	friend kernel_t kernel::detail_::wrap(device::id_t, const void* ptr);
 
 protected: // data members
 	const device::id_t device_id_;
@@ -262,7 +267,20 @@ auto unwrap(Kernel f) -> typename ::std::conditional<
 	return detail_::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
 }
 
+namespace detail_ {
+
+inline kernel_t wrap(device::id_t device_id, const void* function_ptr)
+{
+	return { device_id, reinterpret_cast<const void*>(function_ptr) };
+}
+
+} // namespace detail_
+
+template<typename KernelFunctionPtr>
+kernel_t wrap(const device_t &device, KernelFunctionPtr function_ptr);
+
 } // namespace kernel
+
 
 } // namespace cuda
 

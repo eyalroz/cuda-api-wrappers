@@ -166,11 +166,10 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "\n> ";
-	chooseCudaDevice(argc, (const char **)argv);
-	auto current_device = cuda::device::current::get();
+	auto device = chooseCudaDevice(argc, (const char **)argv);
 
 	// Checking for compute capabilities
-	auto properties = current_device.properties();
+	auto properties = device.properties();
 	auto compute_capability = properties.compute_capability();
 
 	if (compute_capability < cuda::device::compute_capability_t({1, 1}) ) {
@@ -224,7 +223,7 @@ int main(int argc, char **argv)
 	default: // should not be able to get here
 		exit(EXIT_FAILURE);
 	}
-	current_device.set_synch_scheduling_policy(policy);
+	device.set_synch_scheduling_policy(policy);
 	// Not necessary: Since CUDA 3.2 (which is below the minimum supported
 	// version for the API wrappers, all contexts allow such mapping.
 	// current_device.enable_mapping_host_memory();
@@ -237,8 +236,8 @@ int main(int argc, char **argv)
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::device::make_unique<int[]>(current_device, n);
-	auto d_c = cuda::memory::device::make_unique<int>(current_device);
+	auto d_a = cuda::memory::device::make_unique<int[]>(device, n);
+	auto d_c = cuda::memory::device::make_unique<int>(device);
 	cuda::memory::copy_single(d_c.get(), &c);
 
 	std::cout << "\nStarting Test\n";
@@ -247,11 +246,11 @@ int main(int argc, char **argv)
 	std::vector<cuda::stream_t> streams;
 	std::generate_n(
 		std::back_inserter(streams), nstreams,
-		[&current_device]() {
+		[&device]() {
 			// Note: we could omit the specific requirement of synchronization
 			// with the default stream, since that's the CUDA default - but I
 			// think it's important to state that's the case
-			return current_device.create_stream(
+			return device.create_stream(
 				cuda::stream::implicitly_synchronizes_with_default_stream);
 		}
 	);
@@ -260,8 +259,8 @@ int main(int argc, char **argv)
 	// use blocking sync
 	auto use_blocking_sync = (device_sync_method == cudaDeviceBlockingSync);
 
-	auto start_event = cuda::event::create(current_device, use_blocking_sync);
-	auto stop_event = cuda::event::create(current_device, use_blocking_sync);
+	auto start_event = cuda::event::create(device, use_blocking_sync);
+	auto stop_event = cuda::event::create(device, use_blocking_sync);
 
 	// time memcopy from device
 	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed

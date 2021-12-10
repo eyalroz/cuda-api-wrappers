@@ -61,7 +61,7 @@ inline std::ostream& operator<< (std::ostream& os, const cuda::device::compute_c
 
 #ifdef __CUDA_RUNTIME_H__
 // General GPU Device CUDA Initialization
-inline void gpuDeviceInit(int device_id)
+/*inline void gpuDeviceInit(int device_id)
 {
 	auto device_count = cuda::device::count();
 
@@ -91,7 +91,21 @@ inline void gpuDeviceInit(int device_id)
 	}
 
 	device.make_current();
+}*/
+
+static void ensure_device_is_usable(const cuda::device_t device)
+{
+	auto properties = device.properties();
+
+	if (not properties.usable_for_compute()) {
+		die_("Error: device " + std::to_string(device.id()) + "is running with <Compute Mode Prohibited>.");
+	}
+
+	if (not properties.compute_capability().major() < 1) {
+		die_("CUDA device " + std::to_string(device.id()) + " does not support CUDA.\n");
+	}
 }
+
 
 // This function returns the best GPU (with maximum GFLOPS)
 inline int gpuGetMaxGflopsDeviceId()
@@ -145,19 +159,20 @@ inline int gpuGetMaxGflopsDeviceId()
 }
 
 // Initialization code to find the best CUDA Device
-inline void chooseCudaDevice(int argc, const char **argv)
+// Unlike in NVIDIA's original helper_cuda.h, this does _not_
+// make the chosen device current.
+inline cuda::device_t chooseCudaDevice(int argc, const char **argv)
 {
-	cuda::device::id_t device_id;
 	// If the command-line has a device number specified, use it
 	if (checkCmdLineFlag(argc, argv, "device"))
 	{
-		device_id = getCmdLineArgumentInt(argc, argv, "device=");
-
-		if (device_id < 0) { die_("Invalid command line parameter"); }
-		else
-		{
-			gpuDeviceInit(device_id);
+		auto device_id = getCmdLineArgumentInt(argc, argv, "device=");
+		if (device_id < 0) {
+			die_("Invalid command line parameter");
 		}
+		auto device = cuda::device::get(device_id);
+		ensure_device_is_usable(device);
+		return device;
 	}
 	else
 	{
@@ -166,7 +181,7 @@ inline void chooseCudaDevice(int argc, const char **argv)
 		std::cout << "GPU Device " << best_device.id() << ": ";
 		std::cout << "\"" << best_device.name() << "\" ";
 		std::cout << "with compute capability " << best_device.properties().compute_capability() << "\n";
-		best_device.make_current();
+		return best_device;
 	}
 }
 

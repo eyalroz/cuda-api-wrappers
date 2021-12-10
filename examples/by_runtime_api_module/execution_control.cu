@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 	auto device = cuda::device::get(device_id).make_current();
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
-	cuda::kernel_t kernel(device, kernel_function);
+	auto kernel = cuda::kernel::wrap(device, kernel_function);
 
 	// ------------------------------------------
 	//  Attributes without a specific API call
@@ -179,12 +179,12 @@ int main(int argc, char **argv)
 		cuda::outstanding_error::clear();
 	}
 #endif
-	cuda::kernel_t non_cooperative_kernel(device, kernel_function);
+	auto non_cooperative_kernel = cuda::kernel::wrap(device, kernel_function);
 	auto non_cooperative_config = launch_config;
 	non_cooperative_config.block_cooperation = true;
 	std::cout
-		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
+		<< "Launching kernel " << kernel_name << " with "
+		<< num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
 	stream.enqueue.kernel_launch(non_cooperative_kernel, non_cooperative_config, bar);
 	stream.synchronize();
 

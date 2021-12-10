@@ -16,7 +16,7 @@
  * here. In addition to the free-standing functions, the class
  * @ref cuda::memory::ipc::imported_t is defined, usable by receiving
  * processes as an 'adapter' to incoming handles which may be passed
- * as-is to code requiring a propoer pointer.
+ * as-is to code requiring a proper pointer.
  *
  */
 #pragma once
