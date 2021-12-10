@@ -39,6 +39,10 @@ add_executable(simpleStreams modified_cuda_samples/simpleStreams/simpleStreams.c
 add_executable(simpleIPC modified_cuda_samples/simpleIPC/simpleIPC.cu)
 add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 add_executable(asyncAPI modified_cuda_samples/asyncAPI/asyncAPI.cu)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
+	# This one needs cooperative_groups/reduce.h
+	add_executable(binaryPartitionCG modified_cuda_samples/binaryPartitionCG/binaryPartitionCG.cu)
+endif()
 #----
 add_custom_target(modified_cuda_samples)
 add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)
