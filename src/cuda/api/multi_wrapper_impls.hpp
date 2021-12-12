@@ -634,12 +634,12 @@ inline grid::dimension_t kernel_t::maximum_active_blocks_per_multiprocessor(
 
 namespace kernel {
 
-template<typename KernelKernelFunctionPtr>
-kernel_t wrap(const device_t &device, KernelKernelFunctionPtr function_ptr)
+template<typename KernelFunctionPtr>
+kernel_t wrap(const device_t &device, KernelFunctionPtr function_ptr)
 {
 	static_assert(
-		::std::is_pointer<KernelKernelFunctionPtr>::value
-			and ::std::is_function<typename ::std::remove_pointer<KernelKernelFunctionPtr>::type>::value,
+		::std::is_pointer<KernelFunctionPtr>::value
+			and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
 		"function_ptr must be a bona fide pointer to a kernel (__global__) function");
 	return detail_::wrap(device.id(), reinterpret_cast<const void*>(function_ptr));
 }

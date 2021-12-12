@@ -316,6 +316,10 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
  */
 using block_dimensions_t = dimensions_t;
 
+/**
+ * Combined dimensions for a grid - in terms of blocks, then also down
+ * into the block dimensions completing the information to the thread level.
+ */
 struct complete_dimensions_t {
 	grid::dimensions_t grid;
 	grid::block_dimensions_t block;
@@ -334,6 +338,8 @@ constexpr inline bool operator!=(const complete_dimensions_t lhs, const complete
 } // namespace grid
 
 /**
+ * @namespace memory
+ *
  * @brief Management and operations on memory in different CUDA-recognized
  * spaces.
  */
@@ -585,6 +591,11 @@ enum host_thread_synch_scheduling_policy_t : unsigned int {
 	 * actively spin on the processor.
 	 */
 	heuristic = cudaDeviceScheduleAuto,
+
+	/**
+	 * @brief Alias for the default behavior; see @ref heuristic .
+	 */
+	default_ = heuristic,
 
 	/**
 	 * @brief Keep control and spin-check for result availability

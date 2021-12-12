@@ -55,7 +55,9 @@
 
 namespace cuda {
 
+///@cond
 class stream_t;
+///@endcond
 
 /**
  * A named constructor idiom for {@ref grid::dimensions_t},
