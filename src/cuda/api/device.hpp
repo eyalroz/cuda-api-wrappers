@@ -22,9 +22,11 @@
 
 namespace cuda {
 
+///@cond
 class event_t;
 class stream_t;
 class device_t;
+///@endcond
 
 namespace device {
 
