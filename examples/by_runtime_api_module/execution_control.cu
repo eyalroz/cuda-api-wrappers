@@ -102,7 +102,8 @@ int main(int argc, char **argv)
 
 	const int bar = 123;
 	const unsigned num_blocks = 3;
-	auto launch_config = cuda::make_launch_config(num_blocks, attributes.maxThreadsPerBlock);
+	auto max_threads_per_block = attributes.maxThreadsPerBlock;
+	auto launch_config = cuda::make_launch_config(num_blocks, max_threads_per_block);
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 	// Let's do the same, but when the kernel is wrapped in a kernel_t
 	std::cout
 		<< "Launching kernel " << kernel_name
-		<< " wrapped in a kernel_t strcture,"
+		<< " wrapped in a kernel_t structure,"
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
 
 	cuda::launch(kernel, launch_config, bar);
@@ -129,8 +130,7 @@ int main(int argc, char **argv)
 
 	// or via a stream:
 
-	auto stream = cuda::device::current::get().create_stream(
-		cuda::stream::no_implicit_synchronization_with_default_stream);
+	auto stream = cuda::device::current::get().create_stream(cuda::stream::async);
 
 	std::cout
 		<< "Launching kernel " << kernel_name
@@ -140,8 +140,7 @@ int main(int argc, char **argv)
 
 #if TEST_COOPERATIVE_GROUPS
 	try {
-		auto can_launch_cooperatively =
-			(cuda::device::current::get().get_attribute(cudaDevAttrCooperativeLaunch) > 0);
+		auto can_launch_cooperatively = stream.device().get_attribute(cudaDevAttrCooperativeLaunch) > 0;
 		if (can_launch_cooperatively) {
 			auto cooperative_kernel_function = grid_cooperating_foo;
 			auto cooperative_kernel_name = "grid_cooperating_foo";

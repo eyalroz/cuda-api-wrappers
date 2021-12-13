@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 		}
 	);
 	auto threads_per_block = cuda::kernel::wrap(device, increment).attributes().maxThreadsPerBlock;
-	auto num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
+	auto num_blocks = div_rounding_up(buffer_size, threads_per_block);
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect

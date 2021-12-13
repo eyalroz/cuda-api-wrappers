@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <string>
 #include <iomanip>
+#include <numeric>
 
 const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 {
@@ -32,6 +33,20 @@ const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 	};
 	return cache_preference_names[(off_t) pref];
 }
+
+const char* host_thread_synch_scheduling_policy_name(cuda::host_thread_synch_scheduling_policy_t policy)
+{
+	static const char *names[] = {
+		"heuristic",
+		"spin",
+		"yield",
+		"INVALID",
+		"block",
+		nullptr
+	};
+	return names[(off_t) policy];
+}
+
 
 namespace std {
 
@@ -45,14 +60,24 @@ std::ostream& operator<<(std::ostream& os, cuda::multiprocessor_cache_preference
 	return (os << cache_preference_name(pref));
 }
 
+std::ostream& operator<<(std::ostream& os, cuda::host_thread_synch_scheduling_policy_t pref)
+{
+	return (os << host_thread_synch_scheduling_policy_name(pref));
+}
+
 std::ostream& operator<<(std::ostream& os, const cuda::device_t& device)
 {
-	return os << "[id " << device.id() << ']';
+	return os << cuda::device::detail_::identify(device.id());
+}
+
+std::ostream& operator<<(std::ostream& os, const cuda::stream_t& stream)
+{
+	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
 } // namespace std
 
-[[noreturn]] void die_(const std::string& message)
+[[noreturn]] bool die_(const std::string& message)
 {
 	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
@@ -65,4 +90,11 @@ std::ostream& operator<<(std::ostream& os, const cuda::device_t& device)
 		die_("Assertion failed at line " + std::to_string(__LINE__) + ": " #cond); \
 }
 
-#endif /* EXAMPLES_COMMON_HPP_ */
+// Note: This will only work correctly for positive values
+template <typename U1, typename U2>
+typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
+{
+	return dividend / divisor + !!(dividend % divisor);
+}
+
+#endif // EXAMPLES_COMMON_HPP_

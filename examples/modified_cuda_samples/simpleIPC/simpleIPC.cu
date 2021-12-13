@@ -7,7 +7,6 @@
  * and the deriver is the owner of this code according to the EULA.
  *
  * Use this reasonably. If you want to discuss licensing formalities, please
- * contact the author.
  */
 
 #include "../helper_string.h"
@@ -26,7 +25,7 @@ char **pArgv = NULL;
 
 #define MAX_DEVICES          8
 #define PROCESSES_PER_DEVICE 1
-#define DATA_BUF_SIZE        4096
+#define data_buffer_size        4096
 
 #ifdef __linux
 #include <unistd.h>
@@ -142,17 +141,13 @@ void getDeviceCount(ipcDevices_t *devices)
 		// Check possibility for peer accesses, relevant to our tests
 		printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 		devices->count = 1;
-		bool canAccessPeer_0i, canAccessPeer_i0;
 
 		auto device_0 = cuda::device::get(0);
 
 		for (i = 1; i < uvaCount; i++)
 		{
 			auto device_i = cuda::device::get(i);
-			canAccessPeer_0i = cuda::device::peer_to_peer::can_access(device_0, device_i);
-			canAccessPeer_i0 = cuda::device::peer_to_peer::can_access(device_i, device_0);
-
-			if (canAccessPeer_0i and canAccessPeer_i0)
+			if (cuda::device::peer_to_peer::can_access_each_other(device_0, device_i))
 			{
 				devices->ordinals[devices->count] = uvaOrdinals[i];
 				printf("> Two-way peer access between GPU%d and GPU%d: YES\n", devices->ordinals[0], devices->ordinals[devices->count]);
@@ -185,9 +180,9 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 
 	// reference buffer in host memory  (do in all processes for rand() consistency)
-	int h_refData[DATA_BUF_SIZE];
+	int h_refData[data_buffer_size];
 
-	for (int i = 0; i < DATA_BUF_SIZE; i++)
+	for (int i = 0; i < data_buffer_size; i++)
 	{
 		h_refData[i] = rand();
 	}
@@ -198,15 +193,15 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 	{
 		printf("\nLaunching kernels...\n");
 		// host memory buffer for checking results
-		int h_results[DATA_BUF_SIZE * MAX_DEVICES * PROCESSES_PER_DEVICE];
+		int h_results[data_buffer_size * MAX_DEVICES * PROCESSES_PER_DEVICE];
 
 		std::vector<cuda::event_t> events;
 		events.reserve(MAX_DEVICES * PROCESSES_PER_DEVICE - 1);
 		int* d_ptr = reinterpret_cast<int*>(
-			device.memory().allocate(DATA_BUF_SIZE * g_processCount * sizeof(int)).start()
+			device.memory().allocate(data_buffer_size * g_processCount * sizeof(int)).start()
 		);
 		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
-		cuda::memory::copy((void *) d_ptr, (void *) h_refData, DATA_BUF_SIZE * sizeof(int));
+		cuda::memory::copy((void *) d_ptr, (void *) h_refData, data_buffer_size * sizeof(int));
 
 		// b.1: wait until all event handles are created in other processes
 		procBarrier();
@@ -229,18 +224,18 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// b.3
 		procBarrier();
 
-		cuda::memory::copy(h_results, d_ptr + DATA_BUF_SIZE, DATA_BUF_SIZE * (g_processCount - 1) * sizeof(int));
+		cuda::memory::copy(h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
 		cuda::memory::device::free(d_ptr);
 		printf("Checking test results...\n");
 
 		for (int n = 1; n < g_processCount; n++)
 		{
-			for (int i = 0; i < DATA_BUF_SIZE; i++)
+			for (int i = 0; i < data_buffer_size; i++)
 			{
-				if (h_refData[i]/(n + 1) != h_results[(n-1) * DATA_BUF_SIZE + i])
+				if (h_refData[i]/(n + 1) != h_results[(n-1) * data_buffer_size + i])
 				{
 					fprintf(stderr, "Data check error at index %d in process %d!: %i,    %i\n",i,
-							n, h_refData[i], h_results[(n-1) * DATA_BUF_SIZE + i]);
+							n, h_refData[i], h_results[(n-1) * data_buffer_size + i]);
 					g_barrier->allExit = true;
 					exit(EXIT_FAILURE);
 				}
@@ -265,12 +260,13 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 			printf("> Process %3d: Run kernel on GPU%d, taking source data from and writing results to process %d, GPU%d...\n",
 				   index, s_mem[index].device, 0, s_mem[0].device);
-			const dim3 threads(512, 1);
-			const dim3 blocks(DATA_BUF_SIZE / threads.x, 1);
+			constexpr const auto threads = 512;
+			static_assert(data_buffer_size % threads == 0, "data_buffer_size value must be divisible by the kernel block size");
+			auto blocks = data_buffer_size / threads;
 			cuda::launch(
 				simpleKernel,
 				{ blocks, threads },
-				d_ptr.get() + index *DATA_BUF_SIZE, d_ptr.get(), index + 1
+				d_ptr.get() + index *data_buffer_size, d_ptr.get(), index + 1
 			);
 			event.record();
 
@@ -305,7 +301,7 @@ int main(int argc, char **argv)
 	exit(EXIT_WAIVED);
 #endif
 
-	ipcDevices_t *s_devices = (ipcDevices_t *) mmap(NULL, sizeof(*s_devices),
+	ipcDevices_t *s_devices = (ipcDevices_t *) mmap(nullptr, sizeof(*s_devices),
 													PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
 	assert(MAP_FAILED != s_devices);
 
@@ -330,7 +326,7 @@ int main(int argc, char **argv)
 		g_processCount = 2; // two processes per single device
 	}
 
-	g_barrier = (ipcBarrier_t *) mmap(NULL, sizeof(*g_barrier),
+	g_barrier = (ipcBarrier_t *) mmap(nullptr, sizeof(*g_barrier),
 									  PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
 	assert(MAP_FAILED != g_barrier);
 	memset((void *) g_barrier, 0, sizeof(*g_barrier));
@@ -338,7 +334,7 @@ int main(int argc, char **argv)
 	g_procSense = 0;
 
 	// shared memory for CUDA memory an event handlers
-	ipcCUDA_t *s_mem = (ipcCUDA_t *) mmap(NULL, g_processCount * sizeof(*s_mem),
+	ipcCUDA_t* s_mem = (ipcCUDA_t *) mmap(nullptr, g_processCount * sizeof(ipcCUDA_t*),
 										  PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
 	assert(MAP_FAILED != s_mem);
 

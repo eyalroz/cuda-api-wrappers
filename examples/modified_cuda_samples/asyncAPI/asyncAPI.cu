@@ -44,9 +44,9 @@ bool correct_output(int *data, const int n, const int x)
 	return true;
 }
 
-int main(int, char *argv[])
+int main(int, char **)
 {
-	std::cout << "[" << argv[0] << "] - Starting...\n";
+	std::cout << "asyncAPI Starting...\n";
 
 	// This will pick the best possible CUDA capable device
 	// int devID = findCudaDevice(argc, (const char **)argv);
@@ -66,6 +66,7 @@ int main(int, char *argv[])
 	auto d_a = cuda::memory::device::make_unique<datum[]>(device, n);
 
 	auto threads = cuda::grid::block_dimensions_t(512, 1);
+	assert_(n % threads.x == 0);
 	auto blocks  = cuda::grid::dimensions_t(n / threads.x, 1);
 	auto launch_config = cuda::make_launch_config(blocks, threads);
 

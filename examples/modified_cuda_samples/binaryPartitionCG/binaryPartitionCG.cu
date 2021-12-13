@@ -145,7 +145,7 @@ int main(int argc, const char **argv)
 		<< " Sum of Evens " << h_sumOfOddEvenElems.get()[1]
 		<< "\n";
 
-    std::cout << "\n\nSUCCESS\n\n"; // Actually, we don't even check the sum, but... that's what NVIDIA wrote.
+    std::cout << "\nSUCCESS\n"; // Actually, we don't even check the sum, but... that's what NVIDIA wrote.
 
     return EXIT_SUCCESS;
 }
