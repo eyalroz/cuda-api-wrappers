@@ -13,6 +13,7 @@
 #include <cuda/api/device.hpp>
 #include <cuda/api/event.hpp>
 #include <cuda/api/kernel_launch.hpp>
+#include <cuda/api/kernel.hpp>
 #include <cuda/api/pointer.hpp>
 #include <cuda/api/stream.hpp>
 #include <cuda/api/unique_ptr.hpp>
@@ -468,6 +469,8 @@ inline region_pair allocate(
 
 // kernel_t methods
 
+inline device_t kernel_t::device() const noexcept { return device::get(device_id_); }
+
 inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value)
 {
 	device::current::detail_::scoped_override_t set_device_for_this_context(device_id_);
@@ -669,29 +672,33 @@ inline void record_event_on_current_device(device::id_t device_id, stream::handl
 
 } // namespace stream
 
-template<typename Kernel, typename... KernelParameters>
+namespace detail_ {
+
+template<typename... KernelParameters>
 inline void enqueue_launch(
-	Kernel                  kernel_function,
+	::std::true_type,       // got a wrapped kernel
+	const kernel_t&         kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
-	auto unwrapped_kernel_function =
-		kernel::unwrap<
-			Kernel,
-			detail_::kernel_parameter_decay_t<KernelParameters>...
-		>(kernel_function);
-		// Note: This helper function is necessary since we may have gotten a
-		// kernel_t as Kernel, which is type-erased - in
-		// which case we need both to obtain the raw function pointer, and determine
-		// its type, i.e. un-type-erase it. Luckily, we have the KernelParameters pack
-		// which - if we can trust the user - contains more-or-less the function's
-		// parameter types; and kernels return `void`, which settles the whole signature.
-		//
-		// I say "more or less" because the KernelParameter pack may contain some
-		// references, arrays and so on - which CUDA kernels cannot accept; so
-		// we massage those a bit.
+	if (kernel.device() != stream.device()) {
+		throw ::std::invalid_argument("Attempt to enqueue a kernel for "
+			+ device::detail_::identify(kernel.device().id()) + " on a stream for "
+			+ "device " + device::detail_::identify(stream.device().id()));
+	}
 
+	// Note: We are not performing an imperfect un-erasure of the wrapper function pointer's
+	// signature. Imperfect - since the KernelParameter pack may contain some
+	// references, arrays and so on - which CUDA kernels cannot accept; so have
+	// to massage it a bit.
+
+	using raw_kernel_type = void(*)(typename cuda::detail_::kernel_parameter_decay_t<KernelParameters>...);
+//		typename cuda::kernel::detail_::raw_kernel_typegen<
+//			typename cuda::detail_::kernel_parameter_decay_t<KernelParameters>::type ...
+//		>::type;
+
+	auto unwrapped_kernel_function = reinterpret_cast<raw_kernel_type>(const_cast<void*>(kernel.ptr()));
 
 	detail_::enqueue_launch(
 		unwrapped_kernel_function,
@@ -700,19 +707,85 @@ inline void enqueue_launch(
 		::std::forward<KernelParameters>(parameters)...);
 }
 
-template<typename Kernel, typename... KernelParameters>
-inline void launch(
-	Kernel                  kernel_function,
+template<typename RawKernelFunction, typename... KernelParameters>
+inline void enqueue_launch(
+	::std::false_type,      // got a raw function
+	RawKernelFunction       kernel_function,
+	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
-	stream_t stream = device::current::get().default_stream();
-	enqueue_launch(
+	static_assert(
+		::std::is_function<typename ::std::decay<RawKernelFunction>::type>::value
+		or (
+			::std::is_pointer<RawKernelFunction>::value
+			and ::std::is_function<typename ::std::remove_pointer<RawKernelFunction>::type>::value
+			)
+		, "Invalid Kernel type - it must be either a function or a pointer-to-a-function");
+
+
+	// Note: It is possible that the parameter pack's signature does not exactly fit the function
+	// pointer - it contain some references, arrays and so on - which CUDA kernels cannot accept;
+	// but it should be close enough to pass to the function... or the user would not have asked
+	// to launch the kernel this way. So, no reinterpretation/decay should be necessary here.
+
+	detail_::enqueue_launch(
 		kernel_function,
+		stream.handle(),
+		launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
+}
+
+
+} // namespace detail_
+
+template<typename Kernel, typename... KernelParameters>
+inline void enqueue_launch(
+	Kernel                  kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	constexpr const auto got_a_wrapped_kernel = ::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value;
+	using got_a_wrapped_kernel_type = ::std::integral_constant<bool, got_a_wrapped_kernel>;
+	return detail_::enqueue_launch(got_a_wrapped_kernel_type{}, kernel, stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
+}
+
+namespace detail_ {
+
+template<typename Kernel>
+device_t get_implicit_device(Kernel)
+{
+	return device::current::get();
+}
+
+template<>
+inline device_t get_implicit_device<kernel_t>(kernel_t kernel)
+{
+	return kernel.device();
+}
+
+} // namespace detail_
+template<typename Kernel, typename... KernelParameters>
+inline void launch(
+	Kernel                  kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	auto device = detail_::get_implicit_device(kernel);
+	stream_t stream = device.default_stream();
+
+	// Note: If Kernel is a kernel_t, and its associated device is different
+	// than the current device, the next call will fail:
+
+	enqueue_launch(
+		kernel,
 		stream,
 		launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
+
 
 } // namespace cuda
 
