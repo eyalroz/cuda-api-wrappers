@@ -216,59 +216,6 @@ namespace kernel {
 
 namespace detail_ {
 
-template<bool...> struct bool_pack;
-template<bool... bs>
-using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
-
-template<typename... KernelParameters>
-struct raw_kernel_typegen {
-	static_assert(all_true<::std::is_same<KernelParameters, ::cuda::detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
-		"Invalid kernel parameter types" );
-	using type = void(*)(KernelParameters...);
-		// Why no decay? After all, CUDA kernels only takes parameters by value, right?
-		// Well, we're inside `detail_::`. You should be careful to only instantiate this class with
-		// nice simple types we can pass to CUDA kernels.
-};
-
-template<typename Kernel, typename... KernelParameters>
-typename raw_kernel_typegen<KernelParameters...>::type unwrap_inner(::std::true_type, kernel_t wrapped)
-{
-	using raw_kernel_t = typename raw_kernel_typegen<KernelParameters ...>::type;
-	return reinterpret_cast<raw_kernel_t>(const_cast<void*>(wrapped.ptr()));
-		// The inner cast here is because we store the pointer as const void* - as an extra precaution
-		// against anybody trying to write through it. Now, function pointers can't get written through,
-		// but are still for some reason not considered const.
-}
-
-template<typename Kernel, typename... KernelParameters>
-Kernel unwrap_inner(::std::false_type, Kernel raw_function)
-{
-	static_assert(
-		::std::is_function<typename ::std::decay<Kernel>::type>::value or
-		(::std::is_pointer<Kernel>::value and ::std::is_function<typename ::std::remove_pointer<Kernel>::type>::value)
-		, "Invalid Kernel type - it must be either a function or a pointer-to-a-function");
-	return raw_function;
-}
-
-} // namespace detail_
-
-/**
- * Obtain the raw function pointer of any type acceptable as a launchable kernel
- * by {@ref enqueue_launch}.
- */
-template<typename Kernel, typename... KernelParameters>
-auto unwrap(Kernel f) -> typename ::std::conditional<
-	::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value,
-	typename detail_::raw_kernel_typegen<KernelParameters...>::type,
-	Kernel>::type
-{
-	using got_a_kernel_t =
-		::std::integral_constant<bool, ::std::is_same<typename ::std::decay<Kernel>::type, kernel_t>::value>;
-	return detail_::unwrap_inner<Kernel, KernelParameters...>(got_a_kernel_t{}, f);
-}
-
-namespace detail_ {
-
 inline kernel_t wrap(device::id_t device_id, const void* function_ptr)
 {
 	return { device_id, reinterpret_cast<const void*>(function_ptr) };
@@ -280,7 +227,6 @@ template<typename KernelFunctionPtr>
 kernel_t wrap(const device_t &device, KernelFunctionPtr function_ptr);
 
 } // namespace kernel
-
 
 } // namespace cuda
 
