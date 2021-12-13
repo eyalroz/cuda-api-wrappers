@@ -42,12 +42,6 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 
 } // namespace kernels
 
-template <typename I, typename I2>
-constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
-{
-	return (dividend / divisor) + !!(dividend % divisor);
-}
-
 template <typename T>
 void check_output_is_iota(std::string name, const T* actual, size_t length) noexcept
 {

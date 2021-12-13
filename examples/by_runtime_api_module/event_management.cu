@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
 	// Being very cavalier about our command-line arguments here...
 	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id).make_current();
+	auto device = cuda::device::get(device_id);
 
 	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
@@ -76,9 +76,7 @@ int main(int argc, char **argv)
 	// and memory attachments, recording and waiting on events
 	//--------------------------------------------------------------
 
-	auto stream = cuda::device::current::get().create_stream(
-		cuda::stream::no_implicit_synchronization_with_default_stream);
-	auto default_stream = cuda::device::current::get().default_stream();
+	auto stream = device.create_stream(cuda::stream::async);
 
 	{ auto event = cuda::event::create(device); }
 	auto event_1 = cuda::event::create(
@@ -98,21 +96,22 @@ int main(int argc, char **argv)
 
 	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
-		buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	cuda::grid::block_dimension_t threads_per_block = cuda::kernel::wrap(device, increment).attributes().maxThreadsPerBlock;
-	cuda::grid::dimension_t num_blocks = (buffer_size + threads_per_block - 1) / threads_per_block;
+		device, buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
+	auto wrapped_kernel = cuda::kernel::wrap(device, increment);
+	cuda::grid::block_dimension_t threads_per_block = wrapped_kernel.attributes().maxThreadsPerBlock;
+	cuda::grid::dimension_t num_blocks = div_rounding_up(buffer_size, threads_per_block);
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
 	stream.enqueue.event(event_1);
 	stream.enqueue.host_function_call(
-		[&event_1, &event_2](cuda::stream_t) {
+		[&event_1, &event_2](const cuda::stream_t&) {
 			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
 		}
 	);
 	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	stream.enqueue.host_function_call(
-		[&event_1, &event_2](cuda::stream_t) {
+		[&event_1, &event_2](const cuda::stream_t& ) {
 			report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
 		}
 	);

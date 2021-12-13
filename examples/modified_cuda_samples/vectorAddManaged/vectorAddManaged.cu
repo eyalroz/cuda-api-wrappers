@@ -25,7 +25,7 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 	if (i < numElements) { C[i] = A[i] + B[i]; }
 }
 
-int main(void)
+int main()
 {
 	if (cuda::device::count() == 0) {
 		std::cerr << "No CUDA devices on this system" << "\n";
@@ -52,7 +52,7 @@ int main(void)
 
 	cuda::launch(
 		vectorAdd,
-		cuda::launch_configuration_t( blocksPerGrid, threadsPerBlock ),
+		cuda::make_launch_config( blocksPerGrid, threadsPerBlock ),
 		buffer_A.get(), buffer_B.get(), buffer_C.get(), numElements
 	);
 

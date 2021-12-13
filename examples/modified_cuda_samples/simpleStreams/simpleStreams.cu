@@ -40,20 +40,7 @@ const char *sEventSyncMethod[] =
 	NULL
 };
 
-const char *sDeviceSyncMethod[] =
-{
-	"cudaDeviceScheduleAuto",
-	"cudaDeviceScheduleSpin",
-	"cudaDeviceScheduleYield",
-	"INVALID",
-	"cudaDeviceScheduleBlockingSync",
-	NULL
-};
-
 // System includes
-
-// CUDA runtime
-#include "cuda_runtime.h"
 
 // helper functions and utilities to work with CUDA
 #include "../helper_cuda.hpp"
@@ -62,7 +49,6 @@ const char *sDeviceSyncMethod[] =
 
 #include <cstdlib>
 
-#include <fstream>
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -72,7 +58,7 @@ const char *sDeviceSyncMethod[] =
 #define MEMORY_ALIGNMENT  4096
 #define ALIGN_UP(x,size) ( ((size_t)x+(size-1))&(~(size-1)) )
 
-__global__ void init_array(int *g_data, int *factor, int num_iterations)
+__global__ void init_array(int *g_data, const int *factor, int num_iterations)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -82,52 +68,43 @@ __global__ void init_array(int *g_data, int *factor, int num_iterations)
 	}
 }
 
-bool correct_data(int *a, const int n, const int c)
+bool check_resulting_data(const int *a, const int n, const int c)
 {
 	for (int i = 0; i < n; i++) {
 		if (a[i] != c) {
-			std::cout << i << ": " << a[i] << " " << c << "\n";
+			std::cerr << i << ": " << a[i] << " " << c << "\n";
 			return false;
 		}
 	}
 	return true;
 }
 
-static const char *sSyncMethod[] =
-{
-	"0 (Automatic Blocking)",
-	"1 (Spin Blocking)",
-	"2 (Yield Blocking)",
-	"3 (Undefined Blocking Method)",
-	"4 (Blocking Sync Event) = low CPU utilization",
-	NULL
-};
-
 void printHelp()
 {
 	std::cout
 		<< "Usage: " << sSDKsample << " [options below]\n"
-		<< "\t--sync_method=n for CPU/GPU synchronization\n"
-		<< "\t             n=" << sSyncMethod[0] << "\n"
-		<< "\t             n=" << sSyncMethod[1] << "\n"
-		<< "\t             n=" << sSyncMethod[2] << "\n"
-		<< "\t   <Default> n=" << sSyncMethod[4] << "\n"
-		<< "\t--use_generic_memory (default) use generic page-aligned for system memory\n"
-		<< "\t--use_cuda_malloc_host (optional) use cudaMallocHost to allocate system memory\n";
+		<< "\t--sync_method (" << (int) cuda::host_thread_synch_scheduling_policy_t::default_ << ") for CPU thread synchronization with GPU work."
+		<< "\t             Possible values: " << (int) cuda::host_thread_synch_scheduling_policy_t::heuristic << ", "
+		<< (int) cuda::host_thread_synch_scheduling_policy_t::spin << ", "
+		<< (int) cuda::host_thread_synch_scheduling_policy_t::yield << ", "
+		<< (int) cuda::host_thread_synch_scheduling_policy_t::block << ".\n"
+		<< "\t--use_generic_memory (default) use generic page-aligned host memory allocation\n"
+		<< "\t--use_cuda_malloc_host (optional) use pinned host memory allocation\n";
 }
 
 int main(int argc, char **argv)
 {
 	int nstreams = 4;               // number of streams for CUDA calls
-	int nreps = 10;                 // number of times each experiment is repeated
-	int n = 16 * 1024 * 1024;       // number of ints in the data set
+	int nreps = 5;                 // number of times each experiment is repeated; originally 10
+	int n = 2 * 1024 * 1024;       // number of ints in the data set; originally 2^16
 	std::size_t nbytes = n * sizeof(int);   // number of data bytes
 	dim3 threads, blocks;           // kernel launch configuration
 	float scale_factor = 1.0f;
 
 	// allocate generic memory and pin it laster instead of using cudaHostAlloc()
 
-	int  device_sync_method = cudaDeviceBlockingSync; // by default we use BlockingSync
+	using synch_policy_type = cuda::host_thread_synch_scheduling_policy_t;
+	auto synch_policy = synch_policy_type::block;
 
 	int niterations;    // number of iterations for the loop inside the kernel
 
@@ -137,24 +114,22 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	if ((device_sync_method = getCmdLineArgumentInt(argc, (const char **)argv, "sync_method")) >= 0)
+	auto synch_policy_arg = getCmdLineArgumentInt(argc, (const char **)argv, "sync_method");
+	if (   synch_policy_arg == synch_policy_type::heuristic
+		|| synch_policy_arg == synch_policy_type::spin
+		|| synch_policy_arg == synch_policy_type::yield
+		|| synch_policy_arg == synch_policy_type::block)
 	{
-		if (device_sync_method == 0 || device_sync_method == 1 || device_sync_method == 2 || device_sync_method == 4)
-		{
-			std::cout << "Device synchronization method set to = " << sSyncMethod[device_sync_method] << "\n";
-			std::cout << "Setting reps to 100 to demonstrate steady state\n";
-			nreps = 100;
-		}
-		else
-		{
-			std::cout << "Invalid command line option sync_method=\"" << device_sync_method << "\"\n";
-			return EXIT_FAILURE;
-		}
+		synch_policy = (synch_policy_type) synch_policy_arg;
+			std::cout << "Device synchronization method set to = " <<
+				  (synch_policy_type) synch_policy << "\n";
+		std::cout << "Setting reps to 100 to demonstrate steady state\n";
+		nreps = 100;
 	}
 	else
 	{
-		printHelp();
-		return EXIT_SUCCESS;
+		std::cout << "Invalid command line option sync_method=\"" << synch_policy << "\"\n";
+		return EXIT_FAILURE;
 	}
 
 	if (checkCmdLineFlag(argc, (const char **)argv, "use_cuda_malloc_host"))
@@ -212,23 +187,23 @@ int main(int argc, char **argv)
 	std::cout << "> array_size   = " << n << "\n\n";
 
 	// enable use of blocking sync, to reduce CPU usage
-	std::cout << "> Using CPU/GPU Device Synchronization method " << sDeviceSyncMethod[device_sync_method] << "\n";
+	std::cout << "> Using CPU/GPU Device Synchronization method " << synch_policy << "\n";
 
-	cuda::host_thread_synch_scheduling_policy_t policy;
-	switch(device_sync_method) {
-	case 0: policy = cuda::heuristic; break;
-	case 1: policy = cuda::spin;      break;
-	case 2: policy = cuda::yield;     break;
-	case 4: policy = cuda::block;     break;
+	synch_policy_type  policy;
+	switch(synch_policy) {
+	case 0: policy = synch_policy_type::heuristic; break;
+	case 1: policy = synch_policy_type::spin;      break;
+	case 2: policy = synch_policy_type::yield;     break;
+	case 4: policy = synch_policy_type::block;     break;
 	default: // should not be able to get here
 		exit(EXIT_FAILURE);
 	}
+
 	device.set_synch_scheduling_policy(policy);
 	// Not necessary: Since CUDA 3.2 (which is below the minimum supported
 	// version for the API wrappers, all contexts allow such mapping.
-	// current_device.enable_mapping_host_memory();
+	// device.enable_mapping_host_memory();
 
-	// allocate host memory
 	int c = 5;                      // value to which the array will be initialized
 
 	// Allocate Host memory
@@ -257,7 +232,7 @@ int main(int argc, char **argv)
 
 	// create CUDA event handles
 	// use blocking sync
-	auto use_blocking_sync = (device_sync_method == cudaDeviceBlockingSync);
+	auto use_blocking_sync = (synch_policy == cudaDeviceBlockingSync);
 
 	auto start_event = cuda::event::create(device, use_blocking_sync);
 	auto stop_event = cuda::event::create(device, use_blocking_sync);
@@ -272,6 +247,7 @@ int main(int argc, char **argv)
 
 	// time kernel
 	threads=dim3(512, 1);
+	assert_(n % threads.x == 0);
 	blocks=dim3(n / threads.x, 1);
 	start_event.record();
 	init_array<<<blocks, threads, 0, streams[0].handle()>>>(d_a.get(), d_c.get(), niterations);
@@ -327,12 +303,12 @@ int main(int argc, char **argv)
 	stop_event.record();
 	stop_event.synchronize();
 	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / nreps << "\n";
+	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / (float) nreps << "\n";
 
 	// check whether the output is correct
 	std::cout << "-------------------------------\n";
-	bool bResults = correct_data(h_a.get(), n, c*nreps*niterations);
-
-	std::cout << (bResults ? "SUCCESS" : "FAILURE") << "\n";
-	return bResults ? EXIT_SUCCESS : EXIT_FAILURE;
+	if (not check_resulting_data(h_a.get(), n, c * nreps * niterations)) {
+		die_("Result check FAILED.");
+	}
+	std::cout << "\nSUCCESS\n";
 }

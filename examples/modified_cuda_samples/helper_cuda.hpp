@@ -13,87 +13,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions for initialization and error checking
 
-#ifndef HELPER_CUDA_H
-#define HELPER_CUDA_H
+#ifndef HELPER_CUDA_HPP_
+#define HELPER_CUDA_HPP_
 
-#pragma once
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <cuda/runtime_api.hpp>
-
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include <numeric>
+#include "../common.hpp"
 
 #include "helper_string.h"
-//#include "error_messages.h"
 
 #ifndef EXIT_WAIVED
 #define EXIT_WAIVED 2
 #endif
 
-
-#ifdef __DRIVER_TYPES_H__
-#ifndef DEVICE_RESET
-#define DEVICE_RESET cudaDeviceReset();
-#endif
-#else
-#ifndef DEVICE_RESET
-#define DEVICE_RESET
-#endif
-#endif
-
-[[noreturn]] inline void die_(const std::string& message, int exit_value = EXIT_FAILURE) noexcept
-{
-	std::cerr << message << "\n";
-	exit(exit_value);
-}
-
-inline std::ostream& operator<< (std::ostream& os, const cuda::device::compute_capability_t& cc)
-{
-	return os << cc.major() << '.' << cc.minor();
-}
-
-#ifdef __CUDA_RUNTIME_H__
-// General GPU Device CUDA Initialization
-/*inline void gpuDeviceInit(int device_id)
-{
-	auto device_count = cuda::device::count();
-
-	if (device_count == 0) {
-		die_ ("gpuDeviceInit() CUDA error: no devices supporting CUDA.");
-	}
-
-	device_id  = std::max(device_id, 0);
-
-	if (device_id > device_count-1) {
-		throw cuda::runtime_error(cuda::status::invalid_device,
-			std::to_string(device_count) +
-			" CUDA capable GPU device(s) detected; gpuDeviceInit called for device " +
-			std::to_string(device_id) + "which doesn't exist.");
-	}
-
-	auto device = cuda::device::get(device_id);
-	auto properties = device.properties();
-
-	if (!properties.usable_for_compute()) {
-		die_("Error: device is running in <Compute Mode Prohibited>, "
-			"no threads can use ::cudaSetDevice().\n");
-	}
-
-	if (properties.compute_capability().major() < 1) {
-		die_("gpuDeviceInit(): GPU device does not support CUDA.\n");
-	}
-
-	device.make_current();
-}*/
-
-static void ensure_device_is_usable(const cuda::device_t device)
+void ensure_device_is_usable(const cuda::device_t device)
 {
 	auto properties = device.properties();
 
@@ -101,19 +32,18 @@ static void ensure_device_is_usable(const cuda::device_t device)
 		die_("Error: device " + std::to_string(device.id()) + "is running with <Compute Mode Prohibited>.");
 	}
 
-	if (not properties.compute_capability().major() < 1) {
+	if (properties.compute_capability().major() < 1) {
 		die_("CUDA device " + std::to_string(device.id()) + " does not support CUDA.\n");
 	}
 }
 
-
 // This function returns the best GPU (with maximum GFLOPS)
-inline int gpuGetMaxGflopsDeviceId()
+inline int get_device_with_highest_gflops()
 {
 	auto device_count = cuda::device::count();
 
 	if (device_count == 0) {
-		die_("gpuGetMaxGflopsDeviceId() CUDA error: no devices supporting CUDA.");
+		die_("get_device_with_highest_gflops() CUDA error: no devices supporting CUDA.");
 	}
 
 	std::vector<cuda::device::id_t> device_ids(device_count);
@@ -126,7 +56,7 @@ inline int gpuGetMaxGflopsDeviceId()
 		}
 	);
 	if (device_ids.empty()) {
-		die_("gpuGetMaxGflopsDeviceId() CUDA error: all devices have compute mode prohibited.");
+		die_("get_device_with_highest_gflops() CUDA error: all devices have compute mode prohibited.");
 	}
 	if (device_ids.size() == 1) { return *device_ids.begin(); }
 
@@ -158,6 +88,7 @@ inline int gpuGetMaxGflopsDeviceId()
 	return *iterator;
 }
 
+
 // Initialization code to find the best CUDA Device
 // Unlike in NVIDIA's original helper_cuda.h, this does _not_
 // make the chosen device current.
@@ -177,7 +108,7 @@ inline cuda::device_t chooseCudaDevice(int argc, const char **argv)
 	else
 	{
 		// Otherwise pick the device with highest Gflops/s
-		auto best_device = cuda::device::get(gpuGetMaxGflopsDeviceId());
+		auto best_device = cuda::device::get(get_device_with_highest_gflops());
 		std::cout << "GPU Device " << best_device.id() << ": ";
 		std::cout << "\"" << best_device.name() << "\" ";
 		std::cout << "with compute capability " << best_device.properties().compute_capability() << "\n";
@@ -186,24 +117,5 @@ inline cuda::device_t chooseCudaDevice(int argc, const char **argv)
 }
 
 
-// General check for CUDA GPU SM Capabilities
-inline bool checkCudaCapabilities(int major_version, int minor_version)
-{
-	auto minimum_cc = cuda::device::make_compute_capability(major_version, minor_version);
-	auto device = cuda::device::current::get();
-	auto cc = device.properties().compute_capability();
-	if (cc >= minimum_cc) {
-		std::cout
-			<< "  Device " << device.id() << " <" << std::setw(16) << device.properties().name << " >, "
-			<< "Compute SM " << cc << " detected\n";
-		return true;
-	}
-	std::cerr << "No GPU device was found that can support CUDA compute capability " << minimum_cc << "\n";
-	return false;
-}
 
-#endif
-
-// end of CUDA Helper Functions
-
-#endif
+#endif // HELPER_CUDA_HPP_

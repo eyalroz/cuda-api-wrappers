@@ -17,6 +17,13 @@
 #include <iostream>
 #include <memory>
 
+// Note: This will only work correctly for positive values
+template <typename U1, typename U2>
+typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
+{
+	return dividend / divisor + !!(dividend % divisor);
+}
+
 [[noreturn]] void die_(const std::string& message)
 {
 	std::cerr << message << "\n";
@@ -42,49 +49,39 @@ void sequence_cpu(int *h_ptr, int length)
 	}
 }
 
+
 int main(int, char **)
 {
 	if (cuda::device::count() == 0) {
 		die_("No CUDA devices on this system");
 	}
 
-
 	const int N = 1000;
 
 	cuda::device::current::set_to_default();
-	auto current_device = cuda::device::current::get();
+	auto device = cuda::device::current::get();
 
-	auto d_ptr = cuda::memory::device::make_unique<int[]>(current_device, N);
+	auto d_ptr = cuda::memory::device::make_unique<int[]>(device, N);
 	auto h_ptr = cuda::memory::host::make_unique<int[]>(N);
 
 	std::cout << "Generating data on CPU\n";
 
 	sequence_cpu(h_ptr.get(), N);
 
-	cuda::grid::block_dimensions_t cudaBlockSize(256,1,1);
-	cuda::grid::dimensions_t cudaGridSize((N + cudaBlockSize.x - 1) / cudaBlockSize.x, 1, 1);
-	current_device.launch(
-		sequence_gpu,
-		{ cudaGridSize, cudaBlockSize },
-		d_ptr.get(), N
-	);
+	auto block_size = 256;
+	auto grid_size = div_rounding_up(N, block_size);
+	auto launch_config = cuda::make_launch_config(grid_size, block_size);
+	device.launch(sequence_gpu, launch_config, d_ptr.get(), N);
 
 	cuda::outstanding_error::ensure_none();
-	current_device.synchronize();
+	device.synchronize();
 
 	auto h_d_ptr = cuda::memory::host::make_unique<int[]>(N);
 	cuda::memory::copy(h_d_ptr.get(), d_ptr.get(), N * sizeof(int));
 
-	bool bValid = true;
-
-	for (int i=0; i<N && bValid; i++)
-	{
-		if (h_ptr.get()[i] != h_d_ptr.get()[i])
-		{
-			bValid = false;
-		}
+	auto results_are_correct =	std::equal(h_ptr.get(), h_ptr.get() + N, h_d_ptr.get());
+	if (not results_are_correct) {
+		die_("Results check failed.");
 	}
-
-	std::cout << (bValid ? "SUCCESS" : "FAILURE") << "\n";
-	return bValid ? EXIT_SUCCESS: EXIT_FAILURE;
+	std::cout << "SUCCESS\n";
 }
