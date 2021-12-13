@@ -421,7 +421,16 @@ public:
 	 */
 	bool supports_concurrent_managed_access() const
 	{
-		return (get_attribute(cudaDevAttrConcurrentManagedAccess) != 0);
+		return get_attribute(cudaDevAttrConcurrentManagedAccess);
+	}
+
+	/**
+	 * True if this device supports executing kernels in which blocks can
+	 * directly cooperate beyond the use of global-memory atomics.
+	 */
+	bool supports_block_cooperation() const
+	{
+		return get_attribute(cudaDevAttrCooperativeLaunch);
 	}
 
 	/**
@@ -698,7 +707,7 @@ namespace device {
  */
 inline device_t get(id_t device_id) noexcept
 {
-	return device_t(device_t::wrapping_construction{}, device_id);
+	return { device_t::wrapping_construction{}, device_id };
 }
 
 namespace current {
