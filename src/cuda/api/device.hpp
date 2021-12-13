@@ -30,25 +30,20 @@ class device_t;
 
 namespace device {
 
+namespace detail_ {
+
 /**
  * Returns a proxy for the CUDA device with a given id
  *
  * @param device_id the ID for which to obtain the device proxy
- * @note direct constructor access is blocked so that you don't get the
- * idea you're actually creating devices
+ * @note This is the only function allowed to construct device_t's
+ * directly. We could have let device::get() and others do so
+ * (see below) - but chose not too for consistency with other wrappers
+ * and to avoid requiring multiple friend functions.
  */
-device_t get(id_t device_id) noexcept;
+device_t wrap(id_t id) noexcept;
 
-namespace current {
-
-/**
- * Returns the current device in a wrapper which assumes it is indeed
- * current, i.e. which will not set the current device before performing any
- * other actions.
- */
-device_t get();
-
-} // namespace current
+}
 
 namespace peer_to_peer {
 
@@ -159,17 +154,6 @@ protected: // types
 	using scoped_setter_t = device::current::detail_::scoped_override_t;
 	using flags_t = unsigned;
 
-	///@cond
-
-	/**
-	 * Used by wrapper classes to better "hide" their protected constructors, which take plain numbers,
-	 * from user code - so that users don't get "constructor is protected" error if they mistake a number
-	 * for a wrapper object when passing arguments.
-	 */
-	struct wrapping_construction {};
-
-	///@endcond
-
 public:	// types
 
 	/**
@@ -186,10 +170,10 @@ public:	// types
 
 	public:
 		///@cond
-		global_memory_t(device::id_t id) : device_id_(id) { }
+		explicit global_memory_t(device::id_t id) : device_id_(id) { }
 		///@endcond
 
-		cuda::device_t associated_device() const { return device::get(device_id_); }
+		cuda::device_t associated_device() const { return device::detail_::wrap(device_id_); }
 
 		/**
 		 * Allocate a region of memory on the device
@@ -337,7 +321,7 @@ public:
 	/**
 	 * @brief Obtains a proxy for the device's global memory
 	 */
-	global_memory_t memory() const { return global_memory_t(id_); };
+	global_memory_t memory() const { return global_memory_t{ id_ }; };
 
 	/**
 	 * Obtains the (mostly) non-numeric properties for this device.
@@ -355,7 +339,7 @@ public:
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
 		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
-		return device::get(id);
+		return device::detail_::wrap(id);
 	}
 
 	/**
@@ -671,13 +655,14 @@ protected: // constructors
 	 * @note Only @ref device::current::get() and @ref device::get() should be
 	 * calling this one.
 	 */
-	device_t(wrapping_construction, device::id_t device_id) noexcept : id_( device_id ) { }
+	explicit device_t(device::id_t device_id) noexcept  : id_( device_id ) { }
 
 public: // friends
-	friend device_t device::get(device::id_t) noexcept;
+	friend device_t device::detail_::wrap(device::id_t) noexcept;
 
 protected:
 	// data members
+
 	/**
 	 * The numeric ID of the proxied device.
 	 */
@@ -698,6 +683,14 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 
 namespace device {
 
+namespace detail_ {
+
+inline device_t wrap(id_t id) noexcept
+{
+	return device_t{ id };
+}
+
+} // namespace detail_
 /**
  * Returns a proxy for the CUDA device with a given id
  *
@@ -707,12 +700,17 @@ namespace device {
  */
 inline device_t get(id_t device_id) noexcept
 {
-	return { device_t::wrapping_construction{}, device_id };
+	return detail_::wrap(device_id);
 }
 
 namespace current {
 
-inline device_t get() { return device::get(detail_::get_id()); }
+/**
+ * Returns the current device in a wrapper which assumes it is indeed
+ * current, i.e. which will not set the current device before performing any
+ * other actions.
+ */
+inline device_t get() { return device::detail_::wrap(detail_::get_id()); }
 
 inline void set(device_t device) { detail_::set(device.id()); }
 
