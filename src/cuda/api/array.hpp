@@ -130,7 +130,7 @@ public:
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, handle_type, dimensions_type) noexcept;
 
     handle_type get() const noexcept { return handle_; }
-    device_t associated_device() const noexcept;
+    device_t device() const noexcept;
 	dimensions_type dimensions() const noexcept { return dimensions_; }
 	::std::size_t size() const noexcept { return dimensions().size(); }
 	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }

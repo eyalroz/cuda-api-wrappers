@@ -26,7 +26,7 @@
 namespace cuda {
 
 template <typename T, dimensionality_t NumDimensions>
-device_t array_t<T, NumDimensions>::associated_device() const noexcept
+device_t array_t<T, NumDimensions>::device() const noexcept
 {
     return device::get(device_id_);
 }
@@ -35,7 +35,7 @@ template <typename T, dimensionality_t NumDimensions>
 texture_view::texture_view(
     const cuda::array_t<T, NumDimensions>&  arr,
     texture::descriptor_t                   descriptor)
-    : device_id_(arr.associated_device().id()), owning(true)
+    : device_id_(arr.device().id()), owning(true)
 {
     cudaResourceDesc resource_descriptor;
     memset(&resource_descriptor, 0, sizeof(resource_descriptor));
