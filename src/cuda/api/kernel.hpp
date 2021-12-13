@@ -139,13 +139,13 @@ public: // mutators
 	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		memory::shared::size_t   dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t  block_size_limit = 0,
-		bool                     disable_caching_override = false);
+		bool                     disable_caching_override = false) const;
 
 	template <typename UnaryFunction>
 	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		UnaryFunction            block_size_to_dynamic_shared_mem_size,
 		grid::block_dimension_t  block_size_limit = 0,
-		bool                     disable_caching_override = false);
+		bool                     disable_caching_override = false) const;
 
 	/**
 	 * @brief Indicate the desired carve-out between shared memory and L1 cache when launching
