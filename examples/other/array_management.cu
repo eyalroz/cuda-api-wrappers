@@ -68,7 +68,7 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 
 	const cuda::array::dimensions_t<3> dims = {w, h, d};
 	auto arr = cuda::array::create<float>(device, dims);
-	assert_(arr.associated_device() == device);
+	assert_(arr.device() == device);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
 	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
