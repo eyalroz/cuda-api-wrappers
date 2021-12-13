@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 
 #if TEST_COOPERATIVE_GROUPS
 	try {
-		auto can_launch_cooperatively = stream.device().get_attribute(cudaDevAttrCooperativeLaunch) > 0;
+		auto can_launch_cooperatively = stream.device().supports_block_cooperation();
 		if (can_launch_cooperatively) {
 			auto cooperative_kernel_function = grid_cooperating_foo;
 			auto cooperative_kernel_name = "grid_cooperating_foo";
