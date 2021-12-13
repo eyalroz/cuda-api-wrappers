@@ -496,13 +496,13 @@ inline void kernel_t::opt_in_to_extra_dynamic_memory(cuda::memory::shared::size_
 
 namespace detail_ {
 
-inline grid::complete_dimensions_t
-min_grid_params_for_max_occupancy(
-	const void *ptr,
-	device::id_t device_id,
-	memory::shared::size_t dynamic_shared_memory_size,
-	grid::block_dimension_t block_size_limit,
-	bool disable_caching_override)
+template <typename UnaryFunction>
+inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	const void *             ptr,
+	device::id_t             device_id,
+	UnaryFunction            block_size_to_dynamic_shared_mem_size,
+	grid::block_dimension_t  block_size_limit,
+	bool                     disable_caching_override)
 {
 #if CUDART_VERSION <= 10000
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
@@ -511,10 +511,10 @@ min_grid_params_for_max_occupancy(
 	int block_size { 0 };
 		// Note: only initializing the values her because of a
 		// spurious (?) compiler warning about potential uninitialized use.
-	auto result = cudaOccupancyMaxPotentialBlockSizeWithFlags(
+	auto result = cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(
 		&min_grid_size_in_blocks, &block_size,
 		ptr,
-		static_cast<::std::size_t>(dynamic_shared_memory_size),
+		block_size_to_dynamic_shared_mem_size,
 		static_cast<int>(block_size_limit),
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 	);
@@ -525,7 +525,21 @@ min_grid_params_for_max_occupancy(
 #endif // CUDART_VERSION <= 10000
 }
 
+inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	const void *             ptr,
+	device::id_t             device_id,
+	memory::shared::size_t   dynamic_shared_mem_size,
+	grid::block_dimension_t  block_size_limit,
+	bool                     disable_caching_override)
+{
+	auto always_need_same_shared_mem_size =
+		[dynamic_shared_mem_size](::size_t) { return dynamic_shared_mem_size; };
+	return min_grid_params_for_max_occupancy(
+		ptr, device_id, always_need_same_shared_mem_size, block_size_limit, disable_caching_override);
+}
+
 } // namespace detail_
+
 
 inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	const kernel_t&          kernel,
@@ -541,7 +555,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
-	bool                     disable_caching_override)
+	bool                     disable_caching_override) const
 {
 	return detail_::min_grid_params_for_max_occupancy(
 		ptr_, device_id_, dynamic_shared_memory_size, block_size_limit, disable_caching_override);
@@ -551,24 +565,10 @@ template <typename UnaryFunction>
 grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t  block_size_limit,
-	bool                     disable_caching_override)
+	bool                     disable_caching_override) const
 {
-#if CUDART_VERSION <= 10000
-	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
-#else
-	int min_grid_size_in_blocks, block_size;
-	auto result = cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(
-		&min_grid_size_in_blocks, &block_size,
-		ptr_,
-		block_size_to_dynamic_shared_mem_size,
-		static_cast<int>(block_size_limit),
-		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
-		);
-	throw_if_error(result,
-		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr_) +
-		" on device " + ::std::to_string(device_id_) + ".");
-	return { min_grid_size_in_blocks, block_size };
-#endif // CUDART_VERSION <= 10000
+	return detail_::min_grid_params_for_max_occupancy(
+		ptr_, device_id_, block_size_to_dynamic_shared_mem_size, block_size_limit, disable_caching_override);
 }
 
 #endif // defined __CUDACC__
