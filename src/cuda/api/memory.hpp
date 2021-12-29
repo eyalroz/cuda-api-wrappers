@@ -1607,23 +1607,29 @@ inline bool is_part_of_a_region_pair(const void* ptr)
 
 } // namespace mapped
 
+} // namespace memory
+
+
+namespace symbol {
 /**
  * Locates a CUDA symbol in global or constant device memory
  *
  * @return The region of memory CUDA associates with the symbol
  */
-inline region_t locate(symbol_t symbol)
+inline memory::region_t locate(symbol_t symbol)
 {
-	void* start;
+	void *start;
 	size_t symbol_size;
 	auto api_call_result = cudaGetSymbolAddress(&start, symbol.handle);
-	throw_if_error(api_call_result, "Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
+	throw_if_error(api_call_result,
+		"Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
 	api_call_result = cudaGetSymbolSize(&symbol_size, symbol.handle);
-	throw_if_error(api_call_result, "Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
+	throw_if_error(api_call_result,
+		"Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
 	return {start, symbol_size};
 }
 
-} // namespace memory
+} // namespace symbol
 
 } // namespace cuda
 
