@@ -1706,17 +1706,17 @@ namespace symbol {
  *
  * @return The region of memory CUDA associates with the symbol
  */
-inline memory::region_t locate(symbol_t symbol)
+template <typename T>
+inline memory::region_t locate(T&& symbol)
 {
 	void *start;
 	size_t symbol_size;
-	auto api_call_result = cudaGetSymbolAddress(&start, symbol.handle);
-	throw_if_error(api_call_result,
-		"Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
-	api_call_result = cudaGetSymbolSize(&symbol_size, symbol.handle);
-	throw_if_error(api_call_result,
-		"Could not locate the device memory address for symbol " + cuda::detail_::ptr_as_hex(symbol.handle));
-	return {start, symbol_size};
+	auto api_call_result = cudaGetSymbolAddress(&start, std::forward<T>(symbol));
+	throw_if_error(api_call_result, "Could not locate the device memory address for a symbol");
+	api_call_result = cudaGetSymbolSize(&symbol_size, std::forward<T>(symbol));
+	throw_if_error(api_call_result, "Could not locate the device memory address for the symbol at address"
+		+ cuda::detail_::ptr_as_hex(start));
+	return { start, symbol_size };
 }
 
 } // namespace symbol
