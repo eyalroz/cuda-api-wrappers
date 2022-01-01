@@ -367,13 +367,15 @@ inline void zero(T* ptr)
  * @note Since we assume Compute Capability >= 2.0, all devices support the
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
  * where the data is located, and one does not have to specify this.
+ *
+ * @note the sources and destinations may all be in any memory space addressable
+ * in the the unified virtual address space, which could be host-side memory,
+ * device global memory, device constant memory etc.
  */
 ///@{
 /**
- *  @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
+ * @param destination A pointer to a memory region of size @p num_bytes.
+ * @param source A pointer to a a memory region of size @p num_bytes.
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  */
 inline void copy(void *destination, const void *source, size_t num_bytes)
@@ -385,10 +387,8 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 }
 
 /**
- * @param destination A memory region of the same size as @p source, in 
- *     host memory or on any CUDA device's global memory
- * @param source A region whose contents is to be copied, either in host memory
- *     or on any CUDA device's global memory
+ * @param destination A memory region of the same size as @p source.
+ * @param source A region whose contents is to be copied,.
  */
 inline void copy(void* destination, const_region_t source)
 {
@@ -396,11 +396,9 @@ inline void copy(void* destination, const_region_t source)
 }
 
 /**
- * @param destination A region of memory to which to copy the data in@source, of
- *     size at least that of @p source , either in host memory or on any CUDA
- *     device's global memory.
- * @param source A region whose contents is to be copied, either in host memory
- *     or on any CUDA device's global memory
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A region whose contents is to be copied.
  */
 inline void copy(region_t destination, const_region_t source)
 {
@@ -411,7 +409,40 @@ inline void copy(region_t destination, const_region_t source)
 #endif
 	return copy(destination.start(), source);
 }
+
+/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source An array whose contents is to be copied.
+ */
+template <typename T, size_t N>
+inline void copy(region_t destination, const T(&source)[N])
+{
+#ifndef NDEBUG
+	if (destination.size() < N) {
+		throw ::std::logic_error("Source size exceeds destination size");
+	}
+#endif
+	return copy(destination.start(), source, N);
+}
+
+/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A pointer to a a memory region of size @p num_bytes.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ */
+inline void copy(region_t destination, void* source, size_t num_bytes)
+{
+#ifndef NDEBUG
+	if (destination.size() < num_bytes) {
+		throw ::std::logic_error("Number of bytes to copy exceeds destination size");
+	}
+#endif
+	return copy(destination.start(), source, num_bytes);
+}
 ///@}
+
 
 /**
  * @brief Sets a number of bytes in memory to a fixed value
@@ -849,10 +880,21 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, const s
 }
 
 /**
- * Asynchronously copies data from CUDA arrays into memory spaces.
+ * Asynchronously copies data between memory spaces or within a memory space.
+ *
+ * @note Since we assume Compute Capability >= 2.0, all devices support the
+ * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
+ * where the data is located, and one does not have to specify this.
  *
  * @note asynchronous version of @ref memory::copy
  *
+ * @note the sources and destinations may all be in any memory space addressable
+ * in the the unified virtual address space, which could be host-side memory,
+ * device global memory, device constant memory etc.
+ */
+///@{
+
+/**
  * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
  * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation into this CUDA stream
@@ -873,6 +915,54 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, const s
 #endif
 	copy(destination.start(), source, stream);
 }
+
+/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A region whose contents is to be copied.
+ */
+inline void copy(region_t destination, const_region_t source)
+{
+#ifndef NDEBUG
+	if (destination.size() < source.size()) {
+		throw ::std::logic_error("Can't copy a large region into a smaller one");
+	}
+#endif
+	return copy(destination.start(), source);
+}
+
+/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source An array whose contents is to be copied.
+ */
+template <typename T, size_t N>
+inline void copy(region_t destination, const T(&source)[N], const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (destination.size() < N) {
+		throw ::std::logic_error("Source size exceeds destination size");
+	}
+#endif
+	return copy(destination.start(), source, N, stream);
+}
+
+/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A pointer to a a memory region of size @p num_bytes.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ */
+inline void copy(region_t destination, void* source, size_t num_bytes, const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (destination.size() < num_bytes) {
+		throw ::std::logic_error("Number of bytes to copy exceeds destination size");
+	}
+#endif
+	return copy(destination.start(), source, num_bytes, stream);
+}
+///@}
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
