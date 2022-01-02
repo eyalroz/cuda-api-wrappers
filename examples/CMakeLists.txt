@@ -48,7 +48,7 @@ add_executable(simpleIPC modified_cuda_samples/simpleIPC/simpleIPC.cu)
 IF(NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
 	# compile the kernel into a fatbin : modified_cuda_samples/memMapIPCDrv/memMapIpc_kernel.cu
 	add_executable(memMapIPCDrv
-		modified_cuda_samples/memMapIPCDrv/memMapIPC.cpp
+		modified_cuda_samples/memMapIPCDrv/memMapIPC.cpp 
 		modified_cuda_samples/memMapIPCDrv/child.cpp 
 		modified_cuda_samples/memMapIPCDrv/parent.cpp
 		modified_cuda_samples/memMapIPCDrv/helper_multiprocess.cpp
@@ -63,6 +63,16 @@ IF(NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			MAIN_DEPENDENCY modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 	)
 	add_custom_target(do_build_memMapIPCDrv_kernel ALL DEPENDS memMapIPC_kernel.fatbin)
+	add_executable(vectorAddMMAP modified_cuda_samples/vectorAddMMAP/vectorAddMMAP.cpp)
+	add_custom_command(
+			OUTPUT vectorAddMMAP_kernel.fatbin
+			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
+				--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
+				-o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vectorAddMMAP_kernel.fatbin
+				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
+			MAIN_DEPENDENCY modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
+	)
+	add_custom_target(do_build_vectorAddMMAP_kernel ALL DEPENDS vectorAddMMAP_kernel.fatbin)
 endif()
 add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 add_executable(asyncAPI modified_cuda_samples/asyncAPI/asyncAPI.cu)

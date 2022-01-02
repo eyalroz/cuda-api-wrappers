@@ -66,6 +66,7 @@ int main()
 	// since the copying-back of data is not something we've waited for
 	device.synchronize();
 
+
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
 		if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)  {
