@@ -48,16 +48,6 @@ struct compute_architecture_t {
 	unsigned major;
 
 	const char* name() const;
-	unsigned max_warp_schedulings_per_processor_cycle() const;
-	unsigned max_resident_warps_per_processor() const;
-	unsigned max_in_flight_threads_per_processor() const;
-
-	/**
-	 * @note On some architectures, the shared memory / L1 balance is configurable,
-	 * so you might not get the maxima here without making this configuration
-	 * setting
-	 */
-	memory::shared::size_t max_shared_memory_per_block() const;
 
 	constexpr bool is_valid() const noexcept;
 
@@ -89,11 +79,10 @@ struct compute_capability_t {
 	constexpr bool is_valid() const noexcept;
 	unsigned max_warp_schedulings_per_processor_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
+	// Note: Based on _ConvertSMVer2Cores() in the CUDA samples helper code
 	unsigned max_in_flight_threads_per_processor() const;
 	/**
-	 * @note On some architectures, the shared memory / L1 balance is configurable,
-	 * so you might not get the maxima here without making this configuration
-	 * setting
+	 * @note On some architectures, the shared memory / L1 balance is configurable.
 	 */
 	memory::shared::size_t max_shared_memory_per_block() const;
 
