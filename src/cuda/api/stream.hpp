@@ -275,7 +275,7 @@ protected: // static methods
 
 	 */
 	template <typename Callable>
-	static void stream_launched_host_function_adapter(void * device_id_stream_handle_and_callable)
+	static void CUDART_CB stream_launched_host_function_adapter(void * device_id_stream_handle_and_callable)
 	{
 		using triplet_type = ::std::tuple<device::id_t, stream::handle_t, Callable>;
 		auto* triplet_ptr = reinterpret_cast<triplet_type*>(device_id_stream_handle_and_callable);
