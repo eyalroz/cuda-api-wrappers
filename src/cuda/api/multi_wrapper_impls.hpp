@@ -524,7 +524,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	throw_if_error(result,
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr) +
 			" on device " + ::std::to_string(device_id) + ".");
-	return { min_grid_size_in_blocks, block_size };
+	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 #endif // CUDART_VERSION <= 10000
 }
 
