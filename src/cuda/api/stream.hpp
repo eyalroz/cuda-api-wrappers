@@ -40,7 +40,7 @@ enum : bool {
 	nonblocking = async,
 };
 
-#if CUDA_VERSION >= 11000
+#if CUDART_VERSION >= 11000
 /**
  * Possible synchronization behavior of a host thread when performing a synchronous action
  * on a stream (in particular, synchronizing with a stream).
@@ -80,7 +80,7 @@ enum synchronization_policy_t : typename std::underlying_type<cudaSynchronizatio
 	 */
 	block  = cudaSyncPolicyBlockingSync
 };
-#endif // CUDA_VERSION >= 11000
+#endif // CUDART_VERSION >= 11000
 
 namespace detail_ {
 
@@ -595,7 +595,7 @@ public: // mutators
 		cuda::synchronize(*this);
 	}
 
-#if CUDA_VERSION >= 11000
+#if CUDART_VERSION >= 11000
 	stream::synchronization_policy_t synchronization_policy()
 	{
 		device::current::detail_::scoped_override_t set_device_for_this_scope(device_id_);
@@ -737,7 +737,7 @@ inline void synchronize(const stream_t& stream)
 		+ stream::detail_::identify(stream.handle(), stream.device().id()));
 }
 
-#if CUDA_VERSION >= 11000
+#if CUDART_VERSION >= 11000
 /**
  * Overwrite all "attributes" of one stream with those of another
  *
@@ -757,10 +757,10 @@ inline void copy_attributes(const stream_t& dest, const stream_t& src)
 	}
 #endif
 	device::current::scoped_override_t set_device_for_this_scope(dest.device());
-	auto status = cudaStreamCopyAttributes(dest.id(), src.id());
+	auto status = cudaStreamCopyAttributes(dest.handle(), src.handle());
 	throw_if_error(status);
 }
-#endif // CUDA_VERSION >= 11000
+#endif // CUDART_VERSION >= 11000
 
 } // namespace cuda
 
