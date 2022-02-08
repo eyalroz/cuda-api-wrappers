@@ -27,11 +27,17 @@ class kernel_t;
 
 namespace kernel {
 
-namespace detail_ {
-
+/**
+ * Obtain a proxy object for a CUDA kernel
+ *
+ * @note This is a named constructor idiom, existing of direct access to the ctor
+ * of the same signature, to emphasize that a new kernel is _not_ somehow created.
+ *
+ * @param device_id Device on which the texture is located
+ * @param ptr pointer to the global device address of the kernel's executable code
+ * @return a wrapper object associated with the specified kernel
+ */
 inline kernel_t wrap(device::id_t device_id, const void* ptr);
-
-} // namespace detail
 
 /**
  * @brief a wrapper around `cudaFuncAttributes`, offering
@@ -205,7 +211,7 @@ protected: // ctors & dtor
 public: // ctors & dtor
 	~kernel_t() = default;
 
-	friend kernel_t kernel::detail_::wrap(device::id_t, const void* ptr);
+	friend kernel_t kernel::wrap(device::id_t, const void* ptr);
 
 protected: // data members
 	const device::id_t device_id_;
@@ -214,14 +220,10 @@ protected: // data members
 
 namespace kernel {
 
-namespace detail_ {
-
 inline kernel_t wrap(device::id_t device_id, const void* function_ptr)
 {
 	return { device_id, reinterpret_cast<const void*>(function_ptr) };
 }
-
-} // namespace detail_
 
 template<typename KernelFunctionPtr>
 kernel_t wrap(const device_t &device, KernelFunctionPtr function_ptr);

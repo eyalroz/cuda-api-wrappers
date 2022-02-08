@@ -98,7 +98,7 @@ inline handle_t export_(event_t& event)
 
 inline event_t import(device_t& device, const handle_t& handle)
 {
-	return event::detail_::wrap(device.id(), detail_::import(handle), do_not_take_ownership);
+	return event::wrap(device.id(), detail_::import(handle), do_not_take_ownership);
 }
 
 } // namespace ipc
@@ -110,7 +110,7 @@ inline event_t import(device_t& device, const handle_t& handle)
 
 inline stream_t device_t::default_stream() const noexcept
 {
-	return stream::detail_::wrap(id(), stream::default_stream_handle);
+	return stream::wrap(id(), stream::default_stream_handle);
 }
 
 inline stream_t
@@ -119,7 +119,7 @@ device_t::create_stream(
 	stream::priority_t  priority) const
 {
 	device::current::detail_::scoped_override_t set_device_for_this_scope(id_);
-	return stream::detail_::wrap(id(), stream::detail_::create_on_current_device(
+	return stream::wrap(id(), stream::detail_::create_on_current_device(
 		will_synchronize_with_default_stream, priority), do_take_ownership);
 }
 
@@ -644,7 +644,7 @@ kernel_t wrap(const device_t &device, KernelFunctionPtr function_ptr)
 		::std::is_pointer<KernelFunctionPtr>::value
 			and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
 		"function_ptr must be a bona fide pointer to a kernel (__global__) function");
-	return detail_::wrap(device.id(), reinterpret_cast<const void*>(function_ptr));
+	return wrap(device.id(), reinterpret_cast<const void*>(function_ptr));
 }
 
 } // namespace kernel

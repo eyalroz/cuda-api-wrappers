@@ -42,11 +42,21 @@ struct descriptor_t : public cudaTextureDesc {
 	}
 };
 
-namespace detail_ {
-
-inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept;
-
-}  // namespace detail_
+/**
+ * Obtain a proxy object for an already-existing CUDA texture view
+ *
+ * @note This is a named constructor idiom, existing of direct access to the ctor
+ * of the same signature, to emphasize that a new texture view is _not_ created.
+ *
+ * @param device_id Device on which the texture is located
+ * @param handle raw CUDA API handle for the texture view
+ * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
+ * the texture view when it destructs (making an "owning" texture view wrapper;
+ * otherwise, it is assume that some other code "owns" the texture view and will
+ * destroy it when necessary (and not while the wrapper is being used!)
+ * @return a  wrapper object associated with the specified texture view
+ */
+ inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept;
 
 }  // namespace texture
 
@@ -115,7 +125,7 @@ protected: // constructor
 
 public: // friendship
 
-	friend texture_view texture::detail_::wrap(device::id_t, raw_handle_type, bool) noexcept;
+	friend texture_view texture::wrap(device::id_t, raw_handle_type, bool) noexcept;
 
 protected:
     device::id_t device_id_;
@@ -135,14 +145,12 @@ inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcep
 }
 
 namespace texture {
-namespace detail_ {
 
 inline texture_view wrap(device::id_t device_id, texture::raw_handle_t handle, bool take_ownership) noexcept
 {
 	return texture_view { device_id, handle, take_ownership };
 }
 
-} // namespace detail_
 } // namespace texture
 
 }  // namespace cuda

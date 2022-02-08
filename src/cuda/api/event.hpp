@@ -62,26 +62,24 @@ class event_t;
 
 namespace event {
 
-namespace detail_ {
 /**
- * @brief Wrap an existing CUDA event in a @ref event_t instance.
+ * Obtain a proxy object for an already-existing CUDA event
  *
- * @param device_id ID of the device for which the stream is defined
- * @param event_handle handle for the pre-existing event
- * @param take_ownership When set to `false`, the CUDA event
- * will not be destroyed along with proxy; use this setting
- * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to `true`,
- * the proxy class will act as it does usually, destroying the event
- * when being destructed itself.
- * @return The constructed `cuda::event_t`.
+ * @note This is a named constructor idiom, existing of direct access to the ctor
+ * of the same signature, to emphasize that a new event is _not_ created.
+ *
+ * @param device_id Device to which the event is related
+ * @param event_handle of the event for which to obtain a proxy
+ * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
+ * the event when it destructs (making an "owning" event wrapper; otherwise, it is
+ * assume that some other code "owns" the event and will destroy it when necessary
+ * (and not while the wrapper is being used!)
+ * @return an event wrapper associated with the specified event
  */
 event_t wrap(
 	device::id_t  device_id,
-	handle_t          event_handle,
+	handle_t      event_handle,
 	bool          take_ownership = false) noexcept;
-
-} // namespace detail_
 
 } // namespace event
 
@@ -202,7 +200,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend event_t event::detail_::wrap(device::id_t device_id, event::handle_t event_handle, bool take_ownership) noexcept;
+	friend event_t event::wrap(device::id_t device_id, event::handle_t event_handle, bool take_ownership) noexcept;
 
 public: // constructors and destructor
 
@@ -258,30 +256,15 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
-namespace detail_ {
-
-/**
- * Obtain a proxy object for an already-existing CUDA event
- *
- * @note This is a named constructor idiom instead of direct access to the ctor of the same
- * signature, to emphase whot this construction means - a new event is not
- * created.
- *
- * @param device_id Device to which the event is related
- * @param event_handle of the event for which to obtain a proxy
- * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
- * the event when it destructs (making an "owning" event wrapper; otherwise, it is
- * assume that some other code "owns" the event and will destroy it when necessary
- * (and not while the wrapper is being used!)
- * @return an event wrapper associated with the specified event
- */
 inline event_t wrap(
 	device::id_t  device_id,
-	handle_t          event_handle,
+	handle_t      event_handle,
 	bool          take_ownership) noexcept
 {
 	return event_t(device_id, event_handle, take_ownership);
 }
+
+namespace detail_ {
 
 // Note: For now, event_t's need their device's ID - even if it's the current device;
 // that explains the requirement in this function's interface

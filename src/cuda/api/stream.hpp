@@ -150,19 +150,29 @@ inline device::id_t associated_device(stream::handle_t stream_handle)
 
 inline void record_event_on_current_device(device::id_t current_device_id, stream::handle_t stream_handle, event::handle_t event_handle);
 
+} // namespace detail_
+
 /**
- * Wraps a CUDA stream handle in a stream_t proxy instance,
- * possibly also taking on the responsibility of eventually
- * destroying the stream
+ * @brief Wrap an existing stream in a @ref stream_t instance.
  *
- * @return a stream_t proxy for the CUDA stream
+ * @note This is a named constructor idiom, existing of direct access to the ctor
+ * of the same signature, to emphasize that a new stream is _not_ created.
+ *
+ * @param device_id ID of the device for which the stream is defined
+ * @param stream_handle handle of the pre-existing stream
+ * @param take_ownership When set to `false`, the stream
+ * will not be destroyed along with the wrapper; use this setting
+ * when temporarily working with a stream existing irrespective of
+ * the current context and outlasting it. When set to `true`,
+ * the proxy class will act as it does usually, destroying the stream
+ * when being destructed itself.
+ * @return an instance of the stream proxy class, with the specified
+ * device-stream combination.
  */
 stream_t wrap(
 	device::id_t  device_id,
 	handle_t      stream_handle,
 	bool          take_ownership = false) noexcept;
-
-} // namespace detail_
 
 } // namespace stream
 
@@ -625,7 +635,7 @@ public: // constructors and destructor
 	stream_t(const stream_t& other) noexcept :
 	stream_t(other.device_id_, other.handle_, false) { }
 
-	stream_t(stream_t&& other) noexcept : 
+	stream_t(stream_t&& other) noexcept :
 		stream_t(other.device_id_, other.handle_, other.owning)
 	{
 		other.owning = false;
@@ -646,7 +656,7 @@ public: // operators
 
 public: // friendship
 
-	friend stream_t stream::detail_::wrap(device::id_t device_id, stream::handle_t stream_handle, bool take_ownership) noexcept;
+	friend stream_t stream::wrap(device::id_t device_id, stream::handle_t stream_handle, bool take_ownership) noexcept;
 
 	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 	{
@@ -673,27 +683,6 @@ inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 namespace stream {
 
 namespace detail_ {
-/**
- * @brief Wrap an existing stream in a @ref stream_t instance.
- *
- * @param device_id ID of the device for which the stream is defined
- * @param stream_handle handle of the pre-existing stream
- * @param take_ownership When set to `false`, the stream
- * will not be destroyed along with the wrapper; use this setting
- * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to `true`,
- * the proxy class will act as it does usually, destroying the stream
- * when being destructed itself.
- * @return an instance of the stream proxy class, with the specified
- * device-stream combination.
- */
-inline stream_t wrap(
-	device::id_t  device_id,
-	handle_t          stream_handle,
-	bool          take_ownership /* = false, see declaration */) noexcept
-{
-	return stream_t(device_id, stream_handle, take_ownership);
-}
 
 inline stream_t create(
 	device::id_t  device_id,
@@ -708,6 +697,13 @@ inline stream_t create(
 
 } // namespace detail_
 
+inline stream_t wrap(
+	device::id_t  device_id,
+	handle_t      stream_handle,
+	bool          take_ownership /* = false, see declaration */) noexcept
+{
+	return stream_t(device_id, stream_handle, take_ownership);
+}
 /**
  * @brief Create a new stream (= queue) on a CUDA device.
  *

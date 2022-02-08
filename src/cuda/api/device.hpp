@@ -30,8 +30,6 @@ class device_t;
 
 namespace device {
 
-namespace detail_ {
-
 /**
  * Returns a proxy for the CUDA device with a given id
  *
@@ -42,8 +40,6 @@ namespace detail_ {
  * and to avoid requiring multiple friend functions.
  */
 device_t wrap(id_t id) noexcept;
-
-}
 
 namespace peer_to_peer {
 
@@ -173,7 +169,7 @@ public:	// types
 		explicit global_memory_t(device::id_t id) : device_id_(id) { }
 		///@endcond
 
-		cuda::device_t associated_device() const { return device::detail_::wrap(device_id_); }
+		cuda::device_t associated_device() const { return device::wrap(device_id_); }
 
 		/**
 		 * Allocate a region of memory on the device
@@ -339,7 +335,7 @@ public:
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
 		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
-		return device::detail_::wrap(id);
+		return device::wrap(id);
 	}
 
 	/**
@@ -658,7 +654,7 @@ protected: // constructors
 	explicit device_t(device::id_t device_id) noexcept  : id_( device_id ) { }
 
 public: // friends
-	friend device_t device::detail_::wrap(device::id_t) noexcept;
+	friend device_t device::wrap(device::id_t) noexcept;
 
 protected:
 	// data members
@@ -683,14 +679,11 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 
 namespace device {
 
-namespace detail_ {
-
 inline device_t wrap(id_t id) noexcept
 {
 	return device_t{ id };
 }
 
-} // namespace detail_
 /**
  * Returns a proxy for the CUDA device with a given id
  *
@@ -700,7 +693,7 @@ inline device_t wrap(id_t id) noexcept
  */
 inline device_t get(id_t device_id) noexcept
 {
-	return detail_::wrap(device_id);
+	return wrap(device_id);
 }
 
 namespace current {
@@ -710,7 +703,7 @@ namespace current {
  * current, i.e. which will not set the current device before performing any
  * other actions.
  */
-inline device_t get() { return device::detail_::wrap(detail_::get_id()); }
+inline device_t get() { return device::wrap(detail_::get_id()); }
 
 inline void set(device_t device) { detail_::set(device.id()); }
 
