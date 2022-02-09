@@ -348,7 +348,7 @@ inline device_t event_t::device() const
 inline context_t event_t::context() const
 {
 	constexpr const bool dont_take_ownership { false };
-	return context::detail_::wrap(device_id(), context_handle_, dont_take_ownership);
+	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 
 
@@ -376,7 +376,7 @@ inline device_t stream_t::device() const noexcept
 inline context_t stream_t::context() const noexcept
 {
 	constexpr const bool dont_take_ownership { false };
-	return context::detail_::wrap(device_id_, context_handle_, dont_take_ownership);
+	return context::wrap(device_id_, context_handle_, dont_take_ownership);
 }
 
 inline void stream_t::enqueue_t::wait(const event_t& event_)
@@ -465,7 +465,7 @@ inline context_t pointer_t<T>::context() const
 	context::handle_t context_handle;
 	void* value_ptrs[] = {&device_id, &context_handle};
 	pointer::detail_::get_attributes(2, attributes, value_ptrs, ptr_);
-	return context::detail_::wrap(device_id, context_handle);
+	return context::wrap(device_id, context_handle);
 }
 
 namespace async {
@@ -1365,7 +1365,7 @@ inline context_t create_and_push(
 {
 	auto handle = detail_::create_and_push(device.id(), synch_scheduling_policy, keep_larger_local_mem_after_resize);
 	bool take_ownership = true;
-	return context::detail_::wrap(device.id(), handle, take_ownership);
+	return context::wrap(device.id(), handle, take_ownership);
 }
 
 inline context_t create(
@@ -1445,7 +1445,7 @@ inline device_t context_t::global_memory_type::associated_device() const
 inline context_t context_t::global_memory_type::associated_context() const
 {
     constexpr const bool non_owning { false };
-    return cuda::context::detail_::wrap(device_id_, context_handle_, non_owning);
+    return cuda::context::wrap(device_id_, context_handle_, non_owning);
 }
 
 

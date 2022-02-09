@@ -53,6 +53,27 @@ struct stream_priority_range_t {
 	}
 };
 
+/**
+ * Obtain a wrapper for an already-existing CUDA context
+ *
+ * @note This is a named constructor idiom instead of direct access to the ctor of the same
+ * signature, to emphase what this construction means - a new context is _not_
+ * created.
+ *
+ * @param device_id Device with which the context is associated
+ * @param context_id id of the context to wrap with a proxy
+ * @param take_ownership when true, the wrapper will have the CUDA driver destroy
+ * the context when the wrapper itself destruct; otherwise, it is assumed
+ * that the context is "owned" elsewhere in the code, and that location or entity
+ * is responsible for destroying it when relevant (possibly after this wrapper
+ * ceases to exist)
+ * @return a context wrapper associated with the specified context
+ */
+context_t wrap(
+	device::id_t       device_id,
+	context::handle_t  context_id,
+	bool               take_ownership = false) noexcept;
+
 namespace detail_ {
 
 ::std::string identify(const context_t& context);
@@ -91,22 +112,6 @@ inline device::id_t get_device_id(handle_t context_handle)
 	return device_id;
 }
 
-
-
-/**
- * @brief Wrap an existing CUDA context in a @ref context_t instance
- *
- * @param device_id ID of the device for which the context is defined
- * @param context_id
- * @param take_ownership When set to `false`, the CUDA context
- * will not be destroyed along with its proxy. When set to `true`,
- * the proxy class will destroy the context when itself being destructed.
- * @return The constructed `cuda::context_t`.
- */
-context_t wrap(
-	device::id_t       device_id,
-	context::handle_t  context_id,
-	bool               take_ownership = false) noexcept;
 
 context_t from_handle(
 	context::handle_t  context_handle,
@@ -615,7 +620,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend context_t context::detail_::wrap(
+	friend context_t context::wrap(
 			device::id_t device_id,
 			context::handle_t context_id,
 			bool take_ownership) noexcept;
@@ -684,24 +689,6 @@ inline bool operator!=(const context_t& lhs, const context_t& rhs)
 
 namespace context {
 
-namespace detail_ {
-
-/**
- * Obtain a wrapper for an already-existing CUDA context
- *
- * @note This is a named constructor idiom instead of direct access to the ctor of the same
- * signature, to emphase what this construction means - a new context is _not_
- * created.
- *
- * @param device_id Device with which the context is associated
- * @param context_id id of the context to wrap with a proxy
- * @param take_ownership when true, the wrapper will have the CUDA driver destroy
- * the cuntext when the wrapper itself destruct; otherwise, it is assumed
- * that the context is "owned" elsewhere in the code, and that location or entity
- * is responsible for destroying it when relevant (possibly after this wrapper
- * ceases to exist)
- * @return a context wrapper associated with the specified context
- */
 inline context_t wrap(
 	device::id_t       device_id,
 	handle_t           context_id,
@@ -709,6 +696,8 @@ inline context_t wrap(
 {
 	return { device_id, context_id, take_ownership };
 }
+
+namespace detail_ {
 
 inline context_t from_handle(
 	context::handle_t  context_handle,
@@ -803,7 +792,7 @@ inline context_t pop()
 	// on the stack, this incurs an extra API call beyond just the popping...
 	auto handle = context::current::detail_::pop();
 	auto device_id = context::detail_::get_device_id(handle);
-	return context::detail_::wrap(device_id, handle, do_not_take_ownership);
+	return context::wrap(device_id, handle, do_not_take_ownership);
 }
 
 namespace detail_ {

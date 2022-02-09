@@ -29,16 +29,12 @@ namespace link {
 
 using handle_t = CUlinkState;
 
-namespace detail_ {
-
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
 	context::handle_t  context,
 	link::handle_t     handle,
 	link::options_t    options,
 	bool               take_ownership = false) noexcept;
-
-} // namespace detail_
 
 inline link_t create(const void* image, link::options_t options);
 
@@ -136,7 +132,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend link_t link::detail_::wrap(context::handle_t context, link::handle_t handle, link::options_t, bool take_ownership) noexcept;
+	friend link_t link::wrap(context::handle_t context, link::handle_t handle, link::options_t, bool take_ownership) noexcept;
 
 public: // constructors and destructor
 
@@ -187,14 +183,12 @@ inline link_t create(link::options_t options = link::options_t{})
 	);
 	throw_if_error(status, "Failed creating a new link ");
 	auto do_take_ownership = true;
-	return detail_::wrap(
+	return wrap(
 		context::current::detail_::get_handle(),
 		new_link_handle,
 		options,
 		do_take_ownership);
 }
-
-namespace detail_ {
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
@@ -205,8 +199,6 @@ inline link_t wrap(
 {
 	return link_t{context, handle, options, take_ownership};
 }
-
-} // namespace detail_
 
 } // namespace link
 
