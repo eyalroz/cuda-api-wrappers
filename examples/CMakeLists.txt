@@ -105,6 +105,18 @@ add_executable(unified_addressing by_runtime_api_module/unified_addressing.cpp)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
 add_executable(manipulate_current_device other/manipulate_current_device.cu)
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp )
+add_executable(jitify other/jitify/jitify.cpp)
+set(jitify_headers_target_dir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/example_headers)
+file(MAKE_DIRECTORY ${jitify_headers_target_dir})
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${jitify_headers_target_dir})
+file(GLOB jitify_headers ${CMAKE_CURRENT_SOURCE_DIR}/other/jitify/*.cuh)
+foreach(hdr ${jitify_headers})
+	add_custom_command(
+		TARGET jitify
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${hdr} ${jitify_headers_target_dir})
+endforeach()
+target_link_libraries(jitify nvrtc stdc++fs)
 
 if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
 
