@@ -364,6 +364,11 @@ using block_dimensions_t = dimensions_t;
 struct complete_dimensions_t {
 	grid::dimensions_t grid;
 	grid::block_dimensions_t block;
+
+	static constexpr __host__ __device__ complete_dimensions_t point()
+	{
+		return { grid::block_dimensions_t::point(), grid::dimensions_t::point() };
+	}
 };
 
 constexpr inline bool operator==(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept
