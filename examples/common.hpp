@@ -113,6 +113,19 @@ std::ostream& operator<<(std::ostream& os, const cuda::stream_t& stream)
 	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
+std::ostream &operator<<(std::ostream &os, const cuda::rtc::compilation_options_t &opts)
+{
+	auto marshalled = opts.marshal();
+//	os << '(' << marshalled.option_ptrs().size() << ") compilation options: ";
+	bool first_option{true};
+	for (auto opt: marshalled.option_ptrs()) {
+		if (first_option) { first_option = false; }
+		else { os << ' '; }
+		os << opt;
+	}
+	return os;
+}
+
 std::string to_string(const cuda::context_t& context)
 {
 	std::stringstream ss;
