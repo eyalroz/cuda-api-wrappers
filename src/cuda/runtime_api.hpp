@@ -32,6 +32,7 @@
 #include <cuda/api/pci_id_impl.hpp>
 #include <cuda/api/multi_wrapper_impls.hpp>
 #include <cuda/api/kernel.hpp>
+#include <cuda/api/launch_configuration.hpp>
 #include <cuda/api/kernel_launch.hpp>
 
 #endif // CUDA_RUNTIME_API_WRAPPERS_HPP_
