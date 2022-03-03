@@ -1,7 +1,7 @@
 /**
  * @file kernel_launch.hpp
  *
- * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
+ * @brief Variadic, chevron-less API wrappers for the CUDA kernel launch mechanism.
  *
  * This file has two stand-alone functions used for launching kernels - by
  * application code directly and by other API wrappers (e.g. @ref cuda::device_t
@@ -20,22 +20,13 @@
  * rather easy to mix up shared memory sizes with stream IDs; grid and
  * block dimensions with each other; and even grid/block dimensions with
  * the scalar parameters - since a `dim3` is constructible from
- * integral values. Instead, we enforce a launch configuration structure:
- * {@ref cuda::launch_configuration_t}.
+ * integral values. Instead, we enforce use of the launch configuration
+ * structure: @ref cuda::launch_configuration_t .
  * </ul>
  *
- * @note You'd probably better avoid launching kernels using these
- * function directly, and go through the @ref cuda::stream_t or @ref cuda::device_t
- * proxy classes' launch mechanism (e.g.
- * `my_stream.enqueue.kernel_launch(...)`).
- *
- * @note Even though when you use this wrapper, your code will not have the silly
- * chevron, you can't use it from regular `.cpp` files compiled with your host
- * compiler. Hence the `.cuh` extension. You _can_, however, safely include this
- * file from your `.cpp` for other definitions. Theoretically, we could have
- * used the `cudaLaunchKernel` API function, by creating an array on the stack
- * which points to all of the other arguments, but that's kind of redundant.
- *
+ * @note Even though the wrappers here lets you avoide the silly triple-
+ * chevrons, you can't use it from regular `.cpp` files compiled with your
+ * host compiler - hence the `.cuh` extension of this file.
  */
 
 #pragma once
@@ -61,12 +52,12 @@ class stream_t;
 ///@endcond
 
 /**
- * A named constructor idiom for {@ref grid::dimensions_t},
+ * A named constructor idiom for @ref grid::dimensions_t,
  * which, when used, will result in a grid with a single block.
  */
 constexpr grid::dimensions_t single_block() { return 1; }
 /**
- * A named constructor idiom for {@ref grid::dimensions_t},
+ * A named constructor idiom for @ref grid::dimensions_t,
  * which, when used, will result in a grid whose blocks have
  * a single thread
  */
@@ -180,7 +171,7 @@ inline void enqueue_launch(
  * @param launch_configuration not all launches of the same kernel are identical: The launch may be configured
  * to use more of less blocks in the grid, to allow blocks dynamic memory, to control the block's dimensions
  * etc; this parameter defines that extra configuration outside the kernels' actual source. See also
- * {@ref cuda::launch_configuration_t}.
+ * @ref cuda::launch_configuration_t.
  * @param parameters whatever parameters @p kernel_function takes
  */
 template<typename Kernel, typename... KernelParameters>
@@ -203,4 +194,4 @@ void launch(
 
 } // namespace cuda
 
-#endif // CUDA_KERNEL_LAUNCH_HPP_
+#endif // CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
