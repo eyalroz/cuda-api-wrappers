@@ -323,6 +323,25 @@ using block_dimensions_t = dimensions_t;
 struct complete_dimensions_t {
 	grid::dimensions_t grid;
 	grid::block_dimensions_t block;
+
+	/**
+	 * @brief The overall dimensions, in thread, of the launch grid
+	 */
+	constexpr __host__ __device__ grid::dimensions_t flatten() const {
+		return {
+			block.x * grid.x,
+			block.y * grid.y,
+			block.z * grid.z
+		};
+	}
+
+	constexpr __host__ __device__ size_t volume() const { return flatten().volume(); }
+	constexpr __host__ __device__ size_t dimensionality() const { return flatten().dimensionality(); }
+
+	static constexpr __host__ __device__ complete_dimensions_t point()
+	{
+		return { dimensions_t::point(), block_dimensions_t::point() };
+	}
 };
 
 constexpr inline bool operator==(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept

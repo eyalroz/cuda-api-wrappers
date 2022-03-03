@@ -80,17 +80,6 @@ struct launch_configuration_t {
 		dynamic_shared_mem,
 		thread_block_cooperation)
 	{ }
-
-	/**
-	 * @brief The overall dimensions, in thread, of the launch grid
-	 */
-	constexpr grid::dimensions_t combined_grid_dimensions() const {
-		return {
-			dimensions.block.x * dimensions.grid.x,
-			dimensions.block.y * dimensions.grid.y,
-			dimensions.block.z * dimensions.grid.z
-		};
-	}
 };
 
 /**
