@@ -80,6 +80,10 @@ struct launch_configuration_t {
 		dynamic_shared_mem,
 		thread_block_cooperation)
 	{ }
+
+   // These can be made constexpr in C++14
+   launch_configuration_t& operator=(const launch_configuration_t& other) = default;
+   launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
 /**
