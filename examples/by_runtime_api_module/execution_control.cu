@@ -107,6 +107,16 @@ int main(int argc, char **argv)
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
+	{
+		// Copy and move construction and assignment of launch configurations
+		auto launch_config_2 = cuda::make_launch_config(2, 2, 2);
+		auto launch_config_3 = cuda::make_launch_config(3, 3, 3);
+		[[maybe_unused]] cuda::launch_configuration_t launch_config_4{launch_config};
+		launch_config_4 = launch_config_2;
+		launch_config_4 = std::move(launch_config_3);
+		[[maybe_unused]] cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
+	}
+
 	cuda::launch(kernel_function, launch_config, bar);
 	cuda::device::current::get().synchronize();
 
