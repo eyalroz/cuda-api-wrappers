@@ -1,30 +1,65 @@
-# cuda-api-wrappers:<br> Thin C++-flavored wrappers for the CUDA APIs: Runtime, Driver, NVRTC and NVTX
+# Thin C++-flavored wrappers for the CUDA APIs:<br> Runtime, Driver, NVRTC and NVTX
 
 <!--Branch Build Status: Master [![Master Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=master)](https://travis-ci.com/eyalroz/cuda-api-wrappers) | Development: [![Development Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=development)](https://travis-ci.com/eyalroz/cuda-api-wrappers) -->
 
-nVIDIA provides two main APIs for the use of [CUDA](https://developer.nvidia.com/cuda-zone): The
-[Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html) and the
-[Driver API](http://docs.nvidia.com/cuda/cuda-driver-api/index.html); and both are intended for use in C and C++ code. As such, they use a C-style API, being the lower common denominator (with a few [notable exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html) of templated function overloads).
 
-This library provides wrapper objects and functions around the Runtime API and the Driver API, as well as the [NVRTC](https://docs.nvidia.com/cuda/nvrtc/index.html) and
-[NVTX](https://docs.nvidia.com/cuda/profiler-users-guide/index.html#nvtx) libraries. These allow us to embrace many of the features of C++ (including some C++11), and may of the community-recommended [C++ core guidelines](https://github.com/isocpp/CppCoreGuidelines) when using CUDA. Unlike some higher-level libraries, however (such as [Thrust](https://thrust.github.io/) - it does not constrain expressivity vis-a-vis the APIs, nor does it raise the level of abstraction: Using `cuda-api-wrappers`, you still have your devices, streams, events and so on - but they will be more convenient to work with in more C++-idiomatic ways.
+| Table of contents |
+|:------------------|
+|<sub>[General description](#general-description)<br>  - [Key features](#key-features)<br>[Motivation](#motivation)<br>[Detailed documentation](#detailed-documentation)<br>[Requirements](#requirements)<br>[Coverage of the APIs](#coverage-of-the-apis)<br>[A taste of some features in play](#a-taste-of-some-features-in-play)<br>[Example programs](#example-programs)<br>  - [Modified CUDA samples](#modified-cuda-samples)<br>  - ['Coverage' programs - by API module](#coverage-programs---by-api-module)<br>[Bugs, suggestions, feedback](#bugs-suggestions-feedback)</sub>|
 
-Moreover, these wrappers offer seamless integration of all components together: Runtime, Driver, NVRTC and NVTX.
 
-## Key features
+## General description
 
-- All functions and methods throw **exceptions** on failure - no need to check return values (the exceptions carry the status information).
-- Consequently, methods and **functions return what they produce**, so there is no need to pass pointers to pre-allocated result variables.
-- Judicious **namespacing** (and some internal namespace-like classes) for better clarity and for semantically grouping related functionality together.
-- There are **proxy/wrapper objects** for devices, streams, events, kernels (Runtime & Driver API), contexts, modules, link processes (Driver API), compiled programs (NVRTC) timed intervals and points (NVTX) and so on - all using [RAII](http://en.cppreference.com/w/cpp/language/raii) to relieve you of having free or destroy resources yourself.
-- You can  **mostly forget about numeric IDs andhandles**; the proxy classes will fit everywhere.
-- Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators**.
+This is a library of integrated _wrappers_ around the core parts of NVIDIA's [CUDA](https://developer.nvidia.com/cuda-zone) execution ecosystem:
+
+* The lower-level [CUDA Driver API](http://docs.nvidia.com/cuda/cuda-driver-api/index.html)
+* The slightly higher-level CUDA [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html)
+* NVIDIA's dynamic CUDA code compilation library, [NVRTC](http://docs.nvidia.com/cuda/nvrtc/index.html)
+* The NVIDIA profiler in-program API, also known as [NVTX](https://docs.nvidia.com/cuda/profiler-users-guide/index.html#nvtx) (the NVIDIA Toolkit Extensions library).
+
+It is intended for those who would otherwise use these APIs directly, to make working with them be more intuitive and consistent, making use of modern C++ language capabilities, programming idioms and best practices. In a nutshell - making CUDA API work more fun :-)
+
+Also, and importantly - while the wrappers seem to be "high-level", more "abstract" code - they are nothing more than a modern-C++-aesthetic arrangement of NVIDIA's own APIs. The wrapper library does not force any abstractions above CUDA's own, nor conventions regarding where to place data, how and when to perform synchronization, etc.; you have the complete range of expression of the underlying APIs.
+
+
+### Key features
+
+In contrast to the above, this library provides:
+
+- **Seamlessly integrated functionality** of the Driver, Runtime and NVRTC API (NVTX doesn't integrate all that much, seamlessly or otherwise, but it's readily usable).
+- All functions and methods throw **exceptions** on failure, which carry status information; no need to check return values.
+- Methods and **functions return what they produce**, since they don't need to return a status code. No more having to pre-allocate result variables and pass pointers to them as out-parameters. Better compositionality!
+- Judicious **namespacing** (and some internal namespace-like classes) for clarity and for semantic grouping of related functionality.
+- There are **proxy/wrapper objects** for devices, streams, events, kernels, contexts, modules, link processes, timed intervals and so on - all using the [CADRe/RAII](http://en.cppreference.com/w/cpp/language/raii) convention; you don't have to remember to free or release your resources yourself.
+- You can  **forget about numeric IDs andhandles**; the proxy classes will fit everywhere. Of course, you can still get those numeric values for cooperation with other CUDA-related software.
+- Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators** (e.g. device properties, block and grid dimensions).
 - Aims for **clarity and straightforwardness** in naming and semantics, so that you don't need to refer to the official documentation to understand what each class and function do.
+- Aims for conformance with the [C++ core guidelines](https://github.com/isocpp/CppCoreGuidelines).
 - Thin and **lightweight**:
-    - No work done behind your back, no caches or indices or any such thing - except in corner cases for ensuring Runtime-API and Driver-API compatibility.
+    - No work done behind your back, no caches or indices or any such thing - except in corner cases for ensuring Runtime-API and Driver-API compatibility. The sole exception is lazy creation of devices' primary context.
     - No costly inheritance structure, vtables, virtual methods and so on, for almost all wrappers; they vanishes almost entirely on compilation.
     - All "Runtime-API level" actions are implemented so as not to disrupt "Driver-API-level" work.
 - Permissive free software license: [3-BSD](https://github.com/eyalroz/cuda-api-wrappers/blob/master/LICENSE).
+
+
+## Motivation
+
+NVIDIA provides two main APIs for using [CUDA](https://developer.nvidia.com/cuda-zone): The Runtime API and the
+Driver API. These suffer from several deficiencies:
+
+* They are both C-style APIs, targeting the lowest common denominator of language facilities for abstraction, safety and ease of use.
+* ... although the Runtime API has a few [exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html), so you actually need to write C++ to use it.
+* The runtime API is supposedly the higher-level, more convenient version of the Driver API; in fact, it's missing a lot of important functionality, and doesn't can't be used in conjuction with other CUDA facilities, like the NVRTC dynamic compilation library. Consequently, you're forced to use _both_ the runtime and the driver API.
+* It is difficult to use both the runtime and driver API in conjuction; if you're not careful, you'll mess up things like the context stack.
+* The runtime API makes multiple assumptions which you might not want it to make.
+* You have to manually check every call to every API function, everywhere.
+* You have to work with pointers a lot, and pointers-to-pointers, since the API functions mostly return status codes rather than outputs; this will also prevent you from composing.
+* You will need to remember to release all resources you allocate or create - or else bad things happen.
+* There is a very large number of API functions, many of are related, with similar names, and are easy to confuse.
+* You will be working with a lot of numeric and pointer-based handles, instead of class or structs. Other than the poor aesthetics, this makes it easy to mix up resource-handle and pure-number parameters to functions.
+
+You may have noticed this list reads like the opposite of the [key features](#key-features) list, above: The idea is to make this library overcome and rectify all of these deficiencies as much as possible.
+
 
 ## Detailed documentation
 
@@ -32,30 +67,28 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 ## Requirements
 
-- CUDA v11.0 or later is required (essentially due to the lack of `cudaGetFuncBySymbol()` in earlier versions).
-- GPU devices all supporting Unified Virtual Addressing (UVA), i.e. Fermi microarchitecture or later. With earlier GPUs, memory copying, and other functionality relying on automtically determining where a memory address is located, will fail.
-- A C++11-capable compiler compatible with your version of CUDA.
-- CMake v3.18 or later - although most of the library will work as simple headers with no building.
+- CUDA: v11.x or later recommended, v10.x or later supported. Earlier versions are semi-supported.
 
-## Coverage of the Runtime API
+    Remember that an NVIDIA driver compatible with your CUDA version also needs to be installed. Typically, this can be the one bundled in your CUDA distribution itself.
 
-*(This list is out-of-date.)*
+- Other software:
+     - A C++11-capable compiler compatible with your version of CUDA.
+     - CMake v3.18 or later; it's very easy to [download and install](https://cmake.org/download/) a recent version - no need to build it yourself.
 
-Considering the [list of runtime API modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), the library currently has the following (w.r.t. CUDA 9.x):
+- An NVIDIA GPU supporting Unified Virtual Addressing (UVA), i.e. Fermi microarchitecture or later. With earlier GPUs, memory copying, and other functionality relying on automtically determining where a memory address is located, will fail.
 
-| Coverage level  | Modules                                                                 |
-|-----------------|-------------------------------------------------------------------------|
-| full            | Error Handling, Stream Management, Event Management, Version Management, Peer Device Memory Access, Occupancy, Unified Addressing |
-| almost full     | Device Management (no chooseDevice, cudaSetValidDevices),  Memory Management, Execution Control (no support for working with parameter buffers) |
-| partial         | 2D & 3D Arrays, Texture Object Management, Texture Reference Management  |
-| (deprecated)    | Thread management |
-| no coverage     | Graph Management, OpenGL Interoperability, Direct3D Interoperability, VDPAU Interoperability, EGL Interoperability, Graphics Interoperability, Surface Reference Management, Surface Object Management   |
+## Coverage of the APIs
 
-The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indicates some features which aren't covered and are slated for future work.
+Most, but not all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. Specifically, the following are missing:
 
-Since I am not currently working on anything graphics-related, there are no short-term plans to extend coverage to any of the graphics related modules.
+* Task graph management
+* Interoperability with OpenGL, Direct3D, EGL, VDAPU.
 
-## A taste of some key features in play
+Support for textures, arrays and surfaces exists, but is partial: Not all relevant API functions are covered.
+
+The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indicates some features which aren't covered and are slated for future work. Since I am not currently working on anything graphics-related, there are no short-term plans to extend coverage to more graphics-related APIs; however - PRs are welcome.
+
+## A taste of some features in play
 
 We've all dreamed of being able to type in:
 
@@ -98,23 +131,22 @@ The default values here are `enum : bool`'s, which you can use yourself when cre
 
 ## Example programs
 
-More detailed documentation / feature walk-through is forthcoming. For now I'm providing two kinds of short example programs; browsing their source you'll know essentially all there is to know about the API wrappers.
+In lieu of a full-fledged user's guide, I'm providing several kinds of example programs; browsing their source you'll know most of what there is to know about the API wrappers. To build and run the examples (just as a sanity check), execute the following (in a Unix-style command shell):
 
-To build and run the examples (just as a sanity check), execute the following:
+    cmake -S . -B build -DBUILD_EXAMPLES=ON .
+    cmake --build build/
+    find build/examples/bin -type f -executable -exec "{}" ";"
 
-    [user@host:/path/to/cuda-api-wrappers/]$ cmake -S . -B build -DBUILD_EXAMPLES=ON . && cmake --build build/ && find build/examples/bin -exec "{}" ";"
-
+The two main kinds of example programs are:
 
 #### Modified CUDA samples
 
 The CUDA distribution contains sample programs demostrating various features and concepts. A few of these - which are not focused on device-side work - have been adapted to use the API wrappers - completely foregoing direct use of the CUDA Runtime API itself. You will find them in the [modified CUDA samples](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/modified_cuda_samples/) example programs folder.
 
-#### 'Coverage' test programs - by module of the Runtime API
+#### 'Coverage' programs - by API module
 
 Gradually, an example program is being added for each one of the CUDA Runtime API [Modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), in which the approach replacing use of those module API calls by use of the API wrappers is demonstrated. These per-module example programs can be found [here](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/by_runtime_api_module/).
 
 ## Bugs, suggestions, feedback
 
-I would like some help with building up documentation and perhaps a Wiki here; if you can spare the time - do [write me](mailto:eyalroz1@gmx.com). You can also do so if you're interested in collaborating on some related project or for general comments/feedback/suggestions.
-
-If you notice a specific issue which needs addressing, especially any sort of bug or compilation error, please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub.
+If you notice a specific issue which needs addressing, especially any sort of bug, compatibility problem, or missing functionality - please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub. If you'd like to contribute, or give some less-specific or less public feedback -  do [write me](mailto:eyalroz1@gmx.com). You can also write if you're interested in collaborating on related research or coding work.
