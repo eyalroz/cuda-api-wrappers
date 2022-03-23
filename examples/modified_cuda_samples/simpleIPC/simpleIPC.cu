@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 	pArgv = argv;
 
 
-#if CUDART_VERSION >= 4010 && defined(__linux)
+#if CUDA_VERSION >= 4010 && defined(__linux)
 
 	if (!IsAppBuiltAs64())
 	{

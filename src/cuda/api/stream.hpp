@@ -61,7 +61,7 @@ enum wait_condition_t : unsigned {
 } ;
 
 
-#if CUDART_VERSION >= 11000
+#if CUDA_VERSION >= 11000
 /**
  * Possible synchronization behavior of a host thread when performing a synchronous action
  * on a stream (in particular, synchronizing with a stream).
@@ -101,7 +101,7 @@ enum synchronization_policy_t : typename ::std::underlying_type<CUsynchronizatio
 	 */
 	block  = CU_SYNC_POLICY_BLOCKING_SYNC
 };
-#endif // CUDART_VERSION >= 11000
+#endif // CUDA_VERSION >= 11000
 
 namespace detail_ {
 
@@ -525,7 +525,7 @@ public: // mutators
 			// While we always register the same static function, `callback_adapter` as the
 			// callback - what it will actually _do_ is invoke the callback we were passed.
 
-#if CUDART_VERSION >= 10000
+#if CUDA_VERSION >= 10000
 			auto status = cuLaunchHostFunc(
 				associated_stream.handle_, &stream_launched_host_function_adapter<Callable>, raw_callable_extra_argument);
 			    // Could have used the equivalent Driver API call: cuLaunchHostFunc()
@@ -754,7 +754,7 @@ public: // mutators
 		cuda::synchronize(*this);
 	}
 
-#if CUDART_VERSION >= 11000
+#if CUDA_VERSION >= 11000
 	stream::synchronization_policy_t synchronization_policy()
 	{
 		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
@@ -931,7 +931,7 @@ inline void synchronize(const stream_t& stream)
 	throw_if_error(status, "Failed synchronizing " + stream::detail_::identify(stream));
 }
 
-#if CUDART_VERSION >= 11000
+#if CUDA_VERSION >= 11000
 /**
  * Overwrite all "attributes" of one stream with those of another
  *
@@ -944,7 +944,7 @@ inline void synchronize(const stream_t& stream)
  * for details.
  */
 void copy_attributes(const stream_t& dest, const stream_t& src);
-#endif // CUDART_VERSION >= 11000
+#endif // CUDA_VERSION >= 11000
 
 } // namespace cuda
 

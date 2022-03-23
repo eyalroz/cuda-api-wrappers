@@ -46,12 +46,12 @@ enum type_t : ::std::underlying_type<CUmemorytype>::type {
 	array         = CU_MEMORYTYPE_ARRAY,
     unified_      = CU_MEMORYTYPE_UNIFIED,
 	managed_      = CU_MEMORYTYPE_UNIFIED, // an alias (more like the runtime API name)
-#if CUDART_VERSION >= 10000
+#if CUDA_VERSION >= 10000
 	// TODO: Why doesn't the driver API have this?
     // unregistered_ = cudaMemoryTypeUnregistered,
 #else
     unregistered_
-#endif // CUDART_VERSION >= 10000
+#endif // CUDA_VERSION >= 10000
 };
 
 #if CUDA_VERSION >= 11020

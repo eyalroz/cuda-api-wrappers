@@ -535,7 +535,7 @@ public: // Methods which don't mutate the context, but affect the device itself
 	void reset_persisting_l2_cache() const
 	{
 		scoped_setter_type set_context_for_this_scope(handle_);
-#if (CUDART_VERSION >= 11000)
+#if (CUDA_VERSION >= 11000)
 		auto status = cuCtxResetPersistingL2Cache();
 		throw_if_error(status, "Failed resetting/clearing the persisting L2 cache memory");
 #endif

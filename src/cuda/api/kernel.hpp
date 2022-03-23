@@ -361,7 +361,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	cuda::grid::block_dimension_t  block_size_limit,
 	bool                           disable_caching_override)
 {
-#if CUDART_VERSION <= 10000
+#if CUDA_VERSION <= 10000
 	throw cuda::runtime_error {cuda::status::not_yet_implemented};
 #else
 	int min_grid_size_in_blocks { 0 };
@@ -382,7 +382,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
-#endif // CUDART_VERSION <= 10000
+#endif // CUDA_VERSION <= 10000
 }
 
 } // namespace detail_

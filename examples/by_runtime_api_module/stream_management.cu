@@ -60,7 +60,7 @@ __global__ void increment(char* data, size_t length)
 	data[global_index]++;
 }
 
-#if CUDART_VERSION >= 11000
+#if CUDA_VERSION >= 11000
 const char* get_policy_name(cuda::stream::synchronization_policy_t policy)
 {
 	switch(policy) {
@@ -72,7 +72,7 @@ const char* get_policy_name(cuda::stream::synchronization_policy_t policy)
 			return "unknown policy";
 	}
 }
-#endif // CUDART_VERSION >= 11000
+#endif // CUDA_VERSION >= 11000
 
 int main(int argc, char **argv)
 {
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 		cuda::stream::default_priority + 1,
 		cuda::stream::no_implicit_synchronization_with_default_stream);
 
-#if CUDART_VERSION >= 11000
+#if CUDA_VERSION >= 11000
 	// Stream synchronization policy and attribute copying
 
 	auto initial_policy = stream_1.synchronization_policy();

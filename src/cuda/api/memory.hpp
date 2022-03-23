@@ -176,7 +176,7 @@ inline region_t allocate(
 	stream::handle_t       stream_handle,
 	size_t             num_bytes)
 {
-#if CUDART_VERSION >= 11020
+#if CUDA_VERSION >= 11020
 	device::address_t allocated = 0;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements

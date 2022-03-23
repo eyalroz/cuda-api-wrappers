@@ -910,7 +910,7 @@ inline device_t kernel_t::device() const noexcept
 
 inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
 {
-#if CUDART_VERSION >= 9000
+#if CUDA_VERSION >= 9000
 	context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
 	auto result = cuFuncSetAttribute(handle_, static_cast<CUfunction_attribute>(attribute), value);
 	throw_if_error(result,
@@ -1670,7 +1670,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	grid::block_dimension_t  block_size_limit,
 	bool                     disable_caching_override)
 {
-#if CUDART_VERSION <= 10000
+#if CUDA_VERSION <= 10000
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
 #else
 	int min_grid_size_in_blocks { 0 };
@@ -1688,7 +1688,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr) +
 			" on device " + ::std::to_string(device_id) + ".");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
-#endif // CUDART_VERSION <= 10000
+#endif // CUDA_VERSION <= 10000
 }
 
 inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
