@@ -146,10 +146,10 @@ public: // other non-mutator methods
 	{
 		auto status = cuEventQuery(handle_);
 		if (status == cuda::status::success) return true;
-		if (status == cuda::status::not_ready) return false;
+		if (status == cuda::status::async_operations_not_yet_completed) return false;
 		throw cuda::runtime_error(status,
 			"Could not determine whether " + event::detail_::identify(handle_)
-			+ "has already occurred or not.");
+			+ "has already occurred or not");
 	}
 
 	/**

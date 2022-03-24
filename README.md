@@ -67,7 +67,7 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 ## Requirements
 
-- CUDA: v11.x or later recommended, v10.x or later supported. Earlier versions are semi-supported.
+- CUDA: v11.x or later recommended, v9.2 or later supported. Earlier versions are semi-supported.
 
     Remember that an NVIDIA driver compatible with your CUDA version also needs to be installed. Typically, this can be the one bundled in your CUDA distribution itself.
 

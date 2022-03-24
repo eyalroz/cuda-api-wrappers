@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 
 	} catch(cuda::runtime_error& e) {
 		(void) e; // This avoids a spurious warning in MSVC 16.11
-		assert(e.code() == cuda::status::not_ready);
+		assert(e.code() == cuda::status::async_operations_not_yet_completed);
 	}
 	event_2.synchronize();
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
