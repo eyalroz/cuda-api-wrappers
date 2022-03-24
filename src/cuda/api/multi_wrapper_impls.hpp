@@ -1660,6 +1660,7 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 // Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
 // from code compiled with a host-side-only compiler! See cuda_runtime.h for details
 
+#if CUDA_VERSION >= 10000
 namespace detail_ {
 
 template <typename UnaryFunction>
@@ -1670,9 +1671,6 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	grid::block_dimension_t  block_size_limit,
 	bool                     disable_caching_override)
 {
-#if CUDA_VERSION <= 10000
-	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
-#else
 	int min_grid_size_in_blocks { 0 };
 	int block_size { 0 };
 		// Note: only initializing the values her because of a
@@ -1688,7 +1686,6 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr) +
 			" on device " + ::std::to_string(device_id) + ".");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
-#endif // CUDA_VERSION <= 10000
 }
 
 inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
@@ -1726,6 +1723,7 @@ grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	return detail_::min_grid_params_for_max_occupancy(
 		kernel.ptr(), kernel.device_id(), block_size_to_dynamic_shared_mem_size, block_size_limit, disable_caching_override);
 }
+#endif // CUDA_VERSION >= 10000
 
 inline kernel::attributes_t apriori_compiled_kernel_t::attributes() const
 {

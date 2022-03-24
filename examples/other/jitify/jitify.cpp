@@ -326,8 +326,10 @@ int main(int, char**)
 
 	bool test_simple_result = test_simple<float>();
 	bool test_kernels_result = test_kernels<float>();
+#if CUDA_VERSION >= 10000
 	bool test_constant_result = test_constant();
 	bool test_constant_2_result = test_constant_2();
+#endif // CUDA_VERSION >= 10000
 
 	// Note: There's no source-based or signature-based kernel caching mechanism - but
 	// you can certainly keep the modules and kernels built within the test_XXXX functions
@@ -340,14 +342,18 @@ int main(int, char**)
 
 	cout << "test_simple<float>:              " << pass_or_fail(test_simple_result) << endl;
 	cout << "test_kernels<float>:             " << pass_or_fail(test_kernels_result) << endl;
+#if CUDA_VERSION >= 10000
 	cout << "test_constant:                   " << pass_or_fail(test_constant_result) << endl;
 	cout << "test_constant_2:                 " << pass_or_fail(test_constant_2_result) << endl;
+#endif // CUDA_VERSION >= 10000
 
 	return not(
 		test_simple_result
 		and test_kernels_result
+#if CUDA_VERSION >= 10000
 		and test_constant_result
 		and test_constant_2_result
+#endif // CUDA_VERSION >= 10000
 	);
 }
 

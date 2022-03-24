@@ -137,21 +137,25 @@ void enqueue_p2p_copy(
     P2PEngine p2p_mechanism,
     cuda::stream_t& stream)
 {
-    auto copy_kernel = cuda::kernel::get(stream.device(), copyp2p);
-    auto grid_and_block_dims = copy_kernel.min_grid_params_for_max_occupancy();
-		// Note: We could have alternatively used:
-		// auto grid_and_block_dims = cuda::kernel::occupancy::min_grid_params_for_max_occupancy(copy_kernel);
-    auto launch_config = cuda::make_launch_config(grid_and_block_dims);
-
-
+#if CUDA_VERSION <= 10000
+    (void) p2paccess;
+    (void) p2p_mechanism;
+#else
     if (p2p_mechanism == SM && p2paccess)
     {
+        auto copy_kernel = cuda::kernel::get(stream.device(), copyp2p);
+        auto grid_and_block_dims = copy_kernel.min_grid_params_for_max_occupancy();
+        // Note: We could have alternatively used:
+        // auto grid_and_block_dims = cuda::kernel::occupancy::min_grid_params_for_max_occupancy(copy_kernel);
+        auto launch_config = cuda::make_launch_config(grid_and_block_dims);
+
         for (int r = 0; r < repeat; r++) {
             stream.enqueue.kernel_launch(copy_kernel, launch_config, (int4*)dest, (int4*)src, num_elems/sizeof(int4));
         }
     }
     else
-    {
+#endif // CUDA_VERSION >= 10000
+  {
         for (int r = 0; r < repeat; r++) {
         // Since we assume Compute Capability >= 2.0, all devices support the
         // Unified Virtual Address Space, so we don't need to use
@@ -520,7 +524,12 @@ command_line_options handle_command_line(int argc, char** argv)
         test_p2p_read = P2P_READ;
     }
     if (checkCmdLineFlag(argc, (const char**) (argv), "sm_copy")) {
+#if CUDA_VERSION <= 10000
+        std::cerr << "This mechanism is unsupported by this program before CUDA 10.0" << std::endl;
+        exit(EXIT_FAILURE);
+#else
         p2p_mechanism = SM;
+#endif
     }
     return { test_p2p_read, p2p_mechanism };
 }

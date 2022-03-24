@@ -77,7 +77,11 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	insufficient_driver             = cudaErrorInsufficientDriver,
 	set_on_active_process           = cudaErrorSetOnActiveProcess,
 	invalid_surface                 = cudaErrorInvalidSurface,
-	no_device                       = cudaErrorNoDevice, // == 100
+#if CUDA_VERSION < 10000
+  no_device                       = CUDA_ERROR_NO_DEVICE,
+#else
+  no_device                       = cudaErrorNoDevice, // == 100
+#endif // CUDA_VERSION < 10000
 	ecc_uncorrectable               = cudaErrorECCUncorrectable,
 	shared_object_symbol_not_found  = cudaErrorSharedObjectSymbolNotFound,
 	shared_object_init_failed       = cudaErrorSharedObjectInitFailed,

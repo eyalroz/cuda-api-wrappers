@@ -21,7 +21,9 @@ namespace peer_to_peer {
 constexpr const attribute_t link_performance_rank = CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK; /// A relative value indicating the performance of the link between two devices
 constexpr const attribute_t	access_support = CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED; /// 1 if access is supported, 0 otherwise
 constexpr const attribute_t	native_atomics_support = CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED; /// 1 if the first device can perform native atomic operations on the second device, 0 otherwise
+#if CUDA_VERSION >= 10000
 constexpr const attribute_t	array_access_support = CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED; /// 1 if special array iterpolatory access operations are supported across the link, 0 otherwise
+#endif
 
 
 namespace detail_ {

@@ -169,6 +169,7 @@ public: // non-mutators
 		return get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	}
 
+#if CUDA_VERSION >= 10000
 	/**
 	 * @brief obtain the dimensions of a minimum grid which is expected to
 	 * achieve maximum occupancy on the GPU the kernel is associated with.
@@ -206,6 +207,7 @@ public: // non-mutators
 		grid::block_dimension_t          block_size_limit = 0,
 		bool                             disable_caching_override = false) const;
     ///@}
+#endif // CUDA_VERSION >= 10000
 
     /**
      * @brief Calculates the number of grid blocks which may be "active" on a given GPU
@@ -351,6 +353,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
     return result;
 }
 
+#if CUDA_VERSION >= 10000
 // Note: If determine_shared_mem_by_block_size is not null, fixed_shared_mem_size is ignored;
 // if block_size_limit is 0, it is ignored.
 inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
@@ -361,9 +364,6 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	cuda::grid::block_dimension_t  block_size_limit,
 	bool                           disable_caching_override)
 {
-#if CUDA_VERSION <= 10000
-	throw cuda::runtime_error {cuda::status::not_yet_implemented};
-#else
 	int min_grid_size_in_blocks { 0 };
 	int block_size { 0 };
 	// Note: only initializing the values her because of a
@@ -382,8 +382,8 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
-#endif // CUDA_VERSION <= 10000
 }
+#endif // CUDA_VERSION >= 10000
 
 } // namespace detail_
 
@@ -436,6 +436,7 @@ inline ::std::string identify(const kernel_t& kernel)
 } // namespace detail_
 } // namespace kernel
 
+#if CUDA_VERSION >= 10000
 inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
@@ -457,6 +458,7 @@ inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
         handle(), device_id(), shared_memory_size_determiner,
         no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
+#endif // CUDA_VERSION >= 10000
 
 inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
     grid::block_dimension_t  block_size_in_threads,

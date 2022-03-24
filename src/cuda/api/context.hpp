@@ -411,6 +411,7 @@ public: // other non-mutator methods
 		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT);
 	}
 
+#if CUDA_VERSION >= 10000
 	/**
 	 * @return maximum granularity of fetching from the L2 cache
 	 *
@@ -423,6 +424,7 @@ public: // other non-mutator methods
 		scoped_setter_type set_context_for_this_scope(handle_);
 		return context::detail_::get_limit(CU_LIMIT_MAX_L2_FETCH_GRANULARITY);
 	}
+#endif
 
 	/**
 	 * @brief Returns the shared memory bank size, as described in
