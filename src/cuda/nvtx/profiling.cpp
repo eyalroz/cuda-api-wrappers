@@ -11,6 +11,8 @@
 #endif
 
 #include <mutex>
+#include <thread>
+
 
 #ifdef CUDA_API_WRAPPERS_USE_PTHREADS
 #include <pthread.h>
@@ -94,37 +96,39 @@ void stop()
 	throw_if_error(status, "Stopping CUDA profiling");
 }
 
-namespace naming {
+namespace detail_ {
 
 template <>
-void name_host_thread<char>(uint32_t thread_id, const ::std::string& name)
+void name_host_thread<char>(uint32_t raw_thread_id, const char* name)
 {
-	nvtxNameOsThreadA(thread_id, name.c_str());
+	nvtxNameOsThreadA(raw_thread_id, name);
 }
 
 template <>
-void name_host_thread<wchar_t>(uint32_t thread_id, const ::std::wstring& name)
+void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
 {
-	nvtxNameOsThreadW(thread_id, name.c_str());
+	nvtxNameOsThreadW(raw_thread_id, name);
 }
 
-#if defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
 
-template <typename CharT>
-void name_this_thread(const ::std::basic_string<CharT>& name)
+} // namespace detail_
+
+void name(const std::thread& host_thread, const char* name)
 {
-	auto this_thread_s_native_handle =
-#ifdef CUDA_API_WRAPPERS_USE_PTHREADS
-		::pthread_self();
-#else
-		::GetCurrentThreadId();
-#endif
-	name_host_thread<CharT>(this_thread_s_native_handle, name);
+	detail_::name(host_thread.get_id(), name);
 }
 
-#endif // defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
+void name_this_thread(const char* name)
+{
+	detail_::name(std::this_thread::get_id(), name);
+}
 
-} // namespace naming
+
+//#if defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
+//
+//
+//#endif // defined(CUDA_API_WRAPPERS_USE_WIN32_THREADS) || defined(CUDA_API_WRAPPERS_USE_PTHREADS)
+
 
 } // namespace profiling
 } // namespace cuda

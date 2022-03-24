@@ -7,14 +7,15 @@
  *
  */
 #pragma once
-#ifndef CUDA_NVTX_WRAPPERS_PROFILING_HPP_
-#define CUDA_NVTX_WRAPPERS_PROFILING_HPP_
+#ifndef CUDA_API_WRAPPERS_PROFILING_HPP_
+#define CUDA_API_WRAPPERS_PROFILING_HPP_
 
 #include <cuda/api/types.hpp>
 
 #include <cstdint>
 #include <string>
 #include <cstdint>
+#include <thread>
 
 namespace cuda {
 
@@ -78,19 +79,19 @@ using handle_t = ::std::uint64_t;
 
 namespace mark {
 
-void point (const ::std::string& message, color_t color);
+void point(const ::std::string& message, color_t color);
 
-inline void point (const ::std::string& message)
+inline void point(const ::std::string& message)
 {
 	point(message, color_t::Black());
 }
 
-range::handle_t range_start (
+range::handle_t range_start(
 	const ::std::string&  description,
 	range::type_t         type,
-	color_t             color);
+	color_t               color);
 
-inline range::handle_t range_start (
+inline range::handle_t range_start(
 	const ::std::string&  description,
 	range::type_t         type)
 {
@@ -103,7 +104,7 @@ inline range::handle_t range_start (
 	return range_start(description, range::type_t::unspecified);
 }
 
-void range_end (range::handle_t range);
+void range_end(range::handle_t range);
 
 } // namespace mark
 
@@ -145,7 +146,21 @@ public:
 	~scope() { stop(); }
 };
 
-namespace naming {
+namespace detail_ {
+
+template <typename CharT>
+void name_host_thread(uint32_t raw_thread_id, const CharT* name);
+template <> void name_host_thread<char>(uint32_t raw_thread_id, const char* name);
+template <> void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name);
+
+
+void name(std::thread::id host_thread_id, const char* name)
+{
+	auto handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
+	name_host_thread(handle, name);
+}
+
+} // namespace detail_
 
 /**
  * @brief Have the profiler refer to a thread using a specified string
@@ -157,17 +172,16 @@ namespace naming {
  * @param[in] name The string identifier to use for the specified thread
  */
 template <typename CharT>
-void name_host_thread(::std::uint32_t thread_id, const ::std::basic_string<CharT>& name);
+void name(const std::thread& host_thread, const CharT* name);
 
-#if defined(__unix__) || defined(_WIN32)
 template <typename CharT>
-void name_this_thread(const ::std::basic_string<CharT>& name);
-#endif
-
-} // namespace naming
+void name_this_thread(const CharT* name)
+{
+	detail_::name(std::this_thread::get_id(), name);
+}
 
 } // namespace profiling
 
 } // namespace cuda
 
-#endif // CUDA_NVTX_WRAPPERS_PROFILING_HPP_
+#endif // CUDA_API_WRAPPERS_PROFILING_HPP_
