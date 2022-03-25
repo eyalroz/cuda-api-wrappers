@@ -59,6 +59,8 @@ add_executable(stream_management by_runtime_api_module/stream_management.cu)
 add_executable(event_management by_runtime_api_module/event_management.cu)
 add_executable(unified_addressing by_runtime_api_module/unified_addressing.cpp)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
+add_executable(vectorAdd_profiled other/vectorAdd_profiled.cu)
+target_link_libraries(vectorAdd_profiled nvtx)
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp )
 
 if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
