@@ -11,15 +11,73 @@
 #define CUDA_API_WRAPPERS_PROFILING_HPP_
 
 #include <cuda/api/types.hpp>
+#include <cuda/api/error.hpp>
 
+#include <cuda_profiler_api.h>
+
+#if CUDA_VERSION >= 10000 || defined(_WIN32)
+#include <nvtx3/nvToolsExt.h>
+#include <nvtx3/nvToolsExtCudaRt.h>
+#else
+#include <nvToolsExt.h>
+#include <nvToolsExtCudaRt.h>
+#endif
+
+#ifdef CUDA_API_WRAPPERS_USE_PTHREADS
+#include <pthread.h>
+#else
+#ifdef CUDA_API_WRAPPERS_USE_WIN32_THREADS
+#include <processthreadsapi.h>
+#endif
+#endif
+
+
+#include <mutex>
 #include <cstdint>
 #include <string>
 #include <cstdint>
 #include <thread>
 
+
 namespace cuda {
 
+// Note: No implementation for now for nvtxStringHandle_t's
+
 namespace profiling {
+
+namespace detail_ {
+void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
+{
+	attrs.messageType = NVTX_MESSAGE_TYPE_ASCII;
+	attrs.message.ascii = c_str;
+}
+
+void set_message(nvtxEventAttributes_t &attrs, const wchar_t *wc_str) noexcept
+{
+	attrs.messageType = NVTX_MESSAGE_TYPE_UNICODE;
+	attrs.message.unicode = wc_str;
+}
+
+void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) noexcept
+{
+	attrs.messageType = NVTX_MESSAGE_TYPE_REGISTERED;
+	attrs.message.registered = rsh;
+}
+
+} // namespace detail_
+
+namespace range {
+
+enum class type_t { unspecified, kernel, pci_express_transfer	};
+
+/**
+ * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
+ * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
+ * and can leave them within the implementation only.
+ */
+using handle_t = ::std::uint64_t;
+
+} // namespace range
 
 /**
  * @brief An RGB colorspace color value, with potential transparency, which
@@ -33,20 +91,20 @@ struct color_t {
 
 	static constexpr color_t from_hex(underlying_type raw_argb) noexcept {
 		return {
-			(channel_value) ((raw_argb >> 24) & 0xFF),
-			(channel_value) ((raw_argb >> 16) & 0xFF),
-			(channel_value) ((raw_argb >>  8) & 0xFF),
-			(channel_value) ((raw_argb >>  0) & 0xFF),
+		(channel_value) ((raw_argb >> 24) & 0xFF),
+		(channel_value) ((raw_argb >> 16) & 0xFF),
+		(channel_value) ((raw_argb >>  8) & 0xFF),
+		(channel_value) ((raw_argb >>  0) & 0xFF),
 		};
 	}
 	operator underlying_type() const noexcept { return as_hex(); }
 	underlying_type as_hex() const noexcept
 	{
 		return
-			((underlying_type) alpha)  << 24 |
-			((underlying_type) red  )  << 16 |
-			((underlying_type) green)  <<  8 |
-			((underlying_type) blue )  <<  0;
+		((underlying_type) alpha)  << 24 |
+		((underlying_type) red  )  << 16 |
+		((underlying_type) green)  <<  8 |
+		((underlying_type) blue )  <<  0;
 	}
 	static constexpr color_t Black()       noexcept { return from_hex(0x00000000); }
 	static constexpr color_t White()       noexcept { return from_hex(0x00FFFFFF); }
@@ -64,50 +122,112 @@ struct color_t {
 	static constexpr color_t DarkYellow()  noexcept { return from_hex(0x00888800); }
 };
 
-namespace range {
+namespace mark {
 
-enum class type_t { unspecified, kernel, pci_express_transfer	};
+namespace detail_ {
+
+// Used to prevent multiple threads from accessing the profiler simultaneously
+::std::mutex& get_mutex() noexcept
+{
+	static ::std::mutex profiler_mutex;
+	return profiler_mutex;
+}
+
+template <typename CharT>
+nvtxEventAttributes_t create_attributes(color_t color, const CharT* description)
+{
+	nvtxEventAttributes_t eventAttrib = {0};
+	eventAttrib.version = NVTX_VERSION;
+	eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+	eventAttrib.colorType = NVTX_COLOR_ARGB;
+	eventAttrib.color = color;
+	profiling::detail_::set_message(eventAttrib,description);
+	return eventAttrib;
+}
+
+} // namespace detail_
+
+template <typename CharT>
+void point(const CharT* description, color_t color)
+{
+	auto attrs = create_attributes(description, color);
+	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
+	// logging?
+	nvtxMarkEx(&attrs);
+}
+
+template <typename CharT>
+range::handle_t range_start(
+	const CharT*   description,
+	range::type_t  type,
+	color_t        color)
+{
+	(void) type; // Currently not doing anything with the type; maybe in the future
+	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
+	auto attrs = create_attributes(description, color);
+	nvtxRangeId_t range_handle = nvtxRangeStartEx(&attrs);
+	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
+				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+	return range_handle;
+}
+
+void range_end(range::handle_t range_handle)
+{
+	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
+				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+	nvtxRangeEnd(range_handle);
+}
+
+} // namespace mark
 
 /**
- * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
- * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
- * and can leave them within the implementation only.
+ * Start CUDA profiling for the current process
  */
-using handle_t = ::std::uint64_t;
+void start()
+{
+	auto status = cudaProfilerStart();
+	throw_if_error(status, "Starting CUDA profiling");
+}
 
-} // namespace range
+/**
+ * Stop CUDA profiling for the current process
+ */
+void stop()
+{
+	auto status = cudaProfilerStop();
+	throw_if_error(status, "Stopping CUDA profiling");
+}
+
+} // namespace profiling
+} // namespace cuda
+
+namespace cuda {
+
+namespace profiling {
 
 namespace mark {
 
-void point(const ::std::string& message, color_t color);
-
-inline void point(const ::std::string& message)
+template <typename CharT>
+inline void point(const CharT* message)
 {
 	point(message, color_t::Black());
 }
 
-range::handle_t range_start(
-	const ::std::string&  description,
-	range::type_t         type,
-	color_t               color);
-
+template <typename CharT>
 inline range::handle_t range_start(
-	const ::std::string&  description,
-	range::type_t         type)
+	const CharT*   description,
+	range::type_t  type)
 {
 	return range_start(description, type, color_t::LightRed());
 }
 
-inline range::handle_t range_start (
-	const ::std::string&  description)
+template <typename CharT>
+inline range::handle_t range_start(const CharT* description)
 {
 	return range_start(description, range::type_t::unspecified);
 }
 
-void range_end(range::handle_t range);
-
 } // namespace mark
-
 
 /**
  * A RAII class whose scope of existence is reflected as a range in the profiler.
@@ -117,23 +237,22 @@ void range_end(range::handle_t range);
  */
 class scoped_range_marker {
 public:
-	scoped_range_marker(
-		const ::std::string& description,
-		profiling::range::type_t type = profiling::range::type_t::unspecified);
-	~scoped_range_marker();
+	template <typename CharT>
+	explicit scoped_range_marker(
+		const CharT* description,
+		profiling::range::type_t type = profiling::range::type_t::unspecified)
+	{
+		range = profiling::mark::range_start(description, type);
+	}
+
+	~scoped_range_marker()
+	{
+		// TODO: Can we check the range for validity somehow?
+		profiling::mark::range_end(range);
+	}
 protected:
 	profiling::range::handle_t range;
 };
-
-/**
- * Start CUDA profiling for the current process
- */
-void start();
-
-/**
- * Sttop CUDA profiling for the current process
- */
-void stop();
 
 /**
  * A class to instantiate in the part of your application
@@ -146,13 +265,24 @@ public:
 	~scope() { stop(); }
 };
 
+#define profile_this_scope() ::cuda::profiling::scope cuda_profiling_scope_{};
+
 namespace detail_ {
 
 template <typename CharT>
 void name_host_thread(uint32_t raw_thread_id, const CharT* name);
-template <> void name_host_thread<char>(uint32_t raw_thread_id, const char* name);
-template <> void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name);
 
+template <>
+void name_host_thread<char>(uint32_t raw_thread_id, const char* name)
+{
+	nvtxNameOsThreadA(raw_thread_id, name);
+}
+
+template <>
+void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
+{
+	nvtxNameOsThreadW(raw_thread_id, name);
+}
 
 void name(std::thread::id host_thread_id, const char* name)
 {
@@ -163,14 +293,15 @@ void name(std::thread::id host_thread_id, const char* name)
 } // namespace detail_
 
 /**
- * @brief Have the profiler refer to a thread using a specified string
- * identifier (rather than its numeric ID).
+ * @brief Have the profiler refer to the current thread, or another host
+ * thread, using a specified string identifier (rather than its numeric ID).
  *
  * @param[in] thread_id  A native numeric ID of the thread; on Linux systems
  * this would be a `pthread_t`, and on Windows - a DWORD (as is returned,
  * for example, by `GetCurrentThreadId()`)
  * @param[in] name The string identifier to use for the specified thread
  */
+///@{
 template <typename CharT>
 void name(const std::thread& host_thread, const CharT* name);
 
@@ -179,9 +310,9 @@ void name_this_thread(const CharT* name)
 {
 	detail_::name(std::this_thread::get_id(), name);
 }
+///@}
 
 } // namespace profiling
-
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_PROFILING_HPP_

@@ -10,7 +10,7 @@
 
 ## General description
 
-This is a library of integrated _wrappers_ around the core parts of NVIDIA's [CUDA](https://developer.nvidia.com/cuda-zone) execution ecosystem:
+This is a header-only library of integrated wrappers around the core parts of NVIDIA's [CUDA](https://developer.nvidia.com/cuda-zone) execution ecosystem:
 
 * The lower-level [CUDA Driver API](http://docs.nvidia.com/cuda/cuda-driver-api/index.html)
 * The slightly higher-level CUDA [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html)
@@ -39,6 +39,7 @@ In contrast to the above, this library provides:
     - No work done behind your back, no caches or indices or any such thing - except in corner cases for ensuring Runtime-API and Driver-API compatibility. The sole exception is lazy creation of devices' primary context.
     - No costly inheritance structure, vtables, virtual methods and so on, for almost all wrappers; they vanishes almost entirely on compilation.
     - All "Runtime-API level" actions are implemented so as not to disrupt "Driver-API-level" work.
+- **Header-only**: No need to compile anything.
 - Permissive free software license: [3-BSD](https://github.com/eyalroz/cuda-api-wrappers/blob/master/LICENSE).
 
 

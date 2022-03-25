@@ -35,38 +35,38 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 # Our library targets
 # -------------------
 
-add_library(runtime-and-driver INTERFACE) # A header-only library!
-add_library(nvrtc INTERFACE) # A header-only library!
-add_library(nvtx)
+# They're all header-only
+add_library(runtime-and-driver INTERFACE)
+add_library(nvrtc INTERFACE)
+add_library(nvtx INTERFACE)
+
 set(wrapper-libraries runtime-and-driver nvtx nvrtc)
 
-foreach(WRAPPER_LIB ${wrapper-libraries})
-	target_compile_features(${WRAPPER_LIB} INTERFACE cxx_std_11) # This means _at least_ C++11
+foreach(wrapper_lib ${wrapper-libraries})
+	target_compile_features(${wrapper_lib} INTERFACE cxx_std_11) # This means _at least_ C++11
 	target_include_directories(
-		${WRAPPER_LIB}
+		${wrapper_lib}
 		INTERFACE
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
-	target_link_libraries(${WRAPPER_LIB} INTERFACE CUDA::cudart CUDA::cuda_driver)
+	target_link_libraries(${wrapper_lib} INTERFACE CUDA::cudart CUDA::cuda_driver)
+	# Targets using these libraries should be compiled with C++11 _at least_,
+	# but it doesn't seem there's a way to express that at the CMake level
 endforeach()
 target_link_libraries(nvrtc INTERFACE CUDA::nvrtc)
 target_link_libraries(nvtx INTERFACE CUDA::nvToolsExt)
 
-set_target_properties(nvtx PROPERTIES OUTPUT_NAME "cuda-nvtx")
-target_link_libraries(nvtx PUBLIC runtime-and-driver)
-target_link_libraries(nvtx PRIVATE Threads::Threads CUDA::nvToolsExt)
-set_property(TARGET nvtx PROPERTY CXX_STANDARD 11)
-set_property(TARGET nvtx PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET nvtx PROPERTY CXX_EXTENSIONS OFF)
-target_sources(nvtx PRIVATE src/cuda/nvtx/profiling.cpp)
+target_link_libraries(nvtx INTERFACE runtime-and-driver)
+target_link_libraries(nvtx INTERFACE Threads::Threads CUDA::nvToolsExt)
+
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
 if(DEFINED CMAKE_USE_PTHREADS_INIT)
-	target_compile_definitions(nvtx PRIVATE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
+	target_compile_definitions(nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
-	target_compile_definitions(nvtx PRIVATE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
+	target_compile_definitions(nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
 # --------
