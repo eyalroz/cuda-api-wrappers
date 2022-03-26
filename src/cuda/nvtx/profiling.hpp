@@ -12,15 +12,19 @@
 
 #include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
+#include <cuda/api/current_context.hpp>
+#include <cuda/api/stream.hpp>
+#include <cuda/api/event.hpp>
+#include <cuda/api/device.hpp>
 
-#include <cuda_profiler_api.h>
+#include <cudaProfiler.h>
 
 #if CUDA_VERSION >= 10000 || defined(_WIN32)
 #include <nvtx3/nvToolsExt.h>
-#include <nvtx3/nvToolsExtCudaRt.h>
+#include <nvtx3/nvToolsExtCuda.h>
 #else
 #include <nvToolsExt.h>
-#include <nvToolsExtCudaRt.h>
+#include <nvToolsExtCuda.h>
 #endif
 
 #ifdef CUDA_API_WRAPPERS_USE_PTHREADS
@@ -185,7 +189,7 @@ void range_end(range::handle_t range_handle)
  */
 void start()
 {
-	auto status = cudaProfilerStart();
+	auto status = cuProfilerStart();
 	throw_if_error(status, "Starting CUDA profiling");
 }
 
@@ -194,7 +198,7 @@ void start()
  */
 void stop()
 {
-	auto status = cudaProfilerStop();
+	auto status = cuProfilerStop();
 	throw_if_error(status, "Stopping CUDA profiling");
 }
 
@@ -284,6 +288,51 @@ void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
 	nvtxNameOsThreadW(raw_thread_id, name);
 }
 
+template <typename CharT>
+void name_stream(stream::handle_t stream_handle, const CharT* name);
+
+template <>
+void name_stream<char>(stream::handle_t stream_handle, const char* name)
+{
+	nvtxNameCuStreamA(stream_handle, name);
+}
+
+template <>
+void name_stream<wchar_t>(stream::handle_t stream_handle, const wchar_t* name)
+{
+	nvtxNameCuStreamW(stream_handle, name);
+}
+
+template <typename CharT>
+void name_event(event::handle_t event_handle, const CharT* name);
+
+template <>
+void name_event<char>(event::handle_t event_handle, const char* name)
+{
+	nvtxNameCuEventA(event_handle, name);
+}
+
+template <>
+void name_event<wchar_t>(event::handle_t event_handle, const wchar_t* name)
+{
+	nvtxNameCuEventW(event_handle, name);
+}
+
+template <typename CharT>
+void name_device(device::id_t device_id, const CharT* name);
+
+template <>
+void name_device<char>(device::id_t device_id, const char* name)
+{
+	nvtxNameCuDeviceA(device_id, name);
+}
+
+template <>
+void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
+{
+	nvtxNameCuDeviceW(device_id, name);
+}
+
 void name(std::thread::id host_thread_id, const char* name)
 {
 	auto handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
@@ -311,6 +360,26 @@ void name_this_thread(const CharT* name)
 	detail_::name(std::this_thread::get_id(), name);
 }
 ///@}
+
+template <typename CharT>
+void name(const stream_t& stream, const CharT* name)
+{
+	context::current::detail_::scoped_override_t context_setter{stream.context_handle()};
+	detail_::name_stream(stream.handle(), name);
+}
+
+template <typename CharT>
+void name(const event_t& event, const CharT* name)
+{
+	context::current::detail_::scoped_override_t context_setter{event.context_handle()};
+	detail_::name_stream(event.handle(), name);
+}
+
+template <typename CharT>
+void name(const device_t& device, const CharT* name)
+{
+	detail_::name_stream(device.id(), name);
+}
 
 } // namespace profiling
 } // namespace cuda
