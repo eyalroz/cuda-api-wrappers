@@ -1,5 +1,5 @@
 /**
- * @file detail/device_properties.hpp
+ * @file
  *
  * @brief Implementation of methods and helper functions for device-property-related classes.
  *

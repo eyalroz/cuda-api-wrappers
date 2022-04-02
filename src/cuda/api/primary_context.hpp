@@ -1,5 +1,5 @@
 /**
- * @file primary_context.hpp
+ * @file
  */
 
 #ifndef CUDA_API_WRAPPERS_PRIMARY_CONTEXT_HPP_

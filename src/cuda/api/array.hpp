@@ -1,5 +1,5 @@
 /**
- * @file array.hpp
+ * @file
  *
  * @brief Contains a proxy class for CUDA arrays - GPU memory
  * with 2-D or 3-D locality and hardware support for interpolated value

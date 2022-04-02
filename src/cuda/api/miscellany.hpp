@@ -1,5 +1,5 @@
 /**
- * @file miscellany.hpp
+ * @file
  *
  * @brief Miscellaneous functionality which does not fit in another file,
  * and does not depend on the main proxy classes

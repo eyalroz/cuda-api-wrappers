@@ -1,5 +1,5 @@
 /**
- * @file profiling.hpp
+ * @file
  *
  * @brief wrappers for the CUDA profiler API functions,
  * and convenience RAII classes for profiler-output-marked

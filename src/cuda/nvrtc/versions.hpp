@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/versions.hpp
+ * @file
  *
  * @brief Complementing file for `cuda/api/versions.hpp` for obtaining
  * a version number for the NVRTC library

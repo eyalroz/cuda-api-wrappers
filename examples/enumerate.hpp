@@ -1,5 +1,5 @@
 /**
- * @file enumerate.hpp
+ * @file
  *
  * @brief A python-inspired container wrapper which allows for iterating a structure while keeping note of the element index.
  *

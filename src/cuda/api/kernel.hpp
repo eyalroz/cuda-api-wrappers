@@ -1,5 +1,5 @@
 /**
- * @file kernel.hpp
+ * @file
  *
  * @brief Contains a base wrapper class for CUDA kernels - both statically and
  * dynamically compiled; and some related functionality.

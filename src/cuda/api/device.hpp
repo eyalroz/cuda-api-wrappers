@@ -1,5 +1,5 @@
 /**
- * @file device.hpp
+ * @file
  *
  * @brief A proxy class for CUDA devices, providing access to
  * all Runtime API calls involving their use and management; and

@@ -1,5 +1,5 @@
 /**
- * @file event.hpp
+ * @file
  *
  * @brief A CUDA event wrapper class and some associated
  * free-standing functions.

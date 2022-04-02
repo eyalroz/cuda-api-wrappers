@@ -1,5 +1,5 @@
 /**
- * @file pci_id_impl.hpp
+ * @file
  *
  * @brief iostream-related freestanding operator functions for
  * @ref cuda::device::pci_location_t instances and iostream-related methods of

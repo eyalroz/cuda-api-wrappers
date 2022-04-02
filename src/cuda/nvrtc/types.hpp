@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/types.hpp
+ * @file
  *
  * @brief Type definitions used in CUDA real-time compilation work wrappers.
  */

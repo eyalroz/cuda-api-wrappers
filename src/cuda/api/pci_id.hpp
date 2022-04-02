@@ -1,5 +1,5 @@
 /**
- * @file pci_id.hpp
+ * @file
  *
  * @brief Definition of a wrapper class for CUDA PCI device ID
  * information.

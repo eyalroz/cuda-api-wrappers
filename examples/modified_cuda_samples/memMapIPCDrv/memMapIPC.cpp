@@ -13,7 +13,7 @@
  */
 
 /**
- * @file This sample demonstrates Inter-process Communication (IPC)
+ * @file
  * using cuMemMap APIs and with one process per GPU for computation.
  */
 

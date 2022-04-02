@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/error.hpp
+ * @file
  *
  * @brief Facilities for exception-based handling of errors originating
  * to the NVRTC library, including a basic exception class

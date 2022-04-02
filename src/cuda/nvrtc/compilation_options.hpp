@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/options.hpp
+ * @file
  *
  * @brief Definitions and utility functions relating to run-time compilation (RTC)
  * of CUDA code using the NVRTC library

@@ -1,5 +1,5 @@
 /**
- * @file jitify.hpp
+ * @file
  *
  * @brief An adaptation of NVIDIA's jitify library's "simple example"
  * program to use the CUDA API wrappers.

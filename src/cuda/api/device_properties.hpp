@@ -1,5 +1,5 @@
 /**
- * @file api/device_properties.hpp
+ * @file
  *
  * @brief Classes for holding CUDA device properties and
  * CUDA compute capability values.

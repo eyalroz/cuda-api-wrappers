@@ -1,5 +1,5 @@
 /**
- * @file devices.hpp
+ * @file
  *
  * @brief Code regarding the entirety of CUDA devices available on a system.
  */

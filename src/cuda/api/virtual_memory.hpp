@@ -1,5 +1,5 @@
 /**
- * @file virtual_memory.hpp
+ * @file
  */
 #ifndef CUDA_API_WRAPPERS_VIRTUAL_MEMORY_HPP_
 #define CUDA_API_WRAPPERS_VIRTUAL_MEMORY_HPP_

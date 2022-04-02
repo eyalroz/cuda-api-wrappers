@@ -1,5 +1,5 @@
 /**
- * @file unique_ptr.hpp
+ * @file
  *
  * @brief A smart pointer for CUDA device- and host-side memory, similar
  * to the standard library's <a href="http://en.cppreference.com/w/cpp/memory/unique_ptr">::std::unique_ptr</a>.

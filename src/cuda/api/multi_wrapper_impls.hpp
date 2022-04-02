@@ -1,5 +1,5 @@
 /**
- * @file multi_wrapper_impls.hpp
+ * @file
  *
  * @brief Implementations of methods or functions requiring the definitions of
  * multiple CUDA entity proxy classes. In most cases these are declared in the

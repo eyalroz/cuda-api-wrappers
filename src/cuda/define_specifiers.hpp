@@ -1,5 +1,5 @@
 /**
- * @file define_specifiers.hpp
+ * @file
  *
  * @brief Some functions need a specification of their appropriate execution space w.r.t. the
  * CUDA device-vs-host-side side, as well as their inlining requirement. For brevity,

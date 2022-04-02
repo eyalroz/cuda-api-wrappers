@@ -1,5 +1,5 @@
 /**
- * @file memory.hpp
+ * @file
  *
  * @brief freestanding wrapper functions for working with CUDA's various
  * kinds of memory spaces, arranged into a relevant namespace hierarchy.

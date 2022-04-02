@@ -1,5 +1,5 @@
 /**
- * @file current_device.hpp
+ * @file
  *
  * @brief Wrappers for getting and setting CUDA's choice of
  * which device is 'current'

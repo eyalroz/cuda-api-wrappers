@@ -1,5 +1,5 @@
 /**
- * @file stream.hpp
+ * @file
  *
  * @brief A proxy class for CUDA streams, providing access to
  * all Runtime API calls involving their use and management.

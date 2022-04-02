@@ -1,5 +1,5 @@
 /**
- * @file runtime_api.hpp
+ * @file
  *
  * @brief A single file which includes, in turn, all of the CUDA
  * Runtime API wrappers and related headers.

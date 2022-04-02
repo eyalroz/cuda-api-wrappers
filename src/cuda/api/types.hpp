@@ -1,5 +1,5 @@
 /**
- * @file types.hpp
+ * @file
  *
  * @brief Fundamental CUDA-related type definitions.
 

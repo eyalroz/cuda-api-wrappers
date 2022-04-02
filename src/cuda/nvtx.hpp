@@ -1,5 +1,5 @@
 /**
- * @file nvtx.hpp
+ * @file
  *
  * @brief A single file which includes, in turn, all of the CUDA
  * NVTX library API wrappers and related headers.

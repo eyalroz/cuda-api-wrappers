@@ -13,7 +13,7 @@
  */
 
 /**
- * @file Common header for the IPC memory-mapping example using the CUDA driver,
+ * @file
  * applicable to both the child and the parent processes.
  */
 

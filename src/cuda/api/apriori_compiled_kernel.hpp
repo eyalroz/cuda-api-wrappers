@@ -1,5 +1,5 @@
 /**
- * @file apriori_compiled_kernel.hpp
+ * @file
  *
  * @brief An implementation of a subclass of @ref `kernel_t` for kernels
  * compiled together with the host-side program.

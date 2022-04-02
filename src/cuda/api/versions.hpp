@@ -1,5 +1,5 @@
 /**
- * @file versions.hpp
+ * @file
  *
  * @brief Wrappers for Runtime API functions involving versions -
  * of the CUDA runtime and of the CUDA driver. Also defines a @ref cuda::version_t

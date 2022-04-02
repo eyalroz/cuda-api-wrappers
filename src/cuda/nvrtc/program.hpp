@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/program.hpp
+ * @file
  *
  * @brief A Wrapper class for runtime-compiled (RTC) programs, manipulated using the NVRTC library.
  */

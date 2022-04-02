@@ -1,5 +1,5 @@
 /**
- * @file pointer.hpp
+ * @file
  *
  * @brief A wrapper class for host and/or device pointers, allowing
  * easy access to CUDA's pointer attributes.

@@ -1,5 +1,5 @@
 /**
- * @file nvrtc/name_caching_program.hpp
+ * @file
  *
  * @brief The name_caching_progam class
  */

@@ -1,5 +1,5 @@
 /**
- * @file undefine_specifiers.hpp
+ * @file
  *
  * @brief A "preprocessor utility" header for undefining the CUDA function declaration
  * specifier shorthands, defined in @ref define_specifiers.hpp .

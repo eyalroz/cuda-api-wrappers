@@ -1,5 +1,5 @@
 /**
- * @file peer_to_peer.hpp
+ * @file
  *
  * @brief Settings and actions related to the interaction of multiple devices (adding
  * on those already in @ref device.hpp)

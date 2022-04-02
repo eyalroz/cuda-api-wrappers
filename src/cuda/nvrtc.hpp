@@ -1,5 +1,5 @@
 /**
- * @file nvrtc.hpp
+ * @file
  *
  * @brief A single file which triggers inclusion all of the CUDA
  * NVRTC library API wrappers, and in turns, many of the CUDA runtime

@@ -1,5 +1,5 @@
 /**
- * @file link.hpp
+ * @file
  *
  * @brief Wrappers for linking modules of compiled CUDA code.
  */

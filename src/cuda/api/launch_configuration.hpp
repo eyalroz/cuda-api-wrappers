@@ -1,5 +1,5 @@
 /**
- * @file launch_configuration_t.hpp
+ * @file
  *
  * @brief Contains the @ref launch_configuration_t class and some auxiliary
  * functions for it.

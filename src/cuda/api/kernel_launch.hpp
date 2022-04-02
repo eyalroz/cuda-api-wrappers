@@ -1,5 +1,5 @@
 /**
- * @file kernel_launch.hpp
+ * @file
  *
  * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
  *

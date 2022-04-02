@@ -1,5 +1,5 @@
 /**
- * @file texture_view.hpp
+ * @file
  *
  * @brief Contains a "texture view" class, for hardware-accelerated
  * access to CUDA arrays, and some related standalone functions and

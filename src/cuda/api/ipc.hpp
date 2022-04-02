@@ -1,5 +1,5 @@
 /**
- * @file ipc.hpp
+ * @file
  *
  * @brief wrappers for CUDA's facilities for sharing on-device
  * memory addresses and CUDA events between host processes (Inter-

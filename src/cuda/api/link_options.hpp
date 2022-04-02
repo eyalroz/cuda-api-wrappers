@@ -1,5 +1,5 @@
 /**
- * @file jit.hpp
+ * @file
  *
  * @brief Definitions and utility functions relating to just-in-time compilation and linking of CUDA code.
  */

@@ -1,5 +1,5 @@
 /**
- * @file examples/common.hpp
+ * @file
  *
  * @brief Common header for many/most/all CUDA API wrapper example programs.
  */

@@ -1,5 +1,5 @@
 /**
- * @file context.hpp
+ * @file
  *
  * @brief Contains a proxy class for CUDA execution contexts.
  */

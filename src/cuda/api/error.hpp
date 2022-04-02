@@ -1,5 +1,5 @@
 /**
- * @file error.hpp
+ * @file
  *
  * @brief Facilities for exception-based handling of Runtime
  * and Driver API errors, including a basic exception class

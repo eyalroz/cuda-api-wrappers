@@ -1,5 +1,5 @@
 /**
- * @file constants.hpp
+ * @file
  *
  * @brief Fundamental CUDA-related constants and enumerations,
  * not dependent on any more complex abstractions, placed

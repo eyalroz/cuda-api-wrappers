@@ -1,5 +1,5 @@
 /**
- * @file runtime_api.hpp
+ * @file
  *
  * @brief A single file which includes, in turn, all (joint)
  * wrappers for Runtime and Driver APIs, and related headers.
