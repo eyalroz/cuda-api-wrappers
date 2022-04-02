@@ -35,26 +35,6 @@
 
 namespace cuda {
 
-namespace detail_ {
-
-template <typename... >
-using void_t = void;
-
-template<typename, template <typename> class, typename = void>
-struct is_detected : ::std::false_type {};
-
-template<typename T, template <typename> class Op>
-struct is_detected<T, Op, void_t<Op<T>>> : ::std::true_type {};
-
-template< class, class = void >
-struct has_data : ::std::false_type { };
-
-template< class T>
-struct has_data<T, void_t<decltype(std::declval<T>().data())>>
-: std::is_same<decltype(std::declval<T>().data()), void*>::type { };
-
-} // namespace detail_
-
 namespace array {
 
 template <typename T, dimensionality_t NumDimensions>
