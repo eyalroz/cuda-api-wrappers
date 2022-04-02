@@ -13,7 +13,7 @@
 #define HELPER_MULTIPROCESS_H
 
 #include <cuda/api/virtual_memory.hpp>
-#include <cuda/api/multi_wrapper_impls.hpp>
+#include <cuda/api/multi_wrapper_impls/memory.hpp>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #ifndef WIN32_LEAN_AND_MEAN

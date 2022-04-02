@@ -11,6 +11,7 @@
 
 #include <cuda/api/array.hpp>
 #include <cuda/api/error.hpp>
+#include <cuda/api/memory.hpp>
 #include <cuda_runtime.h>
 
 namespace cuda {

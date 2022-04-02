@@ -183,7 +183,24 @@ public: // other non-mutators
 	 * the case of a non-mapped pointer; and on the device and host pointers being
 	 * identical to ptr_ for managed-memory pointers.
 	 */
-	pointer_t other_side_of_region_pair() const;
+	pointer_t other_side_of_region_pair() const
+	{
+		pointer::attribute_t attributes[] = {
+		CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+		CU_POINTER_ATTRIBUTE_HOST_POINTER,
+		CU_POINTER_ATTRIBUTE_DEVICE_POINTER
+		};
+		type_t memory_type;
+		T* host_ptr;
+		T* device_ptr;
+		void* value_ptrs[] = { &memory_type, &host_ptr, &device_ptr };
+		pointer::detail_::get_attributes(3, attributes, value_ptrs, ptr_);
+
+#ifndef NDEBUG
+		assert(host_ptr == ptr_ or device_ptr == ptr_);
+#endif
+		return { ptr_ == host_ptr ? device_ptr : host_ptr };
+	}
 
 public: // constructors
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }

@@ -42,9 +42,21 @@ static_assert(__cplusplus >= 201103L, "The CUDA API headers can only be compiled
 #include <cuda/api/devices.hpp>
 
 #include <cuda/api/pci_id_impl.hpp>
-#include <cuda/api/multi_wrapper_impls.hpp>
 #include <cuda/api/apriori_compiled_kernel.hpp>
 #include <cuda/api/kernel_launch.hpp>
 #include <cuda/api/virtual_memory.hpp>
+
+#include <cuda/api/multi_wrapper_impls/pointer.hpp>
+#include <cuda/api/multi_wrapper_impls/array.hpp>
+#include <cuda/api/multi_wrapper_impls/event.hpp>
+#include <cuda/api/multi_wrapper_impls/device.hpp>
+#include <cuda/api/multi_wrapper_impls/event.hpp>
+#include <cuda/api/multi_wrapper_impls/context.hpp>
+#include <cuda/api/multi_wrapper_impls/stream.hpp>
+#include <cuda/api/multi_wrapper_impls/memory.hpp>
+#include <cuda/api/multi_wrapper_impls/kernel.hpp>
+#include <cuda/api/multi_wrapper_impls/kernel_launch.hpp>
+#include <cuda/api/multi_wrapper_impls/apriori_compiled_kernel.hpp>
+#include <cuda/api/multi_wrapper_impls/module.hpp>
 
 #endif // CUDA_API_WRAPPERS_HPP_
