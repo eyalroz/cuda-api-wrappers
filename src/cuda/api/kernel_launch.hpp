@@ -169,7 +169,7 @@ void enqueue_raw_kernel_launch(
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
-#if CUDA_VERSION <= 9000
+#if CUDA_VERSION < 9000
 		throw cuda::runtime_error(status::not_supported,
 			"Only CUDA versions 9.0 and later support launching kernels \"cooperatively\"");
 #else

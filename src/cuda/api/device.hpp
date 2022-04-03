@@ -175,12 +175,14 @@ public:
 	}
 
 
+#if CUDA_VERSION >= 9020
 	uuid_t uuid () const {
 		uuid_t result;
 		auto status = cuDeviceGetUuid(&result, id_);
 		throw_if_error(status, "Failed obtaining UUID for " + device::detail_::identify(id_));
 		return result;
 	}
+#endif // CUDA_VERSION >= 9020
 
 protected:
 	void cache_and_ensure_primary_context_activation() const {

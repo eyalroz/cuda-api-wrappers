@@ -74,6 +74,7 @@ template <> struct attribute_value<CU_POINTER_ATTRIBUTE_P2P_TOKENS>             
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_SYNC_MEMOPS>                { using type = int;};
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_BUFFER_ID>                  { using type = unsigned long long;};
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_IS_MANAGED>                 { using type = int;};
+#if CUDA_VERSION >= 9020
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>             { using type = cuda::device::id_t;};
 #if CUDA_VERSION >= 10020
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>           { using type = void*;};
@@ -85,6 +86,7 @@ template <> struct attribute_value<CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES>   
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>             { using type = pool::handle_t;};
 #endif // CUDA_VERSION >= 11030
 #endif // CUDA_VERSION >= 10020
+#endif // CUDA_VERSION >= 9020
 
 template <CUpointer_attribute attribute>
 using attribute_value_type_t = typename attribute_value<attribute>::type;
@@ -132,11 +134,13 @@ public: // other non-mutators
 	 */
 	device_t device() const;
 
+#if CUDA_VERSION >= 9020
 	/**
 	 * Returns a proxy for the context in which the memory area, into which the pointer
 	 * points, was allocated.
 	 */
 	context_t context() const;
+#endif // CUDA_VERSION >= 9020
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).

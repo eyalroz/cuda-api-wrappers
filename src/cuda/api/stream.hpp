@@ -122,6 +122,7 @@ inline handle_t create_in_current_context(
 	return new_stream_handle;
 }
 
+#if CUDA_VERSION >= 9020
 inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
 	context::handle_t handle;
@@ -129,6 +130,8 @@ inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 	throw_if_error(result, "Failed obtaining the context of " + cuda::detail_::ptr_as_hex(stream_handle));
 	return handle;
 }
+#endif // CUDA_VERSION >= 9020
+
 
 /**
  * @brief Obtains the device ID with which a stream with a given ID is associated

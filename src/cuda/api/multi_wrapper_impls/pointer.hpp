@@ -16,6 +16,7 @@ namespace cuda {
 
 namespace memory {
 
+#if CUDA_VERSION >= 9020
 template <typename T>
 inline device_t pointer_t<T>::device() const
 {
@@ -36,6 +37,7 @@ inline context_t pointer_t<T>::context() const
 	pointer::detail_::get_attributes(2, attributes, value_ptrs, ptr_);
 	return context::wrap(device_id, context_handle);
 }
+#endif // CUDA_VERSION >= 9020
 
 } // namespace memory
 

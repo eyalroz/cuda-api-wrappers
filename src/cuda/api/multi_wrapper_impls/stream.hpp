@@ -33,10 +33,12 @@ inline ::std::string identify(const stream_t& stream)
 	return identify(stream.handle(), stream.context().handle(), stream.device().id());
 }
 
+#if CUDA_VERSION >= 9020
 inline device::id_t device_id_of(stream::handle_t stream_handle)
 {
 	return context::detail_::get_device_id(context_handle_of(stream_handle));
 }
+#endif // CUDA_VERSION >= 9020
 
 inline void record_event_in_current_context(
 device::id_t       current_device_id,

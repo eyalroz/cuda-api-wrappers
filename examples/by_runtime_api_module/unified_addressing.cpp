@@ -20,6 +20,7 @@
 
 namespace tests {
 
+#if CUDA_VERSION >= 9020
 void pointer_properties(const cuda::device_t& device)
 {
 	constexpr const cuda::size_t fixed_size { 123 };
@@ -91,6 +92,7 @@ void pointer_properties(const cuda::device_t& device)
 	}
 
 }
+#endif // CUDA_VERSION >= 9020
 
 void wrapped_pointers_and_regions(const cuda::device_t& device)
 {
@@ -112,6 +114,7 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 		// die_("Pointer incorrectly reported not to point to managed memory"); break;
 	case device_:       break;
 	}
+#if CUDA_VERSION >= 9020
 	{
 		auto ptr_device = ptr.device();
 		auto ptr_device_id = ptr_device.id();
@@ -119,6 +122,7 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 			"Pointer incorrectly reported as associated with " + cuda::device::detail_::identify(device.id())
 			+ " rather than + " + cuda::device::detail_::identify(device.id()));
 	}
+#endif // CUDA_VERSION >= 9020
 	(ptr.get() == memory_region.start()) or die_("Invalid get() output");
 	if (ptr.get_for_device() != memory_region.start()) {
 		std::stringstream ss;
@@ -150,7 +154,10 @@ int main(int argc, char **argv)
 
 	tests::wrapped_pointers_and_regions(device);
 
+#if CUDA_VERSION >= 9020
 	tests::pointer_properties(device);
+#endif // CUDA_VERSION >= 9020
+
 
 	std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;
