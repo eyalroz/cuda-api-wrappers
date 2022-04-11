@@ -354,46 +354,107 @@ constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rh
 /**
  * CUDA kernels are launched in grids of blocks of threads. This expresses the
  * dimensions of a block within such a grid, in terms of threads.
+ *
+ * @todo Consider having both grid and block dims inhert from the same dimensions_t
+ * structure, but be incompatible, to prevent mis-casting one as the other.
  */
 using block_dimensions_t = dimensions_t;
 
+struct overall_dimensions_t;
 /**
- * Combined dimensions for a grid - in terms of blocks, then also down
+ * Composite dimensions for a grid - in terms of blocks, then also down
  * into the block dimensions completing the information to the thread level.
  */
-struct complete_dimensions_t {
-	grid::dimensions_t grid;
+struct composite_dimensions_t {
+	grid::dimensions_t       grid;
 	grid::block_dimensions_t block;
 
 	/**
 	 * @brief The overall dimensions, in thread, of the launch grid
 	 */
-	constexpr __host__ __device__ grid::dimensions_t flatten() const {
-		return {
-			block.x * grid.x,
-			block.y * grid.y,
-			block.z * grid.z
-		};
-	}
+	constexpr overall_dimensions_t flatten() const;
+	constexpr size_t volume() const;
+	constexpr size_t dimensionality() const;
 
-	constexpr __host__ __device__ size_t volume() const { return flatten().volume(); }
-	constexpr __host__ __device__ size_t dimensionality() const { return flatten().dimensionality(); }
-
-	static constexpr __host__ __device__ complete_dimensions_t point()
+	static constexpr composite_dimensions_t point()
 	{
 		return { dimensions_t::point(), block_dimensions_t::point() };
 	}
 };
 
-constexpr inline bool operator==(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept
+constexpr inline bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
 	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
 }
 
-constexpr inline bool operator!=(const complete_dimensions_t lhs, const complete_dimensions_t& rhs) noexcept
+constexpr inline bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
 	return not (lhs == rhs);
 }
+
+
+/**
+ * Dimension of a grid in threads along one axis, i.e. a multiplication
+ * of a grid's block dimension and the grid's dimension in blocks, on
+ * some axis.
+ */
+using overall_dimension_t = size_t;
+
+/**
+ * Dimensions of a grid in threads, i.e. the axis-wise multiplication of
+ * block and grid dimensions of a grid.
+ */
+struct overall_dimensions_t
+{
+	using dimension_type = overall_dimension_t;
+	dimension_type x, y, z;
+
+	constexpr __host__ __device__ overall_dimensions_t(
+	dimension_type width_, dimension_type height_, dimension_type depth_) noexcept
+	: x(width_), y(height_), z(depth_) { }
+
+	constexpr __host__ __device__ overall_dimensions_t(const overall_dimensions_t& other) noexcept
+	: overall_dimensions_t(other.x, other.y, other.z) { }
+
+	constexpr __host__ __device__ overall_dimensions_t(overall_dimensions_t&& other) noexcept
+	: overall_dimensions_t(other.x, other.y, other.z) { }
+
+	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t&& other) noexcept
+	: overall_dimensions_t(other.x, other.y, other.z) { }
+
+	CPP14_CONSTEXPR overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
+	CPP14_CONSTEXPR overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept= default;
+
+	constexpr __host__ __device__ size_t volume() const noexcept { return x * y * z; }
+	constexpr __host__ __device__ size_t size() const noexcept { return volume(); }
+	constexpr __host__ __device__ dimensionality_t dimensionality() const noexcept
+	{
+		return ((x > 1) + (y > 1) + (z > 1));
+	}
+};
+
+constexpr inline bool operator==(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
+{
+	return (lhs.x == rhs.x) and (lhs.y == rhs.y) and (lhs.z == rhs.z);
+}
+
+constexpr inline bool operator!=(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
+{
+	return not (lhs == rhs);
+}
+
+constexpr inline overall_dimensions_t operator*(dimensions_t grid_dims, block_dimensions_t block_dims) noexcept
+{
+	return overall_dimensions_t {
+		grid_dims.x * overall_dimension_t { block_dims.x },
+		grid_dims.y * overall_dimension_t { block_dims.y },
+		grid_dims.z * overall_dimension_t { block_dims.z },
+	};
+}
+
+constexpr overall_dimensions_t composite_dimensions_t::flatten() const { return grid * block; }
+constexpr size_t composite_dimensions_t::volume() const { return flatten().volume(); }
+constexpr size_t composite_dimensions_t::dimensionality() const { return flatten().dimensionality(); }
 
 } // namespace grid
 

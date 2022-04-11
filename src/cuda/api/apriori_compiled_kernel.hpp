@@ -243,7 +243,7 @@ static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWith
 // Note: If determine_shared_mem_by_block_size is not null, fixed_shared_mem_size is ignored;
 // if block_size_limit is 0, it is ignored.
 template <typename UnaryFunction>
-inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
     const void*                    kernel_function_ptr,
     cuda::device::id_t             device_id,
     UnaryFunction                  determine_shared_mem_by_block_size,
@@ -337,7 +337,7 @@ public: // non-mutators
 	void set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const override;
 
 #if CUDA_VERSION >= 10000
-	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		memory::shared::size_t dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
@@ -350,7 +350,7 @@ public: // non-mutators
 	        block_size_limit, disable_caching_override);
 	}
 
-	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		shared_memory_size_determiner_t shared_memory_size_determiner,
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override

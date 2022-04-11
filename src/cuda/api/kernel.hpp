@@ -194,7 +194,7 @@ public: // non-mutators
 	 */
 	///@{
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		memory::shared::size_t dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const;
@@ -202,7 +202,7 @@ public: // non-mutators
 	using shared_memory_size_determiner_t = size_t (*)(int block_size);
 
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		shared_memory_size_determiner_t  shared_memory_size_determiner,
 		grid::block_dimension_t          block_size_limit = 0,
 		bool                             disable_caching_override = false) const;
@@ -258,6 +258,11 @@ public: // methods mutating the kernel-in-context, but not this reference object
 		}
 		// TODO: Consider a check in debug mode for the value being within range
 		set_attribute(CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,amount_required_by_kernel_);
+	}
+
+	memory::shared::size_t get_maximum_dynamic_shared_memory_per_block() const
+	{
+		return get_attribute(CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES);
 	}
 
 	/**
@@ -356,7 +361,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 #if CUDA_VERSION >= 10000
 // Note: If determine_shared_mem_by_block_size is not null, fixed_shared_mem_size is ignored;
 // if block_size_limit is 0, it is ignored.
-inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	CUfunction                     kernel_handle,
 	cuda::device::id_t             device_id,
 	CUoccupancyB2DSize             determine_shared_mem_by_block_size,
@@ -437,7 +442,7 @@ inline ::std::string identify(const kernel_t& kernel)
 } // namespace kernel
 
 #if CUDA_VERSION >= 10000
-inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
 	bool                     disable_caching_override) const
@@ -448,7 +453,7 @@ inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
         dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
 
-inline grid::complete_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	shared_memory_size_determiner_t  shared_memory_size_determiner,
 	cuda::grid::block_dimension_t    block_size_limit,
 	bool                             disable_caching_override) const

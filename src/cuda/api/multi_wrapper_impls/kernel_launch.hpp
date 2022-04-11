@@ -152,7 +152,7 @@ KernelParameters&&...   parameters)
 namespace detail_ {
 
 template <typename UnaryFunction>
-inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const void *             ptr,
 	device::id_t             device_id,
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,
@@ -176,7 +176,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 }
 
-inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const void *             ptr,
 	device::id_t             device_id,
 	memory::shared::size_t   dynamic_shared_mem_size,
@@ -191,7 +191,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 
 } // namespace detail_
 
-inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const apriori_compiled_kernel_t&          kernel,
 	memory::shared::size_t   dynamic_shared_memory_size,
 	grid::block_dimension_t  block_size_limit,
@@ -202,7 +202,7 @@ inline grid::complete_dimensions_t min_grid_params_for_max_occupancy(
 }
 
 template <typename UnaryFunction>
-grid::complete_dimensions_t min_grid_params_for_max_occupancy(
+grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const apriori_compiled_kernel_t& kernel,
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t  block_size_limit,

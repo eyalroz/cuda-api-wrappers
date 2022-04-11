@@ -24,16 +24,22 @@
 namespace cuda {
 
 struct launch_configuration_t {
-	grid::complete_dimensions_t dimensions { 0 , 0 };
-	memory::shared::size_t    dynamic_shared_memory_size { 0u };
-	/// The number of bytes each grid block may use, in addition to the statically-allocated
-	/// shared memory data inherent in the compiled kernel.
-	bool                      block_cooperation { false };
-	/// When true, CUDA's "cooperative launch" mechanism will be used, enabling
-	/// more flexible device-wide synchronization capabilities; see CUDA Programming
-	/// Guide section C.7, Grid Synchronization. (The section talks about "cooperative
-	/// groups", but you should ignore those, as they are simply C++ library constructs and do not
-	/// in the compiled code).
+	grid::composite_dimensions_t dimensions {0 , 0 };
+
+	/**
+	 * The number of bytes each grid block may use, in addition to the statically-allocated
+	 * shared memory data inherent in the compiled kernel.
+	 */
+	memory::shared::size_t      dynamic_shared_memory_size { 0u };
+
+	/**
+	 * When true, CUDA's "cooperative launch" mechanism will be used, enabling
+	 * more flexible device-wide synchronization capabilities; see CUDA Programming
+	 * Guide section C.7, Grid Synchronization. (The section talks about "cooperative
+	 * groups", but you should ignore those, as they are simply C++ library constructs and do not
+	 * in the compiled code).
+	 */
+	bool                        block_cooperation { false };
 
 	// In C++11, an inline initializer for a struct's field costs us a lot
 	// of its defaulted constructors; but - we must initialize the shared
@@ -47,7 +53,7 @@ struct launch_configuration_t {
 	constexpr launch_configuration_t(launch_configuration_t&&) = default;
 
 	constexpr launch_configuration_t(
-		grid::complete_dimensions_t grid_and_block_dimensions,
+		grid::composite_dimensions_t grid_and_block_dimensions,
 		memory::shared::size_t dynamic_shared_mem = 0u,
 		bool thread_block_cooperation = false
 	) :
@@ -89,7 +95,7 @@ struct launch_configuration_t {
  * @brief a named constructor idiom for a @ref launch_config_t
  */
 constexpr inline launch_configuration_t make_launch_config(
-	grid::complete_dimensions_t grid_and_block_dimensions,
+	grid::composite_dimensions_t grid_and_block_dimensions,
 	memory::shared::size_t      dynamic_shared_memory_size = 0u,
 	bool                        block_cooperation = false) noexcept
 {
