@@ -68,16 +68,17 @@ int main(void)
 	cuda::memory::copy(d_A.get(), h_A.get(), size);
 	cuda::memory::copy(d_B.get(), h_B.get(), size);
 
-	// Launch the Vector Add CUDA Kernel
-	int threadsPerBlock = 256;
-	int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(numElements)
+		.block_size(256)
+		.build();
+
 	std::cout
-		<< "CUDA kernel launch with " << blocksPerGrid
-		<< " blocks of " << threadsPerBlock << " threads\n";
+	<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
+	<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
 	cuda::launch(
-		vectorAdd,
-		cuda::launch_configuration_t( blocksPerGrid, threadsPerBlock ),
+		vectorAdd, launch_config,
 		d_A.get(), d_B.get(), d_C.get(), numElements
 	);
 

@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
 	const int bar = 123;
 	const unsigned num_blocks = 3;
-	std::cout << "Getting kernel attibute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
+	std::cout << "Getting kernel attribute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
 	auto max_threads_per_block = kernel.get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	auto launch_config = cuda::make_launch_config(num_blocks, max_threads_per_block);
 	std::cout

@@ -98,9 +98,11 @@ int main(int argc, char **argv)
 	auto buffer = cuda::memory::managed::make_unique<char[]>(
 		device, buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
 	auto wrapped_kernel = cuda::kernel::get(device, increment);
-	cuda::grid::block_dimension_t threads_per_block = wrapped_kernel.maximum_threads_per_block();
-	cuda::grid::dimension_t num_blocks = div_rounding_up(buffer_size, threads_per_block);
-	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
+	auto launch_config = cuda::launch_config_builder()
+		.kernel(&wrapped_kernel)
+		.overall_size(buffer_size)
+		.use_maximum_linear_block()
+		.build();
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
 	stream.enqueue.event(event_1);

@@ -43,6 +43,7 @@ static_assert(__cplusplus >= 201103L, "The CUDA API headers can only be compiled
 
 #include <cuda/api/pci_id_impl.hpp>
 #include <cuda/api/apriori_compiled_kernel.hpp>
+#include <cuda/api/launch_configuration.hpp>
 #include <cuda/api/kernel_launch.hpp>
 #include <cuda/api/virtual_memory.hpp>
 
@@ -58,5 +59,7 @@ static_assert(__cplusplus >= 201103L, "The CUDA API headers can only be compiled
 #include <cuda/api/multi_wrapper_impls/kernel_launch.hpp>
 #include <cuda/api/multi_wrapper_impls/apriori_compiled_kernel.hpp>
 #include <cuda/api/multi_wrapper_impls/module.hpp>
+
+#include <cuda/api/launch_config_builder.hpp>
 
 #endif // CUDA_API_WRAPPERS_HPP_

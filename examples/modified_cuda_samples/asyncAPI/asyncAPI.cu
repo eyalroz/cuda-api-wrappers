@@ -65,10 +65,9 @@ int main(int, char **)
 
 	auto d_a = cuda::memory::device::make_unique<datum[]>(device, n);
 
-	auto threads = cuda::grid::block_dimensions_t(512, 1);
-	assert_(n % threads.x == 0);
-	auto blocks  = cuda::grid::dimensions_t(n / threads.x, 1);
-	auto launch_config = cuda::make_launch_config(blocks, threads);
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(n)
+		.block_size(512).build();
 
 	// create cuda event handles
 	auto start_event = cuda::event::create(
