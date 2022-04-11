@@ -274,6 +274,11 @@ public:
 		return attribute_value;
 	}
 
+	grid::block_dimension_t maximum_threads_per_block() const
+	{
+		return get_attribute(CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
+	}
+
 	/**
 	 * Obtains this device's location on the PCI express bus in terms of
 	 * domain, bus and device id, e.g. (0, 1, 0)
