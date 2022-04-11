@@ -257,7 +257,7 @@ inline module_t create(const context_t& context, const void* module_data, Creato
 	auto status = creator_function(new_module_handle, module_data);
 	throw_if_error(status, ::std::string(
 		"Failed loading a module from memory location ") + cuda::detail_::ptr_as_hex(module_data) +
-		"within " + context::detail_::identify(context));
+		" within " + context::detail_::identify(context));
 	bool do_take_ownership { true };
 	// TODO: Make sure the default-constructed options correspond to what cuModuleLoadData uses as defaults
 	return detail_::construct(context.device_id(), context.handle(), new_module_handle,
