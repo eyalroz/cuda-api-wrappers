@@ -93,13 +93,13 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 	auto context_handle = associated_stream.context_handle_;
 	auto stream_context_handle_ = associated_stream.context_handle_;
 	if (existing_event.context_handle() != stream_context_handle_) {
-		throw ::std::invalid_argument("Attempt to enqueue "
-									  + event::detail_::identify(existing_event)
-									  + ", to be triggered by " + stream::detail_::identify(associated_stream));
+		throw ::std::invalid_argument(
+			"Attempt to enqueue " + event::detail_::identify(existing_event)
+			+ " on a stream in a different context: " + stream::detail_::identify(associated_stream));
 	}
-	context::current::detail_::scoped_override_t set_device_for_this_scope(context_handle);
-	stream::detail_::record_event_in_current_context(device_id, context_handle,
-													 associated_stream.handle_,existing_event.handle());
+	context::current::detail_::scoped_ensurer_t ensure_a_context{context_handle};
+	stream::detail_::record_event_in_current_context(
+		device_id, context_handle, associated_stream.handle_,existing_event.handle());
 	return existing_event;
 }
 

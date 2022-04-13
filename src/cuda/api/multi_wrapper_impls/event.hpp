@@ -89,9 +89,12 @@ inline context_t event_t::context() const
 
 inline void event_t::record(const stream_t& stream) const
 {
-	// Note:
-	// TODO: Perhaps check the context match here, rather than have the Runtime API call fail?
-	event::detail_::enqueue(stream.handle(), handle_);
+#ifndef NDEBUG
+	if (stream.context_handle() != context_handle_) {
+		throw std::invalid_argument("Attempt to record an event on a stream in a different context");
+	}
+#endif
+	event::detail_::enqueue(context_handle_, stream.handle(), handle_);
 }
 
 inline void event_t::fire(const stream_t& stream) const

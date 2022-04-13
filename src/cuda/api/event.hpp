@@ -30,6 +30,14 @@ namespace event {
 
 namespace detail_ {
 
+inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t event_handle)
+{
+	auto status = cuEventRecord(event_handle, stream_handle);
+	cuda::throw_if_error(status,
+		"Failed recording " + event::detail_::identify(event_handle)
+		+ " on " + stream::detail_::identify(stream_handle));
+}
+
 /**
  * Schedule a specified event to occur (= to fire) when all activities
  * already scheduled on the stream have concluded.
@@ -37,14 +45,14 @@ namespace detail_ {
  * @param stream_handle handle of the stream (=queue) where to enqueue the event occurrence
  * @param event_handle Event to be made to occur on stream @ref stream_handle
  */
-inline void enqueue(stream::handle_t stream_handle, handle_t event_handle) {
-	auto status = cuEventRecord(event_handle, stream_handle);
-	cuda::throw_if_error(status,
-		"Failed recording " + event::detail_::identify(event_handle)
-		+ " on " + stream::detail_::identify(stream_handle));
+inline void enqueue(context::handle_t context_handle, stream::handle_t stream_handle, handle_t event_handle) {
+	context::current::detail_::scoped_ensurer_t { context_handle };
+	enqueue_in_current_context(stream_handle, event_handle);
 }
 
-constexpr unsigned inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
+using flags_t = unsigned int;
+
+constexpr flags_t inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
 {
 	return
 		  ( uses_blocking_sync  ? CU_EVENT_BLOCKING_SYNC : 0  )
@@ -169,7 +177,7 @@ public: // other mutator methods
 	 */
 	void record() const
 	{
-		event::detail_::enqueue(stream::default_stream_handle, handle_);
+		event::detail_::enqueue(context_handle_, stream::default_stream_handle, handle_);
 	}
 
 	/**
@@ -281,6 +289,14 @@ inline ::std::string identify(const event_t& event)
 	return identify(event.handle(), event.context_handle(), event.device_id());
 }
 
+inline handle_t create_raw_in_current_context(flags_t flags = 0u)
+{
+	cuda::event::handle_t new_event_handle;
+	auto status = cuEventCreate(&new_event_handle, flags);
+	cuda::throw_if_error(status, "Failed creating a CUDA event");
+	return new_event_handle;
+}
+
 // Note: For now, event_t's need their device's ID - even if it's the current device;
 // that explains the requirement in this function's interface
 inline event_t create_in_current_context(
@@ -291,12 +307,7 @@ inline event_t create_in_current_context(
 	bool               interprocess)
 {
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
-	cuda::event::handle_t new_event_handle;
-	auto status = cuEventCreate(&new_event_handle, flags);
-	cuda::throw_if_error(status, "failed creating a CUDA event associated with the current device");
-	// Note: We're trusting CUDA to actually have succeeded if it reports success,
-	// so we're not checking the newly-created event handle - which is really just
-	// a pointer - for nullness
+	auto new_event_handle = create_raw_in_current_context(flags);
 	bool take_ownership = true;
 	return wrap(current_device_id, current_context_handle, new_event_handle, take_ownership);
 }
