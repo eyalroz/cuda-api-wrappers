@@ -248,8 +248,9 @@ int main(int argc, char **argv)
 	threads=dim3(512, 1);
 	assert_(n % threads.x == 0);
 	blocks=dim3(n / threads.x, 1);
+	auto launch_config = cuda::make_launch_config(blocks, threads);
 	start_event.record();
-	init_array<<<blocks, threads, 0, streams[0].handle()>>>(d_a.get(), d_c.get(), niterations);
+	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.get(), d_c.get(), niterations);
 	stop_event.record();
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -259,11 +260,12 @@ int main(int argc, char **argv)
 	// time non-streamed execution for reference
 	threads=dim3(512, 1);
 	blocks=dim3(n / threads.x, 1);
+	launch_config = cuda::make_launch_config(blocks, threads);
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
 	{
-		init_array<<<blocks, threads>>>(d_a.get(), d_c.get(), niterations);
+		device.launch(init_array, launch_config, d_a.get(), d_c.get(), niterations);
 		cuda::memory::copy(h_a.get(), d_a.get(), nbytes);
 	}
 
@@ -276,8 +278,12 @@ int main(int argc, char **argv)
 	// time execution with nstreams streams
 	threads=dim3(512,1);
 	blocks=dim3(n/(nstreams*threads.x),1);
+	launch_config = cuda::make_launch_config(blocks, threads);
 	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
+	// TODO: Avoid need to push and pop here
+	cuda::context::current::push(device.primary_context());
 	cuda::memory::device::zero(cuda::memory::region_t{d_a.get(), nbytes}); // set device memory to all 0s, for testing correctness
+	cuda::context::current::pop();
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
@@ -285,7 +291,8 @@ int main(int argc, char **argv)
 		// asynchronously launch nstreams kernels, each operating on its own portion of data
 		for (int i = 0; i < nstreams; i++)
 		{
-			init_array<<<blocks, threads, 0, streams[i].handle()>>>(d_a.get() + i *n / nstreams, d_c.get(), niterations);
+			streams[i].enqueue.kernel_launch(
+				init_array, launch_config, d_a.get() + i *n / nstreams, d_c.get(), niterations);
 		}
 
 		// asynchronously launch nstreams memcopies.  Note that memcopy in stream x will only
