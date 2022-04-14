@@ -70,6 +70,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			MAIN_DEPENDENCY modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 	)
 	add_custom_target(do_build_memMapIPCDrv_kernel ALL DEPENDS memMapIPC_kernel.fatbin)
+	add_dependencies(memMapIPCDrv do_build_memMapIPCDrv_kernel)
 	add_executable(vectorAddMMAP modified_cuda_samples/vectorAddMMAP/vectorAddMMAP.cpp)
 	add_custom_command(
 			OUTPUT vectorAddMMAP_kernel.fatbin
@@ -81,6 +82,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			MAIN_DEPENDENCY modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
 	)
 	add_custom_target(do_build_vectorAddMMAP_kernel ALL DEPENDS vectorAddMMAP_kernel.fatbin)
+	add_dependencies(vectorAddMMAP do_build_vectorAddMMAP_kernel)
 endif()
 add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 add_executable(asyncAPI modified_cuda_samples/asyncAPI/asyncAPI.cu)
