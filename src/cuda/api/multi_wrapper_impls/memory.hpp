@@ -450,11 +450,17 @@ inline region_pair allocate(
 
 namespace host {
 
+// Note: Also increases the reference count to some device context, as otherwise - the
+// allocation may be forgotten later on
 inline void* allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	context::current::detail_::scoped_current_device_fallback_t set_device_for_this_scope{};
+	constexpr const bool decrease_pc_refcount_on_destruct { false };
+	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_a_context{
+		decrease_pc_refcount_on_destruct
+	};
+	cuda::device::primary_context::detail_::increase_refcount(cuda::device::default_device_id);
 	void* allocated = nullptr;
 	auto flags = memory::detail_::make_cuda_host_alloc_flags(options);
 	auto result = cuMemHostAlloc(&allocated, size_in_bytes, flags);
@@ -474,7 +480,7 @@ namespace detail_ {
 template<attribute_t attribute>
 attribute_value_type_t <attribute> get_attribute(const void *ptr)
 {
-	context::current::detail_::scoped_current_device_fallback_t ensure_we_have_some_context;
+	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	attribute_value_type_t <attribute> attribute_value;
 	auto status = cuPointerGetAttribute(&attribute_value, attribute, device::address(ptr));
 	throw_if_error(status, "Obtaining attribute " + ::std::to_string((int) attribute)
@@ -485,7 +491,7 @@ attribute_value_type_t <attribute> get_attribute(const void *ptr)
 // TODO: Consider switching to a span with C++20
 inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attributes, void** value_ptrs, const void* ptr)
 {
-	context::current::detail_::scoped_current_device_fallback_t ensure_we_have_some_context;
+	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	auto status = cuPointerGetAttributes( num_attributes, attributes, value_ptrs, device::address(ptr) );
 	throw_if_error(status, "Obtaining multiple attributes for pointer " + cuda::detail_::ptr_as_hex(ptr));
 }
@@ -495,7 +501,7 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 
 inline void copy(void *destination, const void *source, size_t num_bytes)
 {
-	context::current::detail_::scoped_current_device_fallback_t set_device_for_this_scope{};
+	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
 	auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
@@ -507,7 +513,7 @@ namespace device {
 template <typename T>
 inline void typed_set(T* start, const T& value, size_t num_elements)
 {
-	context::current::detail_::scoped_current_device_fallback_t set_device_for_this_scope{};
+	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
 	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(
 	sizeof(T) == 1 or sizeof(T) == 2 or

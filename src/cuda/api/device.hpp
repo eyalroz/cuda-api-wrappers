@@ -54,6 +54,16 @@ using shared_memory_bank_size_t = context::shared_memory_bank_size_t;
 
 namespace detail_ {
 
+/**
+ * Construct a @ref device_t wrapper class instance for a given device ID
+ *
+ * @param id Numeric id (mostly an ordinal) of the device to wrap
+ * @param primary_context_handle if this is not the "none" value, the wrapper object
+ * will be owning a reference unit to the device's primary context, which it
+ * will release on destruction. Use this to allow runtime-API-style code, which does
+ * not explicitly construct contexts, to be able to function with a primary context
+ * being made and kept active.
+ */
 device_t wrap(id_t id, primary_context::handle_t primary_context_handle = context::detail_::none) noexcept;
 
 } // namespace detail
@@ -679,7 +689,9 @@ namespace current {
 inline device_t get()
 {
 	ensure_driver_is_initialized();
-	return device::get(detail_::get_id());
+	auto id = detail_::get_id();
+	auto pc_handle = primary_context::detail_::obtain_and_increase_refcount(id);
+	return device::detail_::wrap(id, pc_handle);
 }
 
 /**

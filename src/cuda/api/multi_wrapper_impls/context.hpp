@@ -59,6 +59,37 @@ namespace current {
 
 namespace detail_ {
 
+inline bool is_primary(handle_t cc_handle, device::id_t current_context_device_id)
+{
+	// Note we assume current_context_device_id really is the device ID for cc_handle;
+	// otherwise we could just use is_primary_for_device()
+	return cc_handle == device::primary_context::detail_::get_handle(current_context_device_id);
+}
+
+} // namespace detail_
+
+inline bool is_primary()
+{
+	auto current_context = get();
+	return detail_::is_primary(current_context.handle(), current_context.device_id());
+}
+
+namespace detail_ {
+
+inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle)
+: hold_primary_context_ref_unit_(hold_primary_context_ref_unit), device_id_or_0_(device_id)
+{
+	if (hold_primary_context_ref_unit) { device::primary_context::detail_::increase_refcount(device_id); }
+	push(context_handle);
+}
+
+inline scoped_override_t::~scoped_override_t()
+{
+	if (hold_primary_context_ref_unit_) { device::primary_context::detail_::decrease_refcount(device_id_or_0_); }
+	pop();
+}
+
+
 /**
  * @todo This function is a bit shady, consider dropping it.s
  */
@@ -77,50 +108,62 @@ inline handle_t push_default_if_missing()
 
 /**
  * @note This specialized scope setter is used in API calls which aren't provided a context
- * as a parameter, and when there is no context that's current. Such API calls are necessarily
- * device-related (i.e. runtime-API-ish), and since there is always a current device, we can
- * (and in fact must) fall back on that device's primary context as what the user assumes we
- * would use. In these situations, we must also "leak" that device's primary context, in the
- * sense of adding to its reference count without ever decreasing it again - since the only
- * juncture at which we can decrease it is the scoped context setter's fallback; and if we
- * do that, we will actually trigger the destruction of that primary context. As a consequence,
- * if one _ever_ uses an API wrapper call which relies on this scoped context setter, the only
- * way for them to destroy the primary context is either via @ref device_t::reset() (or
- * manually decreasing the reference count to zero, which supposedly they will not do).
+ * as a parameter, and when it may be the case that no context is current. Such API calls
+ * are generally supposed to be independent of a specific context; but - CUDA still often
+ * expects some context to exist and be current to perform whatever it is we want it to do.
+ * It would be unreasonable to create new contexts for the purposes of such calls - as then,
+ * the caller would often need to maintain these contexts after the call. Instead, we fall
+ * back on a primary context of one of the devices - and since no particular device is
+ * specified, we choose that to be the default device. When we do want the caller to keep
+ * a context alive - we increase the primary context's refererence count, keeping it alive
+ * automatically. In these situations, the ref unit "leaks" past the scope of the ensurer
+ * object - but the instantiator would be aware of this, having asked for such behavior
+ * explicitly; and would itself carry the onus of decreasing the ref unit at some point.
  *
- * @note not sure about how appropriate it is to pop the created primary context off
+ * @note See also the simpler @ref cuda::context::current::scoped_ensurer_t ,
+ * which takes the context handle to push in the first place.
  */
-class scoped_current_device_fallback_t {
+class scoped_existence_ensurer_t {
 public:
+	context::handle_t maybe_pc_handle_;
 	device::id_t device_id_;
-	context::handle_t pc_handle_ { context::detail_::none };
+	bool decrease_pc_refcount_on_destruct_;
 
-	explicit scoped_current_device_fallback_t()
+	explicit scoped_existence_ensurer_t(bool decrease_pc_refcount_on_destruct = true)
+		: maybe_pc_handle_(get_handle()),
+		  decrease_pc_refcount_on_destruct_(decrease_pc_refcount_on_destruct)
 	{
-		auto current_context_handle = get_handle();
-		if (current_context_handle  == context::detail_::none) {
+		if (maybe_pc_handle_ == context::detail_::none) {
 			device_id_ = device::current::detail_::get_id();
-			pc_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
-			context::current::detail_::push(pc_handle_);
+			maybe_pc_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
+			context::current::detail_::push(maybe_pc_handle_);
 		}
+		else { decrease_pc_refcount_on_destruct_ = false; }
 	}
 
-	~scoped_current_device_fallback_t()
+	~scoped_existence_ensurer_t()
 	{
-//	    if (pc_handle_ != context::detail_::none) {
-//            context::current::detail_::pop();
-//	        device::primary_context::detail_::decrease_refcount(device_id_);
-//	    }
+	    if (maybe_pc_handle_ != context::detail_::none and decrease_pc_refcount_on_destruct_) {
+            context::current::detail_::pop();
+	        device::primary_context::detail_::decrease_refcount(device_id_);
+	    }
 	}
 };
 
 } // namespace detail_
 
-inline scoped_override_t::scoped_override_t(const context_t &context) : parent(context.handle())
-{}
+class scoped_override_t : private detail_::scoped_override_t {
+protected:
+	using parent = detail_::scoped_override_t;
+public:
 
-inline scoped_override_t::scoped_override_t(context_t &&context) : parent(context.handle())
-{}
+	explicit scoped_override_t(device::primary_context_t&& primary_context)
+		: parent(primary_context.is_owning(), primary_context.device_id(), primary_context.handle()) {}
+	explicit scoped_override_t(const context_t& context) : parent(context.handle()) {}
+	explicit scoped_override_t(context_t&& context) : parent(context.handle()) {}
+	~scoped_override_t() = default;
+};
+
 
 } // namespace current
 
@@ -216,9 +259,7 @@ inline context_t context_t::global_memory_type::associated_context() const
 
 inline bool context_t::is_primary() const
 {
-	auto pc_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
-	device::primary_context::detail_::decrease_refcount(device_id_);
-	return handle_ == pc_handle;
+	return context::current::detail_::is_primary(handle(), device_id());
 }
 
 template <typename ContiguousContainer,

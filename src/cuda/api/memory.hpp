@@ -1499,12 +1499,17 @@ inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 
 /**
  * Free a region of pinned host memory which was allocated with @ref allocate.
+ *
+ * @note You can't just use @ref cuMemFreeHost - or you'll leak a primary context reference unit.
  */
 inline void free(void* host_ptr)
 {
+	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
 	auto result = cuMemFreeHost(host_ptr);
 	throw_if_error(result, "Freeing pinned host memory at " + cuda::detail_::ptr_as_hex(host_ptr));
 }
+
+inline void free(region_t region) {	return free(region.data()); }
 
 namespace detail_ {
 
@@ -1804,6 +1809,13 @@ inline region_t allocate_in_current_context(
 	device::address_t allocated = 0;
 	auto flags = (initial_visibility == initial_visibility_t::to_all_devices) ?
 		attachment_t::global : attachment_t::host;
+	// This is necessary because managed allocation requires at least one (primary)
+	// context to have been constructed. We could theoretically check what our current
+	// context is etc., but that would be brittle, since someone can managed-allocate,
+	// then change contexts, then de-allocate, and we can't be certain that whoever
+	// called us will call free
+	cuda::device::primary_context::detail_::increase_refcount(cuda::device::default_device_id);
+
 	// Note: Despite the templating by T, the size is still in bytes,
 	// not in number of T's
 	auto status = cuMemAllocManaged(&allocated, num_bytes, (unsigned) flags);
@@ -1817,12 +1829,15 @@ inline region_t allocate_in_current_context(
 }
 
 /**
- * Free a region of pinned host memory which was allocated with @ref allocate.
+ * Free a region of managed memory which was allocated with @ref allocate_in_current_context.
+ *
+ * @note You can't just use @ref cuMemFree - or you'll leak a primary context reference unit.
  */
 ///@{
 inline void free(void* ptr)
 {
 	auto result = cuMemFree(device::address(ptr));
+	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
 	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region)

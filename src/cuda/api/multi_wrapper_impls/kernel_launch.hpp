@@ -22,10 +22,10 @@ namespace detail_ {
 
 template<typename... KernelParameters>
 void enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...>::operator()(
-apriori_compiled_kernel_t  wrapped_kernel,
-const stream_t &           stream,
-launch_configuration_t     launch_configuration,
-KernelParameters &&...     parameters)
+	apriori_compiled_kernel_t  wrapped_kernel,
+	const stream_t &           stream,
+	launch_configuration_t     launch_configuration,
+	KernelParameters &&...     parameters)
 {
 	using raw_kernel_t = typename kernel::detail_::raw_kernel_typegen<KernelParameters ...>::type;
 	auto unwrapped_kernel_function = reinterpret_cast<raw_kernel_t>(const_cast<void *>(wrapped_kernel.ptr()));
@@ -61,6 +61,7 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 	launch_configuration_t                lc,
 	KernelParameters &&...                parameters)
 	{
+		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{stream.context_handle()};
 		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(parameters)...) };
 		auto function_handle = wrapped_kernel.handle();
 		status_t status;
@@ -96,12 +97,13 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 template<typename RawKernelFunction, typename... KernelParameters>
 void enqueue_launch(
-::std::integral_constant<bool, false>, // Got a raw kernel function
-RawKernelFunction       kernel_function,
-const stream_t&         stream,
-launch_configuration_t  launch_configuration,
-KernelParameters&&...   parameters)
+	::std::integral_constant<bool, false>, // Got a raw kernel function
+	RawKernelFunction       kernel_function,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
+	context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{stream.context_handle()};
 	detail_::enqueue_raw_kernel_launch<RawKernelFunction, KernelParameters...>(
 	::std::forward<RawKernelFunction>(kernel_function), stream.handle(), launch_configuration,
 	::std::forward<KernelParameters>(parameters)...);
@@ -134,11 +136,8 @@ KernelParameters&&...   parameters)
 	// Note: If Kernel is a kernel_t, and its associated device is different
 	// than the current device, the next call will fail:
 
-	enqueue_launch(
-	kernel,
-	stream,
-	launch_configuration,
-	::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE

@@ -141,6 +141,9 @@ int main(int argc, char **argv)
 
 	std::cout << "\n> ";
 	auto device = chooseCudaDevice(argc, (const char **)argv);
+	device.make_current();
+		// This is "necessary", for now, for the memory operations whose API is context-unaware,
+		// but which would actually fail if the appropriate context is not the current one
 
 	// Checking for compute capabilities
 	auto properties = device.properties();
@@ -279,11 +282,12 @@ int main(int argc, char **argv)
 	threads=dim3(512,1);
 	blocks=dim3(n/(nstreams*threads.x),1);
 	launch_config = cuda::make_launch_config(blocks, threads);
-	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
 	// TODO: Avoid need to push and pop here
-	cuda::context::current::push(device.primary_context());
+	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
+	// This instruction is actually the only one in our program
+	// for which the device.make_current() command was necessary.
+	// TODO: Avoid having to do that altogether...
 	cuda::memory::device::zero(cuda::memory::region_t{d_a.get(), nbytes}); // set device memory to all 0s, for testing correctness
-	cuda::context::current::pop();
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)

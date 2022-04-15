@@ -121,15 +121,7 @@ public: // getters
 	device_t device() const;
 
 	// These API calls are not really the way you want to work.
-	cuda::kernel_t get_kernel(const char* name) const
-	{
-		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
-		kernel::handle_t kernel_function_handle;
-		auto result = cuModuleGetFunction(&kernel_function_handle, handle_, name);
-		throw_if_error(result, ::std::string("Failed obtaining function ") + name
-			+ " from " + module::detail_::identify(*this));
-		return kernel::wrap(context::detail_::get_device_id(context_handle_), context_handle_, kernel_function_handle);
-	}
+	cuda::kernel_t get_kernel(const char* name) const;
 
 	memory::region_t get_global_region(const char* name) const
 	{
@@ -250,19 +242,7 @@ inline module_t construct(
 }
 
 template <typename Creator>
-inline module_t create(const context_t& context, const void* module_data, Creator creator_function)
-{
-	context::current::scoped_override_t set_context_for_this_scope(context);
-	handle_t new_module_handle;
-	auto status = creator_function(new_module_handle, module_data);
-	throw_if_error(status, ::std::string(
-		"Failed loading a module from memory location ") + cuda::detail_::ptr_as_hex(module_data) +
-		" within " + context::detail_::identify(context));
-	bool do_take_ownership { true };
-	// TODO: Make sure the default-constructed options correspond to what cuModuleLoadData uses as defaults
-	return detail_::construct(context.device_id(), context.handle(), new_module_handle,
-		link::options_t{}, do_take_ownership);
-}
+module_t create(const context_t& context, const void* module_data, Creator creator_function);
 
 // TODO: Consider adding create_module() methods to context_t
 inline module_t create(const context_t& context, const void* module_data, const link::options_t& link_options)

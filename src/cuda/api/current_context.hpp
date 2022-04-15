@@ -139,31 +139,38 @@ inline void set(handle_t context_handle)
  *
  */
 class scoped_override_t {
-protected:
 public:
-	explicit scoped_override_t(handle_t context_handle) { push(context_handle); }
-	~scoped_override_t() { pop(); }
+	bool hold_primary_context_ref_unit_;
+	device::id_t device_id_or_0_;
 
-//	explicit scoped_context_override_t(handle_t context_handle_) :
-//		did_push(push_if_not_on_top(context_handle_)) { }
-//	scoped_context_override_terride_t() { if (did_push) { pop(); } }
-//
-//protected:
-//	bool did_push;
+	explicit scoped_override_t(handle_t context_handle)	: scoped_override_t(false, 0, context_handle) {}
+	scoped_override_t(device::id_t device_for_which_context_is_primary, handle_t context_handle)
+		: scoped_override_t(true, device_for_which_context_is_primary, context_handle) {}
+	explicit scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle);
+	~scoped_override_t();
 };
 
+/**
+ * @note See also the more complex @ref cuda::context::current::scoped_existence_ensurer_t ,
+ * which does _not_ take a fallback context handle, and rather obtains a reference to
+ * a primary context on its own.
+ */
 class scoped_ensurer_t {
 public:
-	bool push_needed;
+	bool context_was_pushed_on_construction;
 
-	explicit scoped_ensurer_t(handle_t fallback_context_handle) : push_needed(not exists())
+	explicit scoped_ensurer_t(bool force_push, handle_t fallback_context_handle)
+		: context_was_pushed_on_construction(force_push)
 	{
-		if (push_needed) { push(fallback_context_handle); }
+		if (force_push) { push(fallback_context_handle); }
 	}
-	~scoped_ensurer_t() { if (push_needed) { pop(); } }
-};
 
-class scoped_current_device_fallback_t;
+	explicit scoped_ensurer_t(handle_t fallback_context_handle)
+		: scoped_ensurer_t(not exists(), fallback_context_handle)
+	{}
+
+	~scoped_ensurer_t() { if (context_was_pushed_on_construction) { pop(); } }
+};
 
 } // namespace detail_
 
@@ -180,14 +187,7 @@ class scoped_current_device_fallback_t;
  * pushed.
  *
  */
-class scoped_override_t : private detail_::scoped_override_t {
-protected:
-	using parent = detail_::scoped_override_t;
-public:
-	explicit scoped_override_t(const context_t& device);
-    explicit scoped_override_t(context_t&& device);
-	~scoped_override_t() = default;
-};
+class scoped_override_t;
 
 /**
  * This macro will set the current device for the remainder of the scope in which it is
