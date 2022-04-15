@@ -69,13 +69,6 @@ inline void increase_refcount(device::id_t device_id)
     obtain_and_increase_refcount(device_id);
 }
 
-//inline void activate(device::handle_t device_id) {
-//    if (not is_active(device_id)) {
-//        increase_refcount(device_id);
-//    }
-//}
-
-
 } // namespace detail_
 
 inline bool is_active(const device_t& device);
