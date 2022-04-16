@@ -42,6 +42,7 @@ In contrast to the above, this library provides:
 - **Header-only**: No need to compile anything.
 - Permissive free software license: [3-BSD](https://github.com/eyalroz/cuda-api-wrappers/blob/master/LICENSE).
 
+There is one noteworthy caveat: The wrapper API calls cannot make assumptions about previous or later code of yours, which means some of them require more calls to obtain the current context handle or push a(n existing) context, then pop it. While these calls are cheap, they are still non-trivial and can't be optimized away.
 
 ## Motivation
 
@@ -59,7 +60,7 @@ Driver API. These suffer from several deficiencies:
 * There is a very large number of API functions, many of are related, with similar names, and are easy to confuse.
 * You will be working with a lot of numeric and pointer-based handles, instead of class or structs. Other than the poor aesthetics, this makes it easy to mix up resource-handle and pure-number parameters to functions.
 
-You may have noticed this list reads like the opposite of the [key features](#key-features) list, above: The idea is to make this library overcome and rectify all of these deficiencies as much as possible.
+You may have noticed this list reads like the opposite of the [key features](#key-features), listed above: The idea is to make this library overcome and rectify all of these deficiencies as much as possible.
 
 
 ## Detailed documentation
