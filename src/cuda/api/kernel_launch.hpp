@@ -308,10 +308,8 @@ void enqueue_launch(
 	KernelParameters&&...   parameters)
 {
 	static_assert(
-		detail_::all_true<
-		::std::is_trivially_copyable<detail_::kernel_parameter_decay_t<KernelParameters>>::value...
-		>::value,
-		"All kernel parameter types must be of a trivially copyable (decayed) type." );
+		detail_::all_true<::std::is_trivially_copy_constructible<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
+		"All kernel parameter types must be of a trivially copy-constructible (decayed) type." );
 	constexpr const bool wrapped_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
 	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
 	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
