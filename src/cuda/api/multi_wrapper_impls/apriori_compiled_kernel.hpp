@@ -21,7 +21,6 @@
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
 #include "../apriori_compiled_kernel.hpp"
-#include "../module.hpp"
 #include "../virtual_memory.hpp"
 #include "../current_context.hpp"
 #include "../current_device.hpp"

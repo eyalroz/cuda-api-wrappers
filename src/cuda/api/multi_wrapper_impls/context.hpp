@@ -14,7 +14,6 @@
 #include "../device.hpp"
 #include "../stream.hpp"
 #include "../kernel.hpp"
-#include "../module.hpp"
 #include "../virtual_memory.hpp"
 #include "../current_context.hpp"
 #include "../current_device.hpp"
@@ -262,19 +261,9 @@ inline bool context_t::is_primary() const
 	return context::current::detail_::is_primary(handle(), device_id());
 }
 
-template <typename ContiguousContainer,
-cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
-module_t context_t::create_module(ContiguousContainer module_data) const
-{
-	return module::create<ContiguousContainer>(*this, module_data);
-}
-
-template <typename ContiguousContainer,
-cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
-module_t context_t::create_module(ContiguousContainer module_data, link::options_t link_options) const
-{
-	return module::create<ContiguousContainer>(*this, module_data, link_options);
-}
+// Note: The context_t::create_module() member functions are defined in module.hpp,
+// for better separation of runtime-origination and driver-originating headers; see
+// issue #320 on the issue tracker.
 
 inline void context_t::enable_access_to(const context_t& peer) const
 {

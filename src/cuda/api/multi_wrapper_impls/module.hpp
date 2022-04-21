@@ -6,6 +6,7 @@
  *
  * 1. Functions in the `cuda::module` namespace.
  * 2. Methods of @ref `cuda::module_t` and possibly some relates classes.
+ * 3. The `context_t::create_module()` methods; see issue #320 on the issue tracker.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_MODULE_HPP_
@@ -16,6 +17,22 @@
 #include "../module.hpp"
 
 namespace cuda {
+
+// Moved over from context.hpp
+template <typename ContiguousContainer,
+cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+module_t context_t::create_module(ContiguousContainer module_data) const
+{
+	return module::create<ContiguousContainer>(*this, module_data);
+}
+
+template <typename ContiguousContainer,
+cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+module_t context_t::create_module(ContiguousContainer module_data, link::options_t link_options) const
+{
+	return module::create<ContiguousContainer>(*this, module_data, link_options);
+}
+
 
 // These API calls are not really the way you want to work.
 inline cuda::kernel_t module_t::get_kernel(const char* name) const
