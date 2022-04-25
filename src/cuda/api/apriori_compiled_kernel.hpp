@@ -351,7 +351,7 @@ public: // non-mutators
 	}
 
 	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-		shared_memory_size_determiner_t shared_memory_size_determiner,
+		kernel::shared_memory_size_determiner_t shared_memory_size_determiner,
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
 	{

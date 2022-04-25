@@ -35,6 +35,18 @@ struct poor_mans_optional {
 		maybe_value.value = value;
 		return *this;
 	}
+
+	poor_mans_optional& operator=(const T&& value) {
+		is_set = true;
+		maybe_value.value = std::move(value);
+		return *this;
+	}
+
+	poor_mans_optional& operator=(no_value_t) {
+		is_set = false;
+		return *this;
+	}
+
 	poor_mans_optional& operator=(T&& value) { return *this = value; }
 	poor_mans_optional() noexcept : maybe_value{ no_value_t{} } { }
 	poor_mans_optional(T v) : is_set(true) {
@@ -52,6 +64,7 @@ struct poor_mans_optional {
 	T value() const { return maybe_value.value; }
 
 	operator bool() const noexcept { return is_set; }
+	void clear() noexcept { is_set = false; }
 	void unset() noexcept { is_set = false; }
 
 	bool is_set { false };
@@ -98,22 +111,66 @@ public:
 		}
 	}
 
-	grid::composite_dimensions_t get_composite_dimensions() const {
+protected:
+	memory::shared::size_t  get_dynamic_shared_memory_size(grid::block_dimensions_t block_dims) const
+	{
+		return dynamic_shared_memory_size_determiner_ == nullptr ?
+			dynamic_shared_memory_size_ :
+			dynamic_shared_memory_size_determiner_((int) block_dims.volume());
+	}
+
+	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
+	{
 		grid::composite_dimensions_t result;
-		if ((not dimensions_.block and not dimensions_.grid) or not dimensions_.overall) {
-			throw std::logic_error("Neither block nor grid dimensions have been specified - cannot resolve launch grid dimenions");
+
+		if (saturate_with_active_blocks_ and use_min_params_for_max_occupancy_) {
+				throw std::logic_error(
+					"We cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
+					"the grid with fixed-size cubs.");
 		}
-		else if (dimensions_.block and dimensions_.overall) {
-			result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
+		if (saturate_with_active_blocks_) {
+			if (not (kernel_)) {
+				throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+			}
+			if (not (dimensions_.block)) {
+				throw std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
+			}
+			if (dimensions_.grid or dimensions_.overall) {
+				throw std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
+			}
+
 			result.block = dimensions_.block.value();
+			auto dshmem_size = get_dynamic_shared_memory_size(dimensions_.block.value());
+			result.grid = kernel_->max_active_blocks_per_multiprocessor(
+				dimensions_.block.value().volume(), dshmem_size);
 		}
-		else if (dimensions_.grid) {
-			result.block = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
-			result.grid = dimensions_.grid.value();
+		else if (use_min_params_for_max_occupancy_) {
+			if (not (kernel_)) {
+				throw std::logic_error("A kernel must be set to determine the minimum grid parameter sfor m");
+			}
+			if (dimensions_.block or dimensions_.grid or dimensions_.overall) {
+				throw std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
+			}
+			auto composite_dims = dynamic_shared_memory_size_determiner_ ?
+				kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_determiner_) :
+				kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_);
+			result.block = composite_dims.block;
+			result.grid = composite_dims.grid;
 		}
 		else {
-			result.block = dimensions_.block.value();
-			result.grid = dimensions_.grid.value();
+			if ((not dimensions_.block and not dimensions_.grid) or not dimensions_.overall) {
+				throw std::logic_error(
+					"Neither block nor grid dimensions have been specified - cannot resolve launch grid dimenions");
+			} else if (dimensions_.block and dimensions_.overall) {
+				result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
+				result.block = dimensions_.block.value();
+			} else if (dimensions_.grid) {
+				result.block = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
+				result.grid = dimensions_.grid.value();
+			} else {
+				result.block = dimensions_.block.value();
+				result.grid = dimensions_.grid.value();
+			}
 		}
 #ifndef NDEBUG
 		validate_composite_dimensions(result);
@@ -121,10 +178,13 @@ public:
 		return result;
 	}
 
+public:
 	launch_configuration_t build() const
 	{
-		// auto complete = resolve_dimensions();
-		return launch_configuration_t{get_composite_dimensions(), dynamic_shared_memory_size_, thread_block_cooperation};
+		auto composite_dims = get_composite_dimensions();
+		auto dynamic_shmem_size = get_dynamic_shared_memory_size(composite_dims.block);
+
+		return launch_configuration_t{composite_dims, dynamic_shmem_size, thread_block_cooperation};
 	}
 
 protected:
@@ -138,10 +198,18 @@ protected:
 	} dimensions_;
 
 	bool thread_block_cooperation { false };
+
+	// Note: We could have used a variant between these two;
+	// but the semantic is that if the determiner is not null, we use it;
+	// and if you want to force a concrete apriori value, then you nullify
+	// the determiner
+	kernel::shared_memory_size_determiner_t dynamic_shared_memory_size_determiner_ {nullptr };
 	memory::shared::size_t dynamic_shared_memory_size_ { 0 };
 
 	const kernel_t* kernel_ { nullptr };
 	optional<device::id_t> device_;
+	bool saturate_with_active_blocks_ { false };
+	bool use_min_params_for_max_occupancy_ { false };
 
 	static cuda::device_t device(detail_::poor_mans_optional<device::id_t> maybe_id)
 	{
@@ -306,8 +374,8 @@ protected:
 	{
 		if (dimensions_.block or (dimensions_.grid and dimensions_.overall)) {
 			auto block_dims = dimensions_.block ?
-							  dimensions_.block.value() :
-							  get_composite_dimensions().block;
+				dimensions_.block.value() :
+				get_composite_dimensions().block;
 			compatible(device_id, block_dims);
 		}
 		compatible(device_id, dynamic_shared_memory_size_);
@@ -374,6 +442,7 @@ public:
 		if (dimensions_.block) {
 			dimensions_.overall.unset();
 		}
+		saturate_with_active_blocks_ = false;
 		dimensions_.grid = dims;
 		return *this;
 	}
@@ -389,6 +458,7 @@ public:
 		validate_overall_dimensions(dims);
 #endif
 		dimensions_.overall = dims;
+		saturate_with_active_blocks_ = false;
 		return *this;
 	}
 	launch_config_builder_t& overall_dimensions(grid::dimension_t x, grid::dimension_t y, grid::dimension_t z)
@@ -406,18 +476,32 @@ public:
 	launch_config_builder_t& blocks_may_cooperate() { return block_cooperation(true); }
 	launch_config_builder_t& blocks_dont_cooperate() { return block_cooperation(false); }
 
+	launch_config_builder_t& dynamic_shared_memory_size(
+		kernel::shared_memory_size_determiner_t shared_mem_size_determiner)
+	{
+		dynamic_shared_memory_size_determiner_ = shared_mem_size_determiner;
+		return *this;
+	}
+
 	launch_config_builder_t& dynamic_shared_memory_size(memory::shared::size_t size)
 	{
 #ifndef NDEBUG
 		validate_dynamic_shared_memory_size(size);
 #endif
 		dynamic_shared_memory_size_ = size;
+		dynamic_shared_memory_size_determiner_ = nullptr;
 		return *this;
 	}
 
 	launch_config_builder_t& dynamic_shared_memory(memory::shared::size_t size)
 	{
 		return dynamic_shared_memory_size(size);
+	}
+
+	launch_config_builder_t& dynamic_shared_memory(
+		kernel::shared_memory_size_determiner_t shared_mem_size_determiner)
+	{
+		return dynamic_shared_memory_size(shared_mem_size_determiner);
 	}
 
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
@@ -439,6 +523,42 @@ public:
 		kernel_ = nullptr;
 		return *this;
 	}
+
+	/**
+	 * @brief THis will use information about the kernel, the already-set block size,
+	 * and the device to create a unidimensional grid of blocks to exactly saturate
+	 * the CUDA device's capacity for simultaneous active blocks.
+	 *
+	 * @note This will _not_ set the block size - unlike
+	 */
+	launch_config_builder_t& saturate_with_active_blocks()
+	{
+		if (not (kernel_)) {
+			throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+		}
+		if (not (dimensions_.block)) {
+			throw std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
+		}
+		dimensions_.grid.clear();
+		dimensions_.overall.clear();
+		use_min_params_for_max_occupancy_ = false;
+		saturate_with_active_blocks_ = true;
+		return *this;
+	}
+
+	launch_config_builder_t& min_params_for_max_occupancy()
+	{
+		if (not (kernel_)) {
+			throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+		}
+		dimensions_.block.clear();
+		dimensions_.grid.clear();
+		dimensions_.overall.clear();
+		use_min_params_for_max_occupancy_ = true;
+		saturate_with_active_blocks_ = false;
+		return *this;
+	}
+
 
 }; // launch_config_builder_t
 
