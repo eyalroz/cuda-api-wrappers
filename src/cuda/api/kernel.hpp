@@ -35,6 +35,8 @@ class kernel_t;
 
 namespace kernel {
 
+using shared_memory_size_determiner_t = size_t (*)(int block_size);
+
 /**
  * Obtain a proxy object for a CUDA kernel
  *
@@ -123,15 +125,15 @@ public: // getters
 	kernel::handle_t  handle() const
 	{
 #ifndef NDEBUG
-	    if (handle_ == nullptr) {
-	        throw runtime_error(status::named_t::invalid_resource_handle,
-	            "CUDA driver handle unavailable for kernel");
-	    }
+		if (handle_ == nullptr) {
+			throw runtime_error(status::named_t::invalid_resource_handle,
+			    "CUDA driver handle unavailable for kernel");
+		}
 #endif
-	    return handle_;
+		return handle_;
 	}
 #else
-    kernel::handle_t  handle() const noexcept { return handle_; }
+	kernel::handle_t  handle() const noexcept { return handle_; }
 #endif
 
 public: // non-mutators
@@ -174,19 +176,23 @@ public: // non-mutators
 	 * @brief obtain the dimensions of a minimum grid which is expected to
 	 * achieve maximum occupancy on the GPU the kernel is associated with.
 	 *
-	 * @param dynamic_shared_memory_size The amount of dynamic shared memory each grid block will
-	 * need. Either this value is specified, or @p shared_memory_size_determiner
-	 * @param shared_memory_size_determiner A function which returns the desired amount
-	 * of shared memory given the block size in overall number of threads. Either this function
-	 * is provided,  or @p dynamic_shared_memory_size is specified.
-	 * @param block_size_limit do not return a block size above this value; the default, 0,
-	 * means no limit on the returned block size.
-	 * @param disable_caching_override On platforms where global caching affects occupancy,
-	 * and when enabling caching would result in zero occupancy, the occupancy calculator will
-	 * calculate the occupancy as if caching is disabled. Setting this to true makes the
-	 * occupancy calculator return 0 in such cases. More information can be found about this
-	 * feature in the "Unified L1/Texture Cache" section of the
-	 * <a href="https://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell tuning guide</a>.
+	 * @param dynamic_shared_memory_size
+	 *     The amount of dynamic shared memory each grid block will need.
+	 *     Either this value is specified, or @p kernel::shared_memory_size_determiner.
+	 * @param shared_memory_size_determiner
+	 *     A function which returns the desired amount of shared memory given the block
+	 *     size in overall number of threads. Either this function is provided, or
+	 *     @p dynamic_shared_memory_size is specified.
+	 * @param block_size_limit
+	 *     do not return a block size above this value; the default, 0, means no limit
+	 *     on the returned block size.
+	 * @param disable_caching_override
+	 *     On platforms where global caching affects occupancy, and when enabling caching
+	 *     would result in zero occupancy, the occupancy calculator will calculate the
+	 *     occupancy as if caching is disabled. Setting this to true makes the occupancy
+	 *     calculator return 0 in such cases. More information can be found about this
+	 *     feature in the "Unified L1/Texture Cache" section of the
+	 *     <a href="https://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell tuning guide</a>.
 	 *
 	 * @return A pair, with the second element being the maximum achievable block size
 	 * (1-dimensional), and the first element being the minimum number of such blocks necessary
@@ -199,37 +205,37 @@ public: // non-mutators
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const;
 
-	using shared_memory_size_determiner_t = size_t (*)(int block_size);
-
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-		shared_memory_size_determiner_t  shared_memory_size_determiner,
-		grid::block_dimension_t          block_size_limit = 0,
-		bool                             disable_caching_override = false) const;
-    ///@}
+		kernel::shared_memory_size_determiner_t  shared_memory_size_determiner,
+		grid::block_dimension_t                  block_size_limit = 0,
+		bool                                     disable_caching_override = false) const;
+	///@}
 #endif // CUDA_VERSION >= 10000
 
-    /**
-     * @brief Calculates the number of grid blocks which may be "active" on a given GPU
-     * multiprocessor simultaneously (i.e. with warps from any of these block
-     * being schedulable concurrently)
-     *
-     * @param block_size_in_threads
-     * @param dynamic_shared_memory_per_block
-     * @param disable_caching_override On some GPUs, the choice of whether to
-     * cache memory reads affects occupancy. But what if this caching results in 0
-     * potential occupancy for a kernel? There are two options, controlled by this flag.
-     * When it is set to false - the calculator will assume caching is off for the
-     * purposes of its work; when set to true, it will return 0 for such device functions.
-     * See also the "Unified L1/Texture Cache" section of the
-     * <a href="http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell
-     * tuning guide</a>.
-     */
-    VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-    grid::dimension_t max_active_blocks_per_multiprocessor(
-        grid::block_dimension_t block_size_in_threads,
-        memory::shared::size_t dynamic_shared_memory_per_block,
-        bool disable_caching_override = false) const;
+	/**
+	 * @brief Calculates the number of grid blocks which may be "active" on a given GPU
+	 * multiprocessor simultaneously (i.e. with warps from any of these block
+	 * being schedulable concurrently)
+	 *
+	 * @param block_size_in_threads
+	 * @param dynamic_shared_memory_per_block
+	 * @param disable_caching_override
+	 *     On some GPUs, the choice of whether to cache memory reads affects occupancy.
+	 *     But what if this caching results in 0 potential occupancy for a kernel?
+	 *     There are two options, controlled by this flag. When it is set to false -
+	 *     the calculator will assume caching is off for the purposes of its work; when
+	 *     set to true, it will return 0 for such device functions.
+	 *
+	 * @see The
+	 *     "Unified L1/Texture Cache" section of the <a href="http://docs.nvidia.com/cuda/maxwell-tuning-guide/index.html">Maxwell
+	 * tuning guide</a> regarding caching override.
+	 */
+	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
+	grid::dimension_t max_active_blocks_per_multiprocessor(
+		grid::block_dimension_t block_size_in_threads,
+		memory::shared::size_t  dynamic_shared_memory_per_block,
+		bool                    disable_caching_override = false) const;
 
 
 
@@ -342,20 +348,20 @@ namespace occupancy {
 namespace detail_ {
 
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
-    handle_t                handle,
-    grid::block_dimension_t block_size_in_threads,
-    memory::shared::size_t  dynamic_shared_memory_per_block,
-    bool                    disable_caching_override)
+	handle_t                handle,
+	grid::block_dimension_t block_size_in_threads,
+	memory::shared::size_t  dynamic_shared_memory_per_block,
+	bool                    disable_caching_override)
 {
-    int result;
-    cuda::status_t status = CUDA_SUCCESS;
-        // We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
-    auto flags = (unsigned) disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
-    status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
-        &result, handle, (int) block_size_in_threads, dynamic_shared_memory_per_block, flags);
-    throw_if_error(status,
-        "Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dyanmic memory per block");
-    return result;
+	int result;
+	cuda::status_t status = CUDA_SUCCESS;
+		// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
+	auto flags = (unsigned) disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
+	status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+		&result, handle, (int) block_size_in_threads, dynamic_shared_memory_per_block, flags);
+	throw_if_error(status,
+		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dyanmic memory per block");
+	return result;
 }
 
 #if CUDA_VERSION >= 10000
@@ -398,25 +404,25 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 */
 #if CUDA_VERSION < 11000
 inline memory::shared::size_t max_dynamic_shared_memory_per_block(
-    const kernel_t &,
-    grid::dimension_t,
-    grid::block_dimension_t)
+	const kernel_t &,
+	grid::dimension_t,
+	grid::block_dimension_t)
 {
-    throw cuda::runtime_error(status::not_supported,
-        "cuOccupancyAvailableDynamicSMemPerBlock() requires CUDA 11.0 or later");
+	throw cuda::runtime_error(status::not_supported,
+		"cuOccupancyAvailableDynamicSMemPerBlock() requires CUDA 11.0 or later");
 }
 #else
 inline memory::shared::size_t max_dynamic_shared_memory_per_block(
-    const kernel_t &kernel,
-    grid::dimension_t blocks_on_multiprocessor,
-    grid::block_dimension_t block_size_in_threads)
+	const kernel_t &kernel,
+	grid::dimension_t blocks_on_multiprocessor,
+	grid::block_dimension_t block_size_in_threads)
 {
-    size_t result;
-    auto status = cuOccupancyAvailableDynamicSMemPerBlock(
-        &result, kernel.handle(), (int) blocks_on_multiprocessor, (int) block_size_in_threads);
-    throw_if_error(status,
-        "Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
-    return (memory::shared::size_t) result;
+	size_t result;
+	auto status = cuOccupancyAvailableDynamicSMemPerBlock(
+		&result, kernel.handle(), (int) blocks_on_multiprocessor, (int) block_size_in_threads);
+	throw_if_error(status,
+		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
+	return (memory::shared::size_t) result;
 }
 #endif // CUDA_VERSION < 11000
 
@@ -447,32 +453,32 @@ inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	grid::block_dimension_t  block_size_limit,
 	bool                     disable_caching_override) const
 {
-    kernel_t::shared_memory_size_determiner_t no_shared_memory_size_determiner { nullptr };
-    return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
-        handle(), device_id(), no_shared_memory_size_determiner,
-        dynamic_shared_memory_size, block_size_limit, disable_caching_override);
+	kernel::shared_memory_size_determiner_t no_shared_memory_size_determiner { nullptr };
+	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+		handle(), device_id(), no_shared_memory_size_determiner,
+		dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
 
 inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
-	shared_memory_size_determiner_t  shared_memory_size_determiner,
-	cuda::grid::block_dimension_t    block_size_limit,
-	bool                             disable_caching_override) const
+	kernel::shared_memory_size_determiner_t  shared_memory_size_determiner,
+	cuda::grid::block_dimension_t            block_size_limit,
+	bool                                     disable_caching_override) const
 {
-    size_t no_fixed_dynamic_shared_memory_size { 0 };
-    return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
-        handle(), device_id(), shared_memory_size_determiner,
-        no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);
+	size_t no_fixed_dynamic_shared_memory_size { 0 };
+	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+		handle(), device_id(), shared_memory_size_determiner,
+		no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
 #endif // CUDA_VERSION >= 10000
 
 inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
-    grid::block_dimension_t  block_size_in_threads,
-    memory::shared::size_t   dynamic_shared_memory_per_block,
-    bool                     disable_caching_override) const
+	grid::block_dimension_t  block_size_in_threads,
+	memory::shared::size_t   dynamic_shared_memory_per_block,
+	bool                     disable_caching_override) const
 {
-    return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
-        handle(), block_size_in_threads,
-        dynamic_shared_memory_per_block, disable_caching_override);
+	return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
+		handle(), block_size_in_threads,
+		dynamic_shared_memory_per_block, disable_caching_override);
 }
 
 } // namespace cuda
