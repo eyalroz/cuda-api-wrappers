@@ -30,6 +30,11 @@ namespace event {
 
 namespace detail_ {
 
+inline void destroy(
+	handle_t           handle,
+	device::id_t       device_id,
+	context::handle_t  context_handle);
+
 inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t event_handle)
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
@@ -90,7 +95,8 @@ event_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	handle_t           event_handle,
-	bool               take_ownership = false) noexcept;
+	bool               take_ownership = false,
+	bool               hold_pc_refcount_unit = false) noexcept;
 
 ::std::string identify(const event_t& event);
 
@@ -128,6 +134,10 @@ public: // data member non-mutator getters
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
 	bool              is_owning()       const noexcept { return owning; }
+
+	/// True if this wrapper has been associated with an increase of the device's primary context's reference count
+	bool              holds_primary_context_reference()
+	                                    const noexcept { return holds_pc_refcount_unit; }
 
 	/// The device w.r.t. which the event is defined
 	device_t          device()          const;
@@ -207,29 +217,68 @@ public: // other mutator methods
 
 protected: // constructors
 
-	event_t(device::id_t device_id, context::handle_t context_handle, event::handle_t event_handle, bool take_ownership) noexcept
-	: device_id_(device_id), context_handle_(context_handle), handle_(event_handle), owning(take_ownership) { }
+	event_t(
+		device::id_t device_id,
+		context::handle_t context_handle,
+		event::handle_t event_handle,
+		bool take_ownership,
+		bool hold_pc_refcount_unit) noexcept
+	:
+		device_id_(device_id),
+		context_handle_(context_handle),
+		handle_(event_handle),
+		owning(take_ownership),
+		holds_pc_refcount_unit(hold_pc_refcount_unit) { }
 
 public: // friendship
 
-	friend event_t event::wrap(device::id_t, context::handle_t context_handle, event::handle_t event_handle, bool take_ownership) noexcept;
+	friend event_t event::wrap(
+		device::id_t       device,
+		context::handle_t  context_handle,
+		event::handle_t    event_handle,
+		bool               take_ownership,
+		bool               hold_pc_refcount_unit) noexcept;
 
 public: // constructors and destructor
 
-	event_t(const event_t& other) noexcept : event_t(other.device_id_, other.context_handle_, other.handle_, false) { }
+	// Copying is allowed, but is only shallow, as otherwise,
+	// an actual new event would need to be created, and we want that to
+	// be explicit
 
-	event_t(event_t&& other) noexcept :
-		event_t(other.device_id_, other.context_handle_, other.handle_, other.owning)
+	event_t(const event_t& other) noexcept : event_t(
+		other.device_id_,
+		other.context_handle_,
+		other.handle_,
+		do_not_take_ownership,
+		do_not_hold_primary_context_refcount_unit) { }
+
+	event_t(event_t&& other) noexcept : event_t(
+		other.device_id_, other.context_handle_, other.handle_, other.owning, other.holds_pc_refcount_unit)
 	{
 		other.owning = false;
+		other.holds_pc_refcount_unit = false;
 	};
 
 	~event_t()
 	{
 		if (owning) {
+#ifdef NDEBUG
 			cuEventDestroy(handle_);
 				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
-				// because the context cannot possibly exist after this call.
+				// because the event cannot possibly exist after this call.
+#else
+			event::detail_::destroy(handle_, device_id_, context_handle_);
+#endif
+		}
+		// TODO: DRY
+		if (holds_pc_refcount_unit) {
+#ifdef NDEBUG
+			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
+				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// because a failure probably means the primary context is inactive already
+#else
+			device::primary_context::detail_::decrease_refcount(device_id_);
+#endif
 		}
 	}
 
@@ -245,6 +294,10 @@ protected: // data members
 	bool                     owning;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
+	bool                     holds_pc_refcount_unit;
+		// When context_handle_ is the handle of a primary context, this event may
+		// be "keeping that context alive" through the refcount - in which case
+		// it must release its refcount unit on destruction
 };
 
 namespace event {
@@ -277,9 +330,10 @@ inline event_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	handle_t           event_handle,
-	bool               take_ownership) noexcept
+	bool               take_ownership,
+	bool               hold_pc_refcount_unit) noexcept
 {
-	return { device_id, context_handle, event_handle, take_ownership };
+	return { device_id, context_handle, event_handle, take_ownership, hold_pc_refcount_unit };
 }
 
 namespace detail_ {
@@ -297,19 +351,33 @@ inline handle_t create_raw_in_current_context(flags_t flags = 0u)
 	return new_event_handle;
 }
 
-// Note: For now, event_t's need their device's ID - even if it's the current device;
-// that explains the requirement in this function's interface
+// Notes:
+// * For now, event_t's need their device's ID - even if it's the current device;
+//   that explains the requirement in this function's interface.
+// * Similarly, this function does not know whether the context is primary or
+//   not, and it is up to the caller to know that and decide whether the event
+//   proxy should decrease the primary context refcount on destruction
 inline event_t create_in_current_context(
 	device::id_t       current_device_id,
 	context::handle_t  current_context_handle,
+	bool               hold_pc_refcount_unit,
 	bool               uses_blocking_sync,
 	bool               records_timing,
 	bool               interprocess)
 {
 	auto flags = make_flags(uses_blocking_sync, records_timing, interprocess);
 	auto new_event_handle = create_raw_in_current_context(flags);
-	bool take_ownership = true;
-	return wrap(current_device_id, current_context_handle, new_event_handle, take_ownership);
+	return wrap(current_device_id, current_context_handle, new_event_handle, do_take_ownership, hold_pc_refcount_unit);
+}
+
+inline void destroy_in_current_context(
+	handle_t           handle,
+	device::id_t       current_device_id,
+	context::handle_t  current_context_handle)
+{
+	auto status = cuEventDestroy(handle);
+	cuda::throw_if_error(status, "Failed destroying " +
+		identify(handle, current_context_handle, current_device_id));
 }
 
 /**
@@ -319,18 +387,32 @@ inline event_t create_in_current_context(
 inline event_t create(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
+	bool               hold_pc_refcount_unit,
 	bool               uses_blocking_sync,
 	bool               records_timing,
 	bool               interprocess)
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
-	return detail_::create_in_current_context(device_id, context_handle, uses_blocking_sync, records_timing, interprocess);
+
+	return detail_::create_in_current_context(
+		device_id, context_handle,
+		hold_pc_refcount_unit,
+		uses_blocking_sync, records_timing, interprocess);
+}
+
+inline void destroy(
+	handle_t           handle,
+	device::id_t       device_id,
+	context::handle_t  context_handle)
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	destroy_in_current_context(handle, device_id, context_handle);
 }
 
 } // namespace detail_
 
 /**
- * @brief creates a new execution stream on a device.
+ * @brief creates a new event on (the primary execution context of) a device.
  *
  * @param device              The device on which to create the new stream
  * @param uses_blocking_sync  When synchronizing on this new event, shall a thread busy-wait for it, or block?
@@ -338,13 +420,30 @@ inline event_t create(
  * @param interprocess        Can multiple processes work with the constructed event?
  * @return The constructed event proxy
  *
- * @note Creating an event
+ * @note The created event will keep the device's primary context active while it exists.
  */
 inline event_t create(
-	device_t&  device,
-	bool       uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
-	bool       records_timing     = do_record_timings,
-	bool       interprocess       = not_interprocess);
+	const device_t&  device,
+	bool             uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
+	bool             records_timing     = do_record_timings,
+	bool             interprocess       = not_interprocess);
+
+/**
+ * @brief creates a new event.
+ *
+ * @param context             The CUDA execution context in which to create the event
+ * @param uses_blocking_sync  When synchronizing on this new event, shall a thread busy-wait for it, or block?
+ * @param records_timing      Can this event be used to record time values (e.g. duration between events)?
+ * @param interprocess        Can multiple processes work with the constructed event?
+ * @return The constructed event proxy
+ *
+ * @note Even if the context happens to be primary, the created event will _not_ keep this context alive.
+ */
+inline event_t create(
+	context_t&  context,
+	bool        uses_blocking_sync = sync_by_busy_waiting,
+	bool        records_timing     = do_record_timings,
+	bool        interprocess       = not_interprocess);
 
 } // namespace event
 

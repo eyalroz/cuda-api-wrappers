@@ -64,7 +64,10 @@ namespace detail_ {
  * not explicitly construct contexts, to be able to function with a primary context
  * being made and kept active.
  */
-device_t wrap(id_t id, primary_context::handle_t primary_context_handle = context::detail_::none) noexcept;
+device_t wrap(
+	id_t id,
+	primary_context::handle_t primary_context_handle = context::detail_::none,
+	bool holds_primary_context_refcount_unit = false) noexcept;
 
 } // namespace detail
 
@@ -133,19 +136,22 @@ public: // types
 	using attribute_value_t = device::attribute_value_t;
 	using flags_type = device::flags_t;
 
-	// TODO: Consider a scoped/unscoped dichotomy
-	context_t::global_memory_type memory() const { return primary_context(unscoped_).memory(); }
+	/**
+	 *
+	 * @note The memory proxy regards the device's primary context.
+	 *
+	 * @todo Consider a scoped/unscoped dichotomy.
+	 */
+	context_t::global_memory_type memory() const {
+		return primary_context().memory();
+	}
 
 protected: // types
 	using context_setter_type = context::current::detail_::scoped_override_t;
 		// Note the context setter only affects the _currency_ of a context, not the
 		// activity of a primary context
 
-protected: // constants
-    enum : bool { scoped_ = true, unscoped_ = false };
-
 public:
-
 	/**
 	 * @brief Determine whether this device can access the global memory
 	 * of another CUDA device.
@@ -171,7 +177,7 @@ public:
 	 */
 	void enable_access_to(const device_t& peer) const
 	{
-		primary_context(scoped_).enable_access_to(peer.primary_context(scoped_));
+		primary_context().enable_access_to(peer.primary_context());
 	}
 
 	/**
@@ -181,7 +187,7 @@ public:
 	 */
 	void disable_access_to(const device_t& peer) const
 	{
-		primary_context(scoped_).disable_access_to(peer.primary_context(scoped_));
+		primary_context().disable_access_to(peer.primary_context());
 	}
 
 
@@ -198,7 +204,7 @@ protected:
 	void cache_and_ensure_primary_context_activation() const {
         if (primary_context_handle_ == context::detail_::none) {
             primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
-            // The refcount should now be non-zero until we destruct this device_t!
+			holds_pc_refcount_unit = true;
         }
 	}
 
@@ -218,18 +224,7 @@ public:
 	 * this device object exists. When false, the returned primary context proxy object
 	 * _will_ take care of its own reference count unit, and can outlive this object.
 	 */
-	device::primary_context_t primary_context(bool scoped) const;
-
-
-public:
-	/**
-	 * Produce a proxy for the device's primary context - the one used by runtime API calls.
-	 *
-	 * @note The CUDA driver reference counting for the primary scope is "taken core of"
-	 * with this call, i.e. the caller does not need to add/decrease the refcount, and the
-	 * object can safely outlive the device_t proxy object which created it.
-	 */
-	device::primary_context_t primary_context() const { return primary_context(unscoped_); }
+	device::primary_context_t primary_context(bool hold_pc_refcount_unit = false) const;
 
 	void set_flags(flags_type new_flags) const
 	{
@@ -368,7 +363,7 @@ public:
 	 */
 	device::limit_value_t get_limit(device::limit_t limit) const
 	{
-		return primary_context(scoped_).get_limit(limit);
+		return primary_context().get_limit(limit);
 	}
 
 	/**
@@ -377,7 +372,7 @@ public:
 	 */
 	void set_limit(device::limit_t limit, device::limit_value_t new_value) const
 	{
-		primary_context(scoped_).set_limit(limit, new_value);
+		primary_context().set_limit(limit, new_value);
 	}
 
 	/**
@@ -445,7 +440,7 @@ public:
 	 */
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
-		primary_context(scoped_).set_cache_preference(preference);
+		primary_context().set_cache_preference(preference);
 	}
 
 	/**
@@ -454,7 +449,7 @@ public:
 	 */
 	multiprocessor_cache_preference_t cache_preference() const
 	{
-		return primary_context(scoped_).cache_preference();
+		return primary_context().cache_preference();
 	}
 
 	/**
@@ -465,7 +460,7 @@ public:
 	 */
 	void set_shared_memory_bank_size(device::shared_memory_bank_size_t new_bank_size) const
 	{
-		primary_context(scoped_).set_shared_memory_bank_size(new_bank_size);
+		primary_context().set_shared_memory_bank_size(new_bank_size);
 	}
 
 	/**
@@ -476,7 +471,7 @@ public:
 	 */
 	device::shared_memory_bank_size_t shared_memory_bank_size() const
 	{
-		return primary_context(scoped_).shared_memory_bank_size();
+		return primary_context().shared_memory_bank_size();
 	}
 
 	// For some reason, there is no cudaFuncGetCacheConfig. Weird.
@@ -494,7 +489,7 @@ public:
 		return id_;
 	}
 
-	stream_t default_stream() const;
+	stream_t default_stream(bool hold_primary_context_refcount_unit = false) const;
 
 	/**
 	 * See @ref cuda::stream::create()
@@ -530,7 +525,7 @@ public:
 	 */
 	device::stream_priority_range_t stream_priority_range() const
 	{
-		return primary_context(scoped_).stream_priority_range();
+		return primary_context().stream_priority_range();
 	}
 
 public:
@@ -570,7 +565,7 @@ public:
 protected:
 	void maybe_decrease_primary_context_refcount() const
 	{
-		if (primary_context_handle_ != context::detail_::none) {
+		if (holds_pc_refcount_unit) {
 			device::primary_context::detail_::decrease_refcount(id_);
 		}
 	}
@@ -581,8 +576,20 @@ public: 	// constructors and destructor
 	{
 		::std::swap(lhs.id_, rhs.id_);
 		::std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
+		::std::swap(lhs.holds_pc_refcount_unit, rhs.holds_pc_refcount_unit);
 	}
-	~device_t() { maybe_decrease_primary_context_refcount(); }
+
+	~device_t() {
+#ifndef NDEBUG
+		maybe_decrease_primary_context_refcount();
+#else
+		if (holds_pc_refcount_unit)  {
+			device::primary_context::detail_::decrease_refcount_nothrow(id_);
+				// Swallow any error to avoid termination on throwing from a dtor
+		}
+#endif
+	}
+
 	device_t(device_t&& other) noexcept : id_(other.id_)
 	{
 		swap(*this, other);
@@ -601,6 +608,7 @@ public: 	// constructors and destructor
 		maybe_decrease_primary_context_refcount();
 		id_ = other.id_;
 		primary_context_handle_ = other.primary_context_handle_;
+		holds_pc_refcount_unit = false;
 		return *this;
 	}
 
@@ -618,17 +626,27 @@ protected: // constructors
 	 */
 	explicit device_t(
 		device::id_t device_id,
-		device::primary_context::handle_t primary_context_handle = context::detail_::none) noexcept
-	: id_(device_id), primary_context_handle_(primary_context_handle) { }
+		device::primary_context::handle_t primary_context_handle = context::detail_::none,
+		bool hold_primary_context_refcount_unit = false) noexcept
+	:
+		id_(device_id),
+		primary_context_handle_(primary_context_handle),
+		holds_pc_refcount_unit(hold_primary_context_refcount_unit) { }
 
 public: // friends
-	friend device_t device::detail_::wrap(device::id_t, device::primary_context::handle_t handle) noexcept;
+	friend device_t device::detail_::wrap(
+		device::id_t,
+		device::primary_context::handle_t handle,
+		bool hold_primary_context_refcount_unit) noexcept;
 
 protected: // data members
 	device::id_t id_; /// Numeric ID of the proxied device.
 	mutable device::primary_context::handle_t primary_context_handle_ { context::detail_::none };
 		/// Most work involving a device actually occurs using its primary context; we cache the handle
 		/// to this context here - albeit not necessary on construction
+	mutable bool holds_pc_refcount_unit { false };
+		/// Since we're allowed to cache the primary context handle on constant device_t's, we
+		/// also need to keep track of whether this object "owns" this reference.
 };
 
 ///@cond
@@ -647,9 +665,12 @@ namespace device {
 
 namespace detail_ {
 
-inline device_t wrap(id_t id, primary_context::handle_t primary_context_handle) noexcept
+inline device_t wrap(
+	id_t id,
+	primary_context::handle_t primary_context_handle,
+	bool hold_primary_context_refcount_unit) noexcept
 {
-	return device_t{ id, primary_context_handle };
+	return device_t{ id, primary_context_handle, hold_primary_context_refcount_unit };
 }
 
 } // namespace detail_
@@ -694,10 +715,11 @@ inline device_t get()
 	return device::detail_::wrap(id, pc_handle);
 }
 
-/**
- * Tells the CUDA runtime API to consider the specified device as the current one.
- */
-inline void set(const device_t& device) { detail_::set(device.id()); }
+inline void set(const device_t& device)
+{
+	auto pc = device.primary_context();
+	context::current::detail_::set(pc.handle());
+}
 
 } // namespace current
 

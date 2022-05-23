@@ -173,7 +173,7 @@ namespace detail_ {
  */
 inline region_t allocate(
 	context::handle_t  context_handle,
-	stream::handle_t       stream_handle,
+	stream::handle_t   stream_handle,
 	size_t             num_bytes)
 {
 #if CUDA_VERSION >= 11020
@@ -1509,7 +1509,6 @@ inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
  */
 inline void free(void* host_ptr)
 {
-	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
 	auto result = cuMemFreeHost(host_ptr);
 #if CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
 	if (result == status::success) { return; }

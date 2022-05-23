@@ -48,9 +48,16 @@ inline bool is_active(device::id_t device_id)
     return raw_state(device_id).is_active;
 }
 
+// We used this wrapper for a one-linear to track PC releases
+inline status_t decrease_refcount_nothrow(device::id_t device_id) noexcept
+{
+	auto result = cuDevicePrimaryCtxRelease(device_id);
+	return result;
+}
+
 inline void decrease_refcount(device::id_t device_id)
 {
-	auto status = cuDevicePrimaryCtxRelease(device_id);
+	auto status = decrease_refcount_nothrow(device_id);
 	throw_if_error(status, "Failed releasing the reference to the primary context for " + device::detail_::identify(device_id));
 }
 
@@ -251,6 +258,15 @@ inline context::handle_t get_handle(device::id_t device_id, bool with_refcount_i
 primary_context_t get(const device_t& device);
 
 namespace detail_ {
+
+/**
+ * Like `get()`, but never holds a refcount unit, and if the primary
+ * context was inactive - activates it and leaks the refcount unit.
+ *
+ * @todo DRY with @ref context::current::detail_::get_with_fallback_push()
+
+ */
+primary_context_t leaky_get(device::id_t device_id);
 
 // Note that destroying the wrapped instance decreases the refcount,
 // meaning that the handle must have been obtained with an "unmatched"

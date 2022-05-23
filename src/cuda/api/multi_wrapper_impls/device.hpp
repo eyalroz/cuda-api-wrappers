@@ -45,6 +45,19 @@ inline primary_context_t get(const device_t& device)
 	return detail_::wrap( device.id(), pc_handle, true);
 }
 
+namespace detail_ {
+
+// Use this when you need a PC, you don't have a device_t to hang it on,
+// and you don't want it to get deactivated/destroyed right after you use it.
+inline primary_context_t leaky_get(cuda::device::id_t device_id)
+{
+	bool need_to_activate_and_leak = not cuda::device::primary_context::detail_::is_active(device_id);
+	auto pc_handle = cuda::device::primary_context::detail_::get_handle(device_id, true);
+	return cuda::device::primary_context::detail_::wrap(device_id, pc_handle, not need_to_activate_and_leak);
+}
+
+} // namespace detail_
+
 } // namespace primary_context
 
 namespace peer_to_peer {
@@ -111,35 +124,32 @@ inline stream_t primary_context_t::default_stream() const noexcept
 	return stream::wrap(device_id_, handle_, stream::default_stream_handle);
 }
 
-namespace current {
-
-
-inline scoped_override_t::scoped_override_t(const device_t& device) : parent(device.id()) { }
-inline scoped_override_t::scoped_override_t(device_t&& device) : parent(device.id()) { }
-
-} // namespace current
 } // namespace device
 
 // device_t methods
 
-inline stream_t device_t::default_stream() const
+inline stream_t device_t::default_stream(bool hold_primary_context_refcount_unit) const
 {
-	return stream::wrap(id(), primary_context_handle(), stream::default_stream_handle);
+	auto pc = primary_context();
+	if (hold_primary_context_refcount_unit) {
+		device::primary_context::detail_::increase_refcount(id_);
+	}
+	return stream::wrap(
+		id(), pc.handle(), stream::default_stream_handle,
+		do_not_take_ownership, hold_primary_context_refcount_unit);
 }
 
 inline stream_t device_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority) const
 {
-	device::current::detail_::scoped_context_override_t set_device_for_this_scope(id_);
-	return stream::detail_::create(id_, primary_context_handle(), will_synchronize_with_default_stream, priority);
+	return stream::create(*this, will_synchronize_with_default_stream, priority);
 }
 
-inline device::primary_context_t device_t::primary_context(bool scoped) const
+inline device::primary_context_t device_t::primary_context(bool hold_pc_refcount_unit) const
 {
 	auto pc_handle = primary_context_handle();
-	auto decrease_refcount_on_destruct = not scoped;
-	if (not scoped) {
+	if (hold_pc_refcount_unit) {
 		device::primary_context::detail_::increase_refcount(id_);
 		// Q: Why increase the refcount here, when `primary_context_handle()`
 		//    ensured this has already happened for this object?
@@ -147,7 +157,7 @@ inline device::primary_context_t device_t::primary_context(bool scoped) const
 		//    unit (e.g. in case this object gets destructed but the
 		//    primary_context_t is still alive.
 	}
-	return device::primary_context::detail_::wrap(id_, pc_handle, decrease_refcount_on_destruct);
+	return device::primary_context::detail_::wrap(id_, pc_handle, hold_pc_refcount_unit);
 }
 
 inline void synchronize(const device_t& device)
@@ -162,21 +172,22 @@ void device_t::launch(
 KernelFunction kernel_function, launch_configuration_t launch_configuration,
 KernelParameters ... parameters) const
 {
-	return default_stream().enqueue.kernel_launch(
+	auto pc = primary_context();
+	pc.default_stream().enqueue.kernel_launch(
 	kernel_function, launch_configuration, parameters...);
 }
 
 inline context_t device_t::create_context(
-context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
-bool                                            keep_larger_local_mem_after_resize) const
+	context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	bool                                            keep_larger_local_mem_after_resize) const
 {
 	return context::create(*this, synch_scheduling_policy, keep_larger_local_mem_after_resize);
 }
 
 inline event_t device_t::create_event(
-bool          uses_blocking_sync,
-bool          records_timing,
-bool          interprocess)
+	bool          uses_blocking_sync,
+	bool          records_timing,
+	bool          interprocess)
 {
 	// The current implementation of event::create is not super-smart,
 	// but it's probably not worth it trying to improve just this function

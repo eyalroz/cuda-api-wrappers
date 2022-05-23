@@ -47,8 +47,9 @@ inline void record_event_in_current_context(
 	event::handle_t    event_handle)
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
-	throw_if_error(status, "Failed scheduling " + event::detail_::identify(event_handle)
-						   + " on " + stream::detail_::identify(stream_handle, current_context_handle_, current_device_id));
+	throw_if_error(status,
+		"Failed scheduling " + event::detail_::identify(event_handle)
+		+ " on " + stream::detail_::identify(stream_handle, current_context_handle_, current_device_id));
 }
 
 } // namespace detail_
@@ -58,32 +59,35 @@ inline stream_t create(
 	bool             synchronizes_with_default_stream,
 	priority_t       priority)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope{device.id()};
-	auto stream_handle = detail_::create_in_current_context(synchronizes_with_default_stream, priority);
-	return stream::wrap(device.id(), context::current::detail_::get_handle(), stream_handle);
+	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	device::primary_context::detail_::increase_refcount(device.id());
+	return create(pc, synchronizes_with_default_stream, priority, do_hold_primary_context_refcount_unit);
 }
 
 inline stream_t create(
 	const context_t&  context,
 	bool              synchronizes_with_default_stream,
-	priority_t        priority)
+	priority_t        priority,
+	bool              hold_pc_refcount_unit)
 {
-	return detail_::create(context.device_id(), context.handle(), synchronizes_with_default_stream, priority);
+	return detail_::create(
+		context.device_id(), context.handle(), synchronizes_with_default_stream,
+		priority, hold_pc_refcount_unit);
 }
 
 } // namespace stream
 
 inline void stream_t::enqueue_t::wait(const event_t& event_)
 {
-	auto device_id = associated_stream.device_id_;
-	device::current::detail_::scoped_context_override_t set_device_for_this_scope(device_id);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
 	// Required by the CUDA runtime API; the flags value is currently unused
 	constexpr const unsigned int flags = 0;
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
-	throw_if_error(status, "Failed scheduling a wait for " + event::detail_::identify(event_.handle())
-						   + " on " + stream::detail_::identify(associated_stream));
+	throw_if_error(status,
+		"Failed scheduling a wait for " + event::detail_::identify(event_.handle())
+		+ " on " + stream::detail_::identify(associated_stream));
 
 }
 
@@ -111,10 +115,14 @@ inline event_t stream_t::enqueue_t::event(
 	auto context_handle = associated_stream.context_handle_;
 	context::current::detail_::scoped_override_t set_device_for_this_scope(context_handle);
 
-	event_t ev { event::detail_::create_in_current_context(
-	associated_stream.device_id_, context_handle,
-	uses_blocking_sync, records_timing, interprocess) };
-	// Note that, at this point, the event is not associated with this enqueue object's stream.
+		// Note that even if this stream is in the primary context, the created event
+	auto ev = event::detail_::create_in_current_context(
+		associated_stream.device_id_,
+		context_handle,
+		do_not_hold_primary_context_refcount_unit,
+		uses_blocking_sync, records_timing, interprocess);
+	// will not extend the context's life. If the user wants that extension, they
+		// should have the _stream_ hold a reference to the primary context.
 	this->event(ev);
 	return ev;
 }

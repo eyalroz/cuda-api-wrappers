@@ -35,16 +35,17 @@ using handle_t = CUmodule;
 
 namespace detail_ {
 
-inline module_t construct(
+inline module_t wrap(
 	device::id_t device_id,
 	context::handle_t context_handle,
 	handle_t handle,
 	link::options_t options,
-	bool take_ownership = false) noexcept;
+	bool take_ownership = false,
+	bool holds_primary_context_refcount_unit = false) noexcept;
 
 inline ::std::string identify(const module::handle_t &handle)
 {
-	return std::string("module ") + cuda::detail_::ptr_as_hex(handle);
+	return ::std::string("module ") + cuda::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(const module::handle_t &handle, context::handle_t context_handle)
@@ -58,6 +59,8 @@ inline ::std::string identify(const module::handle_t &handle, context::handle_t 
 }
 
 ::std::string identify(const module_t &module);
+
+inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id);
 
 } // namespace detail_
 
@@ -80,11 +83,12 @@ module_t create(
 	Locus&&              locus,
 	ContiguousContainer  module_data,
 	link::options_t      link_options);
+
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
-	Locus&&          locus,
-ContiguousContainer  module_data);
+	Locus&&              locus,
+	ContiguousContainer  module_data);
 ///@}
 
 } // namespace module
@@ -103,6 +107,7 @@ public: // getters
 	context::handle_t context_handle() const { return context_handle_; }
 	device::id_t device_id() const { return device_id_; }
 	context_t context() const;
+
 	device_t device() const;
 
 	// These API calls are not really the way you want to work.
@@ -129,24 +134,33 @@ protected: // constructors
 		context::handle_t context,
 		module::handle_t handle,
 		link::options_t options,
-		bool owning)
-		noexcept
-		: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning_(owning)
+		bool owning,
+		bool holds_primary_context_refcount_unit)
+	noexcept
+		: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning_(owning),
+		  holds_pc_refcount_unit(holds_primary_context_refcount_unit)
 	{ }
 
 public: // friendship
 
-	friend module_t module::detail_::construct(device::id_t, context::handle_t, module::handle_t, link::options_t, bool) noexcept;
-
+	friend module_t module::detail_::wrap(
+		device::id_t, context::handle_t, module::handle_t, link::options_t, bool, bool) noexcept;
 
 public: // constructors and destructor
 
 	module_t(const module_t&) = delete;
 
 	module_t(module_t&& other) noexcept :
-		module_t(other.device_id_, other.context_handle_, other.handle_, other.options_, other.owning_)
+		module_t(
+			other.device_id_,
+			other.context_handle_,
+			other.handle_,
+			other.options_,
+			other.owning_,
+			other.holds_pc_refcount_unit)
 	{
 		other.owning_ = false;
+		other.holds_pc_refcount_unit = false;
 	};
 
 	// Note: It is up to the user of this class to ensure that it is destroyed _before_ the context
@@ -155,9 +169,17 @@ public: // constructors and destructor
 	~module_t()
 	{
 		if (owning_) {
-			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
-			auto status = cuModuleUnload(handle_);
-		 	throw_if_error(status, "Failed unloading " + module::detail_::identify(*this));
+			module::detail_::destroy(handle_, context_handle_, device_id_);
+		}
+		// TODO: DRY
+		if (holds_pc_refcount_unit) {
+#ifdef NDEBUG
+			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
+				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
+				// because a failure probably means the primary context is inactive already
+#else
+			device::primary_context::detail_::decrease_refcount(device_id_);
+#endif
 		}
 	}
 
@@ -174,6 +196,10 @@ protected: // data members
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
+	bool holds_pc_refcount_unit;
+		// When context_handle_ is the handle of a primary context, this module
+		// may be "keeping that context alive" through the refcount - in which
+		// case it must release its refcount unit on destruction
 };
 
 namespace module {
@@ -186,18 +212,20 @@ inline module_t load_from_file_in_current_context(
 	device::id_t current_context_device_id,
 	context::handle_t current_context_handle,
 	const char *path,
-	link::options_t link_options)
+	link::options_t link_options,
+	bool holds_primary_context_refcount_unit = false)
 {
 	handle_t new_module_handle;
 	auto status = cuModuleLoad(&new_module_handle, path);
 	throw_if_error(status, ::std::string("Failed loading a module from file ") + path);
 	bool do_take_ownership{true};
-	return construct(
+	return wrap(
 		current_context_device_id,
 		current_context_handle,
 		new_module_handle,
 		link_options,
-		do_take_ownership);
+		do_take_ownership,
+		holds_primary_context_refcount_unit);
 }
 
 } // namespace detail_
@@ -214,7 +242,7 @@ inline module_t load_from_file_in_current_context(
  *
  * @todo: consider adding load_module methods to context_t
  * @todo: When switching to the C++17 standard, use string_view's instead of the const char*
- * and std::string reference
+ * and ::std::string reference
  */
 ///@{
 inline module_t load_from_file(
@@ -290,16 +318,16 @@ inline module_t load_from_file(
 
 namespace detail_ {
 
-// This might have been called "wrap", if we had not needed to take care
-// of primary context reference counting
-inline module_t construct(
+inline module_t wrap(
 	device::id_t device_id,
 	context::handle_t context_handle,
 	handle_t module_handle,
 	link::options_t options,
-	bool take_ownership) noexcept
+	bool take_ownership,
+	bool hold_pc_refcount_unit
+) noexcept
 {
-	return module_t{device_id, context_handle, module_handle, options, take_ownership};
+	return module_t{device_id, context_handle, module_handle, options, take_ownership, hold_pc_refcount_unit};
 }
 
 template <typename Creator>
@@ -331,6 +359,13 @@ inline module_t create(const context_t& context, const void* module_data)
 	return detail_::create(context, module_data, creator_function);
 }
 
+inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	auto status = cuModuleUnload(handle);
+	throw_if_error(status, "Failed unloading " + identify(handle, context_handle, device_id));
+}
+
 } // namespace detail_
 
 // TODO: Use an optional to reduce the number of functions here... when the
@@ -351,8 +386,8 @@ inline device::primary_context_t get_context_for(device_t& locus);
 // Note: The following may create the primary context of a device!
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
-module_t  create(
-	Locus&&  locus,
+module_t create(
+	Locus&&             locus,
 	ContiguousContainer module_data)
 {
 	auto context = detail_::get_context_for(locus);

@@ -68,8 +68,8 @@ inline region_t allocate(const context_t& context, size_t size_in_bytes)
 
 inline region_t allocate(const device_t& device, size_t size_in_bytes)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope{device.id()};
-	return detail_::allocate_in_current_context(size_in_bytes);
+	auto pc = device.primary_context();
+	return allocate(pc, size_in_bytes);
 }
 
 namespace async {
@@ -127,10 +127,11 @@ inline unique_ptr<T> make_unique(const context_t& context, size_t num_elements)
  * @return an ::std::unique_ptr pointing to the constructed T array
  */
 template<typename T>
-inline unique_ptr<T> make_unique(device_t device, size_t num_elements)
+inline unique_ptr<T> make_unique(const device_t& device, size_t num_elements)
 {
 	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
+	auto pc = device.primary_context();
+	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
 	return memory::detail_::make_unique<T, device::detail_::allocator, device::detail_::deleter>(num_elements);
 }
 
@@ -151,8 +152,9 @@ template<typename T>
 inline unique_ptr<T> make_unique(size_t num_elements)
 {
 	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	auto device = cuda::device::current::get();
-	make_unique<T>(device, num_elements);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, num_elements);
 }
 
 /**
@@ -180,9 +182,10 @@ inline unique_ptr<T> make_unique(const context_t& context)
  * @return an ::std::unique_ptr pointing to the allocated memory
  */
 template <typename T>
-inline unique_ptr<T> make_unique(device_t device)
+inline unique_ptr<T> make_unique(const device_t& device)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
+	auto pc = device.primary_context();
+	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
 	return memory::detail_::make_unique<T, device::detail_::allocator, device::detail_::deleter>();
 }
 
@@ -193,6 +196,9 @@ inline unique_ptr<T> make_unique(device_t device)
  * @note The allocation will be made in the device's primary context -
  * which will be created if it has not yet been.
  *
+ * @note If called when the device' primary context is inactive,
+ * this
+ *
  * @tparam T  the type of value to construct in device memory
  *
  * @param num_elements  the number of elements to allocate
@@ -202,8 +208,9 @@ inline unique_ptr<T> make_unique(device_t device)
 template<typename T>
 inline unique_ptr<T> make_unique()
 {
-	auto device = cuda::device::current::get();
-	make_unique<T>(device);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc);
 }
 
 } // namespace device
@@ -310,8 +317,8 @@ inline unique_ptr<T> make_unique(
 	size_t                n,
 	initial_visibility_t  initial_visibility)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
-	return detail_::make_unique_in_current_context<T>(n, initial_visibility);
+	auto pc = device.primary_context();
+	return make_unique<T>(pc, n, initial_visibility);
 }
 
 template<typename T>
@@ -319,8 +326,9 @@ inline unique_ptr<T> make_unique(
 	size_t                n,
 	initial_visibility_t  initial_visibility)
 {
-	auto device = cuda::device::current::get();
-	return make_unique<T>(device, n, initial_visibility);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, n, initial_visibility);
 }
 
 template<typename T>
@@ -334,10 +342,11 @@ inline unique_ptr<T> make_unique(
 
 template<typename T>
 inline unique_ptr<T> make_unique(
-	device_t              device,
+	const device_t&       device,
 	initial_visibility_t  initial_visibility)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
+	auto pc = device.primary_context();
+	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
 	return detail_::make_unique_in_current_context<T>(initial_visibility);
 }
 
@@ -345,8 +354,9 @@ template<typename T>
 inline unique_ptr<T> make_unique(
 	initial_visibility_t  initial_visibility)
 {
-	auto device = cuda::device::current::get();
-	return make_unique<T>(initial_visibility);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, initial_visibility);
 }
 
 
@@ -410,12 +420,12 @@ inline region_t allocate(
 }
 
 inline region_t allocate(
-	device_t              device,
+	const device_t&       device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope{device.id()};
-	return detail_::allocate_in_current_context(num_bytes, initial_visibility);
+	auto pc = device.primary_context();
+	return allocate(pc, num_bytes, initial_visibility);
 }
 
 inline region_t allocate(size_t num_bytes)
@@ -450,17 +460,20 @@ inline region_pair allocate(
 
 namespace host {
 
-// Note: Also increases the reference count to some device context, as otherwise - the
-// allocation may be forgotten later on
+/**
+ * @note The allocation does not keep any device context alive/active; that is
+ * the caller's responsibility. However, if there is no current context, it will
+ * trigger the creation of a primary context on the default device, and "leak"
+ * a refcount unit for it.
+ */
 inline void* allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	constexpr const bool decrease_pc_refcount_on_destruct { false };
+	constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_a_context{
-		decrease_pc_refcount_on_destruct
+		dont_decrease_pc_refcount_on_destruct
 	};
-	cuda::device::primary_context::detail_::increase_refcount(cuda::device::default_device_id);
 	void* allocated = nullptr;
 	auto flags = memory::detail_::make_cuda_host_alloc_flags(options);
 	auto result = cuMemHostAlloc(&allocated, size_in_bytes, flags);

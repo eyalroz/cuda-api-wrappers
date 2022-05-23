@@ -124,25 +124,25 @@ inline handle_t push_default_if_missing()
  */
 class scoped_existence_ensurer_t {
 public:
-	context::handle_t maybe_pc_handle_;
+	context::handle_t context_handle;
 	device::id_t device_id_;
 	bool decrease_pc_refcount_on_destruct_;
 
-	explicit scoped_existence_ensurer_t(bool decrease_pc_refcount_on_destruct = true)
-		: maybe_pc_handle_(get_handle()),
-		  decrease_pc_refcount_on_destruct_(decrease_pc_refcount_on_destruct)
+	explicit scoped_existence_ensurer_t(bool avoid_pc_refcount_increase = true)
+		: context_handle(get_handle()),
+		  decrease_pc_refcount_on_destruct_(avoid_pc_refcount_increase)
 	{
-		if (maybe_pc_handle_ == context::detail_::none) {
+		if (context_handle == context::detail_::none) {
 			device_id_ = device::current::detail_::get_id();
-			maybe_pc_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
-			context::current::detail_::push(maybe_pc_handle_);
+			context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
+			context::current::detail_::push(context_handle);
 		}
 		else { decrease_pc_refcount_on_destruct_ = false; }
 	}
 
 	~scoped_existence_ensurer_t()
 	{
-	    if (maybe_pc_handle_ != context::detail_::none and decrease_pc_refcount_on_destruct_) {
+	    if (context_handle != context::detail_::none and decrease_pc_refcount_on_destruct_) {
             context::current::detail_::pop();
 	        device::primary_context::detail_::decrease_refcount(device_id_);
 	    }
