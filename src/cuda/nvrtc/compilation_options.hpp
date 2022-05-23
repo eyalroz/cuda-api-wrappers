@@ -9,6 +9,7 @@
 #define CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
 
 #include <cuda/api/device_properties.hpp>
+#include <cuda/api/device.hpp> // for set_target taking a device
 #include "detail/marshalled_options.hpp"
 
 #include <unordered_map>
