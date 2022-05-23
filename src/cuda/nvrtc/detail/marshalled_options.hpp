@@ -8,6 +8,9 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#if __cplusplus >= 201703L
+#include <charconv>
+#endif
 
 namespace cuda {
 
@@ -173,8 +176,8 @@ public:
 #endif
 		constexpr const ::std::size_t uint_size = ::std::numeric_limits<::std::size_t>::digits10;
 #if __cplusplus >= 201703L
-		auto result = ::std::to_chars(buffer, buffer + sizeof(buffer), v);
-		auto num_chars = result.ptr - uint_buffer;
+		auto result = ::std::to_chars(current_pos(), current_pos() + uint_size, v);
+		auto num_chars = result.ptr - current_pos();
 #else
 		auto num_chars = snprintf(current_pos(), uint_size, "%zu", v);
 #endif
@@ -190,8 +193,8 @@ public:
 #endif
 		constexpr const ::std::size_t uint_size = ::std::numeric_limits<unsigned>::digits10;
 #if __cplusplus >= 201703L
-		auto result = ::std::to_chars(buffer, buffer + sizeof(buffer), v);
-		auto num_chars = result.ptr - uint_buffer;
+		auto result = ::std::to_chars(current_pos(), current_pos() + uint_size, v);
+		auto num_chars = result.ptr - current_pos();
 #else
 		auto num_chars = snprintf(current_pos(), uint_size, "%u", v);
 #endif
