@@ -17,30 +17,6 @@
 
 namespace cuda {
 
-#if __cplusplus >= 202002L
-using ::std::span;
-#else
-	template <typename T>
-	// Poor man's span. TODO: Replace it with a proper span.
-	//
-	// Note: A span is a reference type. That means that changes
-	// to the pointed-to data are _not_considered changes to the
-	// span, hence you can get to that data with const methods.
-	struct span {
-		T* data_;
-		size_t size_;
-
-//		T*& data() noexcept { return const_cast<T*&>(data_); }
-		T* data() const noexcept { return data_; }
-		constexpr size_t size() const noexcept { return size_; }
-		const T* cbegin() const { return data(); }
-		const T* cend() const { return data() + size_; }
-		T* begin() const { return data(); }
-		T* end() const { return data() + size_; }
-	};
-#endif
-
-
 ///@cond
 class module_t;
 ///@endcond

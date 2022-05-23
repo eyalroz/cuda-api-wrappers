@@ -104,6 +104,36 @@ struct is_kinda_like_contiguous_container :
 
 } // namespace detail_
 
+#if __cplusplus >= 202002L
+using ::std::span;
+#else
+
+/**
+ * @brief A "poor man's" span class
+ *
+ * @todo: Replace this with a more proper span, possibly in a file of its own.
+ *
+ * @note Remember a span is a reference type. That means that changes to the
+ * pointed-to data are _not_considered changes to the span, hence you can get
+ * to that data with const methods.
+ */
+template<typename T>
+struct span {
+	T *data_;
+	size_t size_;
+
+	T *data() const noexcept { return data_; }
+	constexpr size_t size() const noexcept { return size_; }
+
+	T const *cbegin() const noexcept { return data(); }
+	T const *cend()   const noexcept { return data() + size_; }
+	T       *begin()  const noexcept { return data(); }
+	T       *end()    const noexcept { return data() + size_; }
+};
+
+#endif
+
+
 
 /**
  * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,
