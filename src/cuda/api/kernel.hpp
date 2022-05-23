@@ -51,7 +51,8 @@ using shared_memory_size_determiner_t = size_t (*)(int block_size);
 kernel_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_id,
-	kernel::handle_t   f);
+	kernel::handle_t   f,
+	bool hold_primary_context_refcount_unit = false);
 
 namespace detail_ {
 
@@ -313,24 +314,52 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	}
 
 protected: // ctors & dtor
-	kernel_t(device::id_t device_id, context::handle_t context_handle, kernel::handle_t handle)
-		: device_id_(device_id), context_handle_(context_handle), handle_(handle) { }
+	kernel_t(
+		device::id_t       device_id,
+		context::handle_t  context_handle,
+		kernel::handle_t   handle,
+		bool               hold_primary_context_refcount_unit)
+	 :
+		device_id_(device_id),
+		context_handle_(context_handle),
+		handle_(handle),
+		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
+	{ }
 
 public: // ctors & dtor
-	friend kernel_t kernel::wrap(device::id_t, context::handle_t, kernel::handle_t);
+	friend kernel_t kernel::wrap(device::id_t, context::handle_t, kernel::handle_t, bool);
 
-	kernel_t(const kernel_t& other) = default; // Note: be careful with subclasses
-	kernel_t(kernel_t&& other) = default; // Note: be careful with subclasses
+	kernel_t(const kernel_t& other) :
+		kernel_t(other.device_id_, other.context_handle_, other.handle_, false) { }
+		// Note: be careful with subclasses
+	kernel_t(kernel_t&& other) :
+		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
+	{
+		std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
+	}
 
 public: // ctors & dtor
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
-	virtual ~kernel_t() = default;
+	virtual
 #endif
+	~kernel_t()	{
+		// TODO: DRY
+		if (holds_pc_refcount_unit) {
+#ifdef NDEBUG
+			cuDevicePrimaryCtxRelease(device_id_);
+				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// because a failure probably means the primary context is inactive already
+#else
+			device::primary_context::detail_::decrease_refcount(device_id_);
+#endif
+		}
+	}
 
 protected: // data members
 	device::id_t device_id_; // We don't _absolutely_ need the device ID, but - why not have it if we can?
 	context::handle_t context_handle_;
 	mutable kernel::handle_t handle_;
+	bool holds_pc_refcount_unit;
 }; // kernel_t
 
 namespace kernel {
@@ -338,9 +367,10 @@ namespace kernel {
 inline kernel_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_id,
-	kernel::handle_t   f)
+	kernel::handle_t   f,
+	bool hold_primary_context_refcount_unit)
 {
-	return kernel_t{ device_id, context_id, f };
+	return kernel_t{ device_id, context_id, f, hold_primary_context_refcount_unit };
 }
 
 namespace occupancy {

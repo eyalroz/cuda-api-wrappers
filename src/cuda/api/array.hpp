@@ -134,6 +134,9 @@ handle_t get_descriptor(context::handle_t context_handle, handle_t handle)
  * value, which is interpolated between the nearest corresponding array elements.
  *
  * @note CUDA only supports arrays of 2 or 3 dimensions.
+ *
+ * @note Instances of this class do _not_ keep devices' primary contexts
+ * alive/active - just like memory allocations (but unlike events and streams).
  */
 template <typename T, dimensionality_t NumDimensions>
 class array_t {
@@ -209,7 +212,7 @@ array_t<T,NumDimensions> create(
 
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	device_t                     device,
+	const device_t&              device,
 	dimensions_t<NumDimensions>  dimensions);
 
 

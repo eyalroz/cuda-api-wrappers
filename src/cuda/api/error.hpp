@@ -469,7 +469,7 @@ inline ::std::string identify(handle_t handle, device::id_t device_id)
 
 } // namespace detail_
 
-namespace current{
+namespace current {
 namespace detail_ {
 inline ::std::string identify(context::handle_t handle)
 {

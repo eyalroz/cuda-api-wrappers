@@ -107,7 +107,7 @@ namespace detail_ {
 
 ::std::string identify(const stream_t& stream);
 
-inline handle_t create_in_current_context(
+inline handle_t create_raw_in_current_context(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = stream::default_priority
 )
@@ -174,7 +174,8 @@ stream_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	handle_t           stream_handle,
-	bool               take_ownership = false) noexcept;
+	bool               take_ownership = false,
+	bool               hold_pc_refcount_unit = false) noexcept;
 
 namespace detail_ {
 
@@ -681,9 +682,12 @@ public: // mutators
 				(with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
 			auto result = static_cast<status_t>(
 				stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
-			throw_if_error(result, "Failed scheduling a wait  to global memory on "
-				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
-				associated_stream.device_id_));
+			throw_if_error(result,
+				"Failed scheduling a wait on global memory address on "
+				+ stream::detail_::identify(
+					associated_stream.handle_,
+					associated_stream.context_handle_,
+					associated_stream.device_id_) );
 		}
 
 		/**
@@ -719,8 +723,9 @@ public: // mutators
 		template <typename Iterator>
 		void single_value_operations_batch(Iterator ops_begin, Iterator ops_end)
 		{
-			static_assert(::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
-			"Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
+			static_assert(
+				::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
+				"Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
 				" CUstreamBatchMemOpParams, as the value type");
 			auto num_ops = ::std::distance(ops_begin, ops_end);
 			if (::std::is_same<typename ::std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
@@ -784,19 +789,29 @@ protected: // constructor
 		device::id_t       device_id,
 		context::handle_t  context_handle,
 		stream::handle_t   stream_handle,
-		bool               take_ownership = false) noexcept
-	: device_id_(device_id), context_handle_(context_handle), handle_(stream_handle), owning(take_ownership) { }
+		bool               take_ownership = false,
+		bool               hold_primary_context_refcount_unit = false) noexcept
+	:
+		device_id_(device_id),
+		context_handle_(context_handle),
+		handle_(stream_handle),
+		owning(take_ownership),
+		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
+	{ }
 
 public: // constructors and destructor
 
 	stream_t(const stream_t& other) noexcept : 
-		stream_t(other.device_id_, other.context_handle_, other.handle_, false)
+		stream_t(
+			other.device_id_, other.context_handle_, other.handle_,
+			do_not_take_ownership, do_not_hold_primary_context_refcount_unit)
 	{ }
 
 	stream_t(stream_t&& other) noexcept : 
-		stream_t(other.device_id_, other.context_handle_, other.handle_, other.owning)
+		stream_t(other.device_id_, other.context_handle_, other.handle_, other.owning, other.holds_pc_refcount_unit)
 	{
 		other.owning = false;
+		other.holds_pc_refcount_unit = false;
 	}
 
 	~stream_t()
@@ -804,6 +819,16 @@ public: // constructors and destructor
 		if (owning) {
 			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 			cuStreamDestroy(handle_);
+		}
+		// TODO: DRY
+		if (holds_pc_refcount_unit) {
+#ifdef NDEBUG
+			cuDevicePrimaryCtxRelease(device_id_);
+				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// because a failure probably means the primary context is inactive already
+#else
+			device::primary_context::detail_::decrease_refcount(device_id_);
+#endif
 		}
 	}
 
@@ -820,8 +845,14 @@ public: // friendship
 		device::id_t       device_id,
 		context::handle_t  context_handle,
 		stream::handle_t   stream_handle,
-		bool               take_ownership) noexcept;
+		bool               take_ownership,
+		bool               hold_pc_refcount_unit) noexcept;
 
+	/**
+	 * @note two stream proxies may be equal even though one is the owning reference
+	 * and the other isn't, or if only one holds a primary context reference unit
+	 * and the other doesn't.
+	 */
 	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 	{
 		return
@@ -837,6 +868,10 @@ protected: // data members
 	const context::handle_t  context_handle_;
 	const stream::handle_t   handle_;
 	bool                     owning;
+	bool                     holds_pc_refcount_unit;
+		// When context_handle_ is the handle of a primary context, this event may
+		// be "keeping that context alive" through the refcount - in which case
+		// it must release its refcount unit on destruction
 
 public: // data members - which only exist in lieu of namespaces
 	enqueue_t     enqueue { *this };
@@ -856,9 +891,10 @@ inline stream_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	stream::handle_t   stream_handle,
-	bool               take_ownership) noexcept
+	bool               take_ownership,
+	bool               hold_pc_refcount_unit) noexcept
 {
-	return { device_id, context_handle, stream_handle, take_ownership };
+	return { device_id, context_handle, stream_handle, take_ownership, hold_pc_refcount_unit };
 }
 
 namespace detail_ {
@@ -867,12 +903,13 @@ inline stream_t create(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	bool               synchronizes_with_default_stream,
-	priority_t         priority = stream::default_priority)
+	priority_t         priority = stream::default_priority,
+	bool               hold_pc_refcount_unit = false)
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
-	auto new_stream_handle = cuda::stream::detail_::create_in_current_context(
+	auto new_stream_handle = cuda::stream::detail_::create_raw_in_current_context(
 		synchronizes_with_default_stream, priority);
-	return wrap(device_id, context_handle, new_stream_handle, do_take_ownership);
+	return wrap(device_id, context_handle, new_stream_handle, do_take_ownership, hold_pc_refcount_unit);
 }
 
 template<>
@@ -903,7 +940,8 @@ inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr addres
 } // namespace detail_
 
 /**
- * @brief Create a new stream (= queue) on a CUDA device.
+ * @brief Create a new stream (= queue) in the primary execution context
+ * of a CUDA device.
  *
  * @param device the device on which a stream is to be created
  * @param synchronizes_with_default_stream if true, no work on this stream
@@ -914,15 +952,30 @@ inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr addres
  * @ref device_t::stream_priority_range() .
  * @return The newly-created stream
  */
-stream_t create(
-	const device_t&  device,
-	bool             synchronizes_with_default_stream,
-	priority_t       priority = stream::default_priority);
+///@{
 
+/**
+ * @brief Create a new stream (= queue) in the primary execution context
+ * of a CUDA device.
+ *
+ * @param device the device on which a stream is to be created
+ */
+stream_t create(
+	const device_t&   device,
+	bool              synchronizes_with_default_stream,
+	priority_t        priority = stream::default_priority);
+
+/**
+ * @brief Create a new stream (= queue) in a CUDA execution context.
+ *
+ * @param context the execution context in which to create the stream
+ */
 stream_t create(
 	const context_t&  context,
 	bool              synchronizes_with_default_stream,
-	priority_t        priority = stream::default_priority);
+	priority_t        priority = stream::default_priority,
+	bool              hold_pc_refcount_unit = false);
+///@}
 
 } // namespace stream
 

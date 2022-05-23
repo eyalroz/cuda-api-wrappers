@@ -34,13 +34,14 @@ array_t<T,NumDimensions> create(
 
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	device_t                     device,
+	const device_t&              device,
 	dimensions_t<NumDimensions>  dimensions)
 {
-	device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
-	auto context_handle =  set_device_for_this_scope.primary_context_handle;
-	handle_t handle = detail_::create<T, NumDimensions>(context_handle, dimensions);
-	return wrap<T, NumDimensions>(device.id(), context_handle, handle, dimensions);
+	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	return create<T, NumDimensions>(pc, dimensions);
+		// Note that we have no guarantee that the device's primary context
+		// will continue to exist/be active when returning from this call;
+		// that's the caller's responsibility
 }
 
 } // namespace array

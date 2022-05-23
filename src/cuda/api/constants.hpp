@@ -116,6 +116,11 @@ enum : bool {
 	do_not_take_ownership = false,
 };
 
+enum : bool {
+	do_hold_primary_context_refcount_unit = true,
+	do_not_hold_primary_context_refcount_unit = false,
+};
+
 namespace context {
 
 namespace detail_ {

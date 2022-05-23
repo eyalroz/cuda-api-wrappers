@@ -40,10 +40,15 @@ apriori_compiled_kernel_t get(context_t context, KernelFunctionPtr function_ptr)
 	return detail_::wrap(context.device_id(), context.handle(), handle, ptr_);
 }
 
+/**
+ * @note The returned kernel proxy object will keep the device's primary
+ * context active while the kernel exists.
+ */
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(device_t device, KernelFunctionPtr function_ptr)
+apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function_ptr)
 {
-	return get<KernelFunctionPtr>(device.primary_context(), function_ptr);
+	auto primary_context = device.primary_context(do_hold_primary_context_refcount_unit);
+	return get<KernelFunctionPtr>(primary_context, function_ptr);
 }
 
 } // namespace kernel

@@ -33,21 +33,36 @@ inline event_t create(
 	bool              records_timing,
 	bool              interprocess)
 {
-	// Yes, we need the ID explicitly even on the current device,
-	// because event_t's don't have an implicit device ID.
-	return event::detail_::create(context.device_id(), context.handle(), uses_blocking_sync, records_timing, interprocess);
+	return event::detail_::create(
+		context.device_id(),
+		context.handle(),
+		do_not_hold_primary_context_refcount_unit,
+		uses_blocking_sync,
+		records_timing,
+		interprocess);
 }
 
 inline event_t create(
-	device_t&  device,
-	bool       uses_blocking_sync,
-	bool       records_timing,
-	bool       interprocess)
+	const device_t&  device,
+	bool             uses_blocking_sync,
+	bool             records_timing,
+	bool             interprocess)
 {
-	device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
+	// While it's possible that the device's primary context is
+	// currently active, we have no guarantee that it will not soon
+	// become inactive. So, we increase the PC refcount "on behalf"
+	// of the stream, to make sure the PC does not de-activate
+	//
+	// todo: consider having the event wrapper take care of the primary
+	//  context refcount.
+	//
+	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
+	device::primary_context::detail_::increase_refcount(device.id());
 	return event::detail_::create_in_current_context(
 		device.id(),
 		context::current::detail_::get_handle(),
+		do_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
 
@@ -60,16 +75,25 @@ inline handle_t export_(const event_t& event)
 
 inline event_t import(const context_t& context, const handle_t& event_ipc_handle)
 {
-	bool do_not_take_ownership { false };
-	return event::wrap(context.device_id(), context.handle(), detail_::import(event_ipc_handle), do_not_take_ownership);
+	constexpr const bool do_not_take_ownership { false };
+	constexpr const bool do_not_own_pc_refcount_unit { false };
+	return event::wrap(
+		context.device_id(),
+		context.handle(),
+		detail_::import(event_ipc_handle),
+		do_not_take_ownership,
+		do_not_own_pc_refcount_unit);
 }
 
 
 inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
 {
-	device::current::detail_::scoped_context_override_t set_device_for_this_scope(device.id());
+	auto pc = device.primary_context();
+	device::primary_context::detail_::increase_refcount(device.id());
 	auto handle = detail_::import(event_ipc_handle);
-	return event::wrap(device.id(), context::current::detail_::get_handle(), handle, do_not_take_ownership);
+	return event::wrap(
+		device.id(), context::current::detail_::get_handle(), handle,
+		do_not_take_ownership, do_hold_primary_context_refcount_unit);
 }
 
 } // namespace ipc

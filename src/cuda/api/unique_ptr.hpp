@@ -4,6 +4,9 @@
  * @brief A smart pointer for CUDA device- and host-side memory, similar
  * to the standard library's <a href="http://en.cppreference.com/w/cpp/memory/unique_ptr">::std::unique_ptr</a>.
  *
+ * @note Unique pointers, like any (wrapped) memory allocations, do _not_ extend the lifetime of
+ * contexts (primary or otherwise). In particular, they do not increase primary context refcounts.
+ *
  */
 #ifndef CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
 #define CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
@@ -100,7 +103,7 @@ template<typename T>
 inline unique_ptr<T> make_unique(const context_t& context, size_t n);
 
 template<typename T>
-inline unique_ptr<T> make_unique(device_t device, size_t n);
+inline unique_ptr<T> make_unique(const device_t& device, size_t n);
 
 template<typename T>
 inline unique_ptr<T> make_unique(size_t n);
@@ -109,7 +112,7 @@ template<typename T>
 inline unique_ptr<T> make_unique(const context_t& context);
 
 template<typename T>
-inline unique_ptr<T> make_unique(device_t device);
+inline unique_ptr<T> make_unique(const device_t& device);
 
 template<typename T>
 inline unique_ptr<T> make_unique();

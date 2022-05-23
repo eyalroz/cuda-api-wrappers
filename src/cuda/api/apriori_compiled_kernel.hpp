@@ -45,9 +45,10 @@ inline handle_t get_handle(const void *kernel_function_ptr, const char* name = n
 
 apriori_compiled_kernel_t wrap(
 	device::id_t device_id,
-	context::handle_t context_id,
+	context::handle_t primary_context_handle,
 	kernel::handle_t f,
-	const void* ptr);
+	const void* ptr,
+	bool hold_primary_context_refcount_unit = false);
 
 
 } // namespace detail_
@@ -394,23 +395,33 @@ public: // non-mutators
 #endif // CAN_GET_APRIORI_KERNEL_HANDLE
 
 protected: // ctors & dtor
-	apriori_compiled_kernel_t(device::id_t device_id, context::handle_t context_handle,
-		kernel::handle_t handle, const void *f)
-		: kernel_t(device_id, context_handle, handle), ptr_(f) {
+	apriori_compiled_kernel_t(device::id_t device_id, context::handle_t primary_context_handle,
+		kernel::handle_t handle, const void *f, bool hold_pc_refcount_unit)
+	: kernel_t(device_id, primary_context_handle, handle, hold_pc_refcount_unit), ptr_(f) {
 		// TODO: Consider checking whether this actually is a device function, at all and in this context
 #ifndef NDEBUG
 		assert(f != nullptr && "Attempt to construct a kernel object for a nullptr kernel function pointer");
 #endif
 	}
-	apriori_compiled_kernel_t(device::id_t device_id, context::handle_t context_handle, const void *f)
-		: apriori_compiled_kernel_t(device_id, context_handle, kernel::detail_::get_handle(f), f) { }
+	apriori_compiled_kernel_t(
+		device::id_t device_id,
+		context::handle_t primary_context_handle,
+		const void *f,
+		bool hold_primary_context_refcount_unit)
+	: apriori_compiled_kernel_t(
+		device_id,
+		primary_context_handle,
+		kernel::detail_::get_handle(f),
+		f,
+		hold_primary_context_refcount_unit)
+	{ }
 
 public: // ctors & dtor
 	apriori_compiled_kernel_t(const apriori_compiled_kernel_t&) = default;
 	apriori_compiled_kernel_t(apriori_compiled_kernel_t&&) = default;
 
 public: // friends
-	friend apriori_compiled_kernel_t kernel::detail_::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*);
+	friend apriori_compiled_kernel_t kernel::detail_::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
 
 protected: // data members
 	const void *const ptr_;
@@ -420,12 +431,13 @@ namespace kernel {
 namespace detail_ {
 
 inline apriori_compiled_kernel_t wrap(
-	device::id_t device_id,
-	context::handle_t context_id,
-	kernel::handle_t f,
-	const void *ptr)
+	device::id_t       device_id,
+	context::handle_t  primary_context_handle,
+	kernel::handle_t   f,
+	const void *       ptr,
+	bool               hold_primary_context_refcount_unit)
 {
-	return {device_id, context_id, f, ptr};
+	return { device_id, primary_context_handle, f, ptr, hold_primary_context_refcount_unit };
 }
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
@@ -438,8 +450,12 @@ inline ::std::string identify(const apriori_compiled_kernel_t& kernel)
 
 } // namespace detail
 
+/**
+ * @note The returned kernel proxy object will keep the device's primary
+ * context active while the kernel exists.
+ */
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(device_t device, KernelFunctionPtr function_ptr);
+apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function_ptr);
 
 template<typename KernelFunctionPtr>
 apriori_compiled_kernel_t get(context_t context, KernelFunctionPtr function_ptr);
