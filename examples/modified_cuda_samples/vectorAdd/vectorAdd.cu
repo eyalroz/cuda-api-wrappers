@@ -10,8 +10,6 @@
  * contact the author.
  */
 
-#include "../../common.hpp"
-
 #include <cuda/api.hpp>
 
 #include <iostream>

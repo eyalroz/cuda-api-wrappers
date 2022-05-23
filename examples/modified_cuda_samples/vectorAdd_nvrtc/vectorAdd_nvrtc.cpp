@@ -13,9 +13,9 @@
  * used instead of regular host and device memory.
  */
 
-#include "../../common.hpp"
-
 #include <cuda/nvrtc.hpp>
+#include <cuda/api.hpp>
+
 #include <iostream>
 #include <cmath>
 
