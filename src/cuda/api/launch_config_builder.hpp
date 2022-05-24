@@ -425,6 +425,9 @@ public:
 		else if (device_) {
 			max_size = device().maximum_threads_per_block();
 		}
+		else {
+			throw std::logic_error("Request to use the maximum-size linear block, with no device or kernel specified");
+		}
 		auto block_dims = grid::block_dimensions_t { max_size, 1, 1 };
 
 		if (dimensions_.grid and dimensions_.overall) {
