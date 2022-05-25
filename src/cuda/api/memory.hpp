@@ -224,7 +224,12 @@ inline region_t allocate(const stream_t& stream, size_t size_in_bytes);
 inline void free(void* ptr)
 {
 	auto result = cuMemFree(address(ptr));
-	throw_if_error(result, "Freeing device memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
+#if CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+	if (result == status::success) { return; }
+#else
+	if (result == status::success or result == status::context_is_destroyed) { return; }
+#endif
+	throw runtime_error(result, "Freeing device memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region) { free(region.start()); }
 ///@}
@@ -1506,7 +1511,12 @@ inline void free(void* host_ptr)
 {
 	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
 	auto result = cuMemFreeHost(host_ptr);
-	throw_if_error(result, "Freeing pinned host memory at " + cuda::detail_::ptr_as_hex(host_ptr));
+#if CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+	if (result == status::success) { return; }
+#else
+	if (result == status::success or result == status::context_is_destroyed) { return; }
+#endif
+	throw runtime_error(result, "Freeing pinned host memory at " + cuda::detail_::ptr_as_hex(host_ptr));
 }
 
 inline void free(region_t region) {	return free(region.data()); }
