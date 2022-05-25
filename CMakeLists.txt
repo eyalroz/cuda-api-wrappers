@@ -17,7 +17,7 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 PROJECT(cuda-api-wrappers
-	VERSION 0.5.1
+	VERSION 0.5.2
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
