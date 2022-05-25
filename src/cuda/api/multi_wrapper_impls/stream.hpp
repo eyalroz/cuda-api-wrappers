@@ -41,10 +41,10 @@ inline device::id_t device_id_of(stream::handle_t stream_handle)
 #endif // CUDA_VERSION >= 9020
 
 inline void record_event_in_current_context(
-device::id_t       current_device_id,
-context::handle_t  current_context_handle_,
-stream::handle_t   stream_handle,
-event::handle_t    event_handle)
+	device::id_t       current_device_id,
+	context::handle_t  current_context_handle_,
+	stream::handle_t   stream_handle,
+	event::handle_t    event_handle)
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
 	throw_if_error(status, "Failed scheduling " + event::detail_::identify(event_handle)
@@ -54,9 +54,9 @@ event::handle_t    event_handle)
 } // namespace detail_
 
 inline stream_t create(
-const device_t&  device,
-bool             synchronizes_with_default_stream,
-priority_t       priority)
+	const device_t&  device,
+	bool             synchronizes_with_default_stream,
+	priority_t       priority)
 {
 	cuda::device::current::detail_::scoped_context_override_t set_device_for_this_scope{device.id()};
 	auto stream_handle = detail_::create_in_current_context(synchronizes_with_default_stream, priority);
@@ -64,9 +64,9 @@ priority_t       priority)
 }
 
 inline stream_t create(
-const context_t&  context,
-bool              synchronizes_with_default_stream,
-priority_t        priority)
+	const context_t&  context,
+	bool              synchronizes_with_default_stream,
+	priority_t        priority)
 {
 	return detail_::create(context.device_id(), context.handle(), synchronizes_with_default_stream, priority);
 }

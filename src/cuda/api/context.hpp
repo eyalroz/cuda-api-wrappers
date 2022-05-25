@@ -244,8 +244,8 @@ public: // inner classes
 			: device_id_(device_id), context_handle_(context_handle) { }
 		///@endcond
 
-        device_t associated_device() const;
-        context_t associated_context() const;
+		device_t associated_device() const;
+		context_t associated_context() const;
 
 		/**
 		 * Allocate a region of memory on the device
@@ -385,7 +385,7 @@ public: // other non-mutator methods
 	/**
 	 * @return the maximum grid depth at which a thread can issue the device
 	 * runtime call `cudaDeviceSynchronize()` / `cuda::device::synchronize()`
-     * to wait on child grid launches to complete.
+	 * to wait on child grid launches to complete.
 	 *
 	 * @todo Is this really a feature of the context? Not of the device?
 	 */
@@ -639,11 +639,11 @@ public: // constructors and destructor
 	};
 
 	~context_t() {
-	    if (owning_) {
-	        cuCtxDestroy(handle_);
+		if (owning_) {
+			cuCtxDestroy(handle_);
 			// Note: "Swallowing" any potential error to avoid std::terminate(); also,
 			// because the context cannot possibly exist after this call.
-	    }
+		}
 	}
 
 public: // operators
@@ -741,12 +741,12 @@ inline handle_t create_and_push(
 context_t create(
 	device_t                               device,
 	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
-    bool                                   keep_larger_local_mem_after_resize = false);
+	bool                                   keep_larger_local_mem_after_resize = false);
 
 context_t create_and_push(
 	device_t                               device,
 	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
-    bool                                   keep_larger_local_mem_after_resize = false);
+	bool                                   keep_larger_local_mem_after_resize = false);
 
 namespace current {
 

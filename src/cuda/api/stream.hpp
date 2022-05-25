@@ -46,18 +46,18 @@ enum : bool {
 };
 
 enum wait_condition_t : unsigned {
-    greater_or_equal_to            = CU_STREAM_WAIT_VALUE_GEQ,
-    geq                            = CU_STREAM_WAIT_VALUE_GEQ,
+	greater_or_equal_to            = CU_STREAM_WAIT_VALUE_GEQ,
+	geq                            = CU_STREAM_WAIT_VALUE_GEQ,
 
-    equality                       = CU_STREAM_WAIT_VALUE_EQ,
-    equals                         = CU_STREAM_WAIT_VALUE_EQ,
+	equality                       = CU_STREAM_WAIT_VALUE_EQ,
+	equals                         = CU_STREAM_WAIT_VALUE_EQ,
 
-    nonzero_after_applying_bitmask = CU_STREAM_WAIT_VALUE_AND,
-    one_bits_overlap               = CU_STREAM_WAIT_VALUE_AND,
-    bitwise_and                    = CU_STREAM_WAIT_VALUE_AND,
+	nonzero_after_applying_bitmask = CU_STREAM_WAIT_VALUE_AND,
+	one_bits_overlap               = CU_STREAM_WAIT_VALUE_AND,
+	bitwise_and                    = CU_STREAM_WAIT_VALUE_AND,
 
-    zero_bits_overlap              = CU_STREAM_WAIT_VALUE_NOR,
-    bitwise_nor                    = CU_STREAM_WAIT_VALUE_NOR,
+	zero_bits_overlap              = CU_STREAM_WAIT_VALUE_NOR,
+	bitwise_nor                    = CU_STREAM_WAIT_VALUE_NOR,
 } ;
 
 
@@ -116,8 +116,8 @@ inline handle_t create_in_current_context(
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	    // We could instead have used an equivalent Driver API call:
-	    // cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
+		// We could instead have used an equivalent Driver API call:
+		// cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
 	cuda::throw_if_error(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
 	return new_stream_handle;
 }
@@ -241,8 +241,8 @@ public: // other non-mutators
 	{
 		unsigned int flags;
 		auto status = cuStreamGetFlags(handle_, &flags);
-		    // Could have used the equivalent Driver API call,
-		    // cuStreamGetFlags(handle_, &flags);
+			// Could have used the equivalent Driver API call,
+			// cuStreamGetFlags(handle_, &flags);
 		throw_if_error(status, "Failed obtaining flags for a stream in "
 				+ context::detail_::identify(context_handle_, device_id_));
 		return flags & CU_STREAM_NON_BLOCKING;
@@ -273,7 +273,7 @@ public: // other non-mutators
 	{
 		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 		auto status = cuStreamQuery(handle_);
-		    // Could have used the equivalent runtime API call:
+			// Could have used the equivalent runtime API call:
 			// cuStreamQuery(handle_);
 		switch(status) {
 		case CUDA_SUCCESS:
@@ -449,7 +449,7 @@ public: // mutators
 		void memset(void *destination, int byte_value, size_t num_bytes)
 		{
 			// Is it necessary to set the device? I wonder.
-            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::set(destination, byte_value, num_bytes, associated_stream.handle_);
 		}
 
@@ -466,7 +466,7 @@ public: // mutators
 		 */
 		void memzero(void *destination, size_t num_bytes)
 		{
-            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.handle_);
 		}
 
@@ -511,7 +511,7 @@ public: // mutators
 		template <typename Callable>
 		void host_function_call(Callable callable_)
 		{
-            context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
 			// Since callable_ will be going out of scope after the enqueueing,
 			// and we don't know anything about the scope of the original argument with
@@ -532,7 +532,7 @@ public: // mutators
 #if CUDA_VERSION >= 10000
 			auto status = cuLaunchHostFunc(
 				associated_stream.handle_, &stream_launched_host_function_adapter<Callable>, raw_callable_extra_argument);
-			    // Could have used the equivalent Driver API call: cuLaunchHostFunc()
+				// Could have used the equivalent Driver API call: cuLaunchHostFunc()
 #else
 			// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
 			// variable, see:
@@ -540,7 +540,7 @@ public: // mutators
 			constexpr const unsigned fixed_flags { 0u };
 			auto status = cuStreamAddCallback(
 				associated_stream.handle_, &callback_launch_adapter<Callable>, raw_callable_extra_argument, fixed_flags);
-			    // Could have used the equivalent Driver API call: cuAddStreamCallback()
+				// Could have used the equivalent Driver API call: cuAddStreamCallback()
 #endif
 
 			throw_if_error(status, "Failed scheduling a callback to be launched on "
@@ -595,7 +595,7 @@ public: // mutators
 			auto flags = static_cast<unsigned>(attachment);
 			auto status =  cuStreamAttachMemAsync(
 				associated_stream.handle_,  memory::device::address(managed_region_start), length, flags);
-			    // Could have used the equivalent Driver API call cuStreamAttachMemAsync
+				// Could have used the equivalent Driver API call cuStreamAttachMemAsync
 			throw_if_error(status, "Failed scheduling an attachment of a managed memory region on "
 				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
 				associated_stream.device_id_));
@@ -641,111 +641,111 @@ public: // mutators
 		 */
 		template <typename T>
 		void set_single_value(T* __restrict__ address, T value, bool with_memory_barrier = true)
-        {
-            static_assert(
-                ::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
-                "Unsupported type for stream value wait."
-            );
-            unsigned flags = with_memory_barrier ?
-                CU_STREAM_WRITE_VALUE_DEFAULT :
-                CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
-		    auto result = static_cast<status_t>(
-		        stream::detail_::write_value(associated_stream.handle_, address, value, flags));
-		    throw_if_error(result, "Failed scheduling a write to global memory on "
-		        + stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
-                + associated_stream.device_id_));
-        }
+		{
+			static_assert(
+				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+				"Unsupported type for stream value wait."
+			);
+			unsigned flags = with_memory_barrier ?
+				CU_STREAM_WRITE_VALUE_DEFAULT :
+				CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
+			auto result = static_cast<status_t>(
+				stream::detail_::write_value(associated_stream.handle_, address, value, flags));
+			throw_if_error(result, "Failed scheduling a write to global memory on "
+				+ stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
+				+ associated_stream.device_id_));
+		}
 
-        /**
-         * Wait for a value in device global memory to change so as to meet some condition
-         *
-         * @tparam T the value to schedule a setting of. Can only be a raw
+		/**
+		 * Wait for a value in device global memory to change so as to meet some condition
+		 *
+		 * @tparam T the value to schedule a setting of. Can only be a raw
 		 * uint32_t or uint64_t !
 		 * @param address location in global device memory to set at the appropriate time.
 		 * @param condition the kind of condition to check against the reference value. Examples:
-         * equal to 5, greater-or-equal to 5, non-zero bitwise-and with 5 etc.
+		 * equal to 5, greater-or-equal to 5, non-zero bitwise-and with 5 etc.
 		 * @param value the condition is checked against this reference value. Example: waiting on
-         * the value at address to be greater-or-equal to this value.
+		 * the value at address to be greater-or-equal to this value.
 		 * @param with_memory_barrier If true, all remote writes guaranteed to have reached the device
-         * before the wait is performed will be visible to all operations on this stream/queue scheduled
-         * after the wait.
-         */
-        template <typename T>
-        void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false)
-        {
-            static_assert(
-                ::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
-                "Unsupported type for stream value wait."
-            );
-            unsigned flags = static_cast<unsigned>(condition) |
-                (with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
-            auto result = static_cast<status_t>(
-                stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
-            throw_if_error(result, "Failed scheduling a wait  to global memory on "
-                + stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
+		 * before the wait is performed will be visible to all operations on this stream/queue scheduled
+		 * after the wait.
+		 */
+		template <typename T>
+		void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false)
+		{
+			static_assert(
+				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+				"Unsupported type for stream value wait."
+			);
+			unsigned flags = static_cast<unsigned>(condition) |
+				(with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
+			auto result = static_cast<status_t>(
+				stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
+			throw_if_error(result, "Failed scheduling a wait  to global memory on "
+				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
 				associated_stream.device_id_));
-        }
+		}
 
-        /**
-         * Guarantee all remote writes to the specified address are visible to subsequent operations
-         * scheduled on this stream.
-         *
-         * @param address location the previous remote writes to which need to be visible to
-         * subsequent operations.
-         */
-        void flush_remote_writes()
-        {
-            CUstreamBatchMemOpParams flush_op;
-            flush_op.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
-            unsigned count = 1;
-            unsigned flags = 0;
-            // Let's cross our fingers and assume nothing else needs to be set here...
-            cuStreamBatchMemOp(associated_stream.handle_, count, &flush_op, flags);
-        }
+		/**
+		 * Guarantee all remote writes to the specified address are visible to subsequent operations
+		 * scheduled on this stream.
+		 *
+		 * @param address location the previous remote writes to which need to be visible to
+		 * subsequent operations.
+		 */
+		void flush_remote_writes()
+		{
+			CUstreamBatchMemOpParams flush_op;
+			flush_op.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
+			unsigned count = 1;
+			unsigned flags = 0;
+			// Let's cross our fingers and assume nothing else needs to be set here...
+			cuStreamBatchMemOp(associated_stream.handle_, count, &flush_op, flags);
+		}
 
-        /**
-         * Enqueue multiple single-value write, wait and flush operations to the device
-         * (avoiding the overhead of multiple enqueue calls).
-         *
-         * @note see @ref wait(), @ref set_single_value and @ref flush_remote_writes.
-         *
-         * @{
-         */
+		/**
+		 * Enqueue multiple single-value write, wait and flush operations to the device
+		 * (avoiding the overhead of multiple enqueue calls).
+		 *
+		 * @note see @ref wait(), @ref set_single_value and @ref flush_remote_writes.
+		 *
+		 * @{
+		 */
 
-        /**
-         * @param ops_begin beginning of a sequence of single-value operation specifications
-         * @param ops_end end of a sequence of single-value operation specifications
-         */
-        template <typename Iterator>
-        void single_value_operations_batch(Iterator ops_begin, Iterator ops_end)
-        {
-            static_assert(::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
-            "Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
-                " CUstreamBatchMemOpParams, as the value type");
-            auto num_ops = ::std::distance(ops_begin, ops_end);
-            if (::std::is_same<typename ::std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
-                "Only accepting containers of the CUDA-driver-API memory operation descriptor, CUstreamBatchMemOpParams")
-            {
-                auto ops_ptr = reinterpret_cast<const CUstreamBatchMemOpParams*>(ops_begin);
-                cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_ptr);
-            }
-            else {
-                auto ops_uptr = ::std::unique_ptr<CUstreamBatchMemOpParams[]>(new CUstreamBatchMemOpParams[num_ops]);
-                ::std::copy(ops_begin, ops_end, ops_uptr.get());
-                cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_uptr.get());
-            }
-        }
+		/**
+		 * @param ops_begin beginning of a sequence of single-value operation specifications
+		 * @param ops_end end of a sequence of single-value operation specifications
+		 */
+		template <typename Iterator>
+		void single_value_operations_batch(Iterator ops_begin, Iterator ops_end)
+		{
+			static_assert(::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
+			"Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
+				" CUstreamBatchMemOpParams, as the value type");
+			auto num_ops = ::std::distance(ops_begin, ops_end);
+			if (::std::is_same<typename ::std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
+				"Only accepting containers of the CUDA-driver-API memory operation descriptor, CUstreamBatchMemOpParams")
+			{
+				auto ops_ptr = reinterpret_cast<const CUstreamBatchMemOpParams*>(ops_begin);
+				cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_ptr);
+			}
+			else {
+				auto ops_uptr = ::std::unique_ptr<CUstreamBatchMemOpParams[]>(new CUstreamBatchMemOpParams[num_ops]);
+				::std::copy(ops_begin, ops_end, ops_uptr.get());
+				cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_uptr.get());
+			}
+		}
 
-        /**
-         * @param single_value_ops A sequence of single-value operation specifiers to enqueue together.
-         */
-        template <typename Container>
-        void single_value_operations_batch(const Container& single_value_ops)
-        {
-            return single_value_operations_batch(single_value_ops.begin(), single_value_ops.end());
-        }
+		/**
+		 * @param single_value_ops A sequence of single-value operation specifiers to enqueue together.
+		 */
+		template <typename Container>
+		void single_value_operations_batch(const Container& single_value_ops)
+		{
+			return single_value_operations_batch(single_value_ops.begin(), single_value_ops.end());
+		}
 
-    }; // class enqueue_t
+	}; // class enqueue_t
 
 	friend class enqueue_t;
 
@@ -780,11 +780,11 @@ public: // mutators
 
 protected: // constructor
 
-    stream_t(
-        device::id_t       device_id,
-        context::handle_t  context_handle,
-        stream::handle_t   stream_handle,
-        bool               take_ownership = false) noexcept
+	stream_t(
+		device::id_t       device_id,
+		context::handle_t  context_handle,
+		stream::handle_t   stream_handle,
+		bool               take_ownership = false) noexcept
 	: device_id_(device_id), context_handle_(context_handle), handle_(stream_handle), owning(take_ownership) { }
 
 public: // constructors and destructor
@@ -878,26 +878,26 @@ inline stream_t create(
 template<>
 inline CUresult wait_on_value<uint32_t>(CUstream stream_handle, CUdeviceptr address, uint32_t value, unsigned int flags)
 {
-    return cuStreamWaitValue32(stream_handle, address, value, flags);
+	return cuStreamWaitValue32(stream_handle, address, value, flags);
 }
 
 template<>
 inline CUresult wait_on_value<uint64_t>(CUstream stream_handle, CUdeviceptr address, uint64_t value, unsigned int flags)
 {
-    return cuStreamWaitValue64(stream_handle, address, value, flags);
+	return cuStreamWaitValue64(stream_handle, address, value, flags);
 }
 
 
 template<>
 inline CUresult write_value<uint32_t>(CUstream stream_handle, CUdeviceptr address, uint32_t value, unsigned int flags)
 {
-    return cuStreamWriteValue32(stream_handle, address, value, flags);
+	return cuStreamWriteValue32(stream_handle, address, value, flags);
 }
 
 template<>
 inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr address, uint64_t value, unsigned int flags)
 {
-    return cuStreamWriteValue64(stream_handle, address, value, flags);
+	return cuStreamWriteValue64(stream_handle, address, value, flags);
 }
 
 } // namespace detail_
