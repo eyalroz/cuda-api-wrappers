@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 // first search for the module path before we load the results
     auto ptx_filename = create_ptx_file();
 
-    auto module = cuda::module::load_from_file(ptx_filename);
+    auto module = cuda::module::load_from_file(context, ptx_filename);
     auto vecAdd_kernel = module.get_kernel("VecAdd_kernel");
     auto dummy_kernel = module.get_kernel("dummy");
 
