@@ -229,7 +229,7 @@ inline void free(void* ptr)
 #else
 	if (result == status::success or result == status::context_is_destroyed) { return; }
 #endif
-	throw runtime_error(result, "Freeing device memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
+	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region) { free(region.start()); }
 ///@}
@@ -1847,7 +1847,7 @@ inline void free(void* ptr)
 {
 	auto result = cuMemFree(device::address(ptr));
 	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
-	throw_if_error(result, "Freeing managed memory at 0x" + cuda::detail_::ptr_as_hex(ptr));
+	throw_if_error(result, "Freeing managed memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region)
 {
@@ -1935,7 +1935,7 @@ inline void free(void* managed_ptr)
 {
 	auto result = cuMemFree(device::address(managed_ptr));
 	throw_if_error(result,
-		"Freeing managed memory (host and device regions) at address 0x"
+		"Freeing managed memory (host and device regions) at address "
 		+ cuda::detail_::ptr_as_hex(managed_ptr));
 }
 
