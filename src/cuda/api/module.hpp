@@ -175,7 +175,7 @@ public: // constructors and destructor
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {
 #ifdef NDEBUG
-			cuDevicePrimaryCtxRelease(device_id_);
+			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
 				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
 				// because a failure probably means the primary context is inactive already
 #else

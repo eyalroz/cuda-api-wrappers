@@ -152,8 +152,9 @@ template<typename T>
 inline unique_ptr<T> make_unique(size_t num_elements)
 {
 	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	auto device = cuda::device::current::get();
-	make_unique<T>(device, num_elements);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, num_elements);
 }
 
 /**
@@ -195,6 +196,9 @@ inline unique_ptr<T> make_unique(const device_t& device)
  * @note The allocation will be made in the device's primary context -
  * which will be created if it has not yet been.
  *
+ * @note If called when the device' primary context is inactive,
+ * this
+ *
  * @tparam T  the type of value to construct in device memory
  *
  * @param num_elements  the number of elements to allocate
@@ -204,8 +208,9 @@ inline unique_ptr<T> make_unique(const device_t& device)
 template<typename T>
 inline unique_ptr<T> make_unique()
 {
-	auto device = cuda::device::current::get();
-	make_unique<T>(device);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc);
 }
 
 } // namespace device
@@ -321,8 +326,9 @@ inline unique_ptr<T> make_unique(
 	size_t                n,
 	initial_visibility_t  initial_visibility)
 {
-	auto device = cuda::device::current::get();
-	return make_unique<T>(device, n, initial_visibility);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, n, initial_visibility);
 }
 
 template<typename T>
@@ -348,8 +354,9 @@ template<typename T>
 inline unique_ptr<T> make_unique(
 	initial_visibility_t  initial_visibility)
 {
-	auto device = cuda::device::current::get();
-	return make_unique<T>(initial_visibility);
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	return make_unique<T>(pc, initial_visibility);
 }
 
 

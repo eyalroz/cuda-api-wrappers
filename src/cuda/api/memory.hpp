@@ -173,7 +173,7 @@ namespace detail_ {
  */
 inline region_t allocate(
 	context::handle_t  context_handle,
-	stream::handle_t       stream_handle,
+	stream::handle_t   stream_handle,
 	size_t             num_bytes)
 {
 #if CUDA_VERSION >= 11020

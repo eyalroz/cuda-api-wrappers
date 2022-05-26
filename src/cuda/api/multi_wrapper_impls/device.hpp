@@ -45,6 +45,19 @@ inline primary_context_t get(const device_t& device)
 	return detail_::wrap( device.id(), pc_handle, true);
 }
 
+namespace detail_ {
+
+// Use this when you need a PC, you don't have a device_t to hang it on,
+// and you don't want it to get deactivated/destroyed right after you use it.
+inline primary_context_t leaky_get(cuda::device::id_t device_id)
+{
+	bool need_to_activate_and_leak = not cuda::device::primary_context::detail_::is_active(device_id);
+	auto pc_handle = cuda::device::primary_context::detail_::get_handle(device_id, true);
+	return cuda::device::primary_context::detail_::wrap(device_id, pc_handle, not need_to_activate_and_leak);
+}
+
+} // namespace detail_
+
 } // namespace primary_context
 
 namespace peer_to_peer {

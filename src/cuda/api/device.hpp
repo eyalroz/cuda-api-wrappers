@@ -584,7 +584,7 @@ public: 	// constructors and destructor
 		maybe_decrease_primary_context_refcount();
 #else
 		if (holds_pc_refcount_unit)  {
-			cuDevicePrimaryCtxRelease(id_);
+			device::primary_context::detail_::decrease_refcount_nothrow(id_);
 				// Swallow any error to avoid termination on throwing from a dtor
 		}
 #endif
