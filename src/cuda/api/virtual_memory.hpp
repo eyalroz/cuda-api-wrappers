@@ -120,7 +120,7 @@ template<kind_t SharedHandleKind> struct shared_handle_type_helper;
 
 template <> struct shared_handle_type_helper<kind_t::posix_file_descriptor> { using type = int; };
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-template <> struct shared_handle_type_helper<kind_t::win32_handle> { using type = HANDLE; };
+template <> struct shared_handle_type_helper<kind_t::win32_handle> { using type = void *; };
 #endif
 // TODO: What about WIN32_KMT?
 } // namespace detail_
