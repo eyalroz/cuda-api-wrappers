@@ -48,9 +48,14 @@
 #include <vector>
 #include <string>
 #include <sstream>
+
+#if __cplusplus >= 201703
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
 #include <experimental/filesystem>
-
-
+namespace fs = std::experimental::filesystem;
+#endif
 
 template <typename T>
 bool are_close(T in, T out) {
@@ -318,7 +323,6 @@ bool test_constant_2()
 
 int main(int, char**)
 {
-	namespace fs = std::experimental::filesystem;
 	fs::path extra_headers_dir { "example_headers" };
 	fs::exists(extra_headers_dir) or die_(
 		"Cannot run the jitify test without the extra headers directory " + extra_headers_dir.string());
