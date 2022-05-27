@@ -31,6 +31,24 @@ jobs:
         include:
           # Windows2019 & VS 2019 supports 10.1+
           - os: windows-2019
+            cuda: "11.7.0"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.6.2"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
+            cuda: "11.6.1"
+            visual-studio: "Visual Studio 16 2019"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          - os: windows-2019
             cuda: "11.6.0"
             visual-studio: "Visual Studio 16 2019"
             shell: "powershell"
