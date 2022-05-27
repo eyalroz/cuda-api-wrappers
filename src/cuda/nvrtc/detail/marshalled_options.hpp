@@ -39,14 +39,59 @@ public:
 		append_to_current(string_view{str, ::std::strlen(str)});
 	}
 
-	void append_to_current(::std::size_t v)
+	void append_to_current(unsigned long long v)
 	{
-		char size_t_buffer[::std::numeric_limits<::std::size_t>::digits10 + 2];
+		char v_buffer[::std::numeric_limits<unsigned long long>::digits10 + 2];
 #if __cplusplus >= 201703L
-		auto result = ::std::to_chars(size_t_buffer, size_t_buffer + sizeof(size_t_buffer), v);
-		auto num_chars = result.ptr - size_t_buffer;
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
 #else
-		auto num_chars = snprintf(size_t_buffer, sizeof(size_t_buffer), "%zu", v);
+		auto num_chars = snprintf(v_buffer, sizeof(unsigned long long), "%llu", v);
+		// Q: Why can't we just print directly into the buffer?
+		// A: There is no buffer, this is the size computer.
+
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(long v)
+	{
+		char v_buffer[::std::numeric_limits<long>::digits10 + 2];
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
+#else
+		auto num_chars = snprintf(v_buffer, sizeof(long), "%ld", v);
+		// Q: Why can't we just print directly into the buffer?
+		// A: There is no buffer, this is the size computer.
+
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(unsigned long v)
+	{
+		char v_buffer[::std::numeric_limits<unsigned long>::digits10 + 2];
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(int_buffer, int_buffer + sizeof(int_buffer), v);
+		auto num_chars = result.ptr - int_buffer;
+#else
+		auto num_chars = snprintf(v_buffer, sizeof(v_buffer), "%lu", v);
+		// Q: Why can't we just print directly into the buffer?
+		// A: There is no buffer, this is the size computer.
+
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(int v)
+	{
+		char v_buffer[::std::numeric_limits<int>::digits10 + 2];
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
+#else
+		auto num_chars = snprintf(v_buffer, sizeof(int), "%d", v);
 		// Q: Why can't we just print directly into the buffer?
 		// A: There is no buffer, this is the size computer.
 
@@ -56,14 +101,14 @@ public:
 
 	void append_to_current(unsigned v)
 	{
-		char int_buffer[::std::numeric_limits<unsigned>::digits10 + 2];
+		char v_buffer[::std::numeric_limits<unsigned>::digits10 + 2];
 #if __cplusplus >= 201703L
 		auto result = ::std::to_chars(int_buffer, int_buffer + sizeof(int_buffer), v);
 		auto num_chars = result.ptr - int_buffer;
 #else
-		auto num_chars = snprintf(int_buffer, sizeof(int_buffer), "%u", v);
-			// Q: Why can't we just print directly into the buffer?
-			// A: There is no buffer, this is the size computer.
+		auto num_chars = snprintf(v_buffer, sizeof(v_buffer), "%u", v);
+		// Q: Why can't we just print directly into the buffer?
+		// A: There is no buffer, this is the size computer.
 
 #endif
 		buffer_pos_ += num_chars;
@@ -73,20 +118,6 @@ public:
 	{
 		buffer_pos_++;
 	}
-
-
-//	void append_to_current(I v)
-//	{
-//		using decayed = typename ::std::decay<I>::type;
-//		char int_buffer[::std::numeric_limits<decayed>::digits10 + 2];
-//#if __cplusplus >= 201703L
-//		auto result = ::std::to_chars(buffer, buffer + sizeof(buffer), v);
-//		auto num_chars = result.ptr - int_buffer;
-//#else
-//		auto num_chars = snprintf(int_buffer, sizeof(int_buffer), "%lld", (long long) v);
-//#endif
-//		buffer_pos_ += num_chars;
-//	}
 
 	void finalize_current()
 	{
@@ -167,19 +198,71 @@ public:
 		append_to_current(string_view{str, ::std::strlen(str)});
 	}
 
-	void append_to_current(::std::size_t v)
+
+	void append_to_current(unsigned long long v)
 	{
 #ifndef NDEBUG
 		if (num_options_ >= option_ptrs_.size()) {
 			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
 		}
 #endif
-		constexpr const ::std::size_t uint_size = ::std::numeric_limits<::std::size_t>::digits10;
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned long long>::digits10;
 #if __cplusplus >= 201703L
-		auto result = ::std::to_chars(current_pos(), current_pos() + uint_size, v);
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else
-		auto num_chars = snprintf(current_pos(), uint_size, "%zu", v);
+		auto num_chars = snprintf(current_pos(), v_size, "%llu", v);
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(long v)
+	{
+#ifndef NDEBUG
+		if (num_options_ >= option_ptrs_.size()) {
+			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
+		}
+#endif
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<long>::digits10;
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
+		auto num_chars = result.ptr - current_pos();
+#else
+		auto num_chars = snprintf(current_pos(), v_size, "%ld", v);
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(unsigned long v)
+	{
+#ifndef NDEBUG
+		if (num_options_ >= option_ptrs_.size()) {
+			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
+		}
+#endif
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned long>::digits10;
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
+		auto num_chars = result.ptr - current_pos();
+#else
+		auto num_chars = snprintf(current_pos(), v_size, "%lu", v);
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(int v)
+	{
+#ifndef NDEBUG
+		if (num_options_ >= option_ptrs_.size()) {
+			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
+		}
+#endif
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<int>::digits10;
+#if __cplusplus >= 201703L
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
+		auto num_chars = result.ptr - current_pos();
+#else
+		auto num_chars = snprintf(current_pos(), v_size, "%d", v);
 #endif
 		buffer_pos_ += num_chars;
 	}
@@ -191,12 +274,12 @@ public:
 			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
 		}
 #endif
-		constexpr const ::std::size_t uint_size = ::std::numeric_limits<unsigned>::digits10;
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned>::digits10;
 #if __cplusplus >= 201703L
-		auto result = ::std::to_chars(current_pos(), current_pos() + uint_size, v);
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else
-		auto num_chars = snprintf(current_pos(), uint_size, "%u", v);
+		auto num_chars = snprintf(current_pos(), v_size, "%u", v);
 #endif
 		buffer_pos_ += num_chars;
 	}
