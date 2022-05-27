@@ -78,12 +78,18 @@ std::string create_ptx_file()
 	}
 	)";
 
+#if _POSIX_C_SOURCE >= 200809L
 	char temp_filename[] = "caw-simple-drv-runtime-ptx-XXXXXX";
-    int file_descriptor = mkstemp(temp_filename);
+	int file_descriptor = mkstemp(temp_filename);
 	if (file_descriptor == -1) {
-        throw std::runtime_error(std::string("Failed creating a temporary file using mkstemp(): ") + std::strerror(errno) + '\n');
-    }
+		throw std::runtime_error(std::string("Failed creating a temporary file using mkstemp(): ") + std::strerror(errno) + '\n');
+	}
 	FILE* ptx_file = fdopen(file_descriptor, "w");
+#else
+	char temp_filename[L_tmpnam];
+	std::tmpnam(temp_filename);
+	FILE* ptx_file = fopen(temp_filename, "w");
+#endif
 	if (ptx_file == nullptr) {
         throw std::runtime_error(std::string("Failed converting temporay file descriptor into a C library FILE structure: ") + std::strerror(errno) + '\n');
     }
@@ -99,7 +105,7 @@ std::string create_ptx_file()
 // Host code
 int main(int argc, char** argv)
 {
-    std::cout << "simpleDrvRuntime - PTX version..\n";
+    std::cout << "simpleDrvRuntime - PTX version.\n";
     int N = 50000;
     size_t  size = N * sizeof(float);
 
