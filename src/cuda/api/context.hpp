@@ -27,7 +27,7 @@ class module_t;
 ///@endcond
 
 namespace link {
-class options_t;
+struct options_t;
 } // namespace link
 
 namespace context {
