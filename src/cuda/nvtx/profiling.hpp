@@ -27,6 +27,10 @@
 #include <nvToolsExtCuda.h>
 #endif
 
+#ifdef _WIN32
+#include <processthreadsapi.h> // for GetThreadId()
+#endif
+
 #ifdef CUDA_API_WRAPPERS_USE_PTHREADS
 #include <pthread.h>
 #else
@@ -335,8 +339,14 @@ void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
 
 void name(std::thread::id host_thread_id, const char* name)
 {
-	auto handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
-	name_host_thread(handle, name);
+	auto native_handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
+	uint32_t thread_id =
+#if _WIN32
+		GetThreadId(native_handle);
+#else
+		native_handle;
+#endif
+	name_host_thread(thread_id, name);
 }
 
 } // namespace detail_
