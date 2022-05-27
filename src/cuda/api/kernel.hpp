@@ -35,7 +35,7 @@ class kernel_t;
 
 namespace kernel {
 
-using shared_memory_size_determiner_t = size_t (*)(int block_size);
+using shared_memory_size_determiner_t = size_t (CUDA_CB *)(int block_size);
 
 /**
  * Obtain a proxy object for a CUDA kernel
