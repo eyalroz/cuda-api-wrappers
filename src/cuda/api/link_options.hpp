@@ -235,7 +235,6 @@ struct options_t {
 	//   CU_JIT_GLOBAL_SYMBOL_COUNT
 	//
 
-public:
 	marshalled_options_t marshal() const;
 };
 

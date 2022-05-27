@@ -80,7 +80,8 @@ namespace detail_ {
 
 inline dimension_t div_rounding_up(overall_dimension_t dividend, block_dimension_t divisor)
 {
-	dimension_t quotient = dividend / divisor;
+	dimension_t quotient = (dimension_t) dividend / divisor;
+		// It is up to the caller to ensure we don't overlow the dimension_t type
 	return (divisor * quotient == dividend) ? quotient : quotient + 1;
 }
 
@@ -114,9 +115,11 @@ public:
 protected:
 	memory::shared::size_t  get_dynamic_shared_memory_size(grid::block_dimensions_t block_dims) const
 	{
-		return dynamic_shared_memory_size_determiner_ == nullptr ?
+		return (memory::shared::size_t)	((dynamic_shared_memory_size_determiner_ == nullptr) ?
 			dynamic_shared_memory_size_ :
-			dynamic_shared_memory_size_determiner_((int) block_dims.volume());
+			dynamic_shared_memory_size_determiner_((int) block_dims.volume()));
+			// Q: Why the need for type conversion?
+			// A: MSVC is being a bit finicky here for some reason
 	}
 
 	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
@@ -141,8 +144,8 @@ protected:
 
 			result.block = dimensions_.block.value();
 			auto dshmem_size = get_dynamic_shared_memory_size(dimensions_.block.value());
-			result.grid = kernel_->max_active_blocks_per_multiprocessor(
-				dimensions_.block.value().volume(), dshmem_size);
+			auto num_block_threads = (grid::block_dimension_t) dimensions_.block.value().volume();
+			result.grid = kernel_->max_active_blocks_per_multiprocessor(num_block_threads, dshmem_size);
 		}
 		else if (use_min_params_for_max_occupancy_) {
 			if (not (kernel_)) {

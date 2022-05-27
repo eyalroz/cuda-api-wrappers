@@ -494,7 +494,7 @@ inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	cuda::grid::block_dimension_t            block_size_limit,
 	bool                                     disable_caching_override) const
 {
-	size_t no_fixed_dynamic_shared_memory_size { 0 };
+	memory::shared::size_t no_fixed_dynamic_shared_memory_size{ 0 };
 	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
 		handle(), device_id(), shared_memory_size_determiner,
 		no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);

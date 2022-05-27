@@ -306,7 +306,7 @@ inline void typed_set(T* start, const T& value, size_t num_elements);
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), byte_value, num_bytes);
+	return typed_set<unsigned char>(static_cast<unsigned char*>(start), (unsigned char) byte_value, num_bytes);
 }
 
 /**
@@ -1201,7 +1201,7 @@ namespace detail_ {
 inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t stream_handle)
 {
 	// TODO: Double-check that this call doesn't require setting the current device
-	auto result = cuMemsetD8Async(address(start), byte_value, num_bytes, stream_handle);
+	auto result = cuMemsetD8Async(address(start), (unsigned char) byte_value, num_bytes, stream_handle);
 	throw_if_error(result, "asynchronously memsetting an on-device buffer");
 }
 
@@ -1270,7 +1270,7 @@ void typed_set(T* start, const T& value, size_t num_elements, const stream_t& st
  */
 inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), byte_value, num_bytes, stream);
+	return typed_set<unsigned char>(static_cast<unsigned char*>(start), (unsigned char) byte_value, num_bytes, stream);
 }
 
 /**
