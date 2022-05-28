@@ -337,9 +337,9 @@ void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
 	nvtxNameCuDeviceW(device_id, name);
 }
 
-void name(std::thread::id host_thread_id, const char* name)
+void name(::std::thread::id host_thread_id, const char* name)
 {
-	auto native_handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
+	auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
 	uint32_t thread_id =
 #if _WIN32
 		GetThreadId(native_handle);
@@ -362,12 +362,12 @@ void name(std::thread::id host_thread_id, const char* name)
  */
 ///@{
 template <typename CharT>
-void name(const std::thread& host_thread, const CharT* name);
+void name(const ::std::thread& host_thread, const CharT* name);
 
 template <typename CharT>
 void name_this_thread(const CharT* name)
 {
-	detail_::name(std::this_thread::get_id(), name);
+	detail_::name(::std::this_thread::get_id(), name);
 }
 ///@}
 

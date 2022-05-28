@@ -76,8 +76,8 @@ inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribu
 				return cudaFuncAttributePreferredSharedMemoryCarveout;
 			default:
 				throw cuda::runtime_error(status::not_supported,
-					"Kernel attribute " + std::to_string(attribute) + " not supported (with CUDA version "
-					+ std::to_string(CUDA_VERSION));
+					"Kernel attribute " + ::std::to_string(attribute) + " not supported (with CUDA version "
+					+ ::std::to_string(CUDA_VERSION));
 		}
 	}();
 	auto result = cudaFuncSetAttribute(ptr_, runtime_attribute, value);

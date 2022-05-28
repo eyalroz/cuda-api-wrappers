@@ -68,38 +68,38 @@ namespace cuda {
 
 namespace detail_ {
 
-// This is available in C++17 as std::void_t, but we're only assuming C++11
+// This is available in C++17 as ::std::void_t, but we're only assuming C++11
 template<typename... Ts>
 using void_t = void;
 
 // This is available in C++14
 template<bool B, typename T>
-using enable_if_t = typename std::enable_if<B, T>::type;
+using enable_if_t = typename ::std::enable_if<B, T>::type;
 
 template<typename T>
-using remove_reference_t = typename std::remove_reference<T>::type;
+using remove_reference_t = typename ::std::remove_reference<T>::type;
 
 // primary template handles types that have no nested ::type member:
 template <typename, typename = void>
-struct has_data_method : std::false_type { };
+struct has_data_method : ::std::false_type { };
 
 // specialization recognizes types that do have a nested ::type member:
 template <typename T>
-struct has_data_method<T, cuda::detail_::void_t<decltype(std::declval<T>().data())>> : std::true_type { };
+struct has_data_method<T, cuda::detail_::void_t<decltype(::std::declval<T>().data())>> : ::std::true_type { };
 
 template <typename, typename = void>
-struct has_value_type_member : std::false_type { };
+struct has_value_type_member : ::std::false_type { };
 
 template <typename T>
-struct has_value_type_member<T, cuda::detail_::void_t<typename T::value_type>> : std::true_type { };
+struct has_value_type_member<T, cuda::detail_::void_t<typename T::value_type>> : ::std::true_type { };
 
 // TODO: Consider either beefing up this type trait or ditching it in favor of something simpler, or
 // in the standard library
 template <typename T>
 struct is_kinda_like_contiguous_container :
-	std::integral_constant<bool,
-		has_data_method<typename std::remove_reference<T>::type>::value
-			and has_value_type_member<typename std::remove_reference<T>::type>::value
+	::std::integral_constant<bool,
+		has_data_method<typename ::std::remove_reference<T>::type>::value
+			and has_value_type_member<typename ::std::remove_reference<T>::type>::value
 	> {};
 
 } // namespace detail_
@@ -539,7 +539,7 @@ private:
 	T* start_ = nullptr;
 	size_t size_in_bytes_ = 0;
 
-	using char_type = typename std::conditional<std::is_const<T>::value, const char *, char *>::type;
+	using char_type = typename ::std::conditional<::std::is_const<T>::value, const char *, char *>::type;
 public:
 	base_region_t() = default;
 	base_region_t(T* start, size_t size_in_bytes)
@@ -568,10 +568,10 @@ protected:
 	{
 #ifndef NDEBUG
 		if (offset_in_bytes >= size_in_bytes_) {
-			throw std::invalid_argument("subregion begins past region end");
+			throw ::std::invalid_argument("subregion begins past region end");
 		}
 		else if (offset_in_bytes + size_in_bytes > size_in_bytes_) {
-			throw std::invalid_argument("subregion exceeds original region bounds");
+			throw ::std::invalid_argument("subregion exceeds original region bounds");
 		}
 #endif
 		return { static_cast<char_type>(start_) + offset_in_bytes, size_in_bytes };

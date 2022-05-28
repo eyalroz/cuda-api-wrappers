@@ -21,8 +21,8 @@ struct compilation_options_t;
 } // namespace rtc
 } // namespace cuda
 
-void report_current_context(const std::string& prefix);
-void report_context_stack(const std::string& prefix);
+void report_current_context(const ::std::string& prefix);
+void report_context_stack(const ::std::string& prefix);
 inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options);
 
 #include <cuda/api.hpp>
@@ -78,42 +78,42 @@ const char* memory_type_name(cuda::memory::type_t mem_type)
 
 namespace std {
 
-std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc)
+::std::ostream& operator<<(::std::ostream& os, cuda::device::compute_capability_t cc)
 {
     return os << cc.major() << '.' << cc.minor();
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::multiprocessor_cache_preference_t pref)
+::std::ostream& operator<<(::std::ostream& os, cuda::multiprocessor_cache_preference_t pref)
 {
 	return (os << cache_preference_name(pref));
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::context::host_thread_synch_scheduling_policy_t pref)
+::std::ostream& operator<<(::std::ostream& os, cuda::context::host_thread_synch_scheduling_policy_t pref)
 {
 	return (os << host_thread_synch_scheduling_policy_name(pref));
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::context::handle_t handle)
+::std::ostream& operator<<(::std::ostream& os, cuda::context::handle_t handle)
 {
 	return (os << cuda::detail_::ptr_as_hex(handle));
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::context_t& context)
+::std::ostream& operator<<(::std::ostream& os, const cuda::context_t& context)
 {
 	return os << "[device " << context.device_id() << " handle " << context.handle() << ']';
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::device_t& device)
+::std::ostream& operator<<(::std::ostream& os, const cuda::device_t& device)
 {
 	return os << cuda::device::detail_::identify(device.id());
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::stream_t& stream)
+::std::ostream& operator<<(::std::ostream& os, const cuda::stream_t& stream)
 {
 	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
-std::ostream &operator<<(std::ostream &os, const cuda::rtc::compilation_options_t &opts)
+::std::ostream &operator<<(::std::ostream &os, const cuda::rtc::compilation_options_t &opts)
 {
 	auto marshalled = opts.marshal();
 //	os << '(' << marshalled.option_ptrs().size() << ") compilation options: ";
@@ -126,9 +126,9 @@ std::ostream &operator<<(std::ostream &os, const cuda::rtc::compilation_options_
 	return os;
 }
 
-std::string to_string(const cuda::context_t& context)
+::std::string to_string(const cuda::context_t& context)
 {
-	std::stringstream ss;
+	::std::stringstream ss;
 	ss.clear();
 	ss << context;
 	return ss.str();
@@ -136,9 +136,9 @@ std::string to_string(const cuda::context_t& context)
 
 } // namespace std
 
-[[noreturn]] bool die_(const std::string& message)
+[[noreturn]] bool die_(const ::std::string& message)
 {
-	std::cerr << message << "\n";
+	::std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -146,75 +146,75 @@ std::string to_string(const cuda::context_t& context)
 { \
 	auto evaluation_result = (cond); \
 	if (not evaluation_result) \
-		die_("Assertion failed at line " + std::to_string(__LINE__) + ": " #cond); \
+		die_("Assertion failed at line " + ::std::to_string(__LINE__) + ": " #cond); \
 }
 
 
-void report_current_context(const std::string& prefix = "")
+void report_current_context(const ::std::string& prefix = "")
 {
-	if (not prefix.empty()) { std::cout << prefix << ", the current context is: "; }
-	else std::cout << "The current context is: ";
+	if (not prefix.empty()) { ::std::cout << prefix << ", the current context is: "; }
+	else ::std::cout << "The current context is: ";
 	if (not cuda::context::current::exists()) {
-		std::cout << "(None)" << std::endl;
+		::std::cout << "(None)" << ::std::endl;
 	}
 	else {
 		auto cc = cuda::context::current::get();
-		std::cout << cc << std::endl;
+		::std::cout << cc << ::std::endl;
 	}
 }
 
 void print_context_stack()
 {
 	if (not cuda::context::current::exists()) {
-		std::cout << "(Context stack is empty)" << std::endl;
+		::std::cout << "(Context stack is empty)" << ::std::endl;
 		return;
 	}
-	std::vector<cuda::context::handle_t> contexts;
+	::std::vector<cuda::context::handle_t> contexts;
 	while(cuda::context::current::exists()) {
 		contexts.push_back(cuda::context::current::detail_::pop());
 	}
-//	std::cout << "" << contexts.size() << " contexts; top to bottom:\n";
+//	::std::cout << "" << contexts.size() << " contexts; top to bottom:\n";
 	for (auto handle : contexts) {
 		auto device_id = cuda::context::detail_::get_device_id(handle);
-		std::cout << handle << " for device " << device_id;
+		::std::cout << handle << " for device " << device_id;
 		if (cuda::context::detail_::is_primary(handle)) {
-			std::cout << " (primary, "
+			::std::cout << " (primary, "
 				<< (cuda::device::primary_context::detail_::is_active(device_id) ? "active" : "inactive")
 				<< ')';
 		}
-		std::cout << '\n';
+		::std::cout << '\n';
 	}
 	for (auto it = contexts.rbegin(); it != contexts.rend(); it++) {
 		cuda::context::current::detail_::push(*it);
 	}
 }
 
-void report_primary_context_activity(const std::string& prefix = "")
+void report_primary_context_activity(const ::std::string& prefix = "")
 {
-	if (not prefix.empty()) { std::cout << prefix << ", "; }
-	std::cout << "Device primary contexts activity: ";
+	if (not prefix.empty()) { ::std::cout << prefix << ", "; }
+	::std::cout << "Device primary contexts activity: ";
 	for(auto device : cuda::devices()) {
-		std::cout << device.id() << ": "
+		::std::cout << device.id() << ": "
 				  << (cuda::device::primary_context::detail_::is_active(device.id()) ? "ACTIVE" : "inactive")
 				  << "  ";
 	}
-	std::cout << '\n';
+	::std::cout << '\n';
 }
 
-void report_context_stack(const std::string& prefix = "")
+void report_context_stack(const ::std::string& prefix = "")
 {
-	if (not prefix.empty()) { std::cout << prefix << ", the context stack is (top to bottom):\n"; }
-	std::cout << "-----------------------------------------------------\n";
+	if (not prefix.empty()) { ::std::cout << prefix << ", the context stack is (top to bottom):\n"; }
+	::std::cout << "-----------------------------------------------------\n";
 	print_context_stack();
-	std::cout << "---\n";
+	::std::cout << "---\n";
 	report_primary_context_activity();
-	std::cout << "-----------------------------------------------------\n" << std::flush;
+	::std::cout << "-----------------------------------------------------\n" << ::std::flush;
 }
 
 
 // Note: This will only work correctly for positive values
 template <typename U1, typename U2>
-typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
+typename ::std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 {
 	return dividend / divisor + !!(dividend % divisor);
 }
@@ -222,9 +222,9 @@ typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options)
 {
 	auto marshalled = compilation_options.marshal();
-	std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
+	::std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
 	for (auto opt: marshalled.option_ptrs()) {
-		std::cout << "Option: " << opt << '\n';
+		::std::cout << "Option: " << opt << '\n';
 	}
 }
 

@@ -49,7 +49,7 @@ constexpr const auto shared_mem_handle_kind = (virtual_mem::physical_allocation:
 #endif
 using shared_allocation_handle_t = virtual_mem::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
 using mem_region_t = cuda::memory::region_t;
-using std::vector;
+using ::std::vector;
 
 size_t safe_round_up(size_t x, size_t divisor)
 {
@@ -59,9 +59,9 @@ size_t safe_round_up(size_t x, size_t divisor)
 	auto remainder = x % divisor;
 	if (remainder == 0) { return x; }
 	auto roundup_amount = divisor - remainder;
-	if (std::numeric_limits<size_t>::max() - x < roundup_amount) {
-		throw std::invalid_argument("A rounding up of " + std::to_string(x)
-			+ " to a multiple of " + std::to_string(divisor) +  " would overflow");
+	if (::std::numeric_limits<size_t>::max() - x < roundup_amount) {
+		throw ::std::invalid_argument("A rounding up of " + ::std::to_string(x)
+			+ " to a multiple of " + ::std::to_string(divisor) +  " would overflow");
 	}
 	return x + roundup_amount;
 }
@@ -85,14 +85,14 @@ cuda::size_t determine_reservation_size(
 	for (const auto &vec: {backing_devices, mapping_devices} ) {
 		for (const auto &device: vec) {
 			auto props = virtual_mem::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
-			min_overall_granularity = std::max(min_overall_granularity, props.minimum_granularity());
+			min_overall_granularity = ::std::max(min_overall_granularity, props.minimum_granularity());
 		}
 	}
 
 	// Round up the size such that we can evenly split it into a stripe size tha meets the granularity requirements
 	auto overall_allocation_size_quantum = backing_devices.size() * min_overall_granularity;
 	if (overall_allocation_size_quantum == 0) {
-		throw std::logic_error("Failed calculating the overall allocation size quantum");
+		throw ::std::logic_error("Failed calculating the overall allocation size quantum");
 	}
 	auto rounded_up_size = safe_round_up(desired_region_size, overall_allocation_size_quantum);
 	return rounded_up_size;
@@ -129,7 +129,7 @@ struct reserved_range_and_mappings {
  * memory in excess of the amount requested may be allocated, to ensure this fact,
  * plus meet the allocation granularity requirements of each device.
  */
-reserved_range_and_mappings<std::vector>
+reserved_range_and_mappings<::std::vector>
 setup_virtual_memory(cuda::size_t desired_region_size,
 	const vector<cuda::device_t> &backing_devices,
 	const vector<cuda::device_t> &mapping_devices,
@@ -140,7 +140,7 @@ setup_virtual_memory(cuda::size_t desired_region_size,
 	auto reserved_range = virtual_mem::reserve(size_to_reserve, alignment);
 
 	vector<virtual_mem::mapping_t> mappings;
-	std::transform(enumerate(backing_devices).cbegin(), enumerate(backing_devices).cend(), std::back_inserter(mappings),
+	::std::transform(enumerate(backing_devices).cbegin(), enumerate(backing_devices).cend(), ::std::back_inserter(mappings),
 		[&](decltype(enumerate(backing_devices))::const_value_type index_and_device) {
 			// Note: With C++14, the above statement could use an auto type, simplifying things
 
@@ -162,7 +162,7 @@ setup_virtual_memory(cuda::size_t desired_region_size,
 
 	virtual_mem::set_access_mode(reserved_range.region(), mapping_devices, virtual_mem::read_and_write_access);
 
-	return { std::move(reserved_range), std::move(mappings) };
+	return { ::std::move(reserved_range), ::std::move(mappings) };
 }
 
 //collect all of the devices whose memory can be mapped from a given device.
@@ -170,7 +170,7 @@ vector<cuda::device_t> get_backing_devices(cuda::device_t mapping_device)
 {
 	vector<cuda::device_t> backing_devices;
 	auto devices = cuda::devices();
-	std::copy_if(devices.cbegin(), devices.cend(), std::back_inserter(backing_devices),
+	::std::copy_if(devices.cbegin(), devices.cend(), ::std::back_inserter(backing_devices),
 		[&](cuda::device_t device) {
 			return (device == mapping_device) or
 				(mapping_device.can_access(device) and device.supports_virtual_memory_management());
@@ -179,14 +179,14 @@ vector<cuda::device_t> get_backing_devices(cuda::device_t mapping_device)
 	return backing_devices;
 }
 
-std::string get_file_contents(const char *path)
+::std::string get_file_contents(const char *path)
 {
-	std::ios::openmode openmode = std::ios::in | std::ios::binary;
-	std::ifstream ifs(path, openmode);
+	::std::ios::openmode openmode = ::std::ios::in | ::std::ios::binary;
+	::std::ifstream ifs(path, openmode);
 	if (ifs.bad() or ifs.fail()) {
-		throw std::system_error(errno, std::system_category(), std::string("opening ") + path + " in binary read mode");
+		throw ::std::system_error(errno, ::std::system_category(), ::std::string("opening ") + path + " in binary read mode");
 	}
-	std::ostringstream sstr;
+	::std::ostringstream sstr;
 	sstr << ifs.rdbuf();
 	return sstr.str();
 }
@@ -195,7 +195,7 @@ bool results_are_valid(const float *h_A, const float *h_B, const float *h_C, int
 {
 	for (int i = 0; i < length; ++i) {
 		float sum = h_A[i] + h_B[i];
-		if (std::fabs(h_C[i] - sum) > 1e-7f) {
+		if (::std::fabs(h_C[i] - sum) > 1e-7f) {
 			return false;
 		}
 	}
@@ -204,14 +204,14 @@ bool results_are_valid(const float *h_A, const float *h_B, const float *h_C, int
 
 int main()
 {
-	std::cout << "Vector Addition (using virtual memory mapping)\n";
+	::std::cout << "Vector Addition (using virtual memory mapping)\n";
 	int num_elements = 50000;
 	size_t size_in_bytes = num_elements * sizeof(float);
 
 	auto device = cuda::device::current::get();
 
 	if (not device.supports_virtual_memory_management()) {
-		std::cout << "Device " << device.id() << " (" << device.name()
+		::std::cout << "Device " << device.id() << " (" << device.name()
 				  << ") doesn't support virtual memory management.\n";
 		exit(EXIT_SUCCESS);
 	}
@@ -223,7 +223,7 @@ int main()
 	// Collect devices accessible by the mapping device (cuDevice) into the backing_devices vector.
 	vector<cuda::device_t> backing_devices = get_backing_devices(device);
 	if (backing_devices.empty()) {
-		std::cout << "No devices can be used for physical allocation for virtual memory mapping" << std::endl;
+		::std::cout << "No devices can be used for physical allocation for virtual memory mapping" << ::std::endl;
 		exit(EXIT_SUCCESS);
 	}
 
@@ -231,16 +231,16 @@ int main()
 	auto module = cuda::module::create(device, fatbin);
 	auto kernel = module.get_kernel(kernel::name);
 
-//	std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << std::endl;
+//	::std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << ::std::endl;
 
-	// TODO: When switching to C++14, replace these with std::make_unique
-	auto h_A = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_B = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_C = std::unique_ptr<float[]>(new float[num_elements]);
+	// TODO: When switching to C++14, replace these with ::std::make_unique
+	auto h_A = ::std::unique_ptr<float[]>(new float[num_elements]);
+	auto h_B = ::std::unique_ptr<float[]>(new float[num_elements]);
+	auto h_C = ::std::unique_ptr<float[]>(new float[num_elements]);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(h_A.get(), h_A.get() + num_elements, generator);
-	std::generate(h_B.get(), h_B.get() + num_elements, generator);
+	::std::generate(h_A.get(), h_A.get() + num_elements, generator);
+	::std::generate(h_B.get(), h_B.get() + num_elements, generator);
 
 	// Allocate vectors in device memory
 	//
@@ -258,7 +258,7 @@ int main()
 	auto d_B_ptr = d_B.reserved_range.region().start();
 	auto d_C_ptr = d_C.reserved_range.region().start();
 
-//	std::cout << "Done setting up virtual memory" << std::endl;
+//	::std::cout << "Done setting up virtual memory" << ::std::endl;
 
 	cuda::memory::copy(d_A_ptr, h_A.get(), size_in_bytes);
 	cuda::memory::copy(d_B_ptr, h_B.get(), size_in_bytes);
@@ -268,7 +268,7 @@ int main()
 	int blocks_per_grid = div_rounding_up(num_elements, threads_per_block);
 	auto launch_config = cuda::make_launch_config(blocks_per_grid, threads_per_block);
 
-	std::cout << "CUDA kernel launch with " << blocks_per_grid << " blocks of " << threads_per_block << " threads" << std::endl;
+	::std::cout << "CUDA kernel launch with " << blocks_per_grid << " blocks of " << threads_per_block << " threads" << ::std::endl;
 
 	cuda::launch(kernel, launch_config,
 		d_A_ptr, d_B_ptr, d_C_ptr, num_elements
@@ -276,13 +276,13 @@ int main()
 
 	cuda::memory::copy(h_C.get(), d_C_ptr, size_in_bytes);
 
-//	std::cout << "Checking results...\n\n";
+//	::std::cout << "Checking results...\n\n";
 
 	if (results_are_valid(h_A.get(), h_B.get(), h_C.get(), num_elements)) {
-		std::cout << "Test PASSED\n";
-		std::cout << "SUCCESS\n";
+		::std::cout << "Test PASSED\n";
+		::std::cout << "SUCCESS\n";
 	} else {
-		std::cerr << "Result verification FAILED";
+		::std::cerr << "Result verification FAILED";
 		exit(EXIT_FAILURE);
 	}
 }

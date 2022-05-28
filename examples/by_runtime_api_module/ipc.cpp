@@ -28,9 +28,9 @@
 #include <cuda/api/pci_id.hpp>
 
 
-[[noreturn]] void die_(const std::string& message)
+[[noreturn]] void die_(const ::std::string& message)
 {
-	std::cerr << message << "\n";
+	::std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -38,10 +38,10 @@ int main(int argc, char **argv)
 {
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+		::std::stoi(argv[1]) : cuda::device::default_device_id;
 	auto device = cuda::device::get(device_id);
 
-	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
+	::std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
 	// fork process
 
@@ -69,6 +69,6 @@ int main(int argc, char **argv)
 
 	// print other kernel's output
 
-	std::cout << "\nSUCCESS\n";
+	::std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;
 }

@@ -227,7 +227,7 @@ inline ::std::string describe(cudaError_t status) { return cudaGetErrorString(st
 namespace detail_ {
 
 template <typename I, bool UpperCase = false>
-std::string as_hex(I x)
+::std::string as_hex(I x)
 {
 	static_assert(::std::is_unsigned<I>::value, "only signed representations are supported");
 	unsigned num_hex_digits = 2*sizeof(I);

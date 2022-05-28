@@ -10,18 +10,18 @@
  * Example:
 
 int main () {
-	std::vector<int> v1{1,2,3};
-	std::vector<int> v2{3,2,1};
-	std::vector<float> v3{1.2,2.4,9.0};
-	std::vector<float> v4{1.2,2.4,9.0};
-	std::cout << "Using zipped iterators:\n";
+	::std::vector<int> v1{1,2,3};
+	::std::vector<int> v2{3,2,1};
+	::std::vector<float> v3{1.2,2.4,9.0};
+	::std::vector<float> v4{1.2,2.4,9.0};
+	::std::cout << "Using zipped iterators:\n";
 	for_each_zipped([](int i,int j,float k,float l) {
-			std::cout << i << " " << j << " " << k << " " << l << '\n';
+			::std::cout << i << " " << j << " " << k << " " << l << '\n';
 		},
 		v1.begin(),v1.end(),v2.begin(),v3.begin(),v4.begin());
-	std::cout << "\nUsing zipped containers:\n";
+	::std::cout << "\nUsing zipped containers:\n";
 	for_each_zipped_containers([](int i,int j,float k,float l) {
-			std::cout << i << " " << j << " " << k << " " << l << '\n';
+			::std::cout << i << " " << j << " " << k << " " << l << '\n';
 		},
 		v1, v2, v3, v4);
 }
@@ -58,7 +58,7 @@ F for_each_zipped(F func, Iterator begin, Iterator end, ExtraIterators ... extra
 template <typename F, typename Container, typename... ExtraContainers>
 F for_each_zipped_containers(F func, Container& container, ExtraContainers& ... extra_containers)
 {
-	return for_each_zipped(func, std::begin(container), std::end(container), std::begin(extra_containers)...);
+	return for_each_zipped(func, ::std::begin(container), ::std::end(container), ::std::begin(extra_containers)...);
 }
 
 

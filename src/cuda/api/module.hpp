@@ -45,7 +45,7 @@ inline module_t construct(
 
 inline ::std::string identify(const module::handle_t &handle)
 {
-	return std::string("module ") + cuda::detail_::ptr_as_hex(handle);
+	return ::std::string("module ") + cuda::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(const module::handle_t &handle, context::handle_t context_handle)
@@ -176,7 +176,7 @@ public: // constructors and destructor
 		if (holds_pc_refcount_unit) {
 #ifdef NDEBUG
 			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
 				// because a failure probably means the primary context is inactive already
 #else
 			device::primary_context::detail_::decrease_refcount(device_id_);
@@ -243,7 +243,7 @@ inline module_t load_from_file_in_current_context(
  *
  * @todo: consider adding load_module methods to context_t
  * @todo: When switching to the C++17 standard, use string_view's instead of the const char*
- * and std::string reference
+ * and ::std::string reference
  */
 ///@{
 inline module_t load_from_file(

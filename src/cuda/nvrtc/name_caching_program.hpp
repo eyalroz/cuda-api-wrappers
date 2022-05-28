@@ -19,7 +19,7 @@ namespace detail_ {
 template<typename C>
 typename C::iterator insert_in_order(C& sorted_container, typename C::value_type&& item )
 {
-	auto pos = std::upper_bound( std::begin(sorted_container), std::end(sorted_container), item);
+	auto pos = ::std::upper_bound( ::std::begin(sorted_container), ::std::end(sorted_container), item);
 	return sorted_container.insert(pos, item);
 }
 
@@ -42,10 +42,10 @@ public: // non-mutators
 
 	const char* get_mangled_registered_name(const char* unmangled_name) const
 	{
-		auto comparator = [](const char* lhs, const char* rhs) { return std::strcmp(lhs, rhs) == 0};
-		auto search_result = std::lower_bound(names_.cbegin(), names_.cend(), unmangled_name);
+		auto comparator = [](const char* lhs, const char* rhs) { return ::std::strcmp(lhs, rhs) == 0};
+		auto search_result = ::std::lower_bound(names_.cbegin(), names_.cend(), unmangled_name);
 		if (search_result == names_.cend() {
-			throw std::invalid_argument("Unmangled name " + unmangled_name + " was not registered for program " + name_);
+			throw ::std::invalid_argument("Unmangled name " + unmangled_name + " was not registered for program " + name_);
 		}
 		auto& mangled = mangled_names[search_result - names_.cbegin()];
 		if (mangled == nullptr) {
@@ -95,8 +95,8 @@ protected: // data members
 
 	// These two are kept sorted
 	// TODO: Use a single vector of pairs?
-	std::vector<const char*> names_ {};
-	std::vector<const char*> mangled_names {};
+	::std::vector<const char*> names_ {};
+	::std::vector<const char*> mangled_names {};
 
 }; // class program_t
 

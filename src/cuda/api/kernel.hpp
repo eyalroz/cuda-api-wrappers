@@ -30,6 +30,7 @@ namespace cuda {
 
 ///@cond
 class device_t;
+
 class kernel_t;
 ///@nocond
 
@@ -49,20 +50,21 @@ using shared_memory_size_determiner_t = size_t (CUDA_CB *)(int block_size);
  * @return a wrapper object associated with the specified kernel
  */
 kernel_t wrap(
-	device::id_t       device_id,
-	context::handle_t  context_id,
-	kernel::handle_t   f,
+	device::id_t device_id,
+	context::handle_t context_id,
+	kernel::handle_t f,
 	bool hold_primary_context_refcount_unit = false);
 
 namespace detail_ {
 
-inline ::std::string identify(const kernel_t& kernel);
+inline ::std::string identify(const kernel_t &kernel);
 
 #ifndef NDEBUG
-static const char* attribute_name(int attribute_index)
+
+static const char *attribute_name(int attribute_index)
 {
 	// Note: These correspond to the values of enum CUfunction_attribute_enum
-	static const char* names[] = {
+	static const char *names[] = {
 		"Maximum number of threads per block",
 		"Statically-allocated shared memory size in bytes",
 		"Required constant memory size in bytes",
@@ -76,18 +78,19 @@ static const char* attribute_name(int attribute_index)
 	};
 	return names[attribute_index];
 }
+
 #endif
 
 inline attribute_value_t get_attribute_in_current_context(handle_t handle, attribute_t attribute)
 {
 	kernel::attribute_value_t attribute_value;
-	auto result = cuFuncGetAttribute(&attribute_value,  attribute, handle);
+	auto result = cuFuncGetAttribute(&attribute_value, attribute, handle);
 	throw_if_error(result,
 		::std::string("Failed obtaining attribute ") +
-#ifdef NDEBUG
-			::std::to_string(static_cast<::std::underlying_type<kernel::attribute_t>::type>(attribute))
-#else
-			attribute_name(attribute)
+		#ifdef NDEBUG
+		::std::to_string(static_cast<::std::underlying_type<kernel::attribute_t>::type>(attribute))
+		#else
+		attribute_name(attribute)
 #endif
 	);
 	return attribute_value;
@@ -118,23 +121,31 @@ class kernel_t {
 
 public: // getters
 	context_t context() const noexcept;
+
 	device_t device() const noexcept;
 
-	device::id_t      device_id() const noexcept { return device_id_; }
-	context::handle_t context_handle() const noexcept { return context_handle_; }
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+	device::id_t device_id() const noexcept
+	{ return device_id_; }
+
+	context::handle_t context_handle() const noexcept
+	{ return context_handle_; }
+
+#if !CAN_GET_APRIORI_KERNEL_HANDLE
 	kernel::handle_t  handle() const
 	{
 #ifndef NDEBUG
 		if (handle_ == nullptr) {
 			throw runtime_error(status::named_t::invalid_resource_handle,
-			    "CUDA driver handle unavailable for kernel");
+				"CUDA driver handle unavailable for kernel");
 		}
 #endif
 		return handle_;
 	}
 #else
-	kernel::handle_t  handle() const noexcept { return handle_; }
+
+	kernel::handle_t handle() const noexcept
+	{ return handle_; }
+
 #endif
 
 public: // non-mutators
@@ -154,7 +165,8 @@ public: // non-mutators
 	}
 
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	cuda::device::compute_capability_t binary_compilation_target_architecture() const {
+	cuda::device::compute_capability_t binary_compilation_target_architecture() const
+	{
 		auto raw_attribute = get_attribute(CU_FUNC_ATTRIBUTE_BINARY_VERSION);
 		return device::compute_capability_t::from_combined_number(raw_attribute);
 	}
@@ -208,9 +220,9 @@ public: // non-mutators
 
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-		kernel::shared_memory_size_determiner_t  shared_memory_size_determiner,
-		grid::block_dimension_t                  block_size_limit = 0,
-		bool                                     disable_caching_override = false) const;
+		kernel::shared_memory_size_determiner_t shared_memory_size_determiner,
+		grid::block_dimension_t block_size_limit = 0,
+		bool disable_caching_override = false) const;
 	///@}
 #endif // CUDA_VERSION >= 10000
 
@@ -235,9 +247,8 @@ public: // non-mutators
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	grid::dimension_t max_active_blocks_per_multiprocessor(
 		grid::block_dimension_t block_size_in_threads,
-		memory::shared::size_t  dynamic_shared_memory_per_block,
-		bool                    disable_caching_override = false) const;
-
+		memory::shared::size_t dynamic_shared_memory_per_block,
+		bool disable_caching_override = false) const;
 
 
 public: // methods mutating the kernel-in-context, but not this reference object
@@ -261,10 +272,10 @@ public: // methods mutating the kernel-in-context, but not this reference object
 		auto amount_required_by_kernel_ = (kernel::attribute_value_t) amount_required_by_kernel;
 		if (amount_required_by_kernel != (cuda::memory::shared::size_t) amount_required_by_kernel_) {
 			throw ::std::invalid_argument("Requested amount of maximum shared memory exceeds the "
-				"representation range for kernel attribute values");
+										  "representation range for kernel attribute values");
 		}
 		// TODO: Consider a check in debug mode for the value being within range
-		set_attribute(CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,amount_required_by_kernel_);
+		set_attribute(CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, amount_required_by_kernel_);
 	}
 
 	memory::shared::size_t get_maximum_dynamic_shared_memory_per_block() const
@@ -309,45 +320,49 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	{
 		// TODO: Need to set a context, not a device
 		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
-		auto result = cuFuncSetSharedMemConfig(handle(), static_cast<CUsharedconfig>(config) );
+		auto result = cuFuncSetSharedMemConfig(handle(), static_cast<CUsharedconfig>(config));
 		throw_if_error(result, "Failed setting the shared memory bank size");
 	}
 
 protected: // ctors & dtor
 	kernel_t(
-		device::id_t       device_id,
-		context::handle_t  context_handle,
-		kernel::handle_t   handle,
-		bool               hold_primary_context_refcount_unit)
-	 :
+		device::id_t device_id,
+		context::handle_t context_handle,
+		kernel::handle_t handle,
+		bool hold_primary_context_refcount_unit)
+		:
 		device_id_(device_id),
 		context_handle_(context_handle),
 		handle_(handle),
 		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
-	{ }
+	{}
 
 public: // ctors & dtor
 	friend kernel_t kernel::wrap(device::id_t, context::handle_t, kernel::handle_t, bool);
 
-	kernel_t(const kernel_t& other) :
-		kernel_t(other.device_id_, other.context_handle_, other.handle_, false) { }
-		// Note: be careful with subclasses
-	kernel_t(kernel_t&& other) :
+	kernel_t(const kernel_t &other) :
+		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
+	{}
+
+	// Note: be careful with subclasses
+	kernel_t(kernel_t &&other) :
 		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
 	{
-		std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
+		::std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
 	}
 
 public: // ctors & dtor
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if !CAN_GET_APRIORI_KERNEL_HANDLE
 	virtual
 #endif
-	~kernel_t()	{
+
+	~kernel_t()
+	{
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {
 #ifdef NDEBUG
 			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
 				// because a failure probably means the primary context is inactive already
 #else
 			device::primary_context::detail_::decrease_refcount(device_id_);
@@ -365,12 +380,12 @@ protected: // data members
 namespace kernel {
 
 inline kernel_t wrap(
-	device::id_t       device_id,
-	context::handle_t  context_id,
-	kernel::handle_t   f,
+	device::id_t device_id,
+	context::handle_t context_id,
+	kernel::handle_t f,
 	bool hold_primary_context_refcount_unit)
 {
-	return kernel_t{ device_id, context_id, f, hold_primary_context_refcount_unit };
+	return kernel_t{device_id, context_id, f, hold_primary_context_refcount_unit};
 }
 
 namespace occupancy {
@@ -378,14 +393,14 @@ namespace occupancy {
 namespace detail_ {
 
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
-	handle_t                handle,
+	handle_t handle,
 	grid::block_dimension_t block_size_in_threads,
-	memory::shared::size_t  dynamic_shared_memory_per_block,
-	bool                    disable_caching_override)
+	memory::shared::size_t dynamic_shared_memory_per_block,
+	bool disable_caching_override)
 {
 	int result;
 	cuda::status_t status = CUDA_SUCCESS;
-		// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
+	// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
 	auto flags = (unsigned) disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
 	status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, handle, (int) block_size_in_threads, dynamic_shared_memory_per_block, flags);
@@ -395,22 +410,23 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 }
 
 #if CUDA_VERSION >= 10000
+
 // Note: If determine_shared_mem_by_block_size is not null, fixed_shared_mem_size is ignored;
 // if block_size_limit is 0, it is ignored.
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	CUfunction                     kernel_handle,
-	cuda::device::id_t             device_id,
-	CUoccupancyB2DSize             determine_shared_mem_by_block_size,
-	cuda::memory::shared::size_t   fixed_shared_mem_size,
-	cuda::grid::block_dimension_t  block_size_limit,
-	bool                           disable_caching_override)
+	CUfunction kernel_handle,
+	cuda::device::id_t device_id,
+	CUoccupancyB2DSize determine_shared_mem_by_block_size,
+	cuda::memory::shared::size_t fixed_shared_mem_size,
+	cuda::grid::block_dimension_t block_size_limit,
+	bool disable_caching_override)
 {
-	int min_grid_size_in_blocks { 0 };
-	int block_size { 0 };
+	int min_grid_size_in_blocks{0};
+	int block_size{0};
 	// Note: only initializing the values her because of a
 	// spurious (?) compiler warning about potential uninitialized use.
 
-	auto result =  cuOccupancyMaxPotentialBlockSizeWithFlags(
+	auto result = cuOccupancyMaxPotentialBlockSizeWithFlags(
 		&min_grid_size_in_blocks, &block_size,
 		kernel_handle,
 		determine_shared_mem_by_block_size,
@@ -422,8 +438,9 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	throw_if_error(result,
 		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
-	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
+	return {(grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size};
 }
+
 #endif // CUDA_VERSION >= 10000
 
 } // namespace detail_
@@ -442,6 +459,7 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 		"cuOccupancyAvailableDynamicSMemPerBlock() requires CUDA 11.0 or later");
 }
 #else
+
 inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 	const kernel_t &kernel,
 	grid::dimension_t blocks_on_multiprocessor,
@@ -454,6 +472,7 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
 	return (memory::shared::size_t) result;
 }
+
 #endif // CUDA_VERSION < 11000
 
 /**
@@ -469,7 +488,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 
 namespace detail_ {
 
-inline ::std::string identify(const kernel_t& kernel)
+inline ::std::string identify(const kernel_t &kernel)
 {
 	return kernel::detail_::identify(kernel.handle()) + " in " + context::detail_::identify(kernel.context());
 }
@@ -478,33 +497,35 @@ inline ::std::string identify(const kernel_t& kernel)
 } // namespace kernel
 
 #if CUDA_VERSION >= 10000
+
 inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
-	memory::shared::size_t   dynamic_shared_memory_size,
-	grid::block_dimension_t  block_size_limit,
-	bool                     disable_caching_override) const
+	memory::shared::size_t dynamic_shared_memory_size,
+	grid::block_dimension_t block_size_limit,
+	bool disable_caching_override) const
 {
-	kernel::shared_memory_size_determiner_t no_shared_memory_size_determiner { nullptr };
+	kernel::shared_memory_size_determiner_t no_shared_memory_size_determiner{nullptr};
 	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
 		handle(), device_id(), no_shared_memory_size_determiner,
 		dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
 
 inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
-	kernel::shared_memory_size_determiner_t  shared_memory_size_determiner,
-	cuda::grid::block_dimension_t            block_size_limit,
-	bool                                     disable_caching_override) const
+	kernel::shared_memory_size_determiner_t shared_memory_size_determiner,
+	cuda::grid::block_dimension_t block_size_limit,
+	bool disable_caching_override) const
 {
-	size_t no_fixed_dynamic_shared_memory_size { 0 };
+	size_t no_fixed_dynamic_shared_memory_size{0};
 	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
 		handle(), device_id(), shared_memory_size_determiner,
 		no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
+
 #endif // CUDA_VERSION >= 10000
 
 inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
-	grid::block_dimension_t  block_size_in_threads,
-	memory::shared::size_t   dynamic_shared_memory_per_block,
-	bool                     disable_caching_override) const
+	grid::block_dimension_t block_size_in_threads,
+	memory::shared::size_t dynamic_shared_memory_per_block,
+	bool disable_caching_override) const
 {
 	return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
 		handle(), block_size_in_threads,

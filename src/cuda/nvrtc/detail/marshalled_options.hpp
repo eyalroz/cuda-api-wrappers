@@ -170,8 +170,8 @@ public:
 		}
 		auto remaining = buffer_.size() - buffer_pos_; // including space for a last '\0'
 		if (sv.size() + 1 > remaining) {
-			throw std::logic_error("Not enough buffer space left for C-string argument: "
-				+ std::to_string(sv.size() + 1) + " > " + std::to_string(remaining));
+			throw ::std::logic_error("Not enough buffer space left for C-string argument: "
+				+ ::std::to_string(sv.size() + 1) + " > " + ::std::to_string(remaining));
 		}
 #endif
 		::std::copy_n(sv.cbegin(), sv.size(), current_pos());

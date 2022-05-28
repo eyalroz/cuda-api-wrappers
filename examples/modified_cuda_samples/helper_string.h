@@ -450,18 +450,18 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
     };
 
     // Extract the executable name
-    std::string executable_name;
+    ::std::string executable_name;
 
     if (executable_path != 0)
     {
-        executable_name = std::string(executable_path);
+        executable_name = ::std::string(executable_path);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
         // Windows path delimiter
         size_t delimiter_pos = executable_name.find_last_of('\\');
         executable_name.erase(0, delimiter_pos + 1);
 
-        if (executable_name.rfind(".exe") != std::string::npos)
+        if (executable_name.rfind(".exe") != ::std::string::npos)
         {
             // we strip .exe, only if the .exe is found
             executable_name.resize(executable_name.size() - 4);
@@ -477,12 +477,12 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
     // Loop over all search paths and return the first hit
     for (unsigned int i = 0; i < sizeof(searchPath)/sizeof(char *); ++i)
     {
-        std::string path(searchPath[i]);
+        ::std::string path(searchPath[i]);
         size_t executable_name_pos = path.find("<executable_name>");
 
         // If there is executable_name variable in the searchPath
         // replace it with the value
-        if (executable_name_pos != std::string::npos)
+        if (executable_name_pos != ::std::string::npos)
         {
             if (executable_path != 0)
             {

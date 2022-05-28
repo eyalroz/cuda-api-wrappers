@@ -43,7 +43,7 @@ template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
 	if (stream.context_handle() != source.context_handle()) {
-		throw std::invalid_argument("Attempt to copy an array in"
+		throw ::std::invalid_argument("Attempt to copy an array in"
 									+ context::detail_::identify(source.context_handle()) + " via "
 									+ stream::detail_::identify(stream));
 	}
@@ -592,7 +592,7 @@ inline void set_access_mode(
 	access_mode_t                access_mode)
 {
 	auto descriptors = new CUmemAccessDesc[devices.size()];
-	for(std::size_t i = 0; i < devices.size(); i++) {
+	for(::std::size_t i = 0; i < devices.size(); i++) {
 		descriptors[i] = {{CU_MEM_LOCATION_TYPE_DEVICE, devices[i].id()}, CUmemAccess_flags(access_mode)};
 	}
 	auto result = cuMemSetAccess(

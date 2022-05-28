@@ -72,7 +72,7 @@ bool check_resulting_data(const int *a, const int n, const int c)
 {
 	for (int i = 0; i < n; i++) {
 		if (a[i] != c) {
-			std::cerr << i << ": " << a[i] << " " << c << "\n";
+			::std::cerr << i << ": " << a[i] << " " << c << "\n";
 			return false;
 		}
 	}
@@ -81,7 +81,7 @@ bool check_resulting_data(const int *a, const int n, const int c)
 
 void printHelp()
 {
-	std::cout
+	::std::cout
 		<< "Usage: " << sSDKsample << " [options below]\n"
 		<< "\t--sync_method (" << (int) synch_policy_type::default_ << ") for CPU thread synchronization with GPU work."
 		<< "\t             Possible values: " << (int) synch_policy_type::heuristic << ", "
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 5;                 // number of times each experiment is repeated; originally 10
 	int n = 2 * 1024 * 1024;       // number of ints in the data set; originally 2^16
-	std::size_t nbytes = n * sizeof(int);   // number of data bytes
+	::std::size_t nbytes = n * sizeof(int);   // number of data bytes
 	dim3 threads, blocks;           // kernel launch configuration
 	float scale_factor = 1.0f;
 
@@ -120,26 +120,26 @@ int main(int argc, char **argv)
 		|| synch_policy_arg == synch_policy_type::block)
 	{
 		synch_policy = (synch_policy_type) synch_policy_arg;
-			std::cout << "Device synchronization method set to: " <<
+			::std::cout << "Device synchronization method set to: " <<
 				  (synch_policy_type) synch_policy << "\n";
-		std::cout << "Setting reps to 100 to demonstrate steady state\n";
+		::std::cout << "Setting reps to 100 to demonstrate steady state\n";
 		nreps = 100;
 	}
 	else
 	{
-		std::cout << "Invalid command line option sync_method \"" << synch_policy << "\"\n";
+		::std::cout << "Invalid command line option sync_method \"" << synch_policy << "\"\n";
 		return EXIT_FAILURE;
 	}
 
 	if (checkCmdLineFlag(argc, (const char **)argv, "use_cuda_malloc_host"))
 	{
-		std::cout
+		::std::cout
 			<< "To simplify this example, support for using cuda_malloc_host instead of "
 			<< "pinned memory has been dropped.\n";
 		return EXIT_FAILURE;
 	}
 
-	std::cout << "\n> ";
+	::std::cout << "\n> ";
 	auto device = chooseCudaDevice(argc, (const char **)argv);
 	device.make_current();
 		// This is "necessary", for now, for the memory operations whose API is context-unaware,
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 	auto compute_capability = properties.compute_capability();
 
 	if (compute_capability < cuda::device::compute_capability_t({1, 1}) ) {
-		std::cout << properties.name << " does not have Compute Capability 1.1 or newer. Reducing workload.\n";
+		::std::cout << properties.name << " does not have Compute Capability 1.1 or newer. Reducing workload.\n";
 	}
 
 	if (compute_capability.major() >= 2) {
@@ -164,32 +164,32 @@ int main(int argc, char **argv)
 	}
 
 	// Check if GPU can map host memory (Generic Method), if not then we override bPinGenericMemory to be false
-	std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
+	::std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
 			<< (properties.canMapHostMemory ? "Yes" : "No") << "\n";
 
 	if (not properties.can_map_host_memory())
 	{
-		std::cout << "Cannot allocate pinned memory (and map GPU device memory to it); aborting.\n";
+		::std::cout << "Cannot allocate pinned memory (and map GPU device memory to it); aborting.\n";
 		return EXIT_FAILURE;
 	}
 
 	// Anything that is less than 32 Cores will have scaled down workload
 	auto faux_cores_per_sm = compute_capability.max_in_flight_threads_per_processor();
 	auto faux_cores_overall = properties.max_in_flight_threads_on_device();
-	scale_factor = std::max((32.0f / faux_cores_overall), 1.0f);
+	scale_factor = ::std::max((32.0f / faux_cores_overall), 1.0f);
 	n = (int)rint((float)n / scale_factor);
 
-	std::cout << "> CUDA Capable: SM " << compute_capability.major() << "." << compute_capability.minor() << " hardware\n";
-	std::cout
+	::std::cout << "> CUDA Capable: SM " << compute_capability.major() << "." << compute_capability.minor() << " hardware\n";
+	::std::cout
 		<< "> " << properties.multiProcessorCount << " Multiprocessor(s)"
 		<< " x " << faux_cores_per_sm << " (Cores/Multiprocessor) = "
 		<< faux_cores_overall << " (Cores)\n";
 
-	std::cout << "> scale_factor = " << 1.0f/scale_factor << "\n";
-	std::cout << "> array_size   = " << n << "\n\n";
+	::std::cout << "> scale_factor = " << 1.0f/scale_factor << "\n";
+	::std::cout << "> array_size   = " << n << "\n\n";
 
 	// enable use of blocking sync, to reduce CPU usage
-	std::cout << "> Using CPU/GPU Device Synchronization method " << synch_policy << std::endl;
+	::std::cout << "> Using CPU/GPU Device Synchronization method " << synch_policy << ::std::endl;
 
 	synch_policy_type  policy;
 	switch(synch_policy) {
@@ -217,12 +217,12 @@ int main(int argc, char **argv)
 	auto d_c = cuda::memory::device::make_unique<int>(device);
 	cuda::memory::copy_single(d_c.get(), &c);
 
-	std::cout << "\nStarting Test\n";
+	::std::cout << "\nStarting Test\n";
 
 	// allocate and initialize an array of stream handles
-	std::vector<cuda::stream_t> streams;
-	std::generate_n(
-		std::back_inserter(streams), nstreams,
+	::std::vector<cuda::stream_t> streams;
+	::std::generate_n(
+		::std::back_inserter(streams), nstreams,
 		[&device]() {
 			// Note: we could omit the specific requirement of synchronization
 			// with the default stream, since that's the CUDA default - but I
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 	stop_event.record();
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
+	::std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
 
 	// time kernel
 	threads=dim3(512, 1);
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	stop_event.record();
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
+	::std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time non-streamed execution for reference
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	stop_event.record();
 	stop_event.synchronize();
 	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
+	::std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time execution with nstreams streams
@@ -313,12 +313,12 @@ int main(int argc, char **argv)
 	stop_event.record();
 	stop_event.synchronize();
 	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / (float) nreps << "\n";
+	::std::cout << nstreams <<" streams:\t" << elapsed_time.count() / (float) nreps << "\n";
 
 	// check whether the output is correct
-	std::cout << "-------------------------------\n";
+	::std::cout << "-------------------------------\n";
 	if (not check_resulting_data(h_a.get(), n, c * nreps * niterations)) {
 		die_("Result check FAILED.");
 	}
-	std::cout << "\nSUCCESS\n";
+	::std::cout << "\nSUCCESS\n";
 }

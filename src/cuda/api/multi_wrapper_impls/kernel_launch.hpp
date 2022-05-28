@@ -46,7 +46,7 @@ void enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...>::oper
 }
 
 template<typename... KernelParameters>
-std::array<void*, sizeof...(KernelParameters)>
+::std::array<void*, sizeof...(KernelParameters)>
 marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
 {
 	return ::std::array<void*, sizeof...(KernelParameters)> { &parameters... };

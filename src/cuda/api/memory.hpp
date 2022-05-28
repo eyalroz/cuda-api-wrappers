@@ -1781,7 +1781,7 @@ inline advice_t as_advice(range_attribute_t attribute, bool set)
 	case CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY:
 		return set ? CU_MEM_ADVISE_SET_ACCESSED_BY : CU_MEM_ADVISE_UNSET_ACCESSED_BY;
 	default:
-		throw std::invalid_argument(
+		throw ::std::invalid_argument(
 			"CUDA memory range attribute does not correspond to any range advice value");
 	}
 }
@@ -2170,9 +2170,9 @@ inline memory::region_t locate(T&& symbol)
 {
 	void *start;
 	size_t symbol_size;
-	auto api_call_result = cudaGetSymbolAddress(&start, std::forward<T>(symbol));
+	auto api_call_result = cudaGetSymbolAddress(&start, ::std::forward<T>(symbol));
 	throw_if_error(api_call_result, "Could not locate the device memory address for a symbol");
-	api_call_result = cudaGetSymbolSize(&symbol_size, std::forward<T>(symbol));
+	api_call_result = cudaGetSymbolSize(&symbol_size, ::std::forward<T>(symbol));
 	throw_if_error(api_call_result, "Could not locate the device memory address for the symbol at address"
 		+ cuda::detail_::ptr_as_hex(start));
 	return { start, symbol_size };

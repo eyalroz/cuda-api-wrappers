@@ -9,8 +9,8 @@
 
 void report_current_device()
 {
-	std::cout << "Runtime believes the current device index is: "
-		<< cuda::device::current::detail_::get_id() << std::endl;
+	::std::cout << "Runtime believes the current device index is: "
+		<< cuda::device::current::detail_::get_id() << ::std::endl;
 }
 
 int main()
@@ -29,31 +29,31 @@ int main()
 	assert_(cur_dev::get_id() == 0);
 	dev_idx[1] = (dev_idx[0] == 0) ? 1 : 0;
 	pc_handle[0] = pc::obtain_and_increase_refcount(dev_idx[0]);
-	std::cout << "Obtained primary context handle for device " << dev_idx[0]<< '\n';
+	::std::cout << "Obtained primary context handle for device " << dev_idx[0]<< '\n';
 	pc_handle[1] = pc::obtain_and_increase_refcount(dev_idx[1]);
-	std::cout << "Obtained primary context handle for device " << dev_idx[1]<< '\n';
+	::std::cout << "Obtained primary context handle for device " << dev_idx[1]<< '\n';
 	report_current_device();
 	cur_ctx::push(pc_handle[1]);
-	std::cout << "Pushed primary context handle for device " << dev_idx[1] << " onto the stack\n";
+	::std::cout << "Pushed primary context handle for device " << dev_idx[1] << " onto the stack\n";
 	report_current_device();
 	assert_(cur_dev::get_id() == dev_idx[1]);
 	auto ctx = context::create_and_push(dev_idx[0]);
-	std::cout << "Created a new context for device " << dev_idx[0] << " and pushed it onto the stack\n";
+	::std::cout << "Created a new context for device " << dev_idx[0] << " and pushed it onto the stack\n";
 	report_current_device();
 	assert_(cur_dev::get_id() == dev_idx[0]);
 	cur_ctx::push(ctx);
-	std::cout << "Pushed primary context handle for device " << dev_idx[0] << " onto the stack\n";
+	::std::cout << "Pushed primary context handle for device " << dev_idx[0] << " onto the stack\n";
 	report_current_device();
 	assert_(cur_dev::get_id() == dev_idx[0]);
 	cur_ctx::push(pc_handle[1]);
-	std::cout << "Pushed primary context for device " << dev_idx[1] << " onto the stack\n";
+	::std::cout << "Pushed primary context for device " << dev_idx[1] << " onto the stack\n";
 	report_current_device();
 	assert_(cur_dev::get_id() == dev_idx[1]);
 	pc::decrease_refcount(dev_idx[1]);
-	std::cout << "Deactivated/destroyed primary context for device " << dev_idx[1] << '\n';
+	::std::cout << "Deactivated/destroyed primary context for device " << dev_idx[1] << '\n';
 	report_current_device();
 	assert_(cur_dev::get_id() == dev_idx[1]);
 
-	std::cout << "\nSUCCESS" << std::endl;
+	::std::cout << "\nSUCCESS" << ::std::endl;
 }
 

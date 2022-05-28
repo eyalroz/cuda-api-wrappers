@@ -55,25 +55,25 @@ int main(int argc, char **argv)
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+		::std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	if (cuda::device::count() <= device_id) {
-		die_("No CUDA device with ID " + std::to_string(device_id));
+		die_("No CUDA device with ID " + ::std::to_string(device_id));
 	}
 
 	auto device = cuda::device::get(device_id).make_current();
-	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
+	::std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 	auto kernel = cuda::kernel::get(device, kernel_function);
 
 	// ------------------------------------------
 	//  Attributes without a specific API call
 	// ------------------------------------------
 
-	std::cout
+	::std::cout
 		<< "The PTX version used in compiling device function " << kernel_name
 		<< " is " << kernel.ptx_version() << ".\n";
 
-	std::string cache_preference_names[] = {
+	::std::string cache_preference_names[] = {
 		"No preference",
 		"Equal L1 and shared memory",
 		"Prefer shared memory over L1",
@@ -101,20 +101,20 @@ int main(int argc, char **argv)
 
 	const int bar = 123;
 	const unsigned num_blocks = 3;
-	std::cout << "Getting kernel attribute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
+	::std::cout << "Getting kernel attribute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << ::std::endl;
 	auto max_threads_per_block = kernel.get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	auto launch_config = cuda::make_launch_config(num_blocks, max_threads_per_block);
-	std::cout
+	::std::cout
 		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, using cuda::launch()" << std::endl;
+		<< " with " << num_blocks << " blocks, using cuda::launch()" << ::std::endl;
 	{
 		// Copy and move construction and assignment of launch configurations
 		auto launch_config_2 = cuda::make_launch_config(2, 2, 2);
 		auto launch_config_3 = cuda::make_launch_config(3, 3, 3);
 		[[maybe_unused]] cuda::launch_configuration_t launch_config_4{launch_config};
 		launch_config_4 = launch_config_2;
-		launch_config_4 = std::move(launch_config_3);
-		[[maybe_unused]] cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
+		launch_config_4 = ::std::move(launch_config_3);
+		[[maybe_unused]] cuda::launch_configuration_t launch_config_5{::std::move(launch_config_2)};
     // In case the `[[maybe_unused]]` attribute is ignored, let's try to trick the compiler
     // into thinking we're actually using launch_config_4.
     launch_config_4.dimensions == launch_config.dimensions;
@@ -124,10 +124,10 @@ int main(int argc, char **argv)
 	cuda::device::current::get().synchronize();
 
 	// Let's do the same, but when the kernel is wrapped in a kernel_t
-	std::cout
+	::std::cout
 		<< "Launching kernel " << kernel_name
 		<< " wrapped in a kernel_t structure,"
-		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
+		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << ::std::flush;
 
 	cuda::launch(kernel, launch_config, bar);
 	cuda::device::current::get().synchronize();
@@ -135,9 +135,9 @@ int main(int argc, char **argv)
 	// But there's more than one way to launch! we can also do
 	// it via the device proxy, using the default stream:
 
-	std::cout
+	::std::cout
 		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, using device.launch()\n" << std::flush;
+		<< " with " << num_blocks << " blocks, using device.launch()\n" << ::std::flush;
 	device.launch(kernel_function, launch_config, bar);
 	device.synchronize();
 
@@ -145,9 +145,9 @@ int main(int argc, char **argv)
 
 	auto stream = cuda::device::current::get().create_stream(cuda::stream::async);
 
-	std::cout
+	::std::cout
 		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, using stream.launch()\n" << std::flush;
+		<< " with " << num_blocks << " blocks, using stream.launch()\n" << ::std::flush;
 	stream.enqueue.kernel_launch(kernel, launch_config, bar);
 	stream.synchronize();
 
@@ -159,28 +159,28 @@ int main(int argc, char **argv)
 			auto cooperative_kernel_name = "grid_cooperating_foo";
 			auto cooperative_config = launch_config;
 			cooperative_config.block_cooperation = true;
-			std::cout
+			::std::cout
 			<< "Launching kernel" << cooperative_kernel_name
 				<< " with " << num_blocks << " blocks, cooperatively, using stream.launch()\n"
-				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
+				<< "(but note this does not actually check that cooperation takes place).\n" << ::std::flush;
 			stream.enqueue.kernel_launch(cooperative_kernel_function, cooperative_config, bar);
 			stream.synchronize();
 
 			// Same, but using cuda::enqueue_launch
-			std::cout
+			::std::cout
 				<< "Launching kernel " << cooperative_kernel_name
 				<< " wrapped in a kernel_t structure,"
 				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
 				<< " and allowing thread block cooperation\n"
-				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
+				<< "(but note this does not actually check that cooperation takes place).\n" << ::std::flush;
 
 			cuda::enqueue_launch(cooperative_kernel_function, stream, cooperative_config, bar);
 			cuda::device::current::get().synchronize();
 		}
 		else {
-			std::cout
+			::std::cout
 				<< "Skipping launch of kernel" << kernel_name
-				<< ", since our CUDA device doesn't support cooperative launches.\n" << std::flush;
+				<< ", since our CUDA device doesn't support cooperative launches.\n" << ::std::flush;
 		}
 
 	}
@@ -196,12 +196,12 @@ int main(int argc, char **argv)
 	auto non_cooperative_kernel = cuda::kernel::get(device, kernel_function);
 	auto non_cooperative_config = launch_config;
 	non_cooperative_config.block_cooperation = true;
-	std::cout
+	::std::cout
 		<< "Launching kernel " << kernel_name << " with "
-		<< num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << std::flush;
+		<< num_blocks << " blocks, un-cooperatively, using stream.launch()\n" << ::std::flush;
 	stream.enqueue.kernel_launch(non_cooperative_kernel, non_cooperative_config, bar);
 	stream.synchronize();
 
-	std::cout << "\nSUCCESS\n";
+	::std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;
 }

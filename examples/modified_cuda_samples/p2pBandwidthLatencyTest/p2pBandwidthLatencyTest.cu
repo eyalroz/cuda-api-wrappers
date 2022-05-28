@@ -38,11 +38,11 @@ struct command_line_options {
 
 template <typename T>
 struct square_matrix {
-	using size_type = typename std::vector<T>::size_type;
-	std::vector<T> elements;
+	using size_type = typename ::std::vector<T>::size_type;
+	::std::vector<T> elements;
 	size_type leg;
 
-	static square_matrix make(std::size_t leg)
+	static square_matrix make(::std::size_t leg)
 	{
 		square_matrix<T> result;
 		result.elements.resize(leg*leg);
@@ -104,7 +104,7 @@ __global__ void copyp2p(
 ///////////////////////////////////////////////////////////////////////////
 void printHelp(void)
 {
-    std::cout
+    ::std::cout
         << "Usage:  p2pBandwidthLatencyTest [OPTION]...\n"
         << "Tests bandwidth/latency of GPU pairs using P2P and without P2P\n"
         << "\n"
@@ -117,21 +117,21 @@ void printHelp(void)
 void checkP2Paccess()
 {
     for (auto device : cuda::devices()) {
-    	static_assert(std::is_same<decltype(device), cuda::device_t>::value, "Unexpected type");
+    	static_assert(::std::is_same<decltype(device), cuda::device_t>::value, "Unexpected type");
         for (auto peer : cuda::devices()) {
             if ((cuda::device_t)device != (cuda::device_t)peer) {
                 auto access = cuda::device::peer_to_peer::can_access(device, peer);
-                std::cout << "Device " << device.id() << (access ? " CAN" : " CANNOT") << " access Peer Device " << peer.id() << "\n";
+                ::std::cout << "Device " << device.id() << (access ? " CAN" : " CANNOT") << " access Peer Device " << peer.id() << "\n";
             }
         }
     }
-    std::cout << "\nNote: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.\nSo you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.\n\n";
+    ::std::cout << "\nNote: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.\nSo you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.\n\n";
 }
 
 void enqueue_p2p_copy(
     int *dest,
     int *src,
-    std::size_t num_elems,
+    ::std::size_t num_elems,
     int repeat,
     bool p2paccess,
     P2PEngine p2p_mechanism,
@@ -237,7 +237,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
             *flag = 1;
             streams[i].synchronize();
 
-            using usec_duration_t = std::chrono::duration<double, std::micro>;
+            using usec_duration_t = ::std::chrono::duration<double, ::std::micro>;
             usec_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
             double gb = numElems * sizeof(int) * repeat / (double)1e9;
@@ -252,7 +252,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
         }
     }
 
-    std::cout << "Unidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth " << (p2p_method == P2P_READ ? "(P2P Reads) " : "") << "Matrix (GB/s)\n";
+    ::std::cout << "Unidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth " << (p2p_method == P2P_READ ? "(P2P Reads) " : "") << "Matrix (GB/s)\n";
 
 	print(bandwidthMatrix, "D\\D");
 
@@ -260,8 +260,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
 void print(const square_matrix<double> &bandwidthMatrix, const char* axis_cross_label)
 {
-	constexpr const std::size_t width = bandwidth::field_width;
-	cout << std::setw(width) << axis_cross_label;
+	constexpr const ::std::size_t width = bandwidth::field_width;
+	cout << ::std::setw(width) << axis_cross_label;
 
 	for (auto device : cuda::devices()) {
 		cout << setw(width) << device.id() << ' ';
@@ -362,7 +362,7 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
             streams_0[i].synchronize();
             streams_1[j].synchronize();
 
-            using seconds_duration_t = std::chrono::duration<double>;
+            using seconds_duration_t = ::std::chrono::duration<double>;
             seconds_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
             double gb = 2.0 * numElems * sizeof(int) * repeat / (double)1e9;
@@ -377,7 +377,7 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
         }
     }
 
-    std::cout << "Bidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth Matrix (GB/s)\n";
+    ::std::cout << "Bidirectional P2P=" << (test_p2p ? "Enabled": "Disabled") << " Bandwidth Matrix (GB/s)\n";
 
     print(bandwidthMatrix, "D\\D");
 }
@@ -433,7 +433,7 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
             streams[i].enqueue.kernel_launch(delay, single_thread, flag, default_timeout_clocks);
             streams[i].enqueue.event(start[i]);
 
-            auto time_before_copy = std::chrono::high_resolution_clock::now();
+            auto time_before_copy = ::std::chrono::high_resolution_clock::now();
             if (i == j) {
                 // Perform intra-GPU, D2D copies
                 enqueue_p2p_copy(buffers[i].get(), buffersD2D[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
@@ -448,15 +448,15 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
                     enqueue_p2p_copy(buffers[i].get(), buffers[j].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
                 }
             }
-            auto time_after_copy = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double, std::micro> cpu_duration_ms = time_after_copy - time_before_copy;
+            auto time_after_copy = ::std::chrono::high_resolution_clock::now();
+            ::std::chrono::duration<double, ::std::micro> cpu_duration_ms = time_after_copy - time_before_copy;
 
             streams[i].enqueue.event(stop[i]);
             // Now that the work has been queued up, release the stream
             *flag = 1;
             streams[i].synchronize();
 
-            using usec_duration_t = std::chrono::duration<double, std::micro>;
+            using usec_duration_t = ::std::chrono::duration<double, ::std::micro>;
             usec_duration_t gpu_duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
             gpuLatencyMatrix(i, j) = gpu_duration.count() / repeat;
@@ -468,7 +468,7 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
         }
     }
 
-    std::cout
+    ::std::cout
         << "P2P=" << (test_p2p ? "Enabled": "Disabled") << " Latency "
         << (test_p2p ? (p2p_method == P2P_READ ? "(P2P Reads) " : "(P2P Writes) ") : "")
         << "Matrix (us)\n";
@@ -481,24 +481,24 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 void print_connectivity_matrix()
 {
     //Check peer-to-peer connectivity
-    std::cout << "P2P Connectivity Matrix\n";
-    std::cout << "   D\\D ";
+    ::std::cout << "P2P Connectivity Matrix\n";
+    ::std::cout << "   D\\D ";
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
+        ::std::cout << ::std::setw(bandwidth::field_width) << device.id() << ' ';
     }
-    std::cout << "\n";
+    ::std::cout << "\n";
     for (auto device : cuda::devices()) {
-        std::cout << std::setw(bandwidth::field_width) << device.id() << ' ';
+        ::std::cout << ::std::setw(bandwidth::field_width) << device.id() << ' ';
         for (auto peer : cuda::devices()) {
             if (device != peer) {
                 auto access = cuda::device::peer_to_peer::can_access(device, peer);
-                std::cout << std::setw(bandwidth::field_width) << ((access) ? 1 : 0);
+                ::std::cout << ::std::setw(bandwidth::field_width) << ((access) ? 1 : 0);
             } else {
-                std::cout << std::setw(bandwidth::field_width) << 1;
+                ::std::cout << ::std::setw(bandwidth::field_width) << 1;
             }
-            std::cout << ' ';
+            ::std::cout << ' ';
         }
-        std::cout << "\n";
+        ::std::cout << "\n";
     }
 }
 
@@ -507,7 +507,7 @@ void list_devices()
     //output devices
     for (auto device : cuda::devices()) {
         auto properties = device.properties();
-        std::cout << "Device: " << device.id() << ", " << properties.name << ", PCI location " << properties.pci_id() << '\n';
+        ::std::cout << "Device: " << device.id() << ", " << properties.name << ", PCI location " << properties.pci_id() << '\n';
     }
 }
 
@@ -525,7 +525,7 @@ command_line_options handle_command_line(int argc, char** argv)
     }
     if (checkCmdLineFlag(argc, (const char**) (argv), "sm_copy")) {
 #if CUDA_VERSION <= 10000
-        std::cerr << "This mechanism is unsupported by this program before CUDA 10.0" << std::endl;
+        ::std::cerr << "This mechanism is unsupported by this program before CUDA 10.0" << ::std::endl;
         exit(EXIT_FAILURE);
 #else
         p2p_mechanism = SM;
@@ -537,7 +537,7 @@ command_line_options handle_command_line(int argc, char** argv)
 int main(int argc, char **argv)
 {
     command_line_options opts = handle_command_line(argc, argv);
-    std::cout << "[P2P (Peer-to-Peer) GPU Bandwidth Latency Test]\n";
+    ::std::cout << "[P2P (Peer-to-Peer) GPU Bandwidth Latency Test]\n";
 
     list_devices();
     checkP2Paccess();
@@ -564,5 +564,5 @@ int main(int argc, char **argv)
     {
         outputLatencyMatrix(opts.mechanism, do_measure_p2p, P2P_READ);
     }
-    std::cout << "\nNOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.\n";
+    ::std::cout << "\nNOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.\n";
 }
