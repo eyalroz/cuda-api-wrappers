@@ -43,18 +43,18 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 } // namespace kernels
 
 template <typename T>
-void check_output_is_iota(std::string name, const T* actual, size_t length) noexcept
+void check_output_is_iota(::std::string name, const T* actual, size_t length) noexcept
 {
 	bool failed { false };
 	for (size_t i = 0; i < length; ++i) {
 		if (actual[i] != i) {
 			if (not failed) {
-				std::cerr << name << ": Output does not matched expected values:\n";
+				::std::cerr << name << ": Output does not matched expected values:\n";
 			}
-			std::cerr << "output[" << std::setw(3) << i << "] = " << actual[i] << " != " << i << '\n';
+			::std::cerr << "output[" << ::std::setw(3) << i << "] = " << actual[i] << " != " << i << '\n';
 		}
 	}
-	if (failed) { std::cerr << '\n'; }
+	if (failed) { ::std::cerr << '\n'; }
 }
 
 void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
@@ -64,16 +64,16 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	auto arr = cuda::array::create<float>(device, dims);
 	assert_(arr.device() == device);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
+	::std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
     assert_(tv.device() == device);
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
 	constexpr auto block_dims = cuda::grid::block_dimensions_t::cube(block_dim);
-	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
-	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
-	assert(div_rounding_up(d, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(w, block_dim) <= ::std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= ::std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(d, block_dim) <= ::std::numeric_limits<grid::dimension_t>::max());
 	const grid::dimensions_t grid_dims = {
 		grid::dimension_t( div_rounding_up(w, block_dim) ),
 		grid::dimension_t( div_rounding_up(h, block_dim) ),
@@ -104,12 +104,12 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 template <typename T>
 void print_2d_array(const char* title, const T* a, size_t width, size_t height)
 {
-    std::cout << title << ":\n";
+    ::std::cout << title << ":\n";
 	for (size_t i = 0; i < height; ++i) {
 		for (size_t j = 0; j < width; ++j) {
-			std::cout << a[j + i * width] << ' ';
+			::std::cout << a[j + i * width] << ' ';
 		}
-		std::cout << '\n';
+		::std::cout << '\n';
 	}
 }
 
@@ -120,9 +120,9 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	const cuda::array::dimensions_t<2> dims = {w, h};
 	auto arr = cuda::array::create<float>(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
+	::std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
 
-	std::cout << std::endl;
+	::std::cout << ::std::endl;
 
     print_2d_array("Data at ptr_in after initialization", ptr_in.get(), w, h);
 
@@ -131,8 +131,8 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
 	constexpr auto block_dims = cuda::grid::block_dimensions_t::square(block_dim);
-	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
-	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(w, block_dim) <= ::std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= ::std::numeric_limits<grid::dimension_t>::max());
 	const cuda::grid::dimensions_t grid_dims = {
 		grid::dimension_t( div_rounding_up(w, block_dim) ),
 		grid::dimension_t( div_rounding_up(h, block_dim) ),
@@ -142,7 +142,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
     auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
     // The following is to make it easier to notice if nothing get copied
     // to the output
-    std::iota(ptr_out.get(), ptr_out.get() + arr.size(), 90);
+    ::std::iota(ptr_out.get(), ptr_out.get() + arr.size(), 90);
 //    print_2d_array("Data at ptr_out after initialization", ptr_out.get(), w, h);
 
 	cuda::launch(
@@ -184,5 +184,5 @@ int main()
 	array_2d_example(device, w, h);
 	device.synchronize();
 
-	std::cout << "\nSUCCESS\n";
+	::std::cout << "\nSUCCESS\n";
 }

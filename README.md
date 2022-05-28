@@ -96,7 +96,7 @@ We've all dreamed of being able to type in:
 
 	my_stream.enqueue.callback(
 		[&foo](cuda::stream_t stream, cuda::status_t status) {
-			std::cout << "Hello " << foo << " world!\n";
+			::std::cout << "Hello " << foo << " world!\n";
 		}
 	);
 

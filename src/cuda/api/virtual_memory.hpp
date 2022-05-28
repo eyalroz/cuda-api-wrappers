@@ -91,7 +91,7 @@ inline reserved_address_range_t reserve(region_t requested_region, alignment_t a
     CUdeviceptr ptr;
     auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, requested_region.device_address(), flags);
     throw_if_error(status, "Failed making a reservation of " + cuda::memory::detail_::identify(requested_region)
-		+ " with alignment value " + std::to_string(alignment));
+		+ " with alignment value " + ::std::to_string(alignment));
     bool is_owning { true };
     return detail_::wrap(memory::region_t { ptr, requested_region.size() }, alignment, is_owning);
 }
@@ -269,8 +269,8 @@ physical_allocation_t create(size_t size, device_t device);
 namespace detail_ {
 
 inline ::std::string identify(handle_t handle, size_t size) {
-	return ::std::string("physical allocation with handle ") + std::to_string(handle)
-		+ " of size " + std::to_string(size);
+	return ::std::string("physical allocation with handle ") + ::std::to_string(handle)
+		+ " of size " + ::std::to_string(size);
 }
 
 inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit)

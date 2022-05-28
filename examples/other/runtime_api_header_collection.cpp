@@ -5,5 +5,5 @@
 int main()
 {
 	cuda::device::count();
-	std::cout << "SUCCESS\n";
+	::std::cout << "SUCCESS\n";
 }

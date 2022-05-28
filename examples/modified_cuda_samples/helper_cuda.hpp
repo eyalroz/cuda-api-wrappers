@@ -29,11 +29,11 @@ void ensure_device_is_usable(const cuda::device_t device)
 	auto properties = device.properties();
 
 	if (not properties.usable_for_compute()) {
-		die_("Error: device " + std::to_string(device.id()) + "is running with <Compute Mode Prohibited>.");
+		die_("Error: device " + ::std::to_string(device.id()) + "is running with <Compute Mode Prohibited>.");
 	}
 
 	if (properties.compute_capability().major() < 1) {
-		die_("CUDA device " + std::to_string(device.id()) + " does not support CUDA.\n");
+		die_("CUDA device " + ::std::to_string(device.id()) + " does not support CUDA.\n");
 	}
 }
 
@@ -46,9 +46,9 @@ inline int get_device_with_highest_gflops()
 		die_("get_device_with_highest_gflops() CUDA error: no devices supporting CUDA.");
 	}
 
-	std::vector<cuda::device::id_t> device_ids(device_count);
-	std::iota(device_ids.begin(), device_ids.end(), 0);
-	(void) std::remove_if(device_ids.begin(), device_ids.end(),
+	::std::vector<cuda::device::id_t> device_ids(device_count);
+	::std::iota(device_ids.begin(), device_ids.end(), 0);
+	(void) ::std::remove_if(device_ids.begin(), device_ids.end(),
 		[](cuda::device::id_t id) {
 			auto properties = cuda::device::get(id).properties();
 			return !properties.usable_for_compute()
@@ -60,7 +60,7 @@ inline int get_device_with_highest_gflops()
 	}
 	if (device_ids.size() == 1) { return *device_ids.begin(); }
 
-	auto iterator = std::max_element(device_ids.begin(),device_ids.end(),
+	auto iterator = ::std::max_element(device_ids.begin(),device_ids.end(),
 		[](cuda::device::id_t id_1, cuda::device::id_t id_2) {
 			auto cc_1 = cuda::device::get(id_1).properties().compute_capability();
 			auto cc_2 = cuda::device::get(id_2).properties().compute_capability();
@@ -69,7 +69,7 @@ inline int get_device_with_highest_gflops()
 	);
 	auto best_sm_arch =	cuda::device::get(*iterator).properties().major;
 	if (best_sm_arch > 2) {
-		(void) std::remove_if(device_ids.begin(), device_ids.end(),
+		(void) ::std::remove_if(device_ids.begin(), device_ids.end(),
 			[best_sm_arch](cuda::device::id_t id) {
 				return cuda::device::get(id).properties().compute_capability().major() < (unsigned) best_sm_arch;
 			}
@@ -80,7 +80,7 @@ inline int get_device_with_highest_gflops()
 		auto properties = cuda::device::get(device_id).properties();
 		return properties.max_in_flight_threads_on_device() * properties.clockRate;
 	};
-	iterator = std::max_element(device_ids.begin(),device_ids.end(),
+	iterator = ::std::max_element(device_ids.begin(),device_ids.end(),
 		[&performance_estimator](cuda::device::id_t id_1, cuda::device::id_t id_2) {
 			return performance_estimator(id_1) < performance_estimator(id_2);
 		}
@@ -108,9 +108,9 @@ inline cuda::device_t chooseCudaDevice(int argc, const char **argv)
 	{
 		// Otherwise pick the device with highest Gflops/s
 		auto best_device = cuda::device::get(get_device_with_highest_gflops());
-		std::cout << "GPU Device " << best_device.id() << ": ";
-		std::cout << "\"" << best_device.name() << "\" ";
-		std::cout << "with compute capability " << best_device.properties().compute_capability() << "\n";
+		::std::cout << "GPU Device " << best_device.id() << ": ";
+		::std::cout << "\"" << best_device.name() << "\" ";
+		::std::cout << "with compute capability " << best_device.properties().compute_capability() << "\n";
 		return best_device;
 	}
 }

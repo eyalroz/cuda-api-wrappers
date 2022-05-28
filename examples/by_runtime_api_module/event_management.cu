@@ -20,13 +20,13 @@ template <size_t N>
 poor_mans_array<char, N> message(const char* message_str)
 {
 	poor_mans_array<char, N> a;
-	assert(std::strlen(message_str) < N);
-	std::strcpy(a.data, message_str);
+	assert(::std::strlen(message_str) < N);
+	::std::strcpy(a.data, message_str);
 	return a;
 }
 
 template <size_t N>
-poor_mans_array<char, N> message(const std::string& message_str)
+poor_mans_array<char, N> message(const ::std::string& message_str)
 {
 	return message<N>(message_str.c_str());
 }
@@ -47,11 +47,11 @@ __global__ void increment(char* data, size_t length)
 }
 
 inline void report_occurrence(
-	const std::string& prefix_message,
+	const ::std::string& prefix_message,
 	const cuda::event_t& e1,
 	const cuda::event_t& e2)
 {
-	std::cout
+	::std::cout
 		<< prefix_message << ": "
 		<< "Event 1 has " << (e1.has_occurred() ? "" : "not ") << "occurred; "
 		<< "event 2 has " << (e2.has_occurred() ? "" : "not ") << "occurred.\n";
@@ -67,10 +67,10 @@ int main(int argc, char **argv)
 	static constexpr size_t N = 40;
 
 	// Being very cavalier about our command-line arguments here...
-	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+	auto device_id =  (argc > 1) ? ::std::stoi(argv[1]) : cuda::device::default_device_id;
 	auto device = cuda::device::get(device_id);
 
-	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
+	::std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
 	// Everything else - Enqueueing kernels, events, callbacks
 	// and memory attachments, recording and waiting on events
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
 	try {
 		cuda::event::time_elapsed_between(event_1, event_2);
-		std::cerr << "Attempting to obtain the elapsed time between two events on a"
+		::std::cerr << "Attempting to obtain the elapsed time between two events on a"
 			"stream which does not auto-sync with the default stream and has not been "
 			"synchronized should fail - but it didn't\n";
 		exit(EXIT_FAILURE);
@@ -135,13 +135,13 @@ int main(int argc, char **argv)
 	}
 	event_2.synchronize();
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
-	std::cout
+	::std::cout
 		<< cuda::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "
 		<< "executing the second kernel (\"increment\") on a buffer of " << buffer_size
 		<< " chars and triggering two callbacks.\n";
 	// ... and this should make the third kernel execute
 	stream.synchronize();
 
-	std::cout << "\nSUCCESS\n";
+	::std::cout << "\nSUCCESS\n";
 	return EXIT_SUCCESS;
 }

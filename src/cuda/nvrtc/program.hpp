@@ -152,7 +152,7 @@ public: // non-mutators
 		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled PTX result: " +
 			cuda::rtc::program::detail_::identify(*this));
 		if (size == 0) {
-			throw std::logic_error("PTX size reported as 0 by NVRTC for program: " +
+			throw ::std::logic_error("PTX size reported as 0 by NVRTC for program: " +
 				cuda::rtc::program::detail_::identify(*this));
 		}
 		return true;
@@ -173,7 +173,7 @@ public: // non-mutators
 		auto status = nvrtcGetCUBINSize(handle_, &size);
 		throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
 		if (size == 0) {
-			throw std::invalid_argument("CUBIN requested for a CUDA program compiled for a virtual architecture: " +
+			throw ::std::invalid_argument("CUBIN requested for a CUDA program compiled for a virtual architecture: " +
 				cuda::rtc::program::detail_::identify(*this));
 		}
 		dynarray<char> result(size);
@@ -218,7 +218,7 @@ public: // non-mutators
 		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled NVVM result: " +
 			cuda::rtc::program::detail_::identify(*this));
 		if (size == 0) {
-			throw std::logic_error("NVVM size reported as 0 by NVRTC for program: " +
+			throw ::std::logic_error("NVVM size reported as 0 by NVRTC for program: " +
 				cuda::rtc::program::detail_::identify(*this));
 		}
 		return true;
@@ -244,7 +244,7 @@ public: // non-mutators
 		return result;
 	}
 
-	const char* get_mangling_of(const std::string& unmangled_name) const
+	const char* get_mangling_of(const ::std::string& unmangled_name) const
 	{
 		return get_mangling_of(unmangled_name.c_str());
 	}
@@ -299,7 +299,7 @@ public: // mutators of the program, but not of this wrapper class
 		throw_if_error(status, "Failed registering a mangled name with program \"" + name_ + "\"");
 	}
 
-	void register_global(const std::string& unmanged_name)
+	void register_global(const ::std::string& unmanged_name)
 	{
 		register_global(unmanged_name.c_str());
 	}
@@ -310,7 +310,7 @@ public: // mutators of the program, but not of this wrapper class
 		register_global(first);
 		register_global(second);
 		cuda::detail_::for_each_argument(
-			[this](std::string global_name) { register_global(global_name); },
+			[this](::std::string global_name) { register_global(global_name); },
 			more_globals...);
 	}
 
@@ -340,8 +340,8 @@ public: // constructors and destructor
 	{
 		status_t status;
 #ifndef NDEBUG
-		if (num_headers > std::numeric_limits<int>::max()) {
-			throw std::invalid_argument("Cannot process more than " + std::to_string(std::numeric_limits<int>::max()) + " headers.");
+		if (num_headers > ::std::numeric_limits<int>::max()) {
+			throw ::std::invalid_argument("Cannot process more than " + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
 		}
 #endif
 		status = nvrtcCreateProgram(&handle_, cuda_source, program_name, (int) num_headers, header_sources, header_names);
@@ -351,7 +351,7 @@ public: // constructors and destructor
 	program_t(const program_t&) = delete;
 
 	program_t(program_t&& other) noexcept
-		: handle_(other.handle_), name_(std::move(other.name_)), owning_(other.owning_)
+		: handle_(other.handle_), name_(::std::move(other.name_)), owning_(other.owning_)
 	{
 		other.owning_ = false;
 	};

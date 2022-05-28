@@ -641,7 +641,7 @@ public: // constructors and destructor
 	~context_t() {
 		if (owning_) {
 			cuCtxDestroy(handle_);
-			// Note: "Swallowing" any potential error to avoid std::terminate(); also,
+			// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
 			// because the context cannot possibly exist after this call.
 		}
 	}

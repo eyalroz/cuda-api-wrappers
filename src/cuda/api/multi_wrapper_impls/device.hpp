@@ -76,7 +76,7 @@ inline void disable_access(device_t accessor, device_t peer)
 {
 #ifndef NDEBUG
 	if (accessor == peer) {
-		throw std::invalid_argument("A device cannot be used as its own peer");
+		throw ::std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::disable_access(accessor.primary_context(), peer.primary_context());
@@ -91,7 +91,7 @@ inline void enable_bidirectional_access(device_t first, device_t second)
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw std::invalid_argument("A device cannot be used as its own peer");
+		throw ::std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::enable_bidirectional_access(first.primary_context(), second.primary_context());
@@ -101,7 +101,7 @@ inline void disable_bidirectional_access(device_t first, device_t second)
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw std::invalid_argument("A device cannot be used as its own peer");
+		throw ::std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::disable_bidirectional_access(first.primary_context(), second.primary_context());
@@ -111,7 +111,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, device_t first, de
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw std::invalid_argument("A device cannot be used as its own peer");
+		throw ::std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	return detail_::get_attribute(attribute, first.id(), second.id());
@@ -209,7 +209,7 @@ inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t
 	auto device = context.device();
 	auto primary_context = device.primary_context();
 	if (context != primary_context) {
-		throw std::logic_error("Attempt to launch a kernel associated with a non-primary context without specifying a stream associated with that context.");
+		throw ::std::logic_error("Attempt to launch a kernel associated with a non-primary context without specifying a stream associated with that context.");
 	}
 	return primary_context;
 }

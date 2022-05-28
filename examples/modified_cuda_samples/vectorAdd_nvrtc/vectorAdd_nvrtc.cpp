@@ -40,7 +40,7 @@ int main(void)
 	size_t size = numElements * sizeof(float);
 	auto kernel_name = "vectorAdd";
 
-	std::cout << "[Vector addition of " << numElements << " elements]\n";
+	::std::cout << "[Vector addition of " << numElements << " elements]\n";
 
 	auto device = cuda::device::current::get();
 	auto program = cuda::rtc::program::create(kernel_name, vectorAdd_source);
@@ -52,14 +52,14 @@ int main(void)
 	auto module = cuda::module::create(context, program);
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
-	// If we could rely on C++14, we would  use std::make_unique
-	auto h_A = std::unique_ptr<float[]>(new float[numElements]);
-	auto h_B = std::unique_ptr<float[]>(new float[numElements]);
-	auto h_C = std::unique_ptr<float[]>(new float[numElements]);
+	// If we could rely on C++14, we would  use ::std::make_unique
+	auto h_A = ::std::unique_ptr<float[]>(new float[numElements]);
+	auto h_B = ::std::unique_ptr<float[]>(new float[numElements]);
+	auto h_C = ::std::unique_ptr<float[]>(new float[numElements]);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(h_A.get(), h_A.get() + numElements, generator);
-	std::generate(h_B.get(), h_B.get() + numElements, generator);
+	::std::generate(h_A.get(), h_A.get() + numElements, generator);
+	::std::generate(h_B.get(), h_B.get() + numElements, generator);
 
 	auto d_A = cuda::memory::device::make_unique<float[]>(device, numElements);
 	auto d_B = cuda::memory::device::make_unique<float[]>(device, numElements);
@@ -73,7 +73,7 @@ int main(void)
 		.block_size(256)
 		.build();
 
-	std::cout
+	::std::cout
 	<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
 	<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
@@ -86,14 +86,14 @@ int main(void)
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
-			std::cerr << "Result verification failed at element " << i << "\n";
+		if (::std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
+			::std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
 	}
 
-    std::cout << "Test PASSED\n";
-    std::cout << "SUCCESS\n";
+    ::std::cout << "Test PASSED\n";
+    ::std::cout << "SUCCESS\n";
 }
 
 

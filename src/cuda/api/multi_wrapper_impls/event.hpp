@@ -115,7 +115,7 @@ inline void event_t::record(const stream_t& stream) const
 {
 #ifndef NDEBUG
 	if (stream.context_handle() != context_handle_) {
-		throw std::invalid_argument("Attempt to record an event on a stream in a different context");
+		throw ::std::invalid_argument("Attempt to record an event on a stream in a different context");
 	}
 #endif
 	event::detail_::enqueue(context_handle_, stream.handle(), handle_);

@@ -101,7 +101,7 @@ cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
 			return static_cast<cpp_dialect_t>(known_dialect);
 		}
 	}
-	throw std::invalid_argument(std::string("No C++ dialect named \"") + dialect_name + '"');
+	throw ::std::invalid_argument(::std::string("No C++ dialect named \"") + dialect_name + '"');
 }
 
 } // namespace detail_
@@ -122,7 +122,7 @@ struct compilation_options_t {
 	 *
 	 * @note As of CUDA 11.0, the default is compute_52.
 	 *
-	 * @todo Use something less fancy than std::unordered_set, e.g.
+	 * @todo Use something less fancy than ::std::unordered_set, e.g.
 	 * a vector-backed ordered set or a dynamic bit-vector for membership.
 	 */
     ::std::unordered_set<cuda::device::compute_capability_t> targets_;
@@ -238,7 +238,7 @@ struct compilation_options_t {
 
     ::std::unordered_set<::std::string> no_value_defines;
 
-    ::std::unordered_map<::std::string,std::string> valued_defines;
+    ::std::unordered_map<::std::string,::std::string> valued_defines;
 
     bool disable_warnings { false };
 
