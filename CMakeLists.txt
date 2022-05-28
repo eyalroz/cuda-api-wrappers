@@ -73,9 +73,9 @@ endif()
 # Examples
 # --------
 
-option(BUILD_EXAMPLES "Build example programs" OFF)
+option(CAW_BUILD_EXAMPLES "Build example programs" OFF)
 
-if (BUILD_EXAMPLES)
+if (CAW_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
 

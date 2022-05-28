@@ -149,7 +149,7 @@ jobs:
 
       - name: CMake configure
         id: configure
-        run: cmake -B ${{ env.build_dir }} -G "${{ env.cmake-generator }}" ${{ matrix.cmake-platform-flag }} -DBUILD_EXAMPLES=ON
+        run: cmake -B ${{ env.build_dir }} -G "${{ env.cmake-generator }}" ${{ matrix.cmake-platform-flag }} -DCAW_BUILD_EXAMPLES=ON
 
       - name: Process potential errors in CMake configuration
         if: ${{ failure() && steps.configure.outcome == 'failure' }}
