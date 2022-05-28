@@ -56,6 +56,12 @@ public:
 
 	// Custom iterator with minimal interface
 	struct iterator {
+		using difference_type = ::std::ptrdiff_t;
+		using value_type = enumerator<Container>::value_type;
+		using pointer = value_type*;
+		using reference = value_type&;
+		using iterator_category = ::std::forward_iterator_tag;
+
 		iterator(typename Container::iterator _it, size_type counter=0) : it(_it), counter(counter) {}
 
 		iterator operator++() { return iterator(++it, ++counter); }
@@ -75,6 +81,12 @@ public:
 
 	// TODO: Reduce DRY here...
 	struct const_iterator {
+		using difference_type = ::std::ptrdiff_t;
+		using value_type = enumerator<Container>::const_value_type;
+		using pointer = const_value_type*;
+		using reference = const_value_type&;
+		using iterator_category = ::std::forward_iterator_tag;
+
 		const_iterator(typename Container::const_iterator _it, size_type counter=0) : it(_it), counter(counter) {}
 
 		const_iterator operator++() { return const_iterator(++it, ++counter); }
