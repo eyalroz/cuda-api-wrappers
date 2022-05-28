@@ -1,7 +1,7 @@
 #ifndef CUDA_API_WRAPPERS_TYPE_NAME_HPP
 #define CUDA_API_WRAPPERS_TYPE_NAME_HPP
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 #include <string_view>
 using std::string_view;
 #define CONSTEXPR_SINCE_2014 constexpr

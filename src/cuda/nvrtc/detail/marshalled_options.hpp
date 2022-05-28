@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 #include <charconv>
 #endif
 
@@ -42,7 +42,7 @@ public:
 	void append_to_current(long v)
 	{
 		char v_buffer[::std::numeric_limits<long>::digits10 + 2];
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
 		auto num_chars = result.ptr - v_buffer;
 #else
@@ -57,9 +57,24 @@ public:
 	void append_to_current(unsigned long v)
 	{
 		char v_buffer[::std::numeric_limits<unsigned long>::digits10 + 2];
-#if __cplusplus >= 201703L
-		auto result = ::std::to_chars(int_buffer, int_buffer + sizeof(int_buffer), v);
-		auto num_chars = result.ptr - int_buffer;
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
+#else
+		auto num_chars = snprintf(v_buffer, sizeof(v_buffer), "%lu", v);
+		// Q: Why can't we just print directly into the buffer?
+		// A: There is no buffer, this is the size computer.
+
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(unsigned long long v)
+	{
+		char v_buffer[::std::numeric_limits<unsigned long long>::digits10 + 2];
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
 #else
 		auto num_chars = snprintf(v_buffer, sizeof(v_buffer), "%lu", v);
 		// Q: Why can't we just print directly into the buffer?
@@ -72,7 +87,7 @@ public:
 	void append_to_current(int v)
 	{
 		char v_buffer[::std::numeric_limits<int>::digits10 + 2];
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
 		auto num_chars = result.ptr - v_buffer;
 #else
@@ -87,9 +102,9 @@ public:
 	void append_to_current(unsigned v)
 	{
 		char v_buffer[::std::numeric_limits<unsigned>::digits10 + 2];
-#if __cplusplus >= 201703L
-		auto result = ::std::to_chars(int_buffer, int_buffer + sizeof(int_buffer), v);
-		auto num_chars = result.ptr - int_buffer;
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+		auto result = ::std::to_chars(v_buffer, v_buffer + sizeof(v_buffer), v);
+		auto num_chars = result.ptr - v_buffer;
 #else
 		auto num_chars = snprintf(v_buffer, sizeof(v_buffer), "%u", v);
 		// Q: Why can't we just print directly into the buffer?
@@ -191,7 +206,7 @@ public:
 		}
 #endif
 		constexpr const ::std::size_t v_size = ::std::numeric_limits<long>::digits10;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else
@@ -208,7 +223,24 @@ public:
 		}
 #endif
 		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned long>::digits10;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
+		auto num_chars = result.ptr - current_pos();
+#else
+		auto num_chars = snprintf(current_pos(), v_size, "%lu", v);
+#endif
+		buffer_pos_ += num_chars;
+	}
+
+	void append_to_current(unsigned long long v)
+	{
+#ifndef NDEBUG
+		if (num_options_ >= option_ptrs_.size()) {
+			::std::runtime_error("Attempt to prepare an option beyond the maximum number of options");
+		}
+#endif
+		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned long>::digits10;
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else
@@ -225,7 +257,7 @@ public:
 		}
 #endif
 		constexpr const ::std::size_t v_size = ::std::numeric_limits<int>::digits10;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else
@@ -242,7 +274,7 @@ public:
 		}
 #endif
 		constexpr const ::std::size_t v_size = ::std::numeric_limits<unsigned>::digits10;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 		auto result = ::std::to_chars(current_pos(), current_pos() + v_size, v);
 		auto num_chars = result.ptr - current_pos();
 #else

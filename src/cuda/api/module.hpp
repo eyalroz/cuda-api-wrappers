@@ -16,7 +16,7 @@
 #include <cuda.h>
 #include <array>
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 #include <filesystem>
 #endif
 
@@ -297,7 +297,7 @@ inline module_t load_from_file(
 }
 
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 
 inline module_t load_from_file(
 	const device_t&                 device,

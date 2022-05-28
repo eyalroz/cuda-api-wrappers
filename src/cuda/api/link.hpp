@@ -13,7 +13,7 @@
 #include <cuda/api/module.hpp>
 #include <cuda.h>
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 #include <filesystem>
 #endif
 
@@ -118,7 +118,7 @@ public:
 			"Failed loading an object of type " + ::std::to_string(file_input.type) + " from file " + file_input.path);
 	}
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 	void add_file(const ::std::filesystem::path& path, link::input_type_t file_contents_type) const
 	{
 		return add_file(path.c_str(), file_contents_type);

@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
 // #include <filesystem>
 #include <string_view>
 namespace cuda {

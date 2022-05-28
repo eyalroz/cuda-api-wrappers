@@ -49,7 +49,7 @@
 #include <string>
 #include <sstream>
 
-#if __cplusplus >= 201703
+#if (__cplusplus >= 201703) || (_MSVC_LANG >= 201703L)
 #include <filesystem>
 namespace fs = std::filesystem;
 #else
@@ -59,7 +59,7 @@ namespace fs = std::experimental::filesystem;
 
 template <typename T>
 bool are_close(T in, T out) {
-  return fabs(in - out) <= 1e-5f * fabs(in);
+	return fabs(in - out) <= 1e-5f * fabs(in);
 }
 
 /**
@@ -76,8 +76,8 @@ std::string append_kernel_instantiation(string_view program_source, string_view 
 	std::stringstream sstr;
 
 	sstr << program_source
-	     << "\n"
-	     << "template __global__ decltype(" << instantiation_name << ") " << instantiation_name << ";\n";
+		<< "\n"
+		<< "template __global__ decltype(" << instantiation_name << ") " << instantiation_name << ";\n";
 	return sstr.str();
 }
 
@@ -132,8 +132,8 @@ bool try_compilation(
 template <typename T>
 bool test_simple() {
 	const auto kernel_name = "my_kernel";
-  	const char* program_source =
-R"(template<int N, typename T>
+	const char* program_source =
+		R"(template<int N, typename T>
 __global__
 void my_kernel(T* data) {
     T data0 = data[0];
@@ -166,7 +166,7 @@ void my_kernel(T* data) {
 template <typename T>
 bool test_kernels() {
 	const char* my_header4_cuh_contents =
-R"(#pragma once
+		R"(#pragma once
 template<typename T>
 T pointless_func(T x) {
 	return x;
@@ -174,8 +174,8 @@ T pointless_func(T x) {
 #warning "Here!"
 )";
 
-  	const char* program_source =
-R"(
+	const char* program_source =
+		R"(
 #include "example_headers/my_header1.cuh"
 #include "example_headers/my_header2.cuh"
 #include "example_headers/my_header3.cuh"
@@ -195,14 +195,14 @@ void my_kernel2(float const* indata, float* outdata) {
     }
 };
 )";
-  	const char* kernel_names[2] = { "my_kernel1", "my_kernel2" };
+	const char* kernel_names[2] = { "my_kernel1", "my_kernel2" };
 
 	enum { C = 123 };
 	auto my_kernel2_instantiation_name = make_instantiation_name(kernel_names[1], std::to_string(C), type_name<T>());
-		// Note: In the original jitify.cpp function, there were 6 different equivalent ways to trigger an
-		// instantiation of the template. I don't see why that's at all useful, but regardless - here we
-		// instantiate by simply printing whatever is passed to the instantiation function (which is not
-		// part of the CUDA API wrappers, but is actually both straightforward and flexible).
+	// Note: In the original jitify.cpp function, there were 6 different equivalent ways to trigger an
+	// instantiation of the template. I don't see why that's at all useful, but regardless - here we
+	// instantiate by simply printing whatever is passed to the instantiation function (which is not
+	// part of the CUDA API wrappers, but is actually both straightforward and flexible).
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, my_kernel2_instantiation_name);
 	std::vector<std::pair<const char*, const char*>> headers = {
 		{"example_headers/my_header4.cuh", my_header4_cuh_contents}
@@ -214,12 +214,12 @@ void my_kernel2(float const* indata, float* outdata) {
 	cuda::rtc::compilation_options_t options;
 	options.use_fast_math = true;
 	options.default_execution_space_is_device = true;
-		// This is necessary because the headers included by this program have functions without a
-		// device/host qualification - and those default to being host functions, which NVRTC doesn't
-		// compile.
+	// This is necessary because the headers included by this program have functions without a
+	// device/host qualification - and those default to being host functions, which NVRTC doesn't
+	// compile.
 	if (not try_compilation(program, device, options)) { return false; }
-		// Note: Headers whose sources were not provided to the program on creation will be sought after
-		// in the specified include directories (in our case, none), and the program's working directory.
+	// Note: Headers whose sources were not provided to the program on creation will be sought after
+	// in the specified include directories (in our case, none), and the program's working directory.
 	const char* mangled_kernel_names[2] = {
 		program.get_mangling_of(kernel_names[0]),
 		program.get_mangling_of(my_kernel2_instantiation_name)
@@ -248,7 +248,7 @@ bool test_constant()
 	constexpr int n_const = 3;
 
 	const char *const_program_source =
-R"(#pragma once
+		R"(#pragma once
 
 __constant__ int a;
 namespace b { __constant__ int a; }
@@ -358,6 +358,6 @@ int main(int, char**)
 		and test_constant_result
 		and test_constant_2_result
 #endif // CUDA_VERSION >= 10000
-	);
+		);
 }
 
