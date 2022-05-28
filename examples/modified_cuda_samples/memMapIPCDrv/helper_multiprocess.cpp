@@ -107,7 +107,7 @@ Process spawnProcess(const char *executable, char *const *args) {
   }
 
   status = CreateProcess(executable, LPSTR(arg_string.c_str()), NULL, NULL, FALSE, 0,
-                         NULL, NULL, &si, process);
+                         NULL, NULL, &si, &process);
 
   if (status) { return process; }
   std::error_code ec (status, std::system_category());
