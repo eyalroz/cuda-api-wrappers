@@ -42,9 +42,9 @@ std::vector<cuda::device_t> get_usable_devices()
 #if defined(__linux__)
 			device.get_attribute(CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR_SUPPORTED);
 #elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		// Assuming no Linux means Windows? Fishy..
+			// Assuming no Linux means Windows? Fishy..
 			device.get_attribute(CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_WIN32_HANDLE_SUPPORTED);
-#eldif
+#else
 #error "Only Linux or Windows platforms are supported by this example"
 #endif
 
