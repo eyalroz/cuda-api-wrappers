@@ -59,7 +59,9 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 		modified_cuda_samples/memMapIPCDrv/parent.cpp
 		modified_cuda_samples/memMapIPCDrv/helper_multiprocess.cpp
 	)
-	target_link_libraries(memMapIPCDrv c rt)
+	if (UNIX)
+		target_link_libraries(memMapIPCDrv rt)
+	endif()
 	add_custom_command(
 			OUTPUT memMapIPC_kernel.fatbin
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
