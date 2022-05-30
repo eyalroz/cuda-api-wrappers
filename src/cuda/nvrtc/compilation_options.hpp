@@ -357,80 +357,72 @@ const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
 }
 
-template <typename T>
-void compilation_options_t::process(T& opt_struct) const
+marshalled_options_t compilation_options_t::marshal() const
 {
+	using detail_::optend;
+	marshalled_options_t marshalled;
 	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
 	// defaults.
-	if (generate_relocatable_code)         { opt_struct.push_back("--relocatable-device-code=true");      }
-	if (compile_extensible_whole_program)  { opt_struct.push_back("--extensible-whole-program=true");     }
-	if (debug)                             { opt_struct.push_back("--device-debug");                      }
-	if (generate_line_info)                { opt_struct.push_back("--generate-line-info");                }
-	if (support_128bit_integers)           { opt_struct.push_back("--device-int128");                     }
-	if (indicate_function_inlining)        { opt_struct.push_back("--optimization-info=inline");          }
-	if (compiler_self_identification)      { opt_struct.push_back("--version-ident=true");                }
-	if (not builtin_initializer_list)      { opt_struct.push_back("--builtin-initializer-list=false");    }
-	if (extra_device_vectorization)        { opt_struct.push_back("--extra-device-vectorization");        }
-	if (disable_warnings)                  { opt_struct.push_back("--disable-warnings");                  }
-	if (assume_restrict)                   { opt_struct.push_back("--restrict");                          }
-	if (default_execution_space_is_device) { opt_struct.push_back("--device-as-default-execution-space"); }
-	if (not display_error_numbers)         { opt_struct.push_back("--no-display-error-number");           }
-	if (not builtin_move_and_forward)      { opt_struct.push_back("--builtin-move-forward=false");        }
-	if (not increase_stack_limit_to_max)   { opt_struct.push_back("--modify-stack-limit=false");          }
-	if (link_time_optimization)            { opt_struct.push_back("--dlink-time-opt");                    }
-	if (use_fast_math)                     { opt_struct.push_back("--use_fast_math");                     }
+	if (generate_relocatable_code)         { marshalled << "--relocatable-device-code=true" << optend;      }
+	if (compile_extensible_whole_program)  { marshalled << "--extensible-whole-program=true" << optend;     }
+	if (debug)                             { marshalled << "--device-debug" << optend;                      }
+	if (generate_line_info)                { marshalled << "--generate-line-info" << optend;                }
+	if (support_128bit_integers)           { marshalled << "--device-int128" << optend;                     }
+	if (indicate_function_inlining)        { marshalled << "--optimization-info=inline" << optend;          }
+	if (compiler_self_identification)      { marshalled << "--version-ident=true" << optend;                }
+	if (not builtin_initializer_list)      { marshalled << "--builtin-initializer-list=false" << optend;    }
+	if (extra_device_vectorization)        { marshalled << "--extra-device-vectorization" << optend;        }
+	if (disable_warnings)                  { marshalled << "--disable-warnings" << optend;                  }
+	if (assume_restrict)                   { marshalled << "--restrict" << optend;                          }
+	if (default_execution_space_is_device) { marshalled << "--device-as-default-execution-space" << optend; }
+	if (not display_error_numbers)         { marshalled << "--no-display-error-number" << optend;           }
+	if (not builtin_move_and_forward)      { marshalled << "--builtin-move-forward=false" << optend;        }
+	if (not increase_stack_limit_to_max)   { marshalled << "--modify-stack-limit=false" << optend;          }
+	if (link_time_optimization)            { marshalled << "--dlink-time-opt" << optend;                    }
+	if (use_fast_math)                     { marshalled << "--use_fast_math" << optend;                     }
 	else {
-		if (flush_denormal_floats_to_zero) { opt_struct.push_back("--ftz");                               }
-		if (not use_precise_square_root)   { opt_struct.push_back("--prec-sqrt=false");                   }
-		if (not use_precise_division)      { opt_struct.push_back("--prec-div=false");                    }
-		if (not use_fused_multiply_add)    { opt_struct.push_back("--fmad=false");                        }
+		if (flush_denormal_floats_to_zero) { marshalled << "--ftz" << optend;                               }
+		if (not use_precise_square_root)   { marshalled << "--prec-sqrt=false" << optend;                   }
+		if (not use_precise_division)      { marshalled << "--prec-div=false" << optend;                    }
+		if (not use_fused_multiply_add)    { marshalled << "--fmad=false" << optend;                        }
 	}
 
 	if (specify_language_dialect) {
-		opt_struct.push_back("--std=", detail_::cpp_dialect_names[(unsigned) language_dialect]);
+		marshalled << "--std=" << detail_::cpp_dialect_names[(unsigned) language_dialect] << optend;
 	}
 
 	if (maximum_register_count != do_not_set_register_count) {
-		opt_struct.push_back("--maxrregcount", maximum_register_count);
+		marshalled << "--maxrregcount" << maximum_register_count << optend;
 	}
 
 	// Multi-value options
 
 	for(const auto& target : targets_) {
 #if CUDA_VERSION < 11000
-		opt_struct.push_back("--gpu-architecture=compute_", target.as_combined_number());
+		marshalled << "--gpu-architecture=compute_" << target.as_combined_number() << optend;
 #else
-		opt_struct.push_back("--gpu-architecture=sm_", target.as_combined_number());
+		marshalled << "--gpu-architecture=sm_" << target.as_combined_number() << optend;
 #endif
 	}
 
 	for(const auto& def : no_value_defines) {
-		opt_struct.push_back("-D", def);
-			// Note: Could alternatively use "--define-macro" instead of "-D"
+		marshalled << "-D" << def << optend;
+		// Note: Could alternatively use "--define-macro" instead of "-D"
 	}
 
 	for(const auto& def : valued_defines) {
-		opt_struct.push_back("-D",def.first, '=', def.second);
+		marshalled << "-D" << def.first << '=' << def.second << optend;
 	}
 
 	for(const auto& path : additional_include_paths) {
-		opt_struct.push_back("--include-path=", path);
+		marshalled << "--include-path=" << path << optend;
 	}
 
 	for(const auto& preinclude_file : preinclude_files) {
-		opt_struct.push_back("--pre-include=", preinclude_file);
+		marshalled << "--pre-include=" << preinclude_file << optend;
 	}
-}
-
-marshalled_options_t compilation_options_t::marshal() const
-{
-	detail_::marshalled_options_size_computer_t size_computer;
-	process(size_computer);
-	marshalled_options_t marshalled(size_computer.num_options(), size_computer.buffer_size());
-	process(marshalled);
 	return marshalled;
 }
-
 
 } // namespace rtc
 

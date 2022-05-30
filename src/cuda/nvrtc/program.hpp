@@ -261,7 +261,8 @@ public: // mutators of the program, but not of this wrapper class
 	void compile(const compilation_options_t& options = compilation_options_t{}) const
 	{
 		auto marshalled_options = options.marshal();
-		compile(marshalled_options.option_ptrs());
+		auto option_ptrs = marshalled_options.option_ptrs();
+		compile({option_ptrs.data(), option_ptrs. size()});
 	}
 
 	void compile_for(
