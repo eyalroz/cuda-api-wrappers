@@ -125,7 +125,7 @@ struct properties_t : public cudaDeviceProp {
 	bool usable_for_compute() const noexcept;
 	compute_capability_t compute_capability() const noexcept { return { { (unsigned) major }, (unsigned) minor }; }
 	compute_architecture_t compute_architecture() const noexcept { return { (unsigned) major }; };
-	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID }; }
+	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID, pci_location_t::unused }; }
 
 	unsigned long long max_in_flight_threads_on_device() const
 	{
