@@ -347,6 +347,11 @@ public: // "shorthands" for more complex option setting
 		return set_language_dialect(detail_::cpp_dialect_from_name(dialect_name));
 	}
 
+	compilation_options_t& set_language_dialect(const ::std::string& dialect_name)
+	{
+		return set_language_dialect(dialect_name.c_str());
+	}
+
 public:
 	marshalled_options_t marshal() const;
 };
