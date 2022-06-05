@@ -48,7 +48,7 @@ inline cuda::kernel_t module_t::get_kernel(const char* name) const
 
 namespace module {
 
-namespace detail_{
+namespace detail_ {
 
 template <typename Creator>
 module_t create(const context_t& context, const void* module_data, Creator creator_function)
@@ -61,10 +61,14 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 						   + cuda::detail_::ptr_as_hex(module_data)
 						   + " within " + context::detail_::identify(context));
 	bool do_take_ownership { true };
+	bool doesnt_hold_pc_refcount_unit { false };
+		// TODO: Do we want to allow holding a refcount unit here, if context is
+		// the primary context?
+
 	// TODO: Make sure the default-constructed options correspond to what cuModuleLoadData uses as defaults
-	return detail_::construct(
-	context.device_id(), context.handle(), new_module_handle,
-	link::options_t{}, do_take_ownership);
+	return detail_::wrap(
+		context.device_id(), context.handle(), new_module_handle,
+		link::options_t{}, do_take_ownership, doesnt_hold_pc_refcount_unit);
 }
 
 

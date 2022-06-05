@@ -157,14 +157,21 @@ public: // constructors and destructor
 
 public: // operators
 
-	link_t& operator=(const link_t& other) = delete;
-	link_t& operator=(link_t&& other) = delete;
+	link_t& operator=(const link_t&) = delete;
+	link_t& operator=(link_t&& other) noexcept
+	{
+		::std::swap(context_handle_, other.context_handle_);
+		::std::swap(handle_, other.handle_);
+		::std::swap(options_, other.options_);
+		::std::swap(owning, owning);
+		return *this;
+	}
 
 protected: // data members
-	const context::handle_t  context_handle_;
-	const link::handle_t     handle_;
-	link::options_t          options_;
-	bool                     owning;
+	context::handle_t  context_handle_;
+	link::handle_t     handle_;
+	link::options_t    options_;
+	bool               owning;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
 };

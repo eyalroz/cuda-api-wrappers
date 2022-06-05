@@ -169,11 +169,14 @@ if (!$?) {
 # Store the CUDA_PATH in the environment for the current session, to be forwarded in the action.
 $CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$($CUDA_MAJOR).$($CUDA_MINOR)"
 $CUDA_PATH_VX_Y = "CUDA_PATH_V$($CUDA_MAJOR)_$($CUDA_MINOR)" 
+$NVTOOLSEXT_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\nvToolsExt"
 # Set environmental variables in this session
 $env:CUDA_PATH = "$($CUDA_PATH)"
 $env:CUDA_PATH_VX_Y = "$($CUDA_PATH_VX_Y)"
+$env:NVTOOLSEXT_PATH = "$($NVTOOLSEXT_PATH)"
 Write-Output "CUDA_PATH $($CUDA_PATH)"
 Write-Output "CUDA_PATH_VX_Y $($CUDA_PATH_VX_Y)"
+Write-Output "NVTOOLSEXT_PATH $($NVTOOLSEXT_PATH)"
 
 # PATH needs updating elsewhere, anything in here won't persist.
 # Append $CUDA_PATH/bin to path.
@@ -183,8 +186,9 @@ Write-Output "CUDA_PATH_VX_Y $($CUDA_PATH_VX_Y)"
 # If executing on github actions, emit the appropriate echo statements to update environment variables
 if (Test-Path "env:GITHUB_ACTIONS") { 
     # Set paths for subsequent steps, using $env:CUDA_PATH
-    echo "Adding CUDA to CUDA_PATH, CUDA_PATH_X_Y and PATH"
+    echo "Adding CUDA-related environment entries: CUDA_PATH, NVTOOLSEXT_PATH"
     echo "CUDA_PATH=$env:CUDA_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    echo "NVTOOLSEXT_PATH=$env:NVTOOLSEXT_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "$env:CUDA_PATH_VX_Y=$env:CUDA_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     echo "$env:CUDA_PATH/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 }

@@ -185,8 +185,17 @@ public: // constructors and destructor
 
 public: // operators
 
-	module_t& operator=(const module_t& other) = delete;
-	module_t& operator=(module_t&& other) = delete;
+	module_t& operator=(const module_t&) = delete;
+	module_t& operator=(module_t&& other) noexcept
+	{
+		::std::swap(device_id_, other.device_id_);
+		::std::swap(context_handle_, other.context_handle_);
+		::std::swap(handle_, other.handle_);
+		::std::swap(options_, other.options_);
+		::std::swap(owning_, other.owning_);
+		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		return *this;
+	}
 
 protected: // data members
 	device::id_t       device_id_;

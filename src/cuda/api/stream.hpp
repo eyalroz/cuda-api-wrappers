@@ -837,7 +837,15 @@ public: // operators
 	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
 	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t& other) = delete;
-	stream_t& operator=(stream_t& other) = delete;
+	stream_t& operator=(stream_t& other) noexcept
+	{
+		::std::swap(device_id_, other.device_id_);
+		::std::swap(context_handle_, other.context_handle_);
+		::std::swap(handle_, other.handle_);
+		::std::swap(owning, other.owning);
+		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		return *this;
+	}
 
 public: // friendship
 
@@ -864,11 +872,11 @@ public: // friendship
 	}
 
 protected: // data members
-	const device::id_t       device_id_;
-	const context::handle_t  context_handle_;
-	const stream::handle_t   handle_;
-	bool                     owning;
-	bool                     holds_pc_refcount_unit;
+	device::id_t       device_id_;
+	context::handle_t  context_handle_;
+	stream::handle_t   handle_;
+	bool               owning;
+	bool               holds_pc_refcount_unit;
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction

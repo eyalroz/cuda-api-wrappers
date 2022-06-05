@@ -137,6 +137,19 @@ public: // getters
 	kernel::handle_t  handle() const noexcept { return handle_; }
 #endif
 
+public: // operators
+
+	kernel_t& operator=(const kernel_t&) = delete;
+	kernel_t& operator=(kernel_t&& other) noexcept
+	{
+		::std::swap(device_id_, other.device_id_);
+		::std::swap(context_handle_, other.context_handle_);
+		::std::swap(handle_, other.handle_);
+		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		return *this;
+	}
+
+
 public: // non-mutators
 
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE

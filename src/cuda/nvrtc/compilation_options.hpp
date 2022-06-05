@@ -261,11 +261,21 @@ struct compilation_options_t {
     /**
      * A sequence of directories to be searched for headers. These paths are searched _after_ the
      * list of headers given to nvrtcCreateProgram.
+     *
+     * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+     * since this class is a value-type, and cannot rely someone else keeping these strings alive.
+     *
+     * @todo In C++17, consider making the elements `std::filesystem::path`'s.
      */
     ::std::vector<::std::string> additional_include_paths;
 
     /**
      * Header files to preinclude during preprocessing of the source.
+     *
+     * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+     * since this class is a value-type, and cannot rely someone else keeping these strings alive.
+     *
+     * @todo In C++17, consider making the elements `std::filesystem::path`'s.
      *
      * @todo Check how these strings are interpreted. Do they need quotation marks? brackets? full paths?
      */

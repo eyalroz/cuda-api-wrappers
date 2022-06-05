@@ -648,18 +648,7 @@ public: // constructors and destructor
 
 public: // operators
 
-	context_t& operator=(const context_t& other)
-	{
-		if (owning_) {
-			context::detail_::destroy(handle_);
-		}
-		device_id_ = other.device_id_;
-		handle_ = other.handle_;
-		owning_ = false;
-		return *this;
-	}
-
-	// Deleted since the handle_t and handle_t are constant
+	context_t& operator=(const context_t&) = delete;
 	context_t& operator=(context_t&& other) noexcept
 	{
 		::std::swap(device_id_, other.device_id_);

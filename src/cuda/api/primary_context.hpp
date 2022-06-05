@@ -195,8 +195,8 @@ public: // constructors and destructor
 
 public: // operators
 
-	context_t& operator=(const primary_context_t& other) = delete;
-	context_t& operator=(primary_context_t&& other) = delete;
+	primary_context_t& operator=(const primary_context_t& other) = delete;
+	primary_context_t& operator=(primary_context_t&& other) = default;
 
 public: // mutators of the proxied primary context, but not of the proxy
 

@@ -284,17 +284,25 @@ public: // constructors and destructor
 
 public: // operators
 
-	event_t& operator=(const event_t& other) = delete;
-	event_t& operator=(event_t&& other) = delete;
+	event_t& operator=(const event_t&) = delete;
+	event_t& operator=(event_t&& other) noexcept
+	{
+		::std::swap(device_id_, other.device_id_);
+		::std::swap(context_handle_, other.context_handle_);
+		::std::swap(handle_, other.handle_);
+		::std::swap(owning, other.owning);
+		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		return *this;
+	}
 
 protected: // data members
-	const device::id_t       device_id_;
-	const context::handle_t  context_handle_;
-	const event::handle_t    handle_;
-	bool                     owning;
+	device::id_t       device_id_;
+	context::handle_t  context_handle_;
+	event::handle_t    handle_;
+	bool               owning;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
-	bool                     holds_pc_refcount_unit;
+	bool               holds_pc_refcount_unit;
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction
