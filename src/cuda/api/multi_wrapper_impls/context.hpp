@@ -13,6 +13,7 @@
 
 #include "../device.hpp"
 #include "../stream.hpp"
+#include "../event.hpp"
 #include "../kernel.hpp"
 #include "../virtual_memory.hpp"
 #include "../current_context.hpp"
@@ -285,6 +286,16 @@ bool                will_synchronize_with_default_stream,
 stream::priority_t  priority)
 {
 	return stream::detail_::create(device_id_, handle_, will_synchronize_with_default_stream, priority);
+}
+
+inline event_t context_t::create_event(
+	bool uses_blocking_sync,
+	bool records_timing,
+	bool interprocess)
+{
+	return cuda::event::detail_::create(
+		device_id_, handle_, do_not_hold_primary_context_refcount_unit,
+		uses_blocking_sync, records_timing, interprocess);
 }
 
 } // namespace cuda
