@@ -67,24 +67,24 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 		status_t status;
 		if (lc.block_cooperation)
 			status = cuLaunchCooperativeKernel(
-			function_handle,
-			lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
-			lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
-			lc.dynamic_shared_memory_size,
-			stream.handle(),
-			marshalled_arguments.data()
+				function_handle,
+				lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
+				lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
+				lc.dynamic_shared_memory_size,
+				stream.handle(),
+				marshalled_arguments.data()
 			);
 		else {
 			constexpr const auto no_arguments_in_alternative_format = nullptr;
 			// TODO: Consider passing arguments in the alternative format
 			status = cuLaunchKernel(
-			function_handle,
-			lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
-			lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
-			lc.dynamic_shared_memory_size,
-			stream.handle(),
-			marshalled_arguments.data(),
-			no_arguments_in_alternative_format
+				function_handle,
+				lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
+				lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
+				lc.dynamic_shared_memory_size,
+				stream.handle(),
+				marshalled_arguments.data(),
+				no_arguments_in_alternative_format
 			);
 		}
 		throw_if_error(status,

@@ -167,9 +167,9 @@ public:
 } // namespace current
 
 inline context_t create_and_push(
-device_t                               device,
-host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
-bool                                   keep_larger_local_mem_after_resize)
+	device_t                               device,
+	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	bool                                   keep_larger_local_mem_after_resize)
 {
 	auto handle = detail_::create_and_push(device.id(), synch_scheduling_policy, keep_larger_local_mem_after_resize);
 	bool take_ownership = true;
@@ -177,9 +177,9 @@ bool                                   keep_larger_local_mem_after_resize)
 }
 
 inline context_t create(
-device_t                               device,
-host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
-bool                                   keep_larger_local_mem_after_resize)
+	device_t                               device,
+	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	bool                                   keep_larger_local_mem_after_resize)
 {
 	auto created = create_and_push(device, synch_scheduling_policy, keep_larger_local_mem_after_resize);
 	current::pop();
