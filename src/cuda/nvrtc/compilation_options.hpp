@@ -235,7 +235,6 @@ struct compilation_options_t {
      */
     cpp_dialect_t language_dialect { cpp_dialect_t::cpp03 };
 
-
     ::std::unordered_set<::std::string> no_value_defines;
 
     ::std::unordered_map<::std::string,::std::string> valued_defines;
@@ -352,14 +351,24 @@ public: // "shorthands" for more complex option setting
 		return *this;
 	}
 
+	compilation_options_t& clear_language_dialect()
+	{
+		specify_language_dialect = false;
+		return *this;
+	}
+
 	compilation_options_t& set_language_dialect(const char* dialect_name)
 	{
-		return set_language_dialect(detail_::cpp_dialect_from_name(dialect_name));
+		return (dialect_name == nullptr or *dialect_name == '\0') ?
+			clear_language_dialect() :
+			set_language_dialect(detail_::cpp_dialect_from_name(dialect_name));
 	}
 
 	compilation_options_t& set_language_dialect(const ::std::string& dialect_name)
 	{
-		return set_language_dialect(dialect_name.c_str());
+		return dialect_name.empty() ?
+			clear_language_dialect() :
+			set_language_dialect(dialect_name.c_str());
 	}
 
 public:
