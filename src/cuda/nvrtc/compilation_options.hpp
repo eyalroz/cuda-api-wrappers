@@ -23,8 +23,6 @@
 
 namespace cuda {
 
-
-
 namespace detail_ {
 
 template <class F>
@@ -371,9 +369,37 @@ public: // "shorthands" for more complex option setting
 			set_language_dialect(dialect_name.c_str());
 	}
 
+	/**
+	 * Use the left-shift operator (<<) to render a delimited sequence of
+	 * command-line-argument-like options (with or without a value as relevant)
+	 * into some target entity - which could be a buffer or a more complex
+	 * structure.
+	 *
+	 */
+	template <typename MarshalTarget, typename Delimiter>
+	void marshal(MarshalTarget& target, Delimiter delimiter) const;
+
 public:
-	marshalled_options_t marshal() const;
+	marshalled_options_t marshal() const
+	{
+		marshalled_options_t mo;
+			// TODO: Can we easily determine the max number of options here?
+		marshal(mo, detail_::optend);
+		return mo;
+	}
+
+	::std::string render() const
+	{
+		::std::ostringstream oss;
+		marshal(oss, ' ');
+		if (oss.tellp() > 0) {
+			// Remove the last, excessive, delimiter
+			oss.seekp(-1,oss.cur);
+		}
+		return oss.str();
+	}
 };
+
 
 namespace detail_ {
 
@@ -381,10 +407,9 @@ const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
 }
 
-marshalled_options_t compilation_options_t::marshal() const
+template <typename MarshalTarget, typename Delimiter>
+void compilation_options_t::marshal(MarshalTarget& marshalled, Delimiter optend) const
 {
-	using detail_::optend;
-	marshalled_options_t marshalled;
 	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
 	// defaults.
 	if (generate_relocatable_code)         { marshalled << "--relocatable-device-code=true" << optend;      }
@@ -445,7 +470,6 @@ marshalled_options_t compilation_options_t::marshal() const
 	for(const auto& preinclude_file : preinclude_files) {
 		marshalled << "--pre-include=" << preinclude_file << optend;
 	}
-	return marshalled;
 }
 
 } // namespace rtc
