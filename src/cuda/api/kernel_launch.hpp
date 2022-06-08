@@ -331,6 +331,28 @@ void launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
+/**
+ * Launch a kernel with the arguments pre-marshalled into the (main) form
+ * which @ref cuLaunchKernel accepts variables in: A null-terminated sequence
+ * of (possibly const) `void *`'s to the argument values.
+ *
+ * @tparam SpanOfConstVoidPtrLike
+ *     Type of the container for the marshalled arguments; typically, this
+ *     would be `span<const void*>` - but it can be an `std::vector`, or
+ *     have non-const `void*` elements etc.
+ * @param stream
+ *     Proxy for the stream on which to enqueue the kernel launch; may be the
+ *     default stream of a context.
+ * @param marshalled_arguments
+ *     A container of `void` or `const void` pointers to the argument values
+ */
+template <typename SpanOfConstVoidPtrLike>
+void launch_type_erased(
+	const kernel_t&         kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	SpanOfConstVoidPtrLike  marshalled_arguments);
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_

@@ -378,15 +378,19 @@ public: // mutators
 			launch_configuration_t      launch_configuration,
 			KernelParameters &&...      parameters)
 		{
-			// Kernel executions cannot be enqueued in streams associated
-			// with devices other than the current one, see:
-			// http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-and-event-behavior
-			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			return cuda::enqueue_launch(
 				kernel_function,
 				associated_stream,
 				launch_configuration,
 				::std::forward<KernelParameters>(parameters)...);
+		}
+
+		void type_erased_kernel_launch(
+			const kernel_t&         kernel,
+			launch_configuration_t  launch_configuration,
+			span<const void*>       marshalled_arguments)
+		{
+			cuda::launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
 		}
 
 		/**
