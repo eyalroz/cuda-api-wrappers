@@ -195,8 +195,8 @@ class scoped_override_t;
  * it as an opaque command, which does not explicitly expose the variable defined under
  * the hood to effect this behavior.
  */
-#define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context_ctor_argument) \
-	::cuda::context::current::scoped_override_t scoped_device_override( ::cuda::context_t(_cuda_context_ctor_argument) )
+#define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
+	::cuda::context::current::scoped_override_t scoped_context_override{ _cuda_context }
 
 
 inline bool push_if_not_on_top(const context_t& context);

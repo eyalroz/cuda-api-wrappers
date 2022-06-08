@@ -180,8 +180,8 @@ inline void set_to_default() { return detail_::set(device::default_device_id); }
  * it as an opaque command, which does not explicitly expose the variable defined under
  * the hood to effect this behavior.
  */
-#define CUDA_DEVICE_FOR_THIS_SCOPE(_cuda_device_ctor_argument) \
-	::cuda::device::current::scoped_override_t scoped_device_override( ::cuda::device_t(_cuda_device_ctor_argument) )
+#define CUDA_DEVICE_FOR_THIS_SCOPE(_cuda_device) \
+	::cuda::device::current::scoped_override_t scoped_device_override{ _cuda_device }
 
 
 } // namespace current
