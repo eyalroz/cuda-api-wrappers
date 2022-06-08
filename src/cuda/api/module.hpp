@@ -110,8 +110,22 @@ public: // getters
 
 	device_t device() const;
 
-	// These API calls are not really the way you want to work.
+	/**
+	 * Obtains an already-compiled kernel previously associated with
+	 * this module.
+	 *
+	 * @param name The function name, in case of a C-style function,
+	 * or the mangled function signature, in case of a C++-style
+	 * function.
+	 *
+	 * @return An enqueable kernel proxy object for the requested kernel.
+	 */
 	cuda::kernel_t get_kernel(const char* name) const;
+
+	cuda::kernel_t get_kernel(const ::std::string& name) const
+	{
+		return get_kernel(name.c_str());
+	}
 
 	memory::region_t get_global_region(const char* name) const
 	{
