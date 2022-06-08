@@ -331,6 +331,12 @@ void launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
+void launch_type_erased(
+	const kernel_t&         kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	span<void*>             marshalled_arguments);
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_

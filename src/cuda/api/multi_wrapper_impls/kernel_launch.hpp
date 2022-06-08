@@ -17,7 +17,6 @@
 
 namespace cuda {
 
-
 namespace detail_ {
 
 template<typename... KernelParameters>
@@ -52,45 +51,62 @@ marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
 	return ::std::array<void*, sizeof...(KernelParameters)> { &parameters... };
 }
 
+
+// Note: The last (valid) element of marshalled_arguments must be null
+inline void launch_type_erased_in_current_context(
+	kernel::handle_t        kernel_function_handle,
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	stream::handle_t        stream_handle,
+	launch_configuration_t  launch_config,
+	void**                  marshalled_arguments)
+{
+	status_t status;
+	const auto&lc = launch_config; // alias for brevity
+	if (launch_config.block_cooperation)
+		status = cuLaunchCooperativeKernel(
+			kernel_function_handle,
+			lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
+			lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
+			lc.dynamic_shared_memory_size,
+			stream_handle,
+			marshalled_arguments
+		);
+	else {
+		constexpr const auto no_arguments_in_alternative_format = nullptr;
+		// TODO: Consider passing marshalled_arguments in the alternative format
+		status = cuLaunchKernel(
+			kernel_function_handle,
+			lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
+			lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
+			lc.dynamic_shared_memory_size,
+			stream_handle,
+			marshalled_arguments,
+			no_arguments_in_alternative_format
+		);
+	}
+	throw_if_error(status,
+		(lc.block_cooperation ? "Cooperative " : "") +
+		::std::string(" kernel launch failed for ") + kernel::detail_::identify(kernel_function_handle)
+		+ " on " + stream::detail_::identify(stream_handle, context_handle, device_id));
+}
+
+
 template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 	void operator()(
 	const kernel_t&                       wrapped_kernel,
 	const stream_t &                      stream,
-	launch_configuration_t                lc,
-	KernelParameters &&...                parameters)
+	launch_configuration_t                launch_config,
+	KernelParameters &&...                arguments)
 	{
-		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{stream.context_handle()};
-		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(parameters)...) };
+		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(arguments)...) };
 		auto function_handle = wrapped_kernel.handle();
-		status_t status;
-		if (lc.block_cooperation)
-			status = cuLaunchCooperativeKernel(
-				function_handle,
-				lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
-				lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
-				lc.dynamic_shared_memory_size,
-				stream.handle(),
-				marshalled_arguments.data()
-			);
-		else {
-			constexpr const auto no_arguments_in_alternative_format = nullptr;
-			// TODO: Consider passing arguments in the alternative format
-			status = cuLaunchKernel(
-				function_handle,
-				lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
-				lc.dimensions.block.x, lc.dimensions.block.y, lc.dimensions.block.z,
-				lc.dynamic_shared_memory_size,
-				stream.handle(),
-				marshalled_arguments.data(),
-				no_arguments_in_alternative_format
-			);
-		}
-		throw_if_error(status,
-					   (lc.block_cooperation ? "Cooperative " : "") +
-					   ::std::string(" kernel launch failed for ") + kernel::detail_::identify(function_handle)
-					   + " on " + stream::detail_::identify(stream));
+		context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+		launch_type_erased_in_current_context(
+			function_handle, stream.device_id(), stream.context_handle(),
+			stream.handle(), launch_config, marshalled_arguments.data());
 	}
 
 };
@@ -138,6 +154,27 @@ KernelParameters&&...   parameters)
 
 	enqueue_launch(kernel, stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
+}
+
+inline void launch_type_erased(
+	const kernel_t&         kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	span<void*>             marshalled_arguments)
+{
+#ifndef NDEBUG
+	if (*(marshalled_arguments.end() - 1) != nullptr) {
+		throw std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
+	}
+#endif
+	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+	return detail_::launch_type_erased_in_current_context(
+		kernel.handle(),
+		stream.device_id(),
+		stream.context_handle(),
+		stream.handle(),
+		launch_configuration,
+		marshalled_arguments.data());
 }
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
