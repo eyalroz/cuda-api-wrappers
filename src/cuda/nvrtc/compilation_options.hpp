@@ -369,35 +369,6 @@ public: // "shorthands" for more complex option setting
 			set_language_dialect(dialect_name.c_str());
 	}
 
-	/**
-	 * Use the left-shift operator (<<) to render a delimited sequence of
-	 * command-line-argument-like options (with or without a value as relevant)
-	 * into some target entity - which could be a buffer or a more complex
-	 * structure.
-	 *
-	 */
-	template <typename MarshalTarget, typename Delimiter>
-	void marshal(MarshalTarget& target, Delimiter delimiter) const;
-
-public:
-	marshalled_options_t marshal() const
-	{
-		marshalled_options_t mo;
-			// TODO: Can we easily determine the max number of options here?
-		marshal(mo, detail_::optend);
-		return mo;
-	}
-
-	::std::string render() const
-	{
-		::std::ostringstream oss;
-		marshal(oss, ' ');
-		if (oss.tellp() > 0) {
-			// Remove the last, excessive, delimiter
-			oss.seekp(-1,oss.cur);
-		}
-		return oss.str();
-	}
 };
 
 
@@ -407,46 +378,53 @@ const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
 }
 
+/**
+ * Use the left-shift operator (<<) to render a delimited sequence of
+ * command-line-argument-like options (with or without a value as relevant)
+ * into some target entity - which could be a buffer or a more complex
+ * structure.
+ *
+ */
 template <typename MarshalTarget, typename Delimiter>
-void compilation_options_t::marshal(MarshalTarget& marshalled, Delimiter optend) const
+void process(const compilation_options_t& opts, MarshalTarget& marshalled, Delimiter optend)
 {
 	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
 	// defaults.
-	if (generate_relocatable_code)         { marshalled << "--relocatable-device-code=true" << optend;      }
-	if (compile_extensible_whole_program)  { marshalled << "--extensible-whole-program=true" << optend;     }
-	if (debug)                             { marshalled << "--device-debug" << optend;                      }
-	if (generate_line_info)                { marshalled << "--generate-line-info" << optend;                }
-	if (support_128bit_integers)           { marshalled << "--device-int128" << optend;                     }
-	if (indicate_function_inlining)        { marshalled << "--optimization-info=inline" << optend;          }
-	if (compiler_self_identification)      { marshalled << "--version-ident=true" << optend;                }
-	if (not builtin_initializer_list)      { marshalled << "--builtin-initializer-list=false" << optend;    }
-	if (extra_device_vectorization)        { marshalled << "--extra-device-vectorization" << optend;        }
-	if (disable_warnings)                  { marshalled << "--disable-warnings" << optend;                  }
-	if (assume_restrict)                   { marshalled << "--restrict" << optend;                          }
-	if (default_execution_space_is_device) { marshalled << "--device-as-default-execution-space" << optend; }
-	if (not display_error_numbers)         { marshalled << "--no-display-error-number" << optend;           }
-	if (not builtin_move_and_forward)      { marshalled << "--builtin-move-forward=false" << optend;        }
-	if (not increase_stack_limit_to_max)   { marshalled << "--modify-stack-limit=false" << optend;          }
-	if (link_time_optimization)            { marshalled << "--dlink-time-opt" << optend;                    }
-	if (use_fast_math)                     { marshalled << "--use_fast_math" << optend;                     }
+	if (opts.generate_relocatable_code)         { marshalled << "--relocatable-device-code=true" << optend;      }
+	if (opts.compile_extensible_whole_program)  { marshalled << "--extensible-whole-program=true" << optend;     }
+	if (opts.debug)                             { marshalled << "--device-debug" << optend;                      }
+	if (opts.generate_line_info)                { marshalled << "--generate-line-info" << optend;                }
+	if (opts.support_128bit_integers)           { marshalled << "--device-int128" << optend;                     }
+	if (opts.indicate_function_inlining)        { marshalled << "--optimization-info=inline" << optend;          }
+	if (opts.compiler_self_identification)      { marshalled << "--version-ident=true" << optend;                }
+	if (not opts.builtin_initializer_list)      { marshalled << "--builtin-initializer-list=false" << optend;    }
+	if (opts.extra_device_vectorization)        { marshalled << "--extra-device-vectorization" << optend;        }
+	if (opts.disable_warnings)                  { marshalled << "--disable-warnings" << optend;                  }
+	if (opts.assume_restrict)                   { marshalled << "--restrict" << optend;                          }
+	if (opts.default_execution_space_is_device) { marshalled << "--device-as-default-execution-space" << optend; }
+	if (not opts.display_error_numbers)         { marshalled << "--no-display-error-number" << optend;           }
+	if (not opts.builtin_move_and_forward)      { marshalled << "--builtin-move-forward=false" << optend;        }
+	if (not opts.increase_stack_limit_to_max)   { marshalled << "--modify-stack-limit=false" << optend;          }
+	if (opts.link_time_optimization)            { marshalled << "--dlink-time-opt" << optend;                    }
+	if (opts.use_fast_math)                     { marshalled << "--use_fast_math" << optend;                     }
 	else {
-		if (flush_denormal_floats_to_zero) { marshalled << "--ftz" << optend;                               }
-		if (not use_precise_square_root)   { marshalled << "--prec-sqrt=false" << optend;                   }
-		if (not use_precise_division)      { marshalled << "--prec-div=false" << optend;                    }
-		if (not use_fused_multiply_add)    { marshalled << "--fmad=false" << optend;                        }
+		if (opts.flush_denormal_floats_to_zero) { marshalled << "--ftz" << optend;                               }
+		if (not opts.use_precise_square_root)   { marshalled << "--prec-sqrt=false" << optend;                   }
+		if (not opts.use_precise_division)      { marshalled << "--prec-div=false" << optend;                    }
+		if (not opts.use_fused_multiply_add)    { marshalled << "--fmad=false" << optend;                        }
 	}
 
-	if (specify_language_dialect) {
-		marshalled << "--std=" << detail_::cpp_dialect_names[(unsigned) language_dialect] << optend;
+	if (opts.specify_language_dialect) {
+		marshalled << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect] << optend;
 	}
 
-	if (maximum_register_count != do_not_set_register_count) {
-		marshalled << "--maxrregcount" << maximum_register_count << optend;
+	if (opts.maximum_register_count != compilation_options_t::do_not_set_register_count) {
+		marshalled << "--maxrregcount" << opts.maximum_register_count << optend;
 	}
 
 	// Multi-value options
 
-	for(const auto& target : targets_) {
+	for(const auto& target : opts.targets_) {
 #if CUDA_VERSION < 11000
 		marshalled << "--gpu-architecture=compute_" << target.as_combined_number() << optend;
 #else
@@ -454,22 +432,41 @@ void compilation_options_t::marshal(MarshalTarget& marshalled, Delimiter optend)
 #endif
 	}
 
-	for(const auto& def : no_value_defines) {
+	for(const auto& def : opts.no_value_defines) {
 		marshalled << "-D" << def << optend;
 		// Note: Could alternatively use "--define-macro" instead of "-D"
 	}
 
-	for(const auto& def : valued_defines) {
+	for(const auto& def : opts.valued_defines) {
 		marshalled << "-D" << def.first << '=' << def.second << optend;
 	}
 
-	for(const auto& path : additional_include_paths) {
+	for(const auto& path : opts.additional_include_paths) {
 		marshalled << "--include-path=" << path << optend;
 	}
 
-	for(const auto& preinclude_file : preinclude_files) {
+	for(const auto& preinclude_file : opts.preinclude_files) {
 		marshalled << "--pre-include=" << preinclude_file << optend;
 	}
+}
+
+marshalled_options_t marshal(const compilation_options_t& opts)
+{
+	marshalled_options_t mo;
+	// TODO: Can we easily determine the max number of options here?
+	process(opts, mo, detail_::optend);
+	return mo;
+}
+
+::std::string render(const compilation_options_t& opts)
+{
+	::std::ostringstream oss;
+	process(opts, oss, ' ');
+	if (oss.tellp() > 0) {
+		// Remove the last, excessive, delimiter
+		oss.seekp(-1,oss.cur);
+	}
+	return oss.str();
 }
 
 } // namespace rtc

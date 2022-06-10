@@ -108,7 +108,7 @@ long double compute_average_elapsed_clocks(const clock_t* timers, std::size_t nu
 
 std::ostream& operator<<(std::ostream& os, const cuda::rtc::compilation_options_t& opts)
 {
-	auto marshalled = opts.marshal();
+	auto marshalled = marshal(opts);
 	bool first = true;
 	for(auto opt : marshalled.option_ptrs()) {
 		if (not first) { os << ' '; }

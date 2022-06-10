@@ -361,7 +361,7 @@ inline module_t create(const context_t& context, const void* module_data, const 
 {
 	auto creator_function =
 		[&link_options](handle_t& new_module_handle, const void* module_data) {
-			auto marshalled_options = link_options.marshal();
+			auto marshalled_options = marshal(link_options);
 			return cuModuleLoadDataEx(
 				&new_module_handle,
 				module_data,

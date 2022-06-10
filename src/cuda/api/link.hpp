@@ -88,7 +88,7 @@ public:
 	// TODO: Replace this with methods which take wrapper classes.
 	void add(link::input::image_t image, const link::options_t ptx_compilation_options = {}) const
 	{
-		auto marshalled_options = ptx_compilation_options.marshal();
+		auto marshalled_options = marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
 			handle_,
 			static_cast<CUjitInputType>(image.type),
@@ -105,7 +105,7 @@ public:
 
 	void add_file(link::input::file_t file_input, const link::options_t& options) const
 	{
-		auto marshalled_options = options.marshal();
+		auto marshalled_options = marshal(options);
 		auto status = cuLinkAddFile(
 			handle_,
 			static_cast<CUjitInputType_enum>(file_input.type),
@@ -181,7 +181,7 @@ namespace link {
 inline link_t create(link::options_t options = link::options_t{})
 {
 	handle_t new_link_handle;
-	auto marshalled_options = options.marshal();
+	auto marshalled_options = marshal(options);
 	auto status = cuLinkCreate(
 		marshalled_options.count(),
 		const_cast<link::option_t*>(marshalled_options.options()),
