@@ -169,11 +169,11 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 {
     int numElems = 10000000;
     int repeat = 5;
+	vector<cuda::stream_t> streams;
     vector<cuda::memory::device::unique_ptr<int[]>> buffers;
     vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
-    vector<cuda::stream_t> streams;
 
     auto flag = reinterpret_cast<volatile int *>(
         cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
@@ -286,12 +286,24 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
 {
     int numElems = 10000000;
     int repeat = 5;
+
+	// Note: The order of these declarations matters. The reason is, that memory
+	// allocations do not hold a reference count to a primary context, while
+	// streams do (and even that is a bit difficult to put faith in).
+	// To avoid this, one would have to ensure the primary contexts are active
+	// through the lifetimes of the pointers. That could mean, for example:
+	//
+	// 1. Holding a refunit-holding primary context wrappers array
+	// 2. Placing the unique pointers within a curly-brackets scope, so they
+	//    get release while the primary contexts array is still alive.
+	//
+
+	vector<cuda::stream_t> streams_0;
+	vector<cuda::stream_t> streams_1;
     vector<cuda::memory::device::unique_ptr<int[]>> buffers;
     vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
-    vector<cuda::stream_t> streams_0;
-    vector<cuda::stream_t> streams_1;
 
 
     auto flag = reinterpret_cast<volatile int *>(
@@ -386,11 +398,23 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 {
     int repeat = 100;
     int numElems = 4; // perform 1-int4 transfer.
+
+	// Note: The order of these declarations matters. The reason is, that memory
+	// allocations do not hold a reference count to a primary context, while
+	// streams do (and even that is a bit difficult to put faith in).
+	// To avoid this, one would have to ensure the primary contexts are active
+	// through the lifetimes of the pointers. That could mean, for example:
+	//
+	// 1. Holding a refunit-holding primary context wrappers array
+	// 2. Placing the unique pointers within a curly-brackets scope, so they
+	//    get release while the primary contexts array is still alive.
+	//
+
+	vector<cuda::stream_t> streams;
     vector<cuda::memory::device::unique_ptr<int[]>> buffers;
     vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
-    vector<cuda::stream_t> streams;
 
     auto flag = reinterpret_cast<volatile int *>(
         cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
