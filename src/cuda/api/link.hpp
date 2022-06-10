@@ -31,7 +31,8 @@ using handle_t = CUlinkState;
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	context::handle_t  context,
+	device::id_t       device_id,
+	context::handle_t  context_handle,
 	link::handle_t     handle,
 	link::options_t    options,
 	bool               take_ownership = false) noexcept;
@@ -67,6 +68,22 @@ struct file_t {
  * to the link is a const-respecting operation on this class.
  */
 class link_t {
+
+public: // getters
+	/// The raw CUDA ID for the device w.r.t. which the event is defined
+	device::id_t      device_id()       const noexcept { return device_id_; };
+
+	/// The raw CUDA handle for the context in which the represented stream is defined.
+	context::handle_t context_handle()  const noexcept { return context_handle_; }
+
+	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
+	bool              is_owning()       const noexcept { return owning; }
+
+	/// The device w.r.t. which the event is defined
+	device_t          device()          const;
+
+	/// The context in which this stream was defined.
+	context_t         context()         const;
 
 public:
 	/**
@@ -127,19 +144,24 @@ public:
 
 protected: // constructors
 
-	link_t(context::handle_t context, link::handle_t handle, link::options_t options, bool take_ownership) noexcept
-	: context_handle_(context), handle_(handle), options_(options), owning(take_ownership) { }
+	link_t(
+		device::id_t device_id,
+		context::handle_t context,
+		link::handle_t handle,
+		link::options_t options,
+		bool take_ownership) noexcept
+	: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning(take_ownership) { }
 
 public: // friendship
 
-	friend link_t link::wrap(context::handle_t context, link::handle_t handle, link::options_t, bool take_ownership) noexcept;
+	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, link::options_t, bool) noexcept;
 
 public: // constructors and destructor
 
 	link_t(const link_t&) = delete;
 
 	link_t(link_t&& other) noexcept :
-		link_t(other.context_handle_, other.handle_, other.options_, other.owning)
+		link_t(other.device_id_, other.context_handle_, other.handle_, other.options_, other.owning)
 	{
 		other.owning = false;
 	};
@@ -151,7 +173,7 @@ public: // constructors and destructor
 			auto status = cuLinkDestroy(handle_);
 			throw_if_error(status,
 				::std::string("Failed destroying the link ") + detail_::ptr_as_hex(handle_) +
-				" in " + context::detail_::identify(context_handle_));
+				" in " + context::detail_::identify(context_handle_, device_id_));
 		}
 	}
 
@@ -160,6 +182,7 @@ public: // operators
 	link_t& operator=(const link_t&) = delete;
 	link_t& operator=(link_t&& other) noexcept
 	{
+		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
 		::std::swap(handle_, other.handle_);
 		::std::swap(options_, other.options_);
@@ -168,6 +191,7 @@ public: // operators
 	}
 
 protected: // data members
+	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	link::handle_t     handle_;
 	link::options_t    options_;
@@ -190,8 +214,11 @@ inline link_t create(link::options_t options = link::options_t{})
 	);
 	throw_if_error(status, "Failed creating a new link ");
 	auto do_take_ownership = true;
+	auto context_handle = context::current::detail_::get_handle();
+	auto device_id = context::current::detail_::get_device_id();
 	return wrap(
-		context::current::detail_::get_handle(),
+		device_id,
+		context_handle,
 		new_link_handle,
 		options,
 		do_take_ownership);
@@ -199,12 +226,13 @@ inline link_t create(link::options_t options = link::options_t{})
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	context::handle_t  context,
+	device::id_t       device_id,
+	context::handle_t  context_handle,
 	link::handle_t     handle,
 	link::options_t    options,
 	bool               take_ownership) noexcept
 {
-	return link_t{context, handle, options, take_ownership};
+	return link_t{device_id, context_handle, handle, options, take_ownership};
 }
 
 } // namespace link
