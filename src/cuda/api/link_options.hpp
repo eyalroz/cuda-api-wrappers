@@ -235,71 +235,70 @@ struct options_t {
 	//   CU_JIT_GLOBAL_SYMBOL_COUNT
 	//
 
-	marshalled_options_t marshal() const;
 };
 
-inline marshalled_options_t options_t::marshal() const
+inline marshalled_options_t marshal(const options_t& link_options)
 {
 	marshalled_options_t marshalled;
+	const auto& lo = link_options;
 
-	if (max_num_registers_per_thread != no_max_registers_limit) {
-		marshalled.push_back(CU_JIT_MAX_REGISTERS, max_num_registers_per_thread);
+	if (lo.max_num_registers_per_thread != lo.no_max_registers_limit) {
+		marshalled.push_back(CU_JIT_MAX_REGISTERS, lo.max_num_registers_per_thread);
 	}
 
-	if (min_num_threads_per_block != no_min_num_threads_per_block) {
-		marshalled.push_back(CU_JIT_THREADS_PER_BLOCK, min_num_threads_per_block);
+	if (lo.min_num_threads_per_block != lo.no_min_num_threads_per_block) {
+		marshalled.push_back(CU_JIT_THREADS_PER_BLOCK, lo.min_num_threads_per_block);
 	}
 
-	auto cil = const_cast<span<char>*>(&info_log);
+	auto cil = const_cast<span<char>*>(&lo.info_log);
 	if (cil->data() != nullptr and cil->size() != 0) {
 		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER, cil->data());
 		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, cil->size());
 	}
 
-	auto cel = const_cast<span<char>*>(&error_log);
+	auto cel = const_cast<span<char>*>(&lo.error_log);
 	if (cel->data() != nullptr and cel->size() != 0) {
 		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER, cel->data());
 		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES, cel->size());
 	}
 
-	if (optimization_level != dont_set_optimization_level) {
-		marshalled.push_back(CU_JIT_OPTIMIZATION_LEVEL, optimization_level);
+	if (lo.optimization_level != lo.dont_set_optimization_level) {
+		marshalled.push_back(CU_JIT_OPTIMIZATION_LEVEL, lo.optimization_level);
 	}
 
-	if (target.obtain_from_cuda_context) {
+	if (lo.target.obtain_from_cuda_context) {
 		marshalled.push_back(CU_JIT_TARGET_FROM_CUCONTEXT);
 	}
-	else if (target.use_specific) {
-		marshalled.push_back(CU_JIT_TARGET, target.specific.as_combined_number());
+	else if (lo.target.use_specific) {
+		marshalled.push_back(CU_JIT_TARGET, lo.target.specific.as_combined_number());
 	}
 
-	if (specify_fallback_strategy) {
-		marshalled.push_back(CU_JIT_FALLBACK_STRATEGY, fallback_strategy);
+	if (lo.specify_fallback_strategy) {
+		marshalled.push_back(CU_JIT_FALLBACK_STRATEGY, lo.fallback_strategy);
 	}
 
-	if (generate_debug_information) {
+	if (lo.generate_debug_information) {
 		marshalled.push_back(CU_JIT_GENERATE_DEBUG_INFO);
 	}
 
-	if (generate_source_line_number_information) {
+	if (lo.generate_source_line_number_information) {
 		marshalled.push_back(CU_JIT_GENERATE_LINE_INFO);
 	}
 
-	if (generate_source_line_number_information) {
+	if (lo.generate_source_line_number_information) {
 		marshalled.push_back(CU_JIT_GENERATE_LINE_INFO);
 	}
 
-	if (verbose_log) {
+	if (lo.verbose_log) {
 		marshalled.push_back(CU_JIT_LOG_VERBOSE);
 	}
 
-	if (specify_default_load_caching_mode) {
-		marshalled.push_back(CU_JIT_CACHE_MODE, default_load_caching_mode);
+	if (lo.specify_default_load_caching_mode) {
+		marshalled.push_back(CU_JIT_CACHE_MODE, lo.default_load_caching_mode);
 	}
 
 	return marshalled;
 }
-
 
 // TODO: Compiler "output options":
 //

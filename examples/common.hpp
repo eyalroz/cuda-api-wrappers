@@ -115,7 +115,7 @@ namespace std {
 
 ::std::ostream &operator<<(::std::ostream &os, const cuda::rtc::compilation_options_t &opts)
 {
-	auto marshalled = opts.marshal();
+	auto marshalled = marshal(opts);
 //	os << '(' << marshalled.option_ptrs().size() << ") compilation options: ";
 	bool first_option{true};
 	for (auto opt: marshalled.option_ptrs()) {
@@ -221,7 +221,7 @@ typename ::std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor
 
 inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options)
 {
-	auto marshalled = compilation_options.marshal();
+	auto marshalled = marshal(compilation_options);
 	::std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
 	for (auto opt: marshalled.option_ptrs()) {
 		::std::cout << "Option: " << opt << '\n';
