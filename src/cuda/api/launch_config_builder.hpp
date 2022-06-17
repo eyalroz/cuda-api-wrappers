@@ -161,10 +161,18 @@ protected:
 			result.grid = composite_dims.grid;
 		}
 		else {
-			if ((not dimensions_.block and not dimensions_.grid) or not dimensions_.overall) {
+			if (not dimensions_.block and not dimensions_.grid) {
 				throw ::std::logic_error(
-					"Neither block nor grid dimensions have been specified - cannot resolve launch grid dimenions");
-			} else if (dimensions_.block and dimensions_.overall) {
+					"Neither block nor grid dimensions have been specified");
+			} else if (not dimensions_.block and not dimensions_.overall) {
+				throw ::std::logic_error(
+					"Grid dimensions only been specified in terms of blocks, not threads, and no block dimensions specified");
+			} else if (not dimensions_.block and not dimensions_.overall) {
+				throw ::std::logic_error(
+					"Only block dimensions have been specified - cannot resolve launch grid dimensions");
+			}
+			// Ok, we're sure we can resolve the dimensions somehow
+			if (dimensions_.block and dimensions_.overall) {
 				result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
 				result.block = dimensions_.block.value();
 			} else if (dimensions_.grid) {
