@@ -158,6 +158,9 @@ void enqueue_raw_kernel_launch(
 {
 	static_assert(::std::is_function<KernelFunction>::value or (is_function_ptr<KernelFunction>::value),
 		"Only a bona fide function can be launched as a CUDA kernel");
+#ifndef NDEBUG
+	detail_::validate(launch_configuration);
+#endif
 	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
 		kernel_function <<<

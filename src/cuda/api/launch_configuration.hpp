@@ -124,6 +124,23 @@ constexpr inline bool operator!=(const launch_configuration_t lhs, const launch_
 	return not (lhs == rhs);
 }
 
+namespace detail_ {
+
+inline void validate(launch_configuration_t launch_config) noexcept(false)
+{
+	if (launch_config.dimensions.grid.volume() == 0) {
+		throw ::std::invalid_argument("Launch config specifies a zero-volume grid-of-blocks");
+	}
+	if (launch_config.dimensions.block.volume() == 0) {
+		throw ::std::invalid_argument("Launch config specifies a zero-volume block dimensions");
+	}
+	// TODO: Consider adding device-specific validations here, like checking for
+	// block size limits, shared mem size limits etc - by taking an optional device
+	// as a parameter
+}
+
+} // namespace detail_
+
 
 } // namespace cuda
 
