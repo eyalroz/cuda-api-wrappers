@@ -122,16 +122,19 @@ protected:
 			// A: MSVC is being a bit finicky here for some reason
 	}
 
+#ifndef NDEBUG
+	grid::composite_dimensions_t get_unvalidated_composite_dimensions() const noexcept(false)
+#else
 	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
+#endif
 	{
 		grid::composite_dimensions_t result;
-
-		if (saturate_with_active_blocks_ and use_min_params_for_max_occupancy_) {
-				throw ::std::logic_error(
-					"We cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
-					"the grid with fixed-size cubs.");
-		}
 		if (saturate_with_active_blocks_) {
+			if (use_min_params_for_max_occupancy_) {
+				throw ::std::logic_error(
+					"Cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
+					"the grid with fixed-size cubs.");
+			}
 			if (not (kernel_)) {
 				throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 			}
@@ -146,8 +149,9 @@ protected:
 			auto dshmem_size = get_dynamic_shared_memory_size(dimensions_.block.value());
 			auto num_block_threads = (grid::block_dimension_t) dimensions_.block.value().volume();
 			result.grid = kernel_->max_active_blocks_per_multiprocessor(num_block_threads, dshmem_size);
+			return result;
 		}
-		else if (use_min_params_for_max_occupancy_) {
+		if (use_min_params_for_max_occupancy_) {
 			if (not (kernel_)) {
 				throw ::std::logic_error("A kernel must be set to determine the minimum grid parameter sfor m");
 			}
@@ -155,39 +159,48 @@ protected:
 				throw ::std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
 			}
 			auto composite_dims = dynamic_shared_memory_size_determiner_ ?
-				kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_determiner_) :
-				kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_);
+								  kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_determiner_) :
+								  kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_);
 			result.block = composite_dims.block;
 			result.grid = composite_dims.grid;
+			return result;
 		}
-		else {
-			if (not dimensions_.block and not dimensions_.grid) {
-				throw ::std::logic_error(
-					"Neither block nor grid dimensions have been specified");
-			} else if (not dimensions_.block and not dimensions_.overall) {
-				throw ::std::logic_error(
-					"Grid dimensions only been specified in terms of blocks, not threads, and no block dimensions specified");
-			} else if (not dimensions_.block and not dimensions_.overall) {
-				throw ::std::logic_error(
-					"Only block dimensions have been specified - cannot resolve launch grid dimensions");
-			}
-			// Ok, we're sure we can resolve the dimensions somehow
-			if (dimensions_.block and dimensions_.overall) {
-				result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
-				result.block = dimensions_.block.value();
-			} else if (dimensions_.grid) {
-				result.block = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
-				result.grid = dimensions_.grid.value();
-			} else {
-				result.block = dimensions_.block.value();
-				result.grid = dimensions_.grid.value();
-			}
+		if (dimensions_.block and dimensions_.overall) {
+			result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
+			result.block = dimensions_.block.value();
+			return result;
 		}
+		if (dimensions_.grid and dimensions_.overall) {
+			result.block = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
+			result.grid = dimensions_.grid.value();
+			return result;
+		}
+		if (dimensions_.grid and dimensions_.block) {
+			result.block = dimensions_.block.value();
+			result.grid = dimensions_.grid.value();
+			return result;
+		}
+
+		if (not dimensions_.block and not dimensions_.grid) {
+			throw ::std::logic_error(
+				"Neither block nor grid dimensions have been specified");
+		} else if (not dimensions_.block and not dimensions_.overall) {
+			throw ::std::logic_error(
+				"Grid dimensions only been specified in terms of blocks, not threads, and no block dimensions specified");
+		} else if (not dimensions_.block and not dimensions_.overall) {
+			throw ::std::logic_error(
+				"Only block dimensions have been specified - cannot resolve launch grid dimensions");
+		}
+	}
+
 #ifndef NDEBUG
+	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
+	{
+		auto result = get_unvalidated_composite_dimensions();
 		validate_composite_dimensions(result);
-#endif
 		return result;
 	}
+#endif
 
 public:
 	launch_configuration_t build() const
