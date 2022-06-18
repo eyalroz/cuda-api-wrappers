@@ -37,7 +37,7 @@ namespace status {
 enum named_t : ::std::underlying_type<status_t>::type {
 	success                          = CUDA_SUCCESS,
 	memory_allocation_failure        = CUDA_ERROR_OUT_OF_MEMORY, // corresponds to cudaErrorMemoryAllocation
-	initialization_error             = CUDA_ERROR_NOT_INITIALIZED, // corresponds to cudaErrorInitializationError
+	not_yet_initialized              = CUDA_ERROR_NOT_INITIALIZED, // corresponds to cudaErrorInitializationError
 	already_deinitialized            = CUDA_ERROR_DEINITIALIZED, // corresponds to cudaErrorCudartUnloading
 	profiler_disabled                = CUDA_ERROR_PROFILER_DISABLED,
 #if CUDA_VERSION >= 10100
