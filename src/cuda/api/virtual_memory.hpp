@@ -24,8 +24,8 @@ namespace detail_ {
 
 inline void cancel_reservation(memory::region_t reserved)
 {
-    auto status = cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
-    throw_if_error(status, "Failed freeing a reservation of " + memory::detail_::identify(reserved));
+	auto status = cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
+	throw_if_error(status, "Failed freeing a reservation of " + memory::detail_::identify(reserved));
 }
 
 } // namespace detail_
@@ -47,33 +47,33 @@ reserved_address_range_t wrap(region_t addres_range, alignment_t alignment, bool
 class reserved_address_range_t {
 protected:
 
-    reserved_address_range_t(region_t region, alignment_t alignment, bool owning) noexcept
-        : region_(region), alignment_(alignment), owning_(owning) { }
+	reserved_address_range_t(region_t region, alignment_t alignment, bool owning) noexcept
+		: region_(region), alignment_(alignment), owning_(owning) { }
 
 public:
-    friend reserved_address_range_t detail_::wrap(region_t, alignment_t, bool);
+	friend reserved_address_range_t detail_::wrap(region_t, alignment_t, bool);
 
-    reserved_address_range_t(reserved_address_range_t&& other) noexcept
+	reserved_address_range_t(reserved_address_range_t&& other) noexcept
 	: region_(other.region_), alignment_(other.alignment_), owning_(other.owning_)
-    {
-        other.owning_ = false;
-    }
+	{
+		other.owning_ = false;
+	}
 
-    ~reserved_address_range_t()
+	~reserved_address_range_t()
 	{
 		if (not owning_) { return; }
 		detail_::cancel_reservation(region_);
 	}
 
 public: // getters
-    bool is_owning() const noexcept { return owning_; }
-    region_t region() const noexcept{ return region_; }
-    alignment_t alignment() const noexcept { return alignment_; }
+	bool is_owning() const noexcept { return owning_; }
+	region_t region() const noexcept{ return region_; }
+	alignment_t alignment() const noexcept { return alignment_; }
 
 protected: // data members
-    const region_t     region_;
-    const alignment_t  alignment_;
-    bool               owning_;
+	const region_t     region_;
+	const alignment_t  alignment_;
+	bool               owning_;
 };
 
 namespace detail_ {
@@ -87,13 +87,13 @@ inline reserved_address_range_t wrap(region_t address_range, alignment_t alignme
 
 inline reserved_address_range_t reserve(region_t requested_region, alignment_t alignment = alignment::default_)
 {
-    unsigned long flags { 0 };
-    CUdeviceptr ptr;
-    auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, requested_region.device_address(), flags);
-    throw_if_error(status, "Failed making a reservation of " + cuda::memory::detail_::identify(requested_region)
+	unsigned long flags { 0 };
+	CUdeviceptr ptr;
+	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, requested_region.device_address(), flags);
+	throw_if_error(status, "Failed making a reservation of " + cuda::memory::detail_::identify(requested_region)
 		+ " with alignment value " + ::std::to_string(alignment));
-    bool is_owning { true };
-    return detail_::wrap(memory::region_t { ptr, requested_region.size() }, alignment, is_owning);
+	bool is_owning { true };
+	return detail_::wrap(memory::region_t { ptr, requested_region.size() }, alignment, is_owning);
 }
 
 inline reserved_address_range_t reserve(size_t requested_size, alignment_t alignment = alignment::default_)
@@ -105,9 +105,9 @@ namespace physical_allocation {
 
 // TODO: Consider simply aliasing CUmemAllocationHandleType and using constexpr const's or anonymous enums
 enum class kind_t : ::std::underlying_type<CUmemAllocationHandleType>::type {
-    posix_file_descriptor = CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
-    win32_handle          = CU_MEM_HANDLE_TYPE_WIN32,
-    win32_kmt             = CU_MEM_HANDLE_TYPE_WIN32_KMT,
+	posix_file_descriptor = CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
+	win32_handle          = CU_MEM_HANDLE_TYPE_WIN32,
+	win32_kmt             = CU_MEM_HANDLE_TYPE_WIN32_KMT,
 };
 
 namespace detail_ {
@@ -131,27 +131,27 @@ using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandle
 // Note: Not inheriting from CUmemAllocationProp_st, since
 // that structure is a bit messed up
 struct properties_t {
-    // Note: Specifying a compression type is currently unsupported,
-    // as the driver API does not document semantics for the relevant
-    // properties field
+	// Note: Specifying a compression type is currently unsupported,
+	// as the driver API does not document semantics for the relevant
+	// properties field
 
 public: // getters
-    cuda::device_t device() const;
+	cuda::device_t device() const;
 
 	// TODO: Is this only relevant to requests?
-    physical_allocation::kind_t requested_kind() const
-    {
+	physical_allocation::kind_t requested_kind() const
+	{
 		return kind_t(raw.requestedHandleTypes);
-    };
+	};
 
 protected: // non-mutators
-    size_t granularity(detail_::granularity_kind_t granuality_kind) const {
-        size_t result;
-        auto status = cuMemGetAllocationGranularity(&result, &raw,
-        	static_cast<CUmemAllocationGranularity_flags>(granuality_kind));
-        throw_if_error(status, "Could not determine physical allocation granularity");
-        return result;
-    }
+	size_t granularity(detail_::granularity_kind_t granuality_kind) const {
+		size_t result;
+		auto status = cuMemGetAllocationGranularity(&result, &raw,
+			static_cast<CUmemAllocationGranularity_flags>(granuality_kind));
+		throw_if_error(status, "Could not determine physical allocation granularity");
+		return result;
+	}
 
 public: // non-mutators
 	size_t minimum_granularity()     const { return granularity(detail_::granularity_kind_t::minimum_required); }
@@ -204,64 +204,64 @@ physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_uni
 
 class physical_allocation_t {
 protected: // constructors
-    physical_allocation_t(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit)
-    : handle_(handle), size_(size), holds_refcount_unit_(holds_refcount_unit) { }
+	physical_allocation_t(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit)
+	: handle_(handle), size_(size), holds_refcount_unit_(holds_refcount_unit) { }
 
 public: // constructors & destructor
-    physical_allocation_t(const physical_allocation_t& other) noexcept : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(false)
-    { }
+	physical_allocation_t(const physical_allocation_t& other) noexcept : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(false)
+	{ }
 
-    physical_allocation_t(physical_allocation_t&& other) noexcept  : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(other.holds_refcount_unit_)
-    {
-        other.holds_refcount_unit_ = false;
-    }
+	physical_allocation_t(physical_allocation_t&& other) noexcept  : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(other.holds_refcount_unit_)
+	{
+		other.holds_refcount_unit_ = false;
+	}
 
-    ~physical_allocation_t() {
-        if (not holds_refcount_unit_) { return; }
-        auto result = cuMemRelease(handle_);
-        throw_if_error(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
-    }
+	~physical_allocation_t() {
+		if (not holds_refcount_unit_) { return; }
+		auto result = cuMemRelease(handle_);
+		throw_if_error(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
+	}
 
 public: // non-mutators
-    friend physical_allocation_t physical_allocation::detail_::wrap(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit);
+	friend physical_allocation_t physical_allocation::detail_::wrap(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit);
 
-    size_t size() const noexcept { return size_; }
-    physical_allocation::handle_t handle() const noexcept { return handle_; }
-    bool holds_refcount_unit() const noexcept { return holds_refcount_unit_; }
+	size_t size() const noexcept { return size_; }
+	physical_allocation::handle_t handle() const noexcept { return handle_; }
+	bool holds_refcount_unit() const noexcept { return holds_refcount_unit_; }
 
-    physical_allocation::properties_t properties() const {
+	physical_allocation::properties_t properties() const {
 		CUmemAllocationProp raw_properties;
-        auto status = cuMemGetAllocationPropertiesFromHandle(&raw_properties, handle_);
-        throw_if_error(status, "Obtaining the properties of a virtual memory physical_allocation with handle " + ::std::to_string(handle_));
-        return { raw_properties };
-    }
+		auto status = cuMemGetAllocationPropertiesFromHandle(&raw_properties, handle_);
+		throw_if_error(status, "Obtaining the properties of a virtual memory physical_allocation with handle " + ::std::to_string(handle_));
+		return { raw_properties };
+	}
 
-    template <physical_allocation::kind_t SharedHandleKind>
-    physical_allocation::shared_handle_t<SharedHandleKind> sharing_handle() const
-    {
-        physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
-        static constexpr const unsigned long long flags { 0 };
-        auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, (CUmemAllocationHandleType) SharedHandleKind, flags);
-        throw_if_error(result, "Exporting a (generic CUDA) shared memory physical_allocation to a shared handle");
-        return shared_handle_;
-    }
+	template <physical_allocation::kind_t SharedHandleKind>
+	physical_allocation::shared_handle_t<SharedHandleKind> sharing_handle() const
+	{
+		physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
+		static constexpr const unsigned long long flags { 0 };
+		auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, (CUmemAllocationHandleType) SharedHandleKind, flags);
+		throw_if_error(result, "Exporting a (generic CUDA) shared memory physical_allocation to a shared handle");
+		return shared_handle_;
+	}
 
 protected: // data members
-    const physical_allocation::handle_t handle_;
-    size_t size_;
-    bool holds_refcount_unit_;
+	const physical_allocation::handle_t handle_;
+	size_t size_;
+	bool holds_refcount_unit_;
 };
 
 namespace physical_allocation {
 
 inline physical_allocation_t create(size_t size, properties_t properties)
 {
-    static constexpr const unsigned long long flags { 0 };
-    CUmemGenericAllocationHandle handle;
-    auto result = cuMemCreate(&handle, size, &properties.raw, flags);
-    throw_if_error(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size));
-    static constexpr const bool is_owning { true };
-    return detail_::wrap(handle, size, is_owning);
+	static constexpr const unsigned long long flags { 0 };
+	CUmemGenericAllocationHandle handle;
+	auto result = cuMemCreate(&handle, size, &properties.raw, flags);
+	throw_if_error(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size));
+	static constexpr const bool is_owning { true };
+	return detail_::wrap(handle, size, is_owning);
 }
 
 physical_allocation_t create(size_t size, device_t device);
@@ -280,11 +280,11 @@ inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refco
 
 inline properties_t properties_of(handle_t handle)
 {
-    CUmemAllocationProp prop;
-    auto result = cuMemGetAllocationPropertiesFromHandle (&prop, handle);
-    throw_if_error(result, "Failed obtaining the properties of the virtual memory physical_allocation with handle "
-      + ::std::to_string(handle));
-    return { prop };
+	CUmemAllocationProp prop;
+	auto result = cuMemGetAllocationPropertiesFromHandle (&prop, handle);
+	throw_if_error(result, "Failed obtaining the properties of the virtual memory physical_allocation with handle "
+	  + ::std::to_string(handle));
+	return { prop };
 }
 
 } // namespace detail_
@@ -303,11 +303,11 @@ inline properties_t properties_of(handle_t handle)
 template <physical_allocation::kind_t SharedHandleKind>
 physical_allocation_t import(shared_handle_t<SharedHandleKind> shared_handle, size_t size, bool holds_refcount_unit = false)
 {
-    handle_t result_handle;
-    auto result = cuMemImportFromShareableHandle(
-        &result_handle, reinterpret_cast<void*>(shared_handle), CUmemAllocationHandleType(SharedHandleKind));
-    throw_if_error(result, "Failed importing a virtual memory physical_allocation from a shared handle ");
-    return physical_allocation::detail_::wrap(result_handle, size, holds_refcount_unit);
+	handle_t result_handle;
+	auto result = cuMemImportFromShareableHandle(
+		&result_handle, reinterpret_cast<void*>(shared_handle), CUmemAllocationHandleType(SharedHandleKind));
+	throw_if_error(result, "Failed importing a virtual memory physical_allocation from a shared handle ");
+	return physical_allocation::detail_::wrap(result_handle, size, holds_refcount_unit);
 }
 
 namespace detail_ {
@@ -321,10 +321,10 @@ inline ::std::string identify(physical_allocation_t physical_allocation) {
 } // namespace physical_allocation
 
 enum access_mode_t : ::std::underlying_type<CUmemAccess_flags>::type {
-    no_access             = CU_MEM_ACCESS_FLAGS_PROT_NONE,
-    read_access           = CU_MEM_ACCESS_FLAGS_PROT_READ,
-    read_and_write_access = CU_MEM_ACCESS_FLAGS_PROT_READWRITE,
-    rw_access             = read_and_write_access
+	no_access             = CU_MEM_ACCESS_FLAGS_PROT_NONE,
+	read_access           = CU_MEM_ACCESS_FLAGS_PROT_READ,
+	read_and_write_access = CU_MEM_ACCESS_FLAGS_PROT_READWRITE,
+	rw_access             = read_and_write_access
 };
 
 namespace mapping {
@@ -425,23 +425,23 @@ inline void set_access_mode(
 
 class mapping_t {
 protected:  // constructors
-    mapping_t(region_t region, bool owning) : address_range_(region), owning_(owning) { }
+	mapping_t(region_t region, bool owning) : address_range_(region), owning_(owning) { }
 
 public: // constructors & destructions
 
-    friend mapping_t mapping::detail_::wrap(region_t address_range, bool owning);
+	friend mapping_t mapping::detail_::wrap(region_t address_range, bool owning);
 
-    mapping_t(const mapping_t& other) noexcept :
+	mapping_t(const mapping_t& other) noexcept :
 		address_range_(other.address_range()), owning_(false) { }
 
-    mapping_t(mapping_t&& other) noexcept :
+	mapping_t(mapping_t&& other) noexcept :
 		address_range_(other.address_range()), owning_(other.owning_)
-    {
-        other.owning_ = false;
-    }
+	{
+		other.owning_ = false;
+	}
 
-    region_t address_range() const noexcept { return address_range_; }
-    bool is_owning() const noexcept { return owning_; }
+	region_t address_range() const noexcept { return address_range_; }
+	bool is_owning() const noexcept { return owning_; }
 
 	access_mode_t get_access_mode(device_t device) const;
 	void set_access_mode(device_t device, access_mode_t access_mode) const;
@@ -479,8 +479,8 @@ public:
 #endif
 protected:
 
-    region_t address_range_;
-    bool owning_;
+	region_t address_range_;
+	bool owning_;
 
 };
 
@@ -504,15 +504,16 @@ inline ::std::string identify(mapping_t mapping)
 
 inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 {
-    size_t offset_into_allocation { 0 }; // not yet supported, but in the API
-    constexpr const unsigned long long flags { 0 };
-    auto handle = physical_allocation.handle();
-    auto status = cuMemMap(region.device_address(), region.size(), offset_into_allocation, handle, flags);
-    throw_if_error(status, "Failed making a virtual memory mapping of " + physical_allocation::detail_::identify(physical_allocation)
-        + " to the range of size " + ::std::to_string(region.size()) + " bytes at " +
-        cuda::detail_::ptr_as_hex(region.data()));
-    constexpr const bool is_owning { true };
-    return mapping::detail_::wrap(region, is_owning);
+	size_t offset_into_allocation { 0 }; // not yet supported, but in the API
+	constexpr const unsigned long long flags { 0 };
+	auto handle = physical_allocation.handle();
+	auto status = cuMemMap(region.device_address(), region.size(), offset_into_allocation, handle, flags);
+	throw_if_error(status, "Failed making a virtual memory mapping of "
+		+ physical_allocation::detail_::identify(physical_allocation)
+		+ " to the range of size " + ::std::to_string(region.size()) + " bytes at " +
+		cuda::detail_::ptr_as_hex(region.data()));
+	constexpr const bool is_owning { true };
+	return mapping::detail_::wrap(region, is_owning);
 }
 
 
