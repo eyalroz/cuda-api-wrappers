@@ -470,7 +470,7 @@ inline void* allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
+	static constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_a_context{
 		dont_decrease_pc_refcount_on_destruct
 	};
@@ -574,7 +574,7 @@ inline void set_access_mode(
 	access_mode_t                access_mode)
 {
 	CUmemAccessDesc desc { { CU_MEM_LOCATION_TYPE_DEVICE, device.id() }, CUmemAccess_flags(access_mode) };
-	constexpr const size_t count { 1 };
+	static constexpr const size_t count { 1 };
 	auto result = cuMemSetAccess(fully_mapped_region.device_address(), fully_mapped_region.size(), &desc, count);
 	throw_if_error(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));

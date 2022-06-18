@@ -75,8 +75,8 @@ inline handle_t export_(const event_t& event)
 
 inline event_t import(const context_t& context, const handle_t& event_ipc_handle)
 {
-	constexpr const bool do_not_take_ownership { false };
-	constexpr const bool do_not_own_pc_refcount_unit { false };
+	static constexpr const bool do_not_take_ownership { false };
+	static constexpr const bool do_not_own_pc_refcount_unit { false };
 	return event::wrap(
 		context.device_id(),
 		context.handle(),
@@ -107,7 +107,7 @@ inline device_t event_t::device() const
 
 inline context_t event_t::context() const
 {
-	constexpr const bool dont_take_ownership { false };
+	static constexpr const bool dont_take_ownership { false };
 	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 

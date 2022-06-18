@@ -15,7 +15,7 @@ inline cuda::device_t link_t::device() const
 
 inline cuda::context_t link_t::context() const
 {
-	constexpr const bool dont_take_ownership { false };
+	static constexpr const bool dont_take_ownership { false };
 	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 

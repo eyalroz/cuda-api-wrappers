@@ -185,7 +185,7 @@ void enqueue_raw_kernel_launch(
 		// but such an array being necessary for collect_argument_addresses with
 		// multiple parameters. Other workarounds are possible, but would be
 		// more cumbersome, except perhaps with C++17 or later.
-		constexpr const auto non_zero_num_params =
+		static constexpr const auto non_zero_num_params =
 			sizeof...(KernelParameters) == 0 ? 1 : sizeof...(KernelParameters);
 		void* argument_ptrs[non_zero_num_params];
 		// fill the argument array with our parameters. Yes, the use
@@ -313,7 +313,7 @@ void enqueue_launch(
 	static_assert(
 		detail_::all_true<::std::is_trivially_copy_constructible<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"All kernel parameter types must be of a trivially copy-constructible (decayed) type." );
-	constexpr const bool wrapped_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+	static constexpr const bool wrapped_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
 	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
 	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
 	// function for each of them will basically be just a one-liner :-(

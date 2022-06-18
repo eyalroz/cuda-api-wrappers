@@ -73,7 +73,7 @@ inline void launch_type_erased_in_current_context(
 			const_cast<void**>(marshalled_arguments)
 		);
 	else {
-		constexpr const auto no_arguments_in_alternative_format = nullptr;
+		static constexpr const auto no_arguments_in_alternative_format = nullptr;
 		// TODO: Consider passing marshalled_arguments in the alternative format
 		status = cuLaunchKernel(
 			kernel_function_handle,

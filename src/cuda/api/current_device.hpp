@@ -44,7 +44,7 @@ namespace detail_ {
  */
 inline id_t get_id()
 {
-	constexpr const id_t default_device_id { 0 };
+	static constexpr const id_t default_device_id { 0 };
 	context::handle_t current_context_handle;
 	auto status = cuCtxGetCurrent(&current_context_handle);
 	if (status == CUDA_ERROR_NOT_INITIALIZED) {

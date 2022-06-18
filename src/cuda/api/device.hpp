@@ -88,8 +88,8 @@ inline ::std::string get_name(id_t id)
 {
 	initialize_driver();
 	using size_type = int; // Yes, an int, that's what cuDeviceName takes
-	constexpr const size_type initial_size_reservation { 100 };
-	constexpr const size_type larger_size { 1000 }; // Just in case
+	static constexpr const size_type initial_size_reservation { 100 };
+	static constexpr const size_type larger_size { 1000 }; // Just in case
 	char stack_buffer[initial_size_reservation];
 	char* buffer = stack_buffer;
 	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));

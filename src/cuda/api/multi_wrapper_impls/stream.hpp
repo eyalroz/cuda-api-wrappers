@@ -82,7 +82,7 @@ inline void stream_t::enqueue_t::wait(const event_t& event_)
 	context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
 	// Required by the CUDA runtime API; the flags value is currently unused
-	constexpr const unsigned int flags = 0;
+	static constexpr const unsigned int flags = 0;
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
 	throw_if_error(status,
@@ -134,7 +134,7 @@ inline device_t stream_t::device() const noexcept
 
 inline context_t stream_t::context() const noexcept
 {
-	constexpr const bool dont_take_ownership { false };
+	static constexpr const bool dont_take_ownership { false };
 	return context::wrap(device_id_, context_handle_, dont_take_ownership);
 }
 

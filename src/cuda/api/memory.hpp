@@ -1788,14 +1788,14 @@ inline advice_t as_advice(range_attribute_t attribute, bool set)
 
 inline void set_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute, cuda::device::id_t device_id)
 {
-	constexpr const bool set { true };
+	static constexpr const bool set { true };
 	advise(region, as_advice(settable_attribute, set), device_id);
 }
 
 inline void unset_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute)
 {
-	constexpr const bool unset { false };
-	constexpr const cuda::device::id_t dummy_device_id { 0 };
+	static constexpr const bool unset { false };
+	static constexpr const cuda::device::id_t dummy_device_id { 0 };
 	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
 }
 

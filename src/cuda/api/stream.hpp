@@ -542,7 +542,7 @@ public: // mutators
 			// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
 			// variable, see:
 			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
-			constexpr const unsigned fixed_flags { 0u };
+			static constexpr const unsigned fixed_flags { 0u };
 			auto status = cuStreamAddCallback(
 				associated_stream.handle_, &callback_launch_adapter<Callable>, raw_callable_extra_argument, fixed_flags);
 				// Could have used the equivalent Driver API call: cuAddStreamCallback()

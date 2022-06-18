@@ -393,7 +393,7 @@ namespace outstanding_error {
  */
 inline status_t get()
 {
-	constexpr const unsigned dummy_flags{0};
+	static constexpr const unsigned dummy_flags{0};
 	auto status = cuInit(dummy_flags);
 	return static_cast<status_t>(status);
 }

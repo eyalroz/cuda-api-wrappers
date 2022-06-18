@@ -240,7 +240,7 @@ public: // non-mutators
     physical_allocation::shared_handle_t<SharedHandleKind> sharing_handle() const
     {
         physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
-        constexpr const unsigned long long flags { 0 };
+        static constexpr const unsigned long long flags { 0 };
         auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, (CUmemAllocationHandleType) SharedHandleKind, flags);
         throw_if_error(result, "Exporting a (generic CUDA) shared memory physical_allocation to a shared handle");
         return shared_handle_;
@@ -256,11 +256,11 @@ namespace physical_allocation {
 
 inline physical_allocation_t create(size_t size, properties_t properties)
 {
-    constexpr const unsigned long long flags { 0 };
+    static constexpr const unsigned long long flags { 0 };
     CUmemGenericAllocationHandle handle;
     auto result = cuMemCreate(&handle, size, &properties.raw, flags);
     throw_if_error(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size));
-    constexpr const bool is_owning { true };
+    static constexpr const bool is_owning { true };
     return detail_::wrap(handle, size, is_owning);
 }
 
