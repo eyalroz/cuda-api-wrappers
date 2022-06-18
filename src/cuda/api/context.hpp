@@ -740,11 +740,18 @@ context_t create_and_push(
 namespace current {
 
 /**
- * Determine whether any CUDA context is current, or whether the context stack is empty
+ * Determine whether any CUDA context is current, or whether the context stack is
+ * empty/uninitialized
  */
 inline bool exists()
 {
-	return (detail_::get_handle() != context::detail_::none);
+	context::handle_t handle;
+	auto status = cuCtxGetCurrent(&handle);
+	if (status == cuda::status::not_yet_initialized) {
+		return false;
+	}
+	throw_if_error(status, "Failed obtaining the current context's handle");
+	return (handle != context::detail_::none);
 }
 
 /**

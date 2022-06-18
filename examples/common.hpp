@@ -166,7 +166,7 @@ void report_current_context(const ::std::string& prefix = "")
 void print_context_stack()
 {
 	if (not cuda::context::current::exists()) {
-		::std::cout << "(Context stack is empty)" << ::std::endl;
+		::std::cout << "(Context stack is empty/uninitialized)" << ::std::endl;
 		return;
 	}
 	::std::vector<cuda::context::handle_t> contexts;
