@@ -104,6 +104,23 @@ cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
 
 } // namespace detail_
 
+namespace error {
+
+enum handling_method_t { raise_error = 0, suppress = 1, warn = 2 };
+using number_t = unsigned;
+
+namespace detail_ {
+
+const char* option_name_part(handling_method_t method)
+{
+	static constexpr const char* parts[] = { "error", "suppress", "warn" };
+	return parts[method];
+}
+
+} // namespace detail_
+
+} // namespace error
+
 struct compilation_options_t {
 
 	static constexpr const size_t do_not_set_register_count { 0 };
@@ -312,6 +329,8 @@ struct compilation_options_t {
 	 */
 	::std::vector<::std::string> extra_options;
 
+	::std::unordered_map<error::number_t, error::handling_method_t> error_handling_overrides;
+
 protected:
     template <typename T>
     void process(T& opts) const;
@@ -378,6 +397,23 @@ public: // "shorthands" for more complex option setting
 			set_language_dialect(dialect_name.c_str());
 	}
 
+	compilation_options_t& suppress_error(error::number_t error_number)
+	{
+		error_handling_overrides[error_number] = error::suppress;
+		return *this;
+	}
+
+	compilation_options_t& treat_as_error(error::number_t error_number)
+	{
+		error_handling_overrides[error_number] = error::raise_error;
+		return *this;
+	}
+
+	compilation_options_t& warn_about(error::number_t error_number)
+	{
+		error_handling_overrides[error_number] = error::warn;
+		return *this;
+	}
 };
 
 
@@ -456,6 +492,12 @@ void process(const compilation_options_t& opts, MarshalTarget& marshalled, Delim
 
 	for(const auto& preinclude_file : opts.preinclude_files) {
 		marshalled << "--pre-include=" << preinclude_file << optend;
+	}
+
+	for(const auto& override : opts.error_handling_overrides) {
+		marshalled
+			<< "--diag-" << error::detail_::option_name_part(override.second)
+			<< '=' << override.first << optend;
 	}
 
 	for(const auto& extra_opt : opts.extra_options) {
