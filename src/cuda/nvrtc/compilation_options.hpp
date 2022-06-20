@@ -303,6 +303,15 @@ struct compilation_options_t {
      */
     bool builtin_initializer_list { true };
 
+	/**
+	 * Support for additional, arbitrary options which may not be covered by other fields
+	 * in this class (e.g. due to newer CUDA versions providing them)
+	 *
+	 * @note These are appended to the command-line verbatim (so, no prefixing with `-`
+	 * signs, no combining pairs of consecutive elements as opt=value etc.)
+	 */
+	::std::vector<::std::string> extra_options;
+
 protected:
     template <typename T>
     void process(T& opts) const;
@@ -447,6 +456,10 @@ void process(const compilation_options_t& opts, MarshalTarget& marshalled, Delim
 
 	for(const auto& preinclude_file : opts.preinclude_files) {
 		marshalled << "--pre-include=" << preinclude_file << optend;
+	}
+
+	for(const auto& extra_opt : opts.extra_options) {
+		marshalled << extra_opt << optend;
 	}
 }
 
