@@ -164,12 +164,12 @@ inline void launch_type_erased(
 	SpanOfConstVoidPtrLike  marshalled_arguments)
 {
 	static_assert(
-		std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
-		std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
+		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
+		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
 		"The element type of the marshalled arguments container type must be either void* or const void*");
 #ifndef NDEBUG
 	if (*(marshalled_arguments.end() - 1) != nullptr) {
-		throw std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
+		throw ::std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
 	}
 #endif
 	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
