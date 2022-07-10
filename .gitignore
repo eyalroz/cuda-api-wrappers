@@ -17,7 +17,9 @@ unused/
 *.ptx
 bin/*
 lib/*
-build/*
+build/
+build-*/
+bazel-*
 
 # Core dumps
 core
@@ -26,12 +28,13 @@ core-*
 
 # CMake & CTest-generated files
 CMakeCache.txt
-CMakeFiles/*
+CMakeFiles/
 cmake_install.cmake
 CMakeScripts/*
 CMakeTmp/*
 Makefile
 CTestTestfile.cmake
+Testing/
 
 # Eclise IDE-related files
 .project
