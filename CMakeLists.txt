@@ -54,12 +54,8 @@ foreach(wrapper_lib ${wrapper-libraries})
 	# Targets using these libraries should be compiled with C++11 _at least_,
 	# but it doesn't seem there's a way to express that at the CMake level
 endforeach()
-target_link_libraries(nvrtc INTERFACE CUDA::nvrtc)
-target_link_libraries(nvtx INTERFACE CUDA::nvToolsExt)
-
-target_link_libraries(nvtx INTERFACE runtime-and-driver)
-target_link_libraries(nvtx INTERFACE Threads::Threads CUDA::nvToolsExt)
-
+target_link_libraries(nvrtc INTERFACE runtime-and-driver CUDA::nvrtc)
+target_link_libraries(nvtx  INTERFACE runtime-and-driver Threads::Threads CUDA::nvToolsExt)
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
