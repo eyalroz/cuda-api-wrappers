@@ -23,6 +23,7 @@ PROJECT(cuda-api-wrappers
 	LANGUAGES CUDA CXX)
 
 include(GNUInstallDirs)
+set(caw_namespace "cuda-api-wrappers")
 
 find_package(CUDAToolkit 9.0 REQUIRED)
 find_package(Threads REQUIRED)
@@ -35,34 +36,45 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 # Our library targets
 # -------------------
 
-# They're all header-only
-add_library(runtime-and-driver INTERFACE)
-add_library(nvrtc INTERFACE)
-add_library(nvtx INTERFACE)
+set(targets runtime-and-driver nvtx nvrtc)
+set(prefixed-targets "")
 
-set(wrapper-libraries runtime-and-driver nvtx nvrtc)
-
-foreach(wrapper_lib ${wrapper-libraries})
-	target_compile_features(${wrapper_lib} INTERFACE cxx_std_11) # This means _at least_ C++11
+foreach(wrapper_lib ${targets})
+	# First ugly hack to facilitate FetchContent use:
+	# Prefix target names with something project-specific
+	set(caw_lib "caw_${wrapper_lib}")
+	add_library(${caw_lib} INTERFACE)
+	target_compile_features(${caw_lib} INTERFACE cxx_std_11) # This means _at least_ C++11
 	target_include_directories(
-		${wrapper_lib}
+		${caw_lib}
 		INTERFACE
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
-	target_link_libraries(${wrapper_lib} INTERFACE CUDA::cudart CUDA::cuda_driver)
+	target_link_libraries(${caw_lib} INTERFACE CUDA::cudart CUDA::cuda_driver)
 	# Targets using these libraries should be compiled with C++11 _at least_,
 	# but it doesn't seem there's a way to express that at the CMake level
+
+	# Additional hacks for facilitating FetchContent use,
+	# which in particular will let you use the same target names as if you had
+	# imported them with find_package
+	add_library("${caw_namespace}::${wrapper_lib}" ALIAS ${caw_lib})
+	list(APPEND prefixed-targets ${caw_lib})
+	set_target_properties(${caw_lib}
+		PROPERTIES
+		EXPORT_NAME ${wrapper_lib}
+		OUTPUT_NAME ${wrapper_lib}
+	)
 endforeach()
-target_link_libraries(nvrtc INTERFACE runtime-and-driver CUDA::nvrtc)
-target_link_libraries(nvtx  INTERFACE runtime-and-driver Threads::Threads CUDA::nvToolsExt)
+target_link_libraries(caw_nvrtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
+target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt)
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
 if(DEFINED CMAKE_USE_PTHREADS_INIT)
-	target_compile_definitions(nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
+	target_compile_definitions(caw_nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
-	target_compile_definitions(nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
+	target_compile_definitions(caw_nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
 # --------
@@ -86,7 +98,7 @@ install(FILES "${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers")
 
 install(
-	TARGETS ${wrapper-libraries}
+	TARGETS ${prefixed-targets}
 	EXPORT cuda-api-wrappers_export
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -94,13 +106,9 @@ install(
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-# If you want to use the library without installing it, you'll need to
-# copy the file we generate here, cuda-api-wrappers-targets.cmake, into the
-# build directory, and set `cuda-api-wrappers_DIR` to that build directory
-# in your own CMake project.
 export(
 	EXPORT cuda-api-wrappers_export
-	NAMESPACE "cuda-api-wrappers::"
+	NAMESPACE "${caw_namespace}::"
 	FILE "${PROJECT_BINARY_DIR}/cuda-api-wrappers-targets.cmake"
 )
 
@@ -113,7 +121,7 @@ install(
 install(
 	EXPORT cuda-api-wrappers_export
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers"
-	NAMESPACE "cuda-api-wrappers::"
+	NAMESPACE "${caw_namespace}::"
 	FILE "cuda-api-wrappers-targets.cmake"
 )
 

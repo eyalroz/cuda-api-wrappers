@@ -83,20 +83,21 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 **Use involving CMake:**
 
-1. Use CMake to configure, build and install the library. Then, in another CMake project, use `find_package(cuda_api_wrappers)` and make sure the library's install location is in CMake's package search path. This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`.
-2. Use CMake's `FetchContent` module to obtain the project source code and make it part of your own project's build, e.g.:
+* Use CMake to configure, build and install the library. Then, in another CMake project, use `find_package(cuda_api_wrappers)` and make sure the library's install location is in CMake's package search path. This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`.
+* Use CMake's `FetchContent` module to obtain the project source code and make it part of your own project's build, e.g.:
    ```
+   include(FetchContent)
    FetchContent_Declare(cuda-api-wrappers_library
        GIT_REPOSITORY https://github.com/eyalroz/cuda-api-wrappers.git
        GIT_TAG v12.34.56 # Replace this with a real available version
    )
    FetchContent_MakeAvailable(cuda-api-wrappers_library)
    ```
-   Note that, in this case, the three targets will _not_ have the namespace prefix.
+   The _same_ target names, with the namespaces, will be available in this case.
 
 **Use not involving CMake:**
 
-3. Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, nvrtc and/or nvtx libraries as appropriate.
+* Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, nvrtc and/or nvtx libraries as appropriate.
 
 Finally, if you've started using the library in a publicly-available (FOSS or commercial) project, please consider emailing [@eyalroz](https://github.com/eyalroz), or open an [issue](https://github.com/eyalroz/printf/issues/), to announce this.
 
