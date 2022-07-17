@@ -6,27 +6,14 @@
 #ifndef EXAMPLES_COMMON_HPP_
 #define EXAMPLES_COMMON_HPP_
 
-// These next few lines allow for reporting the context 
-// stack contents within API code during debugging, but otherwise 
-// are not used.
 
 #include <string>
 #include <iostream>
 
-namespace cuda {
-namespace rtc {
-
-struct compilation_options_t;
-
-} // namespace rtc
-} // namespace cuda
-
 void report_current_context(const ::std::string& prefix);
 void report_context_stack(const ::std::string& prefix);
-inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options);
 
 #include <cuda/api.hpp>
-#include <cuda/nvrtc.hpp>
 
 #include <cstdio>
 #include <fstream>
@@ -113,18 +100,6 @@ namespace std {
 	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
-::std::ostream &operator<<(::std::ostream &os, const cuda::rtc::compilation_options_t &opts)
-{
-	auto marshalled = marshal(opts);
-//	os << '(' << marshalled.option_ptrs().size() << ") compilation options: ";
-	bool first_option{true};
-	for (auto opt: marshalled.option_ptrs()) {
-		if (first_option) { first_option = false; }
-		else { os << ' '; }
-		os << opt;
-	}
-	return os;
-}
 
 ::std::string to_string(const cuda::context_t& context)
 {
@@ -218,15 +193,5 @@ typename ::std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor
 {
 	return dividend / divisor + !!(dividend % divisor);
 }
-
-inline void print_compilation_options(cuda::rtc::compilation_options_t compilation_options)
-{
-	auto marshalled = marshal(compilation_options);
-	::std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
-	for (auto opt: marshalled.option_ptrs()) {
-		::std::cout << "Option: " << opt << '\n';
-	}
-}
-
 
 #endif // EXAMPLES_COMMON_HPP_

@@ -35,6 +35,7 @@
  */
 
 #include "../../common.hpp"
+#include "../../rtc_common.hpp"
 
 
 #include <cuda/api.hpp>
