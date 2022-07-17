@@ -467,6 +467,25 @@ inline ::std::string identify(const program_t& program)
 
 } // namespace program
 
+#if CUDA_VERSION >= 11020
+dynarray<device::compute_capability_t>
+supported_targets()
+{
+	int num_supported_archs;
+	auto status = nvrtcGetNumSupportedArchs(&num_supported_archs);
+	throw_if_error(status, "Failed obtaining the number of target NVRTC architectures");
+	auto raw_archs = std::unique_ptr<int[]>(new int[num_supported_archs]);
+	status = nvrtcGetSupportedArchs(raw_archs.get());
+	throw_if_error(status, "Failed obtaining the architectures supported by NVRTC");
+	dynarray<device::compute_capability_t> result;
+	result.reserve(num_supported_archs);
+	std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, std::back_inserter(result),
+		[](int raw_arch) { return device::compute_capability_t::from_combined_number(raw_arch); });
+	return result;
+}
+#endif
+
+
 } // namespace rtc
 
 namespace module {
