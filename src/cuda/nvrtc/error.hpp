@@ -12,7 +12,6 @@
 #include <cuda/nvrtc/types.hpp>
 
 #include <cuda_runtime_api.h>
-#include <nvrtc.h>
 
 #include <type_traits>
 #include <string>

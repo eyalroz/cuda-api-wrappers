@@ -9,6 +9,8 @@
 
 #include <cuda/api/types.hpp>
 
+#include <nvrtc.h>
+
 #include <vector>
 
 #if __cplusplus >= 201703L
