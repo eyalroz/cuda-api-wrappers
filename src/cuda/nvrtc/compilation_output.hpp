@@ -142,14 +142,15 @@ public: // non-mutators
 	 */
 	dynarray<char> log() const
 	{
-		size_t size;
-		auto status = nvrtcGetProgramLogSize(program_handle_, &size);
-		throw_if_error(status, "Failed obtaining compilation log size for "
+		size_t size_including_trailing_null;
+		auto status = nvrtcGetProgramLogSize(program_handle_, &size_including_trailing_null);
+		throw_if_error(status, "Failed obtaining compilation log size_including_trailing_null for "
 			+ compilation_output::detail_::identify(*this));
-		dynarray<char> result(size);
+		::std::vector<char> result(size_including_trailing_null);
 		status = nvrtcGetProgramLog(program_handle_, result.data());
 		throw_if_error(status, "Failed obtaining compilation log for"
 			+ compilation_output::detail_::identify(*this));
+		result.resize(size_including_trailing_null - 1);
 		return result;
 	}
 
