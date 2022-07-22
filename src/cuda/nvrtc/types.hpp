@@ -39,6 +39,19 @@ using dynarray = ::std::vector<T>;
 // this is not entirely sufficient, as we should probably not
 // provide a container which may then be resized.
 
+/**
+ * @brief Real-time compilation of CUDA programs using the NVIDIA NVRTC library.
+ */
+namespace rtc {
+
+namespace program {
+
+using handle_t = nvrtcProgram;
+
+} // namespace program
+
+} // namespace rtc
+
 } // namespace cuda
 
 #endif /* SRC_CUDA_NVRTC_TYPES_HPP_ */

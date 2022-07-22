@@ -66,8 +66,6 @@ class program_t;
 
 namespace program {
 
-using handle_t = nvrtcProgram;
-
 namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
