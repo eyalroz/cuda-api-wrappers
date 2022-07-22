@@ -43,13 +43,14 @@ int main(void)
 	::std::cout << "[Vector addition of " << numElements << " elements]\n";
 
 	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program::create(kernel_name, vectorAdd_source);
-	program.register_global(kernel_name);
-	program.compile_for(device);
-	auto mangled_kernel_name = program.get_mangling_of(kernel_name);
+	auto compilation_output = cuda::rtc::program_t(kernel_name)
+		.set_source(vectorAdd_source)
+		.add_registered_global(kernel_name)
+		.set_target(device).compile();
+	auto mangled_kernel_name = compilation_output.get_mangling_of(kernel_name);
 
 	auto context = cuda::device::current::get().primary_context();
-	auto module = cuda::module::create(context, program);
+	auto module = cuda::module::create(context, compilation_output);
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
 	// If we could rely on C++14, we would  use ::std::make_unique

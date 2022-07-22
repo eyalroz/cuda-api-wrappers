@@ -1,13 +1,14 @@
 /**
  * @file
  *
- * @brief A Wrapper class for runtime-compiled (RTC) programs, manipulated using the NVRTC library.
+ * @brief Contains the @ref cuda::rtc::program_t class and related code.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
 
 #include <cuda/nvrtc/compilation_options.hpp>
+#include <cuda/nvrtc/compilation_output.hpp>
 #include <cuda/nvrtc/error.hpp>
 #include <cuda/nvrtc/types.hpp>
 #include <cuda/api.hpp>
@@ -17,72 +18,90 @@
 
 namespace cuda {
 
-///@cond
-class device_t;
-class context_t;
-
-namespace rtc {
-class program_t;
-} // namespace rtc
-
-namespace link {
-struct options_t;
-} // namespace rtc
-
-namespace device {
-
-class primary_context_t;
-
-} // namespace device
-
-///@endcond
-
-
-///@cond
-class module_t;
-///@endcond
-namespace module {
-
-inline module_t create(
-	const context_t&       context,
-	const rtc::program_t&  compiled_program,
-	link::options_t        options = {});
-
-inline module_t create(
-	device_t&              device,
-	const rtc::program_t&  compiled_program,
-	link::options_t        options = {});
-
-} // namespace module
-
-/**
- * @brief Real-time compilation of CUDA programs using the NVIDIA NVRTC library.
- */
 namespace rtc {
 
-///@cond
+using const_cstrings_span = span<const char* const>;
+using const_cstring_pairs_span = span<::std::pair<const char* const, const char* const>>;
+
 class program_t;
-///@endcond
+
+
+namespace detail_ {
+
+::std::string identify(const program_t &program);
+
+} // namespace detail_
 
 namespace program {
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+program::handle_t create(
+	const char *program_name,
+	const char *program_source,
+	int num_headers,
+	const char *const *header_sources,
+	const char *const *header_names)
 {
-	return "program at " + cuda::detail_::ptr_as_hex(handle);
+	program::handle_t program_handle;
+	auto status = nvrtcCreateProgram(
+		&program_handle, program_source, program_name, (int) num_headers, header_sources, header_names);
+	throw_if_error(status, "Failed creating an NVRTC program (named " + ::std::string(program_name) + ')');
+	return program_handle;
 }
 
-inline ::std::string identify(handle_t handle, const char* name)
+void register_global(handle_t program_handle, const char *global_to_register)
 {
-	return ::std::string("program ") + name + " at " + cuda::detail_::ptr_as_hex(handle);
+	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
+	throw_if_error(status, "Failed registering global entity " + ::std::string(global_to_register)
+		+ " with " + identify(program_handle));
 }
 
-::std::string identify(const program_t& program);
+compilation_output_t compile(
+	const char *                program_name,
+	const const_cstrings_span & raw_options,
+	handle_t                    program_handle)
+{
+	auto status = nvrtcCompileProgram(program_handle, (int) raw_options.size(), raw_options.data());
+	bool succeeded = (status == status::named_t::success);
+	if (not (succeeded or status == status::named_t::compilation_failure)) {
+		throw rtc::runtime_error(status, "Failed invoking compiler for " + identify(program_handle));
+	}
+	constexpr bool do_own_handle{true};
+	return compilation_output::detail_::wrap(program_handle, program_name, succeeded, do_own_handle);
+}
+
+// Note: The program_source _cannot_ be nullptr; if all of your source code is preincluded headers,
+// pas the address of an empty string.
+compilation_output_t compile(
+	const char *program_name,
+	const char *program_source,
+	const_cstrings_span header_sources,
+	const_cstrings_span header_names,
+	const_cstrings_span raw_options,
+	const_cstrings_span globals_to_register)
+{
+	assert(header_names.size() <= ::std::numeric_limits<int>::max());
+	if (program_name == nullptr or *program_name == '\0') {
+		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
+	}
+	// Note: Not rejecting empty/missing source, because we may be pre-including source files
+	auto num_headers = (int) header_names.size();
+	auto program_handle = create(
+		program_name, program_source, num_headers, header_sources.data(), header_names.data());
+
+	for (const auto global_to_register: globals_to_register) {
+		register_global(program_handle, global_to_register);
+	}
+
+	// Note: compilation is outside of any context
+	return compile(program_name, raw_options, program_handle);
+}
 
 } // namespace detail_
 
 } // namespace program
+
 
 /**
  * Wrapper class for a CUDA runtime-compilable program
@@ -95,194 +114,179 @@ class program_t {
 public: // getters
 
 	const ::std::string& name() const { return name_; }
-	program::handle_t handle() const { return handle_; }
-
-public: // non-mutators
-
-	// Unfortunately, C++'s standard string class is very inflexible,
-	// and it is not possible for us to get it to have an appropriately-
-	// sized _uninitialized_ buffer. We will therefore have to use
-	// a clunkier return type.
-	//
-	// ::std::string log() const
-
-	/**
-	 * Obtain a copy of the log of the last compilation
-	 *
-	 * @note This will fail if the program has never been compiled.
-	 */
-	dynarray<char> compilation_log() const
+	const char* source() const { return source_; }
+	const compilation_options_t& options() const { return options_; }
+	// TODO: Think of a way to set compilation options without having
+	// to break the statement, e.g. if options had a reflected enum value
+	// or some such arrangement.
+	compilation_options_t& options() { return options_; }
+	const_cstrings_span header_names() const
 	{
-		size_t size;
-		auto status = nvrtcGetProgramLogSize(handle_, &size);
-		throw_if_error(status, "Failed obtaining compilation log size for " + program::detail_::identify(*this));
-		dynarray<char> result(size);
-		status = nvrtcGetProgramLog(handle_, result.data());
-		throw_if_error(status, "Failed obtaining compilation log for" + program::detail_::identify(*this));
-		return result;
+		return { headers_.names.data(), headers_.names.size()};
 	}
-
-	/**
-	 * Obtain a copy of the PTX result of the last compilation.
-	 *
-	 * @note the PTX may be missing in cases such as compilation failure or link-time
-	 * optimization compilation.
-	 * @note This will fail if the program has never been compiled.
-	 */
-	dynarray<char> ptx() const
+	const_cstrings_span header_sources() const
 	{
-		size_t size;
-		auto status = nvrtcGetPTXSize(handle_, &size);
-		throw_if_error(status, "Failed obtaining NVRTC program output PTX size for "
-			+ cuda::rtc::program::detail_::identify(*this));
-		dynarray<char> result(size);
-		status = nvrtcGetPTX(handle_, result.data());
-		throw_if_error(status, "Failed obtaining NVRTC program output PTX for "
-			+ cuda::rtc::program::detail_::identify(*this));
-		return result;
+		return { headers_.sources.data(), headers_.sources.size()};
 	}
+	size_t num_headers() const { return headers_.sources.size(); }
 
-	bool has_ptx() const
+public: // setters
+
+	program_t& set_target(device::compute_capability_t target_compute_capability)
 	{
-		size_t size;
-		auto status = nvrtcGetPTXSize(handle_, &size);
-		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled PTX result: " +
-			cuda::rtc::program::detail_::identify(*this));
-		if (size == 0) {
-			throw ::std::logic_error("PTX size reported as 0 by NVRTC for program: " +
-				cuda::rtc::program::detail_::identify(*this));
+		options_.set_target(target_compute_capability);
+		return *this;
+	}
+	program_t& set_target(const device_t& device) { return set_target(device.compute_capability());}
+	program_t& set_target(const context_t& context) { return set_target(context.device()); }
+	program_t& clear_targets() { options_.targets_.clear(); return *this; }
+	template <typename Container>
+	program_t& set_targets(Container target_compute_capabilities)
+	{
+		clear_targets();
+		for(const auto& compute_capability : target_compute_capabilities) {
+			options_.add_target(compute_capability);
 		}
-		return true;
+		return *this;
+	}
+	program_t& add_target(device::compute_capability_t target_compute_capability)
+	{
+		options_.add_target(target_compute_capability);
+		return *this;
+	}
+	void add_target(const device_t& device) { add_target(device.compute_capability()); }
+	void add_target(const context_t& context) { add_target(context.device()); }
+
+	program_t& set_source(const char* source) { source_ = source; return *this; }
+	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
+	program_t& set_options(compilation_options_t options)
+	{
+		options_ = ::std::move(options);
+		return *this;
 	}
 
-#if CUDA_VERSION >= 11010
-	/**
-	 * Obtain a copy of the CUBIN result of the last compilation.
-	 *
-	 * @note CUBIN output is not available when compiling for a virtual architecture only.
-	 * Also, it may be missing in cases such as compilation failure or link-time
-	 * optimization compilation.
-	 * @note This will fail if the program has never been compiled.
-	 */
-	dynarray<char> cubin() const
+	template <typename HeaderNamesFwdIter, typename HeaderSourcesFwdIter>
+	inline program_t& add_headers(
+		HeaderNamesFwdIter header_names_start,
+		HeaderNamesFwdIter header_names_end,
+		HeaderSourcesFwdIter header_sources_start)
 	{
-		size_t size;
-		auto status = nvrtcGetCUBINSize(handle_, &size);
-		throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
-		if (size == 0) {
-			throw ::std::invalid_argument("CUBIN requested for a CUDA program compiled for a virtual architecture: " +
-				cuda::rtc::program::detail_::identify(*this));
+		auto num_headers_to_add = header_names_end - header_names_start;
+		auto new_num_headers = headers_.names.size() + num_headers_to_add;
+#ifndef NDEBUG
+		if (new_num_headers > ::std::numeric_limits<int>::max()) {
+			throw ::std::invalid_argument("Cannot use more than "
+										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
 		}
-		dynarray<char> result(size);
-		status = nvrtcGetCUBIN(handle_, result.data());
-		throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for"
-			+ cuda::rtc::program::detail_::identify(*this));
-		return result;
-	}
-
-	bool has_cubin() const
-	{
-		size_t size;
-		auto status = nvrtcGetCUBINSize(handle_, &size);
-		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled CUBIN result: " +
-			cuda::rtc::program::detail_::identify(*this));
-		return (size > 0);
-	}
-
 #endif
-
-#if CUDA_VERSION >= 11040
-	/**
-	 * Obtain a copy of the nvvm intermediate format result of the last compilation
-	 */
-	dynarray<char> nvvm() const
-	{
-		size_t size;
-		auto status = nvrtcGetNVVMSize(handle_, &size);
-		throw_if_error(status, "Failed obtaining NVRTC program output NVVM size");
-		dynarray<char> result(size);
-		status = nvrtcGetNVVM(handle_, result.data());
-		throw_if_error(status, "Failed obtaining NVRTC program output NVVM");
-		return result;
+		headers_.names.reserve(new_num_headers);
+		::std::copy_n(header_names_start, new_num_headers, ::std::back_inserter(headers_.names));
+		headers_.sources.reserve(new_num_headers);
+		::std::copy_n(header_sources_start, new_num_headers, ::std::back_inserter(headers_.sources));
+		return *this;
 	}
 
-	bool has_nvvm() const
+	template <typename HeaderNameAndSourceFwdIter>
+	inline program_t& add_headers(
+		HeaderNameAndSourceFwdIter named_headers_start,
+		HeaderNameAndSourceFwdIter named_headers_end)
 	{
-		size_t size;
-		auto status = nvrtcGetNVVMSize(handle_, &size);
-		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled NVVM result: " +
-			cuda::rtc::program::detail_::identify(*this));
-		if (size == 0) {
-			throw ::std::logic_error("NVVM size reported as 0 by NVRTC for program: " +
-				cuda::rtc::program::detail_::identify(*this));
+		auto num_headers_to_add = named_headers_end - named_headers_start;
+		auto new_num_headers = headers_.names.size() + num_headers_to_add;
+#ifndef NDEBUG
+		if (new_num_headers > ::std::numeric_limits<int>::max()) {
+			throw ::std::invalid_argument("Cannot use more than "
+										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
 		}
-		return true;
-	}
-
 #endif
-
-	/**
-	 * Obtain the mangled/lowered form of an expression registered earlier, after
-	 * the compilation.
-	 *
-	 * @param unmangled_name A name of a __global__ or __device__ function or variable.
-	 * @return The mangled name (which can actually be used for invoking kernels,
-	 * moving data etc.). The memory is owned by the NVRTC program and will be
-	 * released when it is destroyed.
-	 */
-	const char* get_mangling_of(const char* unmangled_name) const
-	{
-		const char* result;
-		auto status = nvrtcGetLoweredName(handle_, unmangled_name, &result);
-		throw_if_error(status, ::std::string("Failed obtaining the mangled form of name \"")
-			+ unmangled_name + "\" in dynamically-compiled program \"" + name_ + '\"');
-		return result;
+		headers_.names.reserve(new_num_headers);
+		headers_.sources.reserve(new_num_headers);
+		for(auto& pair_it = named_headers_start; pair_it < named_headers_end; pair_it++) {
+			headers_.names.push_back(pair_it->first);
+			headers_.sources.push_back(pair_it->second);
+		}
+		return *this;
 	}
 
-	const char* get_mangling_of(const ::std::string& unmangled_name) const
+	const program_t& add_headers(
+		const_cstrings_span header_names,
+		const_cstrings_span header_sources)
 	{
-		return get_mangling_of(unmangled_name.c_str());
+#ifndef NDEBUG
+		if (header_names.size() != header_sources.size()) {
+			throw ::std::invalid_argument(
+				"Got " + ::std::to_string(header_names.size()) + " header names with "
+				+ ::std::to_string(header_sources.size()));
+		}
+#endif
+		return add_headers(header_names.cbegin(), header_names.cend(), header_sources.cbegin());
 	}
 
-public: // mutators of the program, but not of this wrapper class
-	void compile(span<const char*> raw_options) const
+	template <typename ContainerOfCStringPairs>
+	program_t& add_headers(ContainerOfCStringPairs named_header_pairs)
 	{
-		auto status = nvrtcCompileProgram(handle_, (int) raw_options.size(), raw_options.data());
-		throw_if_error(status, "Failed compiling program \"" + name_ + "\"");
+		return add_headers(::std::begin(named_header_pairs), ::std::end(named_header_pairs));
 	}
+
+	template <typename HeaderNamesFwdIter, typename HeaderSourcesFwdIter>
+	program_t& set_headers(
+		HeaderNamesFwdIter header_names_start,
+		HeaderNamesFwdIter header_names_end,
+		HeaderSourcesFwdIter header_sources_start)
+	{
+		clear_headers();
+		return add_headers(header_names_start, header_names_end, header_sources_start);
+	}
+
+	program_t& set_headers(
+		const_cstrings_span header_names,
+		const_cstrings_span header_sources)
+	{
+#ifndef NDEBUG
+		if (header_names.size() != header_sources.size()) {
+			throw ::std::invalid_argument(
+				"Got " + ::std::to_string(header_names.size()) + " header names with "
+				+ ::std::to_string(header_sources.size()));
+		}
+#endif
+		return set_headers(header_names.cbegin(), header_names.cend(), header_sources.cbegin());
+	}
+
+	template <typename ContainerOfCStringPairs>
+	program_t& set_headers(ContainerOfCStringPairs named_header_pairs)
+	{
+		clear_headers();
+		return add_headers(named_header_pairs);
+	}
+
+
+	program_t& clear_headers()
+	{
+		headers_.names.clear();
+		headers_.sources.clear();
+		return *this;
+	}
+
+	program_t& clear_options() { options_ = {}; return *this; }
+
+public:
 
 	// TODO: Support specifying all compilation option in a single string and parsing it
 
-	void compile(const compilation_options_t& options = compilation_options_t{}) const
+	compilation_output_t compile() const
 	{
-		auto marshalled_options = marshal(options);
-		auto option_ptrs = marshalled_options.option_ptrs();
-		compile({option_ptrs.data(), option_ptrs. size()});
-	}
-
-	void compile_for(
-		device::compute_capability_t target_compute_capability,
-		compilation_options_t extra_options = compilation_options_t{}) const
-	{
-		extra_options.set_target(target_compute_capability);
-		return compile(extra_options);
-	}
-
-	void compile_for(
-		device_t               device,
-		compilation_options_t  extra_options = compilation_options_t{}) const
-	{
-		compile_for(device.compute_capability(), extra_options);
-	}
-
-	void compile_for(
-		const context_t        context,
-		compilation_options_t  extra_options = compilation_options_t{}) const
-	{
-		return compile_for(context.device(), extra_options);
+		if ((source_ == nullptr or *source_ == '\0') and options_.preinclude_files.empty()) {
+			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
+		}
+		auto marshalled_options = marshal(options_);
+		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
+		return program::detail_::compile(
+			name_.c_str(),
+			source_ == nullptr ? "" : source_,
+			{headers_.sources.data(), headers_.sources.size()},
+			{headers_.names.data(), headers_.names.size()},
+			{option_ptrs.data(), option_ptrs.size()},
+			{globals_to_register_.data(), globals_to_register_.size()});
 	}
 
 	/**
@@ -292,176 +296,58 @@ public: // mutators of the program, but not of this wrapper class
 	 * @param name The text of an expression, e.g. "my_global_func()", "f1", "N1::N2::n2",
 	 *
 	 */
-	void register_global(const char* unmangled_name)
+	program_t& add_registered_global(const char* unmangled_name)
 	{
-		auto status = nvrtcAddNameExpression(handle_, unmangled_name);
-		throw_if_error(status, "Failed registering a mangled name with program \"" + name_ + "\"");
+		globals_to_register_.push_back(unmangled_name);
+		return *this;
 	}
-
-	void register_global(const ::std::string& unmanged_name)
+	program_t& add_registered_global(const ::std::string& unmangled_name)
 	{
-		register_global(unmanged_name.c_str());
-	}
-
-	template <typename StringType1, typename StringType2, typename... StringTypes>
-	void register_globals(StringType1 first, StringType2 second, StringTypes&&... more_globals)
-	{
-		register_global(first);
-		register_global(second);
-		cuda::detail_::for_each_argument(
-			[this](::std::string global_name) { register_global(global_name); },
-			more_globals...);
+		globals_to_register_.push_back(unmangled_name.c_str());
+		return *this;
 	}
 
 	template <typename Container>
-	void register_globals(Container&& names)
+	program_t& add_registered_globals(Container&& globals_to_register)
 	{
-		for(const auto& name : names) {
-			register_global(name);
-		};
+		globals_to_register_.reserve(globals_to_register_.size() + globals_to_register.size());
+		::std::copy(globals_to_register.cbegin(), globals_to_register.cend(), ::std::back_inserter(globals_to_register_));
+		return *this;
 	}
-
-protected: // constructors
-	program_t(
-		program::handle_t handle,
-		const char* name,
-		bool owning = false) : handle_(handle), name_(name), owning_(owning) { }
 
 public: // constructors and destructor
-
-	program_t(
-		const char*  program_name,
-		const char*  cuda_source,
-		size_t       num_headers,
-		const char** header_names,
-		const char** header_sources
-		) : handle_(), name_(program_name), owning_(true)
-	{
-		status_t status;
-#ifndef NDEBUG
-		if (num_headers > ::std::numeric_limits<int>::max()) {
-			throw ::std::invalid_argument("Cannot process more than " + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
-		}
-#endif
-		status = nvrtcCreateProgram(&handle_, cuda_source, program_name, (int) num_headers, header_sources, header_names);
-		throw_if_error(status, "Failed creating an NVRTC program (named " + ::std::string(name_) + ')');
-	}
-
-	program_t(const program_t&) = delete;
-
-	program_t(program_t&& other) noexcept
-		: handle_(other.handle_), name_(::std::move(other.name_)), owning_(other.owning_)
-	{
-		other.owning_ = false;
-	};
-
-	~program_t()
-	{
-		if (owning_) {
-			auto status = nvrtcDestroyProgram(&handle_);
-			throw_if_error(status, "Destroying an NVRTC program");
-		}
-	}
+	program_t(::std::string name) : name_(::std::move(name)) {};
+	program_t(const program_t&) = default;
+	program_t(program_t&&) = default;
+	~program_t() = default;
 
 public: // operators
 
-	program_t& operator=(const program_t& other) = delete;
-	program_t& operator=(program_t&& other) = delete;
+	program_t& operator=(const program_t& other) = default;
+	program_t& operator=(program_t&& other) = default;
 
 protected: // data members
-	program::handle_t  handle_;
-	::std::string        name_;
-	bool               owning_;
+	const char*           source_ { nullptr };
+	::std::string         name_;
+	compilation_options_t options_;
+	struct {
+		::std::vector<const char*> names;
+		::std::vector<const char*> sources;
+	} headers_;
+	::std::vector<const char*> globals_to_register_;
 }; // class program_t
 
 namespace program {
-inline program_t create(
-	const char* program_name,
-	const char* cuda_source,
-	span<const char*> header_names,
-	span<const char*> header_sources)
+
+inline program_t create(const char* program_name)
 {
-	return program_t{ program_name, cuda_source, header_names.size(), header_names.data(), header_sources.data() };
+	return program_t(program_name);
 }
 
-template <typename HeaderNamesFwdIter, typename HeaderSourcesFwdIter>
-inline program_t create(
-	const char* program_name,
-	const char* cuda_source,
-	HeaderNamesFwdIter header_names_start,
-	HeaderNamesFwdIter header_names_end,
-	HeaderSourcesFwdIter header_sources_start)
+inline program_t create(const ::std::string program_name)
 {
-	auto num_headers = header_names_end - header_names_start;
-	::std::vector<const char*> header_names;
-	header_names.reserve(num_headers);
-	::std::copy_n(header_names_start, num_headers, ::std::back_inserter(header_names));
-	::std::vector<const char*> header_sources;
-	header_names.reserve(num_headers);
-	::std::copy_n(header_sources_start, num_headers, ::std::back_inserter(header_sources));
-	return program_t{ cuda_source, program_name, num_headers, header_names.data(), header_sources.data() };
+	return program_t(program_name);
 }
-
-template <typename HeaderNameAndSourceFwdIter>
-inline program_t create(
-	const char* program_name,
-	const char* cuda_source,
-	HeaderNameAndSourceFwdIter named_headers_start,
-	HeaderNameAndSourceFwdIter named_headers_end)
-{
-	auto num_headers = named_headers_end - named_headers_start;
-	::std::vector<const char*> header_names{};
-	::std::vector<const char*> header_sources{};
-	header_names.reserve(num_headers);
-	header_sources.reserve(num_headers);
-	for(auto& it = named_headers_start; it < named_headers_end; it++) {
-		header_names.push_back(it->first);
-		header_sources.push_back(it->second);
-	}
-	return program_t{ program_name, cuda_source, (size_t) num_headers, header_names.data(), header_sources.data() };
-}
-
-// Note: This won't work for a string->string map... and we can't use a const char* to const char* map, I think.
-template <typename HeaderNameAndSourcePairContainer>
-inline program_t create(
-	const char*                       program_name,
-	const char*                       cuda_source,
-	HeaderNameAndSourcePairContainer  named_headers)
-{
-	return create<typename HeaderNameAndSourcePairContainer::const_iterator>(
-		program_name, cuda_source, named_headers.cbegin(), named_headers.cend());
-}
-
-/**
- * Create a run-time-compiled CUDA program using just a source string
- * with no extra headers
- */
-inline program_t create(const char* program_name, const char* cuda_source)
-{
-	return program_t{ program_name, cuda_source, 0, nullptr, nullptr };
-}
-
-/**
- * Creates a program with no main source code made available as a string.
- *
- * @note this allows later inclusion of all source code from files via
- * the pre-include mechanism of NVRTC.
- *
- * @return The created empty-source program
- */
-inline program_t create_empty(const char* program_name)
-{
-	return program_t{ program_name, "", 0, nullptr, nullptr };
-}
-
-namespace detail_ {
-
-inline ::std::string identify(const program_t& program)
-{
-	return identify(program.handle(), program.name().c_str());
-}
-
-} // namespace detail_
 
 } // namespace program
 
@@ -472,46 +358,18 @@ supported_targets()
 	int num_supported_archs;
 	auto status = nvrtcGetNumSupportedArchs(&num_supported_archs);
 	throw_if_error(status, "Failed obtaining the number of target NVRTC architectures");
-	auto raw_archs = std::unique_ptr<int[]>(new int[num_supported_archs]);
+	auto raw_archs = ::std::unique_ptr<int[]>(new int[num_supported_archs]);
 	status = nvrtcGetSupportedArchs(raw_archs.get());
 	throw_if_error(status, "Failed obtaining the architectures supported by NVRTC");
 	dynarray<device::compute_capability_t> result;
 	result.reserve(num_supported_archs);
-	std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, std::back_inserter(result),
+	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::back_inserter(result),
 		[](int raw_arch) { return device::compute_capability_t::from_combined_number(raw_arch); });
 	return result;
 }
 #endif
 
-
 } // namespace rtc
-
-namespace module {
-
-inline module_t create(
-	const context_t&       context,
-	const rtc::program_t&  compiled_program,
-	link::options_t        options)
-{
-#if CUDA_VERSION >= 11030
-	auto cubin = compiled_program.cubin();
-	return module::create(context, cubin, options);
-#else
-	// Note this is less likely to succeed :-(
-	auto ptx = compiled_program.ptx();
-	return module::create(context, ptx, options);
-#endif
-}
-
-inline module_t create(
-	device_t&              device,
-	const rtc::program_t&  compiled_program,
-	link::options_t        options)
-{
-	return create(device.primary_context(), compiled_program, options);
-}
-
-} // namespace module
 
 } // namespace cuda
 

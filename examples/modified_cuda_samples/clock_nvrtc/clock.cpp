@@ -123,18 +123,19 @@ cuda::dynarray<char> compile_to_cubin(
 	const char* kernel_name,
 	cuda::device_t target_device)
 {
-	auto program = cuda::rtc::program::create(kernel_name, kernel_source);
+	auto program = cuda::rtc::program::create(kernel_name)
+		.set_source(kernel_source).set_target(target_device);
 		// I wonder if using the same name for the program and the kernel is a good idea
 
-	program.compile_for(target_device);
-	auto log = program.compilation_log();
+	auto output = program.compile();
+	auto log = output.log();
 
-	if (log.size() >= 2) {
+	if (log.size() >= 1) {
 		std::cerr << "\n compilation log ---\n";
 		std::cerr << log.data();
 		std::cerr << "\n end log ---\n";
 	}
-	return program.cubin();
+	return output.cubin();
 }
 
 

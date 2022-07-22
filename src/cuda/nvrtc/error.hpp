@@ -37,11 +37,11 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	invalid_input = NVRTC_ERROR_PROGRAM_CREATION_FAILURE,
 	invalid_program = NVRTC_ERROR_INVALID_PROGRAM,
 	invalid_option = NVRTC_ERROR_INVALID_OPTION,
-	compilation = NVRTC_ERROR_COMPILATION,
+	compilation_failure = NVRTC_ERROR_COMPILATION,
 	builtin_operation_failure = NVRTC_ERROR_BUILTIN_OPERATION_FAILURE,
-	no_name_expressions_after_compilation = NVRTC_ERROR_NO_NAME_EXPRESSIONS_AFTER_COMPILATION,
+	no_registered_globals_after_compilation = NVRTC_ERROR_NO_NAME_EXPRESSIONS_AFTER_COMPILATION,
 	no_lowered_names_before_compilation = NVRTC_ERROR_NO_LOWERED_NAMES_BEFORE_COMPILATION,
-	name_expression_not_valid = NVRTC_ERROR_NAME_EXPRESSION_NOT_VALID,
+	invalid_expression_to_register_as_global = NVRTC_ERROR_NAME_EXPRESSION_NOT_VALID,
 	internal_error = NVRTC_ERROR_INTERNAL_ERROR,
 };
 

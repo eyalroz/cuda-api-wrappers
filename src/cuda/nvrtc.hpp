@@ -16,6 +16,7 @@
 #include <cuda/nvrtc/error.hpp>
 #include <cuda/nvrtc/compilation_options.hpp>
 #include <cuda/nvrtc/versions.hpp>
+#include <cuda/nvrtc/compilation_output.hpp>
 #include <cuda/nvrtc/program.hpp>
 
 #endif // CUDA_NVRTC_WRAPPERS_HPP_

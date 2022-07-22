@@ -105,29 +105,24 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
 	sstr << '>';
 	return sstr.str();
 }
-
-bool try_compilation(
-	const cuda::rtc::program_t &program,
-	const cuda::device_t &device,
+/**
+ *
+ * @param compilation_output
+ * @param fine_day hello world
+ */
+void handle_compilation_failure(
+	const cuda::rtc::compilation_output_t& compilation_output,
 	cuda::rtc::compilation_options_t compilation_options = {})
 {
-	try {
-		compilation_options.set_language_dialect("c++11");
-		program.compile_for(device, compilation_options);
+	std::cerr << "Program compilation failed:\n";
+	auto compilation_log = compilation_output.log();
+	std::cerr << "Compilation options were: " << compilation_options << '\n';
+	if (not compilation_log.empty()) {
+		std::cerr
+			<< "Compilation log:\n"
+			<< string_view(compilation_log.data(), compilation_log.size()) << '\n'
+			<< std::flush;
 	}
-	catch(std::exception& err) {
-		std::cerr << "Program compilation failed: " << err.what() << '\n';
-		auto compilation_log = program.compilation_log();
-		std::cerr << "Compilation options: " << compilation_options << '\n';
-		if (not compilation_log.empty()) {
-			std::cerr
-				<< "Compilation log:\n"
-				<< string_view(compilation_log.data(), compilation_log.size()) << '\n'
-				<< std::flush;
-		}
-		return false;
-	}
-	return true;
 }
 
 template <typename T>
@@ -145,12 +140,19 @@ void my_kernel(T* data) {
 )";
 	auto instantiation_name = make_instantiation_name(kernel_name, std::to_string(3), type_name<T>());
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, instantiation_name);
-	auto program = cuda::rtc::program::create("my_program", source_with_instantiation.c_str());
 	auto device = cuda::device::current::get();
-	program.register_global(instantiation_name);
-	if (not try_compilation(program, device)) { return false; }
-	auto mangled_kernel_name = program.get_mangling_of(instantiation_name);
-	auto module = cuda::module::create(device, program);
+	auto program = cuda::rtc::program_t("my_program")
+		.set_source(source_with_instantiation)
+		.set_target(device)
+		.add_registered_global(instantiation_name);
+	program.options().set_language_dialect("c++11");
+	auto compilation_result = program.compile();
+
+	if (not compilation_result.succeeded()) {
+		handle_compilation_failure(compilation_result, program.options());
+	}
+	auto mangled_kernel_name = compilation_result.get_mangling_of(instantiation_name);
+	auto module = cuda::module::create(device, compilation_result);
 	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
@@ -209,23 +211,34 @@ void my_kernel2(float const* indata, float* outdata) {
 		{"example_headers/my_header4.cuh", my_header4_cuh_contents}
 	};
 
-	auto program = cuda::rtc::program::create("my_program1", source_with_instantiation.c_str(), headers);
 	auto device = cuda::device::current::get();
-	program.register_globals(kernel_names[0], my_kernel2_instantiation_name);
-	cuda::rtc::compilation_options_t options;
+	auto program = cuda::rtc::program_t("my_program1")
+		.set_source(source_with_instantiation)
+		.set_headers(headers)
+		.set_target(device)
+		.add_registered_global(kernel_names[0])
+		.add_registered_global(my_kernel2_instantiation_name);
+	auto& options = program.options();
+	options.set_language_dialect("c++11");
 	options.use_fast_math = true;
 	options.default_execution_space_is_device = true;
 		// This is necessary because the headers included by this program have functions without a
 		// device/host qualification - and those default to being host functions, which NVRTC doesn't
 		// compile.
-	if (not try_compilation(program, device, options)) { return false; }
-		// Note: Headers whose sources were not provided to the program on creation will be sought after
-		// in the specified include directories (in our case, none), and the program's working directory.
+
+	auto compilation_result = program.compile();
+	// Note: Headers whose sources were not provided to the program on creation will be sought after
+	// in the specified include directories (in our case, none), and the program's working directory.
+
+	if (not compilation_result.succeeded()) {
+		handle_compilation_failure(compilation_result, program.options());
+	}
+
 	const char* mangled_kernel_names[2] = {
-		program.get_mangling_of(kernel_names[0]),
-		program.get_mangling_of(my_kernel2_instantiation_name)
+		compilation_result.get_mangling_of(kernel_names[0]),
+		compilation_result.get_mangling_of(my_kernel2_instantiation_name)
 	};
-	auto module = cuda::module::create(device, program);
+	auto module = cuda::module::create(device, compilation_result);
 	auto my_kernel1 = module.get_kernel(mangled_kernel_names[0]);
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
@@ -268,21 +281,30 @@ __global__ void constant_test(int *x) {
 		const char *c_b_a = "&c::b::a";
 	} names;
 
-	auto program = cuda::rtc::program::create("const_program", const_program_source);
-
-	cuda::rtc::compilation_options_t options;
-	options.use_fast_math = true;
-	program.register_globals(names.kernel, names.a, names.b_a, names.c_b_a);
 	auto device = cuda::device::current::get();
-	if (not try_compilation(program, device, options)) { return false; }
-	auto module = cuda::module::create(device, program);
+	auto program = cuda::rtc::program::create("const_program")
+		.set_source(const_program_source)
+		.add_registered_global(names.kernel)
+		.add_registered_global(names.a)
+		.add_registered_global(names.b_a)
+		.add_registered_global(names.c_b_a)
+		.set_target(device);
 
-	auto mangled_kernel_name = program.get_mangling_of(names.kernel);
+	auto& options = program.options();
+	options.set_language_dialect("c++11");
+	options.use_fast_math = true;
+	auto compilation_result = program.compile();
+	if (not compilation_result.succeeded()) {
+		handle_compilation_failure(compilation_result, program.options());
+	}
+	auto module = cuda::module::create(device, compilation_result);
+
+	auto mangled_kernel_name = compilation_result.get_mangling_of(names.kernel);
 	auto kernel = module.get_kernel(mangled_kernel_name);
 	int inval[] = {2, 4, 8};
-	auto a = module.get_global_region(program.get_mangling_of(names.a));
-	auto b_a = module.get_global_region(program.get_mangling_of(names.b_a));
-	auto c_b_a = module.get_global_region(program.get_mangling_of(names.c_b_a));
+	auto a = module.get_global_region(compilation_result.get_mangling_of(names.a));
+	auto b_a = module.get_global_region(compilation_result.get_mangling_of(names.b_a));
+	auto c_b_a = module.get_global_region(compilation_result.get_mangling_of(names.c_b_a));
 	cuda::memory::copy(a, &inval[0]);
 	cuda::memory::copy(b_a, &inval[1]);
 	cuda::memory::copy(c_b_a, &inval[2]);
@@ -295,22 +317,28 @@ __global__ void constant_test(int *x) {
 	return std::equal(inval, inval + n_const, outval);
 }
 
+
 bool test_constant_2()
 {
 	// test __constant__ array look up in header nested in both anonymous and explicit namespace
 	constexpr int n_const = 3;
 	const char* second_kernel_name = "constant_test2";
-	auto program = cuda::rtc::program::create_empty("const_program_2");
-	cuda::rtc::compilation_options_t options;
+	auto device = cuda::device::current::get();
+	const char* name_of_anon_b_a = "&b::a";
+	auto program = cuda::rtc::program::create("const_program_2")
+		.add_registered_global(second_kernel_name)
+		.add_registered_global(name_of_anon_b_a)
+		.set_target(device);
+	auto& options = program.options();
 	options.preinclude_files.emplace_back("example_headers/constant_header.cuh");
 	options.use_fast_math = true;
-	const char* name_of_anon_b_a = "&b::a";
-	program.register_globals(second_kernel_name, name_of_anon_b_a);
-	auto device = cuda::device::current::get();
-	if (not try_compilation(program, device, options)) { return false; }
-	auto module = cuda::module::create(device, program);
-	auto anon_b_a = module.get_global_region(program.get_mangling_of(name_of_anon_b_a));
-	auto kernel = module.get_kernel(program.get_mangling_of(second_kernel_name));
+	auto compilation_result = program.compile();
+	if (not compilation_result.succeeded()) {
+		handle_compilation_failure(compilation_result, program.options());
+	}
+	auto module = cuda::module::create(device, compilation_result);
+	auto anon_b_a = module.get_global_region(compilation_result.get_mangling_of(name_of_anon_b_a));
+	auto kernel = module.get_kernel(compilation_result.get_mangling_of(second_kernel_name));
 	int inval[] = {3, 5, 9};
 	cuda::memory::copy(anon_b_a, inval);
 	auto launch_config = cuda::make_launch_config(cuda::grid::composite_dimensions_t::point());
