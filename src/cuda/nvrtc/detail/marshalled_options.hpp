@@ -37,12 +37,16 @@ public:
 	marshalled_options_t(marshalled_options_t&&) = default;
 
 protected:
-	::std::ostringstream oss;
+	mutable ::std::ostringstream oss;
 	mutable ::std::string finalized {};
 	::std::vector<size_type> option_positions;
 		// Offsets into the eventually-created options string.
 		// Note that the last offset is to a not-yet-existing option
 public:
+
+	bool empty() const {
+		return oss.tellp() == 0;
+	}
 
 	template <typename T>
 	marshalled_options_t& operator<<(T&& x)

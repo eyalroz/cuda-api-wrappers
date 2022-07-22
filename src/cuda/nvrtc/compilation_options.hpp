@@ -421,6 +421,26 @@ namespace detail_ {
 
 const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
+template <typename Delimiter>
+struct opt_start_t {
+	bool      ever_used;
+	Delimiter delimiter;
+
+	opt_start_t(Delimiter delimiter) : ever_used(false), delimiter(delimiter){ }
+};
+
+} // namespace detail_
+
+template <typename MarshalTarget, typename Delimiter>
+MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& opt_start)
+{
+	if (not opt_start.ever_used) {
+		opt_start.ever_used = true;
+	}
+	else {
+		mt << opt_start.delimiter;
+	}
+	return mt;
 }
 
 /**
@@ -431,77 +451,84 @@ const char* true_or_false(bool b) { return b ? "true" : "false"; }
  *
  */
 template <typename MarshalTarget, typename Delimiter>
-void process(const compilation_options_t& opts, MarshalTarget& marshalled, Delimiter optend)
+void process(
+	const compilation_options_t& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	bool need_delimited_after_every_option = false)
 {
+	detail_::opt_start_t<Delimiter> opt_start { delimiter };
 	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
 	// defaults.
-	if (opts.generate_relocatable_code)         { marshalled << "--relocatable-device-code=true" << optend;      }
-	if (opts.compile_extensible_whole_program)  { marshalled << "--extensible-whole-program=true" << optend;     }
-	if (opts.debug)                             { marshalled << "--device-debug" << optend;                      }
-	if (opts.generate_line_info)                { marshalled << "--generate-line-info" << optend;                }
-	if (opts.support_128bit_integers)           { marshalled << "--device-int128" << optend;                     }
-	if (opts.indicate_function_inlining)        { marshalled << "--optimization-info=inline" << optend;          }
-	if (opts.compiler_self_identification)      { marshalled << "--version-ident=true" << optend;                }
-	if (not opts.builtin_initializer_list)      { marshalled << "--builtin-initializer-list=false" << optend;    }
-	if (opts.extra_device_vectorization)        { marshalled << "--extra-device-vectorization" << optend;        }
-	if (opts.disable_warnings)                  { marshalled << "--disable-warnings" << optend;                  }
-	if (opts.assume_restrict)                   { marshalled << "--restrict" << optend;                          }
-	if (opts.default_execution_space_is_device) { marshalled << "--device-as-default-execution-space" << optend; }
-	if (not opts.display_error_numbers)         { marshalled << "--no-display-error-number" << optend;           }
-	if (not opts.builtin_move_and_forward)      { marshalled << "--builtin-move-forward=false" << optend;        }
-	if (not opts.increase_stack_limit_to_max)   { marshalled << "--modify-stack-limit=false" << optend;          }
-	if (opts.link_time_optimization)            { marshalled << "--dlink-time-opt" << optend;                    }
-	if (opts.use_fast_math)                     { marshalled << "--use_fast_math" << optend;                     }
+	if (opts.generate_relocatable_code)         { marshalled << opt_start << "--relocatable-device-code=true";      }
+	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program=true";     }
+	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                      }
+	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";                }
+	if (opts.support_128bit_integers)           { marshalled << opt_start << "--device-int128";                     }
+	if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
+	if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }
+	if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
+	if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
+	if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";                  }
+	if (opts.assume_restrict)                   { marshalled << opt_start << "--restrict";                          }
+	if (opts.default_execution_space_is_device) { marshalled << opt_start << "--device-as-default-execution-space"; }
+	if (not opts.display_error_numbers)         { marshalled << opt_start << "--no-display-error-number";           }
+	if (not opts.builtin_move_and_forward)      { marshalled << opt_start << "--builtin-move-forward=false";        }
+	if (not opts.increase_stack_limit_to_max)   { marshalled << opt_start << "--modify-stack-limit=false";          }
+	if (opts.link_time_optimization)            { marshalled << opt_start << "--dlink-time-opt";                    }
+	if (opts.use_fast_math)                     { marshalled << opt_start << "--use_fast_math";                     }
 	else {
-		if (opts.flush_denormal_floats_to_zero) { marshalled << "--ftz" << optend;                               }
-		if (not opts.use_precise_square_root)   { marshalled << "--prec-sqrt=false" << optend;                   }
-		if (not opts.use_precise_division)      { marshalled << "--prec-div=false" << optend;                    }
-		if (not opts.use_fused_multiply_add)    { marshalled << "--fmad=false" << optend;                        }
+		if (opts.flush_denormal_floats_to_zero) { marshalled << opt_start << "--ftz";                               }
+		if (not opts.use_precise_square_root)   { marshalled << opt_start << "--prec-sqrt=false";                   }
+		if (not opts.use_precise_division)      { marshalled << opt_start << "--prec-div=false";                    }
+		if (not opts.use_fused_multiply_add)    { marshalled << opt_start << "--fmad=false";                        }
 	}
 
 	if (opts.specify_language_dialect) {
-		marshalled << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect] << optend;
+		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect];
 	}
 
 	if (opts.maximum_register_count != compilation_options_t::do_not_set_register_count) {
-		marshalled << "--maxrregcount" << opts.maximum_register_count << optend;
+		marshalled << opt_start << "--maxrregcount" << opts.maximum_register_count;
 	}
 
 	// Multi-value options
 
 	for(const auto& target : opts.targets_) {
 #if CUDA_VERSION < 11000
-		marshalled << "--gpu-architecture=compute_" << target.as_combined_number() << optend;
+		marshalled << opt_start << "--gpu-architecture=compute_" << target.as_combined_number();
 #else
-		marshalled << "--gpu-architecture=sm_" << target.as_combined_number() << optend;
+		marshalled << opt_start << "--gpu-architecture=sm_" << target.as_combined_number();
 #endif
 	}
 
 	for(const auto& def : opts.no_value_defines) {
-		marshalled << "-D" << def << optend;
+		marshalled << opt_start << "-D" << def;
 		// Note: Could alternatively use "--define-macro" instead of "-D"
 	}
 
 	for(const auto& def : opts.valued_defines) {
-		marshalled << "-D" << def.first << '=' << def.second << optend;
+		marshalled << opt_start << "-D" << def.first << '=' << def.second;
 	}
 
 	for(const auto& path : opts.additional_include_paths) {
-		marshalled << "--include-path=" << path << optend;
+		marshalled << opt_start << "--include-path=" << path;
 	}
 
 	for(const auto& preinclude_file : opts.preinclude_files) {
-		marshalled << "--pre-include=" << preinclude_file << optend;
+		marshalled << opt_start << "--pre-include=" << preinclude_file;
 	}
 
 	for(const auto& override : opts.error_handling_overrides) {
 		marshalled
-			<< "--diag-" << error::detail_::option_name_part(override.second)
-			<< '=' << override.first << optend;
+			<< opt_start << "--diag-" << error::detail_::option_name_part(override.second)
+			<< '=' << override.first ;
 	}
 
 	for(const auto& extra_opt : opts.extra_options) {
-		marshalled << extra_opt << optend;
+		marshalled << opt_start << extra_opt;
+	}
+
+	if (need_delimited_after_every_option) {
+		marshalled << opt_start; // If no options were marshalled, this does nothing
 	}
 }
 
@@ -509,7 +536,8 @@ marshalled_options_t marshal(const compilation_options_t& opts)
 {
 	marshalled_options_t mo;
 	// TODO: Can we easily determine the max number of options here?
-	process(opts, mo, detail_::optend);
+	constexpr bool need_delimiter_after_every_option { true };
+	process(opts, mo, detail_::optend, need_delimiter_after_every_option);
 	return mo;
 }
 
