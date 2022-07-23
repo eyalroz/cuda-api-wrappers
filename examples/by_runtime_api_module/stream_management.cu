@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect
-	stream_1.enqueue.memory_attachment(buffer.get());
+	stream_1.enqueue.attach_managed_region(buffer.get());
 	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
 	event_1.record(stream_1);
 	stream_1.enqueue.kernel_launch(print_message<N,4>, single_thread_config, message<N>("I'm on stream 1"));

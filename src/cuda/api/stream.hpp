@@ -562,9 +562,27 @@ public: // mutators
 		 * only become allocated for use once the allocation task is actually reached by
 		 * the stream and completed.
 		 */
-		memory::region_t memory_allocation(size_t num_bytes) {
+		memory::region_t allocate(size_t num_bytes) {
 			return memory::device::async::allocate(associated_stream, num_bytes);
 		}
+
+		/**
+		 * Allocate a specified amount of memory.
+		 *
+		 * @param num_bytes amount of memory to allocate
+		 * @return a region whose location is set when scheduling, but the memory of which
+		 * only become allocated for use once the allocation task is actually reached by
+		 * the stream and completed.
+		 */
+		///@{
+		void free(void* region_start) {
+			memory::device::async::free(associated_stream, region_start);
+		}
+
+		void free(memory::region_t region) {
+			memory::device::async::free(associated_stream, region);
+		}
+		///@{
 
 		/**
 		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
@@ -588,7 +606,7 @@ public: // mutators
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
 		 * pass whatever @ref cuda::memory::managed::allocate() returned.
 		 */
-		void memory_attachment(
+		void attach_managed_region(
 			const void* managed_region_start,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
@@ -610,11 +628,11 @@ public: // mutators
 		 * @param region the managed memory region to attach; it cannot be a sub-region -
 		 * you must pass whatever @ref cuda::memory::managed::allocate() returned.
 		 */
-		void memory_attachment(
+		void attach_managed_region(
 			memory::managed::region_t region,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
 		{
-			memory_attachment(region.start(), attachment);
+			attach_managed_region(region.start(), attachment);
 		}
 		///@}
 

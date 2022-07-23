@@ -234,6 +234,49 @@ inline void free(void* ptr)
 inline void free(region_t region) { free(region.start()); }
 ///@}
 
+namespace async {
+
+namespace detail_ {
+
+inline void free(
+	context::handle_t  context_handle,
+	stream::handle_t   stream_handle,
+	void*              allocated_region_start)
+{
+#if CUDA_VERSION >= 11020
+	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
+	throw_if_error(status,
+		"Failed scheduling an asynchronous freeing of the global memory region starting at "
+		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
+		+ stream::detail_::identify(stream_handle, context_handle) );
+#else
+	(void) context_handle;
+	(void) stream_handle;
+	(void) allocated_region_start;
+	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory (de-)allocation is not supported with CUDA versions below 11.2");
+#endif
+}
+
+} // namespace detail_
+
+/**
+ * Schedule a de-allocation of device-side memory on a CUDA stream.
+ *
+ * @throws cuda::runtime_error if freeing fails
+ *
+ * @param stream the stream on which to register the allocation
+ */
+ ///@{
+inline void free(const stream_t& stream, void* region_start);
+inline void free(const stream_t& stream, region_t region)
+{
+	free(stream, region.data());
+}
+///@}
+
+} // namespace async
+
+
 /**
  * Allocate device-side memory on a CUDA device context.
  *
