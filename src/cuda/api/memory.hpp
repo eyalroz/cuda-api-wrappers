@@ -164,6 +164,7 @@ inline region_t allocate(context::handle_t context_handle, size_t size_in_bytes)
 
 } // namespace detail_
 
+#if CUDA_VERSION >= 11020
 namespace async {
 
 namespace detail_ {
@@ -176,7 +177,6 @@ inline region_t allocate(
 	stream::handle_t   stream_handle,
 	size_t             num_bytes)
 {
-#if CUDA_VERSION >= 11020
 	device::address_t allocated = 0;
 	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
 	// not in number of elements
@@ -189,12 +189,6 @@ inline region_t allocate(
 		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
 		" bytes of global memory on " + stream::detail_::identify(stream_handle, context_handle) );
 	return {as_pointer(allocated), num_bytes};
-#else
-	(void) context_handle;
-	(void) stream_handle;
-	(void) num_bytes;
-	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory allocation is not supported with CUDA versions below 11.2");
-#endif
 }
 
 } // namespace detail_
@@ -215,7 +209,7 @@ inline region_t allocate(
 inline region_t allocate(const stream_t& stream, size_t size_in_bytes);
 
 } // namespace async
-
+#endif
 
 /**
  * Free a region of device-side memory (regardless of how it was allocated)
@@ -234,6 +228,7 @@ inline void free(void* ptr)
 inline void free(region_t region) { free(region.start()); }
 ///@}
 
+#if CUDA_VERSION >= 11020
 namespace async {
 
 namespace detail_ {
@@ -243,18 +238,11 @@ inline void free(
 	stream::handle_t   stream_handle,
 	void*              allocated_region_start)
 {
-#if CUDA_VERSION >= 11020
 	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
 	throw_if_error(status,
 		"Failed scheduling an asynchronous freeing of the global memory region starting at "
 		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
 		+ stream::detail_::identify(stream_handle, context_handle) );
-#else
-	(void) context_handle;
-	(void) stream_handle;
-	(void) allocated_region_start;
-	throw cuda::runtime_error(cuda::status::not_yet_implemented, "Asynchronous memory (de-)allocation is not supported with CUDA versions below 11.2");
-#endif
 }
 
 } // namespace detail_
@@ -275,6 +263,7 @@ inline void free(const stream_t& stream, region_t region)
 ///@}
 
 } // namespace async
+#endif
 
 
 /**

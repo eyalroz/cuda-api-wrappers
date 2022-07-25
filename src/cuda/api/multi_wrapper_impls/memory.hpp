@@ -73,7 +73,7 @@ inline region_t allocate(const device_t& device, size_t size_in_bytes)
 }
 
 namespace async {
-
+#if CUDA_VERSION >= 11020
 inline region_t allocate(const stream_t& stream, size_t size_in_bytes)
 {
 	return detail_::allocate(stream.context().handle(), stream.handle(), size_in_bytes);
@@ -83,6 +83,7 @@ inline void free(const stream_t& stream, void* region_start)
 {
 	return detail_::free(stream.context().handle(), stream.handle(), region_start);
 }
+#endif // CUDA_VERSION >= 11020
 
 template <typename T>
 inline void typed_set(T* start, const T& value, size_t num_elements, const stream_t& stream)

@@ -442,19 +442,10 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 } // namespace detail_
 
 
+#if CUDA_VERSION >= 11000
 /**
 * @brief See the Driver API documentation for @ref cuOccupancyAvailableDynamicSMemPerBlock
 */
-#if CUDA_VERSION < 11000
-inline memory::shared::size_t max_dynamic_shared_memory_per_block(
-	const kernel_t &,
-	grid::dimension_t,
-	grid::block_dimension_t)
-{
-	throw cuda::runtime_error(status::not_supported,
-		"cuOccupancyAvailableDynamicSMemPerBlock() requires CUDA 11.0 or later");
-}
-#else
 inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 	const kernel_t &kernel,
 	grid::dimension_t blocks_on_multiprocessor,
@@ -467,7 +458,7 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
 	return (memory::shared::size_t) result;
 }
-#endif // CUDA_VERSION < 11000
+#endif // CUDA_VERSION >= 11000
 
 /**
 * @brief See the Driver API documentation for @ref cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags

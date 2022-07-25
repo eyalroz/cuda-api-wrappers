@@ -554,6 +554,7 @@ public: // mutators
 		}
 
 
+#if CUDA_VERSION >= 11020
 		/**
 		 * Allocate a specified amount of memory.
 		 *
@@ -582,6 +583,7 @@ public: // mutators
 		void free(memory::region_t region) {
 			memory::device::async::free(associated_stream, region);
 		}
+#endif
 		///@{
 
 		/**
