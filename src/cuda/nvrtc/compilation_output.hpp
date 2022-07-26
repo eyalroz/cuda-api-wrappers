@@ -68,8 +68,60 @@ inline ::std::string identify(program::handle_t handle, const char *name = nullp
 
 } // namespace detail_
 
-#if CUDA_VERSION >= 11040
 namespace detail_ {
+
+size_t get_log_size(program::handle_t program_handle, const char* program_name)
+{
+	size_t size;
+	auto status = nvrtcGetProgramLogSize(program_handle, &size);
+	throw_if_error(status, "Failed obtaining compilation log size for " + identify(program_handle, program_name));
+	return size;
+}
+
+void get_log(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+{
+	auto status = nvrtcGetProgramLog(program_handle, buffer);
+	throw_if_error(status, "Failed obtaining NVRTC program compilation log for"
+		+ identify(program_handle, program_name));
+}
+
+size_t get_cubin_size(program::handle_t program_handle, const char* program_name)
+{
+	size_t size;
+	auto status = nvrtcGetCUBINSize(program_handle, &size);
+	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
+	if (size == 0) {
+		throw std::runtime_error("CUBIN requested for a program compiled for a virtual architecture only: "
+								 + identify(program_handle, program_name));
+	}
+	return size;
+}
+
+void get_cubin(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+{
+	auto status = nvrtcGetCUBIN(program_handle, buffer);
+	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for "
+						   + identify(program_handle, program_name));
+}
+
+
+size_t get_ptx_size(program::handle_t program_handle, const char *program_name = nullptr)
+{
+	size_t size;
+	auto status = nvrtcGetPTXSize(program_handle, &size);
+	throw_if_error(status, "Failed obtaining NVRTC program output PTX size for "
+						   + identify(program_handle, program_name));
+	return size;
+}
+
+void get_ptx(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+{
+	auto status = nvrtcGetPTX(program_handle, buffer);
+	throw_if_error(status, "Failed obtaining NVRTC program output PTX for "
+						   + identify(program_handle, program_name));
+}
+
+#if CUDA_VERSION >= 11040
 
 size_t get_nvvm_size(program::handle_t program_handle, const char *program_name = nullptr)
 {
@@ -84,12 +136,12 @@ void get_nvvm(char* buffer, program::handle_t program_handle, const char *progra
 {
 	auto status = nvrtcGetNVVM(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program output NVVM for "
-						   + identify(program_handle, program_name));
-
+		+ identify(program_handle, program_name));
 }
 
-} // namespace detail_
 #endif // CUDA_VERSION >= 11040
+
+} // namespace detail_
 
 } // namespace program
 
@@ -140,19 +192,28 @@ public: // non-mutators
 	 *
 	 * @note This will fail if the program has never been compiled.
 	 */
+	///@{
+	span<char> log(span<char> buffer) const
+	{
+		size_t size = program::detail_::get_log_size(program_handle_, program_name_.c_str());
+		if (buffer.size() < size) {
+			throw ::std::invalid_argument(
+				"Provided buffer size is insufficient for the program compilation log ("
+				+ ::std::to_string(buffer.size()) + " < " + ::std::to_string(size) + ": "
+				+ compilation_output::detail_::identify(*this));
+		}
+		program::detail_::get_log(buffer.data(), program_handle_, program_name_.c_str());
+		return { buffer.data(), size };
+	}
+
 	dynarray<char> log() const
 	{
-		size_t size_including_trailing_null;
-		auto status = nvrtcGetProgramLogSize(program_handle_, &size_including_trailing_null);
-		throw_if_error(status, "Failed obtaining compilation log size_including_trailing_null for "
-			+ compilation_output::detail_::identify(*this));
-		::std::vector<char> result(size_including_trailing_null);
-		status = nvrtcGetProgramLog(program_handle_, result.data());
-		throw_if_error(status, "Failed obtaining compilation log for"
-			+ compilation_output::detail_::identify(*this));
-		result.resize(size_including_trailing_null - 1);
+		size_t size = program::detail_::get_log_size(program_handle_, program_name_.c_str());
+		dynarray<char> result(size);
+		program::detail_::get_log(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
+	///@}
 
 	/**
 	 * Obtain a copy of the PTX result of the last compilation.
@@ -161,18 +222,27 @@ public: // non-mutators
 	 * optimization compilation.
 	 * @note This will fail if the program has never been compiled.
 	 */
+	///@{
+	span<char> ptx(span<char> buffer) const
+	{
+		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
+		if (buffer.size() < size) {
+			throw ::std::invalid_argument("Provided buffer size is insufficient for the compiled program's PTX ("
+				+ ::std::to_string(buffer.size()) + " < " + ::std::to_string(size) + ": "
+				+ compilation_output::detail_::identify(*this));
+		}
+		program::detail_::get_ptx(buffer.data(), program_handle_, program_name_.c_str());
+		return { buffer.data(), size };
+	}
+
 	dynarray<char> ptx() const
 	{
-		size_t size;
-		auto status = nvrtcGetPTXSize(program_handle_, &size);
-		throw_if_error(status, "Failed obtaining output PTX size for "
-			+ compilation_output::detail_::identify(*this));
+		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
-		status = nvrtcGetPTX(program_handle_, result.data());
-		throw_if_error(status, "Failed obtaining output PTX for "
-			+ compilation_output::detail_::identify(*this));
+		program::detail_::get_ptx(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
+	///@}
 
 	bool has_ptx() const
 	{
@@ -197,21 +267,27 @@ public: // non-mutators
 	 * optimization compilation.
 	 * @note This will fail if the program has never been compiled.
 	 */
-	dynarray<char> cubin() const
+	///@{
+	span<char> cubin(span<char> buffer) const
 	{
-		size_t size;
-		auto status = nvrtcGetCUBINSize(program_handle_, &size);
-		throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
-		if (size == 0) {
-			throw ::std::invalid_argument("CUBIN requested for a program compiled for a virtual architecture only: "
+		size_t size = program::detail_::get_cubin_size(program_handle_, program_name_.c_str());
+		if (buffer.size() < size) {
+			throw ::std::invalid_argument("Provided buffer size is insufficient for the compiled program's cubin ("
+				+ ::std::to_string(buffer.size()) + " < " + ::std::to_string(size) + ": "
 				+ compilation_output::detail_::identify(*this));
 		}
+		program::detail_::get_cubin(buffer.data(), program_handle_, program_name_.c_str());
+		return { buffer.data(), size };
+	}
+
+	dynarray<char> cubin() const
+	{
+		size_t size = program::detail_::get_cubin_size(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
-		status = nvrtcGetCUBIN(program_handle_, result.data());
-		throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for "
-			+ compilation_output::detail_::identify(*this));
+		program::detail_::get_cubin(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
+	///@}
 
 	bool has_cubin() const
 	{
