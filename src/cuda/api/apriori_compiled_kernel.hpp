@@ -335,7 +335,7 @@ public: // non-mutators
 
 	void set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const override;
 
-#if CUDA_VERSION >= 10000
+#if CUDA_VERSION > 10000
 	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		memory::shared::size_t dynamic_shared_memory_size = no_dynamic_shared_memory,
 		grid::block_dimension_t block_size_limit = 0,
