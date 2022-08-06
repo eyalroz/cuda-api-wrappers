@@ -91,7 +91,6 @@ inline ::std::string get_name(id_t id)
 	static constexpr const size_type initial_size_reservation { 100 };
 	static constexpr const size_type larger_size { 1000 }; // Just in case
 	char stack_buffer[initial_size_reservation];
-	char* buffer = stack_buffer;
 	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));
 	auto try_getting_name = [&](char* buffer, size_type buffer_size) -> size_type {
 		auto status =  cuDeviceGetName(buffer, buffer_size-1, id);
@@ -99,17 +98,18 @@ inline ::std::string get_name(id_t id)
 		buffer[buffer_size-1] = '\0';
 		return (size_type) ::std::strlen(buffer);
 	};
-	auto prospective_name_length = try_getting_name(buffer, initial_size_reservation);
-	if (prospective_name_length >= buffer_size - 1) {
-		// This should really not happen, but just for the off chance...
-		if (buffer != stack_buffer) { delete buffer; }
-		buffer = new char[larger_size];
-		prospective_name_length = try_getting_name(buffer, buffer_size);
+	auto prospective_name_length = try_getting_name(stack_buffer, initial_size_reservation);
+	if (prospective_name_length < buffer_size - 1) {
+		return { stack_buffer, (::std::string::size_type) prospective_name_length };
 	}
+	::std::string result;
+	result.reserve(prospective_name_length);
+	prospective_name_length = try_getting_name(&result[0], buffer_size);
+		// We can't use result.data() since it's const until C++20ץץץ
 	if (prospective_name_length >= buffer_size - 1) {
 		throw ::std::runtime_error("CUDA device name longer than expected maximum size " + ::std::to_string(larger_size));
 	}
-	return { buffer, (::std::size_t) prospective_name_length };
+	return result;
 }
 
 } // namespace detail
