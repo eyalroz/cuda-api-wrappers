@@ -76,11 +76,11 @@ public:
 
 namespace detail_ {
 
-void optend() { }
+inline void optend() { }
 
 } // namespace detail_
 
-marshalled_options_t& operator<< (marshalled_options_t& mo, decltype(detail_::optend))
+inline marshalled_options_t& operator<< (marshalled_options_t& mo, decltype(detail_::optend))
 {
 	mo.advance();
 	return mo;

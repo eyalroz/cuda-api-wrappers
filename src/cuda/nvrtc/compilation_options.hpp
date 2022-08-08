@@ -89,7 +89,7 @@ constexpr const char* cpp_dialect_names[] =  {
 	"c++17",
 };
 
-cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
+inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
 {
 	for(auto known_dialect = (int) cpp_dialect_t::cpp03;
 		known_dialect <= (int) cpp_dialect_t::last;
@@ -111,7 +111,7 @@ using number_t = unsigned;
 
 namespace detail_ {
 
-const char* option_name_part(handling_method_t method)
+inline const char* option_name_part(handling_method_t method)
 {
 	static constexpr const char* parts[] = { "error", "suppress", "warn" };
 	return parts[method];
@@ -419,7 +419,7 @@ public: // "shorthands" for more complex option setting
 
 namespace detail_ {
 
-const char* true_or_false(bool b) { return b ? "true" : "false"; }
+inline const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
 template <typename Delimiter>
 struct opt_start_t {
@@ -532,7 +532,7 @@ void process(
 	}
 }
 
-marshalled_options_t marshal(const compilation_options_t& opts)
+inline marshalled_options_t marshal(const compilation_options_t& opts)
 {
 	marshalled_options_t mo;
 	// TODO: Can we easily determine the max number of options here?
@@ -541,7 +541,7 @@ marshalled_options_t marshal(const compilation_options_t& opts)
 	return mo;
 }
 
-::std::string render(const compilation_options_t& opts)
+inline ::std::string render(const compilation_options_t& opts)
 {
 	::std::ostringstream oss;
 	process(opts, oss, ' ');
