@@ -67,7 +67,7 @@ foreach(wrapper_lib ${targets})
 	)
 endforeach()
 target_link_libraries(caw_nvrtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
-target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt)
+target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt ${CMAKE_DL_LIBS})
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
