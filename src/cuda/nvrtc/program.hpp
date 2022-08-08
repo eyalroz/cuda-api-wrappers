@@ -36,7 +36,7 @@ namespace program {
 
 namespace detail_ {
 
-program::handle_t create(
+inline program::handle_t create(
 	const char *program_name,
 	const char *program_source,
 	int num_headers,
@@ -50,14 +50,14 @@ program::handle_t create(
 	return program_handle;
 }
 
-void register_global(handle_t program_handle, const char *global_to_register)
+inline void register_global(handle_t program_handle, const char *global_to_register)
 {
 	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
 	throw_if_error(status, "Failed registering global entity " + ::std::string(global_to_register)
 		+ " with " + identify(program_handle));
 }
 
-compilation_output_t compile(
+inline compilation_output_t compile(
 	const char *                program_name,
 	const const_cstrings_span & raw_options,
 	handle_t                    program_handle)
@@ -73,7 +73,7 @@ compilation_output_t compile(
 
 // Note: The program_source _cannot_ be nullptr; if all of your source code is preincluded headers,
 // pas the address of an empty string.
-compilation_output_t compile(
+inline compilation_output_t compile(
 	const char *program_name,
 	const char *program_source,
 	const_cstrings_span header_sources,
@@ -352,7 +352,7 @@ inline program_t create(const ::std::string program_name)
 } // namespace program
 
 #if CUDA_VERSION >= 11020
-dynarray<device::compute_capability_t>
+inline dynarray<device::compute_capability_t>
 supported_targets()
 {
 	int num_supported_archs;

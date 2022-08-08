@@ -54,19 +54,19 @@ namespace cuda {
 namespace profiling {
 
 namespace detail_ {
-void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
+inline void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_ASCII;
 	attrs.message.ascii = c_str;
 }
 
-void set_message(nvtxEventAttributes_t &attrs, const wchar_t *wc_str) noexcept
+inline void set_message(nvtxEventAttributes_t &attrs, const wchar_t *wc_str) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_UNICODE;
 	attrs.message.unicode = wc_str;
 }
 
-void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) noexcept
+inline void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_REGISTERED;
 	attrs.message.registered = rsh;
@@ -135,7 +135,7 @@ namespace mark {
 namespace detail_ {
 
 // Used to prevent multiple threads from accessing the profiler simultaneously
-::std::mutex& get_mutex() noexcept
+inline ::std::mutex& get_mutex() noexcept
 {
 	static ::std::mutex profiler_mutex;
 	return profiler_mutex;
@@ -179,7 +179,7 @@ range::handle_t range_start(
 	return range_handle;
 }
 
-void range_end(range::handle_t range_handle)
+inline void range_end(range::handle_t range_handle)
 {
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
 				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
@@ -191,7 +191,7 @@ void range_end(range::handle_t range_handle)
 /**
  * Start CUDA profiling for the current process
  */
-void start()
+inline void start()
 {
 	auto status = cuProfilerStart();
 	throw_if_error(status, "Starting CUDA profiling");
@@ -200,7 +200,7 @@ void start()
 /**
  * Stop CUDA profiling for the current process
  */
-void stop()
+inline void stop()
 {
 	auto status = cuProfilerStop();
 	throw_if_error(status, "Stopping CUDA profiling");
@@ -281,13 +281,13 @@ template <typename CharT>
 void name_host_thread(uint32_t raw_thread_id, const CharT* name);
 
 template <>
-void name_host_thread<char>(uint32_t raw_thread_id, const char* name)
+inline void name_host_thread<char>(uint32_t raw_thread_id, const char* name)
 {
 	nvtxNameOsThreadA(raw_thread_id, name);
 }
 
 template <>
-void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
+inline void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
 {
 	nvtxNameOsThreadW(raw_thread_id, name);
 }
@@ -296,28 +296,28 @@ template <typename CharT>
 void name_stream(stream::handle_t stream_handle, const CharT* name);
 
 template <>
-void name_stream<char>(stream::handle_t stream_handle, const char* name)
+inline void name_stream<char>(stream::handle_t stream_handle, const char* name)
 {
 	nvtxNameCuStreamA(stream_handle, name);
 }
 
 template <>
-void name_stream<wchar_t>(stream::handle_t stream_handle, const wchar_t* name)
+inline void name_stream<wchar_t>(stream::handle_t stream_handle, const wchar_t* name)
 {
 	nvtxNameCuStreamW(stream_handle, name);
 }
 
 template <typename CharT>
-void name_event(event::handle_t event_handle, const CharT* name);
+inline void name_event(event::handle_t event_handle, const CharT* name);
 
 template <>
-void name_event<char>(event::handle_t event_handle, const char* name)
+inline void name_event<char>(event::handle_t event_handle, const char* name)
 {
 	nvtxNameCuEventA(event_handle, name);
 }
 
 template <>
-void name_event<wchar_t>(event::handle_t event_handle, const wchar_t* name)
+inline void name_event<wchar_t>(event::handle_t event_handle, const wchar_t* name)
 {
 	nvtxNameCuEventW(event_handle, name);
 }
@@ -326,18 +326,18 @@ template <typename CharT>
 void name_device(device::id_t device_id, const CharT* name);
 
 template <>
-void name_device<char>(device::id_t device_id, const char* name)
+inline void name_device<char>(device::id_t device_id, const char* name)
 {
 	nvtxNameCuDeviceA(device_id, name);
 }
 
 template <>
-void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
+inline void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
 {
 	nvtxNameCuDeviceW(device_id, name);
 }
 
-void name(::std::thread::id host_thread_id, const char* name)
+inline void name(::std::thread::id host_thread_id, const char* name)
 {
 	auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
 	uint32_t thread_id =

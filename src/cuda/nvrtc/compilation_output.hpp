@@ -70,7 +70,7 @@ inline ::std::string identify(program::handle_t handle, const char *name = nullp
 
 namespace detail_ {
 
-size_t get_log_size(program::handle_t program_handle, const char* program_name)
+inline size_t get_log_size(program::handle_t program_handle, const char* program_name)
 {
 	size_t size;
 	auto status = nvrtcGetProgramLogSize(program_handle, &size);
@@ -78,7 +78,7 @@ size_t get_log_size(program::handle_t program_handle, const char* program_name)
 	return size;
 }
 
-void get_log(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+inline void get_log(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetProgramLog(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program compilation log for"
@@ -87,7 +87,7 @@ void get_log(char* buffer, program::handle_t program_handle, const char *program
 
 #if CUDA_VERSION >= 11010
 
-size_t get_cubin_size(program::handle_t program_handle, const char* program_name)
+inline size_t get_cubin_size(program::handle_t program_handle, const char* program_name)
 {
 	size_t size;
 	auto status = nvrtcGetCUBINSize(program_handle, &size);
@@ -99,7 +99,7 @@ size_t get_cubin_size(program::handle_t program_handle, const char* program_name
 	return size;
 }
 
-void get_cubin(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+inline void get_cubin(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetCUBIN(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for "
@@ -109,7 +109,7 @@ void get_cubin(char* buffer, program::handle_t program_handle, const char *progr
 #endif // CUDA_VERSION >= 11010
 
 
-size_t get_ptx_size(program::handle_t program_handle, const char *program_name = nullptr)
+inline size_t get_ptx_size(program::handle_t program_handle, const char *program_name = nullptr)
 {
 	size_t size;
 	auto status = nvrtcGetPTXSize(program_handle, &size);
@@ -118,7 +118,7 @@ size_t get_ptx_size(program::handle_t program_handle, const char *program_name =
 	return size;
 }
 
-void get_ptx(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+inline void get_ptx(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetPTX(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program output PTX for "
@@ -127,7 +127,7 @@ void get_ptx(char* buffer, program::handle_t program_handle, const char *program
 
 #if CUDA_VERSION >= 11040
 
-size_t get_nvvm_size(program::handle_t program_handle, const char *program_name = nullptr)
+inline size_t get_nvvm_size(program::handle_t program_handle, const char *program_name = nullptr)
 {
 	size_t size;
 	auto status = nvrtcGetNVVMSize(program_handle, &size);
@@ -136,7 +136,7 @@ size_t get_nvvm_size(program::handle_t program_handle, const char *program_name 
 	return size;
 }
 
-void get_nvvm(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
+inline void get_nvvm(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetNVVM(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program output NVVM for "
