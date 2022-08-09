@@ -86,7 +86,6 @@ namespace detail_ {
 
 inline ::std::string get_name(id_t id)
 {
-	initialize_driver();
 	using size_type = int; // Yes, an int, that's what cuDeviceName takes
 	static constexpr const size_type initial_size_reservation { 100 };
 	static constexpr const size_type larger_size { 1000 }; // Just in case
