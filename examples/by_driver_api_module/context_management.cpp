@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	}
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ?
+	cuda::device::id_t device_id = (argc > 1) ?
 		::std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	if (cuda::device::count() <= device_id) {
@@ -153,10 +153,25 @@ int main(int argc, char **argv)
 
 	::std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
-//	report_context_stack("Before anything is done");
-	auto pc = device.primary_context();
-//	report_context_stack("After getting the primary context");
+	if (cuda::device::primary_context::is_active(device)) {
+		std::ostringstream oss;
+		oss << "The primary context is unexpectedly active before we've done anything with its device (" << device << ")\n";
+		die_(oss.str());
+	}
 
+	auto original_pc = device.primary_context();
+
+	cuda::device::primary_context::detail_::decrease_refcount(device.id());
+
+	if (cuda::device::primary_context::is_active(device)) {
+		die_("The primary context is unexpectedly active after increasing, then decreasing, its refcount");
+	}
+
+	auto pc = device.primary_context();
+
+	// std::cout << "New PC handle = " << pc.handle() << " ; old PC handle = " << original_pc.handle() << "\n";
+
+	cuda::device::primary_context::detail_::increase_refcount(device.id());
 
 	cuda::context::current::push(pc);
 	constexpr const bool is_primary = true;
