@@ -107,14 +107,14 @@ inline handle_t push_default_if_missing()
 }
 
 /**
- * @note This specialized scope setter is used in API calls which aren't provided a context
- * as a parameter, and when it may be the case that no context is current. Such API calls
- * are generally supposed to be independent of a specific context; but - CUDA still often
- * expects some context to exist and be current to perform whatever it is we want it to do.
- * It would be unreasonable to create new contexts for the purposes of such calls - as then,
- * the caller would often need to maintain these contexts after the call. Instead, we fall
- * back on a primary context of one of the devices - and since no particular device is
- * specified, we choose that to be the default device. When we do want the caller to keep
+ * @note This specialized scope context setter is used in API calls which aren't provided a
+ * context as a parameter, and when it may be the case that no context is current. Such API
+ * calls are generally supposed to be independent of a specific context; but - CUDA still
+ * often expects some context to exist and be current to perform whatever it is we want it
+ * to do. It would be unreasonable to create new contexts for the purposes of such calls -
+ * as then, the caller would often need to maintain these contexts after the call. Instead,
+ * we fall back on a primary context of one of the devices - and since no particular device
+ * is specified, we choose that to be the default device. When we do want the caller to keep
  * a context alive - we increase the primary context's refererence count, keeping it alive
  * automatically. In these situations, the ref unit "leaks" past the scope of the ensurer
  * object - but the instantiator would be aware of this, having asked for such behavior
@@ -130,15 +130,28 @@ public:
 	bool decrease_pc_refcount_on_destruct_;
 
 	explicit scoped_existence_ensurer_t(bool avoid_pc_refcount_increase = true)
-		: context_handle(get_handle()),
-		  decrease_pc_refcount_on_destruct_(avoid_pc_refcount_increase)
 	{
+		auto status_and_handle = get_with_status();
+		if (status_and_handle.status == cuda::status::not_yet_initialized) {
+			context_handle = context::detail_::none;
+			initialize_driver(); // and the handle
+		}
+		else {
+			context_handle = status_and_handle.handle;
+		}
 		if (context_handle == context::detail_::none) {
 			device_id_ = device::current::detail_::get_id();
 			context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
 			context::current::detail_::push(context_handle);
+			decrease_pc_refcount_on_destruct_ = avoid_pc_refcount_increase;
 		}
-		else { decrease_pc_refcount_on_destruct_ = false; }
+		else {
+			// Some compilers fail to detect that device_id is never used
+			// unless it's initialized, and thus warns us of maybe-uninitialized 
+			// use, so...
+			device_id_ = 0;
+			decrease_pc_refcount_on_destruct_ = false;
+		}
 	}
 
 	~scoped_existence_ensurer_t()

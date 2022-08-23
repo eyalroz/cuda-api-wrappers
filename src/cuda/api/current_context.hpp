@@ -45,6 +45,26 @@ inline bool is_(handle_t handle)
 	}
 }
 
+struct status_and_handle_pair { status_t status; handle_t handle; };
+
+/**
+ * Returns a raw handle for the current CUDA context
+ *
+ * @return the raw handle from the CUDA driver - if one exists; none
+ * if no context is current/active (e.g. if the driver has not
+ * been initialized). Also returns the status reported by the driver
+ * following the attempt to obtain the context.
+ */
+inline status_and_handle_pair get_with_status()
+{
+	handle_t handle;
+	auto status = cuCtxGetCurrent(&handle);
+	if (status == status::not_yet_initialized) {
+		handle = context::detail_::none;
+	}
+	return { status, handle };
+}
+
 /**
  * Returns a raw handle for the current CUDA context
  *
@@ -53,10 +73,9 @@ inline bool is_(handle_t handle)
  */
 inline handle_t get_handle()
 {
-	handle_t handle;
-	auto status = cuCtxGetCurrent(&handle);
-	throw_if_error(status, "Failed obtaining the current context's handle");
-	return handle;
+	auto p = get_with_status();
+	throw_if_error(p.status, "Failed obtaining the current context's handle");
+	return p.handle;
 }
 
 // Note: not calling this get_ since flags are read-only anyway

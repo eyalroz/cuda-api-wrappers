@@ -271,6 +271,8 @@ class scope {
 public:
 	scope() { start(); }
 	~scope() { stop(); }
+protected:
+	context::current::detail_::scoped_existence_ensurer_t context_existence_ensurer;
 };
 
 #define profile_this_scope() ::cuda::profiling::scope cuda_profiling_scope_{};
