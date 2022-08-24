@@ -14,7 +14,6 @@
 #include <cuda/api.hpp>
 
 #include <vector>
-#include <iostream>
 
 namespace cuda {
 
