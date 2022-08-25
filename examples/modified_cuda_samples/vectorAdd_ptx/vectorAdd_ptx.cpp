@@ -1,7 +1,7 @@
 /**
  * Derived from the nVIDIA CUDA 10.0 samples by
  *
- *   Eyal Rozenberg <eyalroz@technion.ac.il>
+ *   Eyal Rozenberg <eyalroz1@gmx.com>
  *
  * The derivation is specifically permitted in the nVIDIA CUDA Samples EULA
  * and the deriver is the owner of this code according to the EULA.
@@ -21,15 +21,51 @@
 
 const char* vectorAdd_source = R"(
 
-/**
- * Computes the vector addition of A and B into C. The 3 vectors have the same
- * number of elements numElements.
- */
+.version 7.1
+.target sm_52
+.address_size 64
 
-__global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)
+//
+// Computes the vector addition of param_0 and param_1 into param_2.
+// The three vectors have the same number of elements, param_3
+//
+.visible .entry _Z9vectorAddPKfS0_Pfi(
+        .param .u64 _Z9vectorAddPKfS0_Pfi_param_0,
+        .param .u64 _Z9vectorAddPKfS0_Pfi_param_1,
+        .param .u64 _Z9vectorAddPKfS0_Pfi_param_2,
+        .param .u32 _Z9vectorAddPKfS0_Pfi_param_3
+)
 {
-	int i = blockDim.x * blockIdx.x + threadIdx.x;
-	if (i < numElements) { C[i] = A[i] + B[i]; }
+        .reg .pred      %p<2>;
+        .reg .f32       %f<4>;
+        .reg .b32       %r<6>;
+        .reg .b64       %rd<11>;
+
+        ld.param.u64    %rd1, [_Z9vectorAddPKfS0_Pfi_param_0];
+        ld.param.u64    %rd2, [_Z9vectorAddPKfS0_Pfi_param_1];
+        ld.param.u64    %rd3, [_Z9vectorAddPKfS0_Pfi_param_2];
+        ld.param.u32    %r2, [_Z9vectorAddPKfS0_Pfi_param_3];
+        mov.u32         %r3, %ntid.x;
+        mov.u32         %r4, %ctaid.x;
+        mov.u32         %r5, %tid.x;
+        mad.lo.s32      %r1, %r4, %r3, %r5;
+        setp.ge.s32     %p1, %r1, %r2;
+        @%p1 bra        BB0_2;
+
+        cvta.to.global.u64      %rd4, %rd1;
+        mul.wide.s32    %rd5, %r1, 4;
+        add.s64         %rd6, %rd4, %rd5;
+        cvta.to.global.u64      %rd7, %rd2;
+        add.s64         %rd8, %rd7, %rd5;
+        ld.global.f32   %f1, [%rd8];
+        ld.global.f32   %f2, [%rd6];
+        add.f32         %f3, %f2, %f1;
+        cvta.to.global.u64      %rd9, %rd3;
+        add.s64         %rd10, %rd9, %rd5;
+        st.global.f32   [%rd10], %f3;
+
+BB0_2:
+        ret;
 }
 
 )";
@@ -43,14 +79,18 @@ int main(void)
 	::std::cout << "[Vector addition of " << numElements << " elements]\n";
 
 	auto device = cuda::device::current::get();
-	auto compilation_output = cuda::rtc::program_t<cuda::cuda_cpp>(kernel_name)
+	auto compilation_output = cuda::rtc::program_t<cuda::ptx>(kernel_name)
 		.set_source(vectorAdd_source)
-		.add_registered_global(kernel_name)
 		.set_target(device).compile();
-	auto mangled_kernel_name = compilation_output.get_mangling_of(kernel_name);
+
+	if (compilation_output.failed()) {
+		auto log = compilation_output.log();
+		std::cout << "Compilation log:\n" << log.data() << "\n---------\n";
+	}
 
 	auto context = cuda::device::current::get().primary_context();
 	auto module = cuda::module::create(context, compilation_output);
+	constexpr const auto mangled_kernel_name = "_Z9vectorAddPKfS0_Pfi";
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
 	// If we could rely on C++14, we would  use ::std::make_unique
@@ -75,8 +115,8 @@ int main(void)
 		.build();
 
 	::std::cout
-	<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
-	<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
+		<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
+		<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
 	cuda::launch(
 		vectorAdd, launch_config,

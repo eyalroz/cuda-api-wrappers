@@ -19,15 +19,12 @@ namespace cuda {
 
 namespace rtc {
 
-using const_cstrings_span = span<const char* const>;
-using const_cstring_pairs_span = span<::std::pair<const char* const, const char* const>>;
-
-class program_t;
+class ptx_program_t;
 
 
 namespace detail_ {
 
-::std::string identify(const program_t &program);
+::std::string identify(const ptx_program_t &program);
 
 } // namespace detail_
 
@@ -35,44 +32,69 @@ namespace program {
 
 namespace detail_ {
 
-inline program::handle_t create(
+inline program::handle_t<cuda_cpp> create_cuda_cpp(
 	const char *program_name,
 	const char *program_source,
 	int num_headers,
 	const char *const *header_sources,
 	const char *const *header_names)
 {
-	program::handle_t program_handle;
-	auto status = nvrtcCreateProgram(
-		&program_handle, program_source, program_name, (int) num_headers, header_sources, header_names);
-	throw_if_error_lazy(status, "Failed creating an NVRTC program (named " + ::std::string(program_name) + ')');
+	program::handle_t<cuda_cpp> program_handle;
+	auto status = nvrtcCreateProgram(&program_handle, program_source, program_name, num_headers, header_sources, header_names);
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed creating " + detail_::identify<cuda_cpp>(program_name));
 	return program_handle;
 }
 
-inline void register_global(handle_t program_handle, const char *global_to_register)
+inline program::handle_t<ptx> create_ptx(
+	const char *program_name,
+	string_view program_source)
 {
-	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
-	throw_if_error_lazy(status, "Failed registering global entity " + ::std::string(global_to_register)
-		+ " with " + identify(program_handle));
+	program::handle_t<ptx> program_handle;
+	auto status = nvPTXCompilerCreate(&program_handle, program_source.size(), program_source.data());
+	throw_if_rtc_error_lazy(ptx, status, "Failed creating " + detail_::identify<ptx>(program_name));
+	return program_handle;
 }
 
-inline compilation_output_t compile(
-	const char *                program_name,
-	const const_cstrings_span & raw_options,
-	handle_t                    program_handle)
+template <source_kind_t Kind>
+inline program::handle_t<Kind> create(
+	const char *program_name,
+	string_view program_source,
+	int num_headers = 0,
+	const char *const *header_sources = nullptr,
+	const char *const *header_names = nullptr)
 {
-	auto status = nvrtcCompileProgram(program_handle, (int) raw_options.size(), raw_options.data());
-	bool succeeded = (status == status::named_t::success);
-	if (not (succeeded or status == status::named_t::compilation_failure)) {
-		throw rtc::runtime_error(status, "Failed invoking compiler for " + identify(program_handle));
+	return (Kind == cuda_cpp) ?
+		(program::handle_t<Kind>) create_cuda_cpp(program_name, program_source.data(), num_headers, header_sources, header_names) :
+		(program::handle_t<Kind>) create_ptx(program_name, program_source);
+}
+
+inline void register_global(handle_t<cuda_cpp> program_handle, const char *global_to_register)
+{
+	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed registering global entity " + ::std::string(global_to_register)
+		+ " with " + identify<cuda_cpp>(program_handle));
+}
+
+template <source_kind_t Kind>
+inline compilation_output_t<Kind> compile(
+	const char *                program_name,
+	const const_cstrings_span&  raw_options,
+	handle_t<Kind>              program_handle)
+{
+	status_t<Kind> status = (Kind == cuda_cpp) ?
+		(status_t<Kind>) nvrtcCompileProgram((handle_t<cuda_cpp>)program_handle, (int) raw_options.size(), raw_options.data()) :
+		(status_t<Kind>) nvPTXCompilerCompile((handle_t<ptx>)program_handle, (int) raw_options.size(), raw_options.data());
+	bool succeeded = is_success<Kind>(status);
+	if (not (succeeded or (status == (status_t<Kind>) status::named_t<Kind>::compilation_failure))) {
+		throw rtc::runtime_error<Kind>(status, "Failed invoking compiler for " + identify<Kind>(program_handle));
 	}
 	constexpr bool do_own_handle{true};
-	return compilation_output::detail_::wrap(program_handle, program_name, succeeded, do_own_handle);
+	return compilation_output::detail_::wrap<Kind>(program_handle, program_name, succeeded, do_own_handle);
 }
 
 // Note: The program_source _cannot_ be nullptr; if all of your source code is preincluded headers,
 // pas the address of an empty string.
-inline compilation_output_t compile(
+inline compilation_output_t<cuda_cpp> compile(
 	const char *program_name,
 	const char *program_source,
 	const_cstrings_span header_sources,
@@ -86,7 +108,7 @@ inline compilation_output_t compile(
 	}
 	// Note: Not rejecting empty/missing source, because we may be pre-including source files
 	auto num_headers = (int) header_names.size();
-	auto program_handle = create(
+	auto program_handle = create_cuda_cpp(
 		program_name, program_source, num_headers, header_sources.data(), header_names.data());
 
 	for (const auto global_to_register: globals_to_register) {
@@ -94,34 +116,82 @@ inline compilation_output_t compile(
 	}
 
 	// Note: compilation is outside of any context
-	return compile(program_name, raw_options, program_handle);
+	return compile<cuda_cpp>(program_name, raw_options, program_handle);
+}
+
+inline compilation_output_t<ptx> compile_ptx(
+	const char *program_name,
+	const char *program_source,
+	const_cstrings_span raw_options)
+{
+	if (program_name == nullptr or *program_name == '\0') {
+		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
+	}
+	// Note: Not rejecting empty/missing source, because we may be pre-including source files
+	auto program_handle = create_ptx(program_name, program_source);
+
+	// Note: compilation is outside of any context
+	return compile<ptx>(program_name, raw_options, program_handle);
 }
 
 } // namespace detail_
 
 } // namespace program
 
+template <source_kind_t Kind>
+class program_base_t {
+public: // types and constants
+	constexpr static const source_kind_t source_kind { Kind };
+	using handle_type = program::handle_t<source_kind>;
+	using status_type = status_t<source_kind>;
+
+public: // getters
+
+	const ::std::string& name() const { return name_; }
+	const char* source() const { return source_; }
+	const compilation_options_t<Kind>& options() const { return options_; }
+	// TODO: Think of a way to set compilation options without having
+	// to break the statement, e.g. if options had a reflected enum value
+	// or some such arrangement.
+	compilation_options_t<Kind>& options() { return options_; }
+
+public: // constructors and destructor
+	program_base_t(::std::string name) : name_(::std::move(name)) {};
+	program_base_t(const program_base_t&) noexcept = default;
+	program_base_t(program_base_t&&) noexcept = default;
+	~program_base_t() = default;
+
+public: // operators
+
+	program_base_t& operator=(const program_base_t& other) noexcept = default;
+	program_base_t& operator=(program_base_t&& other) noexcept = default;
+
+protected: // data members
+	const char*           source_ { nullptr };
+	::std::string         name_;
+	compilation_options_t<Kind> options_;
+}; // program_base_t
+
+template <source_kind_t Kind>
+class program_t;
 
 /**
  * Wrapper class for a CUDA runtime-compilable program
  *
  * @note This class is a "reference type", not a "value type". Therefore, making changes
  * to the program is a const-respecting operation on this class.
+ *
  */
-class program_t {
+template <>
+class program_t<cuda_cpp> : public program_base_t<cuda_cpp> {
+public: // types
+	using parent = program_base_t<source_kind>;
 
 public: // getters
 
-	const ::std::string& name() const { return name_; }
-	const char* source() const { return source_; }
-	const compilation_options_t& options() const { return options_; }
-	// TODO: Think of a way to set compilation options without having
-	// to break the statement, e.g. if options had a reflected enum value
-	// or some such arrangement.
-	compilation_options_t& options() { return options_; }
 	const_cstrings_span header_names() const
 	{
-		return { headers_.names.data(), headers_.names.size()};
+		return { headers_.names.data(),headers_.names.size()};
 	}
 	const_cstrings_span header_sources() const
 	{
@@ -129,7 +199,7 @@ public: // getters
 	}
 	size_t num_headers() const { return headers_.sources.size(); }
 
-public: // setters
+public: // setters - duplicated with PTX programs
 
 	program_t& set_target(device::compute_capability_t target_compute_capability)
 	{
@@ -158,7 +228,7 @@ public: // setters
 
 	program_t& set_source(const char* source) { source_ = source; return *this; }
 	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
-	program_t& set_options(compilation_options_t options)
+	program_t& set_options(compilation_options_t<source_kind> options)
 	{
 		options_ = ::std::move(options);
 		return *this;
@@ -245,7 +315,7 @@ public: // mutators
 		headers_.sources.reserve(new_num_headers);
 		// TODO: Use a zip iterator
 		for(auto name_it = header_names.cbegin(), source_it = header_sources.cbegin();
-			name_it < header_names.cend();
+		    name_it < header_names.cend();
 			name_it++, source_it++) {
 			add_header(*name_it, *source_it);
 		}
@@ -303,7 +373,7 @@ public:
 
 	// TODO: Support specifying all compilation option in a single string and parsing it
 
-	compilation_output_t compile() const
+	compilation_output_t<cuda_cpp> compile() const
 	{
 		if ((source_ == nullptr or *source_ == '\0') and options_.preinclude_files.empty()) {
 			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
@@ -346,7 +416,7 @@ public:
 	}
 
 public: // constructors and destructor
-	program_t(::std::string name) : name_(::std::move(name)) {};
+	program_t(::std::string name) : program_base_t(std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
@@ -357,26 +427,100 @@ public: // operators
 	program_t& operator=(program_t&& other) = default;
 
 protected: // data members
-	const char*           source_ { nullptr };
-	::std::string         name_;
-	compilation_options_t options_;
 	struct {
 		::std::vector<const char*> names;
 		::std::vector<const char*> sources;
 	} headers_;
 	::std::vector<const char*> globals_to_register_;
-}; // class program_t
+}; // class program_t<cuda_cpp>
+
+#if CUDA_VERSION >= 11010
+
+template <>
+class program_t<ptx> : public program_base_t<ptx> {
+public: // types
+	using parent = program_base_t<source_kind>;
+
+public: // setters - duplicated with CUDA-C++/NVRTC programs
+
+	program_t& set_target(device::compute_capability_t target_compute_capability)
+	{
+		options_.set_target(target_compute_capability);
+		return *this;
+	}
+	program_t& set_target(const device_t& device) { return set_target(device.compute_capability());}
+	program_t& set_target(const context_t& context) { return set_target(context.device()); }
+	program_t& clear_targets() { options_.targets_.clear(); return *this; }
+	template <typename Container>
+	program_t& set_targets(Container target_compute_capabilities)
+	{
+		clear_targets();
+		for(const auto& compute_capability : target_compute_capabilities) {
+			options_.add_target(compute_capability);
+		}
+		return *this;
+	}
+	program_t& add_target(device::compute_capability_t target_compute_capability)
+	{
+		options_.add_target(target_compute_capability);
+		return *this;
+	}
+	void add_target(const device_t& device) { add_target(device.compute_capability()); }
+	void add_target(const context_t& context) { add_target(context.device()); }
+
+	program_t& set_source(const char* source) { source_ = source; return *this; }
+	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
+	program_t& set_options(compilation_options_t<source_kind> options)
+	{
+		options_ = ::std::move(options);
+		return *this;
+	}
+	program_t& clear_options() { options_ = {}; return *this; }
+
+public:
+
+	// TODO: Support specifying all compilation option in a single string and parsing it
+
+	compilation_output_t<ptx> compile() const
+	{
+		if (source_ == nullptr or *source_ == '\0') {
+			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
+		}
+		auto marshalled_options = marshal(options_);
+		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
+		return program::detail_::compile_ptx(
+			name_.c_str(),
+			source_,
+			{option_ptrs.data(), option_ptrs.size()});
+	}
+
+
+public: // constructors and destructor
+	program_t(::std::string name) : program_base_t(std::move(name)) {}
+	program_t(const program_t&) = default;
+	program_t(program_t&&) = default;
+	~program_t() = default;
+
+public: // operators
+
+	program_t& operator=(const program_t& other) = default;
+	program_t& operator=(program_t&& other) = default;
+}; // class program_t<ptx>
+
+#endif // CUDA_VERSION >= 11010
 
 namespace program {
 
-inline program_t create(const char* program_name)
+template <source_kind_t Kind>
+inline program_t<Kind> create(const char* program_name)
 {
-	return program_t(program_name);
+	return program_t<Kind>(program_name);
 }
 
-inline program_t create(const ::std::string program_name)
+template <source_kind_t Kind>
+inline program_t<Kind> create(const ::std::string& program_name)
 {
-	return program_t(program_name);
+	return program_t<Kind>(program_name);
 }
 
 } // namespace program
@@ -387,10 +531,10 @@ supported_targets()
 {
 	int num_supported_archs;
 	auto status = nvrtcGetNumSupportedArchs(&num_supported_archs);
-	throw_if_error_lazy(status, "Failed obtaining the number of target NVRTC architectures");
+	throw_if_error<cuda_cpp>(status, "Failed obtaining the number of target NVRTC architectures");
 	auto raw_archs = ::std::unique_ptr<int[]>(new int[num_supported_archs]);
 	status = nvrtcGetSupportedArchs(raw_archs.get());
-	throw_if_error_lazy(status, "Failed obtaining the architectures supported by NVRTC");
+	throw_if_error<cuda_cpp>(status, "Failed obtaining the architectures supported by NVRTC");
 	dynarray<device::compute_capability_t> result;
 	result.reserve(num_supported_archs);
 	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::back_inserter(result),
