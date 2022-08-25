@@ -36,6 +36,8 @@ add_executable(vectorAddMapped modified_cuda_samples/vectorAddMapped/vectorAddMa
 add_executable(vectorAddManaged modified_cuda_samples/vectorAddManaged/vectorAddManaged.cu)
 add_executable(vectorAdd_nvrtc modified_cuda_samples/vectorAdd_nvrtc/vectorAdd_nvrtc.cpp)
 target_link_libraries(vectorAdd_nvrtc cuda-api-wrappers::rtc)
+add_executable(vectorAdd_ptx modified_cuda_samples/vectorAdd_ptx/vectorAdd_ptx.cpp)
+target_link_libraries(vectorAdd_ptx cuda-api-wrappers::rtc)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.3")
 	# Needs direct cubin access for NVRTC programs
 	add_executable(clock_nvrtc modified_cuda_samples/clock_nvrtc/clock.cpp)
