@@ -17,7 +17,7 @@ if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 PROJECT(cuda-api-wrappers
-	VERSION 0.6
+	VERSION 0.6.0
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 	LANGUAGES CUDA CXX)
@@ -73,10 +73,11 @@ endforeach()
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	if (TARGET CUDA::nvptxcompiler)
-		target_link_libraries(caw_rtc INTERFACE  CUDA::nvptxcompiler)
+		target_link_libraries(caw_rtc INTERFACE CUDA::nvptxcompiler)
 	else()
-		target_link_libraries(caw_rtc INTERFACE  CUDA::nvptxcompiler_static)
+		target_link_libraries(caw_rtc INTERFACE CUDA::nvptxcompiler_static)
 	endif()
+	target_link_libraries(CUDA::nvptxcompiler_static INTERFACE Threads::Threads) # Because the NVIDIA PTX compiler itself uses threads
 endif()
 
 target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt ${CMAKE_DL_LIBS})

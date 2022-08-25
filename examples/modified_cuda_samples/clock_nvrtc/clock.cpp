@@ -111,7 +111,7 @@ cuda::dynarray<char> compile_to_cubin(
 	const char* kernel_name,
 	cuda::device_t target_device)
 {
-	auto program = cuda::rtc::program::create(kernel_name)
+	auto program = cuda::rtc::program::create<cuda::cuda_cpp>(kernel_name)
 		.set_source(kernel_source).set_target(target_device);
 		// I wonder if using the same name for the program and the kernel is a good idea
 

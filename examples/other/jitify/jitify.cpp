@@ -111,8 +111,8 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
  * @param fine_day hello world
  */
 void handle_compilation_failure(
-	const cuda::rtc::compilation_output_t& compilation_output,
-	cuda::rtc::compilation_options_t compilation_options = {})
+	const cuda::rtc::compilation_output_t<cuda::cuda_cpp>& compilation_output,
+	cuda::rtc::compilation_options_t<cuda::cuda_cpp> compilation_options = {})
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
@@ -141,7 +141,7 @@ void my_kernel(T* data) {
 	auto instantiation_name = make_instantiation_name(kernel_name, std::to_string(3), type_name<T>());
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, instantiation_name);
 	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program_t("my_program")
+	auto program = cuda::rtc::program_t<cuda::cuda_cpp>("my_program")
 		.set_source(source_with_instantiation)
 		.set_target(device)
 		.add_registered_global(instantiation_name);
@@ -208,11 +208,11 @@ void my_kernel2(float const* indata, float* outdata) {
 		// part of the CUDA API wrappers, but is actually both straightforward and flexible).
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, my_kernel2_instantiation_name);
 	std::vector<std::pair<const char*, const char*>> headers = {
-		{"example_headers/my_header4.cuh", my_header4_cuh_contents}
+		{"example_headers/my_header4.cuh", my_header4_cuh_contents }
 	};
 
 	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program_t("my_program1")
+	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("my_program1")
 		.set_source(source_with_instantiation)
 		.set_headers(headers)
 		.set_target(device)
@@ -282,7 +282,7 @@ __global__ void constant_test(int *x) {
 	} names;
 
 	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program::create("const_program")
+	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("const_program")
 		.set_source(const_program_source)
 		.add_registered_global(names.kernel)
 		.add_registered_global(names.a)
@@ -325,7 +325,7 @@ bool test_constant_2()
 	const char* second_kernel_name = "constant_test2";
 	auto device = cuda::device::current::get();
 	const char* name_of_anon_b_a = "&b::a";
-	auto program = cuda::rtc::program::create("const_program_2")
+	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("const_program_2")
 		.add_registered_global(second_kernel_name)
 		.add_registered_global(name_of_anon_b_a)
 		.set_target(device);

@@ -112,7 +112,8 @@ struct maybe_forced_bool {
 	void unforce() { is_forced = false; }
 };
 
-struct compilation_options_t {
+template <source_kind_t Kind>
+struct compilation_options_base_t {
 	template <typename T>
 	using optional = cuda::optional<T>;
 
@@ -133,8 +134,172 @@ struct compilation_options_t {
 	 */
 	::std::unordered_set<cuda::device::compute_capability_t> targets_;
 
+public:
 	/**
-	 * Generate relocatable code that can be linked with other relocatable device code. It is equivalent to
+	 * Have the compilation also target a specific compute capability.
+	 *
+	 * @note previously-specified compute capabilities will be targeted in
+	 * addition to the one specified.
+	 */
+	compilation_options_base_t& add_target(device::compute_capability_t compute_capability)
+	{
+		targets_.clear();
+		targets_.insert(compute_capability);
+		return *this;
+	}
+
+	/**
+	 * Have the compilation target one one specific compute capability.
+	 *
+	 * @note any previous target settings are dropped, i.e. no other compute
+	 * capability will be targeted.
+	 */
+	compilation_options_base_t& set_target(device::compute_capability_t compute_capability)
+	{
+		targets_.clear();
+		add_target(compute_capability);
+		return *this;
+	}
+
+	compilation_options_base_t& set_target(device_t device)
+	{
+		return set_target(device.compute_capability());
+	}
+
+};
+
+enum class optimization_level_t : int {
+	O0 = 0,
+	no_optimization = O0,
+	O1 = 1,
+	O2 = 2,
+	O3 = 3,
+	maximum_optimization = O3
+};
+
+inline std::ostream& operator<< (std::ostream& os, optimization_level_t lvl)
+{
+	return os << static_cast<int>(lvl);
+}
+
+enum class memory_operation_t { load, store };
+
+template <memory_operation_t Op> struct caching;
+
+template <> struct caching<memory_operation_t::load> {
+	enum mode {
+		ca = 0, all = ca, cache_all = ca, cache_at_all_levels = ca,
+		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
+		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
+		lu = 3, last_use = lu,
+		cv = 4, dont_cache = cv
+	};
+	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
+};
+
+
+template <> struct caching<memory_operation_t::store> {
+	enum mode {
+		wb = 0, write_back = wb, write_back_coherent_levels = wb,
+		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
+		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
+		wt = 3, write_through = wt, write_through_to_system_memory = wt
+	};
+	static constexpr const char* mode_names[] = { "wb", "cg", "cs", "wt" };
+};
+
+template <memory_operation_t Op>
+using caching_mode_t = typename caching<Op>::mode;
+
+template <memory_operation_t Op>
+const char* name(caching_mode_t<Op> mode)
+{
+	return caching<Op>::mode_names[static_cast<int>(mode)];
+}
+
+template <memory_operation_t Op>
+inline std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
+{
+	return os << name(lcm);
+}
+
+template <source_kind_t Kind>
+struct compilation_options_t;
+
+template <>
+struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
+	using parent = compilation_options_base_t<ptx>;
+	using parent::parent;
+	using register_count_t = uint16_t;
+
+	/**
+	 * Generate relocatable code that can be linked with other relocatable device code.
+	 *
+	 * @note equivalent to `--rdc` or `--relocatable-device-code=true` in NVRTC
+	 */
+	bool compile_only { false };
+
+	/**
+	 * Makes the PTX compiler run without producing any CUBIN output - for verifying
+	 * the input PTX only.
+	 */
+	bool parse_without_code_generation { false };
+	bool allow_expensive_optimizations_below_O2 { false };
+	bool compile_as_tools_patch { false };
+	bool debug { false };
+	bool generate_line_info { false };
+	bool compile_extensible_whole_program { false };
+	bool use_fused_multiply_add { true };
+	bool verbose { false };
+	bool dont_merge_basicblocks { false };
+	bool disable_warnings { false };
+	bool disable_optimizer_constants { false };
+	bool return_at_end_of_kernel { false };
+	bool preserve_variable_relocations { false };
+	optional<optimization_level_t> optimization_level { };
+	struct {
+		bool double_precision_ops { false };
+		bool local_memory_use { false };
+		bool registers_spill_to_local_memory { false };
+		bool indeterminable_stack_size {true };
+		// Does the PTX compiler library actually support this? ptxas does, but the PTX compilation API
+		// doesn't mention it
+		bool double_demotion { false };
+	} situation_warnings;
+	struct {
+		optional<register_count_t> kernel {};
+		optional<register_count_t> device_function {};
+	} maximum_register_counts;
+
+	struct caching_mode_spec_t {
+		optional<caching_mode_t<memory_operation_t::load>> load {};
+		optional<caching_mode_t<memory_operation_t::store>> store {};
+	};
+	struct {
+		caching_mode_spec_t default_ {};
+		caching_mode_spec_t forced {};
+	} caching_mode;
+
+	/**
+	 * Specifies the GPU kernels, or `__global__` functions in CUDA-C++ terms, or `.entry`
+	 * functions in PTX terms, for which code must be generated.
+	 *
+	 * @note The PTX source may contain code for additional `.entry` functions.
+	 */
+	std::vector<std::string> mangled_entry_function_names;
+
+	std::vector<std::string>& entries();
+	std::vector<std::string>& kernels();
+	std::vector<std::string>& kernel_names();
+};
+
+template <>
+struct compilation_options_t<cuda_cpp> : public compilation_options_base_t<cuda_cpp> {
+	using parent = compilation_options_base_t<cuda_cpp>;
+	using parent::parent;
+
+	/**
+	 * Generate relocatable code that can be linked with other relocatable device code.
 	 *
 	 * @note equivalent to "--relocatable-device-code" or "-rdc" for NVCC.
 	 */
@@ -354,8 +519,7 @@ public: // "shorthands" for more complex option setting
 	 */
 	compilation_options_t& add_target(device::compute_capability_t compute_capability)
 	{
-		targets_.clear();
-		targets_.insert(compute_capability);
+		parent::add_target(compute_capability);
 		return *this;
 	}
 
@@ -367,14 +531,14 @@ public: // "shorthands" for more complex option setting
 	 */
 	compilation_options_t& set_target(device::compute_capability_t compute_capability)
 	{
-		targets_.clear();
-		add_target(compute_capability);
+		parent::set_target(compute_capability);
 		return *this;
 	}
 
 	compilation_options_t& set_target(device_t device)
 	{
-		return set_target(device.compute_capability());
+		parent::set_target(device);
+		return *this;
 	}
 
 	compilation_options_t& set_language_dialect(cpp_dialect_t dialect)
@@ -459,12 +623,93 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
  */
 template <typename MarshalTarget, typename Delimiter>
 void process(
-	const compilation_options_t& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	const compilation_options_t<ptx>& opts, MarshalTarget& marshalled, Delimiter delimiter,
 	bool need_delimited_after_every_option = false)
 {
 	detail_::opt_start_t<Delimiter> opt_start { delimiter };
-	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
-	// defaults.
+	// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
+	//  even when they are the compiler defaults.
+
+	// flags
+	if (opts.compile_only)                      { marshalled << opt_start << "--compile-only";                  }
+	if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
+	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                  }
+	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";            }
+	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
+	if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
+	if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
+	if (opts.dont_merge_basicblocks)            { marshalled << opt_start << "--dont-merge-basicblocks";        }
+	{
+		const auto& osw = opts.situation_warnings;
+		if (osw.double_precision_ops)            { marshalled << opt_start << "--warn-on-double-precision-use";   }
+		if (osw.local_memory_use)                { marshalled << opt_start << "--warn-on-local-memory-usage";     }
+		if (osw.registers_spill_to_local_memory) { marshalled << opt_start << "--warn-on-spills";                 }
+		if (not osw.indeterminable_stack_size)   { marshalled << opt_start << "--suppress-stack-size-warning";    }
+		if (osw.double_demotion)                 { marshalled << opt_start << "--suppress-double-demote-warning"; }
+	}
+	if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";              }
+	if (opts.disable_optimizer_constants)       { marshalled << opt_start << "--disable-optimizer-constants";   }
+
+
+	if (opts.return_at_end_of_kernel)           { marshalled << opt_start << "--return-at-end";                 }
+	if (opts.preserve_variable_relocations)     { marshalled << opt_start << "--preserve-relocs";               }
+
+	// Non-flag single-value options
+
+	if (opts.optimization_level) {
+		marshalled << opt_start << "--opt-level" << opts.optimization_level.value();
+		if (opts.optimization_level.value() < optimization_level_t::O2
+		    and opts.allow_expensive_optimizations_below_O2)
+		{
+			marshalled << opt_start << "--allow-expensive-optimizations";
+		}
+	}
+
+	if (opts.maximum_register_counts.kernel) {
+		marshalled << opt_start << "--maxrregcount " << opts.maximum_register_counts.kernel.value();
+	}
+	if (opts.maximum_register_counts.device_function) {
+		marshalled << opt_start << "--device-function-maxrregcount " << opts.maximum_register_counts.device_function.value();
+	}
+
+	{
+		const auto& ocm = opts.caching_mode;
+		if (ocm.default_.load)  { marshalled << opt_start << "--def-load-cache "    << ocm.default_.load.value();  }
+		if (ocm.default_.store) { marshalled << opt_start << "--def-store-cache "   << ocm.default_.store.value(); }
+		if (ocm.forced.load)    { marshalled << opt_start << "--force-load-cache "  << ocm.forced.load.value();    }
+		if (ocm.forced.store)   { marshalled << opt_start << "--force-store-cache " << ocm.forced.store.value();   }
+	}
+
+	// Multi-value options
+
+	for(const auto& target : opts.targets_) {
+		auto prefix = opts.parse_without_code_generation ? "compute" : "sm";
+		marshalled << opt_start << "--gpu-name=" << prefix << '_'  << target.as_combined_number();
+	}
+
+	if (not opts.mangled_entry_function_names.empty()) {
+		marshalled << opt_start << "--entry";
+		bool first = true;
+		for (const auto &entry: opts.mangled_entry_function_names) {
+			if (first) { first = false; }
+			else { marshalled << ','; }
+			marshalled << entry;
+		}
+	}
+
+	if (need_delimited_after_every_option) {
+		marshalled << opt_start; // If no options were marshalled, this does nothing
+	}
+}
+
+template <typename MarshalTarget, typename Delimiter>
+void process(
+	const compilation_options_t<cuda_cpp>& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	bool need_delimited_after_every_option = false)
+{
+	detail_::opt_start_t<Delimiter> opt_start { delimiter };
+	// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
+	//  even when they are the compiler defaults.
 	if (opts.generate_relocatable_code)         { marshalled << opt_start << "--relocatable-device-code=true";      }
 		// Note: This is equivalent to specifying "--device-c" ; and if this option is not specified - that's
 		// equivalent to specifying "--device-w".
@@ -504,7 +749,7 @@ void process(
 	}
 
 	if (opts.maximum_register_count) {
-		marshalled << opt_start << "--maxrregcount" << opts.maximum_register_count.value();
+		marshalled << opt_start << "--maxrregcount=" << opts.maximum_register_count.value();
 	}
 
 	// Multi-value options
@@ -555,7 +800,8 @@ void process(
 	}
 }
 
-inline marshalled_options_t marshal(const compilation_options_t& opts)
+template <source_kind_t Kind>
+inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
 {
 	marshalled_options_t mo;
 	// TODO: Can we easily determine the max number of options here?
@@ -564,7 +810,8 @@ inline marshalled_options_t marshal(const compilation_options_t& opts)
 	return mo;
 }
 
-inline ::std::string render(const compilation_options_t& opts)
+template <source_kind_t Kind>
+inline ::std::string render(const compilation_options_t<Kind>& opts)
 {
 	::std::ostringstream oss;
 	process(opts, oss, ' ');
