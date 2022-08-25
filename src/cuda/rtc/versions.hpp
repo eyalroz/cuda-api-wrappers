@@ -21,7 +21,7 @@ namespace version_numbers {
 inline version_t nvrtc() {
 	version_t version;
 	auto status = nvrtcVersion(&version.major, &version.minor);
-	throw_if_error(status, "Failed obtaining the NVRTC library version");
+	throw_if_error<cuda_cpp>(status, "Failed obtaining the NVRTC library version");
 	return version;
 }
 

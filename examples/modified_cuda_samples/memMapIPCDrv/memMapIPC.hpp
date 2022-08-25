@@ -35,7 +35,7 @@
 // CU_MEM_HANDLE_TYPE_WIN32 meaning that NT HANDLEs will be used. The
 // ipcHandleTypeFlag variable is a convenience variable and is passed by value
 // to individual requests.
-//constexpr const auto shared_mem_handle_kind = (cuda::memory::virtual_::physical_allocation::kind_t)
+//constexpr const auto shared_mem_handle_kind = (cuda::memory::virtual_::physical_allocation::source_kind_t)
 //#if defined(__linux__)
 //	CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
 //#else

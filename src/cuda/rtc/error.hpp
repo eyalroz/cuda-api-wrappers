@@ -21,35 +21,35 @@ namespace cuda {
 
 namespace rtc {
 
-using status_t = nvrtcResult;
+namespace detail_ {
+
+// We would _like_ to define the named status codes here. Unfortunately - we cannot, due to a
+// C++11 corner-case behavior issues in GCC and/or clang. See:
+// https://stackoverflow.com/q/73479613/1593077
+// https://cplusplus.github.io/CWG/issues/1485
+//
+// template <> enum types<cuda_cpp>::named_status ...
+// template <> enum types<ptx>::named_status ...
+
+} // namespace detail_
 
 namespace status {
 
 /**
- * Aliases for CUDA status codes
- *
- * @note unfortunately, this enum can't inherit from @ref cuda::status_t
+ * @brief Aliases for NVRTC / PTX compilation library status codes
  */
-enum named_t : ::std::underlying_type<status_t>::type {
-	success = NVRTC_SUCCESS,
-	out_of_memory = NVRTC_ERROR_OUT_OF_MEMORY,
-	program_creation_failure = NVRTC_ERROR_OUT_OF_MEMORY,
-	invalid_input = NVRTC_ERROR_PROGRAM_CREATION_FAILURE,
-	invalid_program = NVRTC_ERROR_INVALID_PROGRAM,
-	invalid_option = NVRTC_ERROR_INVALID_OPTION,
-	compilation_failure = NVRTC_ERROR_COMPILATION,
-	builtin_operation_failure = NVRTC_ERROR_BUILTIN_OPERATION_FAILURE,
-	no_registered_globals_after_compilation = NVRTC_ERROR_NO_NAME_EXPRESSIONS_AFTER_COMPILATION,
-	no_lowered_names_before_compilation = NVRTC_ERROR_NO_LOWERED_NAMES_BEFORE_COMPILATION,
-	invalid_expression_to_register_as_global = NVRTC_ERROR_NAME_EXPRESSION_NOT_VALID,
-	internal_error = NVRTC_ERROR_INTERNAL_ERROR,
-};
+template <source_kind_t Kind>
+using named_t = typename rtc::detail_::types<Kind>::named_status;
 
 ///@cond
-constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
-constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
-constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
-constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
+template <source_kind_t Kind>
+constexpr inline bool operator==(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs == (status_t<Kind>) rhs;}
+template <source_kind_t Kind>
+constexpr inline bool operator!=(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs != (status_t<Kind>) rhs;}
+template <source_kind_t Kind>
+constexpr inline bool operator==(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return (status_t<Kind>) lhs == rhs;}
+template <source_kind_t Kind>
+constexpr inline bool operator!=(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return (status_t<Kind>) lhs != rhs;}
 ///@endcond
 
 } // namespace status
@@ -60,18 +60,49 @@ constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { retu
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
-constexpr inline bool is_success(rtc::status_t status)  { return status == (rtc::status_t) rtc::status::success; }
+ ///@{
+ template <source_kind_t Kind>
+constexpr inline bool is_success(rtc::status_t<Kind> status)
+{
+	return (status == (rtc::status_t<Kind>) rtc::status::named_t<Kind>::success);
+}
+///@}
 
 /**
  * @brief Determine whether the API call returning the specified status had failed
  */
-constexpr inline bool is_failure(rtc::status_t status)  { return status != (rtc::status_t) rtc::status::success; }
+template <source_kind_t Kind>
+constexpr inline bool is_failure(rtc::status_t<Kind> status)
+{
+	return not is_success<Kind>(status);
+}
 
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
  * or error code.
  */
-inline ::std::string describe(rtc::status_t status) { return nvrtcGetErrorString(status); }
+///@{
+inline ::std::string describe(rtc::status_t<cuda_cpp> status)
+{
+	return nvrtcGetErrorString(status);
+}
+
+inline ::std::string describe(rtc::status_t<ptx> status)
+{
+	using named = rtc::status::named_t<ptx>;
+	switch(status) {
+	case named::success: break;
+	case named::invalid_program_handle: return "Invalid PTX compilation handle";
+	case named::out_of_memory: return "out of memory";
+	case named::invalid_input: return "Invalid input for PTX compilation";
+	case named::compilation_invocation_incomplete: return "PTX compilation invocation incomplete";
+	case named::compilation_failure: return "PTX compilation failure";
+	case named::unsupported_ptx_version: return "Unsupported PTX version";
+	case named::internal_error: return "Unknown PTX compilation error";
+	}
+	return "unknown error";
+}
+///@}
 
 namespace rtc {
 
@@ -82,32 +113,33 @@ namespace rtc {
  * A CUDA runtime error can be constructed with either just a CUDA error code
  * (=status code), or a code plus an additional message.
  */
+template <source_kind_t Kind>
 class runtime_error : public ::std::runtime_error {
 public:
 	///@cond
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
-	runtime_error(status_t error_code) :
+	runtime_error(status_t<Kind> error_code) :
 		::std::runtime_error(describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t error_code, const ::std::string& what_arg) :
+	runtime_error(status_t<Kind> error_code, const ::std::string& what_arg) :
 		::std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	///@endcond
-	runtime_error(status::named_t error_code) :
-		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(status::named_t error_code, const ::std::string& what_arg) :
-		runtime_error(static_cast<status_t>(error_code), what_arg) { }
+	runtime_error(status::named_t<Kind> error_code) :
+		runtime_error(static_cast<status_t<Kind>>(error_code)) { }
+	runtime_error(status::named_t<Kind> error_code, const ::std::string& what_arg) :
+		runtime_error(static_cast<status_t<Kind>>(error_code), what_arg) { }
 
 	/**
 	 * Obtain the CUDA status code which resulted in this error being thrown.
 	 */
-	status_t code() const { return code_; }
+	status_t<Kind> code() const { return code_; }
 
 private:
-	status_t code_;
+	status_t<Kind> code_;
 };
 
 } // namespace rtc
@@ -123,9 +155,10 @@ private:
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(rtc::status_t status, const ::std::string& message) noexcept(false)
+template <source_kind_t Kind>
+inline void throw_if_error(rtc::status_t<Kind> status, const ::std::string& message) noexcept(false)
 {
-	if (is_failure(status)) { throw rtc::runtime_error(status, message); }
+	if (is_failure<Kind>(status)) { throw rtc::runtime_error<Kind>(status, message); }
 }
 
 /**
@@ -134,9 +167,10 @@ inline void throw_if_error(rtc::status_t status, const ::std::string& message) n
  *
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  */
-inline void throw_if_error(rtc::status_t status) noexcept(false)
+template <source_kind_t Kind>
+inline void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
 {
-	if (is_failure(status)) { throw rtc::runtime_error(status); }
+	if (is_failure(status)) { throw rtc::runtime_error<Kind>(status); }
 }
 
 } // namespace cuda
