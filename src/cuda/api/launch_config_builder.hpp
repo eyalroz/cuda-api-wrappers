@@ -16,64 +16,6 @@
 
 namespace cuda {
 
-
-namespace detail_ {
-
-struct no_value_t {};
-
-// This is pretty unsafe; don't use this at home, kids!
-template <typename T>
-struct poor_mans_optional {
-	static_assert(::std::is_trivially_destructible<T>::value, "Use a simpler type");
-	union maybe_value_union_t {
-		no_value_t no_value;
-		T value;
-	};
-
-	poor_mans_optional& operator=(const T& value) {
-		is_set = true;
-		maybe_value.value = value;
-		return *this;
-	}
-
-	poor_mans_optional& operator=(const T&& value) {
-		is_set = true;
-		maybe_value.value = ::std::move(value);
-		return *this;
-	}
-
-	poor_mans_optional& operator=(no_value_t) {
-		is_set = false;
-		return *this;
-	}
-
-	poor_mans_optional& operator=(T&& value) { return *this = value; }
-	poor_mans_optional() noexcept : maybe_value{ no_value_t{} } { }
-	poor_mans_optional(T v) : is_set(true) {
-		maybe_value.value = v;
-	}
-	poor_mans_optional(const poor_mans_optional& other)
-	{
-		if (other) {
-			*this = other.value();
-		}
-		is_set = other.is_set;
-	}
-	~poor_mans_optional() noexcept { };
-
-	T value() const { return maybe_value.value; }
-
-	operator bool() const noexcept { return is_set; }
-	void clear() noexcept { is_set = false; }
-	void unset() noexcept { is_set = false; }
-
-	bool is_set { false };
-	maybe_value_union_t maybe_value;
-};
-
-
-} // namespace detail_
-
 namespace grid {
 
 namespace detail_ {

@@ -142,8 +142,69 @@ struct span {
 
 #endif
 
+namespace detail_ {
 
+struct no_value_t {};
 
+template <typename T>
+struct poor_mans_optional {
+	static_assert(::std::is_trivially_destructible<T>::value, "Use a simpler type");
+	union maybe_value_union_t {
+		no_value_t no_value;
+		T value;
+	};
+
+	poor_mans_optional& operator=(const poor_mans_optional& other) = default;
+	poor_mans_optional& operator=(poor_mans_optional&& other) = default;
+
+	poor_mans_optional& operator=(const T& value)
+	{
+		has_value_ = true;
+		maybe_value.value = value;
+		return *this;
+	}
+
+	poor_mans_optional& operator=(const T&& value)
+	{
+		has_value_ = true;
+		maybe_value.value = ::std::move(value);
+		return *this;
+	}
+
+	poor_mans_optional& operator=(no_value_t)
+	{
+		has_value_ = false;
+		return *this;
+	}
+
+	poor_mans_optional& operator=(T&& value) { return *this = value; }
+
+	poor_mans_optional() noexcept : has_value_(false), maybe_value{ no_value_t{} } { }
+	poor_mans_optional(T v) : has_value_(true) {
+		maybe_value.value = v;
+	}
+	poor_mans_optional(const poor_mans_optional& other)
+	{
+		if (other) {
+			*this = other.value();
+		}
+		has_value_ = other.has_value_;
+	}
+	~poor_mans_optional() noexcept { };
+
+	T value() const { return maybe_value.value; }
+
+	operator bool() const noexcept { return has_value_; }
+	bool has_value() const noexcept { return has_value_; }
+	void clear() noexcept { has_value_ = false; }
+	void unset() noexcept { has_value_ = false; }
+
+protected:
+	bool has_value_ {false };
+	maybe_value_union_t maybe_value;
+};
+
+} // namespace detail_
 /**
  * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,
  * or the overall status of the API (which is typically the last triggered error).
