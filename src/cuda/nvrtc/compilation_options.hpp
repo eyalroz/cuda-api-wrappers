@@ -91,9 +91,30 @@ inline const char* option_name_part(handling_method_t method)
 
 } // namespace error
 
-struct compilation_options_t {
+// An optional<bool>-like class, but with slightly different semantics -
+// as operator bool() would be confusing
+struct maybe_forced_bool {
+	bool is_forced;
+	bool force_value;
 
-	static constexpr const size_t do_not_set_register_count { 0 };
+	void force(bool b)
+	{
+		is_forced = false;
+		force_value = b;
+	}
+
+	maybe_forced_bool& operator=(bool b)
+	{
+		force(b);
+		return *this;
+	}
+	void unset() { is_forced = false; }
+	void unforce() { is_forced = false; }
+};
+
+struct compilation_options_t {
+	template <typename T>
+	using optional = cuda::detail_::poor_mans_optional<T>;
 
 	/**
 	 * Target devices in terms of CUDA compute capability.
@@ -132,6 +153,14 @@ struct compilation_options_t {
 	bool debug { false };
 
 	/**
+	 *  If debug mode is enabled, perform limited optimizations of device code rather than none at all
+	 *
+	 *  @note It is not possible to force device code optimizations off in NVRTC in non-debug mode with
+	 *  '--dopt=off' - that's rejected by NVRTC as an invalid option.
+	 */
+	bool optimize_device_code_in_debug_mode { false };
+
+	/**
 	 *  Generate information for translating compiled code line numbers to source code line numbers.
 	 */
 	bool generate_line_info { false };
@@ -160,12 +189,8 @@ struct compilation_options_t {
 	 * amount of thread parallelism. Hence, a good maxrregcount value is the result of a trade-off.
 	 * If this option is not specified, then no maximum is assumed. Value less than the minimum registers
 	 * required by ABI will be bumped up by the compiler to ABI minimum limit.
-	 *
-	 * @note Set this to @ref do_not_set_register_count to not pass this as a compilation option.
-	 *
-	 * @todo Use ::std::optional
 	 */
-	size_t maximum_register_count { do_not_set_register_count };
+	optional<size_t> maximum_register_count { };
 
 	/**
 	 * When performing single-precision floating-point operations, flush denormal values to zero.
@@ -208,6 +233,12 @@ struct compilation_options_t {
 	bool link_time_optimization { false };
 
 	/**
+	 * Implicitly add the directories of source files (TODO: Which source files?) as
+	 * include file search paths.
+	 */
+	bool source_dirs_in_include_path { true };
+
+	/**
 	 * Enables more aggressive device code vectorization in the NVVM optimizer.
 	 */
 	bool extra_device_vectorization { false };
@@ -221,7 +252,7 @@ struct compilation_options_t {
 	cpp_dialect_t language_dialect { cpp_dialect_t::cpp03 };
 
 	::std::unordered_set<::std::string> no_value_defines;
-
+	::std::unordered_set<::std::string> undefines;
 	::std::unordered_map<::std::string,::std::string> valued_defines;
 
 	bool disable_warnings { false };
@@ -241,6 +272,11 @@ struct compilation_options_t {
 	 * Display (error) numbers for warning (and error?) messages, in addition to the message itself.
 	 */
 	bool display_error_numbers { true };
+
+	/**
+	 * Extra options for the PTX compiler (a.k.a. "PTX optimizing assembler").
+	 */
+	std::string ptxas;
 
 	/**
 	 * A sequence of directories to be searched for headers. These paths are searched _after_ the
@@ -306,6 +342,7 @@ protected:
 	void process(T& opts) const;
 
 public: // "shorthands" for more complex option setting
+
 	// TODO: Drop the following methods and make targets a custom
 	// inner class which can assigned, added to or subtracted from
 
@@ -429,6 +466,8 @@ void process(
 	// TODO: Consider taking an option to be verbose, and push_back option values which are compiler
 	// defaults.
 	if (opts.generate_relocatable_code)         { marshalled << opt_start << "--relocatable-device-code=true";      }
+		// Note: This is equivalent to specifying "--device-c" ; and if this option is not specified - that's
+		// equivalent to specifying "--device-w".
 	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program=true";     }
 	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                      }
 	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";                }
@@ -436,6 +475,7 @@ void process(
 	if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
 	if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }
 	if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
+	if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include ";                }
 	if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
 	if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";                  }
 	if (opts.assume_restrict)                   { marshalled << opt_start << "--restrict";                          }
@@ -451,12 +491,19 @@ void process(
 		if (not opts.use_precise_division)      { marshalled << opt_start << "--prec-div=false";                    }
 		if (not opts.use_fused_multiply_add)    { marshalled << opt_start << "--fmad=false";                        }
 	}
+	if (opts.optimize_device_code_in_debug_mode) {
+		marshalled << opt_start << "--dopt=on";
+	}
+	if (not opts.ptxas.empty()) {
+		marshalled << opt_start << "--ptxas-options=" << opts.ptxas;
+
+	}
 
 	if (opts.specify_language_dialect) {
 		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect];
 	}
 
-	if (opts.maximum_register_count != compilation_options_t::do_not_set_register_count) {
+	if (opts.maximum_register_count.has_value()) {
 		marshalled << opt_start << "--maxrregcount" << opts.maximum_register_count;
 	}
 
@@ -470,9 +517,15 @@ void process(
 #endif
 	}
 
+	for(const auto& def : opts.undefines) {
+		marshalled << opt_start << "-U" << def;
+		// Note: Could alternatively use "--undefine-macro=" instead of "-D"
+	}
+
+
 	for(const auto& def : opts.no_value_defines) {
 		marshalled << opt_start << "-D" << def;
-		// Note: Could alternatively use "--define-macro" instead of "-D"
+		// Note: Could alternatively use "--define-macro=" instead of "-D"
 	}
 
 	for(const auto& def : opts.valued_defines) {
