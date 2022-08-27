@@ -37,36 +37,6 @@ void for_each_argument(F f, Args&&... args) {
 // doesn't guarantee execution order
 }
 
-/*
-// Allocator adapter which should hopefully let
-// vectors skip setting character values to 0 when
-// resizing.
-template <typename T, typename Allocator=::std::allocator<T>>
-class default_init_allocator : public Allocator {
-  typedef ::std::allocator_traits<Allocator> a_t;
-public:
-  template <typename U> struct rebind {
-    using other =
-      default_init_allocator<
-        U, typename a_t::template rebind_alloc<U>
-      >;
-  };
-
-  using Allocator::A;
-
-  template <typename U>
-  void construct(U* ptr)
-    noexcept(::std::is_nothrow_default_constructible<U>::value) {
-    ::new(static_cast<void*>(ptr)) U;
-  }
-  template <typename U, typename...Args>
-  void construct(U* ptr, Args&&... args) {
-    a_t::construct(static_cast<Allocator&>(*this),
-                   ptr, ::std::forward<Args>(args)...);
-  }
-};
-*/
-
 } // namespaced detail_
 
 namespace rtc {
