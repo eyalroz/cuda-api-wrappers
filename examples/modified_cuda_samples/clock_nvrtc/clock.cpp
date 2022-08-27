@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 
-#include "../../common.hpp"
+#include "../../rtc_common.hpp"
 
 #include <cuda/api.hpp>
 #include <cuda/nvrtc.hpp>
@@ -104,18 +104,6 @@ long double compute_average_elapsed_clocks(const clock_t* timers, std::size_t nu
 	}
 
 	return offset_sum / num_blocks;
-}
-
-std::ostream& operator<<(std::ostream& os, const cuda::rtc::compilation_options_t& opts)
-{
-	auto marshalled = marshal(opts);
-	bool first = true;
-	for(auto opt : marshalled.option_ptrs()) {
-		if (not first) { os << ' '; }
-		os << opt;
-		first = false;
-	}
-	return os;
 }
 
 cuda::dynarray<char> compile_to_cubin(
