@@ -9,7 +9,7 @@
 #include <string>
 #include <iostream>
 
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 
 #include <iostream>
 

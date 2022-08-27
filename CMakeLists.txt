@@ -36,7 +36,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 # Our library targets
 # -------------------
 
-set(targets runtime-and-driver nvtx nvrtc)
+set(targets runtime-and-driver nvtx rtc)
 set(prefixed-targets "")
 
 foreach(wrapper_lib ${targets})
@@ -66,7 +66,7 @@ foreach(wrapper_lib ${targets})
 		OUTPUT_NAME ${wrapper_lib}
 	)
 endforeach()
-target_link_libraries(caw_nvrtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
+target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
 target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt ${CMAKE_DL_LIBS})
 
 # Note: This is a bit like a poor man's configure.h file;

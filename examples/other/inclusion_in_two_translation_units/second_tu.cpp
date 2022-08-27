@@ -1,6 +1,6 @@
 #include <cuda/api.hpp>
 #include <cuda/nvtx.hpp>
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 
 cuda::device::id_t get_current_device_id()
 {

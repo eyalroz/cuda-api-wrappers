@@ -21,7 +21,7 @@ using string_view = ::std::string_view;
 // namespace filesystem = ::std::filesystem;
 }
 #else
-#include <cuda/nvrtc/detail/string_view.hpp>
+#include <cuda/rtc/detail/string_view.hpp>
 namespace cuda {
 using string_view = bpstd::string_view;
 }
