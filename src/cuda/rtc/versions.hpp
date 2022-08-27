@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_VERSIONS_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_VERSIONS_HPP_
 
-#include <cuda/nvrtc/error.hpp>
+#include <cuda/rtc/error.hpp>
 #include <cuda/api/versions.hpp>
 
 namespace cuda {

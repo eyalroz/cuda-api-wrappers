@@ -1,6 +1,6 @@
 #include <cuda/api.hpp>
 #include <cuda/nvtx.hpp>
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 
 #include <cstdlib>
 #include <iostream>

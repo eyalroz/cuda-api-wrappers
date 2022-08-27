@@ -13,7 +13,7 @@
  * used instead of regular host and device memory.
  */
 
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 #include <cuda/api.hpp>
 
 #include <iostream>

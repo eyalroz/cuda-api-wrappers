@@ -1,7 +1,7 @@
 #ifndef SRC_CUDA_API_DETAIL_MARSHALLED_OPTIONS_HPP_
 #define SRC_CUDA_API_DETAIL_MARSHALLED_OPTIONS_HPP_
 
-#include <cuda/nvrtc/types.hpp>
+#include <cuda/rtc/types.hpp>
 
 #include <cstdlib>
 #include <vector>

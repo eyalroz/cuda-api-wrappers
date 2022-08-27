@@ -26,7 +26,7 @@
 #include "../../rtc_common.hpp"
 
 #include <cuda/api.hpp>
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 
 namespace clock_kernel {
 
