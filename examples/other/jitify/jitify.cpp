@@ -39,7 +39,7 @@
 
 
 #include <cuda/api.hpp>
-#include <cuda/nvrtc.hpp>
+#include <cuda/rtc.hpp>
 
 #include "type_name.hpp"
 

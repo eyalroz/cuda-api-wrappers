@@ -7,9 +7,9 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_OUTPUT_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_OUTPUT_HPP_
 
-#include <cuda/nvrtc/compilation_options.hpp>
-#include <cuda/nvrtc/error.hpp>
-#include <cuda/nvrtc/types.hpp>
+#include <cuda/rtc/compilation_options.hpp>
+#include <cuda/rtc/error.hpp>
+#include <cuda/rtc/types.hpp>
 #include <cuda/api.hpp>
 
 #include <vector>

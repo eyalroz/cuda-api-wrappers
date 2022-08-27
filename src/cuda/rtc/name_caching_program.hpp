@@ -7,7 +7,7 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_NAME_CACHING_PROGRAM_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_NAME_CACHING_PROGRAM_HPP_
 
-#include <cuda/nvrtc/program.hpp>
+#include <cuda/rtc/program.hpp>
 
 #include <algorithm>
 #include <cstring>

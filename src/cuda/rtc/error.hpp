@@ -9,7 +9,7 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_ERROR_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_ERROR_HPP_
 
-#include <cuda/nvrtc/types.hpp>
+#include <cuda/rtc/types.hpp>
 
 #include <cuda_runtime_api.h>
 
