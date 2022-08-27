@@ -30,8 +30,8 @@ void for_each_argument(F) { }
 
 template <class F, class... Args>
 void for_each_argument(F f, Args&&... args) {
-    using arrT = int[];
-    static_cast<void>(arrT{(f(::std::forward<Args>(args)), 0)...});
+	using arrT = int[];
+	static_cast<void>(arrT{(f(::std::forward<Args>(args)), 0)...});
 // This:
 //	[](...){}((f(::std::forward<Args>(args)), 0)...);
 // doesn't guarantee execution order
@@ -110,185 +110,185 @@ struct compilation_options_t {
 	 * @todo Use something less fancy than ::std::unordered_set, e.g.
 	 * a vector-backed ordered set or a dynamic bit-vector for membership.
 	 */
-    ::std::unordered_set<cuda::device::compute_capability_t> targets_;
+	::std::unordered_set<cuda::device::compute_capability_t> targets_;
 
-    /**
-     * Generate relocatable code that can be linked with other relocatable device code. It is equivalent to
-     *
-     * @note equivalent to "--relocatable-device-code" or "-rdc" for NVCC.
-     */
-    bool generate_relocatable_code { false };
+	/**
+	 * Generate relocatable code that can be linked with other relocatable device code. It is equivalent to
+	 *
+	 * @note equivalent to "--relocatable-device-code" or "-rdc" for NVCC.
+	 */
+	bool generate_relocatable_code { false };
 
-    /**
-     * Do extensible whole program compilation of device code.
-     *
-     * @todo explain what that is.
-     */
-    bool compile_extensible_whole_program { false };
+	/**
+	 * Do extensible whole program compilation of device code.
+	 *
+	 * @todo explain what that is.
+	 */
+	bool compile_extensible_whole_program { false };
 
-    /**
-     *  Generate debugging information (and perhaps limit optimizations?); see also @ref generate_line_info
-     */
-    bool debug { false };
+	/**
+	 *  Generate debugging information (and perhaps limit optimizations?); see also @ref generate_line_info
+	 */
+	bool debug { false };
 
-    /**
-     *  Generate information for translating compiled code line numbers to source code line numbers.
-     */
-    bool generate_line_info { false };
+	/**
+	 *  Generate information for translating compiled code line numbers to source code line numbers.
+	 */
+	bool generate_line_info { false };
 
-    /**
-     * Allow the use of the 128-bit `__int128` type in the code.
-     */
-    bool support_128bit_integers { false };
+	/**
+	 * Allow the use of the 128-bit `__int128` type in the code.
+	 */
+	bool support_128bit_integers { false };
 
-    /**
-     *  emit a remark when a function is inlined
-     */
-    bool indicate_function_inlining { false };
+	/**
+	 *  emit a remark when a function is inlined
+	 */
+	bool indicate_function_inlining { false };
 
-    /**
-     *  Print a self-identification string indicating which
-     *  compiler produced the code, in the compilation result
-     */
-    bool compiler_self_identification { false };
+	/**
+	 *  Print a self-identification string indicating which
+	 *  compiler produced the code, in the compilation result
+	 */
+	bool compiler_self_identification { false };
 
-    /**
-     * Specify the maximum amount of registers that GPU functions can use. Until a function-specific limit, a
-     * higher value will generally increase the performance of individual GPU threads that execute this
-     * function. However, because thread registers are allocated from a global register pool on each GPU,
-     * a higher value of this option will also reduce the maximum thread block size, thereby reducing the
-     * amount of thread parallelism. Hence, a good maxrregcount value is the result of a trade-off.
-     * If this option is not specified, then no maximum is assumed. Value less than the minimum registers
-     * required by ABI will be bumped up by the compiler to ABI minimum limit.
-     *
-     * @note Set this to @ref do_not_set_register_count to not pass this as a compilation option.
-     *
-     * @todo Use ::std::optional
-     */
-    size_t maximum_register_count { do_not_set_register_count };
+	/**
+	 * Specify the maximum amount of registers that GPU functions can use. Until a function-specific limit, a
+	 * higher value will generally increase the performance of individual GPU threads that execute this
+	 * function. However, because thread registers are allocated from a global register pool on each GPU,
+	 * a higher value of this option will also reduce the maximum thread block size, thereby reducing the
+	 * amount of thread parallelism. Hence, a good maxrregcount value is the result of a trade-off.
+	 * If this option is not specified, then no maximum is assumed. Value less than the minimum registers
+	 * required by ABI will be bumped up by the compiler to ABI minimum limit.
+	 *
+	 * @note Set this to @ref do_not_set_register_count to not pass this as a compilation option.
+	 *
+	 * @todo Use ::std::optional
+	 */
+	size_t maximum_register_count { do_not_set_register_count };
 
-    /**
-     * When performing single-precision floating-point operations, flush denormal values to zero.
-     *
-     * @Setting @ref use_fast_math implies setting this to true.
-     */
-    bool flush_denormal_floats_to_zero { false };
+	/**
+	 * When performing single-precision floating-point operations, flush denormal values to zero.
+	 *
+	 * @Setting @ref use_fast_math implies setting this to true.
+	 */
+	bool flush_denormal_floats_to_zero { false };
 
-    /**
-     * For single-precision floating-point square root, use IEEE round-to-nearest mode or use a faster approximation.
-     *
-     * @Setting @ref use_fast_math implies setting this to false.
-     */
-    bool use_precise_square_root { true };
+	/**
+	 * For single-precision floating-point square root, use IEEE round-to-nearest mode or use a faster approximation.
+	 *
+	 * @Setting @ref use_fast_math implies setting this to false.
+	 */
+	bool use_precise_square_root { true };
 
-    /**
-     * For single-precision floating-point division and reciprocals, use IEEE round-to-nearest mode or use a faster approximation.
-     *
-     * @Setting @ref use_fast_math implies setting this to false.
-     */
-    bool use_precise_division { true };
+	/**
+	 * For single-precision floating-point division and reciprocals, use IEEE round-to-nearest mode or use a faster approximation.
+	 *
+	 * @Setting @ref use_fast_math implies setting this to false.
+	 */
+	bool use_precise_division { true };
 
-    /**
-     * Enables (disables) the contraction of floating-point multiplies and adds/subtracts into floating-point multiply-add operations (FMAD, FFMA, or DFMA).
-     *
-     * @Setting @ref use_fast_math implies setting this to false.
-     */
-    bool use_fused_multiply_add { true };
+	/**
+	 * Enables (disables) the contraction of floating-point multiplies and adds/subtracts into floating-point multiply-add operations (FMAD, FFMA, or DFMA).
+	 *
+	 * @Setting @ref use_fast_math implies setting this to false.
+	 */
+	bool use_fused_multiply_add { true };
 
-    /**
-     * Make use of fast math operations. Implies use_fused_multiply_add,
-     * not use_precise_division and not use_precise_square_root.
-     */
-    bool use_fast_math { false };
+	/**
+	 * Make use of fast math operations. Implies use_fused_multiply_add,
+	 * not use_precise_division and not use_precise_square_root.
+	 */
+	bool use_fast_math { false };
 
-    /**
-     * Do not compile fully into PTX/Cubin. Instead, only generate NVVM (the LLVM IR variant), which is
-     * combined with other NVVM pieces from LTO-compiled "objects", at device link time.
-     */
-    bool link_time_optimization { false };
+	/**
+	 * Do not compile fully into PTX/Cubin. Instead, only generate NVVM (the LLVM IR variant), which is
+	 * combined with other NVVM pieces from LTO-compiled "objects", at device link time.
+	 */
+	bool link_time_optimization { false };
 
-    /**
-     * Enables more aggressive device code vectorization in the NVVM optimizer.
-     */
-    bool extra_device_vectorization { false };
+	/**
+	 * Enables more aggressive device code vectorization in the NVVM optimizer.
+	 */
+	bool extra_device_vectorization { false };
 
 	// TODO: switch to optional<cpp_dialect_t> when the library starts depending on C++14
-    bool specify_language_dialect { false };
-    /**
-     * Set language dialect to C++03, C++11, C++14 or C++17.
-     *
-     */
-    cpp_dialect_t language_dialect { cpp_dialect_t::cpp03 };
+	bool specify_language_dialect { false };
+	/**
+	 * Set language dialect to C++03, C++11, C++14 or C++17.
+	 *
+	 */
+	cpp_dialect_t language_dialect { cpp_dialect_t::cpp03 };
 
-    ::std::unordered_set<::std::string> no_value_defines;
+	::std::unordered_set<::std::string> no_value_defines;
 
-    ::std::unordered_map<::std::string,::std::string> valued_defines;
+	::std::unordered_map<::std::string,::std::string> valued_defines;
 
-    bool disable_warnings { false };
+	bool disable_warnings { false };
 
-    /**
-     * Treat all kernel pointer parameters as if they had the `restrict` (or `__restrict`) qualifier.
-     */
-    bool assume_restrict { false };
+	/**
+	 * Treat all kernel pointer parameters as if they had the `restrict` (or `__restrict`) qualifier.
+	 */
+	bool assume_restrict { false };
 
-    /**
-     * Assume functions without an explicit specification of their execution space are `__device__`
-     * rather than `__host__` functions.
-     */
-    bool default_execution_space_is_device { false };
+	/**
+	 * Assume functions without an explicit specification of their execution space are `__device__`
+	 * rather than `__host__` functions.
+	 */
+	bool default_execution_space_is_device { false };
 
-    /**
-     * Display (error) numbers for warning (and error?) messages, in addition to the message itself.
-     */
-    bool display_error_numbers { true };
+	/**
+	 * Display (error) numbers for warning (and error?) messages, in addition to the message itself.
+	 */
+	bool display_error_numbers { true };
 
-    /**
-     * A sequence of directories to be searched for headers. These paths are searched _after_ the
-     * list of headers given to nvrtcCreateProgram.
-     *
-     * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
-     * since this class is a value-type, and cannot rely someone else keeping these strings alive.
-     *
-     * @todo In C++17, consider making the elements `std::filesystem::path`'s.
-     */
-    ::std::vector<::std::string> additional_include_paths;
+	/**
+	 * A sequence of directories to be searched for headers. These paths are searched _after_ the
+	 * list of headers given to nvrtcCreateProgram.
+	 *
+	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
+	 *
+	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
+	 */
+	::std::vector<::std::string> additional_include_paths;
 
-    /**
-     * Header files to preinclude during preprocessing of the source.
-     *
-     * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
-     * since this class is a value-type, and cannot rely someone else keeping these strings alive.
-     *
-     * @todo In C++17, consider making the elements `std::filesystem::path`'s.
-     *
-     * @todo Check how these strings are interpreted. Do they need quotation marks? brackets? full paths?
-     */
-    ::std::vector<::std::string> preinclude_files;
+	/**
+	 * Header files to preinclude during preprocessing of the source.
+	 *
+	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
+	 *
+	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
+	 *
+	 * @todo Check how these strings are interpreted. Do they need quotation marks? brackets? full paths?
+	 */
+	::std::vector<::std::string> preinclude_files;
 
-    /**
-     * Provide builtin definitions of @ref ::std::move and @ref ::std::forward.
-     *
-     * @note Only relevant when the dialect is C++11 or later.
-     */
-    bool builtin_move_and_forward { true };
+	/**
+	 * Provide builtin definitions of @ref ::std::move and @ref ::std::forward.
+	 *
+	 * @note Only relevant when the dialect is C++11 or later.
+	 */
+	bool builtin_move_and_forward { true };
 
-    /**
+	/**
 	 * Use @ref setrlimit() to increase the stack size to the maximum the OS allows.
-     * The limit is reverted to its previous value after compilation.
+	 * The limit is reverted to its previous value after compilation.
 	 *
 	 * @note :
-     *  1. Only works on Linux
-     *  2. Affects the entire process, not just the thread invoking the compilation
-     *     command.
+	 *  1. Only works on Linux
+	 *  2. Affects the entire process, not just the thread invoking the compilation
+	 *     command.
 	 */
-    bool increase_stack_limit_to_max { true };
+	bool increase_stack_limit_to_max { true };
 
-    /**
-     * Provide builtin definitions of ::std::initializer_list class and member functions.
-     *
-     * @note Only relevant when the dialect is C++11 or later.
-     */
-    bool builtin_initializer_list { true };
+	/**
+	 * Provide builtin definitions of ::std::initializer_list class and member functions.
+	 *
+	 * @note Only relevant when the dialect is C++11 or later.
+	 */
+	bool builtin_initializer_list { true };
 
 	/**
 	 * Support for additional, arbitrary options which may not be covered by other fields
@@ -302,8 +302,8 @@ struct compilation_options_t {
 	::std::unordered_map<error::number_t, error::handling_method_t> error_handling_overrides;
 
 protected:
-    template <typename T>
-    void process(T& opts) const;
+	template <typename T>
+	void process(T& opts) const;
 
 public: // "shorthands" for more complex option setting
 	// TODO: Drop the following methods and make targets a custom
