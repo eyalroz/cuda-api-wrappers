@@ -92,6 +92,7 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
 	# This one needs cooperative_groups/reduce.h
 	add_executable(binaryPartitionCG modified_cuda_samples/binaryPartitionCG/binaryPartitionCG.cu)
 endif()
+add_executable(bandwidthtest modified_cuda_samples/bandwidthtest/bandwidthtest.cpp)
 #----
 add_custom_target(modified_cuda_samples)
 add_dependencies(modified_cuda_samples vectorAdd inlinePTX simpleStreams simpleIPC)
