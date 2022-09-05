@@ -334,6 +334,11 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
+inline duration_t time_elapsed_between(const ::std::pair<event_t, event_t>& event_pair)
+{
+	return time_elapsed_between(event_pair.first, event_pair.second);
+}
+
 inline event_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,

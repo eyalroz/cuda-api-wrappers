@@ -65,7 +65,7 @@ void profileCopies(float        *h_a,
 	stream.enqueue.event(events.second);
 	stream.synchronize();
 
-	duration = cuda::event::time_elapsed_between(events.first, events.second);
+	duration = cuda::event::time_elapsed_between(events);
 	std::cout << "  Device to Host bandwidth (GB/s): " << (bytes * 1e-6 / duration.count()) << "\n";
 
 	bool are_equal = std::equal(h_a, h_a + nElements, h_b);
