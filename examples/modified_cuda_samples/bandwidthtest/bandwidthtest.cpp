@@ -31,25 +31,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cuda_runtime.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cuda/api.hpp>
 
-// Convenience function for checking CUDA runtime API results
-// can be wrapped around any runtime API call. No-op in release builds.
-inline
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != cudaSuccess) {
-    fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-    assert(result == cudaSuccess);
-  }
-#endif
-	return result;
-}
+#include <memory>
+#include <array>
+#include <utility>
+#include <algorithm>
+#include <numeric>
 
 void profileCopies(float        *h_a,
 				   float        *h_b,
@@ -57,88 +45,69 @@ void profileCopies(float        *h_a,
 				   size_t       nElements,
 				   char const   *desc)
 {
-	printf("\n%s transfers\n", desc);
+	std::cout << desc << " transfers\n";
 
 	size_t bytes = nElements * sizeof(float);
 
-	// events for timing
-	cudaEvent_t startEvent, stopEvent;
+	auto device = cuda::device::current::get();
+	auto stream = device.default_stream();
+	auto events = std::make_pair(device.create_event(), device.create_event());
+	stream.enqueue.event(events.first);
+	stream.enqueue.copy(d, h_a, bytes);
+	stream.enqueue.event(events.second);
+	stream.synchronize();
 
-	checkCuda( cudaEventCreate(&startEvent) );
-	checkCuda( cudaEventCreate(&stopEvent) );
+	auto duration = cuda::event::time_elapsed_between(events.first, events.second);
+	std::cout << "  Host to Device bandwidth (GB/s): " << (bytes * 1e-6 / duration.count()) << "\n";
 
-	checkCuda( cudaEventRecord(startEvent, 0) );
-	checkCuda( cudaMemcpy(d, h_a, bytes, cudaMemcpyHostToDevice) );
-	checkCuda( cudaEventRecord(stopEvent, 0) );
-	checkCuda( cudaEventSynchronize(stopEvent) );
+	stream.enqueue.event(events.first);
+	stream.enqueue.copy(h_b, d, bytes);
+	stream.enqueue.event(events.second);
+	stream.synchronize();
 
-	float time;
-	checkCuda( cudaEventElapsedTime(&time, startEvent, stopEvent) );
-	printf("  Host to Device bandwidth (GB/s): %f\n", bytes * 1e-6 / time);
+	duration = cuda::event::time_elapsed_between(events.first, events.second);
+	std::cout << "  Device to Host bandwidth (GB/s): " << (bytes * 1e-6 / duration.count()) << "\n";
 
-	checkCuda( cudaEventRecord(startEvent, 0) );
-	checkCuda( cudaMemcpy(h_b, d, bytes, cudaMemcpyDeviceToHost) );
-	checkCuda( cudaEventRecord(stopEvent, 0) );
-	checkCuda( cudaEventSynchronize(stopEvent) );
-
-	checkCuda( cudaEventElapsedTime(&time, startEvent, stopEvent) );
-	printf("  Device to Host bandwidth (GB/s): %f\n", bytes * 1e-6 / time);
-
-	for (size_t i = 0; i < nElements; ++i) {
-		if (h_a[i] != h_b[i]) {
-			printf("*** %s transfers failed ***", desc);
-			break;
-		}
+	bool are_equal = std::equal(h_a, h_a + nElements, h_b);
+	if (not are_equal) {
+		std::cout << "*** " << desc << " transfers failed ***\n";
 	}
-
-	// clean up events
-	checkCuda( cudaEventDestroy(startEvent) );
-	checkCuda( cudaEventDestroy(stopEvent) );
 }
 
 int main()
 {
-	const size_t nElements = 4*1024*1024;
+	constexpr const size_t Mi = 1024 * 1024;
+	const size_t nElements = 4 * Mi;
 	const size_t bytes = nElements * sizeof(float);
 
-	// host arrays
-	float *h_aPageable, *h_bPageable;
-	float *h_aPinned, *h_bPinned;
+	auto pageable_host_buffers = std::make_pair(
+		std::unique_ptr<float[]>(new float[nElements]),
+		std::unique_ptr<float[]>(new float[nElements])
+	);
 
-	// device array
-	float *d_a;
+	auto device_buffer = cuda::memory::device::make_unique<float[]>(nElements);
 
-	// allocate and initialize
-	h_aPageable = (float*)malloc(bytes);                    // host pageable
-	h_bPageable = (float*)malloc(bytes);                    // host pageable
-	checkCuda( cudaMallocHost((void**)&h_aPinned, bytes) ); // host pinned
-	checkCuda( cudaMallocHost((void**)&h_bPinned, bytes) ); // host pinned
-	checkCuda( cudaMalloc((void**)&d_a, bytes) );           // device
+	auto pinned_host_buffers = std::make_pair(
+		cuda::memory::host::make_unique<float[]>(nElements),
+		cuda::memory::host::make_unique<float[]>(nElements)
+	);
 
-	for (size_t i = 0; i < nElements; ++i) h_aPageable[i] = i;
-	memcpy(h_aPinned, h_aPageable, bytes);
-	memset(h_bPageable, 0, bytes);
-	memset(h_bPinned, 0, bytes);
+	auto h_aPageable = pageable_host_buffers.first.get();
+	auto h_bPageable = pageable_host_buffers.second.get();
+	auto h_aPinned = pinned_host_buffers.first.get();
+	auto h_bPinned = pinned_host_buffers.second.get();
 
-	// output device info and transfer size
-	cudaDeviceProp prop;
-	checkCuda( cudaGetDeviceProperties(&prop, 0) );
+	std::iota(h_aPageable, h_aPageable + nElements, 0);
+	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
+	// Note: the following two instructions can be replaced with CUDA API wrappers
+	// calls - cuda::memory::host::zero(), but that won't improve anything
+	std::fill_n(h_bPageable, nElements, (float) 0);
+	std::fill_n(h_bPinned, nElements, (float) 0);
 
-	printf("\nDevice: %s\n", prop.name);
-	printf("Transfer size (MB): %zu\n", bytes / (size_t) (1024 * 1024));
+	std::cout << "\nDevice: " << cuda::device::current::get().name() << "\n";
+	std::cout << "\nTransfer size (MB): " << (bytes / Mi) << "\n";
 
 	// perform copies and report bandwidth
-	profileCopies(h_aPageable, h_bPageable, d_a, nElements, "Pageable");
-	profileCopies(h_aPinned, h_bPinned, d_a, nElements, "Pinned");
-
-	printf("\n");
-
-	// cleanup
-	cudaFree(d_a);
-	cudaFreeHost(h_aPinned);
-	cudaFreeHost(h_bPinned);
-	free(h_aPageable);
-	free(h_bPageable);
-
-	return 0;
+	profileCopies(h_aPageable, h_bPageable, device_buffer.get(), nElements, "Pageable");
+	profileCopies(h_aPinned, h_bPinned, device_buffer.get(), nElements, "Pinned");
 }
