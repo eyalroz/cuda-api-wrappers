@@ -453,17 +453,23 @@ struct overall_dimensions_t
 	dimension_type width_, dimension_type height_, dimension_type depth_) noexcept
 	: x(width_), y(height_), z(depth_) { }
 
+	constexpr __host__ __device__ overall_dimensions_t(const dim3& dims) noexcept
+	: x(dims.x), y(dims.y), z(dims.z) { }
+
+	constexpr __host__ __device__ overall_dimensions_t(dim3&& dims) noexcept
+	: x(dims.x), y(dims.y), z(dims.z) { }
+
 	constexpr __host__ __device__ overall_dimensions_t(const overall_dimensions_t& other) noexcept
 	: overall_dimensions_t(other.x, other.y, other.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(overall_dimensions_t&& other) noexcept
 	: overall_dimensions_t(other.x, other.y, other.z) { }
 
-	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t&& other) noexcept
-	: overall_dimensions_t(other.x, other.y, other.z) { }
+	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t dims) noexcept
+	: overall_dimensions_t(dims.x, dims.y, dims.z) { }
 
 	CPP14_CONSTEXPR overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
-	CPP14_CONSTEXPR overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept= default;
+	CPP14_CONSTEXPR overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept = default;
 
 	constexpr __host__ __device__ size_t volume() const noexcept { return x * y * z; }
 	constexpr __host__ __device__ size_t size() const noexcept { return volume(); }
