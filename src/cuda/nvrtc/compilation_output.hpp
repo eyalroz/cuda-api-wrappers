@@ -220,13 +220,18 @@ public: // non-mutators
 	///@}
 
 	/**
-	 * Obtain a copy of the PTX result of the last compilation.
+	 * Obtain a (nul-terminated) copy of the PTX result of the last compilation.
 	 *
 	 * @note the PTX may be missing in cases such as compilation failure or link-time
 	 * optimization compilation.
 	 * @note This will fail if the program has never been compiled.
 	 */
 	///@{
+	
+	/**
+	 * @param[inout] buffer A writable buffer large enough to contain the compiled
+	 *     program's PTX code.
+	 */ 	
 	span<char> ptx(span<char> buffer) const
 	{
 		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
@@ -312,8 +317,8 @@ public: // non-mutators
 	 * @throws ::std::invalid_argument if the supplied buffer is too small to hold
 	 * the program's NVVM.
 	 *
-	 * @param[inout] buffer A writable buffer which should, hopefully, be large
-	 * enough to contain the compiled program's NVVM
+	 * @param[inout] buffer A writable buffer large enough to contain the compiled
+	 *     program's NVVM code.
 	 * @return The sub-buffer, starting at the beginning of @p buffer, containing
 	 * exactly the compiled program's NVVM (i.e. sized down to fit the contents)
 	 */
