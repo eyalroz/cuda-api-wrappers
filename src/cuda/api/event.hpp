@@ -102,7 +102,21 @@ event_t wrap(
 
 } // namespace event
 
-inline void synchronize(const event_t& event);
+/**
+ * Have the calling thread wait - either busy-waiting or blocking - and
+ * return only after this event has occurred (see @ref event_t::has_occurred()
+ *
+ * @todo figure out what happens if the event has not been recorded
+ * before this call is made.
+ *
+ * @note the waiting will occur either passively (e.g. like waiting for
+ * information on a file descriptor), or actively (by busy-waiting) -
+ * depending on the flag with which the event was created.
+ *
+ * @param event the event for whose occurrence to wait; must be scheduled
+ * to occur on some stream (possibly the different stream)
+ */
+inline void wait(event_t event);
 
 /**
  * @brief Wrapper class for a CUDA event
@@ -176,7 +190,6 @@ public: // other non-mutator methods
 	 */
 	bool query() const { return has_occurred(); }
 
-
 public: // other mutator methods
 
 	/**
@@ -207,12 +220,11 @@ public: // other mutator methods
 	void fire(const stream_t& stream) const;
 
 	/**
-	 * Have the calling thread wait - either busy-waiting or blocking - and
-	 * return only after this event has occurred (see @ref has_occurred() ).
+	 * See @see cuda::wait() .
 	 */
 	void synchronize() const
 	{
-		return cuda::synchronize(*this);
+		return cuda::wait(*this);
 	}
 
 protected: // constructors
@@ -460,23 +472,18 @@ inline event_t create(
 
 } // namespace event
 
-/**
- * Waits for a specified event to conclude before returning control
- * to the calling code.
- *
- * @todo Determine how this waiting takes place (as opposed to stream
- * synchronization).
- *
- * @param event the event for whose occurrence to wait; must be scheduled
- * to occur on some stream (possibly the different stream)
- */
-inline void synchronize(const event_t& event)
+inline void wait(event_t event)
 {
 	auto context_handle = event.context_handle();
 	auto event_handle = event.handle();
 	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
 	auto status = cuEventSynchronize(event_handle);
 	throw_if_error(status, "Failed synchronizing " + event::detail_::identify(event));
+}
+
+inline void synchronize(event_t event)
+{
+	return wait(event);
 }
 
 } // namespace cuda
