@@ -77,7 +77,7 @@ inline stream_t create(
 
 } // namespace stream
 
-inline void stream_t::enqueue_t::wait(const event_t& event_)
+inline void stream_t::enqueue_t::wait(const event_t& event_) const
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
@@ -91,7 +91,7 @@ inline void stream_t::enqueue_t::wait(const event_t& event_)
 
 }
 
-inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
+inline event_t& stream_t::enqueue_t::event(event_t& existing_event) const
 {
 	auto device_id = associated_stream.device_id_;
 	auto context_handle = associated_stream.context_handle_;
@@ -110,7 +110,7 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event)
 inline event_t stream_t::enqueue_t::event(
 	bool          uses_blocking_sync,
 	bool          records_timing,
-	bool          interprocess)
+	bool          interprocess) const
 {
 	auto context_handle = associated_stream.context_handle_;
 	context::current::detail_::scoped_override_t set_device_for_this_scope(context_handle);

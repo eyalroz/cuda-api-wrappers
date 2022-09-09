@@ -376,7 +376,7 @@ public: // mutators
 		void kernel_launch(
 			const KernelFunction&       kernel_function,
 			launch_configuration_t      launch_configuration,
-			KernelParameters &&...      parameters)
+			KernelParameters &&...      parameters) const
 		{
 			return cuda::enqueue_launch(
 				kernel_function,
@@ -388,7 +388,7 @@ public: // mutators
 		void type_erased_kernel_launch(
 			const kernel_t&         kernel,
 			launch_configuration_t  launch_configuration,
-			span<const void*>       marshalled_arguments)
+			span<const void*>       marshalled_arguments) const
 		{
 			cuda::launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
 		}
@@ -409,7 +409,7 @@ public: // mutators
 		 * the device's global memory, host memory or the global memory of another device)
 		 * @param num_bytes size of the region to copy
 		 **/
-		void copy(void *destination, const void *source, size_t num_bytes)
+		void copy(void *destination, const void *source, size_t num_bytes) const
 		{
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
 			// however, unfortunately, it does require us to be in _some_ context.
@@ -417,7 +417,7 @@ public: // mutators
 			memory::async::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
-		void copy(void* destination, memory::const_region_t source, size_t num_bytes)
+		void copy(void* destination, memory::const_region_t source, size_t num_bytes) const
 		{
 #ifndef NDEBUG
 			if (source.size() < num_bytes) {
@@ -427,17 +427,17 @@ public: // mutators
 			copy(destination, source.start(), num_bytes);
 		}
 
-		void copy(memory::region_t destination, memory::const_region_t source, size_t num_bytes)
+		void copy(memory::region_t destination, memory::const_region_t source, size_t num_bytes) const
 		{
 			copy(destination.start(), source, num_bytes);
 		}
 
-		void copy(memory::region_t destination, memory::const_region_t source)
+		void copy(memory::region_t destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
 		}
 
-		void copy(void* destination, memory::const_region_t source)
+		void copy(void* destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
 		}
@@ -451,7 +451,7 @@ public: // mutators
 		 * @param byte_value the value with which to fill the memory region bytes
 		 * @param num_bytes size of the region to fill
 		 */
-		void memset(void *destination, int byte_value, size_t num_bytes)
+		void memset(void *destination, int byte_value, size_t num_bytes) const
 		{
 			// Is it necessary to set the device? I wonder.
 			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
@@ -469,7 +469,7 @@ public: // mutators
 		 * @param destination Beginning of the region to fill
 		 * @param num_bytes size of the region to fill
 		 */
-		void memzero(void *destination, size_t num_bytes)
+		void memzero(void *destination, size_t num_bytes) const
 		{
 			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.handle_);
@@ -487,7 +487,7 @@ public: // mutators
 		 * @note It is possible to wait for events across devices, but it is _not_ possible to
 		 * trigger events across devices.
 		 **/
-		event_t& event(event_t& existing_event);
+		event_t& event(event_t& existing_event) const;
 
 		/**
 		 * Have an event 'fire', i.e. marked as having occurred,
@@ -504,7 +504,7 @@ public: // mutators
 		event_t event(
 			bool          uses_blocking_sync = event::sync_by_busy_waiting,
 			bool          records_timing     = event::do_record_timings,
-			bool          interprocess       = event::not_interprocess);
+			bool          interprocess       = event::not_interprocess) const;
 
 		/**
 		 * Execute the specified function on the calling host thread once all
@@ -514,7 +514,7 @@ public: // mutators
 		 * with two parameters: `cuda::stream::handle_t stream_handle, cuda::event::handle_t event_handle`
 		 */
 		template <typename Callable>
-		void host_function_call(Callable callable_)
+		void host_function_call(Callable callable_) const
 		{
 			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 
@@ -563,7 +563,8 @@ public: // mutators
 		 * only become allocated for use once the allocation task is actually reached by
 		 * the stream and completed.
 		 */
-		memory::region_t allocate(size_t num_bytes) {
+		memory::region_t allocate(size_t num_bytes) const
+		{
 			return memory::device::async::allocate(associated_stream, num_bytes);
 		}
 
@@ -576,7 +577,8 @@ public: // mutators
 		 * the stream and completed.
 		 */
 		///@{
-		void free(void* region_start) {
+		void free(void* region_start) const
+		{
 			memory::device::async::free(associated_stream, region_start);
 		}
 
@@ -610,7 +612,7 @@ public: // mutators
 		 */
 		void attach_managed_region(
 			const void* managed_region_start,
-			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
+			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream) const
 		{
 			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			// This fixed value is required by the CUDA Runtime API,
@@ -632,7 +634,7 @@ public: // mutators
 		 */
 		void attach_managed_region(
 			memory::managed::region_t region,
-			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream)
+			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream) const
 		{
 			attach_managed_region(region.start(), attachment);
 		}
@@ -651,7 +653,7 @@ public: // mutators
 		 * would typically be recorded on another stream.
 		 *
 		 */
-		void wait(const event_t& event_);
+		void wait(const event_t& event_) const;
 
 		/**
 		 * Schedule writing a single value to global device memory after all
@@ -665,7 +667,7 @@ public: // mutators
 		 * with writes scheduled before it.
 		 */
 		template <typename T>
-		void set_single_value(T* __restrict__ address, T value, bool with_memory_barrier = true)
+		void set_single_value(T* __restrict__ address, T value, bool with_memory_barrier = true) const
 		{
 			static_assert(
 				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
@@ -696,7 +698,7 @@ public: // mutators
 		 * after the wait.
 		 */
 		template <typename T>
-		void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false)
+		void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false) const
 		{
 			static_assert(
 				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
@@ -721,7 +723,7 @@ public: // mutators
 		 * @param address location the previous remote writes to which need to be visible to
 		 * subsequent operations.
 		 */
-		void flush_remote_writes()
+		void flush_remote_writes() const
 		{
 			CUstreamBatchMemOpParams flush_op;
 			flush_op.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
@@ -745,7 +747,7 @@ public: // mutators
 		 * @param ops_end end of a sequence of single-value operation specifications
 		 */
 		template <typename Iterator>
-		void single_value_operations_batch(Iterator ops_begin, Iterator ops_end)
+		void single_value_operations_batch(Iterator ops_begin, Iterator ops_end) const
 		{
 			static_assert(
 				::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
@@ -769,7 +771,7 @@ public: // mutators
 		 * @param single_value_ops A sequence of single-value operation specifiers to enqueue together.
 		 */
 		template <typename Container>
-		void single_value_operations_batch(const Container& single_value_ops)
+		void single_value_operations_batch(const Container& single_value_ops) const
 		{
 			return single_value_operations_batch(single_value_ops.begin(), single_value_ops.end());
 		}
@@ -906,7 +908,7 @@ protected: // data members
 		// it must release its refcount unit on destruction
 
 public: // data members - which only exist in lieu of namespaces
-	enqueue_t     enqueue { *this };
+	const enqueue_t     enqueue { *this };
 		// The use of *this here is safe, since enqueue_t doesn't do anything with it
 		// on its own. Any use of enqueue only happens through, well, *this - and
 		// after construction.
