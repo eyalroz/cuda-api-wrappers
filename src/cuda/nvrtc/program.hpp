@@ -164,100 +164,131 @@ public: // setters
 		return *this;
 	}
 
-	template <typename HeaderNamesFwdIter, typename HeaderSourcesFwdIter>
-	inline program_t& add_headers(
-		HeaderNamesFwdIter header_names_start,
-		HeaderNamesFwdIter header_names_end,
-		HeaderSourcesFwdIter header_sources_start)
+protected:
+	template <typename String>
+	static inline void check_string_type()
 	{
-		auto num_headers_to_add = header_names_end - header_names_start;
-		auto new_num_headers = headers_.names.size() + num_headers_to_add;
-#ifndef NDEBUG
-		if (new_num_headers > ::std::numeric_limits<int>::max()) {
-			throw ::std::invalid_argument("Cannot use more than "
-										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
-		}
-#endif
-		headers_.names.reserve(new_num_headers);
-		::std::copy_n(header_names_start, new_num_headers, ::std::back_inserter(headers_.names));
-		headers_.sources.reserve(new_num_headers);
-		::std::copy_n(header_sources_start, new_num_headers, ::std::back_inserter(headers_.sources));
+		using no_cref_string_type = typename std::remove_const<typename std::remove_reference<String>::type>::type;
+		static_assert(
+			std::is_same<no_cref_string_type, const char*>::value or
+			std::is_same<no_cref_string_type, char*>::value or
+			std::is_same<String, const std::string&>::value or
+			std::is_same<String, std::string&>::value,
+			"Cannot use this type for a named header name or source; use char*, const char* or a "
+			"reference to a string you own"
+		);
+	}
+
+	// Note: All methods involved in adding headers - which eventually call one of the
+	// three adders of each kind here - are written carefully to support both C-style strings
+	// and lvalue references to std::string's - but _not_ rvalue strings or rvalue string
+	// references, as the latter are not owned by the caller, and this class' code does not
+	// make a copy or take ownership. If you make any changes, you must be very careful not
+	// to _copy_ anything by mistake, but rather carry forward reference-types all the way
+	// to here.
+
+	void add_header_name_  (const char* name)          { headers_.names.emplace_back(name); }
+	void add_header_name_  (const std::string& name)   { add_header_name_(name.c_str()); }
+	void add_header_name_  (std::string&& name) = delete;
+
+	void add_header_source_(const char* source)        { headers_.sources.emplace_back(source); }
+	void add_header_source_(const std::string& source) { add_header_source_(source.c_str()); }
+	void add_header_source_(std::string&& source) = delete;
+
+public: // mutators
+	template <typename String1, typename String2>
+	program_t& add_header(String1&& name, String2&& source)
+	{
+		add_header_name_(name);
+		add_header_source_(source);
 		return *this;
 	}
 
-	template <typename HeaderNameAndSourceFwdIter>
-	inline program_t& add_headers(
-		HeaderNameAndSourceFwdIter named_headers_start,
-		HeaderNameAndSourceFwdIter named_headers_end)
+	template <typename String1, typename String2>
+	program_t& add_header(const std::pair<String1, String2>& name_and_source)
 	{
-		auto num_headers_to_add = named_headers_end - named_headers_start;
-		auto new_num_headers = headers_.names.size() + num_headers_to_add;
-#ifndef NDEBUG
-		if (new_num_headers > ::std::numeric_limits<int>::max()) {
-			throw ::std::invalid_argument("Cannot use more than "
-										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
-		}
-#endif
-		headers_.names.reserve(new_num_headers);
-		headers_.sources.reserve(new_num_headers);
-		for(auto& pair_it = named_headers_start; pair_it < named_headers_end; pair_it++) {
-			headers_.names.push_back(pair_it->first);
-			headers_.sources.push_back(pair_it->second);
-		}
+		add_header_name_(name_and_source.first);
+		add_header_source_(name_and_source.second);
 		return *this;
 	}
 
+	template <typename String1, typename String2>
+	program_t& add_header(std::pair<String1, String2>&& name_and_source)
+	{
+		check_string_type<String1>();
+		check_string_type<String2>();
+		return add_header(name_and_source);
+	}
+
+	template <typename RangeOfNames, typename RangeOfSources>
 	const program_t& add_headers(
-		const_cstrings_span header_names,
-		const_cstrings_span header_sources)
+		RangeOfNames   header_names,
+		RangeOfSources header_sources)
 	{
+		check_string_type<typename RangeOfNames::const_reference>();
+		check_string_type<typename RangeOfSources::const_reference>();
 #ifndef NDEBUG
 		if (header_names.size() != header_sources.size()) {
 			throw ::std::invalid_argument(
-				"Got " + ::std::to_string(header_names.size()) + " header names with "
-				+ ::std::to_string(header_sources.size()));
+				"Got a different number of header names (" + ::std::to_string(header_names.size())
+				+ ") and header source (" + ::std::to_string(header_sources.size()) + ')');
 		}
 #endif
-		return add_headers(header_names.cbegin(), header_names.cend(), header_sources.cbegin());
-	}
-
-	template <typename ContainerOfCStringPairs>
-	program_t& add_headers(ContainerOfCStringPairs named_header_pairs)
-	{
-		return add_headers(::std::begin(named_header_pairs), ::std::end(named_header_pairs));
-	}
-
-	template <typename HeaderNamesFwdIter, typename HeaderSourcesFwdIter>
-	program_t& set_headers(
-		HeaderNamesFwdIter header_names_start,
-		HeaderNamesFwdIter header_names_end,
-		HeaderSourcesFwdIter header_sources_start)
-	{
-		clear_headers();
-		return add_headers(header_names_start, header_names_end, header_sources_start);
-	}
-
-	program_t& set_headers(
-		const_cstrings_span header_names,
-		const_cstrings_span header_sources)
-	{
+		auto new_num_headers = headers_.names.size() + header_names.size();
 #ifndef NDEBUG
-		if (header_names.size() != header_sources.size()) {
-			throw ::std::invalid_argument(
-				"Got " + ::std::to_string(header_names.size()) + " header names with "
-				+ ::std::to_string(header_sources.size()));
+		if (new_num_headers > ::std::numeric_limits<int>::max()) {
+			throw ::std::invalid_argument("Cannot use more than "
+										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
 		}
 #endif
-		return set_headers(header_names.cbegin(), header_names.cend(), header_sources.cbegin());
+		headers_.names.reserve(new_num_headers);
+		headers_.sources.reserve(new_num_headers);
+		// TODO: Use a zip iterator
+		for(auto name_it = header_names.cbegin(), source_it = header_sources.cbegin();
+			name_it < header_names.cend();
+			name_it++, source_it++) {
+			add_header(*name_it, *source_it);
+		}
+		return *this;
 	}
 
-	template <typename ContainerOfCStringPairs>
-	program_t& set_headers(ContainerOfCStringPairs named_header_pairs)
+	template <typename RangeOfNameAndSourcePairs>
+	program_t& add_headers(RangeOfNameAndSourcePairs&& named_header_pairs)
+	{
+		// TODO: Accept ranges without a size method and no iterator arithmetic
+		auto num_headers_to_add = named_header_pairs.size();
+		auto new_num_headers = headers_.names.size() + num_headers_to_add;
+#ifndef NDEBUG
+		if (new_num_headers > ::std::numeric_limits<int>::max()) {
+			throw ::std::invalid_argument("Cannot use more than "
+										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
+		}
+#endif
+		headers_.names.reserve(new_num_headers);
+		headers_.sources.reserve(new_num_headers);
+		// Using auto&& to notice the case of getting rvalue references  (which we would like to reject)
+		for(auto&& pair : named_header_pairs) {
+			add_header(pair.first, pair.second);
+		}
+		return *this;
+	}
+
+	template <typename RangeOfNames, typename RangeOfSources>
+	const program_t& set_headers(
+		RangeOfNames&&   names,
+		RangeOfSources&& sources)
 	{
 		clear_headers();
-		return add_headers(named_header_pairs);
+		return add_headers(names, sources);
 	}
 
+	template <typename RangeOfNameAndSourcePairs>
+	program_t& set_headers(RangeOfNameAndSourcePairs&& named_header_pairs)
+	{
+		clear_headers();
+		add_headers(named_header_pairs);
+		return *this;
+	}
 
 	program_t& clear_headers()
 	{
