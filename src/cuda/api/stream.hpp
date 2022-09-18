@@ -863,7 +863,7 @@ public: // operators
 	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
 	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t& other) = delete;
-	stream_t& operator=(stream_t& other) noexcept
+	stream_t& operator=(stream_t&& other) noexcept
 	{
 		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
