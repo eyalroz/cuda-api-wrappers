@@ -465,10 +465,10 @@ inline event_t create(
  * @note Even if the context happens to be primary, the created event will _not_ keep this context alive.
  */
 inline event_t create(
-	context_t&  context,
-	bool        uses_blocking_sync = sync_by_busy_waiting,
-	bool        records_timing     = do_record_timings,
-	bool        interprocess       = not_interprocess);
+	const context_t&  context,
+	bool              uses_blocking_sync = sync_by_busy_waiting,
+	bool              records_timing     = do_record_timings,
+	bool              interprocess       = not_interprocess);
 
 } // namespace event
 
