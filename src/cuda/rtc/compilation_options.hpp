@@ -9,7 +9,8 @@
 #define CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
 
 #include <cuda/api/device_properties.hpp>
-#include <cuda/api/device.hpp> // for set_target taking a device
+#include <cuda/api/device.hpp>
+#include <cuda/api/common_ptx_compilation_options.hpp>
 #include "detail/marshalled_options.hpp"
 
 #include <unordered_map>
@@ -168,7 +169,7 @@ public:
 
 };
 
-enum class optimization_level_t : int {
+enum : rtc::optimization_level_t {
 	O0 = 0,
 	no_optimization = O0,
 	O1 = 1,
@@ -177,67 +178,18 @@ enum class optimization_level_t : int {
 	maximum_optimization = O3
 };
 
-inline std::ostream& operator<< (std::ostream& os, optimization_level_t lvl)
-{
-	return os << static_cast<int>(lvl);
-}
-
-enum class memory_operation_t { load, store };
-
-template <memory_operation_t Op> struct caching;
-
-template <> struct caching<memory_operation_t::load> {
-	enum mode {
-		ca = 0, all = ca, cache_all = ca, cache_at_all_levels = ca,
-		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
-		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
-		lu = 3, last_use = lu,
-		cv = 4, dont_cache = cv
-	};
-	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
-};
-
-
-template <> struct caching<memory_operation_t::store> {
-	enum mode {
-		wb = 0, write_back = wb, write_back_coherent_levels = wb,
-		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
-		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
-		wt = 3, write_through = wt, write_through_to_system_memory = wt
-	};
-	static constexpr const char* mode_names[] = { "wb", "cg", "cs", "wt" };
-};
-
-template <memory_operation_t Op>
-using caching_mode_t = typename caching<Op>::mode;
-
-template <memory_operation_t Op>
-const char* name(caching_mode_t<Op> mode)
-{
-	return caching<Op>::mode_names[static_cast<int>(mode)];
-}
-
-template <memory_operation_t Op>
-inline std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
-{
-	return os << name(lcm);
-}
 
 template <source_kind_t Kind>
-struct compilation_options_t;
+class compilation_options_t;
 
 template <>
-struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
+class compilation_options_t<ptx> final :
+	public compilation_options_base_t<ptx>,
+	public common_ptx_compilation_options_t
+{
+public:
 	using parent = compilation_options_base_t<ptx>;
 	using parent::parent;
-	using register_count_t = uint16_t;
-
-	/**
-	 * Generate relocatable code that can be linked with other relocatable device code.
-	 *
-	 * @note equivalent to `--rdc` or `--relocatable-device-code=true` in NVRTC
-	 */
-	bool compile_only { false };
 
 	/**
 	 * Makes the PTX compiler run without producing any CUBIN output - for verifying
@@ -246,8 +198,6 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 	bool parse_without_code_generation { false };
 	bool allow_expensive_optimizations_below_O2 { false };
 	bool compile_as_tools_patch { false };
-	bool debug { false };
-	bool generate_line_info { false };
 	bool compile_extensible_whole_program { false };
 	bool use_fused_multiply_add { true };
 	bool verbose { false };
@@ -256,7 +206,6 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 	bool disable_optimizer_constants { false };
 	bool return_at_end_of_kernel { false };
 	bool preserve_variable_relocations { false };
-	optional<optimization_level_t> optimization_level { };
 	struct {
 		bool double_precision_ops { false };
 		bool local_memory_use { false };
@@ -267,8 +216,8 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 		bool double_demotion { false };
 	} situation_warnings;
 	struct {
-		optional<register_count_t> kernel {};
-		optional<register_count_t> device_function {};
+		optional<rtc::ptx_register_count_t> kernel {};
+		optional<rtc::ptx_register_count_t> device_function {};
 	} maximum_register_counts;
 
 	struct caching_mode_spec_t {
@@ -279,6 +228,16 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 		caching_mode_spec_t default_ {};
 		caching_mode_spec_t forced {};
 	} caching_mode;
+
+	optional<caching_mode_t<memory_operation_t::load>>& default_load_caching_mode() override
+	{
+		return caching_mode.default_.load;
+	}
+	optional<caching_mode_t<memory_operation_t::load>> default_load_caching_mode() const override
+	{
+		return caching_mode.default_.load;
+	}
+
 
 	/**
 	 * Specifies the GPU kernels, or `__global__` functions in CUDA-C++ terms, or `.entry`
@@ -294,16 +253,13 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 };
 
 template <>
-struct compilation_options_t<cuda_cpp> : public compilation_options_base_t<cuda_cpp> {
+class compilation_options_t<cuda_cpp> final :
+	public compilation_options_base_t<cuda_cpp>,
+	public common_ptx_compilation_options_t
+{
+public:
 	using parent = compilation_options_base_t<cuda_cpp>;
 	using parent::parent;
-
-	/**
-	 * Generate relocatable code that can be linked with other relocatable device code.
-	 *
-	 * @note equivalent to "--relocatable-device-code" or "-rdc" for NVCC.
-	 */
-	bool generate_relocatable_code { false };
 
 	/**
 	 * Do extensible whole program compilation of device code.
@@ -313,22 +269,12 @@ struct compilation_options_t<cuda_cpp> : public compilation_options_base_t<cuda_
 	bool compile_extensible_whole_program { false };
 
 	/**
-	 *  Generate debugging information (and perhaps limit optimizations?); see also @ref generate_line_info
-	 */
-	bool debug { false };
-
-	/**
 	 *  If debug mode is enabled, perform limited optimizations of device code rather than none at all
 	 *
 	 *  @note It is not possible to force device code optimizations off in NVRTC in non-debug mode with
 	 *  '--dopt=off' - that's rejected by NVRTC as an invalid option.
 	 */
 	bool optimize_device_code_in_debug_mode { false };
-
-	/**
-	 *  Generate information for translating compiled code line numbers to source code line numbers.
-	 */
-	bool generate_line_info { false };
 
 	/**
 	 * Allow the use of the 128-bit `__int128` type in the code.
@@ -631,10 +577,11 @@ void process(
 	//  even when they are the compiler defaults.
 
 	// flags
-	if (opts.compile_only)                      { marshalled << opt_start << "--compile-only";                  }
+	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--compile-only";                  }
 	if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
-	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                  }
-	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";            }
+	if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                  }
+	if (opts.generate_source_line_info)
+	                                            { marshalled << opt_start << "--generate-line-info";            }
 	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
 	if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
 	if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
@@ -658,7 +605,7 @@ void process(
 
 	if (opts.optimization_level) {
 		marshalled << opt_start << "--opt-level" << opts.optimization_level.value();
-		if (opts.optimization_level.value() < optimization_level_t::O2
+		if (opts.optimization_level.value() < O2
 		    and opts.allow_expensive_optimizations_below_O2)
 		{
 			marshalled << opt_start << "--allow-expensive-optimizations";
@@ -708,14 +655,10 @@ void process(
 	bool need_delimited_after_every_option = false)
 {
 	detail_::opt_start_t<Delimiter> opt_start { delimiter };
-	// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
-	//  even when they are the compiler defaults.
-	if (opts.generate_relocatable_code)         { marshalled << opt_start << "--relocatable-device-code=true";      }
-		// Note: This is equivalent to specifying "--device-c" ; and if this option is not specified - that's
-		// equivalent to specifying "--device-w".
+	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--relocatable-device-code=true";      }
 	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program=true";     }
-	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                      }
-	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";                }
+	if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                      }
+	if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";                }
 	if (opts.support_128bit_integers)           { marshalled << opt_start << "--device-int128";                     }
 	if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
 	if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }

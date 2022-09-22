@@ -56,11 +56,12 @@ inline program::handle_t<Kind> create(
 	const char *const *header_sources = nullptr,
 	const char *const *header_names = nullptr)
 {
+	return
 #if CUDA_VERSION >= 11010
-	return (Kind == ptx) ?
-		(program::handle_t<cuda_cpp>) create_ptx(program_name, program_source) :
+		(Kind == ptx) ?
+			(program::handle_t<Kind>) create_ptx(program_name, program_source) :
 #endif // CUDA_VERSION >= 11010
-		create_cuda_cpp(program_name, program_source.data(), num_headers, header_sources, header_names);
+			(program::handle_t<Kind>) create_cuda_cpp(program_name, program_source.data(), num_headers, header_sources, header_names);
 }
 
 inline void register_global(handle_t<cuda_cpp> program_handle, const char *global_to_register)
@@ -133,7 +134,6 @@ inline compilation_output_t<ptx> compile_ptx(
 	return compile<ptx>(program_name, raw_options, program_handle);
 }
 #endif // CUDA_VERSION >= 11010
-
 
 } // namespace detail_
 

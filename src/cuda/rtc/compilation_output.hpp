@@ -83,7 +83,7 @@ inline size_t get_log_size(program::handle_t<Kind> program_handle, const char* p
 		(Kind == ptx) ?
 			(status_t<Kind>) nvPTXCompilerGetErrorLogSize((handle_t<ptx>) program_handle, &size) :
 #endif // CUDA_VERSION >= 11010
-			(status_t<Kind>) nvrtcGetProgramLogSize((handle_t<cuda_cpp>)program_handle, &size);
+			(status_t<Kind>) nvrtcGetProgramLogSize((handle_t<cuda_cpp>) program_handle, &size);
 	throw_if_error<Kind>(status, "Failed obtaining compilation log size for "
 		+ identify<Kind>(program_handle, program_name));
 	return size;
@@ -116,7 +116,7 @@ inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char*
 		throw  (Kind == cuda_cpp) ?
 			std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
 				+ identify<Kind>(program_handle, program_name)):
-		    std::runtime_error("Empty output CUBIN for compilation of "
+			std::runtime_error("Empty output CUBIN for compilation of "
 				+ identify<Kind>(program_handle, program_name));
 	}
 	return size;
@@ -259,8 +259,7 @@ protected: // constructors
 	compilation_output_base_t(handle_type handle, const ::std::string& name, bool succeeded, bool owning = false)
 	: program_handle_(handle), program_name_(name), succeeded_(succeeded), owns_handle_(owning) { }
 
-public:
-
+public: // constructors & destructor
 	compilation_output_base_t(compilation_output_base_t&& other) noexcept :
 		program_handle_(other.program_handle_),
 		program_name_(::std::move(other.program_name_)),
@@ -548,7 +547,7 @@ inline compilation_output_t<Kind> wrap(
 	bool                     succeeded,
 	bool                     own_handle)
 {
-	return compilation_output_t<Kind>{program_handle, program_name, succeeded, own_handle};
+	return compilation_output_t<Kind>{program_handle, ::std::move(program_name), succeeded, own_handle};
 }
 
 } // namespace detail_

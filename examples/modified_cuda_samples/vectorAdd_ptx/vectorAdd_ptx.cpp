@@ -79,7 +79,7 @@ int main(void)
 	::std::cout << "[Vector addition of " << numElements << " elements]\n";
 
 	auto device = cuda::device::current::get();
-	auto compilation_output = cuda::rtc::program_t<cuda::source_kind_t::ptx>(kernel_name)
+	auto compilation_output = cuda::rtc::program_t<cuda::ptx>(kernel_name)
 		.set_source(vectorAdd_source)
 		.set_target(device).compile();
 
