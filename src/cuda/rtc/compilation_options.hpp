@@ -9,7 +9,8 @@
 #define CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
 
 #include <cuda/api/device_properties.hpp>
-#include <cuda/api/device.hpp> // for set_target taking a device
+#include <cuda/api/device.hpp>
+#include <cuda/api/common_ptx_compilation_options.hpp>
 #include "detail/marshalled_options.hpp"
 
 #include <unordered_map>
@@ -114,9 +115,6 @@ struct maybe_forced_bool {
 
 template <source_kind_t Kind>
 struct compilation_options_base_t {
-	template <typename T>
-	using optional = cuda::detail_::poor_mans_optional<T>;
-
 	/**
 	 * Target devices in terms of CUDA compute capability.
 	 *
@@ -171,7 +169,7 @@ public:
 
 };
 
-enum class optimization_level_t : int {
+enum : rtc::ptx::optimization_level_t {
 	O0 = 0,
 	no_optimization = O0,
 	O1 = 1,
@@ -180,60 +178,16 @@ enum class optimization_level_t : int {
 	maximum_optimization = O3
 };
 
-inline std::ostream& operator<< (std::ostream& os, optimization_level_t lvl)
-{
-	return os << static_cast<int>(lvl);
-}
-
-enum class memory_operation_t { load, store };
-
-template <memory_operation_t Op> struct caching;
-
-template <> struct caching<memory_operation_t::load> {
-	enum mode {
-		ca = 0, all = ca, cache_all = ca, cache_at_all_levels = ca,
-		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
-		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
-		lu = 3, last_use = lu,
-		cv = 4, dont_cache = cv
-	};
-	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
-};
-
-
-template <> struct caching<memory_operation_t::store> {
-	enum mode {
-		wb = 0, write_back = wb, write_back_coherent_levels = wb,
-		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
-		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
-		wt = 3, write_through = wt, write_through_to_system_memory = wt
-	};
-	static constexpr const char* mode_names[] = { "wb", "cg", "cs", "wt" };
-};
-
-template <memory_operation_t Op>
-using caching_mode_t = typename caching<Op>::mode;
-
-template <memory_operation_t Op>
-const char* name(caching_mode_t<Op> mode)
-{
-	return caching<Op>::mode_names[static_cast<int>(mode)];
-}
-
-template <memory_operation_t Op>
-inline std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
-{
-	return os << name(lcm);
-}
-
 template <source_kind_t Kind>
 struct compilation_options_t;
 
 template <>
-struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
-	using parent = compilation_options_base_t<ptx>;
+struct compilation_options_t<source_kind_t::ptx> :
+	public compilation_options_base_t<source_kind_t::ptx>,
+	public ptx::options_t
+{
+	using parent = compilation_options_base_t<source_kind_t::ptx>;
 	using parent::parent;
-	using register_count_t = uint16_t;
 
 	/**
 	 * Generate relocatable code that can be linked with other relocatable device code.
@@ -249,8 +203,6 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 	bool parse_without_code_generation { false };
 	bool allow_expensive_optimizations_below_O2 { false };
 	bool compile_as_tools_patch { false };
-	bool debug { false };
-	bool generate_line_info { false };
 	bool compile_extensible_whole_program { false };
 	bool use_fused_multiply_add { true };
 	bool verbose { false };
@@ -259,7 +211,6 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 	bool disable_optimizer_constants { false };
 	bool return_at_end_of_kernel { false };
 	bool preserve_variable_relocations { false };
-	optional<optimization_level_t> optimization_level { };
 	struct {
 		bool double_precision_ops { false };
 		bool local_memory_use { false };
@@ -270,8 +221,8 @@ struct compilation_options_t<ptx> : public compilation_options_base_t<ptx> {
 		bool double_demotion { false };
 	} situation_warnings;
 	struct {
-		optional<register_count_t> kernel {};
-		optional<register_count_t> device_function {};
+		optional<rtc::ptx::register_count_t> kernel {};
+		optional<rtc::ptx::register_count_t> device_function {};
 	} maximum_register_counts;
 
 	struct caching_mode_spec_t {
@@ -626,7 +577,7 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
  */
 template <typename MarshalTarget, typename Delimiter>
 void process(
-	const compilation_options_t<ptx>& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	const compilation_options_t<source_kind_t::ptx>& opts, MarshalTarget& marshalled, Delimiter delimiter,
 	bool need_delimited_after_every_option = false)
 {
 	detail_::opt_start_t<Delimiter> opt_start { delimiter };
@@ -636,8 +587,9 @@ void process(
 	// flags
 	if (opts.compile_only)                      { marshalled << opt_start << "--compile-only";                  }
 	if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
-	if (opts.debug)                             { marshalled << opt_start << "--device-debug";                  }
-	if (opts.generate_line_info)                { marshalled << opt_start << "--generate-line-info";            }
+	if (opts.generate_debug_information)        { marshalled << opt_start << "--device-debug";                  }
+	if (opts.generate_source_line_number_information)
+	                                            { marshalled << opt_start << "--generate-line-info";            }
 	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
 	if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
 	if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
@@ -661,7 +613,7 @@ void process(
 
 	if (opts.optimization_level.has_value()) {
 		marshalled << opt_start << "--opt-level" << opts.optimization_level.value();
-		if (opts.optimization_level.value() < optimization_level_t::O2
+		if (opts.optimization_level.value() < O2
 		    and opts.allow_expensive_optimizations_below_O2)
 		{
 			marshalled << opt_start << "--allow-expensive-optimizations";
