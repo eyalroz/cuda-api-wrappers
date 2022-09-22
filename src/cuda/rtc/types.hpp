@@ -87,7 +87,7 @@ template <> struct types<cuda_cpp> {
 	};
 };
 
-template <> struct types<ptx> {
+template <> struct types<source_kind_t::ptx> {
 	using handle_type = nvPTXCompilerHandle;
 	using status_type = nvPTXCompileResult;
 	enum named_status : std::underlying_type<status_type>::type {

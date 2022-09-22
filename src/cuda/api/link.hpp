@@ -27,6 +27,14 @@ class link_t;
 
 namespace link {
 
+enum class input_kind_t {
+	cubin,    /// Compiled device-class-specific device code
+	ptx,      /// PTX (microarchitecture-inspecific intermediate representation)
+	fatbin,   /// A bundle of multiple cubin and/or PTX inputs; typically
+	object,   /// A host-side binary object with embedded device code; a `.o` file
+	library,  /// An archive of objects files with embedded device code; a `.a` file
+};
+
 using handle_t = CUlinkState;
 
 // TODO: Check if the linking has been completed!
@@ -48,12 +56,12 @@ namespace input {
  */
 struct image_t : memory::region_t {
 	const char* name;
-	link::input_type_t type;
+	link::input_kind_t type;
 };
 
 struct file_t {
 	const char* path; // TODO: Use a proper path in C++14 and later
-	link::input_type_t type;
+	link::input_kind_t type;
 };
 
 } // namespace input
@@ -117,7 +125,8 @@ public:
 			const_cast<void**>(marshalled_options.values())
 		);
 		throw_if_error(status,
-			"Failed adding input " + ::std::string(image.name) + " of type " + ::std::to_string(image.type) + " to a link.");
+			"Failed adding input " + ::std::string(image.name) + " of type "
+			+ ::std::to_string((int) image.type) + " to a link.");
 	}
 
 	void add_file(link::input::file_t file_input, const link::options_t& options) const
@@ -132,7 +141,8 @@ public:
 			const_cast<void**>(marshalled_options.values())
 			);
 		throw_if_error(status,
-			"Failed loading an object of type " + ::std::to_string(file_input.type) + " from file " + file_input.path);
+			"Failed loading an object of type " + ::std::to_string((int) file_input.type)
+			+ " from file " + file_input.path);
 	}
 
 #if __cplusplus >= 201703L
