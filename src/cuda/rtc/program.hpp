@@ -45,13 +45,13 @@ inline program::handle_t<cuda_cpp> create_cuda_cpp(
 	return program_handle;
 }
 
-inline program::handle_t<ptx> create_ptx(
+inline program::handle_t<source_kind_t::ptx> create_ptx(
 	const char *program_name,
 	string_view program_source)
 {
-	program::handle_t<ptx> program_handle;
+	program::handle_t<source_kind_t::ptx> program_handle;
 	auto status = nvPTXCompilerCreate(&program_handle, program_source.size(), program_source.data());
-	throw_if_rtc_error_lazy(ptx, status, "Failed creating " + detail_::identify<ptx>(program_name));
+	throw_if_rtc_error_lazy(source_kind_t::ptx, status, "Failed creating " + detail_::identify<source_kind_t::ptx>(program_name));
 	return program_handle;
 }
 
@@ -83,7 +83,7 @@ inline compilation_output_t<Kind> compile(
 {
 	status_t<Kind> status = (Kind == cuda_cpp) ?
 		(status_t<Kind>) nvrtcCompileProgram((handle_t<cuda_cpp>)program_handle, (int) raw_options.size(), raw_options.data()) :
-		(status_t<Kind>) nvPTXCompilerCompile((handle_t<ptx>)program_handle, (int) raw_options.size(), raw_options.data());
+		(status_t<Kind>) nvPTXCompilerCompile((handle_t<source_kind_t::ptx>)program_handle, (int) raw_options.size(), raw_options.data());
 	bool succeeded = is_success<Kind>(status);
 	if (not (succeeded or (status == (status_t<Kind>) status::named_t<Kind>::compilation_failure))) {
 		throw rtc::runtime_error<Kind>(status, "Failed invoking compiler for " + identify<Kind>(program_handle));
@@ -119,7 +119,7 @@ inline compilation_output_t<cuda_cpp> compile(
 	return compile<cuda_cpp>(program_name, raw_options, program_handle);
 }
 
-inline compilation_output_t<ptx> compile_ptx(
+inline compilation_output_t<source_kind_t::ptx> compile_ptx(
 	const char *program_name,
 	const char *program_source,
 	const_cstrings_span raw_options)
@@ -131,7 +131,7 @@ inline compilation_output_t<ptx> compile_ptx(
 	auto program_handle = create_ptx(program_name, program_source);
 
 	// Note: compilation is outside of any context
-	return compile<ptx>(program_name, raw_options, program_handle);
+	return compile<source_kind_t::ptx>(program_name, raw_options, program_handle);
 }
 
 } // namespace detail_
@@ -437,7 +437,7 @@ protected: // data members
 #if CUDA_VERSION >= 11010
 
 template <>
-class program_t<ptx> : public program_base_t<ptx> {
+class program_t<source_kind_t::ptx> : public program_base_t<source_kind_t::ptx> {
 public: // types
 	using parent = program_base_t<source_kind>;
 
@@ -481,7 +481,7 @@ public:
 
 	// TODO: Support specifying all compilation option in a single string and parsing it
 
-	compilation_output_t<ptx> compile() const
+	compilation_output_t<source_kind_t::ptx> compile() const
 	{
 		if (source_ == nullptr or *source_ == '\0') {
 			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
@@ -505,7 +505,7 @@ public: // operators
 
 	program_t& operator=(const program_t& other) = default;
 	program_t& operator=(program_t&& other) = default;
-}; // class program_t<ptx>
+}; // class program_t<source_kind_t::ptx>
 
 #endif // CUDA_VERSION >= 11010
 
