@@ -43,7 +43,7 @@
 #include <cuda/api/peer_to_peer.hpp>
 #include <cuda/api/devices.hpp>
 
-#include <cuda/api/pci_id_impl.hpp>
+#include <cuda/api/detail/pci_id.hpp>
 #include <cuda/api/apriori_compiled_kernel.hpp>
 #include <cuda/api/launch_configuration.hpp>
 #include <cuda/api/kernel_launch.hpp>

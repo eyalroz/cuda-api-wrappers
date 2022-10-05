@@ -13,7 +13,7 @@
 #ifndef CUDA_API_WRAPPERS_PCI_ID_HPP_IMPL_
 #define CUDA_API_WRAPPERS_PCI_ID_HPP_IMPL_
 
-#include <cuda/api/pci_id.hpp>
+#include "cuda/api/pci_id.hpp"
 
 #include <string>
 #include <istream>
@@ -55,7 +55,7 @@ inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location
 	switch(is.get()) {
 	case '.':
 		// It's the third format
-		pci_id.domain = pci_location_t::unused; // Is this a reasonable choice? I woudld  have liked that...
+		pci_id.domain = pci_location_t::unused; // Is this a reasonable choice?
 		pci_id.bus = first_field;
 		pci_id.device = second_field;
 		is >> pci_id.function;
