@@ -38,6 +38,7 @@
 #include <utility>
 #include <algorithm>
 #include <numeric>
+#include <iostream>
 
 void profileCopies(float        *h_a,
 				   float        *h_b,
