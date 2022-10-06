@@ -5,9 +5,9 @@
 #ifndef CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 
-#include <cuda/api/types.hpp>
 #include <cuda/api/error.hpp>
-#include <cuda/api/versions.hpp>
+#include <cuda/api/constants.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cuda.h>
 
@@ -22,8 +22,23 @@ namespace context {
 
 namespace current {
 
-namespace detail_ {
+/**
+ * Determine whether any CUDA context is current, or whether the context stack is
+ * empty/uninitialized
+ */
+inline bool exists()
+{
+	context::handle_t handle;
+	auto status = cuCtxGetCurrent(&handle);
+	if (status == cuda::status::not_yet_initialized) {
+		return false;
+	}
+	throw_if_error(status, "Failed obtaining the current context's handle");
+	return (handle != context::detail_::none);
+}
 
+
+namespace detail_ {
 /**
  * Returns a raw handle for the current CUDA context
  *
@@ -41,11 +56,15 @@ inline bool is_(handle_t handle)
 	case CUDA_SUCCESS:
 		return (handle == current_context_handle);
 	default:
-		throw cuda::runtime_error((status_t) status, "Failed determining whether there's a current context, or what it is");
+		throw cuda::runtime_error(status,
+			"Failed determining whether there's a current context, or what it is");
 	}
 }
 
-struct status_and_handle_pair { status_t status; handle_t handle; };
+struct status_and_handle_pair {
+	status_t status;
+	handle_t handle;
+};
 
 /**
  * Returns a raw handle for the current CUDA context
@@ -95,14 +114,6 @@ inline device::id_t get_device_id()
 	return device_id;
 }
 
-} // namespace detail_
-
-inline bool exists();
-inline context_t get();
-inline void set(const context_t& context);
-
-namespace detail_ {
-
 /**
  * Push a context handle onto the top of the context stack - if it is not already on the
  * top of the stack
@@ -114,8 +125,8 @@ namespace detail_ {
 inline void push(handle_t context_handle)
 {
 	auto status = cuCtxPushCurrent(context_handle);
-	throw_if_error(status,
-		"Failed pushing to the top of the context stack: " + context::detail_::identify(context_handle));
+	throw_if_error(status, "Failed pushing to the top of the context stack: "
+		+ context::detail_::identify(context_handle));
 }
 
 /**
@@ -132,8 +143,9 @@ inline void push(handle_t context_handle)
  */
 inline bool push_if_not_on_top(handle_t context_handle)
 {
-	if (detail_::get_handle() == context_handle) { return false; }
-	push(context_handle); return true;
+	if (get_handle() == context_handle) { return false; }
+	push(context_handle);
+	return true;
 }
 
 inline context::handle_t pop()
@@ -146,16 +158,19 @@ inline context::handle_t pop()
 
 inline void set(handle_t context_handle)
 {
-	// TODO: Would this help?
+	// Thought about doing this:
 	// if (detail_::get_handle() == context_handle_) { return; }
-	auto status = static_cast<status_t>(cuCtxSetCurrent(context_handle));
+	// ... but decided against it.
+	auto status = cuCtxSetCurrent(context_handle);
 	throw_if_error(status,
-	    "Failed setting the current context to " + context::detail_::identify(context_handle));
+		"Failed setting the current context to " + context::detail_::identify(context_handle));
 }
 
+} // namespace detail_
+
+namespace detail_ {
 /**
  * @note See the out-of-`detail_::` version of this class.
- *
  */
 class scoped_override_t {
 public:
@@ -217,10 +232,6 @@ class scoped_override_t;
 #define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
 	::cuda::context::current::scoped_override_t scoped_context_override{ _cuda_context }
 
-
-inline bool push_if_not_on_top(const context_t& context);
-inline void push(const context_t& context);
-
 inline void synchronize()
 {
 	auto status = cuCtxSynchronize();
@@ -231,21 +242,27 @@ inline void synchronize()
 
 namespace detail_ {
 
-inline void synchronize(context::handle_t handle)
+// Just like context::current::synchronize(), but with an argument
+// allowing for throwing a more informative exception on failure
+inline void synchronize(context::handle_t current_context_handle)
 {
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
 		throw cuda::runtime_error(status,"Failed synchronizing "
-			+ context::detail_::identify(handle));
+			+ context::detail_::identify(current_context_handle));
 	}
 }
 
-inline void synchronize(device::id_t device_id, context::handle_t handle)
+// Just like context::current::synchronize(), but with arguments
+// allowing for throwing a more informative exception on failure
+inline void synchronize(
+	device::id_t current_context_device_id,
+	context::handle_t current_context_handle)
 {
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
 		throw cuda::runtime_error(status, "Failed synchronizing "
-			+ context::detail_::identify(handle, device_id));
+			+ context::detail_::identify(current_context_handle, current_context_device_id));
 	}
 }
 

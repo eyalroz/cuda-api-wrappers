@@ -7,14 +7,15 @@
 #ifndef CUDA_API_WRAPPERS_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_CONTEXT_HPP_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/versions.hpp>
 #include <cuda/api/current_context.hpp>
+#include <cuda/api/versions.hpp>
+#include <cuda/api/error.hpp>
+#include <cuda/api/constants.hpp>
+#include <cuda/api/types.hpp>
 
 #include <cuda.h>
-#include <iostream>
+#include <string>
+#include <utility>
 
 namespace cuda {
 
@@ -738,21 +739,6 @@ context_t create_and_push(
     bool                                   keep_larger_local_mem_after_resize = false);
 
 namespace current {
-
-/**
- * Determine whether any CUDA context is current, or whether the context stack is
- * empty/uninitialized
- */
-inline bool exists()
-{
-	context::handle_t handle;
-	auto status = cuCtxGetCurrent(&handle);
-	if (status == cuda::status::not_yet_initialized) {
-		return false;
-	}
-	throw_if_error(status, "Failed obtaining the current context's handle");
-	return (handle != context::detail_::none);
-}
 
 /**
  * Obtain the current CUDA context, if one exists.

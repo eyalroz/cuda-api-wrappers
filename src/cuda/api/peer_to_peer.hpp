@@ -111,7 +111,7 @@ inline void disable_access(context::handle_t accessor, context::handle_t peer)
 /**
  * @brief Check if a CUDA context can access the global memory of another CUDA context
  */
-inline bool can_access(context_t accessor, context_t peer);
+bool can_access(context_t accessor, context_t peer);
 
 /**
  * @brief Enable access by one CUDA device to the global memory of another
@@ -119,7 +119,7 @@ inline bool can_access(context_t accessor, context_t peer);
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-inline void enable_access(context_t accessor, context_t peer);
+void enable_access(context_t accessor, context_t peer);
 
 /**
  * @brief Disable access by one CUDA device to the global memory of another
@@ -127,17 +127,17 @@ inline void enable_access(context_t accessor, context_t peer);
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-inline void disable_access(context_t accessor, context_t peer);
+void disable_access(context_t accessor, context_t peer);
 
 /**
  * @brief Enable access both by the @p first to the @p second context and the other way around.
  */
-inline void enable_bidirectional_access(context_t first, context_t second);
+void enable_bidirectional_access(context_t first, context_t second);
 
 /**
  * @brief Disable access both by the @p first to the @p second context and the other way around.
  */
-inline void disable_bidirectional_access(context_t first, context_t second);
+void disable_bidirectional_access(context_t first, context_t second);
 
 } // namespace peer_to_peer
 } // namespace context

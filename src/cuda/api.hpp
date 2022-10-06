@@ -53,7 +53,6 @@
 #include <cuda/api/multi_wrapper_impls/array.hpp>
 #include <cuda/api/multi_wrapper_impls/event.hpp>
 #include <cuda/api/multi_wrapper_impls/device.hpp>
-#include <cuda/api/multi_wrapper_impls/event.hpp>
 #include <cuda/api/multi_wrapper_impls/context.hpp>
 #include <cuda/api/multi_wrapper_impls/stream.hpp>
 #include <cuda/api/multi_wrapper_impls/memory.hpp>

@@ -30,6 +30,10 @@
 #endif
 #include <cuda.h>
 
+#if __cplusplus >= 202002L
+#include <span>
+#endif
+
 #include <type_traits>
 #include <utility>
 #include <cassert>

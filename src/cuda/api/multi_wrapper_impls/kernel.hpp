@@ -12,7 +12,6 @@
 #define MULTI_WRAPPER_IMPLS_KERNEL_HPP_
 
 #include "../device.hpp"
-#include "../kernel_launch.hpp"
 #include "../pointer.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
@@ -80,6 +79,35 @@ inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attri
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
 #endif
 }
+
+namespace detail_ {
+
+template<typename Kernel>
+device::primary_context_t get_implicit_primary_context(Kernel)
+{
+	return device::current::get().primary_context();
+}
+
+template<>
+inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t kernel)
+{
+	auto context = kernel.context();
+	auto device = context.device();
+	auto primary_context = device.primary_context();
+	if (context != primary_context) {
+		throw ::std::logic_error("Attempt to launch a kernel associated with a non-primary context without specifying a stream associated with that context.");
+	}
+	return primary_context;
+}
+
+template<>
+inline device::primary_context_t get_implicit_primary_context<apriori_compiled_kernel_t>(apriori_compiled_kernel_t kernel)
+{
+	const kernel_t& kernel_ = kernel;
+	return get_implicit_primary_context(kernel_);
+}
+
+} // namespace detail_
 
 } // namespace cuda
 

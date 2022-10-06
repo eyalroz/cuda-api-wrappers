@@ -447,7 +447,7 @@ inline void destroy(
  *
  * @note The created event will keep the device's primary context active while it exists.
  */
-inline event_t create(
+event_t create(
 	const device_t&  device,
 	bool             uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
 	bool             records_timing     = do_record_timings,

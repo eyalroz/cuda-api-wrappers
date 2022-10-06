@@ -8,6 +8,7 @@
 #ifndef MULTI_WRAPPER_IMPLS_LAUNCH_HPP_
 #define MULTI_WRAPPER_IMPLS_LAUNCH_HPP_
 
+#include "kernel.hpp"
 #include "../types.hpp"
 #include "../memory.hpp"
 #include "../stream.hpp"

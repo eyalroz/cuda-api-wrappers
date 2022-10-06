@@ -8,6 +8,7 @@
 #define CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_
 
 
+#include <cuda/api/device_properties.hpp>
 #include <cuda/api/types.hpp>
 
 #if __cplusplus >= 202002L
