@@ -206,7 +206,7 @@ inline region_t allocate(
  * @return a pointer to the region of memory which will become allocated once the stream
  * completes all previous tasks and proceeds to also complete the allocation.
  */
-inline region_t allocate(const stream_t& stream, size_t size_in_bytes);
+region_t allocate(const stream_t& stream, size_t size_in_bytes);
 
 } // namespace async
 #endif
@@ -255,7 +255,8 @@ inline void free(
  * @param stream the stream on which to register the allocation
  */
  ///@{
-inline void free(const stream_t& stream, void* region_start);
+void free(const stream_t& stream, void* region_start);
+
 inline void free(const stream_t& stream, region_t region)
 {
 	free(stream, region.data());
@@ -321,7 +322,7 @@ struct deleter {
  * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
  */
 template <typename T>
-inline void typed_set(T* start, const T& value, size_t num_elements);
+void typed_set(T* start, const T& value, size_t num_elements);
 
 /**
  * @brief Sets all bytes in a region of memory to a fixed value
@@ -507,8 +508,6 @@ inline void copy(region_t destination, void* source)
 }
 ///@}
 
-
-
 /**
  * @brief Sets a number of bytes in memory to a fixed value
  *
@@ -520,23 +519,7 @@ inline void copy(region_t destination, void* source)
  * @param byte_value value to set the memory region to
  * @param num_bytes The amount of memory to set to @p byte_value
  */
-inline void set(void* ptr, int byte_value, size_t num_bytes)
-{
-	switch ( type_of(ptr) ) {
-		case device_:
-//		case managed_:
-		case unified_:
-			memory::device::set(ptr, byte_value, num_bytes); break;
-//		case unregistered_:
-		case host_:
-			::std::memset(ptr, byte_value, num_bytes); break;
-  		default:
-			throw runtime_error(
-				cuda::status::invalid_value,
-				"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail_::ptr_as_hex(ptr));
-	}
-}
-
+void set(void* ptr, int byte_value, size_t num_bytes);
 
 /**
  * @brief Sets all bytes in a region of memory to a fixed value
@@ -1308,7 +1291,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& s
 /**
  * Similar to @ref set(), but sets the memory to zero rather than an arbitrary value
  */
-inline void zero(void* start, size_t num_bytes, const stream_t& stream);
+void zero(void* start, size_t num_bytes, const stream_t& stream);
 
 /**
  * @brief Asynchronously sets all bytes of a single pointed-to value

@@ -550,6 +550,23 @@ inline void typed_set(T* start, const T& value, size_t num_elements)
 
 } // namespace device
 
+inline void set(void* ptr, int byte_value, size_t num_bytes)
+{
+	switch ( type_of(ptr) ) {
+	case device_:
+//		case managed_:
+	case unified_:
+		memory::device::set(ptr, byte_value, num_bytes); break;
+//		case unregistered_:
+	case host_:
+		::std::memset(ptr, byte_value, num_bytes); break;
+	default:
+		throw runtime_error(
+			cuda::status::invalid_value,
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail_::ptr_as_hex(ptr));
+	}
+}
+
 #if CUDA_VERSION >= 10020
 namespace virtual_ {
 namespace physical_allocation {
