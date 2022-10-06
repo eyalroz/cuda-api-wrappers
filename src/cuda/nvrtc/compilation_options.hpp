@@ -114,7 +114,7 @@ struct maybe_forced_bool {
 
 struct compilation_options_t {
 	template <typename T>
-	using optional = cuda::detail_::poor_mans_optional<T>;
+	using optional = cuda::optional<T>;
 
 	/**
 	 * Target devices in terms of CUDA compute capability.
@@ -503,8 +503,8 @@ void process(
 		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect];
 	}
 
-	if (opts.maximum_register_count.has_value()) {
-		marshalled << opt_start << "--maxrregcount" << opts.maximum_register_count;
+	if (opts.maximum_register_count) {
+		marshalled << opt_start << "--maxrregcount" << opts.maximum_register_count.value();
 	}
 
 	// Multi-value options
