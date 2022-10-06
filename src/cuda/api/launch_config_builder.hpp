@@ -10,9 +10,10 @@
 #ifndef CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 
-#include "launch_configuration.hpp"
-#include "kernel.hpp"
-#include "device.hpp"
+#include <cuda/api/launch_configuration.hpp>
+#include <cuda/api/kernel.hpp>
+#include <cuda/api/device.hpp>
+#include <cuda/api/types.hpp>
 
 namespace cuda {
 
@@ -154,8 +155,6 @@ public:
 	}
 
 protected:
-	template <typename T>
-	using optional = detail_::poor_mans_optional<T>;
 
 	struct {
 		optional<grid::block_dimensions_t  > block;
@@ -177,7 +176,7 @@ protected:
 	bool saturate_with_active_blocks_ { false };
 	bool use_min_params_for_max_occupancy_ { false };
 
-	static cuda::device_t device(detail_::poor_mans_optional<device::id_t> maybe_id)
+	static cuda::device_t device(optional<device::id_t> maybe_id)
 	{
 		return cuda::device::get(maybe_id.value());
 	}
@@ -211,8 +210,8 @@ protected:
 	}
 
 	static void compatible(
-		detail_::poor_mans_optional<device::id_t> maybe_device_id,
-		memory::shared::size_t                    shared_mem_size)
+		optional<device::id_t> maybe_device_id,
+		memory::shared::size_t shared_mem_size)
 	{
 		if (not maybe_device_id) { return; }
 		if (shared_mem_size == 0) { return; }
@@ -247,8 +246,8 @@ protected:
 	}
 
 	static void compatible(
-		detail_::poor_mans_optional<device::id_t>  maybe_device_id,
-		grid::block_dimensions_t                   block_dims)
+		optional<device::id_t>    maybe_device_id,
+		grid::block_dimensions_t  block_dims)
 	{
 		if (not maybe_device_id) { return; }
 		auto dev = device(maybe_device_id);
@@ -362,7 +361,7 @@ public:
 #ifndef NDEBUG
 		validate_composite_dimensions(composite_dims);
 #endif
-		dimensions_.overall.unset();
+		dimensions_.overall = nullopt;
 		dimensions_.grid = composite_dims.grid;
 		dimensions_.block = composite_dims.block;
 		return *this;
@@ -375,7 +374,7 @@ public:
 #endif
 		dimensions_.block = dims;
 		if (dimensions_.grid) {
-			dimensions_.overall.unset();
+			dimensions_.overall = nullopt;
 		}
 		return *this;
 
@@ -406,7 +405,7 @@ public:
 		auto block_dims = grid::block_dimensions_t { max_size, 1, 1 };
 
 		if (dimensions_.grid and dimensions_.overall) {
-			dimensions_.overall.unset();
+			dimensions_.overall = nullopt;
 		}
 		dimensions_.block = block_dims;
 		return *this;
@@ -418,7 +417,7 @@ public:
 		validate_grid_dimensions(dims);
 #endif
 		if (dimensions_.block) {
-			dimensions_.overall.unset();
+			dimensions_.overall = nullopt;
 		}
 		dimensions_.grid = dims;
 		saturate_with_active_blocks_ = false;
@@ -526,8 +525,8 @@ public:
 		if (not (dimensions_.block)) {
 			throw ::std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
 		}
-		dimensions_.grid.clear();
-		dimensions_.overall.clear();
+		dimensions_.grid = nullopt;
+		dimensions_.overall = nullopt;
 		use_min_params_for_max_occupancy_ = false;
 		saturate_with_active_blocks_ = true;
 		return *this;
@@ -538,9 +537,9 @@ public:
 		if (not (kernel_)) {
 			throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 		}
-		dimensions_.block.clear();
-		dimensions_.grid.clear();
-		dimensions_.overall.clear();
+		dimensions_.block = nullopt;
+		dimensions_.grid = nullopt;
+		dimensions_.overall = nullopt;
 		use_min_params_for_max_occupancy_ = true;
 		saturate_with_active_blocks_ = false;
 		return *this;

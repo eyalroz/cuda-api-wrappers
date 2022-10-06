@@ -83,8 +83,7 @@ struct poor_mans_optional {
 		has_value_ = other.has_value_;
 	}
 
-	~poor_mans_optional() noexcept
-	{};
+	~poor_mans_optional() noexcept = default;
 
 	T value() const
 	{ return maybe_value.value; }
@@ -95,14 +94,11 @@ struct poor_mans_optional {
 	bool has_value() const noexcept
 	{ return has_value_; }
 
-	void clear() noexcept
-	{ has_value_ = false; }
-
-	void unset() noexcept
+	void reset() noexcept
 	{ has_value_ = false; }
 
 protected:
-	bool has_value_{false};
+	bool has_value_;
 	maybe_value_union_t maybe_value;
 };
 
@@ -110,7 +106,8 @@ protected:
 
 template<typename T>
 using optional = cuda::detail_::poor_mans_optional<T>;
-using nullopt = detail_::no_value_t;
+using nullopt_t = detail_::no_value_t;
+constexpr nullopt_t nullopt{};
 
 } // namespace cuda
 
