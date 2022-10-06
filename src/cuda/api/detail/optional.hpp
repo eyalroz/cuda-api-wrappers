@@ -15,9 +15,9 @@ using ::std::optional;
 using ::std::nullopt;
 } // namespace cuda
 #elif __cplusplus >= 201402L
-namespace cuda {
 #include <experimental/optional>
 #include <experimental/any>
+namespace cuda {
 using ::std::experimental::optional;
 using ::std::experimental::nullopt;
 } // namespace cuda
