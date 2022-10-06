@@ -11,8 +11,8 @@
 #include <optional>
 #include <any>
 namespace cuda {
-using std::optional;
-using std::nullopt;
+using ::std::optional;
+using ::std::nullopt;
 } // namespace cuda
 #elif __cplusplus >= 201402L
 namespace cuda {

@@ -168,12 +168,12 @@ protected:
 	template <typename String>
 	static inline void check_string_type()
 	{
-		using no_cref_string_type = typename std::remove_const<typename std::remove_reference<String>::type>::type;
+		using no_cref_string_type = typename ::std::remove_const<typename ::std::remove_reference<String>::type>::type;
 		static_assert(
-			std::is_same<no_cref_string_type, const char*>::value or
-			std::is_same<no_cref_string_type, char*>::value or
-			std::is_same<String, const std::string&>::value or
-			std::is_same<String, std::string&>::value,
+			::std::is_same<no_cref_string_type, const char*>::value or
+			::std::is_same<no_cref_string_type, char*>::value or
+			::std::is_same<String, const ::std::string&>::value or
+			::std::is_same<String, ::std::string&>::value,
 			"Cannot use this type for a named header name or source; use char*, const char* or a "
 			"reference to a string you own"
 		);
@@ -181,19 +181,19 @@ protected:
 
 	// Note: All methods involved in adding headers - which eventually call one of the
 	// three adders of each kind here - are written carefully to support both C-style strings
-	// and lvalue references to std::string's - but _not_ rvalue strings or rvalue string
+	// and lvalue references to ::std::string's - but _not_ rvalue strings or rvalue string
 	// references, as the latter are not owned by the caller, and this class' code does not
 	// make a copy or take ownership. If you make any changes, you must be very careful not
 	// to _copy_ anything by mistake, but rather carry forward reference-types all the way
 	// to here.
 
-	void add_header_name_  (const char* name)          { headers_.names.emplace_back(name); }
-	void add_header_name_  (const std::string& name)   { add_header_name_(name.c_str()); }
-	void add_header_name_  (std::string&& name) = delete;
+	void add_header_name_  (const char* name)            { headers_.names.emplace_back(name); }
+	void add_header_name_  (const ::std::string& name)   { add_header_name_(name.c_str()); }
+	void add_header_name_  (::std::string&& name) = delete;
 
-	void add_header_source_(const char* source)        { headers_.sources.emplace_back(source); }
-	void add_header_source_(const std::string& source) { add_header_source_(source.c_str()); }
-	void add_header_source_(std::string&& source) = delete;
+	void add_header_source_(const char* source)          { headers_.sources.emplace_back(source); }
+	void add_header_source_(const ::std::string& source) { add_header_source_(source.c_str()); }
+	void add_header_source_(::std::string&& source) = delete;
 
 public: // mutators
 	template <typename String1, typename String2>
@@ -205,7 +205,7 @@ public: // mutators
 	}
 
 	template <typename String1, typename String2>
-	program_t& add_header(const std::pair<String1, String2>& name_and_source)
+	program_t& add_header(const ::std::pair<String1, String2>& name_and_source)
 	{
 		add_header_name_(name_and_source.first);
 		add_header_source_(name_and_source.second);
@@ -213,7 +213,7 @@ public: // mutators
 	}
 
 	template <typename String1, typename String2>
-	program_t& add_header(std::pair<String1, String2>&& name_and_source)
+	program_t& add_header(::std::pair<String1, String2>&& name_and_source)
 	{
 		check_string_type<String1>();
 		check_string_type<String2>();

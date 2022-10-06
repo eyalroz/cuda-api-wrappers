@@ -341,7 +341,7 @@ void launch(
  *
  * @tparam SpanOfConstVoidPtrLike
  *     Type of the container for the marshalled arguments; typically, this
- *     would be `span<const void*>` - but it can be an `std::vector`, or
+ *     would be `span<const void*>` - but it can be an `::std::vector`, or
  *     have non-const `void*` elements etc.
  * @param stream
  *     Proxy for the stream on which to enqueue the kernel launch; may be the

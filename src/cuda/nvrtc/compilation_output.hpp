@@ -93,8 +93,8 @@ inline size_t get_cubin_size(program::handle_t program_handle, const char* progr
 	auto status = nvrtcGetCUBINSize(program_handle, &size);
 	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
 	if (size == 0) {
-		throw std::runtime_error("CUBIN requested for a program compiled for a virtual architecture only: "
-								 + identify(program_handle, program_name));
+		throw ::std::runtime_error("CUBIN requested for a program compiled for a virtual architecture only: "
+			+ identify(program_handle, program_name));
 	}
 	return size;
 }
@@ -103,7 +103,7 @@ inline void get_cubin(char* buffer, program::handle_t program_handle, const char
 {
 	auto status = nvrtcGetCUBIN(program_handle, buffer);
 	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for "
-						   + identify(program_handle, program_name));
+		+ identify(program_handle, program_name));
 }
 
 #endif // CUDA_VERSION >= 11010
