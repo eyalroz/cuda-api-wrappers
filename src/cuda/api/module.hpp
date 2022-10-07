@@ -286,38 +286,29 @@ inline module_t load_from_file(
 	return load_from_file(context, path.c_str(), link_options);
 }
 
-inline module_t load_from_file(
+module_t load_from_file(
 	const device_t&  device,
 	const char*      path,
-	link::options_t  link_options = {})
-{
-	auto pc = device.primary_context();
-	device::primary_context::detail_::increase_refcount(device.id());
-	return load_from_file(pc, path, link_options);
-}
+	link::options_t  link_options = {});
 
 inline module_t load_from_file(
 	const device_t&       device,
-	const ::std::string*  path,
+	const ::std::string&  path,
 	link::options_t       link_options = {})
 {
-	return load_from_file(device, path->c_str(), link_options);
+	return load_from_file(device, path.c_str(), link_options);
 }
 
-inline module_t load_from_file(
+module_t load_from_file(
 	const char*      path,
-	link::options_t  link_options = {})
-{
-	return load_from_file(device::current::get(), path, link_options);
-}
+	link::options_t  link_options = {});
 
 inline module_t load_from_file(
 	const ::std::string&  path,
-	link::options_t       link_options)
+	link::options_t       link_options = {})
 {
-	return load_from_file(device::current::get(), path.c_str(), link_options);
+	return load_from_file(path.c_str(), link_options);
 }
-
 
 #if __cplusplus >= 201703L
 
@@ -353,34 +344,23 @@ inline module_t wrap(
 	return module_t{device_id, context_handle, module_handle, options, take_ownership, hold_pc_refcount_unit};
 }
 
+/*
 template <typename Creator>
 module_t create(const context_t& context, const void* module_data, Creator creator_function);
+*/
 
-// TODO: Consider adding create_module() methods to context_t
-inline module_t create(const context_t& context, const void* module_data, const link::options_t& link_options)
-{
-	auto creator_function =
-		[&link_options](handle_t& new_module_handle, const void* module_data) {
-			auto marshalled_options = marshal(link_options);
-			return cuModuleLoadDataEx(
-				&new_module_handle,
-				module_data,
-				marshalled_options.count(),
-				const_cast<link::option_t *>(marshalled_options.options()),
-				const_cast<void **>(marshalled_options.values())
-			);
-		};
-	return detail_::create(context, module_data, creator_function);
-}
-
-inline module_t create(const context_t& context, const void* module_data)
-{
-	auto creator_function =
-		[](handle_t& new_module_handle, const void* module_data) {
-			return cuModuleLoadData(&new_module_handle, module_data);
-		};
-	return detail_::create(context, module_data, creator_function);
-}
+/**
+ * Creates a new module in a context using raw compiled code
+ *
+ * @param context The module will exist within this GPU context, i.e. the globals (functions,
+ * variable) of the module would be usable within that constant.
+ * @param module_data The raw compiled code for the module.
+ * @param link_options Potential options for the PTX compilation and device linking of the code.
+ */
+///@{
+module_t create(const context_t& context, const void* module_data, const link::options_t& link_options);
+module_t create(const context_t& context, const void* module_data);
+///@}
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
@@ -398,7 +378,7 @@ namespace detail_ {
 
 inline ::std::string identify(const module_t& module)
 {
-	return identify(module.handle(), module.context_handle(), module.device().id());
+	return identify(module.handle(), module.context_handle(), module.device_id());
 }
 
 inline context_t get_context_for(const context_t& locus) { return locus; }

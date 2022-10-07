@@ -12,8 +12,8 @@
 #ifndef MULTI_WRAPPER_IMPLS_MODULE_HPP_
 #define MULTI_WRAPPER_IMPLS_MODULE_HPP_
 
+#include "context.hpp"
 #include "../device.hpp"
-#include "../context.hpp"
 #include "../module.hpp"
 
 namespace cuda {
@@ -56,10 +56,9 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 	context::current::scoped_override_t set_context_for_this_scope(context);
 	handle_t new_module_handle;
 	auto status = creator_function(new_module_handle, module_data);
-	throw_if_error(status, ::std::string(
-	"Failed loading a module from memory location ")
-						   + cuda::detail_::ptr_as_hex(module_data)
-						   + " within " + context::detail_::identify(context));
+	throw_if_error(status, ::std::string("Failed loading a module from memory location ")
+		+ cuda::detail_::ptr_as_hex(module_data)
+		+ " within " + context::detail_::identify(context));
 	bool do_take_ownership { true };
 	bool doesnt_hold_pc_refcount_unit { false };
 		// TODO: Do we want to allow holding a refcount unit here, if context is
@@ -71,10 +70,54 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 		link::options_t{}, do_take_ownership, doesnt_hold_pc_refcount_unit);
 }
 
+// TODO: Consider adding create_module() methods to context_t
+inline module_t create(const context_t& context, const void* module_data, const link::options_t& link_options)
+{
+	auto creator_function =
+		[&link_options](handle_t& new_module_handle, const void* module_data) {
+			auto marshalled_options = marshal(link_options);
+			return cuModuleLoadDataEx(
+				&new_module_handle,
+				module_data,
+				marshalled_options.count(),
+				const_cast<link::option_t *>(marshalled_options.options()),
+				const_cast<void **>(marshalled_options.values())
+			);
+		};
+	return detail_::create(context, module_data, creator_function);
+}
+
+inline module_t create(const context_t& context, const void* module_data)
+{
+	auto creator_function =
+		[](handle_t& new_module_handle, const void* module_data) {
+			return cuModuleLoadData(&new_module_handle, module_data);
+		};
+	return detail_::create(context, module_data, creator_function);
+}
+
+
 
 inline device::primary_context_t get_context_for(device_t& locus) { return locus.primary_context(); }
 
 } // namespace detail_
+
+inline module_t load_from_file(
+	const device_t&  device,
+	const char*      path,
+	link::options_t  link_options)
+{
+	auto pc = device.primary_context();
+	device::primary_context::detail_::increase_refcount(device.id());
+	return load_from_file(pc, path, link_options);
+}
+
+inline module_t load_from_file(
+	const char*      path,
+	link::options_t  link_options)
+{
+	return load_from_file(device::current::get(), path, link_options);
+}
 
 } // namespace module
 
