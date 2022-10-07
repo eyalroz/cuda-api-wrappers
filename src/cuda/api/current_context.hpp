@@ -230,7 +230,7 @@ class scoped_override_t;
  * the hood to effect this behavior.
  */
 #define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
-	::cuda::context::current::scoped_override_t scoped_context_override{ _cuda_context }
+	::cuda::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
 
 inline void synchronize()
 {
