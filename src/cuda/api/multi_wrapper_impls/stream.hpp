@@ -113,7 +113,7 @@ inline event_t stream_t::enqueue_t::event(
 	bool          interprocess) const
 {
 	auto context_handle = associated_stream.context_handle_;
-	context::current::detail_::scoped_override_t set_device_for_this_scope(context_handle);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
 
 		// Note that even if this stream is in the primary context, the created event
 	auto ev = event::detail_::create_in_current_context(
@@ -150,7 +150,7 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 		throw ::std::invalid_argument("Attempt to copy attributes between streams on different contexts");
 	}
 #endif
-	context::current::detail_::scoped_override_t set_device_for_this_scope(dest.context_handle());
+	context::current::detail_::scoped_override_t set_context_for_this_scope(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
 	throw_if_error(status);
 }
