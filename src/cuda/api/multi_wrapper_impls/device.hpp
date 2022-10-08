@@ -169,8 +169,8 @@ inline void synchronize(const device_t& device)
 
 template <typename KernelFunction, typename ... KernelParameters>
 void device_t::launch(
-KernelFunction kernel_function, launch_configuration_t launch_configuration,
-KernelParameters ... parameters) const
+	KernelFunction kernel_function, launch_configuration_t launch_configuration,
+	KernelParameters ... parameters) const
 {
 	auto pc = primary_context();
 	pc.default_stream().enqueue.kernel_launch(
