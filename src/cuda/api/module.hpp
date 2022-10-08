@@ -138,8 +138,8 @@ public: // getters
 
 	// TODO: Implement a surface reference and texture reference class rather than these raw pointers.
 
-	CUsurfref* get_surface(const char* name) const;
-	CUtexref* get_texture_reference(const char* name) const;
+	CUsurfref get_surface(const char* name) const;
+	CUtexref get_texture_reference(const char* name) const;
 
 protected: // constructors
 
