@@ -44,12 +44,12 @@ namespace module {
 inline module_t create(
 	const context_t&                  context,
 	const rtc::compilation_output_t&  compiled_program,
-	link::options_t                   options = {});
+	const link::options_t&            options = {});
 
 inline module_t create(
 	device_t&                         device,
 	const rtc::compilation_output_t&  compiled_program,
-	link::options_t                   options = {});
+	const link::options_t&            options = {});
 
 } // namespace module
 
@@ -463,7 +463,7 @@ namespace module {
 inline module_t create(
 	const context_t&                  context,
 	const rtc::compilation_output_t&  compiled_program,
-	link::options_t                   options)
+	const link::options_t&            options)
 {
 #if CUDA_VERSION >= 11030
 	auto cubin = compiled_program.cubin();
@@ -478,7 +478,7 @@ inline module_t create(
 inline module_t create(
 	device_t&                         device,
 	const rtc::compilation_output_t&  compiled_program,
-	link::options_t                   options)
+	const link::options_t&            options)
 {
 	return create(device.primary_context(), compiled_program, options);
 }

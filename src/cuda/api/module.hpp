@@ -36,12 +36,12 @@ using handle_t = CUmodule;
 namespace detail_ {
 
 inline module_t wrap(
-	device::id_t device_id,
-	context::handle_t context_handle,
-	handle_t handle,
-	link::options_t options,
-	bool take_ownership = false,
-	bool holds_primary_context_refcount_unit = false) noexcept;
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	handle_t                handle,
+	const link::options_t&  options,
+	bool                    take_ownership = false,
+	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
 inline ::std::string identify(const module::handle_t &handle)
 {
@@ -80,9 +80,9 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
-	Locus&&              locus,
-	ContiguousContainer  module_data,
-	link::options_t      link_options);
+	Locus&&                 locus,
+	ContiguousContainer     module_data,
+	const link::options_t&  link_options);
 
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
@@ -147,7 +147,7 @@ protected: // constructors
 		device::id_t device_id,
 		context::handle_t context,
 		module::handle_t handle,
-		link::options_t options,
+		const link::options_t& options,
 		bool owning,
 		bool holds_primary_context_refcount_unit)
 	noexcept
@@ -158,7 +158,7 @@ protected: // constructors
 public: // friendship
 
 	friend module_t module::detail_::wrap(
-		device::id_t, context::handle_t, module::handle_t, link::options_t, bool, bool) noexcept;
+		device::id_t, context::handle_t, module::handle_t, const link::options_t&, bool, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -232,11 +232,11 @@ using handle_t = CUmodule;
 namespace detail_ {
 
 inline module_t load_from_file_in_current_context(
-	device::id_t current_context_device_id,
-	context::handle_t current_context_handle,
-	const char *path,
-	link::options_t link_options,
-	bool holds_primary_context_refcount_unit = false)
+	device::id_t            current_context_device_id,
+	context::handle_t       current_context_handle,
+	const char *            path,
+	const link::options_t&  link_options,
+	bool                    holds_primary_context_refcount_unit = false)
 {
 	handle_t new_module_handle;
 	auto status = cuModuleLoad(&new_module_handle, path);
@@ -269,9 +269,9 @@ inline module_t load_from_file_in_current_context(
  */
 ///@{
 inline module_t load_from_file(
-	const context_t&  context,
-	const char*       path,
-	link::options_t   link_options = {})
+	const context_t&        context,
+	const char*             path,
+	const link::options_t&  link_options = {})
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context.handle());
 	return detail_::load_from_file_in_current_context(
@@ -279,33 +279,33 @@ inline module_t load_from_file(
 }
 
 inline module_t load_from_file(
-	const context_t&      context,
-	const ::std::string&  path,
-	link::options_t       link_options = {})
+	const context_t&        context,
+	const ::std::string&    path,
+	const link::options_t&  link_options = {})
 {
 	return load_from_file(context, path.c_str(), link_options);
 }
 
 module_t load_from_file(
-	const device_t&  device,
-	const char*      path,
-	link::options_t  link_options = {});
+	const device_t&         device,
+	const char*             path,
+	const link::options_t&  link_options = {});
 
 inline module_t load_from_file(
-	const device_t&       device,
-	const ::std::string&  path,
-	link::options_t       link_options = {})
+	const device_t&         device,
+	const ::std::string&    path,
+	const link::options_t&  link_options = {})
 {
 	return load_from_file(device, path.c_str(), link_options);
 }
 
 module_t load_from_file(
-	const char*      path,
-	link::options_t  link_options = {});
+	const char*             path,
+	const link::options_t&  link_options = {});
 
 inline module_t load_from_file(
-	const ::std::string&  path,
-	link::options_t       link_options = {})
+	const ::std::string&    path,
+	const link::options_t&  link_options = {})
 {
 	return load_from_file(path.c_str(), link_options);
 }
@@ -315,14 +315,14 @@ inline module_t load_from_file(
 inline module_t load_from_file(
 	const device_t&                 device,
 	const ::std::filesystem::path&  path,
-	link::options_t                 link_options = {})
+	const link::options_t&          link_options = {})
 {
 	return load_from_file(device, path.c_str(), link_options);
 }
 
 inline module_t load_from_file(
 	const ::std::filesystem::path&  path,
-	link::options_t                 link_options = {})
+	const link::options_t&          link_options = {})
 {
 	return load_from_file(device::current::get(), path, link_options);
 }
@@ -333,12 +333,12 @@ inline module_t load_from_file(
 namespace detail_ {
 
 inline module_t wrap(
-	device::id_t device_id,
-	context::handle_t context_handle,
-	handle_t module_handle,
-	link::options_t options,
-	bool take_ownership,
-	bool hold_pc_refcount_unit
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	handle_t                module_handle,
+	const link::options_t&  options,
+	bool                    take_ownership,
+	bool                    hold_pc_refcount_unit
 ) noexcept
 {
 	return module_t{device_id, context_handle, module_handle, options, take_ownership, hold_pc_refcount_unit};
@@ -401,9 +401,9 @@ module_t create(
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
-	Locus&&              locus,
-	ContiguousContainer  module_data,
-	link::options_t      link_options)
+	Locus&&                 locus,
+	ContiguousContainer     module_data,
+	const link::options_t&  link_options)
 {
 	auto context = detail_::get_context_for(locus);
 	return detail_::create(context, module_data.data(), link_options);
