@@ -522,7 +522,7 @@ public: // methods which mutate the context, but not its wrapper
 
 	template <typename ContiguousContainer,
 		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
-	module_t create_module(ContiguousContainer module_data, link::options_t link_options) const;
+	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
 
 	template <typename ContiguousContainer,
 		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >

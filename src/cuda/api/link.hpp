@@ -31,13 +31,13 @@ using handle_t = CUlinkState;
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	device::id_t       device_id,
-	context::handle_t  context_handle,
-	link::handle_t     handle,
-	link::options_t    options,
-	bool               take_ownership = false) noexcept;
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	link::handle_t          handle,
+	const link::options_t&  options,
+	bool                    take_ownership = false) noexcept;
 
-inline link_t create(const void* image, link::options_t options);
+inline link_t create(const void* image, const link::options_t& options);
 
 // TODO: Use a clase-class with C++17 of later, made up of the two classes here
 namespace input {
@@ -103,7 +103,7 @@ public:
 	}
 
 	// TODO: Replace this with methods which take wrapper classes.
-	void add(link::input::image_t image, const link::options_t ptx_compilation_options = {}) const
+	void add(link::input::image_t image, const link::options_t& ptx_compilation_options = {}) const
 	{
 		auto marshalled_options = marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
@@ -145,16 +145,16 @@ public:
 protected: // constructors
 
 	link_t(
-		device::id_t device_id,
-		context::handle_t context,
-		link::handle_t handle,
-		link::options_t options,
-		bool take_ownership) noexcept
+		device::id_t            device_id,
+		context::handle_t       context,
+		link::handle_t          handle,
+		const link::options_t&  options,
+		bool                    take_ownership) noexcept
 	: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning(take_ownership) { }
 
 public: // friendship
 
-	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, link::options_t, bool) noexcept;
+	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, const link::options_t&, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -202,7 +202,7 @@ protected: // data members
 
 namespace link {
 
-inline link_t create(link::options_t options = link::options_t{})
+inline link_t create(const link::options_t& options = link::options_t{})
 {
 	handle_t new_link_handle;
 	auto marshalled_options = marshal(options);
@@ -226,11 +226,11 @@ inline link_t create(link::options_t options = link::options_t{})
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	device::id_t       device_id,
-	context::handle_t  context_handle,
-	link::handle_t     handle,
-	link::options_t    options,
-	bool               take_ownership) noexcept
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	link::handle_t          handle,
+	const link::options_t&  options,
+	bool                    take_ownership) noexcept
 {
 	return link_t{device_id, context_handle, handle, options, take_ownership};
 }

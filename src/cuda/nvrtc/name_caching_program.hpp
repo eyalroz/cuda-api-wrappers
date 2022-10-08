@@ -205,9 +205,9 @@ class module_t;
 namespace module {
 
 inline module_t create(
-	const context_t&       context,
-	const rtc::program_t&  compiled_program,
-	link::options_t        options = {} )
+	const context_t&        context,
+	const rtc::program_t&   compiled_program,
+	const link::options_t&  options = {} )
 {
 #if CUDA_VERSION >= 11030
 	auto cubin = compiled_program.cubin();

@@ -28,7 +28,7 @@ module_t context_t::create_module(ContiguousContainer module_data) const
 
 template <typename ContiguousContainer,
 cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
-module_t context_t::create_module(ContiguousContainer module_data, link::options_t link_options) const
+module_t context_t::create_module(ContiguousContainer module_data, const link::options_t& link_options) const
 {
 	return module::create<ContiguousContainer>(*this, module_data, link_options);
 }
@@ -103,9 +103,9 @@ inline device::primary_context_t get_context_for(device_t& locus) { return locus
 } // namespace detail_
 
 inline module_t load_from_file(
-	const device_t&  device,
-	const char*      path,
-	link::options_t  link_options)
+	const device_t&         device,
+	const char*             path,
+	const link::options_t&  link_options)
 {
 	auto pc = device.primary_context();
 	device::primary_context::detail_::increase_refcount(device.id());
@@ -113,8 +113,8 @@ inline module_t load_from_file(
 }
 
 inline module_t load_from_file(
-	const char*      path,
-	link::options_t  link_options)
+	const char*             path,
+	const link::options_t&  link_options)
 {
 	return load_from_file(device::current::get(), path, link_options);
 }
