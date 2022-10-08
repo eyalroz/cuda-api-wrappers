@@ -27,6 +27,10 @@ set(caw_namespace "cuda-api-wrappers")
 
 find_package(CUDAToolkit 9.0 REQUIRED)
 find_package(Threads REQUIRED)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
+	_CUDAToolkit_find_and_add_import_lib(nvptxcompiler)
+	_CUDAToolkit_find_and_add_import_lib(nvptxcompiler_static)
+endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
@@ -67,6 +71,14 @@ foreach(wrapper_lib ${targets})
 	)
 endforeach()
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
+	if (TARGET CUDA::nvptxcompiler)
+		target_link_libraries(caw_rtc INTERFACE  CUDA::nvptxcompiler)
+	else()
+		target_link_libraries(caw_rtc INTERFACE  CUDA::nvptxcompiler_static)
+	endif()
+endif()
+
 target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt ${CMAKE_DL_LIBS})
 
 # Note: This is a bit like a poor man's configure.h file;
