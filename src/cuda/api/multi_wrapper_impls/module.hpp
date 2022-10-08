@@ -124,6 +124,27 @@ inline module_t load_from_file(
 inline context_t module_t::context() const { return context::detail_::from_handle(context_handle_); }
 inline device_t module_t::device() const { return device::get(context::detail_::get_device_id(context_handle_)); }
 
+inline CUsurfref module_t::get_surface(const char* name) const
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CUsurfref raw_surface_reference;
+	auto status = cuModuleGetSurfRef(&raw_surface_reference, handle_, name);
+	throw_if_error(status, ::std::string("Failed obtaining a reference to surface \"") + name + "\" from "
+		+ module::detail_::identify(*this));
+	return raw_surface_reference;
+}
+
+inline CUtexref module_t::get_texture_reference(const char* name) const
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CUtexref raw_texture_reference;
+	auto status = cuModuleGetTexRef(&raw_texture_reference, handle_, name);
+	throw_if_error(status, ::std::string("Failed obtaining a reference to texture \"") + name + "\" from "
+		+ module::detail_::identify(*this));
+	return raw_texture_reference;
+}
+
+
 } // namespace cuda
 
 #endif // MULTI_WRAPPER_IMPLS_MODULE_HPP_
