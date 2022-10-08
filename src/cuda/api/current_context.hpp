@@ -181,6 +181,10 @@ public:
 	scoped_override_t(device::id_t device_for_which_context_is_primary, handle_t context_handle)
 		: scoped_override_t(true, device_for_which_context_is_primary, context_handle) {}
 	explicit scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle);
+	scoped_override_t(const scoped_override_t&) = delete;
+	scoped_override_t(scoped_override_t&&) = delete;
+	scoped_override_t& operator=(const scoped_override_t&) = delete;
+	scoped_override_t& operator=(scoped_override_t&&) = delete;
 	~scoped_override_t();
 };
 
@@ -202,6 +206,12 @@ public:
 	explicit scoped_ensurer_t(handle_t fallback_context_handle)
 		: scoped_ensurer_t(not exists(), fallback_context_handle)
 	{}
+
+	scoped_ensurer_t(const scoped_ensurer_t&) = delete;
+	scoped_ensurer_t(scoped_ensurer_t&&) = delete;
+
+	scoped_ensurer_t& operator=(scoped_ensurer_t&&) = delete;
+	scoped_ensurer_t& operator=(const scoped_ensurer_t&) = delete;
 
 	~scoped_ensurer_t() { if (context_was_pushed_on_construction) { pop(); } }
 };
