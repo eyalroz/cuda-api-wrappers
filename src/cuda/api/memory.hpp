@@ -1235,7 +1235,7 @@ inline void zero(region_t region, stream::handle_t stream_handle)
 	zero(region.start(), region.size(), stream_handle);
 }
 
-// TODO: Drop this in favor of <algorithm>-like functions under `cuda::~.
+// TODO: Drop this in favor of <algorithm>-like functions under `cuda::`.
 template <typename T>
 inline void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t stream_handle)
 {

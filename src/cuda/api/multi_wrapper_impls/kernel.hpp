@@ -70,11 +70,7 @@ inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attri
 	auto result = cuFuncSetAttribute(handle_, static_cast<CUfunction_attribute>(attribute), value);
 	throw_if_error(result,
 		"Setting CUDA device function attribute " +
-#ifndef NDEBUG
 		::std::string(kernel::detail_::attribute_name(attribute)) +
-#else
-		::std::to_string(static_cast<::std::underlying_type<kernel::attribute_t>::type>(attribute)) +
-#endif
 		" to value " + ::std::to_string(value)	);
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
 #endif
