@@ -840,7 +840,7 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit = false;
 	}
 
-	~stream_t()
+	~stream_t() noexcept(false)
 	{
 		if (owning) {
 			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);

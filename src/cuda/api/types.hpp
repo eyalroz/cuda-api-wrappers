@@ -58,6 +58,12 @@
 #endif
 #endif
 
+#ifdef NDEBUG
+#define NOEXCEPT_IF_NDEBUG noexcept(true)
+#else
+#define NOEXCEPT_IF_NDEBUG noexcept(false)
+#endif
+
 #ifdef _MSC_VER
 /*
  * Microsoft Visual C++ (upto v2017) does not support the C++

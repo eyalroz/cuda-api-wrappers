@@ -186,10 +186,15 @@ public: // constructors and destructor
 
 	primary_context_t(primary_context_t&& other) noexcept = default;
 
-	~primary_context_t()
+	~primary_context_t() NOEXCEPT_IF_NDEBUG
 	{
-	    if (owns_refcount_unit_) {
-	        primary_context::detail_::decrease_refcount(device_id_);
+		if (owns_refcount_unit_) {
+#ifndef NDEBUG
+			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
+			// Swallow any error to avoid termination on throwing from a dtor
+#else
+			primary_context::detail_::decrease_refcount(device_id_);
+#endif
 	    }
 	}
 

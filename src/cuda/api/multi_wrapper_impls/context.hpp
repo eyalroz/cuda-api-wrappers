@@ -83,7 +83,7 @@ inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, 
 	push(context_handle);
 }
 
-inline scoped_override_t::~scoped_override_t()
+inline scoped_override_t::~scoped_override_t() noexcept(false)
 {
 	if (hold_primary_context_ref_unit_) { device::primary_context::detail_::decrease_refcount(device_id_or_0_); }
 	pop();

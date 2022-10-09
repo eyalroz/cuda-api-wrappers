@@ -59,7 +59,7 @@ public:
 		other.owning_ = false;
 	}
 
-	~reserved_address_range_t()
+	~reserved_address_range_t() noexcept(false)
 	{
 		if (not owning_) { return; }
 		detail_::cancel_reservation(region_);
@@ -216,7 +216,8 @@ public: // constructors & destructor
 		other.holds_refcount_unit_ = false;
 	}
 
-	~physical_allocation_t() {
+	~physical_allocation_t() noexcept(false)
+	{
 		if (not holds_refcount_unit_) { return; }
 		auto result = cuMemRelease(handle_);
 		throw_if_error_lazy(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
@@ -456,7 +457,7 @@ public: // constructors & destructions
 		ContiguousContainer<device_t>&& devices,
 		access_mode_t access_mode) const;
 
-	~mapping_t()
+	~mapping_t() noexcept(false)
 	{
 		if (not owning_) { return; }
 		auto result = cuMemUnmap(address_range_.device_address(), address_range_.size());

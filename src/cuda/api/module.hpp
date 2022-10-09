@@ -180,7 +180,7 @@ public: // constructors and destructor
 	// Note: It is up to the user of this class to ensure that it is destroyed _before_ the context
 	// in which it was created; and one needs to be particularly careful about this point w.r.t.
 	// primary contexts
-	~module_t()
+	~module_t() noexcept(false)
 	{
 		if (owning_) {
 			module::detail_::destroy(handle_, context_handle_, device_id_);

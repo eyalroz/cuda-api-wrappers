@@ -349,7 +349,8 @@ public: // ctors & dtor
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
 	virtual
 #endif
-	~kernel_t()	{
+	~kernel_t() NOEXCEPT_IF_NDEBUG
+	{
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {
 #ifdef NDEBUG
