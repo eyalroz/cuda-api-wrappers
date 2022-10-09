@@ -299,6 +299,14 @@ private:
 	status_t code_;
 };
 
+#define throw_if_error_lazy(status__, ... ) \
+do { \
+	status_t tie_status__ = static_cast<status_t>(status__); \
+	if (is_failure(tie_status__)) { \
+		throw runtime_error(tie_status__, (__VA_ARGS__)); \
+	} \
+} while(false)
+
 // TODO: The following could use ::std::optional arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here

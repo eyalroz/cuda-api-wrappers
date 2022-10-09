@@ -30,7 +30,7 @@ inline void initialize_driver()
 {
 	static constexpr const unsigned dummy_flags { 0 }; // this is the only allowed value for flags
 	auto status = cuInit(dummy_flags);
-	throw_if_error(status, "Failed initializing the CUDA driver");
+	throw_if_error_lazy(status, "Failed initializing the CUDA driver");
 }
 
 inline void ensure_driver_is_initialized()

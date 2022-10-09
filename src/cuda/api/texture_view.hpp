@@ -116,7 +116,7 @@ public: // constructors and destructors
 		resource_descriptor.res.array.hArray = arr.get();
 
 		auto status = cuTexObjectCreate(&raw_view_handle, &resource_descriptor, &descriptor, nullptr);
-		throw_if_error(status, "failed creating a CUDA texture object");
+		throw_if_error_lazy(status, "failed creating a CUDA texture object");
     }
 
 public: // operators
@@ -126,7 +126,7 @@ public: // operators
 		if (owning) {
 			scoped_context_setter set_context(context_handle_);
 			auto status = cuTexObjectDestroy(raw_view_handle);
-			throw_if_error(status, "failed destroying texture object");
+			throw_if_error_lazy(status, "failed destroying texture object");
 		}
 	}
 

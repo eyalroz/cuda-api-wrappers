@@ -70,7 +70,7 @@ handle_t create_in_current_context(dimensions_t<3> dimensions)
 	descriptor.Flags = 0;
 
 	auto status = cuArray3DCreate(&handle, &descriptor);
-	throw_if_error(status, "failed allocating 3D CUDA array");
+	throw_if_error_lazy(status, "failed allocating 3D CUDA array");
 	return handle;
 }
 
@@ -84,7 +84,7 @@ handle_t create_in_current_context(dimensions_t<2> dimensions)
 	descriptor.NumChannels = 1;
 	handle_t handle;
 	auto status = cuArrayCreate(&handle, &descriptor);
-	throw_if_error(status, "failed allocating 2D CUDA array");
+	throw_if_error_lazy(status, "failed allocating 2D CUDA array");
 	return handle;
 }
 
@@ -106,7 +106,7 @@ handle_t get_descriptor(context::handle_t context_handle, handle_t handle)
 	auto status = (NumDimensions == 2) ?
 		cuArrayGetDescriptor(&result, handle) :
 		cuArray3DGetDescriptor(&result, handle);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		::std::string("Failed obtaining the descriptor of the CUDA ") +
 		(NumDimensions == 2 ? "2":"3") + "D array at " + cuda::detail_::ptr_as_hex(handle));
 	return result;
@@ -170,7 +170,7 @@ public:
 			auto status = cuArrayDestroy(handle_);
 			// Note: Throwing in a noexcept destructor; if the free'ing fails, the program
 			// will likely terminate
-			throw_if_error(status, "Failed destroying CUDA array " + cuda::detail_::ptr_as_hex(handle_));
+			throw_if_error_lazy(status, "Failed destroying CUDA array " + cuda::detail_::ptr_as_hex(handle_));
 		}
 	}
 

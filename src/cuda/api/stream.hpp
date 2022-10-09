@@ -118,7 +118,7 @@ inline handle_t create_raw_in_current_context(
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
 		// We could instead have used an equivalent Driver API call:
 		// cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	throw_if_error(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
+	throw_if_error_lazy(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
 	return new_stream_handle;
 }
 
@@ -127,7 +127,7 @@ inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
 	context::handle_t handle;
 	auto result = cuStreamGetCtx(stream_handle, &handle);
-	throw_if_error(result, "Failed obtaining the context of " + cuda::detail_::ptr_as_hex(stream_handle));
+	throw_if_error_lazy(result, "Failed obtaining the context of " + cuda::detail_::ptr_as_hex(stream_handle));
 	return handle;
 }
 #endif // CUDA_VERSION >= 9020
@@ -244,7 +244,7 @@ public: // other non-mutators
 		auto status = cuStreamGetFlags(handle_, &flags);
 			// Could have used the equivalent Driver API call,
 			// cuStreamGetFlags(handle_, &flags);
-		throw_if_error(status, "Failed obtaining flags for a stream in "
+		throw_if_error_lazy(status, "Failed obtaining flags for a stream in "
 				+ context::detail_::identify(context_handle_, device_id_));
 		return flags & CU_STREAM_NON_BLOCKING;
 	}
@@ -255,7 +255,7 @@ public: // other non-mutators
 		auto status = cuStreamGetPriority(handle_, &the_priority);
 			// Could have used the equivalent Runtime API call:
 			// cuStreamGetPriority(handle_, &the_priority);
-		throw_if_error(status, "Failed obtaining priority for a stream in "
+		throw_if_error_lazy(status, "Failed obtaining priority for a stream in "
 			+ context::detail_::identify(context_handle_, device_id_));
 		return the_priority;
 	}
@@ -548,7 +548,7 @@ public: // mutators
 				// Could have used the equivalent Driver API call: cuAddStreamCallback()
 #endif
 
-			throw_if_error(status, "Failed scheduling a callback to be launched on "
+			throw_if_error_lazy(status, "Failed scheduling a callback to be launched on "
 				+ stream::detail_::identify(associated_stream.handle_,
 					associated_stream.context_handle_, associated_stream.device_id_));
 		}
@@ -623,7 +623,7 @@ public: // mutators
 			auto status =  cuStreamAttachMemAsync(
 				associated_stream.handle_,  memory::device::address(managed_region_start), length, flags);
 				// Could have used the equivalent Driver API call cuStreamAttachMemAsync
-			throw_if_error(status, "Failed scheduling an attachment of a managed memory region on "
+			throw_if_error_lazy(status, "Failed scheduling an attachment of a managed memory region on "
 				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
 				associated_stream.device_id_));
 		}
@@ -678,7 +678,7 @@ public: // mutators
 				CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
 			auto result = static_cast<status_t>(
 				stream::detail_::write_value(associated_stream.handle_, address, value, flags));
-			throw_if_error(result, "Failed scheduling a write to global memory on "
+			throw_if_error_lazy(result, "Failed scheduling a write to global memory on "
 				+ stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
 				+ associated_stream.device_id_));
 		}
@@ -708,7 +708,7 @@ public: // mutators
 				(with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
 			auto result = static_cast<status_t>(
 				stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
-			throw_if_error(result,
+			throw_if_error_lazy(result,
 				"Failed scheduling a wait on global memory address on "
 				+ stream::detail_::identify(
 					associated_stream.handle_,
@@ -795,7 +795,7 @@ public: // mutators
 		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
-		throw_if_error(status, ::std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, ::std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
@@ -805,7 +805,7 @@ public: // mutators
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
-		throw_if_error(status, ::std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, ::std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
 	}
 #endif
 
@@ -1019,7 +1019,7 @@ using queue_id_t = stream::handle_t;
 inline void synchronize(const stream_t& stream)
 {
 	auto status = cuStreamSynchronize(stream.handle());
-	throw_if_error(status, "Failed synchronizing " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail_::identify(stream));
 }
 
 #if CUDA_VERSION >= 11000

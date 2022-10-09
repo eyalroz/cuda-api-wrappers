@@ -214,7 +214,7 @@ void enqueue_raw_kernel_launch(
 			(size_t)launch_configuration.dynamic_shared_memory_size,
 			cudaStream_t(stream_handle));
 #endif // CUDA_VERSION >= 11000
-		throw_if_error(status, "Cooperative kernel launch failed");
+		throw_if_error_lazy(status, "Cooperative kernel launch failed");
 #endif // CUDA_VERSION >= 9000
 	}
 }

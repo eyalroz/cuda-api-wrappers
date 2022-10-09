@@ -132,7 +132,7 @@ public: // getters
 		CUdeviceptr dptr;
 		size_t size;
 		auto result = cuModuleGetGlobal(&dptr, &size, handle_, name);
-		throw_if_error(result, "Obtaining the address and size of a named global object");
+		throw_if_error_lazy(result, "Obtaining the address and size of a named global object");
 		return { memory::as_pointer(dptr), size };
 	}
 
@@ -240,7 +240,7 @@ inline module_t load_from_file_in_current_context(
 {
 	handle_t new_module_handle;
 	auto status = cuModuleLoad(&new_module_handle, path);
-	throw_if_error(status, ::std::string("Failed loading a module from file ") + path);
+	throw_if_error_lazy(status, ::std::string("Failed loading a module from file ") + path);
 	bool do_take_ownership{true};
 	return wrap(
 		current_context_device_id,
@@ -366,7 +366,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
 	auto status = cuModuleUnload(handle);
-	throw_if_error(status, "Failed unloading " + identify(handle, context_handle, device_id));
+	throw_if_error_lazy(status, "Failed unloading " + identify(handle, context_handle, device_id));
 }
 
 } // namespace detail_

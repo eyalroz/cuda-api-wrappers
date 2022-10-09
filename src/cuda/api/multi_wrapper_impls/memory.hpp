@@ -386,7 +386,7 @@ template <typename Allocator>
 	auto status = cuMemRangeGetAttribute(
 	device_ids, sizeof(device_t) * devices.size(),
 	CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY, device::address(region.start()), region.size());
-	throw_if_error(status, "Obtaining the IDs of devices with access to the managed memory range at "
+	throw_if_error_lazy(status, "Obtaining the IDs of devices with access to the managed memory range at "
 						   + cuda::detail_::ptr_as_hex(region.start()));
 	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
@@ -487,7 +487,7 @@ inline void* allocate(
 		// Can this even happen? hopefully not
 		result = static_cast<status_t>(status::named_t::unknown);
 	}
-	throw_if_error(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
+	throw_if_error_lazy(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
 	return allocated;
 }
 
@@ -502,7 +502,7 @@ attribute_value_type_t <attribute> get_attribute(const void *ptr)
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	attribute_value_type_t <attribute> attribute_value;
 	auto status = cuPointerGetAttribute(&attribute_value, attribute, device::address(ptr));
-	throw_if_error(status, "Obtaining attribute " + ::std::to_string((int) attribute)
+	throw_if_error_lazy(status, "Obtaining attribute " + ::std::to_string((int) attribute)
 						   + " for pointer " + cuda::detail_::ptr_as_hex(ptr) );
 	return attribute_value;
 }
@@ -512,7 +512,7 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 {
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	auto status = cuPointerGetAttributes( num_attributes, attributes, value_ptrs, device::address(ptr) );
-	throw_if_error(status, "Obtaining multiple attributes for pointer " + cuda::detail_::ptr_as_hex(ptr));
+	throw_if_error_lazy(status, "Obtaining multiple attributes for pointer " + cuda::detail_::ptr_as_hex(ptr));
 }
 
 } // namespace detail_
@@ -524,7 +524,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes)
 	auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
-	throw_if_error(result, "Synchronously copying data");
+	throw_if_error_lazy(result, "Synchronously copying data");
 }
 
 namespace device {
@@ -545,7 +545,7 @@ inline void typed_set(T* start, const T& value, size_t num_elements)
 		case(2): result = cuMemsetD16(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
 		case(4): result = cuMemsetD32(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
 	}
-	throw_if_error(result, "Setting global device memory bytes");
+	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
 
 } // namespace device
@@ -599,7 +599,7 @@ inline void set_access_mode(
 	CUmemAccessDesc desc { { CU_MEM_LOCATION_TYPE_DEVICE, device.id() }, CUmemAccess_flags(access_mode) };
 	static constexpr const size_t count { 1 };
 	auto result = cuMemSetAccess(fully_mapped_region.device_address(), fully_mapped_region.size(), &desc, count);
-	throw_if_error(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
+	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
@@ -620,7 +620,7 @@ inline void set_access_mode(
 	}
 	auto result = cuMemSetAccess(
 	device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors, devices.size());
-	throw_if_error(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
+	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 

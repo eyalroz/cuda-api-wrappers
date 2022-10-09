@@ -151,7 +151,7 @@ inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
-	throw_if_error(status, "Failed allocating " + ::std::to_string(num_bytes) +
+	throw_if_error_lazy(status, "Failed allocating " + ::std::to_string(num_bytes) +
 		" bytes of global memory on the current CUDA device");
 	return {as_pointer(allocated), num_bytes};
 }
@@ -185,7 +185,7 @@ inline region_t allocate(
 		// Can this even happen? hopefully not
 		status = static_cast<decltype(status)>(status::unknown);
 	}
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
 		" bytes of global memory on " + stream::detail_::identify(stream_handle, context_handle) );
 	return {as_pointer(allocated), num_bytes};
@@ -239,7 +239,7 @@ inline void free(
 	void*              allocated_region_start)
 {
 	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed scheduling an asynchronous freeing of the global memory region starting at "
 		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
 		+ stream::detail_::identify(stream_handle, context_handle) );
@@ -842,7 +842,7 @@ void copy(array_t<T, NumDimensions> destination, array_t<T, NumDimensions> sourc
 	params.dstPitch = params.srcPitch = dims.width * sizeof(T);
 	auto status = //(source.context() == destination.context()) ?
 		detail_::multidim_copy<NumDimensions>(source.context_handle(), params);
-	throw_if_error(status, "Copying from a CUDA array into a regular memory region");
+	throw_if_error_lazy(status, "Copying from a CUDA array into a regular memory region");
 }
 
 
@@ -901,7 +901,7 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
-	throw_if_error(result, "Scheduling a memory copy on " + stream::detail_::identify(stream_handle));
+	throw_if_error_lazy(result, "Scheduling a memory copy on " + stream::detail_::identify(stream_handle));
 }
 
 /**
@@ -1217,7 +1217,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t 
 {
 	// TODO: Double-check that this call doesn't require setting the current device
 	auto result = cuMemsetD8Async(address(start), (unsigned char) byte_value, num_bytes, stream_handle);
-	throw_if_error(result, "asynchronously memsetting an on-device buffer");
+	throw_if_error_lazy(result, "asynchronously memsetting an on-device buffer");
 }
 
 inline void set(region_t region, int byte_value, stream::handle_t stream_handle)
@@ -1251,7 +1251,7 @@ inline void typed_set(T* start, const T& value, size_t num_elements, stream::han
 		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements, stream_handle); break;
 		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements, stream_handle); break;
 	}
-	throw_if_error(result, "Setting global device memory bytes");
+	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
 
 } // namespace detail_
@@ -1330,7 +1330,7 @@ inline void copy(
 		destination_context,
 		reinterpret_cast<device::address_t>(source_address),
 		source_context, num_bytes);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		::std::string("Failed copying data between devices: From address ")
 			+ cuda::detail_::ptr_as_hex(source_address) + " in "
 			+ context::detail_::identify(source_context) + " to address "
@@ -1402,7 +1402,7 @@ inline void copy(
 
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
-	throw_if_error(result, "Scheduling an inter-context memory copy from "
+	throw_if_error_lazy(result, "Scheduling an inter-context memory copy from "
 		+ context::detail_::identify(source_context_handle) + " to "
 		+ context::detail_::identify(destination_context_handle) + " on "
 		+ stream::detail_::identify(stream_handle));
@@ -1559,7 +1559,7 @@ struct deleter {
 inline void register_(const void *ptr, size_t size, unsigned flags)
 {
 	auto result = cuMemHostRegister(const_cast<void *>(ptr), size, flags);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Could not register and page-lock the region of " + ::std::to_string(size) +
 		" bytes of host memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
@@ -1648,7 +1648,7 @@ inline void register_(const_region_t region)
 inline void deregister(const void *ptr)
 {
 	auto result = cuMemHostUnregister(const_cast<void *>(ptr));
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Could not unregister the memory segment starting at address *a");
 }
 
@@ -1770,7 +1770,7 @@ inline T get_scalar_range_attribute(managed::const_region_t region, range_attrib
 	uint32_t attribute_value { 0 };
 	auto result = cuMemRangeGetAttribute(
 		&attribute_value, sizeof(attribute_value), attribute, device::address(region.start()), region.size());
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Obtaining an attribute for a managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
 	return static_cast<T>(attribute_value);
 }
@@ -1780,7 +1780,7 @@ inline T get_scalar_range_attribute(managed::const_region_t region, range_attrib
 inline void advise(managed::const_region_t region, advice_t advice, cuda::device::id_t device_id)
 {
 	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
-	throw_if_error(result, "Setting an attribute for a managed memory range at "
+	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
 	+ cuda::detail_::ptr_as_hex(region.start()));
 }
 
@@ -1847,7 +1847,7 @@ inline region_t allocate_in_current_context(
 		// Can this even happen? hopefully not
 		status = (status_t) status::unknown;
 	}
-	throw_if_error(status, "Failed allocating "
+	throw_if_error_lazy(status, "Failed allocating "
 		+ ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
 	return {as_pointer(allocated), num_bytes};
 }
@@ -1862,7 +1862,7 @@ inline void free(void* ptr)
 {
 	auto result = cuMemFree(device::address(ptr));
 	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
-	throw_if_error(result, "Freeing managed memory at " + cuda::detail_::ptr_as_hex(ptr));
+	throw_if_error_lazy(result, "Freeing managed memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
 inline void free(region_t region)
 {
@@ -1949,7 +1949,7 @@ region_t allocate(size_t num_bytes);
 inline void free(void* managed_ptr)
 {
 	auto result = cuMemFree(device::address(managed_ptr));
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Freeing managed memory (host and device regions) at address "
 		+ cuda::detail_::ptr_as_hex(managed_ptr));
 }
@@ -1973,7 +1973,7 @@ namespace detail_ {
 inline void set(const_region_t region, kind_t advice, cuda::device::id_t device_id)
 {
 	auto result = cuMemAdvise(device::address(region.start()), region.size(), (managed::detail_::advice_t) advice, device_id);
-	throw_if_error(result, "Setting advice on a (managed) memory region at"
+	throw_if_error_lazy(result, "Setting advice on a (managed) memory region at"
 		+ cuda::detail_::ptr_as_hex(region.start()) + " w.r.t. " + cuda::device::detail_::identify(device_id));
 }
 
@@ -1993,7 +1993,7 @@ inline void prefetch(
 	stream::handle_t    source_stream_handle)
 {
 	auto result = cuMemPrefetchAsync(device::address(region.start()), region.size(), destination, source_stream_handle);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
 		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + (
 		 	(destination == CU_DEVICE_CPU) ? "the host" : cuda::device::detail_::identify(destination))  );
@@ -2038,7 +2038,7 @@ inline T* device_side_pointer_for(T* host_memory_ptr)
 		&device_side_ptr,
 		host_memory_ptr,
 		get_device_pointer_flags);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed obtaining the device-side pointer for host-memory pointer "
 		+ cuda::detail_::ptr_as_hex(host_memory_ptr) + " supposedly mapped to device memory");
 	return as_pointer(device_side_ptr);
@@ -2070,7 +2070,7 @@ inline region_pair allocate_in_current_context(
 		// Can this even happen? hopefully not
 		status = (status_t) status::named_t::unknown;
 	}
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)
 		+ " bytes of global memory in " + context::detail_::identify(current_context_handle));
 	allocated.device_side = device_side_pointer_for(allocated.host_side);
@@ -2089,7 +2089,7 @@ inline region_pair allocate(
 inline void free(void* host_side_pair)
 {
 	auto result = cuMemFreeHost(host_side_pair);
-	throw_if_error(result, "Freeing a mapped memory region pair with host-side address "
+	throw_if_error_lazy(result, "Freeing a mapped memory region pair with host-side address "
 		+ cuda::detail_::ptr_as_hex(host_side_pair));
 }
 
@@ -2146,7 +2146,7 @@ inline void free_region_pair_of(void* ptr)
 	// We could check this...
 	void* host_side_ptr;
 	auto status = cuPointerGetAttribute (&host_side_ptr, CU_POINTER_ATTRIBUTE_HOST_POINTER, memory::device::address(ptr));
-	throw_if_error(status, "Failed obtaining the host-side address of supposedly-device-side pointer "
+	throw_if_error_lazy(status, "Failed obtaining the host-side address of supposedly-device-side pointer "
 		+ cuda::detail_::ptr_as_hex(ptr));
 	detail_::free(host_side_ptr);
 }
@@ -2186,9 +2186,9 @@ inline memory::region_t locate(T&& symbol)
 	void *start;
 	size_t symbol_size;
 	auto api_call_result = cudaGetSymbolAddress(&start, ::std::forward<T>(symbol));
-	throw_if_error(api_call_result, "Could not locate the device memory address for a symbol");
+	throw_if_error_lazy(api_call_result, "Could not locate the device memory address for a symbol");
 	api_call_result = cudaGetSymbolSize(&symbol_size, ::std::forward<T>(symbol));
-	throw_if_error(api_call_result, "Could not locate the device memory address for the symbol at address"
+	throw_if_error_lazy(api_call_result, "Could not locate the device memory address for the symbol at address"
 		+ cuda::detail_::ptr_as_hex(start));
 	return { start, symbol_size };
 }

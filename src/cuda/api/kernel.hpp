@@ -81,7 +81,7 @@ inline attribute_value_t get_attribute_in_current_context(handle_t handle, attri
 {
 	kernel::attribute_value_t attribute_value;
 	auto result = cuFuncGetAttribute(&attribute_value,  attribute, handle);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		::std::string("Failed obtaining attribute ") + attribute_name(attribute)
 	);
 	return attribute_value;
@@ -301,7 +301,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	{
 		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
 		auto result = cuFuncSetCacheConfig(handle(), (CUfunc_cache) preference);
-		throw_if_error(result,
+		throw_if_error_lazy(result,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
 			"CUDA device function");
 	}
@@ -317,7 +317,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 		// TODO: Need to set a context, not a device
 		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
 		auto result = cuFuncSetSharedMemConfig(handle(), static_cast<CUsharedconfig>(config) );
-		throw_if_error(result, "Failed setting the shared memory bank size");
+		throw_if_error_lazy(result, "Failed setting the shared memory bank size");
 	}
 
 protected: // ctors & dtor
@@ -396,7 +396,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	auto flags = (unsigned) disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
 	status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, handle, (int) block_size_in_threads, dynamic_shared_memory_per_block, flags);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dyanmic memory per block");
 	return result;
 }
@@ -426,7 +426,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT
 	);
 
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
@@ -448,7 +448,7 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 	size_t result;
 	auto status = cuOccupancyAvailableDynamicSMemPerBlock(
 		&result, kernel.handle(), (int) blocks_on_multiprocessor, (int) block_size_in_threads);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
 	return (memory::shared::size_t) result;
 }

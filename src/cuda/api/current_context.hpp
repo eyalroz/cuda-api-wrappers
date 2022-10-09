@@ -33,7 +33,7 @@ inline bool exists()
 	if (status == cuda::status::not_yet_initialized) {
 		return false;
 	}
-	throw_if_error(status, "Failed obtaining the current context's handle");
+	throw_if_error_lazy(status, "Failed obtaining the current context's handle");
 	return (handle != context::detail_::none);
 }
 
@@ -93,7 +93,7 @@ inline status_and_handle_pair get_with_status()
 inline handle_t get_handle()
 {
 	auto p = get_with_status();
-	throw_if_error(p.status, "Failed obtaining the current context's handle");
+	throw_if_error_lazy(p.status, "Failed obtaining the current context's handle");
 	return p.handle;
 }
 
@@ -102,7 +102,7 @@ inline context::flags_t get_flags()
 {
 	context::flags_t result;
 	auto status = cuCtxGetFlags(&result);
-	throw_if_error(status, "Failed obtaining the current context's flags");
+	throw_if_error_lazy(status, "Failed obtaining the current context's flags");
 	return result;
 }
 
@@ -110,7 +110,7 @@ inline device::id_t get_device_id()
 {
 	device::id_t device_id;
 	auto result = cuCtxGetDevice(&device_id);
-	throw_if_error(result, "Failed obtaining the current context's device");
+	throw_if_error_lazy(result, "Failed obtaining the current context's device");
 	return device_id;
 }
 
@@ -125,7 +125,7 @@ inline device::id_t get_device_id()
 inline void push(handle_t context_handle)
 {
 	auto status = cuCtxPushCurrent(context_handle);
-	throw_if_error(status, "Failed pushing to the top of the context stack: "
+	throw_if_error_lazy(status, "Failed pushing to the top of the context stack: "
 		+ context::detail_::identify(context_handle));
 }
 
@@ -152,7 +152,7 @@ inline context::handle_t pop()
 {
 	handle_t popped_context_handle;
 	auto status = cuCtxPopCurrent(&popped_context_handle);
-	throw_if_error(status, "Failed popping the current CUDA context");
+	throw_if_error_lazy(status, "Failed popping the current CUDA context");
 	return popped_context_handle;
 }
 
@@ -162,7 +162,7 @@ inline void set(handle_t context_handle)
 	// if (detail_::get_handle() == context_handle_) { return; }
 	// ... but decided against it.
 	auto status = cuCtxSetCurrent(context_handle);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed setting the current context to " + context::detail_::identify(context_handle));
 }
 
