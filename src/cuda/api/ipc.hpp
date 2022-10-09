@@ -117,7 +117,8 @@ public: // constructors & destructor
 	/**
 	 * @note This may (?) throw! Be very careful.
 	 */
-	~imported_t() {
+	~imported_t() noexcept(false)
+	{
 		if (ptr_ == nullptr) { return; }
 		unmap(ptr_);
 	}

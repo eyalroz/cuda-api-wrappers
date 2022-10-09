@@ -163,7 +163,7 @@ public:
 		other.handle_ = nullptr;
 	}
 
-	~array_t() noexcept
+	~array_t() noexcept(false)
 	{
 		cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 		if (handle_) {
