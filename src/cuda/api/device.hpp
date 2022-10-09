@@ -578,7 +578,8 @@ public: 	// constructors and destructor
 		::std::swap(lhs.holds_pc_refcount_unit, rhs.holds_pc_refcount_unit);
 	}
 
-	~device_t() {
+	~device_t() NOEXCEPT_IF_NDEBUG
+	{
 #ifndef NDEBUG
 		maybe_decrease_primary_context_refcount();
 #else

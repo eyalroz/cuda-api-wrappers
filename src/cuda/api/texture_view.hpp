@@ -121,7 +121,7 @@ public: // constructors and destructors
 
 public: // operators
 
-	~texture_view()
+	~texture_view() noexcept(false)
 	{
 		if (owning) {
 			scoped_context_setter set_context(context_handle_);

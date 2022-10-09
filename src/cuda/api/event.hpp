@@ -271,7 +271,7 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit = false;
 	};
 
-	~event_t()
+	~event_t() noexcept(false)
 	{
 		if (owning) {
 #ifdef NDEBUG

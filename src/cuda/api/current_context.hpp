@@ -185,7 +185,7 @@ public:
 	scoped_override_t(scoped_override_t&&) = delete;
 	scoped_override_t& operator=(const scoped_override_t&) = delete;
 	scoped_override_t& operator=(scoped_override_t&&) = delete;
-	~scoped_override_t();
+	~scoped_override_t() noexcept(false);
 };
 
 /**

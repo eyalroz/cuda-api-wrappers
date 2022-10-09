@@ -166,7 +166,7 @@ public: // constructors and destructor
 		other.owning = false;
 	};
 
-	~link_t()
+	~link_t() noexcept(false)
 	{
 		if (owning) {
 			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);

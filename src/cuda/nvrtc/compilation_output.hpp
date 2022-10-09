@@ -413,7 +413,7 @@ public:
 		other.owns_handle_ = false;
 	};
 
-	~compilation_output_t()
+	~compilation_output_t() noexcept(false)
 	{
 		if (owns_handle_) {
 			auto status = nvrtcDestroyProgram(&program_handle_);
