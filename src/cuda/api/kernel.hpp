@@ -59,7 +59,6 @@ namespace detail_ {
 
 inline ::std::string identify(const kernel_t& kernel);
 
-#ifndef NDEBUG
 static const char* attribute_name(int attribute_index)
 {
 	// Note: These correspond to the values of enum CUfunction_attribute_enum
@@ -77,19 +76,13 @@ static const char* attribute_name(int attribute_index)
 	};
 	return names[attribute_index];
 }
-#endif
 
 inline attribute_value_t get_attribute_in_current_context(handle_t handle, attribute_t attribute)
 {
 	kernel::attribute_value_t attribute_value;
 	auto result = cuFuncGetAttribute(&attribute_value,  attribute, handle);
 	throw_if_error(result,
-		::std::string("Failed obtaining attribute ") +
-#ifdef NDEBUG
-			::std::to_string(static_cast<::std::underlying_type<kernel::attribute_t>::type>(attribute))
-#else
-			attribute_name(attribute)
-#endif
+		::std::string("Failed obtaining attribute ") + attribute_name(attribute)
 	);
 	return attribute_value;
 }

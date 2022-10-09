@@ -118,7 +118,7 @@ inline handle_t create_raw_in_current_context(
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
 		// We could instead have used an equivalent Driver API call:
 		// cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	cuda::throw_if_error(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
+	throw_if_error(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
 	return new_stream_handle;
 }
 
@@ -795,7 +795,7 @@ public: // mutators
 		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
-		throw_if_error(status);
+		throw_if_error(status, ::std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
@@ -805,7 +805,7 @@ public: // mutators
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
-		throw_if_error(status);
+		throw_if_error(status, ::std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
 	}
 #endif
 

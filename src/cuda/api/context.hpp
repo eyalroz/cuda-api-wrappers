@@ -709,7 +709,7 @@ inline handle_t create_and_push(
 			keep_larger_local_mem_after_resize);
 	handle_t handle;
 	auto status = cuCtxCreate(&handle, flags, device_id);
-	cuda::throw_if_error(status, "failed creating a CUDA context associated with "
+	throw_if_error(status, "failed creating a CUDA context associated with "
 		+ device::detail_::identify(device_id));
 	return handle;
 }

@@ -152,7 +152,8 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 #endif
 	context::current::detail_::scoped_override_t set_context_for_this_scope(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
-	throw_if_error(status);
+	throw_if_error(status, "Copying attributes from " + stream::detail_::identify(src)
+		+ " to " + stream::detail_::identify(src));
 }
 
 #endif // CUDA_VERSION >= 11000
