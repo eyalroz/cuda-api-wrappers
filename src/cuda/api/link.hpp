@@ -97,7 +97,7 @@ public:
 		void* cubin_output_start;
 		size_t cubin_output_size;
 		auto status = cuLinkComplete(handle_, &cubin_output_start, &cubin_output_size);
-		throw_if_error(status,
+		throw_if_error_lazy(status,
 			"Failed completing the link with state at address " + cuda::detail_::ptr_as_hex(handle_));
 		return memory::region_t{cubin_output_start, cubin_output_size};
 	}
@@ -116,7 +116,7 @@ public:
 			const_cast<link::option_t*>(marshalled_options.options()),
 			const_cast<void**>(marshalled_options.values())
 		);
-		throw_if_error(status,
+		throw_if_error_lazy(status,
 			"Failed adding input " + ::std::string(image.name) + " of type " + ::std::to_string(image.type) + " to a link.");
 	}
 
@@ -131,7 +131,7 @@ public:
 			const_cast<link::option_t*>(marshalled_options.options()),
 			const_cast<void**>(marshalled_options.values())
 			);
-		throw_if_error(status,
+		throw_if_error_lazy(status,
 			"Failed loading an object of type " + ::std::to_string(file_input.type) + " from file " + file_input.path);
 	}
 
@@ -171,7 +171,7 @@ public: // constructors and destructor
 		if (owning) {
 			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 			auto status = cuLinkDestroy(handle_);
-			throw_if_error(status,
+			throw_if_error_lazy(status,
 				::std::string("Failed destroying the link ") + detail_::ptr_as_hex(handle_) +
 				" in " + context::detail_::identify(context_handle_, device_id_));
 		}
@@ -212,7 +212,7 @@ inline link_t create(const link::options_t& options = link::options_t{})
 		const_cast<void**>(marshalled_options.values()),
 		&new_link_handle
 	);
-	throw_if_error(status, "Failed creating a new link ");
+	throw_if_error_lazy(status, "Failed creating a new link ");
 	auto do_take_ownership = true;
 	auto context_handle = context::current::detail_::get_handle();
 	auto device_id = context::current::detail_::get_device_id();

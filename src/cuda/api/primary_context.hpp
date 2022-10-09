@@ -58,14 +58,14 @@ inline status_t decrease_refcount_nothrow(device::id_t device_id) noexcept
 inline void decrease_refcount(device::id_t device_id)
 {
 	auto status = decrease_refcount_nothrow(device_id);
-	throw_if_error(status, "Failed releasing the reference to the primary context for " + device::detail_::identify(device_id));
+	throw_if_error_lazy(status, "Failed releasing the reference to the primary context for " + device::detail_::identify(device_id));
 }
 
 inline handle_t obtain_and_increase_refcount(device::id_t device_id)
 {
 	handle_t primary_context_handle;
 	auto status = cuDevicePrimaryCtxRetain(&primary_context_handle, device_id);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed obtaining (and possibly creating, and adding a reference count to) the primary context for "
 		+ device::detail_::identify(device_id));
 	return primary_context_handle;

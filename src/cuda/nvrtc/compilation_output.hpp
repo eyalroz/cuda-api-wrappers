@@ -74,14 +74,14 @@ inline size_t get_log_size(program::handle_t program_handle, const char* program
 {
 	size_t size;
 	auto status = nvrtcGetProgramLogSize(program_handle, &size);
-	throw_if_error(status, "Failed obtaining compilation log size for " + identify(program_handle, program_name));
+	throw_if_error_lazy(status, "Failed obtaining compilation log size for " + identify(program_handle, program_name));
 	return size;
 }
 
 inline void get_log(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetProgramLog(program_handle, buffer);
-	throw_if_error(status, "Failed obtaining NVRTC program compilation log for"
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program compilation log for"
 		+ identify(program_handle, program_name));
 }
 
@@ -91,7 +91,7 @@ inline size_t get_cubin_size(program::handle_t program_handle, const char* progr
 {
 	size_t size;
 	auto status = nvrtcGetCUBINSize(program_handle, &size);
-	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN size");
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output CUBIN size");
 	if (size == 0) {
 		throw ::std::runtime_error("CUBIN requested for a program compiled for a virtual architecture only: "
 			+ identify(program_handle, program_name));
@@ -102,7 +102,7 @@ inline size_t get_cubin_size(program::handle_t program_handle, const char* progr
 inline void get_cubin(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetCUBIN(program_handle, buffer);
-	throw_if_error(status, "Failed obtaining NVRTC program output CUBIN for "
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output CUBIN for "
 		+ identify(program_handle, program_name));
 }
 
@@ -113,7 +113,7 @@ inline size_t get_ptx_size(program::handle_t program_handle, const char *program
 {
 	size_t size;
 	auto status = nvrtcGetPTXSize(program_handle, &size);
-	throw_if_error(status, "Failed obtaining NVRTC program output PTX size for "
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output PTX size for "
 						   + identify(program_handle, program_name));
 	return size;
 }
@@ -121,7 +121,7 @@ inline size_t get_ptx_size(program::handle_t program_handle, const char *program
 inline void get_ptx(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetPTX(program_handle, buffer);
-	throw_if_error(status, "Failed obtaining NVRTC program output PTX for "
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output PTX for "
 						   + identify(program_handle, program_name));
 }
 
@@ -131,7 +131,7 @@ inline size_t get_nvvm_size(program::handle_t program_handle, const char *progra
 {
 	size_t size;
 	auto status = nvrtcGetNVVMSize(program_handle, &size);
-	throw_if_error(status, "Failed obtaining NVRTC program output NVVM size for "
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output NVVM size for "
 		+ identify(program_handle, program_name));
 	return size;
 }
@@ -139,7 +139,7 @@ inline size_t get_nvvm_size(program::handle_t program_handle, const char *progra
 inline void get_nvvm(char* buffer, program::handle_t program_handle, const char *program_name = nullptr)
 {
 	auto status = nvrtcGetNVVM(program_handle, buffer);
-	throw_if_error(status, "Failed obtaining NVRTC program output NVVM for "
+	throw_if_error_lazy(status, "Failed obtaining NVRTC program output NVVM for "
 		+ identify(program_handle, program_name));
 }
 
@@ -258,7 +258,7 @@ public: // non-mutators
 		size_t size;
 		auto status = nvrtcGetPTXSize(program_handle_, &size);
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled PTX result: "
+		throw_if_error_lazy(status, "Failed determining whether the NVRTC program has a compiled PTX result: "
 			+ compilation_output::detail_::identify(*this));
 		if (size == 0) {
 			throw ::std::logic_error("PTX size reported as 0 by "
@@ -303,7 +303,7 @@ public: // non-mutators
 		size_t size;
 		auto status = nvrtcGetCUBINSize(program_handle_, &size);
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled CUBIN result: "
+		throw_if_error_lazy(status, "Failed determining whether the NVRTC program has a compiled CUBIN result: "
 			+ compilation_output::detail_::identify(*this));
 		return (size > 0);
 	}
@@ -349,7 +349,7 @@ public: // non-mutators
 		size_t size;
 		auto status = nvrtcGetNVVMSize(program_handle_, &size);
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_error(status, "Failed determining whether the NVRTC program has a compiled NVVM result: "
+		throw_if_error_lazy(status, "Failed determining whether the NVRTC program has a compiled NVVM result: "
 			+ compilation_output::detail_::identify(*this));
 		if (size == 0) {
 			throw ::std::logic_error("NVVM size reported as 0 by NVRTC for program: "
@@ -373,7 +373,7 @@ public: // non-mutators
 	{
 		const char* result;
 		auto status = nvrtcGetLoweredName(program_handle_, unmangled_name, &result);
-		throw_if_error(status, ::std::string("Failed obtaining the mangled form of name \"")
+		throw_if_error_lazy(status, ::std::string("Failed obtaining the mangled form of name \"")
 			+ unmangled_name + "\" in dynamically-compiled program \"" + program_name_ + '\"');
 		return result;
 	}
@@ -417,7 +417,7 @@ public:
 	{
 		if (owns_handle_) {
 			auto status = nvrtcDestroyProgram(&program_handle_);
-			throw_if_error(status, "Destroying " + program::detail_::identify(program_handle_, program_name_.c_str()));
+			throw_if_error_lazy(status, "Destroying " + program::detail_::identify(program_handle_, program_name_.c_str()));
 		}
 	}
 

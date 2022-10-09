@@ -194,7 +194,7 @@ inline void range_end(range::handle_t range_handle)
 inline void start()
 {
 	auto status = cuProfilerStart();
-	throw_if_error(status, "Starting CUDA profiling");
+	throw_if_error_lazy(status, "Starting CUDA profiling");
 }
 
 /**
@@ -203,7 +203,7 @@ inline void start()
 inline void stop()
 {
 	auto status = cuProfilerStop();
-	throw_if_error(status, "Stopping CUDA profiling");
+	throw_if_error_lazy(status, "Stopping CUDA profiling");
 }
 
 } // namespace profiling

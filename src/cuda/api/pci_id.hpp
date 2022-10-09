@@ -53,7 +53,7 @@ inline id_t resolve_id(pci_location_t pci_id)
 	::std::string as_string { pci_id };
 	id_t cuda_device_id;
 	auto result = cuDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Failed obtaining a CUDA device ID corresponding to PCI id " + as_string);
 	return cuda_device_id;
 }

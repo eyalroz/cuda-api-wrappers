@@ -93,7 +93,7 @@ inline ::std::string get_name(id_t id)
 	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));
 	auto try_getting_name = [&](char* buffer, size_type buffer_size) -> size_type {
 		auto status =  cuDeviceGetName(buffer, buffer_size-1, id);
-		throw_if_error(status, "Failed obtaining the CUDA device name");
+		throw_if_error_lazy(status, "Failed obtaining the CUDA device name");
 		buffer[buffer_size-1] = '\0';
 		return (size_type) ::std::strlen(buffer);
 	};
@@ -163,7 +163,7 @@ public:
 		context_setter_type set_for_this_scope(primary_context_handle());
 		int result;
 		auto status = cuDeviceCanAccessPeer(&result, id(), peer.id());
-		throw_if_error(status, "Failed determining whether "
+		throw_if_error_lazy(status, "Failed determining whether "
 			+ device::detail_::identify(id_) + " can access "
 			+ device::detail_::identify(peer.id_));
 		return (result == 1);
@@ -194,7 +194,7 @@ public:
 	uuid_t uuid () const {
 		uuid_t result;
 		auto status = cuDeviceGetUuid(&result, id_);
-		throw_if_error(status, "Failed obtaining UUID for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining UUID for " + device::detail_::identify(id_));
 		return result;
 	}
 #endif // CUDA_VERSION >= 9020
@@ -228,7 +228,7 @@ public:
 	void set_flags(flags_type new_flags) const
 	{
 		auto status = cuDevicePrimaryCtxSetFlags(id(), new_flags);
-		throw_if_error(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
 	}
 
 public:
@@ -242,14 +242,14 @@ public:
 	{
 		properties_t properties;
 		auto status = cudaGetDeviceProperties(&properties, id());
-		throw_if_error(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
 		return properties;
 	}
 
 	static device_t choose_best_match(const properties_t& properties) {
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
-		throw_if_error(status, "Failed choosing a best matching device by a a property set.");
+		throw_if_error_lazy(status, "Failed choosing a best matching device by a a property set.");
 		return device::wrap(id);
 	}
 
@@ -274,7 +274,7 @@ public:
 	{
 		attribute_value_t attribute_value;
 		auto status = cuDeviceGetAttribute(&attribute_value, attribute, id_);
-		throw_if_error(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
 		return attribute_value;
 	}
 
@@ -428,7 +428,7 @@ public:
 	        primary_context_handle_;
 		context_setter_type set_context_for_this_scope{pc_handle};
 		auto status = cudaDeviceReset();
-		throw_if_error(status, "Resetting " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Resetting " + device::detail_::identify(id_));
 	}
 
 	/**

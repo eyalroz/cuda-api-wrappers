@@ -52,7 +52,7 @@ inline id_t get_id()
 		// Should we activate and push the default device's context? probably not.
 		return default_device_id;
 	}
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed obtaining the current context for determining which device is active");
 
 	if (current_context_handle == context::detail_::none) {
@@ -64,7 +64,7 @@ inline id_t get_id()
 	//
 //	handle_t  device_id;
 //	auto status = cudaGetDevice(&device_id);
-//	throw_if_error(status, "Failure obtaining current device id");
+//	throw_if_error_lazy(status, "Failure obtaining current device id");
 //	return device_id;
 }
 
@@ -154,7 +154,7 @@ inline void set(const id_t *device_ids, size_t num_devices)
 		throw cuda::runtime_error(status::invalid_device, "More devices listed than exist on the system");
 	}
 	auto result = cudaSetValidDevices(const_cast<int *>(device_ids), (int) num_devices);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Failure setting the current device to any of the list of "
 		+ ::std::to_string(num_devices) + " devices specified");
 }

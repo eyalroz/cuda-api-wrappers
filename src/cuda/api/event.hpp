@@ -38,7 +38,7 @@ inline void destroy(
 inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t event_handle)
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed recording " + event::detail_::identify(event_handle)
 		+ " on " + stream::detail_::identify(stream_handle));
 }
@@ -342,7 +342,7 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 {
 	float elapsed_milliseconds;
 	auto status = cuEventElapsedTime(&elapsed_milliseconds, start.handle(), end.handle());
-	throw_if_error(status, "determining the time elapsed between events");
+	throw_if_error_lazy(status, "determining the time elapsed between events");
 	return duration_t { elapsed_milliseconds };
 }
 
@@ -372,7 +372,7 @@ inline handle_t create_raw_in_current_context(flags_t flags = 0u)
 {
 	cuda::event::handle_t new_event_handle;
 	auto status = cuEventCreate(&new_event_handle, flags);
-	throw_if_error(status, "Failed creating a CUDA event");
+	throw_if_error_lazy(status, "Failed creating a CUDA event");
 	return new_event_handle;
 }
 
@@ -401,7 +401,7 @@ inline void destroy_in_current_context(
 	context::handle_t  current_context_handle)
 {
 	auto status = cuEventDestroy(handle);
-	throw_if_error(status, "Failed destroying " +
+	throw_if_error_lazy(status, "Failed destroying " +
 		identify(handle, current_context_handle, current_device_id));
 }
 
@@ -478,7 +478,7 @@ inline void wait(event_t event)
 	auto event_handle = event.handle();
 	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
 	auto status = cuEventSynchronize(event_handle);
-	throw_if_error(status, "Failed synchronizing " + event::detail_::identify(event));
+	throw_if_error_lazy(status, "Failed synchronizing " + event::detail_::identify(event));
 }
 
 inline void synchronize(event_t event)

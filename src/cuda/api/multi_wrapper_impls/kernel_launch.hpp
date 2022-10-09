@@ -86,7 +86,7 @@ inline void launch_type_erased_in_current_context(
 			no_arguments_in_alternative_format
 		);
 	}
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		(lc.block_cooperation ? "Cooperative " : "") +
 		::std::string(" kernel launch failed for ") + kernel::detail_::identify(kernel_function_handle)
 		+ " on " + stream::detail_::identify(stream_handle, context_handle, device_id));
@@ -212,7 +212,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		static_cast<int>(block_size_limit),
 		disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault
 	);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr) +
 			" on device " + ::std::to_string(device_id) + ".");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };

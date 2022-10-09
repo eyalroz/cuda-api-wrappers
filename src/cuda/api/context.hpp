@@ -83,7 +83,7 @@ inline limit_value_t get_limit(limit_t limit_id)
 {
 	limit_value_t limit_value;
 	auto status = cuCtxGetLimit(&limit_value, limit_id);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 			"Failed obtaining CUDA context limit value");
 	return limit_value;
 }
@@ -91,7 +91,7 @@ inline limit_value_t get_limit(limit_t limit_id)
 inline void set_limit(limit_t limit_id, limit_value_t new_value)
 {
 	auto status = cuCtxSetLimit(limit_id, new_value);
-	throw_if_error(status, "Failed obtaining CUDA context limit value");
+	throw_if_error_lazy(status, "Failed obtaining CUDA context limit value");
 }
 
 constexpr flags_t inline make_flags(
@@ -122,7 +122,7 @@ inline size_t total_memory(handle_t handle)
 {
 	size_t total_mem_in_bytes;
 	auto status = cuMemGetInfo(nullptr, &total_mem_in_bytes);
-	throw_if_error(status, "Failed determining amount of total memory for " + identify(handle));
+	throw_if_error_lazy(status, "Failed determining amount of total memory for " + identify(handle));
 	return total_mem_in_bytes;
 
 }
@@ -131,14 +131,14 @@ inline size_t free_memory(handle_t handle)
 {
 	size_t free_mem_in_bytes;
 	auto status = cuMemGetInfo(&free_mem_in_bytes, nullptr);
-	throw_if_error(status, "Failed determining amount of free memory for " + identify(handle));
+	throw_if_error_lazy(status, "Failed determining amount of free memory for " + identify(handle));
 	return free_mem_in_bytes;
 }
 
 inline void set_cache_preference(handle_t handle, multiprocessor_cache_preference_t preference)
 {
 	auto status = cuCtxSetCacheConfig(static_cast<CUfunc_cache>(preference));
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference to " +
 			::std::to_string((unsigned) preference) + " for " + identify(handle));
 }
@@ -147,7 +147,7 @@ inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
 {
 	CUfunc_cache preference;
 	auto status = cuCtxGetCacheConfig(&preference);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + identify(handle));
 	return (multiprocessor_cache_preference_t) preference;
 }
@@ -156,14 +156,14 @@ inline shared_memory_bank_size_t shared_memory_bank_size(handle_t handle)
 {
 	CUsharedconfig bank_size;
 	auto status = cuCtxGetSharedMemConfig(&bank_size);
-	throw_if_error(status, "Obtaining the multiprocessor shared memory bank size for " + identify(handle));
+	throw_if_error_lazy(status, "Obtaining the multiprocessor shared memory bank size for " + identify(handle));
 	return static_cast<shared_memory_bank_size_t>(bank_size);
 }
 
 inline void set_shared_memory_bank_size(handle_t handle, shared_memory_bank_size_t bank_size)
 {
 	auto status = cuCtxSetSharedMemConfig(static_cast<CUsharedconfig>(bank_size));
-	throw_if_error(status, "Setting the multiprocessor shared memory bank size for " + identify(handle));
+	throw_if_error_lazy(status, "Setting the multiprocessor shared memory bank size for " + identify(handle));
 }
 
 inline void synchronize(context::handle_t handle)
@@ -181,13 +181,13 @@ inline void synchronize(device::id_t device_id, context::handle_t handle)
 inline void destroy(handle_t handle)
 {
 	auto status = cuCtxDestroy(handle);
-	throw_if_error(status, "Failed destroying " + identify(handle));
+	throw_if_error_lazy(status, "Failed destroying " + identify(handle));
 }
 
 inline void destroy(handle_t handle, device::id_t device_index)
 {
 	auto status = cuCtxDestroy(handle);
-	throw_if_error(status, "Failed destroying " + identify(handle, device_index));
+	throw_if_error_lazy(status, "Failed destroying " + identify(handle, device_index));
 }
 
 inline context::flags_t get_flags(handle_t handle)
@@ -461,7 +461,7 @@ public: // other non-mutator methods
 		scoped_setter_type set_context_for_this_scope(handle_);
 		context::stream_priority_range_t result;
 		auto status = cuCtxGetStreamPriorityRange(&result.least, &result.greatest);
-		throw_if_error(status, "Obtaining the priority range for streams within " +
+		throw_if_error_lazy(status, "Obtaining the priority range for streams within " +
 			context::detail_::identify(*this));
 		return result;
 	}
@@ -476,7 +476,7 @@ public: // other non-mutator methods
 	{
 		unsigned int raw_version;
 		auto status = cuCtxGetApiVersion(handle_, &raw_version);
-		throw_if_error(status, "Failed obtaining the API version for " + context::detail_::identify(*this));
+		throw_if_error_lazy(status, "Failed obtaining the API version for " + context::detail_::identify(*this));
 		return version_t::from_single_number((int) raw_version);
 	}
 
@@ -540,7 +540,7 @@ public: // Methods which don't mutate the context, but affect the device itself
 		scoped_setter_type set_context_for_this_scope(handle_);
 #if (CUDA_VERSION >= 11000)
 		auto status = cuCtxResetPersistingL2Cache();
-		throw_if_error(status, "Failed resetting/clearing the persisting L2 cache memory");
+		throw_if_error_lazy(status, "Failed resetting/clearing the persisting L2 cache memory");
 #endif
 		throw cuda::runtime_error(
 			cuda::status::insufficient_driver,
@@ -709,7 +709,7 @@ inline handle_t create_and_push(
 			keep_larger_local_mem_after_resize);
 	handle_t handle;
 	auto status = cuCtxCreate(&handle, flags, device_id);
-	throw_if_error(status, "failed creating a CUDA context associated with "
+	throw_if_error_lazy(status, "failed creating a CUDA context associated with "
 		+ device::detail_::identify(device_id));
 	return handle;
 }

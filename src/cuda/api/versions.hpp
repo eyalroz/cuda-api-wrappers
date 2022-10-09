@@ -133,7 +133,7 @@ inline version_t driver() {
 	combined_version_t version;
 	auto status = cuDriverGetVersion(&version);
 		// The same value would be returned using cuDriverGetVersion()
-	throw_if_error(status, "Failed obtaining the CUDA driver version");
+	throw_if_error_lazy(status, "Failed obtaining the CUDA driver version");
 	return version_t::from_single_number(version);
 }
 
@@ -146,7 +146,7 @@ inline version_t driver() {
 inline version_t runtime() {
 	combined_version_t version;
 	auto status = cudaRuntimeGetVersion(&version);
-	throw_if_error(status, "Failed obtaining the CUDA runtime version");
+	throw_if_error_lazy(status, "Failed obtaining the CUDA runtime version");
 	return version_t::from_single_number(version);
 }
 
