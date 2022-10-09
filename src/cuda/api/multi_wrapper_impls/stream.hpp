@@ -47,7 +47,7 @@ inline void record_event_in_current_context(
 	event::handle_t    event_handle)
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed scheduling " + event::detail_::identify(event_handle)
 		+ " on " + stream::detail_::identify(stream_handle, current_context_handle_, current_device_id));
 }
@@ -85,7 +85,7 @@ inline void stream_t::enqueue_t::wait(const event_t& event_) const
 	static constexpr const unsigned int flags = 0;
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
-	throw_if_error(status,
+	throw_if_error_lazy(status,
 		"Failed scheduling a wait for " + event::detail_::identify(event_.handle())
 		+ " on " + stream::detail_::identify(associated_stream));
 
@@ -152,7 +152,7 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 #endif
 	context::current::detail_::scoped_override_t set_context_for_this_scope(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
-	throw_if_error(status, "Copying attributes from " + stream::detail_::identify(src)
+	throw_if_error_lazy(status, "Copying attributes from " + stream::detail_::identify(src)
 		+ " to " + stream::detail_::identify(src));
 }
 

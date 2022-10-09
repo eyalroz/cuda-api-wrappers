@@ -42,7 +42,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 {
 	attribute_value_t value;
 	auto status = cuDeviceGetP2PAttribute(&value, attribute, source, destination);
-	throw_if_error(status, "Failed obtaining peer-to-peer device attribute for device pair ("
+	throw_if_error_lazy(status, "Failed obtaining peer-to-peer device attribute for device pair ("
 		+ ::std::to_string(source) + ", " + ::std::to_string(destination) + ')');
 	return value;
 }
@@ -51,7 +51,7 @@ inline bool can_access(const device::id_t accessor, const device::id_t peer)
 {
 	int result;
 	auto status = cuDeviceCanAccessPeer(&result, accessor, peer);
-	throw_if_error(status, "Failed determining whether " + device::detail_::identify(accessor)
+	throw_if_error_lazy(status, "Failed determining whether " + device::detail_::identify(accessor)
 		+ " can access " + device::detail_::identify(peer));
 	return (result == 1);
 }
@@ -85,13 +85,13 @@ inline void enable_access_to(context::handle_t peer_context)
 	enum : unsigned {fixed_flags = 0 };
 	// No flags are supported as of CUDA 8.0
 	auto status = cuCtxEnablePeerAccess(peer_context, fixed_flags);
-	throw_if_error(status, "Failed enabling access to peer " + context::detail_::identify(peer_context));
+	throw_if_error_lazy(status, "Failed enabling access to peer " + context::detail_::identify(peer_context));
 }
 
 inline void disable_access_to(context::handle_t peer_context)
 {
 	auto status = cuCtxDisablePeerAccess(peer_context);
-	throw_if_error(status, "Failed disabling access to peer " + context::detail_::identify(peer_context));
+	throw_if_error_lazy(status, "Failed disabling access to peer " + context::detail_::identify(peer_context));
 }
 
 inline void enable_access(context::handle_t accessor, context::handle_t peer)

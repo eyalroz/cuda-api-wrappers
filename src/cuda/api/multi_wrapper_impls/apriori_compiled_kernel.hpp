@@ -41,7 +41,7 @@ inline kernel::attributes_t apriori_compiled_kernel_t::attributes() const
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 	kernel::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
-	throw_if_error(status, "Failed obtaining attributes for a CUDA device function");
+	throw_if_error_lazy(status, "Failed obtaining attributes for a CUDA device function");
 	return function_attributes;
 }
 
@@ -50,7 +50,7 @@ inline void apriori_compiled_kernel_t::set_cache_preference(multiprocessor_cache
 	// Note: assuming the primary context is active
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
-	throw_if_error(result,
+	throw_if_error_lazy(result,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
 		"CUDA device function");
 }
@@ -61,7 +61,7 @@ inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
 	// Note: assuming the primary context is active
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
-	throw_if_error(result);
+	throw_if_error_lazy(result);
 }
 
 inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
@@ -81,7 +81,7 @@ inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribu
 		}
 	}();
 	auto result = cudaFuncSetAttribute(ptr_, runtime_attribute, value);
-	throw_if_error(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
+	throw_if_error_lazy(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
 }
 
 kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel::attribute_t attribute) const

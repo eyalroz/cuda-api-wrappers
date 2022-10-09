@@ -36,7 +36,7 @@ inline bool is_active(const device_t& device)
 inline void destroy(const device_t& device)
 {
 	auto status = cuDevicePrimaryCtxReset(device.id());
-	throw_if_error(status, "Failed destroying/resetting the primary context of device " + ::std::to_string(device.id()));
+	throw_if_error_lazy(status, "Failed destroying/resetting the primary context of device " + ::std::to_string(device.id()));
 }
 
 inline primary_context_t get(const device_t& device)

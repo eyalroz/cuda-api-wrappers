@@ -45,14 +45,14 @@ inline program::handle_t create(
 	program::handle_t program_handle;
 	auto status = nvrtcCreateProgram(
 		&program_handle, program_source, program_name, (int) num_headers, header_sources, header_names);
-	throw_if_error(status, "Failed creating an NVRTC program (named " + ::std::string(program_name) + ')');
+	throw_if_error_lazy(status, "Failed creating an NVRTC program (named " + ::std::string(program_name) + ')');
 	return program_handle;
 }
 
 inline void register_global(handle_t program_handle, const char *global_to_register)
 {
 	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
-	throw_if_error(status, "Failed registering global entity " + ::std::string(global_to_register)
+	throw_if_error_lazy(status, "Failed registering global entity " + ::std::string(global_to_register)
 		+ " with " + identify(program_handle));
 }
 
@@ -387,10 +387,10 @@ supported_targets()
 {
 	int num_supported_archs;
 	auto status = nvrtcGetNumSupportedArchs(&num_supported_archs);
-	throw_if_error(status, "Failed obtaining the number of target NVRTC architectures");
+	throw_if_error_lazy(status, "Failed obtaining the number of target NVRTC architectures");
 	auto raw_archs = ::std::unique_ptr<int[]>(new int[num_supported_archs]);
 	status = nvrtcGetSupportedArchs(raw_archs.get());
-	throw_if_error(status, "Failed obtaining the architectures supported by NVRTC");
+	throw_if_error_lazy(status, "Failed obtaining the architectures supported by NVRTC");
 	dynarray<device::compute_capability_t> result;
 	result.reserve(num_supported_archs);
 	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::back_inserter(result),
