@@ -156,10 +156,10 @@ namespace detail_ {
 ::std::string identify(const compilation_output_t &compilation_output);
 
 inline compilation_output_t wrap(
-	program::handle_t  program_handle,
-	::std::string      program_name,
-	bool               succeeded,
-	bool               own_handle);
+	program::handle_t     program_handle,
+	const ::std::string&  program_name,
+	bool                  succeeded,
+	bool                  own_handle);
 
 } // namespace detail
 
@@ -385,14 +385,14 @@ public: // non-mutators
 
 
 protected: // constructors
-	compilation_output_t(program::handle_t handle, ::std::string name, bool succeeded, bool owning = false)
+	compilation_output_t(program::handle_t handle, const ::std::string& name, bool succeeded, bool owning = false)
 	: program_handle_(handle), program_name_(name), succeeded_(succeeded), owns_handle_(owning) { }
 
 	friend compilation_output_t compilation_output::detail_::wrap(
-		program::handle_t  program_handle,
-		::std::string      program_name,
-		bool               succeeded,
-		bool               own_handle);
+		program::handle_t     program_handle,
+		const ::std::string&  program_name,
+		bool                  succeeded,
+		bool                  own_handle);
 
 public:
 
@@ -427,10 +427,10 @@ public: // operators
 	compilation_output_t& operator=(compilation_output_t&& other) = delete;
 
 protected: // data members
-	program::handle_t  program_handle_;
-	::std::string      program_name_;
-	bool               succeeded_;
-	bool               owns_handle_;
+	program::handle_t     program_handle_;
+	::std::string         program_name_;
+	bool                  succeeded_;
+	bool                  owns_handle_;
 }; // class compilation_output_t
 
 namespace compilation_output {
@@ -444,10 +444,10 @@ inline ::std::string identify(const compilation_output_t &compilation_result)
 }
 
 inline compilation_output_t wrap(
-	program::handle_t  program_handle,
-	::std::string      program_name,
-	bool               succeeded,
-	bool               own_handle)
+	program::handle_t     program_handle,
+	const ::std::string&  program_name,
+	bool                  succeeded,
+	bool                  own_handle)
 {
 	return compilation_output_t{program_handle, ::std::move(program_name), succeeded, own_handle};
 }

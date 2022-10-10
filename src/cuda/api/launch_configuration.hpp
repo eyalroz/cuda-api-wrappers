@@ -94,7 +94,7 @@ struct launch_configuration_t {
 /**
  * @brief a named constructor idiom for a @ref launch_config_t
  */
-constexpr inline launch_configuration_t make_launch_config(
+constexpr launch_configuration_t make_launch_config(
 	grid::composite_dimensions_t grid_and_block_dimensions,
 	memory::shared::size_t      dynamic_shared_memory_size = 0u,
 	bool                        block_cooperation = false) noexcept
@@ -102,7 +102,7 @@ constexpr inline launch_configuration_t make_launch_config(
 	return { grid_and_block_dimensions, dynamic_shared_memory_size, block_cooperation };
 }
 
-constexpr inline launch_configuration_t make_launch_config(
+constexpr launch_configuration_t make_launch_config(
 	grid::dimensions_t         grid_dimensions,
 	grid::block_dimensions_t   block_dimensions,
 	memory::shared::size_t     dynamic_shared_memory_size = 0u,
@@ -111,7 +111,7 @@ constexpr inline launch_configuration_t make_launch_config(
 	return { { grid_dimensions, block_dimensions }, dynamic_shared_memory_size, block_cooperation };
 }
 
-constexpr inline bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return
 		lhs.dimensions == rhs.dimensions and
@@ -119,7 +119,7 @@ constexpr inline bool operator==(const launch_configuration_t lhs, const launch_
 			lhs.block_cooperation == rhs.block_cooperation;
 }
 
-constexpr inline bool operator!=(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+constexpr bool operator!=(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
