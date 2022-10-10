@@ -46,10 +46,10 @@ enum named_t : ::std::underlying_type<status_t>::type {
 };
 
 ///@cond
-constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
-constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
-constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
-constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
+constexpr bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == (status_t) rhs;}
+constexpr bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != (status_t) rhs;}
+constexpr bool operator==(const named_t& lhs, const status_t& rhs) { return (status_t) lhs == rhs;}
+constexpr bool operator!=(const named_t& lhs, const status_t& rhs) { return (status_t) lhs != rhs;}
 ///@endcond
 
 } // namespace status
@@ -60,12 +60,12 @@ constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) { retu
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
-constexpr inline bool is_success(rtc::status_t status)  { return status == (rtc::status_t) rtc::status::success; }
+constexpr bool is_success(rtc::status_t status)  { return status == (rtc::status_t) rtc::status::success; }
 
 /**
  * @brief Determine whether the API call returning the specified status had failed
  */
-constexpr inline bool is_failure(rtc::status_t status)  { return status != (rtc::status_t) rtc::status::success; }
+constexpr bool is_failure(rtc::status_t status)  { return status != (rtc::status_t) rtc::status::success; }
 
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
