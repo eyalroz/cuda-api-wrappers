@@ -116,7 +116,7 @@ event_t wrap(
  * @param event the event for whose occurrence to wait; must be scheduled
  * to occur on some stream (possibly the different stream)
  */
-inline void wait(event_t event);
+inline void wait(const event_t& event);
 
 /**
  * @brief Wrapper class for a CUDA event
@@ -253,16 +253,13 @@ public: // friendship
 
 public: // constructors and destructor
 
-	// Copying is allowed, but is only shallow, as otherwise,
-	// an actual new event would need to be created, and we want that to
-	// be explicit
-
-	event_t(const event_t& other) noexcept : event_t(
-		other.device_id_,
-		other.context_handle_,
-		other.handle_,
-		do_not_take_ownership,
-		do_not_hold_primary_context_refcount_unit) { }
+	// Events cannot be copied, despite our allowing non-owning class instances.
+	// The reason is that we might inadvertently copy of an owning stream, creating
+	// a non-owning stream and letting the original owning stream go out of scope -
+	// thus destructing the object, and destroying the underlying CUDA object.
+	// Essentially, that is like passing a reference to a local variable - which we
+	// may not do.
+	event_t(const event_t& other) = delete;
 
 	event_t(event_t&& other) noexcept : event_t(
 		other.device_id_, other.context_handle_, other.handle_, other.owning, other.holds_pc_refcount_unit)
@@ -346,7 +343,7 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
-inline duration_t time_elapsed_between(const ::std::pair<event_t, event_t>& event_pair)
+inline duration_t time_elapsed_between(const ::std::pair<const event_t&, const event_t&>& event_pair)
 {
 	return time_elapsed_between(event_pair.first, event_pair.second);
 }
@@ -472,7 +469,7 @@ inline event_t create(
 
 } // namespace event
 
-inline void wait(event_t event)
+inline void wait(const event_t& event)
 {
 	auto context_handle = event.context_handle();
 	auto event_handle = event.handle();
@@ -481,7 +478,7 @@ inline void wait(event_t event)
 	throw_if_error_lazy(status, "Failed synchronizing " + event::detail_::identify(event));
 }
 
-inline void synchronize(event_t event)
+inline void synchronize(const event_t& event)
 {
 	return wait(event);
 }
