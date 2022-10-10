@@ -390,11 +390,11 @@ struct dimensions_t // this almost-inherits dim3
 };
 
 ///@cond
-constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
@@ -432,12 +432,12 @@ struct composite_dimensions_t {
 	}
 };
 
-constexpr inline bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
+constexpr bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
 	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
 }
 
-constexpr inline bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
+constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -489,17 +489,17 @@ struct overall_dimensions_t
 	}
 };
 
-constexpr inline bool operator==(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
+constexpr bool operator==(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
 {
 	return (lhs.x == rhs.x) and (lhs.y == rhs.y) and (lhs.z == rhs.z);
 }
 
-constexpr inline bool operator!=(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
+constexpr bool operator!=(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
 {
 	return not (lhs == rhs);
 }
 
-constexpr inline overall_dimensions_t operator*(dimensions_t grid_dims, block_dimensions_t block_dims) noexcept
+constexpr overall_dimensions_t operator*(dimensions_t grid_dims, block_dimensions_t block_dims) noexcept
 {
 	return overall_dimensions_t {
 		grid_dims.x * overall_dimension_t { block_dims.x },
