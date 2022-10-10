@@ -38,11 +38,11 @@ void enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...>::oper
 	//    `KernelParameter` pack may contain some references, arrays and so on - which CUDA
 	//    kernels cannot accept; so we massage those a bit.
 
-	detail_::enqueue_raw_kernel_launch(
-	unwrapped_kernel_function,
-	stream.handle(),
-	launch_configuration,
-	::std::forward<KernelParameters>(parameters)...);
+	detail_::enqueue_raw_kernel_launch_in_current_context(
+		unwrapped_kernel_function,
+		stream.handle(),
+		launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename... KernelParameters>
@@ -120,10 +120,13 @@ void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
-	context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{stream.context_handle()};
-	detail_::enqueue_raw_kernel_launch<RawKernelFunction, KernelParameters...>(
-	::std::forward<RawKernelFunction>(kernel_function), stream.handle(), launch_configuration,
-	::std::forward<KernelParameters>(parameters)...);
+	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
+	// and not have trouble enqueueing into a stream in another context - it balks at doing so under
+	// certain conditions, so we must place ourselves in the stream's context.
+	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
+		::std::forward<RawKernelFunction>(kernel_function), stream.handle(), launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
