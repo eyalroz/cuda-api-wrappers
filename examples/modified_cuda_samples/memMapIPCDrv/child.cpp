@@ -117,10 +117,10 @@ get_virtual_mem_mappings(
 }
 
 bool results_are_valid(
-	int id_of_this_child,
-	cuda::memory::region_t mappings_region,
-	cuda::stream_t stream,
-	int num_processes)
+	int                     id_of_this_child,
+	cuda::memory::region_t  mappings_region,
+	const cuda::stream_t&   stream,
+	int                     num_processes)
 {
 	std::cout << "Process " << id_of_this_child << ": verifying..." << std::endl;
 

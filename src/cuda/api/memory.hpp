@@ -1435,26 +1435,26 @@ inline void copy(
 } // namespace detail_
 
 void copy(
-	void *        destination_address,
-	context_t     destination_context,
-	const void *  source_address,
-	context_t     source_context,
-	size_t        num_bytes,
-	stream_t      stream);
+	void *           destination_address,
+	context_t        destination_context,
+	const void *     source_address,
+	context_t        source_context,
+	size_t           num_bytes,
+	const stream_t&  stream);
 
 void copy(
-	void *          destination,
-	context_t       destination_context,
-	const_region_t  source,
-	context_t       source_context,
-	stream_t        stream);
+	void *           destination,
+	context_t        destination_context,
+	const_region_t   source,
+	context_t        source_context,
+	const stream_t&  stream);
 
 inline void copy(
 	region_t        destination,
-	context_t       destination_context,
-	const_region_t  source,
-	context_t       source_context,
-	stream_t        stream);
+	context_t        destination_context,
+	const_region_t   source,
+	context_t        source_context,
+	const stream_t&  stream);
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(
