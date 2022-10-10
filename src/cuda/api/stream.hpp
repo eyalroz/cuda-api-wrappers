@@ -827,13 +827,15 @@ protected: // constructor
 
 public: // constructors and destructor
 
-	stream_t(const stream_t& other) noexcept : 
-		stream_t(
-			other.device_id_, other.context_handle_, other.handle_,
-			do_not_take_ownership, do_not_hold_primary_context_refcount_unit)
-	{ }
+	// Streams cannot be copied, despite our allowing non-owning class instances.
+	// The reason is that we might inadvertently copy of an owning stream, creating
+	// a non-owning stream and letting the original owning stream go out of scope -
+	// thus destructing the object, and destroying the underlying CUDA object.
+	// Essentially, that is like passing a reference to a local variable - which we
+	// may not do.
+	stream_t(const stream_t& other) = delete;
 
-	stream_t(stream_t&& other) noexcept : 
+	stream_t(stream_t&& other) noexcept :
 		stream_t(other.device_id_, other.context_handle_, other.handle_, other.owning, other.holds_pc_refcount_unit)
 	{
 		other.owning = false;
@@ -860,8 +862,6 @@ public: // constructors and destructor
 
 public: // operators
 
-	// TODO: Do we really want to allow assignments? Hmm... probably not, it's
-	// too risky - someone might destroy one of the streams and use the others
 	stream_t& operator=(const stream_t& other) = delete;
 	stream_t& operator=(stream_t&& other) noexcept
 	{
@@ -1018,6 +1018,10 @@ using queue_id_t = stream::handle_t;
 
 inline void synchronize(const stream_t& stream)
 {
+	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
+	// and not have trouble acting on a stream in another context - it balks at doing so under
+	// certain conditions, so we must place ourselves in the stream's context.
+	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	auto status = cuStreamSynchronize(stream.handle());
 	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail_::identify(stream));
 }

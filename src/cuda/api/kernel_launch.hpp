@@ -145,7 +145,7 @@ void enqueue_launch(
 	KernelParameters&&...   parameters);
 
 template<typename KernelFunction, typename... KernelParameters>
-void enqueue_raw_kernel_launch(
+void enqueue_raw_kernel_launch_in_current_context(
 	KernelFunction          kernel_function,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_configuration,
