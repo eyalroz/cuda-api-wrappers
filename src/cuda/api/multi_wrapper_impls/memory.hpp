@@ -238,12 +238,12 @@ inline void copy(
 namespace async {
 
 inline void copy(
-	void *        destination_address,
-	context_t     destination_context,
-	const void *  source_address,
-	context_t     source_context,
-	size_t        num_bytes,
-	stream_t      stream)
+	void *           destination_address,
+	context_t        destination_context,
+	const void *     source_address,
+	context_t        source_context,
+	size_t           num_bytes,
+	const stream_t&  stream)
 {
 	return detail_::copy(
 	destination_address, destination_context.handle(), source_address,
@@ -251,11 +251,11 @@ inline void copy(
 }
 
 inline void copy(
-	region_t        destination,
-	context_t       destination_context,
-	const_region_t  source,
-	context_t       source_context,
-	stream_t        stream)
+	region_t         destination,
+	context_t        destination_context,
+	const_region_t   source,
+	context_t        source_context,
+	const stream_t&  stream)
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
