@@ -776,7 +776,7 @@ status_t multidim_copy(context::handle_t context_handle, copy_parameters_t<NumDi
 	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params);
 }
 
-} // namespace detail
+} // namespace detail_
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
@@ -829,7 +829,7 @@ void copy(T *destination, const array_t<T, NumDimensions>& source)
 }
 
 template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions> destination, array_t<T, NumDimensions> source)
+void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source)
 {
 	detail_::copy_parameters_t<NumDimensions> params{};
 	auto dims = source.dimensions();
@@ -845,7 +845,6 @@ void copy(array_t<T, NumDimensions> destination, array_t<T, NumDimensions> sourc
 	throw_if_error_lazy(status, "Copying from a CUDA array into a regular memory region");
 }
 
-
 template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source)
 {
@@ -853,6 +852,15 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source)
 		throw ::std::logic_error("Attempt to copy an array into a memory region too small to hold the copy");
 	}
 	copy(destination.start(), source);
+}
+
+template <typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>& destination, const_region_t source)
+{
+	if (destination.size_bytes() < source.size()) {
+		throw ::std::logic_error("Attempt to copy into an array from a source region larger than the array's size");
+	}
+	copy(destination, source.start());
 }
 
 /**
