@@ -849,7 +849,7 @@ void copy(array_t<T, NumDimensions> destination, array_t<T, NumDimensions> sourc
 template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source)
 {
-	if (source.size_bytes() < destination.size()) {
+	if (destination.size() < source.size_bytes()) {
 		throw ::std::logic_error("Attempt to copy an array into a memory region too small to hold the copy");
 	}
 	copy(destination.start(), source);
