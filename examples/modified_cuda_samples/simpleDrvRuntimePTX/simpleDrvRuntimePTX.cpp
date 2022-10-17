@@ -142,9 +142,9 @@ int main(int argc, char** argv)
 
     stream.synchronize();
 
-	auto h_A = ::std::unique_ptr<float>(new float[N]);
-	auto h_B = ::std::unique_ptr<float>(new float[N]);
-	auto h_C = ::std::unique_ptr<float>(new float[N]);
+	auto h_A = ::std::unique_ptr<float[]>(new float[N]);
+	auto h_B = ::std::unique_ptr<float[]>(new float[N]);
+	auto h_C = ::std::unique_ptr<float[]>(new float[N]);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
 	::std::generate_n(h_A.get(), N, generator);
