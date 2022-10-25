@@ -22,10 +22,10 @@ namespace detail_ {
 
 template<typename... KernelParameters>
 void enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...>::operator()(
-	apriori_compiled_kernel_t  wrapped_kernel,
-	const stream_t &           stream,
-	launch_configuration_t     launch_configuration,
-	KernelParameters &&...     parameters)
+	const apriori_compiled_kernel_t&  wrapped_kernel,
+	const stream_t &                  stream,
+	launch_configuration_t            launch_configuration,
+	KernelParameters &&...            parameters) const
 {
 	using raw_kernel_t = typename kernel::detail_::raw_kernel_typegen<KernelParameters ...>::type;
 	auto unwrapped_kernel_function = reinterpret_cast<raw_kernel_t>(const_cast<void *>(wrapped_kernel.ptr()));
@@ -95,12 +95,11 @@ inline void launch_type_erased_in_current_context(
 
 template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel_t, KernelParameters...> {
-
 	void operator()(
 	const kernel_t&                       wrapped_kernel,
 	const stream_t &                      stream,
 	launch_configuration_t                launch_config,
-	KernelParameters &&...                arguments)
+	KernelParameters &&...                arguments) const
 	{
 		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(arguments)...) };
 		auto function_handle = wrapped_kernel.handle();
@@ -115,42 +114,42 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 template<typename RawKernelFunction, typename... KernelParameters>
 void enqueue_launch(
 	::std::integral_constant<bool, false>, // Got a raw kernel function
-	RawKernelFunction       kernel_function,
-	const stream_t&         stream,
-	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	RawKernelFunction&&       kernel_function,
+	const stream_t&           stream,
+	launch_configuration_t    launch_configuration,
+	KernelParameters&&...     parameters)
 {
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble enqueueing into a stream in another context - it balks at doing so under
 	// certain conditions, so we must place ourselves in the stream's context.
 	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
 	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
-		::std::forward<RawKernelFunction>(kernel_function), stream.handle(), launch_configuration,
+		kernel_function, stream.handle(), launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 ::std::integral_constant<bool, true>, // a kernel wrapped in a kernel_t (sub)class
-Kernel                  kernel,
-const stream_t&         stream,
-launch_configuration_t  launch_configuration,
-KernelParameters&&...   parameters)
+	Kernel&&                kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
-	enqueue_launch_helper<Kernel, KernelParameters...>{}(
-	::std::forward<Kernel>(kernel), stream, launch_configuration,
-	::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch_helper<typename std::decay<Kernel>::type, KernelParameters...>{}(
+		::std::forward<Kernel>(kernel), stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
 }
 
 } // namespace detail_
 
 template<typename Kernel, typename... KernelParameters>
 inline void launch(
-Kernel                  kernel,
-launch_configuration_t  launch_configuration,
-KernelParameters&&...   parameters)
+	Kernel&&                kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
 {
-	auto primary_context = detail_::get_implicit_primary_context(kernel);
+	auto primary_context = detail_::get_implicit_primary_context(std::forward<Kernel>(kernel));
 	auto stream = primary_context.default_stream();
 
 	// Note: If Kernel is a kernel_t, and its associated device is different
@@ -237,10 +236,10 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 } // namespace detail_
 
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const apriori_compiled_kernel_t&          kernel,
-	memory::shared::size_t   dynamic_shared_memory_size,
-	grid::block_dimension_t  block_size_limit,
-	bool                     disable_caching_override)
+	const apriori_compiled_kernel_t&  kernel,
+	memory::shared::size_t            dynamic_shared_memory_size,
+	grid::block_dimension_t           block_size_limit,
+	bool                              disable_caching_override)
 {
 	return detail_::min_grid_params_for_max_occupancy(
 		kernel.ptr(), kernel.device().id(), dynamic_shared_memory_size, block_size_limit, disable_caching_override);
@@ -248,10 +247,10 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const apriori_compiled_kernel_t& kernel,
-	UnaryFunction            block_size_to_dynamic_shared_mem_size,
-	grid::block_dimension_t  block_size_limit,
-	bool                     disable_caching_override)
+	const apriori_compiled_kernel_t&  kernel,
+	UnaryFunction                     block_size_to_dynamic_shared_mem_size,
+	grid::block_dimension_t           block_size_limit,
+	bool                              disable_caching_override)
 {
 	return detail_::min_grid_params_for_max_occupancy(
 		kernel.ptr(), kernel.device_id(), block_size_to_dynamic_shared_mem_size, block_size_limit, disable_caching_override);

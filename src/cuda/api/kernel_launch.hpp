@@ -89,9 +89,9 @@ using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 template<typename P>
 struct kernel_parameter_decay {
 private:
-    typedef typename ::std::remove_reference<P>::type U;
+    using U = typename ::std::remove_reference<P>::type;
 public:
-    typedef typename ::std::conditional<
+    using type = typename ::std::conditional<
         ::std::is_array<U>::value,
         typename ::std::remove_extent<U>::type*,
         typename ::std::conditional<
@@ -99,7 +99,7 @@ public:
             typename ::std::add_pointer<U>::type,
             U
         >::type
-    >::type type;
+    >::type;
 };
 
 template<typename P>
@@ -122,16 +122,16 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 template<typename Kernel, typename... KernelParameters>
 struct enqueue_launch_helper {
 	void operator()(
-		Kernel                  kernel_function,
+		Kernel&&                kernel_function,
 		const stream_t &        stream,
 		launch_configuration_t  launch_configuration,
-		KernelParameters &&...  parameters);
+		KernelParameters &&...  parameters) const;
 };
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	::std::integral_constant<bool, false>,
-	Kernel                  kernel_function,
+	Kernel&&                kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
@@ -139,14 +139,14 @@ void enqueue_launch(
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	::std::integral_constant<bool, true>,
-	Kernel                  kernel,
+	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
 template<typename KernelFunction, typename... KernelParameters>
 void enqueue_raw_kernel_launch_in_current_context(
-	KernelFunction          kernel_function,
+	KernelFunction&&        kernel_function,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
@@ -156,7 +156,8 @@ void enqueue_raw_kernel_launch_in_current_context(
 ;
 #else
 {
-	static_assert(::std::is_function<KernelFunction>::value or (is_function_ptr<KernelFunction>::value),
+	using decayed_kf_type = typename std::decay<KernelFunction>::type;
+	static_assert(::std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
 		"Only a bona fide function can be launched as a CUDA kernel");
 #ifndef NDEBUG
 	detail_::validate(launch_configuration);
@@ -253,7 +254,7 @@ struct raw_kernel_typegen {
 
 template<typename... KernelParameters>
 typename detail_::raw_kernel_typegen<KernelParameters...>::type
-unwrap(apriori_compiled_kernel_t kernel)
+unwrap(const apriori_compiled_kernel_t& kernel)
 {
 	using raw_kernel_t = typename detail_::raw_kernel_typegen<KernelParameters ...>::type;
 	return reinterpret_cast<raw_kernel_t>(const_cast<void *>(kernel.ptr()));
@@ -266,10 +267,10 @@ namespace detail_ {
 template<typename... KernelParameters>
 struct enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...> {
 	void operator()(
-		apriori_compiled_kernel_t  wrapped_kernel,
-		const stream_t &           stream,
-		launch_configuration_t     launch_configuration,
-		KernelParameters &&...     parameters);
+		const apriori_compiled_kernel_t&  wrapped_kernel,
+		const stream_t &                  stream,
+		launch_configuration_t            launch_configuration,
+		KernelParameters &&...            parameters) const;
 };
 
 } // namespace detail_
@@ -305,7 +306,7 @@ struct enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...> {
  */
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	Kernel                  kernel,
+	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
@@ -330,7 +331,7 @@ void enqueue_launch(
  */
 template<typename Kernel, typename... KernelParameters>
 void launch(
-	Kernel                  kernel,
+	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
