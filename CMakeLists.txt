@@ -80,7 +80,7 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	target_link_libraries(CUDA::nvptxcompiler_static INTERFACE Threads::Threads) # Because the NVIDIA PTX compiler itself uses threads
 endif()
 
-target_link_libraries(caw_nvtx  INTERFACE cuda-api-wrappers::runtime-and-driver Threads::Threads CUDA::nvToolsExt ${CMAKE_DL_LIBS})
+target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvToolsExt ${CMAKE_DL_LIBS}) # libnvToolsExt uses dlclose
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
