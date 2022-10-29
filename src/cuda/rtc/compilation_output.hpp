@@ -64,7 +64,7 @@ namespace detail_ {
 template <source_kind_t Kind>
 inline ::std::string identify(const char *name)
 {
-	return std::string{detail_::kind_name(Kind)} + " program" +
+	return ::std::string{detail_::kind_name(Kind)} + " program" +
 		((name == nullptr) ? "" : " '" + ::std::string{name} + "'");
 }
 
@@ -114,9 +114,9 @@ inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char*
 		+ identify<Kind>(program_handle, program_name));
 	if (size == 0) {
 		throw  (Kind == cuda_cpp) ?
-			std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
+			::std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
 				+ identify<Kind>(program_handle, program_name)):
-			std::runtime_error("Empty output CUBIN for compilation of "
+			::std::runtime_error("Empty output CUBIN for compilation of "
 				+ identify<Kind>(program_handle, program_name));
 	}
 	return size;
@@ -570,7 +570,7 @@ template<> inline module_t create<cuda_cpp>(
 	const link::options_t&                      options)
 {
 	if (not compiled_program.succeeded()) {
-		throw std::invalid_argument("Attempt to create a module after compilation failure of "
+		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
 			+ cuda::rtc::program::detail_::identify<cuda_cpp>(compiled_program.program_handle()));
 	}
 #if CUDA_VERSION >= 11030
@@ -590,7 +590,7 @@ template<> inline module_t create<source_kind_t::ptx>(
 	const link::options_t&                                options)
 {
 	if (not compiled_program.succeeded()) {
-		throw std::invalid_argument("Attempt to create a module after compilation failure of "
+		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
 			+ cuda::rtc::program::detail_::identify<source_kind_t::ptx>(compiled_program.program_handle()));
 	}
 	auto cubin = compiled_program.cubin();

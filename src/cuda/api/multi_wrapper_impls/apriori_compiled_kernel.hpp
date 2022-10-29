@@ -61,7 +61,7 @@ inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
 	// Note: assuming the primary context is active
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
-	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + std::to_string(config));
+	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + ::std::to_string(config));
 }
 
 inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const

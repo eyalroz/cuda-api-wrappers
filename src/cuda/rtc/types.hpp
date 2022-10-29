@@ -73,7 +73,7 @@ template <source_kind_t Kind> struct types {};
 template <> struct types<cuda_cpp> {
 	using handle_type = nvrtcProgram;
 	using status_type = nvrtcResult;
-	enum named_status : std::underlying_type<status_type>::type {
+	enum named_status : ::std::underlying_type<status_type>::type {
 		success = NVRTC_SUCCESS,
 		out_of_memory = NVRTC_ERROR_OUT_OF_MEMORY,
 		program_creation_failure = NVRTC_ERROR_OUT_OF_MEMORY,
@@ -93,7 +93,7 @@ template <> struct types<cuda_cpp> {
 template <> struct types<ptx> {
 	using handle_type = nvPTXCompilerHandle;
 	using status_type = nvPTXCompileResult;
-	enum named_status : std::underlying_type<status_type>::type {
+	enum named_status : ::std::underlying_type<status_type>::type {
 		success = NVPTXCOMPILE_SUCCESS,
 		invalid_handle = NVPTXCOMPILE_ERROR_INVALID_COMPILER_HANDLE,
 		invalid_program_handle = NVPTXCOMPILE_ERROR_INVALID_COMPILER_HANDLE,

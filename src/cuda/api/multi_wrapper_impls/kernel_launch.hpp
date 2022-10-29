@@ -136,7 +136,7 @@ void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
-	enqueue_launch_helper<typename std::decay<Kernel>::type, KernelParameters...>{}(
+	enqueue_launch_helper<typename ::std::decay<Kernel>::type, KernelParameters...>{}(
 		::std::forward<Kernel>(kernel), stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }

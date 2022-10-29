@@ -245,11 +245,11 @@ public:
 	 *
 	 * @note The PTX source may contain code for additional `.entry` functions.
 	 */
-	std::vector<std::string> mangled_entry_function_names;
+	::std::vector<std::string> mangled_entry_function_names;
 
-	std::vector<std::string>& entries();
-	std::vector<std::string>& kernels();
-	std::vector<std::string>& kernel_names();
+	::std::vector<std::string>& entries();
+	::std::vector<std::string>& kernels();
+	::std::vector<std::string>& kernel_names();
 };
 
 template <>

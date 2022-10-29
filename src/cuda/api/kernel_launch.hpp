@@ -156,7 +156,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 ;
 #else
 {
-	using decayed_kf_type = typename std::decay<KernelFunction>::type;
+	using decayed_kf_type = typename ::std::decay<KernelFunction>::type;
 	static_assert(::std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
 		"Only a bona fide function can be launched as a CUDA kernel");
 #ifndef NDEBUG
