@@ -183,7 +183,7 @@ template <source_kind_t Kind>
 template <source_kind_t Kind>
 inline compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
-	const ::std::string&     program_name,
+	::std::string            program_name,
 	bool                     succeeded,
 	bool                     own_handle);
 
@@ -256,8 +256,8 @@ public: // non-mutators
 #endif
 
 protected: // constructors
-	compilation_output_base_t(handle_type handle, const ::std::string& name, bool succeeded, bool owning = false)
-	: program_handle_(handle), program_name_(name), succeeded_(succeeded), owns_handle_(owning) { }
+	compilation_output_base_t(handle_type handle, ::std::string name, bool succeeded, bool owning = false)
+	: program_handle_(handle), program_name_(std::move(name)), succeeded_(succeeded), owns_handle_(owning) { }
 
 public: // constructors & destructor
 	compilation_output_base_t(compilation_output_base_t&& other) noexcept :
@@ -302,10 +302,10 @@ public:
 	using parent::parent;
 
 	friend compilation_output_t compilation_output::detail_::wrap<source_kind>(
-		handle_type           program_handle,
-		const ::std::string&  program_name,
-		bool                  succeeded,
-		bool                  own_handle);
+		handle_type    program_handle,
+		::std::string  program_name,
+		bool           succeeded,
+		bool           own_handle);
 
 public: // non-mutators
 	/**
@@ -482,10 +482,10 @@ public:
 	using parent::parent;
 
 	friend compilation_output_t compilation_output::detail_::wrap<source_kind>(
-		handle_type           program_handle,
-		const ::std::string&  program_name,
-		bool                  succeeded,
-		bool                  own_handle);
+		handle_type    program_handle,
+		::std::string  program_name,
+		bool           succeeded,
+		bool           own_handle);
 
 public: // non-mutators
 	/**
@@ -543,7 +543,7 @@ inline ::std::string identify(const compilation_output_t<Kind> &compilation_resu
 template <source_kind_t Kind>
 inline compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
-	const ::std::string&     program_name,
+	::std::string            program_name,
 	bool                     succeeded,
 	bool                     own_handle)
 {
