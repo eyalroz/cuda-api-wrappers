@@ -82,7 +82,8 @@ inline constexpr const char* architecture_name(const compute_architecture_t& arc
 		(arch.major == 7) ? "Volta/Turing" :
 			// Unfortunately, nVIDIA broke with the custom of having the numeric prefix
 			// designate the architecture name, with Turing (Compute Capability 7.5 _only_).
-		(arch.major == 8) ? "Ampere" :
+		(arch.major == 8) ? "Ampere/Lovelace" :
+		(arch.major == 9) ? "Hopper" :
 		nullptr;
 }
 
@@ -149,6 +150,7 @@ inline constexpr compute_capability_t make_compute_capability(unsigned major, un
 
 namespace detail_ {
 
+// Based on `_ConvertSMVer2Cores()` from the CUDA samples
 inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
 {
 	return
@@ -161,7 +163,8 @@ inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capa
 		(cc.architecture.major == 6)    ? 128 :
 		(cc.architecture.major == 7)    ?  64 :
 		(cc.as_combined_number() == 80) ?  64 :
-		(cc.as_combined_number() == 86) ? 128 :
+		(cc.architecture.major == 8)    ? 128 :
+		(cc.architecture.major == 9)    ? 128 :
 		invalid_compute_capability_return;
 }
 
@@ -177,6 +180,7 @@ inline constexpr unsigned max_warp_schedulings_per_processor_cycle(const compute
 		(cc.architecture.major == 6)    ?  4 :
 		(cc.architecture.major == 7)    ?  4 :
 		(cc.architecture.major == 8)    ?  4 :
+		(cc.architecture.major == 9)    ?  4 :
 		invalid_compute_capability_return;
 }
 
@@ -203,11 +207,15 @@ inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t
 		// Note: No architecture number 4!
 		(cc.architecture.major == 5)    ?  48 * KiB :
 		(cc.architecture.major == 6)    ?  48 * KiB :
-		(cc.as_combined_number() == 7)  ?  64 * KiB : // of 96
-		(cc.as_combined_number() == 75) ?  64 * KiB : // of 96
+		(cc.as_combined_number() == 7)  ?  64 * KiB : // of 128
+		(cc.as_combined_number() == 72) ?  48 * KiB : // of 128
+		(cc.as_combined_number() == 75) ?  64 * KiB : // of  96
 		(cc.architecture.major == 7)    ?  96 * KiB : // of 128
 		(cc.as_combined_number() == 80) ? 163 * KiB : // of 192
 		(cc.as_combined_number() == 86) ?  99 * KiB : // of 128
+		(cc.as_combined_number() == 87) ? 163 * KiB : // of 192
+		(cc.as_combined_number() == 89) ?  99 * KiB : // of 100
+		(cc.as_combined_number() == 90) ? 227 * KiB : // of 256
 		invalid_compute_capability_return;
 }
 
@@ -224,7 +232,8 @@ inline constexpr unsigned max_resident_warps_per_processor(const compute_capabil
 		(cc.as_combined_number() == 75) ?  32 :
 		(cc.architecture.major == 7)    ?  64 :
 		(cc.as_combined_number() == 80) ?  64 :
-		(cc.as_combined_number() == 86) ?  48 :
+		(cc.architecture.major == 8)    ?  48 :
+		(cc.as_combined_number() == 90) ?  64 :
 		invalid_compute_capability_return;
 }
 
