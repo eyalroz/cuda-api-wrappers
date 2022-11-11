@@ -17,7 +17,10 @@
 
 #include <cuda_runtime.h>
 #include <cuda.h>
+
+#ifndef CUDA_NO_HALF
 #include <cuda_fp16.h>
+#endif
 
 namespace cuda {
 
@@ -52,7 +55,9 @@ template <> struct format_specifier<uint32_t> { static constexpr const CUarray_f
 template <> struct format_specifier<int8_t  > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT8;    };
 template <> struct format_specifier<int16_t > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT16;   };
 template <> struct format_specifier<int32_t > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT32;   };
+#ifndef CUDA_NO_HALF
 template <> struct format_specifier<half    > { static constexpr const CUarray_format value = CU_AD_FORMAT_HALF;           };
+#endif
 template <> struct format_specifier<float   > { static constexpr const CUarray_format value = CU_AD_FORMAT_FLOAT;          };
 
 template<typename T>
