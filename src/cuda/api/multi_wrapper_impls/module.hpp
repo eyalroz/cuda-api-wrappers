@@ -74,11 +74,11 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 inline module_t create(const context_t& context, const void* module_data, const link::options_t& link_options)
 {
 	auto creator_function =
-		[&link_options](handle_t& new_module_handle, const void* module_data) {
+		[&link_options](handle_t& new_module_handle, const void* module_data_) {
 			auto marshalled_options = marshal(link_options);
 			return cuModuleLoadDataEx(
 				&new_module_handle,
-				module_data,
+				module_data_,
 				marshalled_options.count(),
 				const_cast<link::option_t *>(marshalled_options.options()),
 				const_cast<void **>(marshalled_options.values())
@@ -90,8 +90,8 @@ inline module_t create(const context_t& context, const void* module_data, const 
 inline module_t create(const context_t& context, const void* module_data)
 {
 	auto creator_function =
-		[](handle_t& new_module_handle, const void* module_data) {
-			return cuModuleLoadData(&new_module_handle, module_data);
+		[](handle_t& new_module_handle, const void* module_data_) {
+			return cuModuleLoadData(&new_module_handle, module_data_);
 		};
 	return detail_::create(context, module_data, creator_function);
 }

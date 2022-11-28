@@ -541,9 +541,9 @@ inline void typed_set(T* start, const T& value, size_t num_elements)
 	// TODO: Consider checking for alignment when compiling without NDEBUG
 	status_t result {CUDA_SUCCESS};
 	switch(sizeof(T)) {
-		case(1): result = cuMemsetD8 (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements); break;
-		case(2): result = cuMemsetD16(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
-		case(4): result = cuMemsetD32(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
+		case 1: result = cuMemsetD8 (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements); break;
+		case 2: result = cuMemsetD16(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
+		case 4: result = cuMemsetD32(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
 	}
 	throw_if_error_lazy(result, "Setting global device memory bytes");
 }

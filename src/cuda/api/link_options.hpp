@@ -120,7 +120,7 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 
 inline marshalled_options_t marshal(const options_t& link_options)
 {
-	marshalled_options_t marshalled;
+	marshalled_options_t marshalled{};
 	const auto& lo = link_options;
 
 	if (lo.max_num_registers_per_thread) {

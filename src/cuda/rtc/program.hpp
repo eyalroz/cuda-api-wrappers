@@ -229,7 +229,12 @@ public: // setters - duplicated with PTX programs
 
 	program_t& set_source(const char* source) { source_ = source; return *this; }
 	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
-	program_t& set_options(compilation_options_t<source_kind> options)
+	program_t& set_options(const compilation_options_t<source_kind>& options)
+	{
+		options_ = options;
+		return *this;
+	}
+	program_t& set_options(compilation_options_t<source_kind>&& options)
 	{
 		options_ = ::std::move(options);
 		return *this;

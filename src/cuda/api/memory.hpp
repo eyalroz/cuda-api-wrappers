@@ -95,7 +95,7 @@ namespace detail_ {
 inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 {
 	return
-		(options.portability     == portability_across_contexts::is_portable ? CU_MEMHOSTALLOC_PORTABLE      : 0) &
+		(options.portability     == portability_across_contexts::is_portable ? CU_MEMHOSTALLOC_PORTABLE      : 0) |
 		(options.write_combining == cpu_write_combining::with_wc             ? CU_MEMHOSTALLOC_WRITECOMBINED : 0);
 }
 
