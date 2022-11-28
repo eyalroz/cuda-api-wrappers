@@ -54,8 +54,8 @@ apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function
 
 inline context_t kernel_t::context() const noexcept
 {
-constexpr bool dont_take_ownership { false };
-return context::detail_::from_handle(context_handle_, dont_take_ownership);
+	constexpr bool dont_take_ownership { false };
+	return context::wrap(device_id_, context_handle_, dont_take_ownership);
 }
 
 inline device_t kernel_t::device() const noexcept
