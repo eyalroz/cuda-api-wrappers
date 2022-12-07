@@ -21,7 +21,9 @@ namespace cuda {
 
 ///@cond
 class device_t;
+
 class module_t;
+
 class link_t;
 ///@endcond
 
@@ -39,13 +41,13 @@ using handle_t = CUlinkState;
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	device::id_t            device_id,
-	context::handle_t       context_handle,
-	link::handle_t          handle,
-	const link::options_t&  options,
-	bool                    take_ownership = false) noexcept;
+	device::id_t device_id,
+	context::handle_t context_handle,
+	link::handle_t handle,
+	const link::options_t &options,
+	bool take_ownership = false) noexcept;
 
-inline link_t create(const void* image, const link::options_t& options);
+inline link_t create(const void *image, const link::options_t &options);
 
 // TODO: Use a clase-class with C++17 of later, made up of the two classes here
 namespace input {
@@ -55,12 +57,12 @@ namespace input {
  * CUDA linking process.
  */
 struct image_t : memory::region_t {
-	const char* name;
+	const char *name;
 	link::input_kind_t type;
 };
 
 struct file_t {
-	const char* path; // TODO: Use a proper path in C++14 and later
+	const char *path; // TODO: Use a proper path in C++14 and later
 	link::input_kind_t type;
 };
 
@@ -79,19 +81,22 @@ class link_t {
 
 public: // getters
 	/// The raw CUDA ID for the device w.r.t. which the event is defined
-	device::id_t      device_id()       const noexcept { return device_id_; };
+	device::id_t device_id() const noexcept
+	{ return device_id_; };
 
 	/// The raw CUDA handle for the context in which the represented stream is defined.
-	context::handle_t context_handle()  const noexcept { return context_handle_; }
+	context::handle_t context_handle() const noexcept
+	{ return context_handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
-	bool              is_owning()       const noexcept { return owning; }
+	bool is_owning() const noexcept
+	{ return owning; }
 
 	/// The device w.r.t. which the event is defined
-	device_t          device()          const;
+	device_t device() const;
 
 	/// The context in which this stream was defined.
-	context_t         context()         const;
+	context_t context() const;
 
 public:
 	/**
@@ -101,8 +106,9 @@ public:
 	 * @return The completely-linked cubin image, in a sized memory range. This memory is owned
 	 * by the link object, and must not be freed/deleted.
 	 */
-	memory::region_t complete() const {
-		void* cubin_output_start;
+	memory::region_t complete() const
+	{
+		void *cubin_output_start;
 		size_t cubin_output_size;
 		auto status = cuLinkComplete(handle_, &cubin_output_start, &cubin_output_size);
 		throw_if_error_lazy(status,
@@ -111,7 +117,7 @@ public:
 	}
 
 	// TODO: Replace this with methods which take wrapper classes.
-	void add(link::input::image_t image, const link::options_t& ptx_compilation_options = {}) const
+	void add(link::input::image_t image, const link::options_t &ptx_compilation_options = {}) const
 	{
 		auto marshalled_options = marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
@@ -121,15 +127,15 @@ public:
 			image.size(),
 			image.name,
 			marshalled_options.count(),
-			const_cast<link::option_t*>(marshalled_options.options()),
-			const_cast<void**>(marshalled_options.values())
+			const_cast<link::option_t *>(marshalled_options.options()),
+			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
 			"Failed adding input " + ::std::string(image.name) + " of type "
 			+ ::std::to_string((int) image.type) + " to a link.");
 	}
 
-	void add_file(link::input::file_t file_input, const link::options_t& options) const
+	void add_file(link::input::file_t file_input, const link::options_t &options) const
 	{
 		auto marshalled_options = marshal(options);
 		auto status = cuLinkAddFile(
@@ -137,16 +143,16 @@ public:
 			static_cast<CUjitInputType_enum>(file_input.type),
 			file_input.path,
 			marshalled_options.count(),
-			const_cast<link::option_t*>(marshalled_options.options()),
-			const_cast<void**>(marshalled_options.values())
-			);
+			const_cast<link::option_t *>(marshalled_options.options()),
+			const_cast<void **>(marshalled_options.values())
+		);
 		throw_if_error_lazy(status,
 			"Failed loading an object of type " + ::std::to_string((int) file_input.type)
 			+ " from file " + file_input.path);
 	}
 
 #if __cplusplus >= 201703L
-	void add_file(const ::std::filesystem::path& path, link::input_type_t file_contents_type) const
+	void add_file(const ::std::filesystem::path& path, link::input_kind_t file_contents_type) const
 	{
 		return add_file(path.c_str(), file_contents_type);
 	}
@@ -155,22 +161,23 @@ public:
 protected: // constructors
 
 	link_t(
-		device::id_t            device_id,
-		context::handle_t       context,
-		link::handle_t          handle,
-		const link::options_t&  options,
-		bool                    take_ownership) noexcept
-	: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning(take_ownership) { }
+		device::id_t device_id,
+		context::handle_t context,
+		link::handle_t handle,
+		const link::options_t &options,
+		bool take_ownership) noexcept
+		: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning(take_ownership)
+	{}
 
 public: // friendship
 
-	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, const link::options_t&, bool) noexcept;
+	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, const link::options_t &, bool) noexcept;
 
 public: // constructors and destructor
 
-	link_t(const link_t&) = delete;
+	link_t(const link_t &) = delete;
 
-	link_t(link_t&& other) noexcept :
+	link_t(link_t &&other) noexcept:
 		link_t(other.device_id_, other.context_handle_, other.handle_, other.options_, other.owning)
 	{
 		other.owning = false;
@@ -189,8 +196,9 @@ public: // constructors and destructor
 
 public: // operators
 
-	link_t& operator=(const link_t&) = delete;
-	link_t& operator=(link_t&& other) noexcept
+	link_t &operator=(const link_t &) = delete;
+
+	link_t &operator=(link_t &&other) noexcept
 	{
 		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
@@ -201,25 +209,25 @@ public: // operators
 	}
 
 protected: // data members
-	device::id_t       device_id_;
-	context::handle_t  context_handle_;
-	link::handle_t     handle_;
-	link::options_t    options_;
-	bool               owning;
-		// this field is mutable only for enabling move construction; other
-		// than in that case it must not be altered
+	device::id_t device_id_;
+	context::handle_t context_handle_;
+	link::handle_t handle_;
+	link::options_t options_;
+	bool owning;
+	// this field is mutable only for enabling move construction; other
+	// than in that case it must not be altered
 };
 
 namespace link {
 
-inline link_t create(const link::options_t& options = link::options_t{})
+inline link_t create(const link::options_t &options = link::options_t{})
 {
 	handle_t new_link_handle;
 	auto marshalled_options = marshal(options);
 	auto status = cuLinkCreate(
 		marshalled_options.count(),
-		const_cast<link::option_t*>(marshalled_options.options()),
-		const_cast<void**>(marshalled_options.values()),
+		const_cast<link::option_t *>(marshalled_options.options()),
+		const_cast<void **>(marshalled_options.values()),
 		&new_link_handle
 	);
 	throw_if_error_lazy(status, "Failed creating a new link ");
@@ -236,11 +244,11 @@ inline link_t create(const link::options_t& options = link::options_t{})
 
 // TODO: Check if the linking has been completed!
 inline link_t wrap(
-	device::id_t            device_id,
-	context::handle_t       context_handle,
-	link::handle_t          handle,
-	const link::options_t&  options,
-	bool                    take_ownership) noexcept
+	device::id_t device_id,
+	context::handle_t context_handle,
+	link::handle_t handle,
+	const link::options_t &options,
+	bool take_ownership) noexcept
 {
 	return link_t{device_id, context_handle, handle, options, take_ownership};
 }
