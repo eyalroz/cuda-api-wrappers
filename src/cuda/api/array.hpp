@@ -157,7 +157,7 @@ public:
 	 * Runtime API - and takes ownership of the array
 	 */
 	array_t(device::id_t device_id, context::handle_t context_handle, handle_type handle, dimensions_type dimensions) :
-		device_id_(device_id), context_handle_(context_handle), dimensions_(dimensions), handle_(handle)
+		dimensions_(dimensions), device_id_(device_id), context_handle_(context_handle), handle_(handle)
 	{
 		assert(handle != nullptr);
 	}
