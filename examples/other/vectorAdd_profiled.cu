@@ -29,6 +29,7 @@ int main()
 {
 	profile_this_scope();
 	cuda::profiling::name_this_thread("The single thread for vectorAdd_profile :-)");
+	auto profiling_range_handle = cuda::profiling::mark::range_start("main range of vectorAdd_profile");
 	if (cuda::device::count() == 0) {
 		::std::cerr << "No CUDA devices on this system" << "\n";
 		exit(EXIT_FAILURE);
@@ -67,6 +68,8 @@ int main()
 	);
 
 	cuda::memory::copy(h_C.get(), d_C.get(), size);
+
+	cuda::profiling::mark::range_end(profiling_range_handle);
 
 	::std::cout << "SUCCESS\n";
 }
