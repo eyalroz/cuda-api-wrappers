@@ -142,7 +142,7 @@ inline ::std::mutex& get_mutex() noexcept
 }
 
 template <typename CharT>
-nvtxEventAttributes_t create_attributes(color_t color, const CharT* description)
+nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
 {
 	nvtxEventAttributes_t eventAttrib = {0};
 	eventAttrib.version = NVTX_VERSION;
@@ -158,7 +158,7 @@ nvtxEventAttributes_t create_attributes(color_t color, const CharT* description)
 template <typename CharT>
 void point(const CharT* description, color_t color)
 {
-	auto attrs = create_attributes(description, color);
+	auto attrs = detail_::create_attributes(description, color);
 	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
 	// logging?
 	nvtxMarkEx(&attrs);
@@ -172,7 +172,7 @@ range::handle_t range_start(
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
 	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
-	auto attrs = create_attributes(description, color);
+	auto attrs = detail_::create_attributes(description, color);
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&attrs);
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
 				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
