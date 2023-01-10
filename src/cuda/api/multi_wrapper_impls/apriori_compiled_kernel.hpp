@@ -84,7 +84,7 @@ inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribu
 	throw_if_error_lazy(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
 }
 
-kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel::attribute_t attribute) const
+inline kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel::attribute_t attribute) const
 {
 	kernel::attributes_t attrs = attributes();
 	switch(attribute) {
