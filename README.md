@@ -115,13 +115,7 @@ Since this is a header-only library, you can simply add the `src/` subdirectory 
 
 ## Coverage of the APIs
 
-Most, but not all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. Specifically, the following are missing:
-
-* Execution graph management
-* CUDA 12.x "texture objects", "surface objects" and "tensor objects" (textures and texture references, introduced in earlier CUDA versions, are supported)
-* Interoperability with OpenGL, Direct3D, EGL, VDAPU.
-
-Support for textures, arrays and surfaces exists, but is partial: Not all relevant API functions are covered.
+Most, but not quite all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. You can find the main omissions as [issues tagged with "missing-cuda-feature"](https://github.com/eyalroz/cuda-api-wrappers/issues?q=is%3Aissue+is%3Aopen+label%3Amissing-cuda-feature), intended for further development work. Additionally, the wrapper library does not cover the APIs for interoperability with OpenGL, Direct3D, EGL and VDAPU.
 
 The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indicates some features which aren't covered and are slated for future work. Since I am not currently working on anything graphics-related, there are no short-term plans to extend coverage to more graphics-related APIs; however - PRs are welcome.
 

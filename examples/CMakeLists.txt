@@ -144,6 +144,20 @@ if(USE_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
 	add_executable(binaryPartitionCG modified_cuda_samples/binaryPartitionCG/binaryPartitionCG.cu)
 endif()
 add_executable(bandwidthtest modified_cuda_samples/bandwidthtest/bandwidthtest.cpp)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "10.0")
+	if((NOT MSVC)
+		OR (CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.2")
+		OR (CUDAToolkit_VERSION VERSION_LESS "11.7")
+	)
+		add_executable(simpleCudaGraphs modified_cuda_samples/simpleCudaGraphs/simpleCudaGraphs.cu)
+		# Note: Between versions 11.7 and 12.1.1, CUDA's own cooperative groups header
+		# tries to include the CUDA faux standard library - which it shouldn't
+		add_executable(jacobiCudaGraphs
+			modified_cuda_samples/jacobiCudaGraphs/main.cpp
+			modified_cuda_samples/jacobiCudaGraphs/jacobi.cu
+		)
+	endif()
+endif()
 #----
 
 add_executable(version_management by_api_module/version_management.cpp)

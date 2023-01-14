@@ -237,7 +237,6 @@ enum : priority_t {
 	default_priority   = 0
 };
 
-namespace detail_ {
 
 /// The CUDA driver's raw handle for a host-side callback function
 #if CUDA_VERSION >= 10000
@@ -246,7 +245,33 @@ using callback_t = CUhostFn;
 using callback_t = CUstreamCallback;
 #endif
 
-} // namespace detail_
+#if CUDA_VERSION >= 10000
+
+namespace capture {
+
+enum class mode_t : ::std::underlying_type<CUstreamCaptureMode>::type {
+	global        = CU_STREAM_CAPTURE_MODE_GLOBAL,
+	thread        = CU_STREAM_CAPTURE_MODE_THREAD_LOCAL,
+	thread_local_ = thread,
+	relaxed       = CU_STREAM_CAPTURE_MODE_RELAXED
+};
+
+enum class state_t : ::std::underlying_type<CUstreamCaptureStatus>::type {
+	active        = CU_STREAM_CAPTURE_STATUS_ACTIVE,
+	capturing     = active,
+	invalidated   = CU_STREAM_CAPTURE_STATUS_INVALIDATED,
+	none          = CU_STREAM_CAPTURE_STATUS_NONE,
+	not_capturing = none
+};
+
+} // namespace capture
+
+inline bool is_capturing(capture::state_t status) noexcept
+{
+	return status == capture::state_t::active;
+}
+
+#endif // CUDA_VERSION >= 10000
 
 } // namespace stream
 
@@ -915,6 +940,55 @@ using attribute_value_t = int;
 using handle_t = CUfunction;
 
 } // namespace kernel
+
+#if CUDA_VERSION >= 10000
+
+/**
+ * Functionality related to CUDA (execution) graphs, which can be scheduled
+ * for execution at once, rather than the default piecemeal execution of
+ * individual command and event-based dependencies.
+ */
+namespace graph {
+
+namespace node {
+
+/// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
+using handle_t = CUgraphNode;
+/// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
+using const_handle_t = CUgraphNode_st const *;
+
+constexpr const const_handle_t no_handle = nullptr;
+
+} // namespace node
+
+/**
+ * Functionality related to the @ref cuda::template_t class - the
+ * templates of CUDA execution graphs, which are what one constructs and edits,
+ * but then must instantiate for actual execution scheduling.
+ */
+namespace template_ {
+
+/// Internal CUDA driver handle of a(n execution) graph template; wrapped by @ref graph::template_t
+using handle_t = CUgraph;
+constexpr const handle_t null_handle = nullptr;
+
+} // namespace template_
+
+/**
+ * Functionality related to the @ref cuda::template_t class - the
+ * templates of CUDA execution graphs, which are what one constructs and edits,
+ * but then must instantiate for actual execution scheduling.
+ */
+namespace instance {
+
+/// Internal CUDA driver handle of an executable graph instance; wrapped by @ref graph::instance_t
+using handle_t = CUgraphExec;
+
+} // namespace instance
+
+} // namespace graph
+
+#endif // CUDA_VERSION >= 10000
 
 } // namespace cuda
 
