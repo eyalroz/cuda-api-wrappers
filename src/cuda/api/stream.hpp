@@ -316,7 +316,7 @@ protected: // static methods
 	 * actually wants to be called.
 	 */
 	template <typename Callable>
-	static void CUDART_CB stream_launched_host_function_adapter(void * stream_wrapper_members_and_callable)
+	static void CUDA_CB stream_launched_host_function_adapter(void * stream_wrapper_members_and_callable)
 	{
 		using tuple_type = ::std::tuple<device::id_t, context::handle_t , stream::handle_t, Callable>;
 		auto* tuple_ptr = reinterpret_cast<tuple_type *>(stream_wrapper_members_and_callable);
