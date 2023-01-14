@@ -233,6 +233,12 @@ public: // inner classes
 	 * `my_dev.memory::foo()`, think of it as a `my_dev::memory::foo()`.
 	 */
 	class global_memory_type {
+#if CUDA_VERSION >= 11000
+	public: // data types
+		using execution_graph_related_attribute_t = CUgraphMem_attribute;
+#endif
+
+
 	protected: // data members
 		const device::id_t device_id_;
 		const context::handle_t context_handle_;
@@ -297,6 +303,42 @@ public: // inner classes
 			CAW_SET_SCOPE_CONTEXT(context_handle_);
 			return context::detail_::free_memory(context_handle_);
 		}
+
+#if CUDA_VERSION >= 11000
+		/**
+		 * @note CUDA devices use special memory allocation for execution graphs - not managed via
+		 * cuMemAlloc and friends. These methods allow for controlling and querying some aspects of this
+		 * memory.
+		 */
+		///@{
+		void free_unused_execution_graph_memory() const
+		{
+			auto status = cuDeviceGraphMemTrim(device_id_);
+			throw_if_error_lazy(status,
+				"Trimming memory used for CUDA execution graphs on " + device::detail_::identify(device_id_));
+		}
+
+		/**
+		 * @param attribute See the documentation for @ref CUgraphMem_attribute for the possible attributes
+		 */
+		size_t get_execution_graph_related_attribute(execution_graph_related_attribute_t attribute) const
+		{
+			cuuint64_t result;
+			auto status = cuDeviceGetGraphMemAttribute(device_id_, attribute, &result);
+			throw_if_error_lazy(status, "Failed obtaining an execution-graph-related memory attribute for "
+										+ device::detail_::identify(device_id_));
+			return result;
+		}
+
+		void reset_execution_graph_usage_high_watermark() const
+		{
+			cuuint64_t value_{0};
+			auto status = cuDeviceSetGraphMemAttribute(device_id_, CU_GRAPH_MEM_ATTR_USED_MEM_HIGH, &value_);
+			throw_if_error_lazy(status, "Failed setting an execution-graph-related memory attribute for "
+										+ device::detail_::identify(device_id_));
+		}
+		///@}
+#endif
 	}; // class global_memory_type
 
 

@@ -62,6 +62,13 @@
 #include "api/external.hpp"
 #endif // CUDA_VERSION >= 10000
 
+#if CUDA_VERSION >= 10000
+#include "api/graph/node.hpp"
+#include "api/graph/typed_node.hpp"
+#include "api/graph/template.hpp"
+#include "api/graph/instance.hpp"
+#endif // CUDA_VERSION >= 10000
+
 #include "api/multi_wrapper_impls/pointer.hpp"
 #include "api/multi_wrapper_impls/array.hpp"
 #include "api/multi_wrapper_impls/event.hpp"
@@ -78,7 +85,9 @@
 #include "api/multi_wrapper_impls/module.hpp"
 #include "api/multi_wrapper_impls/ipc.hpp"
 #include "api/multi_wrapper_impls/launch_configuration.hpp"
-
 #include "api/launch_config_builder.hpp"
-
+#if CUDA_VERSION >= 10000
+#include "api/multi_wrapper_impls/graph.hpp"
+#include "api/graph/node_builder.hpp"
+#endif // CUDA_VERSION >= 10000
 #endif // CUDA_API_WRAPPERS_HPP_
