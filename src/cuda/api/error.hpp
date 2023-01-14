@@ -312,7 +312,7 @@ private:
 
 #define throw_if_error_lazy(status__, ... ) \
 do { \
-	status_t tie_status__ = static_cast<status_t>(status__); \
+	cuda::status_t tie_status__ = static_cast<cuda::status_t>(status__); \
 	if (is_failure(tie_status__)) { \
 		throw runtime_error(tie_status__, (__VA_ARGS__)); \
 	} \

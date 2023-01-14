@@ -53,6 +53,11 @@
 #include "api/kernel_launch.hpp"
 #include "api/virtual_memory.hpp"
 
+#include "api/graph/node.hpp"
+#include "api/graph/typed_node.hpp"
+#include "api/graph/template.hpp"
+#include "api/graph/instance.hpp"
+
 #include "api/multi_wrapper_impls/pointer.hpp"
 #include "api/multi_wrapper_impls/array.hpp"
 #include "api/multi_wrapper_impls/event.hpp"
@@ -64,6 +69,7 @@
 #include "api/multi_wrapper_impls/kernel_launch.hpp"
 #include "api/multi_wrapper_impls/apriori_compiled_kernel.hpp"
 #include "api/multi_wrapper_impls/module.hpp"
+#include "api/multi_wrapper_impls/graph.hpp"
 #include "api/multi_wrapper_impls/ipc.hpp"
 
 #include "api/launch_config_builder.hpp"

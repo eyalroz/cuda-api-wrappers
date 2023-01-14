@@ -26,6 +26,7 @@
 #include <utility>
 #include <tuple>
 #include <algorithm>
+#include "cuda/api/graph/template.hpp"
 
 namespace cuda {
 
@@ -198,6 +199,17 @@ CUresult write_value(CUstream stream_handle, CUdeviceptr address, T value, unsig
 
 } // namespace detail_
 
+namespace capture {
+
+inline state_t state(const stream_t& stream);
+
+} // namespace capture
+
+inline bool is_capturing(const stream_t& stream)
+{
+	return is_capturing(stream::capture::state(stream));
+}
+
 } // namespace stream
 
 inline void synchronize(const stream_t& stream);
@@ -364,6 +376,8 @@ public: // mutators
 			cuda::launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
 		}
 
+		void graph_launch(const graph::instance_t& graph_instance) const;
+
 		/**
 		 * Have the CUDA device perform an I/O operation between two specified
 		 * memory regions (on or off the actual device)
@@ -412,6 +426,7 @@ public: // mutators
 		{
 			copy(destination, source, source.size());
 		}
+
 		///@}
 
 		/**
@@ -500,7 +515,7 @@ public: // mutators
 		{
 			// I hope you like function declaration punning :-)
 			stream::detail_::enqueue_function_call(
-				associated_stream, reinterpret_cast<stream::detail_::callback_t>(function), argument);
+				associated_stream, reinterpret_cast<stream::callback_t>(function), argument);
 		}
 #endif
 
@@ -515,7 +530,7 @@ public: // mutators
 		template <typename Invokable>
 		void host_invokable(Invokable& invokable) const
 		{
-			auto type_erased_invoker = reinterpret_cast<stream::detail_::callback_t>(stream_launched_invoker<Invokable>);
+			auto type_erased_invoker = reinterpret_cast<stream::callback_t>(stream_launched_invoker<Invokable>);
 			stream::detail_::enqueue_function_call(associated_stream, type_erased_invoker, &invokable);
 		}
 
@@ -788,6 +803,34 @@ public: // mutators
 	}
 #endif
 
+	// TODO: Create a dummy capture object, then we could have capture.start(), capture.stop(), capture.status(),
+	// and perhaps a capture_() which takes a lambda. Also offer a
+	// cuda::stream::capture(const stream_t& stream, F f) template!
+
+	/**
+	 * @brief begin a capture of enqueued operations for later generation of an execution graph
+	 *
+	 * @note See also @ref graph::template_t
+	 */
+	void begin_capture(stream::capture::mode_t mode) const {
+		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		auto status = cuStreamBeginCapture(handle_, static_cast<CUstreamCaptureMode>(mode));
+		throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail_::identify(*this));
+	}
+
+	/**
+	 * @return true if the stream is currently capturing enqueued operations for inclusion in an execution graph.
+	 */
+	bool is_capturing() const { return stream::is_capturing(*this); }
+
+	/**
+	 * @brief Complete the capture begun by the last invocation of the @ref begin_capture method
+	 *
+	 * @return A CUDA execution graph template, comprising of all operations enqueued on this stream
+	 * between the last invocation of @ref begin_capture and the invocation of this one.
+	 */
+	graph::template_t end_capture() const;
+
 protected: // constructor
 
 	stream_t(
@@ -1023,6 +1066,19 @@ stream_t create(
 	priority_t        priority = stream::default_priority,
 	bool              hold_pc_refcount_unit = false);
 ///@}
+
+namespace capture {
+
+state_t state(const stream_t& stream)
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	CUstreamCaptureStatus capture_status;
+	auto op_status = cuStreamIsCapturing(stream.handle(), &capture_status);
+	throw_if_error_lazy(op_status, "Failed beginning to capture on " + stream::detail_::identify(stream));
+	return static_cast<state_t>(capture_status);
+}
+
+} // namespace capture
 
 } // namespace stream
 

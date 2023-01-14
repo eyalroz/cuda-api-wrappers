@@ -132,7 +132,8 @@ inline marshalled_options_t marshal(const options_t& link_options)
 	}
 
 	if (lo.info_log) {
-		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER, lo.info_log.value().data());
+		auto data = lo.info_log.value().data();
+		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER, data);
 		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, lo.info_log.value().size());
 	}
 
