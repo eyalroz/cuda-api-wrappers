@@ -40,7 +40,11 @@ inline CUmemLocation create_mem_location(cuda::device::id_t device_id) noexcept
 	return result;
 }
 
+#if CUDA_VERSION >= 11020
+template<pool::shared_handle_kind_t SharedHandleKind = pool::shared_handle_kind_t::no_export>
+#else
 template<pool::shared_handle_kind_t SharedHandleKind>
+#endif
 CUmemPoolProps create_raw_properties(cuda::device::id_t device_id) noexcept
 {
 	CUmemPoolProps result;

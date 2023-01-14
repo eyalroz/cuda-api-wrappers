@@ -144,7 +144,19 @@ if(USE_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
 	add_executable(binaryPartitionCG modified_cuda_samples/binaryPartitionCG/binaryPartitionCG.cu)
 endif()
 add_executable(bandwidthtest modified_cuda_samples/bandwidthtest/bandwidthtest.cpp)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "10.0")
+	add_executable(simpleCudaGraphs modified_cuda_samples/simpleCudaGraphs/simpleCudaGraphs.cu)
+	add_executable(jacobiCudaGraphs
+		modified_cuda_samples/jacobiCudaGraphs/main.cpp
+		modified_cuda_samples/jacobiCudaGraphs/jacobi.cu
+	)
+endif()
 #----
+add_custom_target(modified_cuda_samples)
+add_dependencies(modified_cuda_samples
+	vectorAdd inlinePTX simpleStreams simpleIPC
+#	simpleCudaGraphs graphMemoryNodes jacobiCudaGraphs
+)
 
 add_executable(version_management by_api_module/version_management.cpp)
 add_executable(error_handling by_api_module/error_handling.cu)
