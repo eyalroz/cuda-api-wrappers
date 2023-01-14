@@ -614,12 +614,12 @@ inline void set_access_mode(
 	const Container<device_t>&   devices,
 	access_mode_t                access_mode)
 {
-	auto descriptors = new CUmemAccessDesc[devices.size()];
+	auto descriptors = ::std::unique_ptr<CUmemAccessDesc[]>(new CUmemAccessDesc[devices.size()]);
 	for(::std::size_t i = 0; i < devices.size(); i++) {
 		descriptors[i] = {{CU_MEM_LOCATION_TYPE_DEVICE, devices[i].id()}, CUmemAccess_flags(access_mode)};
 	}
 	auto result = cuMemSetAccess(
-	device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors, devices.size());
+	device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
