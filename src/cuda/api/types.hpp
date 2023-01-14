@@ -155,13 +155,16 @@ struct span {
 	T *data_;
 	size_t size_;
 
-	T *data() const noexcept { return data_; }
-	constexpr size_t size() const noexcept { return size_; }
+	T * const &   data() const noexcept { return data_; }
+	const size_t& size() const noexcept { return size_; }
 
 	T const *cbegin() const noexcept { return data(); }
 	T const *cend()   const noexcept { return data() + size_; }
 	T       *begin()  const noexcept { return data(); }
 	T       *end()    const noexcept { return data() + size_; }
+
+	T& operator[](size_type i)       noexcept { return data_[i]; }
+	T  operator[](size_type i) const noexcept { return data_[i]; }
 
 	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
@@ -348,16 +351,35 @@ enum : priority_t {
 	default_priority   = 0
 };
 
-namespace detail_ {
-
 #if CUDA_VERSION >= 10000
 using callback_t = CUhostFn;
 #else
 using callback_t = CUstreamCallback;
 #endif
 
-} // namespace detail_
+namespace capture {
 
+enum class mode_t : ::std::underlying_type<CUstreamCaptureMode>::type {
+	global        = CU_STREAM_CAPTURE_MODE_GLOBAL,
+	thread        = CU_STREAM_CAPTURE_MODE_THREAD_LOCAL,
+	thread_local_ = thread,
+	relaxed       = CU_STREAM_CAPTURE_MODE_RELAXED
+};
+
+enum class state_t : ::std::underlying_type<CUstreamCaptureStatus>::type {
+	active        = CU_STREAM_CAPTURE_STATUS_ACTIVE,
+	capturing     = active,
+	invalidated   = CU_STREAM_CAPTURE_STATUS_INVALIDATED,
+	none          = CU_STREAM_CAPTURE_STATUS_NONE,
+	not_capturing = none
+};
+
+} // namespace capture
+
+inline bool is_capturing(capture::state_t status) noexcept
+{
+	return status == capture::state_t::active;
+}
 
 } // namespace stream
 
@@ -928,6 +950,51 @@ using handle_t = CUfunction;
 // and we won't introduce our own here. So...
 template <typename T>
 using dynarray = ::std::vector<T>;
+
+/**
+ * Functionality related to CUDA (execution) graphs, which can be scheduled
+ * for execution at once, rather than the default piecemeal execution of
+ * individual command and event-based dependencies.
+ */
+namespace graph {
+
+namespace node {
+
+/// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
+using handle_t = CUgraphNode;
+/// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
+using const_handle_t = CUgraphNode_st const *;
+
+constexpr const const_handle_t no_handle = nullptr;
+
+} // namespace node
+
+/**
+ * Functionality related to the @ref cuda::template_t class - the
+ * templates of CUDA execution graphs, which are what one constructs and edits,
+ * but then must instantiate for actual execution scheduling.
+ */
+namespace template_ {
+
+/// Internal CUDA driver handle of a(n execution) graph template; wrapped by @ref graph::template_t
+using handle_t = CUgraph;
+constexpr const handle_t null_handle = nullptr;
+
+} // namespace template_
+
+/**
+ * Functionality related to the @ref cuda::template_t class - the
+ * templates of CUDA execution graphs, which are what one constructs and edits,
+ * but then must instantiate for actual execution scheduling.
+ */
+namespace instance {
+
+/// Internal CUDA driver handle of an executable graph instance; wrapped by @ref graph::instance_t
+using handle_t = CUgraphExec;
+
+} // namespace instance
+
+} // namespace graph
 
 } // namespace cuda
 

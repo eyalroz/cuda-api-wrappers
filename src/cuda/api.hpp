@@ -50,6 +50,11 @@
 #include <cuda/api/kernel_launch.hpp>
 #include <cuda/api/virtual_memory.hpp>
 
+#include <cuda/api/graph/node.hpp>
+#include <cuda/api/graph/typed_node.hpp>
+#include <cuda/api/graph/template.hpp>
+#include <cuda/api/graph/instance.hpp>
+
 #include <cuda/api/multi_wrapper_impls/pointer.hpp>
 #include <cuda/api/multi_wrapper_impls/array.hpp>
 #include <cuda/api/multi_wrapper_impls/event.hpp>
@@ -61,6 +66,7 @@
 #include <cuda/api/multi_wrapper_impls/kernel_launch.hpp>
 #include <cuda/api/multi_wrapper_impls/apriori_compiled_kernel.hpp>
 #include <cuda/api/multi_wrapper_impls/module.hpp>
+#include <cuda/api/multi_wrapper_impls/graph.hpp>
 
 #include <cuda/api/launch_config_builder.hpp>
 

@@ -135,6 +135,74 @@ public: // types
 	using attribute_value_t = device::attribute_value_t;
 	using flags_type = device::flags_t;
 
+#if CUDA_VERSION >= 11000
+	class global_memory_type : public context_t::global_memory_type {
+
+		/**
+		 * Obtains the amount of memory used for execution-graph-related resource on
+		 * this device.
+		 *
+		 * @param reserved
+		 *     when false, the memory in actual use at the moment is returned; when true,
+		 *     the amount returned is the total reserved for use by the "asynchronous
+		 *     allocator" used for execution graphs
+		 * @param high_watermark
+		 *     when false, the current amount of memory is returned; when true, the
+		 *     returned amount is the "high watermark" of device memory use on the device
+		 *     since the last reset.
+		 */
+		size_t amount_used_for_graphs(
+			bool reserved = false,
+			bool high_watermark = false) const
+		{
+			auto attribute = reserved ?
+				(high_watermark ? CU_GRAPH_MEM_ATTR_RESERVED_MEM_CURRENT : CU_GRAPH_MEM_ATTR_RESERVED_MEM_HIGH) :
+				(high_watermark ? CU_GRAPH_MEM_ATTR_USED_MEM_CURRENT : CU_GRAPH_MEM_ATTR_USED_MEM_HIGH);
+			size_t result;
+			auto status = cuDeviceGetGraphMemAttribute(device_id_, attribute, &result);
+			throw_if_error_lazy(status,
+				"Obtaining the current amount of memory used for execution graphs on "
+				+ device::detail_::identify(device_id_));
+			return result;
+		}
+
+		/**
+		 * Releases any memory allocated for execution graph resources back to the OS
+		 */
+		void free_unused_graph_memory() const
+		{
+			auto status = cuDeviceGraphMemTrim(device_id_);
+			throw_if_error_lazy(status, "Freeing unused execution graph memory on "
+				+ device::detail_::identify(device_id_));
+		}
+
+		/**
+		 * Obtains the amount of memory used for execution-graph-related resource on
+		 * this device.
+		 *
+		 * @param high_watermark
+		 *     when false, and by default, the current amount of memory used is
+		 *     returned; when true, the returned amount is the "high watermark" of
+		 *     device memory usage for graph resources since the last reset.
+		 */
+		size_t amount_used_for_graphs(bool high_watermark = false) const
+		{
+			size_t result;
+			auto status = cuDeviceGetGraphMemAttribute(
+				device_id_,
+				high_watermark ?
+				CU_GRAPH_MEM_ATTR_RESERVED_MEM_CURRENT :
+				CU_GRAPH_MEM_ATTR_USED_MEM_HIGH,
+				&result);
+			throw_if_error_lazy(status,
+				"Obtaining the current amount of memory used for execution graphs on "
+				+ device::detail_::identify(device_id_));
+			return result;
+		}
+
+	};
+#endif // CUDA_VERSION >= 11000
+
 	/**
 	 *
 	 * @note The memory proxy regards the device's primary context.
