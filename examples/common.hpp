@@ -35,6 +35,18 @@ bool your_type_was_() { return true; }
 #define print_type_of(_x) your_type_was_<decltype(_x)>()
 #endif
 
+inline const char* ordinal_suffix(int n)
+{
+	static const char suffixes [4][5] = {"th", "st", "nd", "rd"};
+	auto ord = n % 100;
+	if (ord / 10 == 1) { ord = 0; }
+	ord = ord % 10;
+	return suffixes[ord > 3 ? 0 : ord];
+}
+
+template <typename N = int>
+inline ::std::string xth(N n) { return ::std::to_string(n) + ordinal_suffix(n); }
+
 const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 {
 	static const char* cache_preference_names[] = {
