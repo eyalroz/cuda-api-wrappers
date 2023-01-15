@@ -725,13 +725,29 @@ public: // mutators
 		 */
 		void flush_remote_writes() const
 		{
-			CUstreamBatchMemOpParams flush_op;
-			flush_op.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
+			CUstreamBatchMemOpParams op_params;
+			op_params.flushRemoteWrites.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
+			op_params.flushRemoteWrites.flags = 0;
 			unsigned count = 1;
 			unsigned flags = 0;
 			// Let's cross our fingers and assume nothing else needs to be set here...
-			cuStreamBatchMemOp(associated_stream.handle_, count, &flush_op, flags);
+			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
+			throw_if_error_lazy(status, "scheduling a flush-remote-writes memory operation as a 1-op batch");
 		}
+
+#if CUDA_VERSION >= 11070
+		void memory_barrier(memory::barrier_scope_t scope) const
+		{
+			CUstreamBatchMemOpParams op_params;
+			op_params.memoryBarrier.operation = CU_STREAM_MEM_OP_BARRIER;
+			op_params.memoryBarrier.flags = static_cast<unsigned>(scope);
+			unsigned count = 1;
+			unsigned flags = 0;
+			// Let's cross our fingers and assume nothing else needs to be set here...
+			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
+			throw_if_error_lazy(status, "scheduling a memory barrier operation as a 1-op batch");
+		}
+#endif
 
 		/**
 		 * Enqueue multiple single-value write, wait and flush operations to the device
