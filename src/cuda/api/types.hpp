@@ -668,6 +668,14 @@ using range_attribute_t = CUmem_range_attribute;
 
 } // namespace managed
 
+#if CUDA_VERSION >= 11070
+enum class barrier_scope_t : typename std::underlying_type<CUstreamMemoryBarrier_flags>::type {
+	device = CU_STREAM_MEMORY_BARRIER_TYPE_GPU,
+	system = CU_STREAM_MEMORY_BARRIER_TYPE_SYS
+};
+#endif // CUDA_VERSION >= 11700
+
+
 } // namespace memory
 
 /**
