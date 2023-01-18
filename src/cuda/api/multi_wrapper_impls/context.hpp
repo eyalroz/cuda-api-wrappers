@@ -19,6 +19,9 @@
 #include "../current_context.hpp"
 #include "../current_device.hpp"
 #include "../peer_to_peer.hpp"
+#include "../memory.hpp"
+#include "cuda/api/context.hpp"
+
 
 namespace cuda {
 
@@ -256,8 +259,15 @@ inline void disable_access_to(const context_t &peer_context)
 
 inline memory::region_t context_t::global_memory_type::allocate(size_t size_in_bytes)
 {
-	return cuda::memory::device::detail_::allocate(context_handle_, size_in_bytes);
+	return memory::device::detail_::allocate(context_handle_, size_in_bytes);
 }
+
+inline memory::region_t context_t::global_memory_type::allocate_managed(
+	size_t size_in_bytes, memory::managed::initial_visibility_t initial_visibility)
+{
+	return memory::managed::detail_::allocate(context_handle_, size_in_bytes, initial_visibility);
+}
+
 
 inline device_t context_t::global_memory_type::associated_device() const
 {
