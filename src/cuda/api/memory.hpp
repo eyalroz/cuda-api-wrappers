@@ -794,7 +794,7 @@ void copy(const array_t<T, NumDimensions>& destination, const T *source)
 	detail_::copy_parameters_t<NumDimensions> params{};
 	auto dims = destination.dimensions();
 	params.template clear_offset<T>(detail_::endpoint_t::source);
-    params.template clear_offset<T>(detail_::endpoint_t::destination);
+	params.template clear_offset<T>(detail_::endpoint_t::destination);
 	params.template set_extent<T>(dims);
 	params.clear_rest();
 	params.set_endpoint(detail_::endpoint_t::source, const_cast<T*>(source), dims);

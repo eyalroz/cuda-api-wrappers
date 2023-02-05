@@ -149,7 +149,7 @@ inline void launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
-	auto primary_context = detail_::get_implicit_primary_context(std::forward<Kernel>(kernel));
+	auto primary_context = detail_::get_implicit_primary_context(::std::forward<Kernel>(kernel));
 	auto stream = primary_context.default_stream();
 
 	// Note: If Kernel is a kernel_t, and its associated device is different

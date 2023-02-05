@@ -257,7 +257,7 @@ public: // non-mutators
 
 protected: // constructors
 	compilation_output_base_t(handle_type handle, ::std::string name, bool succeeded, bool owning = false)
-	: program_handle_(handle), program_name_(std::move(name)), succeeded_(succeeded), owns_handle_(owning) { }
+	: program_handle_(handle), program_name_(::std::move(name)), succeeded_(succeeded), owns_handle_(owning) { }
 
 public: // constructors & destructor
 	compilation_output_base_t(compilation_output_base_t&& other) noexcept :
