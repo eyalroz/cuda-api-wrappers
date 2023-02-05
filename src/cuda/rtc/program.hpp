@@ -422,7 +422,7 @@ public:
 	}
 
 public: // constructors and destructor
-	program_t(::std::string name) : program_base_t(std::move(name)) {}
+	program_t(::std::string name) : program_base_t(::std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
@@ -502,7 +502,7 @@ public:
 
 
 public: // constructors and destructor
-	program_t(::std::string name) : program_base_t(std::move(name)) {}
+	program_t(::std::string name) : program_base_t(::std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;

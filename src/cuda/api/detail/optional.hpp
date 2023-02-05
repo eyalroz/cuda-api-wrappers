@@ -54,14 +54,14 @@ struct poor_mans_optional {
 
 	poor_mans_optional &operator=(poor_mans_optional &&other) noexcept = default;
 
-	poor_mans_optional &operator=(const T &value) noexcept(std::is_nothrow_assignable<T,T>::value)
+	poor_mans_optional &operator=(const T &value) noexcept(::std::is_nothrow_assignable<T,T>::value)
 	{
 		has_value_ = true;
 		maybe_value.value = value;
 		return *this;
 	}
 
-	poor_mans_optional &operator=(const T &&value) noexcept(std::is_nothrow_move_assignable<T>::value)
+	poor_mans_optional &operator=(const T &&value) noexcept(::std::is_nothrow_move_assignable<T>::value)
 	{
 		has_value_ = true;
 		maybe_value.value = ::std::move(value);
@@ -74,13 +74,13 @@ struct poor_mans_optional {
 		return *this;
 	}
 
-	poor_mans_optional &operator=(T &&value) noexcept(std::is_nothrow_move_assignable<T>::value)
+	poor_mans_optional &operator=(T &&value) noexcept(::std::is_nothrow_move_assignable<T>::value)
 	{ return *this = value; }
 
 	poor_mans_optional() noexcept: has_value_(false)
 	{}
 
-	poor_mans_optional(T v) noexcept(std::is_nothrow_assignable<T,T>::value) : has_value_(true)
+	poor_mans_optional(T v) noexcept(::std::is_nothrow_assignable<T,T>::value) : has_value_(true)
 	{
 		maybe_value.value = v;
 	}
