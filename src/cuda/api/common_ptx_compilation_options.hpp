@@ -104,7 +104,7 @@ const char* name(caching_mode_t<Op> mode)
 }
 
 template <memory_operation_t Op>
-inline ::std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
+inline ::std::ostream& operator<< (::std::ostream& os, caching_mode_t<Op> lcm)
 {
 	return os << name(lcm);
 }
