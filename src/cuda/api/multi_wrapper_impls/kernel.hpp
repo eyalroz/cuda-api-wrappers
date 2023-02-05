@@ -22,33 +22,46 @@ namespace cuda {
 
 namespace kernel {
 
+namespace detail_ {
+
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(context_t context, KernelFunctionPtr function_ptr)
+apriori_compiled_kernel_t get(
+	device::id_t         device_id,
+	context::handle_t &  primary_context_handle,
+	KernelFunctionPtr    function_ptr)
 {
 	static_assert(
-	::std::is_pointer<KernelFunctionPtr>::value
-	and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
-	"function_ptr must be a bona fide pointer to a kernel (__global__) function");
+		::std::is_pointer<KernelFunctionPtr>::value
+		and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
+		"function_ptr must be a bona fide pointer to a kernel (__global__) function");
 
-	auto ptr_ = reinterpret_cast<const void*>(function_ptr);
+	auto ptr_ = reinterpret_cast<const void *>(function_ptr);
 #if CAN_GET_APRIORI_KERNEL_HANDLE
 	auto handle = detail_::get_handle(ptr_);
 #else
 	auto handle = nullptr;
 #endif
-	return detail_::wrap(context.device_id(), context.handle(), handle, ptr_);
+	return detail_::wrap(device_id, primary_context_handle, handle, ptr_, do_hold_primary_context_refcount_unit);
 }
 
+} // namespace detail_
+
 /**
+ * @brief Obtain a wrapped kernel object corresponding to a "raw" kernel function
+ *
+ * @note Kernel objects are device (and context) specific;' but kernels built
+ * from functions in program sources are used (only?) with the primary context of a device
+ *
  * @note The returned kernel proxy object will keep the device's primary
  * context active while the kernel exists.
  */
 template<typename KernelFunctionPtr>
 apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function_ptr)
 {
-	auto primary_context = device.primary_context(do_hold_primary_context_refcount_unit);
-	return get<KernelFunctionPtr>(primary_context, function_ptr);
+	auto primary_context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device.id());
+	return detail_::get(device.id(), primary_context_handle, function_ptr);
 }
+
 
 } // namespace kernel
 
