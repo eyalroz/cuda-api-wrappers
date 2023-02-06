@@ -94,6 +94,13 @@ using attribute_value_type_t = typename attribute_value<attribute>::type;
 template <attribute_t attribute>
 attribute_value_type_t<attribute> get_attribute(const void* ptr);
 
+inline context::handle_t context_handle_of(const void* ptr)
+{
+	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(ptr);
+}
+
+inline cuda::device::id_t device_id_of(const void* ptr);
+
 } // namespace detail_
 
 } // namespace pointer
@@ -102,6 +109,8 @@ inline memory::type_t type_of(const void* ptr)
 {
 	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
 }
+
+inline context_t context_of(const void* ptr);
 
 
 /**
@@ -134,13 +143,11 @@ public: // other non-mutators
 	 */
 	device_t device() const;
 
-#if CUDA_VERSION >= 9020
 	/**
 	 * Returns a proxy for the context in which the memory area, into which the pointer
 	 * points, was allocated.
 	 */
 	context_t context() const;
-#endif // CUDA_VERSION >= 9020
 
 	/**
 	 * @returns A pointer into device-accessible memory (not necessary on-device memory though).
