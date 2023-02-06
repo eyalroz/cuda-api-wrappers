@@ -26,6 +26,7 @@
 #ifndef CUDA_API_WRAPPERS_MEMORY_HPP_
 #define CUDA_API_WRAPPERS_MEMORY_HPP_
 
+#include <cuda/api/copy_parameters.hpp>
 #include <cuda/api/array.hpp>
 #include <cuda/api/constants.hpp>
 #include <cuda/api/current_device.hpp>
@@ -573,196 +574,28 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-template<dimensionality_t NumDimensions>
-struct base_copy_params;
-
-template<>
-struct base_copy_params<2> {
-	using intra_context_type = CUDA_MEMCPY2D;
-	using type = intra_context_type; // Why is there no inter-context type, CUDA_MEMCPY2D_PEER ?
-};
-
-template<>
-struct base_copy_params<3> {
-	using type = CUDA_MEMCPY3D_PEER;
-	using intra_context_type = CUDA_MEMCPY3D;
-};
-
-// Note these, by default, support inter-context
-template<dimensionality_t NumDimensions>
-using base_copy_params_t = typename base_copy_params<NumDimensions>::type;
-
-
-enum class endpoint_t {
-	source, destination
-};
-
-template<dimensionality_t NumDimensions>
-struct copy_parameters_t : base_copy_params_t<NumDimensions> {
-	// TODO: Perhaps use proxies?
-
-	using intra_context_type = typename base_copy_params<NumDimensions>::intra_context_type;
-
-	using dimensions_type = array::dimensions_t<NumDimensions>;
-
-	template<typename T>
-	void set_endpoint(endpoint_t endpoint, const cuda::array_t<T, NumDimensions> &array);
-
-	template<typename T>
-	void set_endpoint(endpoint_t endpoint, T *ptr, array::dimensions_t<NumDimensions> dimensions);
-
-	template<typename T>
-	void set_endpoint(endpoint_t endpoint, context::handle_t context_handle, T *ptr,
-		array::dimensions_t<NumDimensions> dimensions);
-
-	// TODO: Perhaps we should have an dimensioned offset type?
-	template<typename T>
-	void set_offset(endpoint_t endpoint, dimensions_type offset);
-
-	template<typename T>
-	void clear_offset(endpoint_t endpoint)
-	{ set_offset<T>(endpoint, dimensions_type::zero()); }
-
-	template<typename T>
-	void set_extent(dimensions_type extent);
-	// Sets how much is being copies, as opposed to the sizes of the endpoints which may be larger
-
-	void clear_rest();
-	// Clear any dummy fields which are required to be set to 0. Note that important fields,
-	// which you have not set explicitly, will _not_ be cleared by this method.
-
-};
-
-template<>
-template<typename T>
-void copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 2> &array)
-{
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
-	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
-	// Can't set the endpoint context - the basic data structure doesn't support that!
-}
-
-template<>
-template<typename T>
-void copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 3> &array)
-{
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
-	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
-	(endpoint == endpoint_t::source ? srcContext : dstContext) = array.context_handle();
-}
-
-template<>
-template<typename T>
-inline void copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, context::handle_t context_handle, T *ptr,
-	array::dimensions_t<2> dimensions)
-{
-	if (context_handle != context::detail_::none) {
-		throw cuda::runtime_error(
-			cuda::status::named_t::not_supported,
-			"Inter-context copying of 2D arrays is not supported by the CUDA driver");
-	}
-	set_endpoint<2>(endpoint, ptr, dimensions);
-}
-
-template<>
-template<typename T>
-inline void copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, T *ptr, array::dimensions_t<2> dimensions)
-{
-	auto memory_type = memory::type_of(ptr);
-	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_) {
-		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
-	} else {
-		if (endpoint == endpoint_t::source) { srcHost = ptr; }
-		else { dstHost = ptr; }
-	}
-	(endpoint == endpoint_t::source ? srcPitch : dstPitch) = dimensions.width * sizeof(T);
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype) memory_type;
-	// Can't set the endpoint context - the basic data structure doesn't support that!
-}
-
-template<>
-template<typename T>
-inline void copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, context::handle_t context_handle, T *ptr,
-	array::dimensions_t<3> dimensions)
-{
-	cuda::memory::pointer_t<void> wrapped{ptr};
-	auto memory_type = memory::type_of(ptr);
-	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_) {
-		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
-	} else {
-		if (endpoint == endpoint_t::source) { srcHost = ptr; }
-		else { dstHost = ptr; }
-	}
-	(endpoint == endpoint_t::source ? srcPitch : dstPitch) = dimensions.width * sizeof(T);
-	(endpoint == endpoint_t::source ? srcHeight : dstHeight) = dimensions.height;
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype) memory_type;
-	(endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
-}
-
-template<>
-template<typename T>
-inline void copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, T *ptr, array::dimensions_t<3> dimensions)
-{
-	set_endpoint<T>(endpoint, context::detail_::none, ptr, dimensions);
-}
-
-template<>
-inline void copy_parameters_t<2>::clear_rest()
-{}
-
-template<>
-inline void copy_parameters_t<3>::clear_rest()
-{
-	srcLOD = 0;
-	dstLOD = 0;
-}
-
-template<>
-template<typename T>
-inline void copy_parameters_t<2>::set_extent(dimensions_type extent)
-{
-	WidthInBytes = extent.width * sizeof(T);
-	Height = extent.height;
-}
-
-template<>
-template<typename T>
-void copy_parameters_t<3>::set_extent(dimensions_type extent)
-{
-	WidthInBytes = extent.width * sizeof(T);
-	Height = extent.height;
-	Depth = extent.depth;
-}
-
-template<>
-template<typename T>
-void copy_parameters_t<3>::set_offset(endpoint_t endpoint, dimensions_type offset)
-{
-	(endpoint == endpoint_t::source ? srcXInBytes : dstXInBytes) = offset.width * sizeof(T);
-	(endpoint == endpoint_t::source ? srcY : dstY) = offset.height;
-	(endpoint == endpoint_t::source ? srcZ : dstZ) = offset.depth;
-}
-
-template<>
-template<typename T>
-void copy_parameters_t<2>::set_offset(endpoint_t endpoint, dimensions_type offset)
-{
-	(endpoint == endpoint_t::source ? srcXInBytes : dstXInBytes) = offset.width * sizeof(T);
-	(endpoint == endpoint_t::source ? srcY : dstY) = offset.height;
-}
-
-void set_endpoint(endpoint_t endpoint, void *src);
-
 inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params)
 {
+	// TODO: Move this logic into the scoped ensurer class
+	auto context_handle = context::current::detail_::get_handle();
+	if  (context_handle != context::detail_::none) {
+		return cuMemcpy2D(&params);
+	}
+	auto current_device_id = cuda::device::current::detail_::get_id();
+	context_handle = cuda::device::primary_context::detail_::obtain_and_increase_refcount(current_device_id);
+	context::current::detail_::push(context_handle);
 	// Note this _must_ be an intra-context copy, as inter-context is not supported
 	// and there's no indication of context in the relevant data structures
-	return cuMemcpy2D(&params);
+	auto status = cuMemcpy2D(&params);
+	context::current::detail_::pop();
+	cuda::device::primary_context::detail_::decrease_refcount(current_device_id);
+	return status;
 }
 
 inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params)
 {
 	if (params.srcContext == params.dstContext) {
+		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{params.srcContext};
 		auto *intra_context_params = reinterpret_cast<base_copy_params<3>::intra_context_type *>(&params);
 		return cuMemcpy3D(intra_context_params);
 	}
@@ -770,13 +603,53 @@ inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, cop
 }
 
 template<dimensionality_t NumDimensions>
-status_t multidim_copy(context::handle_t context_handle, copy_parameters_t<NumDimensions> params)
+status_t multidim_copy(copy_parameters_t<NumDimensions> params)
 {
-	context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{context_handle};
 	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params);
 }
 
+
 } // namespace detail_
+
+/**
+ * @brief An almost-generalized-case memory copy, taking a rather complex structure of
+ * copy parameters - wrapping the CUDA driver's own most-generalized-case copy
+ *
+ * @tparam NumDimensions The number of dimensions of the parameter structure.
+ * @param params A parameter structure with details regarding the copy source
+ * and destination, including CUDA context specifications, which must have been
+ * set in advance. This function will _not_ verify its validity, but rather
+ * merely pass it on to the CUDA driver
+ */
+template<dimensionality_t NumDimensions>
+void copy(copy_parameters_t<NumDimensions> params)
+{
+	status_t status = detail_::multidim_copy(params);
+	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
+}
+
+/**
+ * Synchronously copies data from a CUDA array into non-array memory.
+ *
+ * @tparam NumDimensions the number of array dimensions; only 2 and 3 are supported values
+ * @tparam T array element type
+ *
+ * @param destination A {@tparam NumDimensions}-dimensional CUDA array
+ * @param source A pointer to a region of contiguous memory holding `destination.size()` values
+ * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ */
+template<typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source)
+{
+	auto dims = destination.dimensions();
+	auto params = copy_parameters_t<NumDimensions> {};
+	params.clear_offsets();
+	params.template set_extent<T>(dims);
+	params.set_endpoint(endpoint_t::source, source_context.handle(), const_cast<T*>(source), dims);
+	params.set_endpoint(endpoint_t::destination, destination);
+	params.clear_rest();
+	copy(params);
+}
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
@@ -791,17 +664,34 @@ status_t multidim_copy(context::handle_t context_handle, copy_parameters_t<NumDi
 template<typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const T *source)
 {
-	detail_::copy_parameters_t<NumDimensions> params{};
-	auto dims = destination.dimensions();
-	params.template clear_offset<T>(detail_::endpoint_t::source);
-	params.template clear_offset<T>(detail_::endpoint_t::destination);
-	params.template set_extent<T>(dims);
-	params.clear_rest();
-	params.set_endpoint(detail_::endpoint_t::source, const_cast<T*>(source), dims);
-	params.set_endpoint(detail_::endpoint_t::destination, destination);
-	auto status = detail_::multidim_copy<NumDimensions>(destination.context_handle(), params);
-    throw_if_error(status, "Copying from a regular memory region into a CUDA array");
+	copy(destination, context_of(source), source);
 }
+
+/**
+ * Synchronously copies data into a CUDA array from non-array memory.
+ *
+ * @tparam NumDimensions the number of array dimensions; only 2 and 3 are supported values
+ * @tparam T array element type
+ *
+ * @param destination A pointer to a region of contiguous memory holding `destination.size()` values
+ * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * @param source A {@tparam NumDimensions}-dimensional CUDA array
+ */
+template <typename T, dimensionality_t NumDimensions>
+void copy(const context_t& context, T *destination, const array_t<T, NumDimensions>& source)
+{
+	auto dims = source.dimensions();
+	auto params = copy_parameters_t<NumDimensions> {};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.set_endpoint(endpoint_t::source, source);
+	params.template set_endpoint<T>(endpoint_t::destination, context.handle(), destination, dims);
+	params.set_default_pitches();
+	params.clear_rest();
+	copy(params);
+}
+
 /**
  * Synchronously copies data into a CUDA array from non-array memory.
  *
@@ -815,31 +705,21 @@ void copy(const array_t<T, NumDimensions>& destination, const T *source)
 template <typename T, dimensionality_t NumDimensions>
 void copy(T *destination, const array_t<T, NumDimensions>& source)
 {
-	detail_::copy_parameters_t<NumDimensions> params{};
-	auto dims = source.dimensions();
-	params.template clear_offset<T>(detail_::endpoint_t::source);
-	params.template clear_offset<T>(detail_::endpoint_t::destination);
-	params.template set_extent<T>(source.dimensions());
-	params.clear_rest();
-	params.set_endpoint(detail_::endpoint_t::source, source);
-	params.template set_endpoint<T>(detail_::endpoint_t::destination, destination, dims);
-    params.dstPitch = params.srcPitch = dims.width * sizeof(T);
-    auto status = detail_::multidim_copy<NumDimensions>(source.context_handle(), params);
-    throw_if_error(status, "Copying from a CUDA array into a regular memory region");
+    copy(context_of(destination), destination, source);
 }
 
 template <typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source)
 {
-	detail_::copy_parameters_t<NumDimensions> params{};
 	auto dims = source.dimensions();
-	params.template clear_offset<T>(detail_::endpoint_t::source);
-	params.template clear_offset<T>(detail_::endpoint_t::destination);
-	params.template set_extent<T>(source.dimensions());
-	params.clear_rest();
-	params.set_endpoint(detail_::endpoint_t::source, source);
-	params.set_endpoint(detail_::endpoint_t::destination, destination);
-	params.dstPitch = params.srcPitch = dims.width * sizeof(T);
+	auto params = copy_parameters_t<NumDimensions> {};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.set_endpoint(endpoint_t::source, source);
+	params.set_endpoint(endpoint_t::destination, destination);
+	params.set_default_pitches();
+	params.clear_rest();;
 	auto status = //(source.context() == destination.context()) ?
 		detail_::multidim_copy<NumDimensions>(source.context_handle(), params);
 	throw_if_error_lazy(status, "Copying from a CUDA array into a regular memory region");
@@ -930,7 +810,7 @@ inline void copy(region_t destination, const_region_t source, stream::handle_t s
 }
 ///@}
 
-using memory::detail_::copy_parameters_t;
+using memory::copy_parameters_t;
 
 inline status_t multidim_copy_in_current_context(
 	::std::integral_constant<dimensionality_t, 2>,
@@ -978,17 +858,17 @@ status_t multidim_copy(
 template <typename T, dimensionality_t NumDimensions>
 void copy(T *destination, const array_t<T, NumDimensions>& source, stream::handle_t stream_handle)
 {
-	using  memory::detail_::endpoint_t;
+	using  memory::endpoint_t;
 	auto dims = source.dimensions();
 	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	detail_::copy_parameters_t<NumDimensions> params{};
-	params.template clear_offset<T>(endpoint_t::source);
-	params.template clear_offset<T>(endpoint_t::destination);
+	auto params = copy_parameters_t<NumDimensions> {};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
 	params.template set_extent<T>(dims);
-	params.clear_rest();
 	params.set_endpoint(endpoint_t::source, source);
 	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
-    params.dstPitch = dims.width * sizeof(T);
+	params.set_default_pitches();
+	params.clear_rest();
     auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
     throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
 }
@@ -997,17 +877,17 @@ void copy(T *destination, const array_t<T, NumDimensions>& source, stream::handl
 template <typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream::handle_t stream_handle)
 {
-	using  memory::detail_::endpoint_t;
+	using memory::endpoint_t;
 	auto dims = destination.dimensions();
 	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	detail_::copy_parameters_t<NumDimensions> params{};
-	params.template clear_offset<T>(endpoint_t::source);
-	params.template clear_offset<T>(endpoint_t::destination);
-	params.template set_extent<T>(destination.dimensions());
-    params.srcPitch = dims.width * sizeof(T);
-	params.clear_rest();
+	auto params = copy_parameters_t<NumDimensions>{};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
+	params.template set_extent<T>(dims);
 	params.set_endpoint(endpoint_t::source, const_cast<T*>(source), dims);
 	params.set_endpoint(endpoint_t::destination, destination);
+	params.set_default_pitches();
+	params.clear_rest();
     auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
     throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
 }
