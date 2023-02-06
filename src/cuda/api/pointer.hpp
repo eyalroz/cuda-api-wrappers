@@ -36,7 +36,6 @@ class context_t;
 
 namespace memory {
 
-
 /**
  * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
  */
@@ -46,6 +45,7 @@ enum type_t : ::std::underlying_type<CUmemorytype>::type {
 	array         = CU_MEMORYTYPE_ARRAY,
     unified_      = CU_MEMORYTYPE_UNIFIED,
 	managed_      = CU_MEMORYTYPE_UNIFIED, // an alias (more like the runtime API name)
+	non_cuda      = ~(::std::underlying_type<CUmemorytype>::type{0})
 };
 
 #if CUDA_VERSION >= 11020
@@ -91,6 +91,15 @@ template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>         
 template <CUpointer_attribute attribute>
 using attribute_value_type_t = typename attribute_value<attribute>::type;
 
+template<attribute_t attribute>
+struct status_and_attribute_value {
+	status_t status;
+	attribute_value_type_t<attribute> value;
+};
+
+template<attribute_t attribute>
+status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr);
+
 template <attribute_t attribute>
 attribute_value_type_t<attribute> get_attribute(const void* ptr);
 
@@ -107,7 +116,11 @@ inline cuda::device::id_t device_id_of(const void* ptr);
 
 inline memory::type_t type_of(const void* ptr)
 {
-	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
+	auto result = pointer::detail_::get_attribute_with_status<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
+	// Note: As of CUDA 12, CUDA treats passing a non-CUDA-allocated pointer to the memory type check
+	// as an error, though it really should not be
+	return (result.status == status::named_t::invalid_value) ?
+		memory::type_t::non_cuda : result.value;
 }
 
 inline context_t context_of(const void* ptr);
