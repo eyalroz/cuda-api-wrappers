@@ -103,6 +103,7 @@ constexpr flags_t inline make_flags(
 		| (keep_larger_local_mem_after_resize    ? CU_CTX_LMEM_RESIZE_TO_MAX : 0) );
 }
 
+// consider renaming this: device_id_of
 inline device::id_t get_device_id(handle_t context_handle)
 {
 	auto needed_push = current::detail_::push_if_not_on_top(context_handle);

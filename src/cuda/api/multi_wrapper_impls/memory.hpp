@@ -497,14 +497,23 @@ namespace pointer {
 namespace detail_ {
 
 template<attribute_t attribute>
-attribute_value_type_t <attribute> get_attribute(const void *ptr)
+status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr)
 {
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	attribute_value_type_t <attribute> attribute_value;
 	auto status = cuPointerGetAttribute(&attribute_value, attribute, device::address(ptr));
-	throw_if_error_lazy(status, "Obtaining attribute " + ::std::to_string((int) attribute)
-						   + " for pointer " + cuda::detail_::ptr_as_hex(ptr) );
-	return attribute_value;
+	return { status, attribute_value };
+}
+
+
+template<attribute_t attribute>
+attribute_value_type_t<attribute> get_attribute(const void *ptr)
+{
+	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
+	throw_if_error_lazy(status_and_attribute_value.status,
+		"Obtaining attribute " + ::std::to_string((int) attribute)
+		+ " for pointer " + cuda::detail_::ptr_as_hex(ptr) );
+	return status_and_attribute_value.value;
 }
 
 // TODO: Consider switching to a span with C++20
