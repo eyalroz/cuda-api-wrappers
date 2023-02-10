@@ -158,7 +158,7 @@ The default values here are `enum : bool`'s, which you can use yourself when cre
 
 In lieu of a full-fledged user's guide, I'm providing several kinds of example programs; browsing their source you'll know most of what there is to know about the API wrappers. To build and run the examples (just as a sanity check), execute the following (in a Unix-style command shell):
 
-    cmake -S . -B build -DBUILD_EXAMPLES=ON .
+    cmake -S . -B build -DCAW_BUILD_EXAMPLES=ON .
     cmake --build build/
     find build/examples/bin -type f -executable -exec "{}" ";"
 
