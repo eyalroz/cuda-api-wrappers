@@ -104,17 +104,64 @@ template <typename T, dimensionality_t NumDimensions>
 handle_t create(const context_t& context, dimensions_t<NumDimensions> dimensions);
 
 template <dimensionality_t NumDimensions>
-handle_t get_descriptor(context::handle_t context_handle, handle_t handle)
+descriptor_t<NumDimensions> get_descriptor_in_current_context(handle_t handle);
+
+template <>
+inline descriptor_t<2> get_descriptor_in_current_context<2>(handle_t handle)
+{
+	descriptor_t<2> result;
+	auto status = cuArrayGetDescriptor(&result, handle);
+	throw_if_error_lazy(status,
+		::std::string("Failed obtaining the descriptor of the CUDA 2D array at ")
+		+ cuda::detail_::ptr_as_hex(handle));
+	return result;
+}
+
+template <>
+inline descriptor_t<4> get_descriptor_in_current_context<3>(handle_t handle)
+{
+	descriptor_t<3> result;
+	auto status = cuArray3DGetDescriptor(&result, handle);
+	throw_if_error_lazy(status,
+		::std::string("Failed obtaining the descriptor of the CUDA 3D array at ")
+		+ cuda::detail_::ptr_as_hex(handle));
+	return result;
+}
+
+template <dimensionality_t NumDimensions>
+descriptor_t<NumDimensions> get_descriptor(context::handle_t context_handle, handle_t handle)
 {
 	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
-	descriptor_t<NumDimensions> result;
-	auto status = (NumDimensions == 2) ?
-		cuArrayGetDescriptor(&result, handle) :
-		cuArray3DGetDescriptor(&result, handle);
-	throw_if_error_lazy(status,
-		::std::string("Failed obtaining the descriptor of the CUDA ") +
-		(NumDimensions == 2 ? "2":"3") + "D array at " + cuda::detail_::ptr_as_hex(handle));
-	return result;
+	return get_descriptor_in_current_context<NumDimensions>(handle);
+}
+
+template <dimensionality_t NumDimensions>
+dimensions_t<NumDimensions> dimensions_of(const descriptor_t<NumDimensions>& descriptor);
+
+template <>
+inline dimensions_t<3> dimensions_of(const descriptor_t<3>& descriptor)
+{
+	return { descriptor.Width, descriptor.Height, descriptor.Depth };
+}
+
+template <>
+inline dimensions_t<2> dimensions_of(const descriptor_t<2>& descriptor)
+{
+	return { descriptor.Width, descriptor.Height };
+}
+
+template <dimensionality_t NumDimensions>
+dimensions_t<NumDimensions> dimensions_of_in_current_context(handle_t handle_in_current_context)
+{
+	auto descriptor = get_descriptor_in_current_context<NumDimensions>(handle_in_current_context);
+	return dimensions_of<NumDimensions>(descriptor);
+}
+
+template <dimensionality_t NumDimensions>
+dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, handle_t handle)
+{
+	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	return dimensions_of_in_current_context<NumDimensions>(handle);
 }
 
 } // namespace detail_
