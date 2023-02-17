@@ -49,7 +49,8 @@ struct stream_priority_range_t {
 	 * When true, stream prioritization is not supported, i.e. all streams have
 	 * "the same" priority - the default one.
 	 */
-	constexpr bool is_trivial() const {
+	constexpr bool is_trivial() const
+	{
 		return least == stream::default_priority and greatest == stream::default_priority;
 	}
 };
@@ -83,8 +84,7 @@ inline limit_value_t get_limit(limit_t limit_id)
 {
 	limit_value_t limit_value;
 	auto status = cuCtxGetLimit(&limit_value, limit_id);
-	throw_if_error_lazy(status,
-			"Failed obtaining CUDA context limit value");
+	throw_if_error_lazy(status, "Failed obtaining CUDA context limit value");
 	return limit_value;
 }
 
@@ -98,9 +98,9 @@ constexpr flags_t inline make_flags(
 	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
-	return(
+	return
 		  synch_scheduling_policy // this enum value is also a valid bitmask
-		| (keep_larger_local_mem_after_resize    ? CU_CTX_LMEM_RESIZE_TO_MAX : 0) );
+		| (keep_larger_local_mem_after_resize    ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
 }
 
 // consider renaming this: device_id_of
@@ -141,7 +141,7 @@ inline void set_cache_preference(handle_t handle, multiprocessor_cache_preferenc
 	auto status = cuCtxSetCacheConfig(static_cast<CUfunc_cache>(preference));
 	throw_if_error_lazy(status,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference to " +
-			::std::to_string((unsigned) preference) + " for " + identify(handle));
+		::std::to_string((unsigned) preference) + " for " + identify(handle));
 }
 
 inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
@@ -224,7 +224,7 @@ public: // types
 	using flags_type = context::flags_t;
 
 	static_assert(
-		::std::is_same< ::std::underlying_type<CUsharedconfig>::type, ::std::underlying_type<cudaSharedMemConfig>::type >::value,
+		::std::is_same<::std::underlying_type<CUsharedconfig>::type, ::std::underlying_type<cudaSharedMemConfig>::type>::value,
 		"Unexpected difference between enumerators used for the same purpose by the CUDA runtime and the CUDA driver");
 
 public: // inner classes
@@ -233,8 +233,6 @@ public: // inner classes
 	 * @brief A class to create a faux member in a @ref device_t, in lieu of an in-class
 	 * namespace (which C++ does not support); whenever you see a function
 	 * `my_dev.memory::foo()`, think of it as a `my_dev::memory::foo()`.
-	 *
-	 * TODO: Should this be made context-specific?
 	 */
 	class global_memory_type {
 	protected: // data members
@@ -243,11 +241,13 @@ public: // inner classes
 
 	public:
 		global_memory_type(device::id_t device_id, context::handle_t context_handle)
-			: device_id_(device_id), context_handle_(context_handle) { }
+			: device_id_(device_id), context_handle_(context_handle)
+		{}
 		///@endcond
 
-        device_t associated_device() const;
-        context_t associated_context() const;
+		device_t associated_device() const;
+
+		context_t associated_context() const;
 
 		/**
 		 * Allocate a region of memory on the device
@@ -294,7 +294,8 @@ public: // inner classes
 		/**
 		 * Amount of free global memory on the CUDA device's primary context.
 		 */
-		size_t amount_free() const {
+		size_t amount_free() const
+		{
 			scoped_setter_type set_context_for_this_scope(context_handle_);
 			return context::detail_::free_memory(context_handle_);
 		}
@@ -323,7 +324,8 @@ public: // data member non-mutator getters
 	 * The amount of total global device memory available to this context, including
 	 * memory already allocated.
 	 */
-	size_t total_memory() const {
+	size_t total_memory() const
+	{
 		scoped_setter_type set_context_for_this_scope(handle_);
 		return context::detail_::total_memory(handle_);
 	}
@@ -334,7 +336,8 @@ public: // data member non-mutator getters
 	 *
 	 *  @note It is not guaranteed that this entire amount can actually be succefully allocated.
 	 */
-	size_t free_memory() const {
+	size_t free_memory() const
+	{
 		scoped_setter_type set_context_for_this_scope(handle_);
 		return context::detail_::free_memory(handle_);
 	}
@@ -501,8 +504,8 @@ public: // methods which mutate the context, but not its wrapper
 		return context::host_thread_synch_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
 	}
 
-	 bool keeping_larger_local_mem_after_resize() const
-	 {
+	bool keeping_larger_local_mem_after_resize() const
+	{
 		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
@@ -522,11 +525,11 @@ public: // methods which mutate the context, but not its wrapper
 		bool interprocess       = event::not_interprocess);
 
 	template <typename ContiguousContainer,
-		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
 
 	template <typename ContiguousContainer,
-		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data) const;
 
 public: // Methods which don't mutate the context, but affect the device itself
@@ -620,27 +623,30 @@ protected: // constructors
 		device::id_t       device_id,
 		context::handle_t  context_id,
 		bool               take_ownership) noexcept
-	: device_id_(device_id), handle_(context_id), owning_(take_ownership) { }
+		: device_id_(device_id), handle_(context_id), owning_(take_ownership)
+	{ }
 
 public: // friendship
 
 	friend context_t context::wrap(
-			device::id_t device_id,
-			context::handle_t context_id,
-			bool take_ownership) noexcept;
+		device::id_t       device_id,
+		context::handle_t  context_id,
+		bool               take_ownership) noexcept;
 
 public: // constructors and destructor
 
 	context_t(const context_t& other) :
-		context_t(other.device_id_, other.handle_, false) { };
+		context_t(other.device_id_, other.handle_, false)
+	{ };
 
-	context_t(context_t&& other) noexcept :
+	context_t(context_t&& other) noexcept:
 		context_t(other.device_id_, other.handle_, other.owning_)
 	{
 		other.owning_ = false;
 	};
 
-	~context_t() {
+	~context_t()
+	{
 		if (owning_) {
 			cuCtxDestroy(handle_);
 			// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
@@ -706,8 +712,8 @@ inline handle_t create_and_push(
 	bool                                   keep_larger_local_mem_after_resize = false)
 {
 	auto flags = context::detail_::make_flags(
-			synch_scheduling_policy,
-			keep_larger_local_mem_after_resize);
+		synch_scheduling_policy,
+		keep_larger_local_mem_after_resize);
 	handle_t handle;
 	auto status = cuCtxCreate(&handle, flags, device_id);
 	throw_if_error_lazy(status, "failed creating a CUDA context associated with "
@@ -732,12 +738,12 @@ inline handle_t create_and_push(
 context_t create(
 	device_t                               device,
 	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
-    bool                                   keep_larger_local_mem_after_resize = false);
+	bool                                   keep_larger_local_mem_after_resize = false);
 
 context_t create_and_push(
 	device_t                               device,
 	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
-    bool                                   keep_larger_local_mem_after_resize = false);
+	bool                                   keep_larger_local_mem_after_resize = false);
 
 namespace current {
 
@@ -795,7 +801,7 @@ handle_t push_default_if_missing();
  */
 inline context_t get_with_fallback_push()
 {
-	auto handle =  push_default_if_missing();
+	auto handle = push_default_if_missing();
 	return context::detail_::from_handle(handle);
 }
 
