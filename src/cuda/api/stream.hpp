@@ -314,6 +314,8 @@ protected: // static methods
 	 * recreate the wrapper with which the callback is associated, without any additional CUDA API calls -
 	 * plus the callable which was passed to @ref enqueue_t::host_function_call, and which the programmer
 	 * actually wants to be called.
+	 *
+	 * @note instances of this template are of type {@ref callback_t}.
 	 */
 	template <typename Callable>
 	static void CUDA_CB stream_launched_host_function_adapter(void * stream_wrapper_members_and_callable)

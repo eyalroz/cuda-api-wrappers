@@ -35,10 +35,6 @@ enum source_kind_t {
 	ptx = 1
 };
 
-// The C++ standard library doesn't offer ::std::dynarray (although it almost did),
-// and we won't introduce our own here. So...
-template <typename T>
-using dynarray = ::std::vector<T>;
 //
 // An easy alternative might be using a non-initializing allocator;
 // see: https://stackoverflow.com/a/15966795/1593077
