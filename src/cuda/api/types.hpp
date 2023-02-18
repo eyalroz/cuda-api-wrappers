@@ -39,6 +39,7 @@
 #include <cassert>
 #include <cstddef> // for ::std::size_t
 #include <cstdint>
+#include <vector>
 #ifndef NDEBUG
 #include <stdexcept>
 #endif
@@ -80,12 +81,23 @@ namespace cuda {
 
 namespace detail_ {
 
+template <bool B>
+using bool_constant = ::std::integral_constant<bool, B>;
+
+using true_type = bool_constant<true>;
+using false_type = bool_constant<false>;
+
+template<bool...> struct bool_pack;
+
+template<bool... bs>
+using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
+
 // This is available in C++17 as ::std::void_t, but we're only assuming C++11
 template<typename... Ts>
 using void_t = void;
 
 // This is available in C++14
-template<bool B, typename T>
+template<bool B, typename T = void>
 using enable_if_t = typename ::std::enable_if<B, T>::type;
 
 template<typename T>
@@ -150,6 +162,18 @@ struct span {
 	T const *cend()   const noexcept { return data() + size_; }
 	T       *begin()  const noexcept { return data(); }
 	T       *end()    const noexcept { return data() + size_; }
+
+	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
+	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
+	template<
+	    typename U = T,
+		typename = typename std::enable_if<not std::is_const<U>::value>::type
+	>
+	operator span<const U>()
+	{
+		static_assert(std::is_same<U,T>::value, "Invalid type specified");
+		return { data_, size_ };
+	}
 };
 
 #endif
@@ -204,6 +228,8 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 		: dimensions_t(other.width, other.height, other.depth) { }
 	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
 		: dimensions_t(other.width, other.height, other.depth) { }
+	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
+		: dimensions_t(linear_size, 1, 1) { }
 
 	CPP14_CONSTEXPR dimensions_t& operator=(const dimensions_t& other) = default;
 	CPP14_CONSTEXPR dimensions_t& operator=(dimensions_t&& other) = default;
@@ -243,6 +269,8 @@ struct dimensions_t<2>
 		: dimensions_t(other.width, other.height) { }
 	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
 		: dimensions_t(other.width, other.height) { }
+	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
+		: dimensions_t(linear_size, 1) { }
 
 	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
 	{
@@ -567,19 +595,26 @@ private:
 
 	using char_type = typename ::std::conditional<::std::is_const<T>::value, const char *, char *>::type;
 public:
-	base_region_t() = default;
-	base_region_t(T* start, size_t size_in_bytes)
+	base_region_t() noexcept = default;
+	base_region_t(T* start, size_t size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
-	base_region_t(device::address_t start, size_t size_in_bytes)
+	base_region_t(device::address_t start, size_t size_in_bytes) noexcept
 		: start_(as_pointer(start)), size_in_bytes_(size_in_bytes) {}
 
-	T*& start() { return start_; }
-	size_t& size() { return size_in_bytes_; }
+	template <typename U>
+	base_region_t(span<U> span) noexcept : start_(span.data()), size_in_bytes_(span.size() * sizeof(U))
+	{
+		static_assert(::std::is_const<T>::value or not ::std::is_const<U>::value,
+			"Attempt to construct a non-const memory region from a const span");
+	}
 
-	size_t size() const { return size_in_bytes_; }
-	T* start() const { return start_; }
-	T* data() const { return start(); }
-	T* get() const { return start(); }
+	T*& start() noexcept { return start_; }
+	size_t& size() noexcept { return size_in_bytes_; }
+
+	size_t size() const noexcept { return size_in_bytes_; }
+	T* start() const noexcept { return start_; }
+	T* data() const noexcept { return start(); }
+	T* get() const noexcept { return start(); }
 
 	device::address_t device_address() const noexcept
 	{
@@ -869,7 +904,6 @@ using handle_t = CUmodule;
 
 namespace kernel {
 
-
 using attribute_t = CUfunction_attribute;
 using attribute_value_t = int;
 
@@ -878,6 +912,13 @@ using attribute_value_t = int;
 using handle_t = CUfunction;
 
 } // namespace kernel
+
+using callback_t = CUhostFn;
+
+// The C++ standard library doesn't offer ::std::dynarray (although it almost did),
+// and we won't introduce our own here. So...
+template <typename T>
+using dynarray = ::std::vector<T>;
 
 } // namespace cuda
 
