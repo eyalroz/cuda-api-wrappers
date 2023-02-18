@@ -73,11 +73,6 @@ constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
 namespace detail_ {
 
-template<bool...> struct bool_pack;
-
-template<bool... bs>
-using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
-
 /**
  * @brief adapt a type to be usable as a kernel parameter.
  *
