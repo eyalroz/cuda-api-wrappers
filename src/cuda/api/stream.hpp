@@ -325,7 +325,7 @@ protected: // static methods
 		auto unique_ptr_to_tuple = ::std::unique_ptr<tuple_type>{tuple_ptr}; // Ensures deletion when we leave this function.
 		auto device_id        = ::std::get<0>(*unique_ptr_to_tuple.get());
 		auto context_handle   = ::std::get<1>(*unique_ptr_to_tuple.get());
-		auto stream_handle        = ::std::get<2>(*unique_ptr_to_tuple.get());
+		auto stream_handle    = ::std::get<2>(*unique_ptr_to_tuple.get());
 		const auto& callable  = ::std::get<3>(*unique_ptr_to_tuple.get());
 		callable( stream_t{device_id, context_handle, stream_handle, do_not_take_ownership} );
 	}
@@ -460,6 +460,11 @@ public: // mutators
 			memory::device::async::detail_::set(destination, byte_value, num_bytes, associated_stream.handle_);
 		}
 
+		void memset(memory::region_t region, int byte_value) const
+		{
+			memset(region.data(), byte_value, region.size());
+		}
+
 		/**
 		 * Set all bytes of a certain region in device memory (or unified memory,
 		 * but using the CUDA device to do it) to zero.
@@ -475,6 +480,11 @@ public: // mutators
 		{
 			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
 			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.handle_);
+		}
+
+		void memzero(memory::region_t region) const
+		{
+			memzero(region.data(), region.size());
 		}
 
 		/**
