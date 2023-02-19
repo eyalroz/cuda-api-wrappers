@@ -129,7 +129,8 @@ protected:
 				"Neither block nor grid dimensions have been specified");
 		} else if (not dimensions_.block and not dimensions_.overall) {
 			throw ::std::logic_error(
-				"Grid dimensions only been specified in terms of blocks, not threads, and no block dimensions specified");
+				"Attempt to obtain the composite grid dimensions, while the grid dimensions have only bee specified "
+				"in terms of blocks, not threads, with no block dimensions specified");
 		} else { // it must be the case that (not dimensions_.block and not dimensions_.overall)
 			throw ::std::logic_error(
 				"Only block dimensions have been specified - cannot resolve launch grid dimensions");

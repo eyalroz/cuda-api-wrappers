@@ -128,11 +128,6 @@ inline void wait(const event_t& event);
  * an event on construction and destroy it on destruction, and isn't merely
  * an ephemeral wrapper one could apply and discard; but this second kind of
  * semantics is also (sort of) supported, through the @ref event_t::owning field.
- *
- * @note this is one of the three main classes in the Runtime API wrapper library,
- * together with @ref cuda::device_t and @ref cuda::stream_t
- * @note This class is a "reference type", not a "value type". Therefore, making changes
- * to the event is a const-respecting operation on this class.
  */
 class event_t {
 
@@ -254,9 +249,9 @@ public: // friendship
 public: // constructors and destructor
 
 	// Events cannot be copied, despite our allowing non-owning class instances.
-	// The reason is that we might inadvertently copy of an owning stream, creating
-	// a non-owning stream and letting the original owning stream go out of scope -
-	// thus destructing the object, and destroying the underlying CUDA object.
+	// The reason is that we might inadvertently copy an owning instance, creating
+	// a non-owning instance and letting the original owning instance go out of scope -
+	// thus destructing the C++ object, and destroying the underlying CUDA object.
 	// Essentially, that is like passing a reference to a local variable - which we
 	// may not do.
 	event_t(const event_t& other) = delete;
