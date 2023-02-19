@@ -43,6 +43,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, version_t v)
 	return os << v.major << '.' << v.minor;
 }
 
+// Note: All of comparison operators in this can be made constexpr in C++14
+
 inline bool operator==(const version_t& lhs, const version_t& rhs) noexcept
 {
 	return lhs.operator ::std::pair<int, int>() == rhs.operator ::std::pair<int, int>();
