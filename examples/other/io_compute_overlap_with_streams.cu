@@ -135,12 +135,10 @@ int main(int, char **)
             buffer_set.device_result.get(),
             num_elements);
         stream.enqueue.copy(buffer_set.host_result.get(), buffer_set.device_result.get(), buffer_size);
-        stream.enqueue.host_function_call(
-            [=](cuda::stream_t) {
-                ::std::cout
-                    << "Stream " << k+1 << " of " << num_kernels << " has concluded all work. " << ::std::endl;
-            }
-        );
+	auto callback = [=] {
+		::std::cout << "Stream " << k+1 << " of " << num_kernels << " has concluded all work. " << ::std::endl;
+	};
+        stream.enqueue.host_invokable(callback);
     }
     ::std::this_thread::sleep_for(::std::chrono::microseconds(50000));
     for(auto& stream : streams) { stream.synchronize(); }

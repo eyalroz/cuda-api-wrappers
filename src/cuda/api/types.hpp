@@ -348,6 +348,17 @@ enum : priority_t {
 	default_priority   = 0
 };
 
+namespace detail_ {
+
+#if CUDA_VERSION >= 10000
+using callback_t = CUhostFn;
+#else
+using callback_t = CUstreamCallback;
+#endif
+
+} // namespace detail_
+
+
 } // namespace stream
 
 namespace grid {
@@ -912,8 +923,6 @@ using attribute_value_t = int;
 using handle_t = CUfunction;
 
 } // namespace kernel
-
-using callback_t = CUhostFn;
 
 // The C++ standard library doesn't offer ::std::dynarray (although it almost did),
 // and we won't introduce our own here. So...
