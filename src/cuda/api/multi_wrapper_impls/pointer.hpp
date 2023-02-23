@@ -59,8 +59,8 @@ inline context_t context_of(const void* ptr)
 	void* value_ptrs[] = {&device_id, &context_handle};
 	pointer::detail_::get_attributes(2, attributes, value_ptrs, ptr);
 #else
-	auto context_handle = pointer::detail_::context_handle_of(ptr_);
-	auto device_id = context::detail_::get_device_id(ptr_);
+	auto context_handle = pointer::detail_::context_handle_of(ptr);
+	auto device_id = context::detail_::get_device_id(context_handle);
 #endif
 	return context::wrap(device_id, context_handle);
 }
