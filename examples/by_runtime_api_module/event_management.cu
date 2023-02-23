@@ -106,17 +106,16 @@ int main(int argc, char **argv)
 
 	stream.enqueue.kernel_launch(print_message<N,1>, { 1, 1 }, message<N>("I am launched before the first event"));
 	stream.enqueue.event(event_1);
-	stream.enqueue.host_function_call(
-		[&event_1, &event_2](const cuda::stream_t&) {
-			report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
-		}
-	);
+	auto first_callback = [&] {
+		report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
+	};
+	stream.enqueue.host_invokable(first_callback);
 	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
-	stream.enqueue.host_function_call(
-		[&event_1, &event_2](const cuda::stream_t& ) {
-			report_occurrence("In second callback (enqueued after the first kernel but before the second event)", event_1, event_2);
-		}
-	);
+	auto second_callback = [&] {
+		report_occurrence("In second callback (enqueued after the first kernel but before the second event)",
+			event_1, event_2);
+	};
+	stream.enqueue.host_invokable(second_callback);
 	stream.enqueue.event(event_2);
 	stream.enqueue.kernel_launch(print_message<N,3>, { 1, 1 }, message<N>("I am launched after the second event"));
 	stream.enqueue.event(event_3);

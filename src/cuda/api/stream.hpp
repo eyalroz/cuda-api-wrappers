@@ -116,8 +116,6 @@ inline handle_t create_raw_in_current_context(
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-		// We could instead have used an equivalent Driver API call:
-		// cuStreamCreateWithPriority(cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
 	throw_if_error_lazy(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
 	return new_stream_handle;
 }
@@ -149,6 +147,9 @@ inline void record_event_in_current_context(
 	context::handle_t  current_context_handle_,
 	stream::handle_t   stream_handle,
 	event::handle_t    event_handle);
+
+template <typename Function>
+void enqueue_function_call(const stream_t& stream, Function function, void * argument);
 
 } // namespace detail_
 
@@ -305,58 +306,20 @@ public: // other non-mutators
 protected: // static methods
 
 	/**
-	 * A function used internally by this class as the host function to call directly; see
-	 * @ref enqueue_t::host_function_call - but only with CUDA version 10.0 and later.
-	 *
-	 * @param stream_handle the ID of the stream for which a host function call was triggered - this
-	 * will be passed by the CUDA runtime
-	 * @param stream_wrapper_members_and_callable a tuple, containing the information necessary to
-	 * recreate the wrapper with which the callback is associated, without any additional CUDA API calls -
-	 * plus the callable which was passed to @ref enqueue_t::host_function_call, and which the programmer
-	 * actually wants to be called.
-	 *
-	 * @note instances of this template are of type {@ref callback_t}.
-	 */
-	template <typename Callable>
-	static void CUDA_CB stream_launched_host_function_adapter(void * stream_wrapper_members_and_callable)
-	{
-		using tuple_type = ::std::tuple<device::id_t, context::handle_t , stream::handle_t, Callable>;
-		auto* tuple_ptr = reinterpret_cast<tuple_type *>(stream_wrapper_members_and_callable);
-		auto unique_ptr_to_tuple = ::std::unique_ptr<tuple_type>{tuple_ptr}; // Ensures deletion when we leave this function.
-		auto device_id        = ::std::get<0>(*unique_ptr_to_tuple.get());
-		auto context_handle   = ::std::get<1>(*unique_ptr_to_tuple.get());
-		auto stream_handle    = ::std::get<2>(*unique_ptr_to_tuple.get());
-		const auto& callable  = ::std::get<3>(*unique_ptr_to_tuple.get());
-		callable( stream_t{device_id, context_handle, stream_handle, do_not_take_ownership} );
-	}
-
-	/**
 	 * @brief A function to @ref `host_function_launch_adapter`, for use with the old-style CUDA Runtime API call,
-	 * which passes more arguments to the callable - and calls the host function even on device failures.
+	 * which passes more arguments to the invokable - and calls the host function even on device failures.
 	 *
 	 * @param stream_handle the ID of the stream for which a host function call was triggered - this
 	 * will be passed by the CUDA runtime
 	 * @note status indicates the status the CUDA status when the host function call is triggered; anything
 	 * other than @ref `cuda::status::success` means there's been a device error previously - but
-	 * in that case, we won't invoke the callable, as such execution is deprecated; see:
+	 * in that case, we won't invoke the invokable, as such execution is deprecated; see:
 	 * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM
-	 * @param device_id_and_callable a pair-value, containing the ID of the device to which the stream launching
-	 * the host function call is associated, as well as the callable callback which was passed to
+	 * @param device_id_and_invokable a pair-value, containing the ID of the device to which the stream launching
+	 * the host function call is associated, as well as the invokable callback which was passed to
 	 * @ref enqueue_t::host_function_call, and which the programmer actually wants to be called.
 	 */
-	template <typename Callable>
-	static void callback_launch_adapter(
-		stream::handle_t,
-		status_t      status,
-		void *        stream_wrapper_members_and_callable)
-	{
-		if (status != cuda::status::success) {
-			using tuple_type = ::std::tuple<device::id_t, context::handle_t , stream::handle_t, Callable>;
-			delete reinterpret_cast<tuple_type*>(stream_wrapper_members_and_callable);
-			return;
-		}
-		stream_launched_host_function_adapter<Callable>(stream_wrapper_members_and_callable);
-	}
+
 
 public: // mutators
 
@@ -518,53 +481,37 @@ public: // mutators
 			bool          records_timing     = event::do_record_timings,
 			bool          interprocess       = event::not_interprocess) const;
 
+# if CUDA_VERSION >= 10000
 		/**
-		 * Execute the specified function on the calling host thread once all
+		 * Execute the specified function on the calling host thread, after all
 		 * hereto-scheduled work on this stream has been completed.
 		 *
-		 * @param callable_ a function to execute on the host. It must be callable
-		 * with two parameters: `cuda::stream::handle_t stream_handle, cuda::event::handle_t event_handle`
+		 * @param invokable_ an object to call. It must be invokable/invokable with
+		 * a
 		 */
-		template <typename Callable>
-		void host_function_call(Callable callable_) const
+		template <typename Argument>
+		void host_function_call(void (*function)(Argument*), Argument* argument) const
 		{
-			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
-
-			// Since callable_ will be going out of scope after the enqueueing,
-			// and we don't know anything about the scope of the original argument with
-			// which we were called, we must make a copy of `callable_` on the heap
-			// and pass that as the user-defined data. We also add information about
-			// the enqueueing stream.
-			auto raw_callable_extra_argument = new
-				::std::tuple<device::id_t, context::handle_t, stream::handle_t, Callable>(
-				associated_stream.device_id_,
-				associated_stream.context_handle_,
-				associated_stream.handle(),
-					Callable(::std::move(callable_))
-				);
-
-			// While we always register the same static function, `callback_adapter` as the
-			// callback - what it will actually _do_ is invoke the callback we were passed.
-
-#if CUDA_VERSION >= 10000
-			auto status = cuLaunchHostFunc(
-				associated_stream.handle_, &stream_launched_host_function_adapter<Callable>, raw_callable_extra_argument);
-				// Could have used the equivalent Driver API call: cuLaunchHostFunc()
-#else
-			// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
-			// variable, see:
-			// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
-			static constexpr const unsigned fixed_flags { 0u };
-			auto status = cuStreamAddCallback(
-				associated_stream.handle_, &callback_launch_adapter<Callable>, raw_callable_extra_argument, fixed_flags);
-				// Could have used the equivalent Driver API call: cuAddStreamCallback()
+			// I hope you like function declaration punning :-)
+			stream::detail_::enqueue_function_call(
+				associated_stream, reinterpret_cast<stream::detail_::callback_t>(function), argument);
+		}
 #endif
 
-			throw_if_error_lazy(status, "Failed scheduling a callback to be launched on "
-				+ stream::detail_::identify(associated_stream.handle_,
-					associated_stream.context_handle_, associated_stream.device_id_));
+	private:
+		template <typename Invokable>
+		static void CUDA_CB stream_launched_invoker(void* type_erased_invokable) {
+			auto invokable = reinterpret_cast<Invokable*>(type_erased_invokable);
+			(*invokable)();
 		}
 
+	public:
+		template <typename Invokable>
+		void host_invokable(Invokable& invokable) const
+		{
+			auto type_erased_invoker = reinterpret_cast<stream::detail_::callback_t>(stream_launched_invoker<Invokable>);
+			stream::detail_::enqueue_function_call(associated_stream, type_erased_invoker, &invokable);
+		}
 
 #if CUDA_VERSION >= 11020
 		/**
@@ -997,6 +944,40 @@ template<>
 inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr address, uint64_t value, unsigned int flags)
 {
 	return cuStreamWriteValue64(stream_handle, address, value, flags);
+}
+
+/**
+ * A function used internally by this class as the host function to call directly; see
+ * @ref enqueue_t::host_function_call - but only with CUDA version 10.0 and later.
+ *
+ * @param stream_handle the ID of the stream for which a host function call was triggered - this
+ * will be passed by the CUDA runtime
+ * @param stream_wrapper_members_and_invokable a tuple, containing the information necessary to
+ * recreate the wrapper with which the callback is associated, without any additional CUDA API calls -
+ * plus the invokable which was passed to @ref enqueue_t::host_function_call, and which the programmer
+ * actually wants to be called.
+ *
+ * @note instances of this template are of type {@ref callback_t}.
+ */
+template <typename Function>
+void enqueue_function_call(const stream_t& stream, Function function, void* argument)
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+
+	// While we always register the same static function, `callback_adapter` as the
+	// callback - what it will actually _do_ is invoke the callback we were passed.
+
+#if CUDA_VERSION >= 10000
+	auto status = cuLaunchHostFunc(stream.handle(), function, argument);
+	// Could have used the equivalent Driver API call: cuLaunchHostFunc()
+#else
+	// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
+	// variable, see:
+	// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
+	static constexpr const unsigned fixed_flags { 0u };
+	auto status = cuStreamAddCallback(stream.handle(), function, argument, fixed_flags);
+#endif
+	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + stream::detail_::identify(stream));
 }
 
 } // namespace detail_

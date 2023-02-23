@@ -117,11 +117,8 @@ The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indica
 
 We've all dreamed of being able to type in:
 
-	my_stream.enqueue.callback(
-		[&foo](cuda::stream_t stream, cuda::status_t status) {
-			::std::cout << "Hello " << foo << " world!\n";
-		}
-	);
+	auto callback =	[&foo] { ::std::cout << "Hello " << foo << " world!\n"; }
+	my_stream.enqueue.host_invokable(callback);
 
 ... and have that just work, right? Well, now it does!
 

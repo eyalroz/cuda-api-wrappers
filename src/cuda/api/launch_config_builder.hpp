@@ -73,11 +73,13 @@ protected:
 	{
 		grid::composite_dimensions_t result;
 		if (saturate_with_active_blocks_) {
+#if CUDA_VERSION >= 10000
 			if (use_min_params_for_max_occupancy_) {
 				throw ::std::logic_error(
 					"Cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
 					"the grid with fixed-size cubs.");
 			}
+#endif
 			if (not (kernel_)) {
 				throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 			}
@@ -94,6 +96,7 @@ protected:
 			result.grid = kernel_->max_active_blocks_per_multiprocessor(num_block_threads, dshmem_size);
 			return result;
 		}
+#if CUDA_VERSION >= 10000
 		if (use_min_params_for_max_occupancy_) {
 			if (not (kernel_)) {
 				throw ::std::logic_error("A kernel must be set to determine the minimum grid parameter sfor m");
@@ -108,6 +111,7 @@ protected:
 			result.grid = composite_dims.grid;
 			return result;
 		}
+#endif
 		if (dimensions_.block and dimensions_.overall) {
 			result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
 			result.block = dimensions_.block.value();
@@ -175,7 +179,9 @@ protected:
 	const kernel_t* kernel_ { nullptr };
 	optional<device::id_t> device_;
 	bool saturate_with_active_blocks_ { false };
+#if CUDA_VERSION >= 10000
 	bool use_min_params_for_max_occupancy_ { false };
+#endif
 
 	static cuda::device_t device(optional<device::id_t> maybe_id)
 	{
@@ -528,7 +534,9 @@ public:
 		}
 		dimensions_.grid = nullopt;
 		dimensions_.overall = nullopt;
+#if CUDA_VERSION >= 10000
 		use_min_params_for_max_occupancy_ = false;
+#endif
 		saturate_with_active_blocks_ = true;
 		return *this;
 	}
@@ -541,7 +549,9 @@ public:
 		dimensions_.block = nullopt;
 		dimensions_.grid = nullopt;
 		dimensions_.overall = nullopt;
+#if CUDA_VERSION >= 10000
 		use_min_params_for_max_occupancy_ = true;
+#endif
 		saturate_with_active_blocks_ = false;
 		return *this;
 	}

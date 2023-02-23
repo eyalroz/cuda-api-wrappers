@@ -115,9 +115,9 @@ int main(int argc, char **argv)
 		launch_config_4 = launch_config_2;
 		launch_config_4 = ::std::move(launch_config_3);
 		[[maybe_unused]] cuda::launch_configuration_t launch_config_5{::std::move(launch_config_2)};
-    // In case the `[[maybe_unused]]` attribute is ignored, let's try to trick the compiler
-    // into thinking we're actually using launch_config_4.
-    launch_config_4.dimensions == launch_config.dimensions;
+    	// In case the `[[maybe_unused]]` attribute is ignored, let's try to trick the compiler
+    	// into thinking we're actually using launch_config_4.
+    	launch_config_4.dimensions == launch_config.dimensions;
 	}
 
 	cuda::launch(kernel_function, launch_config, bar);
