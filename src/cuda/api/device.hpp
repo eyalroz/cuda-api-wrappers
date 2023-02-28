@@ -687,7 +687,7 @@ inline device_t wrap(id_t id) noexcept
  * @note direct constructor access is blocked so that you don't get the
  * idea you're actually creating devices
  */
-inline device_t get(id_t id) noexcept
+inline device_t get(id_t id)
 {
 	ensure_driver_is_initialized(); // The device_t class mostly assumes the driver has been initialized
 	return wrap(id);
