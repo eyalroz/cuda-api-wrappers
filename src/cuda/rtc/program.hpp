@@ -48,7 +48,7 @@ inline program::handle_t<ptx> create_ptx(
 }
 #endif // CUDA_VERSION >= 11010
 
-template <source_kind_t Kind>
+template <source_kind_t Kind = cuda_cpp>
 inline program::handle_t<Kind> create(
 	const char *program_name,
 	string_view program_source,
