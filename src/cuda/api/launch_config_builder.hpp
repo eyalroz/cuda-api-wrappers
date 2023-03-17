@@ -476,6 +476,11 @@ public:
 		return *this;
 	}
 
+	launch_config_builder_t& no_dynamic_shared_memory()
+	{
+		return dynamic_shared_memory_size(memory::shared::size_t(0));
+	}
+
 	launch_config_builder_t& dynamic_shared_memory_size(memory::shared::size_t size)
 	{
 #ifndef NDEBUG
