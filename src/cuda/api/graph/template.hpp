@@ -115,8 +115,8 @@ namespace detail_ {
 
 inline status_t delete_edges(
 	template_::handle_t   template_handle,
-	span<node::handle_t>  edge_source_handles,
-	span<node::handle_t>  edge_destination_handles)
+	span<const node::handle_t>  edge_source_handles,
+	span<const node::handle_t>  edge_destination_handles)
 {
 	auto num_edges = edge_source_handles.size();
 	assert(edge_source_handles.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -128,8 +128,8 @@ inline status_t delete_edges(
 
 inline status_t delete_edges(
 	template_::handle_t template_handle,
-	span<node_t>        edge_sources,
-	span<node_t>        edge_destinations)
+	span<const node_t>        edge_sources,
+	span<const node_t>        edge_destinations)
 {
 	auto num_edges = edge_sources.size();
 	assert(edge_destinations.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -138,21 +138,21 @@ inline status_t delete_edges(
 	auto handles_buffer = ::std::vector<node::handle_t>{num_edges * 2};
 	{
 		auto handles_iter = handles_buffer;
-		::std::transform(edge_sources.cbegin(), edge_sources.cend(), handles_buffer.data(),
+		::std::transform(edge_sources.begin(), edge_sources.end(), handles_buffer.data(),
 			[](const node_t &node) { return node.handle(); });
-		::std::transform(edge_destinations.cbegin(), edge_destinations.cend(), handles_buffer.data() + num_edges,
+		::std::transform(edge_destinations.begin(), edge_destinations.end(), handles_buffer.data() + num_edges,
 			[](const node_t &node) { return node.handle(); });
 	}
-	span<node::handle_t> edge_source_handles { handles_buffer.data(), num_edges };
-	span<node::handle_t> edge_destination_handles { handles_buffer.data() + num_edges, num_edges };
+	span<const node::handle_t> edge_source_handles { handles_buffer.data(), num_edges };
+	span<const node::handle_t> edge_destination_handles { handles_buffer.data() + num_edges, num_edges };
 	return delete_edges(template_handle, edge_source_handles, edge_destination_handles);
 }
 
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t template_handle,
-	span<node_t>        edge_sources,
-	span<node_t>        edge_destinations)
+	span<const node_t>        edge_sources,
+	span<const node_t>        edge_destinations)
 {
 	auto num_edges = edge_sources.size();
 	assert(edge_destinations.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -161,9 +161,9 @@ inline status_t insert_edges(
 	auto handles_buffer = ::std::vector<node::handle_t>{num_edges * 2};
 	{
 		auto handles_iter = handles_buffer;
-		::std::transform(edge_sources.cbegin(), edge_sources.cend(), handles_buffer.data(),
+		::std::transform(edge_sources.begin(), edge_sources.end(), handles_buffer.data(),
 			[](const node_t &node) { return node.handle(); });
-		::std::transform(edge_destinations.cbegin(), edge_destinations.cend(), handles_buffer.data() + num_edges,
+		::std::transform(edge_destinations.begin(), edge_destinations.end(), handles_buffer.data() + num_edges,
 			[](const node_t &node) { return node.handle(); });
 	}
 	const node::handle_t* sources_handles = handles_buffer.data();
@@ -174,31 +174,8 @@ inline status_t insert_edges(
 }
 
 inline status_t delete_edges(
-	template_::handle_t   template_handle,
-	span<const node::detail_::edge_t>  edges)
-{
-	auto num_edges = edges.size();
-
-	// TODO: With C++14, consider make_unique here and no container
-	auto handles_buffer = ::std::vector<node::handle_t>{num_edges * 2};
-	{
-		auto handles_iter = handles_buffer;
-		::std::transform(edges.cbegin(), edges.cend(), handles_buffer.data(),
-			[](const node::detail_::edge_t& edge) { return edge.first.handle(); });
-		::std::transform(edges.cbegin(), edges.cend(), handles_buffer.data() + num_edges,
-			[](const node::detail_::edge_t& edge) { return edge.second.handle(); });
-	}
-	const node::handle_t* sources_handles = handles_buffer.data();
-	const node::handle_t* destinations_handles = handles_buffer.data() + num_edges;
-	auto result = cuGraphAddDependencies(
-		template_handle,sources_handles, destinations_handles, num_edges);
-	return result;
-}
-
-
-inline status_t delete_edges(
 	template_::handle_t template_handle,
-	span<node::detail_::edge_t> edges)
+	span<const node::detail_::edge_t> edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = ::std::vector<node::handle_t>{edges.size() * 2};
@@ -214,11 +191,10 @@ inline status_t delete_edges(
 		template_handle,sources_handles, destinations_handles, edges.size());
 	return result;
 }
-
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t template_handle,
-	span<node::detail_::edge_t> edges)
+	span<const node::detail_::edge_t> edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = ::std::vector<node::handle_t>{edges.size() * 2};
@@ -646,7 +622,7 @@ public: // non-mutators
 			return edge(edge_.first, edge_.second);
 		}
 
-		void edges(span<node_ref_type> sources, span<node_ref_type> destinations) const
+		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
 		{
 			if (sources.size() != destinations.size()) {
 				throw ::std::invalid_argument(
@@ -660,7 +636,7 @@ public: // non-mutators
 										+ template_::detail_::identify(associated_template));
 		}
 
-		void edges(span<edge_type> edges) const
+		void edges(span<const edge_type> edges) const
 		{
 			auto status = template_::detail_::insert_edges(handle(), edges);
 
@@ -717,7 +693,7 @@ public: // non-mutators
 										+ " in " + template_::detail_::identify(associated_template));
 		}
 
-		void edges(span<node_ref_type> sources, span<node_ref_type> destinations) const
+		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
 		{
 			if (sources.size() != destinations.size()) {
 				throw ::std::invalid_argument(

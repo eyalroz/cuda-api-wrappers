@@ -143,7 +143,7 @@ using ::std::span;
  */
 template<typename T>
 struct span {
-	using value_type = T;
+	using value_type = typename std::remove_cv<T>::type;
 	using element_type = T;
 	using size_type = size_t;
 	using difference_type = ::std::ptrdiff_t;
@@ -158,13 +158,10 @@ struct span {
 	T * const &   data() const noexcept { return data_; }
 	const size_t& size() const noexcept { return size_; }
 
-	T const *cbegin() const noexcept { return data(); }
-	T const *cend()   const noexcept { return data() + size_; }
 	T       *begin()  const noexcept { return data(); }
 	T       *end()    const noexcept { return data() + size_; }
 
-	T& operator[](size_type i)       noexcept { return data_[i]; }
-	T  operator[](size_type i) const noexcept { return data_[i]; }
+	T& operator[](size_type i) const noexcept { return data_[i]; }
 
 	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
