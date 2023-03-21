@@ -563,6 +563,7 @@ constexpr size_t composite_dimensions_t::dimensionality() const { return flatten
  */
 namespace memory {
 
+#if CUDA_VERSION >= 10020
 enum : bool {
 	read_enabled = true,
 	read_disabled = false,
@@ -595,7 +596,6 @@ struct access_permissions_t {
 	}
 };
 
-#if CUDA_VERSION >= 10020
 namespace physical_allocation {
 
 // TODO: Consider simply aliasing CUmemAllocationHandleType and using constexpr const's or anonymous enums
@@ -625,6 +625,18 @@ using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandle
 
 } // namespace physical_allocation
 #endif // CUDA_VERSION >= 10020
+#if CUDA_VERSION >= 11020
+
+namespace pool {
+/**
+ * @note Unsupported for now
+ */
+using handle_t = CUmemoryPool;
+using shared_handle_kind_t = physical_allocation::shared_handle_kind_t;
+using physical_allocation::shared_handle_t;
+
+} // namespace pool
+#endif // CUDA_VERSION >= 11020
 
 namespace pointer {
 

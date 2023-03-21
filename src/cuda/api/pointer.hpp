@@ -48,15 +48,6 @@ enum type_t : ::std::underlying_type<CUmemorytype>::type {
 	non_cuda      = ~(::std::underlying_type<CUmemorytype>::type{0})
 };
 
-#if CUDA_VERSION >= 11020
-namespace pool {
-/**
- * @note Unsupported for now
- */
-using handle_t = CUmemoryPool;
-} // namespace pool
-#endif // CUDA_VERSION >= 11020
-
 namespace pointer {
 
 namespace detail_ {
@@ -89,19 +80,19 @@ template <> struct attribute_value<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>         
 #endif // CUDA_VERSION >= 9020
 
 template <CUpointer_attribute attribute>
-using attribute_value_type_t = typename attribute_value<attribute>::type;
+using attribute_value_t = typename attribute_value<attribute>::type;
 
 template<attribute_t attribute>
 struct status_and_attribute_value {
 	status_t status;
-	attribute_value_type_t<attribute> value;
+	attribute_value_t<attribute> value;
 };
 
 template<attribute_t attribute>
 status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr);
 
 template <attribute_t attribute>
-attribute_value_type_t<attribute> get_attribute(const void* ptr);
+attribute_value_t<attribute> get_attribute(const void* ptr);
 
 inline context::handle_t context_handle_of(const void* ptr)
 {
@@ -144,7 +135,7 @@ public: // getters and operators
 
 protected:
 	template <pointer::attribute_t attribute>
-	pointer::detail_::attribute_value_type_t<attribute> get_attribute() const
+	pointer::detail_::attribute_value_t<attribute> get_attribute() const
 	{
 		return pointer::detail_::get_attribute<attribute>(ptr_);
 	}

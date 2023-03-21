@@ -106,7 +106,6 @@ Finally, if you've started using the library in a publicly-available (FOSS or co
 
 Most, but not all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. Specifically, the following are missing:
 
-* Memory pool management and use (coming soon)
 * Execution graph management
 * Interoperability with OpenGL, Direct3D, EGL, VDAPU.
 

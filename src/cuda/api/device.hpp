@@ -29,6 +29,9 @@ namespace cuda {
 class event_t;
 class stream_t;
 class device_t;
+namespace memory {
+class pool_t;
+} // namespace memory
 ///@endcond
 
 /**
@@ -231,6 +234,9 @@ public:
 		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
 	}
 
+#if CUDA_VERSION >= 11020
+	memory::pool_t default_memory_pool() const;
+#endif
 public:
 
 	/**
@@ -353,6 +359,18 @@ public:
 	{
 		return get_attribute(CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH);
 	}
+
+#if CUDA_VERSION >= 11020
+	/**
+	 * True if this device supports executing kernels in which blocks can
+	 * directly cooperate beyond the use of global-memory atomics.
+	 */
+	bool supports_memory_pools() const
+	{
+		return get_attribute(CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED);
+	}
+
+#endif // CUDA_VERSION >= 11020
 
 	/**
 	 * Obtains the upper limit on the amount of a certain kind of
@@ -508,6 +526,13 @@ public:
 	context_t create_context(
 		context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy = context::heuristic,
 		bool                                            keep_larger_local_mem_after_resize = false) const;
+
+#if CUDA_VERSION >= 11020
+
+	template <memory::pool::shared_handle_kind_t Kind = memory::pool::shared_handle_kind_t::no_export>
+	memory::pool_t create_memory_pool() const;
+
+#endif
 
 	template<typename KernelFunction, typename ... KernelParameters>
 	void launch(

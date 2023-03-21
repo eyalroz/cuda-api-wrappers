@@ -527,13 +527,10 @@ public: // mutators
 			return memory::device::async::allocate(associated_stream, num_bytes);
 		}
 
+		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes);
+
 		/**
-		 * Allocate a specified amount of memory.
-		 *
-		 * @param num_bytes amount of memory to allocate
-		 * @return a region whose location is set when scheduling, but the memory of which
-		 * only become allocated for use once the allocation task is actually reached by
-		 * the stream and completed.
+		 * Free memory which, at the time of execution, has been allocated.
 		 */
 		///@{
 		void free(void* region_start) const

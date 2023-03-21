@@ -27,6 +27,9 @@
 #include <cuda/api/texture_view.hpp>
 #include <cuda/api/copy_parameters.hpp>
 #include <cuda/api/memory.hpp>
+#if CUDA_VERSION >= 11020
+#include <cuda/api/memory_pool.hpp>
+#endif
 #include <cuda/api/unique_ptr.hpp>
 #include <cuda/api/link_options.hpp>
 
@@ -61,6 +64,7 @@
 #include <cuda/api/multi_wrapper_impls/kernel_launch.hpp>
 #include <cuda/api/multi_wrapper_impls/apriori_compiled_kernel.hpp>
 #include <cuda/api/multi_wrapper_impls/module.hpp>
+#include <cuda/api/multi_wrapper_impls/ipc.hpp>
 
 #include <cuda/api/launch_config_builder.hpp>
 

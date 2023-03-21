@@ -241,7 +241,6 @@ protected: // data members
 	bool    holds_refcount_unit_;
 };
 
-
 namespace physical_allocation {
 
 inline physical_allocation_t create(size_t size, properties_t properties)

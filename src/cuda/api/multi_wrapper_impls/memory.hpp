@@ -17,8 +17,10 @@
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
 #include "../virtual_memory.hpp"
+#include "../memory_pool.hpp"
 #include "context.hpp"
 #include "../current_device.hpp"
+#include "ipc.hpp"
 
 namespace cuda {
 
@@ -500,14 +502,14 @@ template<attribute_t attribute>
 status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr)
 {
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
-	attribute_value_type_t <attribute> attribute_value;
+	attribute_value_t <attribute> attribute_value;
 	auto status = cuPointerGetAttribute(&attribute_value, attribute, device::address(ptr));
 	return { status, attribute_value };
 }
 
 
 template<attribute_t attribute>
-attribute_value_type_t<attribute> get_attribute(const void *ptr)
+attribute_value_t<attribute> get_attribute(const void *ptr)
 {
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
 	throw_if_error_lazy(status_and_attribute_value.status,
@@ -700,8 +702,113 @@ void mapping_t::set_access_mode(
 } // namespace virtual_
 #endif // CUDA_VERSION >= 10020
 
+#if CUDA_VERSION >= 11020
+namespace pool {
+
+template<shared_handle_kind_t SharedHandleKind>
+pool_t create(const cuda::device_t& device)
+{
+	return detail_::create<SharedHandleKind>(device.id());
+}
+
+
+inline region_t allocate(const pool_t& pool, const stream_t &stream, size_t num_bytes)
+{
+	CUdeviceptr dptr;
+	auto status = cuMemAllocFromPoolAsync(&dptr, num_bytes, pool.handle(), stream.handle());
+	throw_if_error_lazy(status, "Failed scheduling an allocation of " + ::std::to_string(num_bytes)
+		+ " bytes of memory from " + detail_::identify(pool) + ", on " + stream::detail_::identify(stream));
+	return {as_pointer(dptr), num_bytes };
+}
+
+namespace ipc {
+
+template <shared_handle_kind_t Kind>
+shared_handle_t<Kind> export_(const pool_t& pool)
+{
+	shared_handle_t<Kind> result;
+	static constexpr const unsigned long long flags { 0 };
+	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), (CUmemAllocationHandleType) Kind, flags);
+	throw_if_error_lazy(status, "Exporting " + pool::detail_::identify(pool) +" for inter-process use");
+	return result;
+}
+
+template <shared_handle_kind_t Kind>
+pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle)
+{
+	auto handle = detail_::import<Kind>(shared_pool_handle);
+	// TODO: MUST SUPPORT SAYING THIS POOL CAN'T ALLOCATE - NOT AN EXTRA FLAG IN THE POOL CLASS
+	return memory::pool::wrap(device.id(), handle, do_not_take_ownership);
+}
+
+} // namespace ipc
+
+
+} // namespace pool
+
+inline region_t pool_t::allocate(const stream_t& stream, size_t num_bytes) const
+{
+	return pool::allocate(*this, stream, num_bytes);
+}
+
+inline cuda::device_t pool_t::device() const noexcept
+{
+	return cuda::device::wrap(device_id_);
+}
+
+inline pool::ipc::imported_ptr_t pool_t::import(const memory::pool::ipc::ptr_handle_t& exported_handle) const
+{
+	return pool::ipc::import_ptr(*this, exported_handle);
+}
+
+inline access_permissions_t access_permissions(const cuda::device_t& device, const pool_t& pool)
+{
+	return cuda::memory::detail_::access_permissions(device.id(), pool.handle());
+}
+
+inline void set_access_permissions(const cuda::device_t& device, const pool_t& pool, access_permissions_t permissions)
+{
+	if (pool.device_id() == device.id()) {
+		throw ::std::invalid_argument("Cannot change the access permissions to a pool of the device "
+			"on which the pool's memory is allocated (" + cuda::device::detail_::identify(device.id()) + ')');
+	}
+	cuda::memory::detail_::set_access_permissions(device.id(), pool.handle(), permissions);
+}
+
+template <typename DeviceRange>
+void set_access_permissions(DeviceRange devices, const pool_t& pool, access_permissions_t permissions)
+{
+	cuda::dynarray<cuda::device::id_t> device_ids(devices.size());
+	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.begin());
+	span<cuda::device::id_t> device_ids_span {device_ids.data(), device_ids.size()};
+	cuda::memory::detail_::set_access_permissions(device_ids_span, pool.handle(), permissions);
+}
+#endif // #if CUDA_VERSION >= 11020
+
 } // namespace memory
 
+#if CUDA_VERSION >= 11020
+
+template <memory::pool::shared_handle_kind_t Kind>
+memory::pool_t device_t::create_memory_pool() const
+{
+	return cuda::memory::pool::detail_::create<Kind>(id_);
+}
+
+inline memory::region_t stream_t::enqueue_t::allocate(const memory::pool_t& pool, size_t num_bytes)
+{
+	return memory::pool::allocate(pool, associated_stream, num_bytes);
+}
+
+inline memory::pool_t device_t::default_memory_pool() const
+{
+	memory::pool::handle_t handle;
+	auto status = cuDeviceGetDefaultMemPool(&handle, id_);
+	throw_if_error_lazy(status, "Failed obtaining the default memory pool for " + device::detail_::identify(id_));
+	return memory::pool::wrap(id_, handle, do_not_take_ownership);
+}
+
+#endif //  CUDA_VERSION >= 11020
 } // namespace cuda
 
 #endif // MULTI_WRAPPER_IMPLS_MEMORY_HPP_

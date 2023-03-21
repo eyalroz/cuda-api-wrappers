@@ -38,6 +38,9 @@ class device_t;
 class event_t;
 
 namespace memory {
+
+class pool_t;
+
 namespace ipc {
 
 /**
@@ -94,7 +97,7 @@ inline void unmap(void* ipc_mapped_ptr)
  * @return a handle which another process can call @ref import()
  * on to obtain a device pointer it can use
  */
-inline ptr_handle_t export_(void *device_ptr)
+inline ptr_handle_t export_(void* device_ptr)
 {
 	ptr_handle_t handle;
 	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
@@ -108,10 +111,12 @@ inline ptr_handle_t export_(void *device_ptr)
  *
  * This RAII wrapper class maps memory in the current process' address space on
  * construction, and unmaps it on destruction, using a CUDA IPC handle.
+ *
+ * @tparam the element type in the stretch of IPC-shared memory
  */
 class imported_ptr_t {
 protected: // constructors & destructor
-	 imported_ptr_t(void *ptr, bool owning) : ptr_(ptr), owning_(owning)
+	imported_ptr_t(void* ptr, bool owning) : ptr_(ptr), owning_(owning)
 	{
 		if (ptr_ == nullptr) {
 			throw ::std::logic_error("IPC memory handle yielded a null pointer");
@@ -121,9 +126,6 @@ protected: // constructors & destructor
 public: // constructors & destructors
 	friend imported_ptr_t wrap(void * ptr, bool owning) noexcept;
 
-	/**
-	 * @note This may (?) throw! Be very careful.
-	 */
 	~imported_ptr_t() noexcept(false)
 	{
 		if (owning_) { detail_::unmap(ptr_); }
@@ -131,32 +133,30 @@ public: // constructors & destructors
 
 public: // operators
 
-	imported_ptr_t(const imported_ptr_t &other) = delete;
-	imported_ptr_t &operator=(const imported_ptr_t &other) = delete;
-	imported_ptr_t &operator=(imported_ptr_t &&other) noexcept
+	imported_ptr_t(const imported_ptr_t& other) = delete;
+	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
+	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept
 	{
 		::std::swap(ptr_, other.ptr_);
 		::std::swap(owning_, other.owning_);
 		return *this;
 	}
-
-	imported_ptr_t(imported_ptr_t &&other) noexcept = default;
+	imported_ptr_t(imported_ptr_t&& other) noexcept = default;
 
 public: // getters
 
-	template<typename T = void>
-	T *get() const noexcept
+	template <typename T = void>
+	T* get() const noexcept
 	{
 		// If you're wondering why this cast is necessary - some IDEs/compilers
 		// have the notion that if the method is const, `ptr_` is a const void* within it
-		return static_cast<T *>(const_cast<void *>(ptr_));
+		return static_cast<T*>(const_cast<void*>(ptr_));
 	}
-
 	bool is_owning() const noexcept { return owning_; }
 
 protected: // data members
-	void *ptr_;
-	bool owning_;
+	void*  ptr_;
+	bool   owning_;
 }; // class imported_ptr_t
 
 inline imported_ptr_t wrap(void * ptr, bool owning) noexcept
@@ -170,8 +170,84 @@ inline imported_ptr_t import(const ptr_handle_t& ptr_handle)
 	return wrap(raw_ptr, do_take_ownership);
 }
 
+} // namespace ipc
+
+#if CUDA_VERSION >= 11020
+namespace pool {
+
+namespace ipc {
+
+using handle_t = void *;
+
+template <shared_handle_kind_t Kind>
+shared_handle_t<Kind> export_(const pool_t& pool);
+
+namespace detail_ {
+
+template <shared_handle_kind_t Kind>
+pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
+{
+	memory::pool::handle_t result;
+	static constexpr const unsigned long long flags { 0 };
+	void * ptr_to_handle = static_cast<void*>(const_cast<shared_handle_t<Kind>*>(&shared_pool_handle));
+	auto status = cuMemPoolImportFromShareableHandle(&result, ptr_to_handle, (CUmemAllocationHandleType) Kind, flags);
+	throw_if_error_lazy(status, "Importing an IPC-shared memory pool handle");
+	return result;
+}
+
+} // namespace detail_
+
+template <shared_handle_kind_t Kind>
+pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle);
+
+/**
+ * The concrete value passed between processes, used to tell
+ * the CUDA Runtime API which pool-allocated memory area is desired.
+ */
+using ptr_handle_t = CUmemPoolPtrExportData;
+
+inline ptr_handle_t export_ptr(void* pool_allocated) {
+	ptr_handle_t handle;
+	auto status = cuMemPoolExportPointer(&handle, device::address(pool_allocated));
+	throw_if_error_lazy(status,
+		"Failed producing an IPC handle for memory-pool-allocated pointer "
+		+ cuda::detail_::ptr_as_hex(pool_allocated));
+	return handle;
+}
+
+namespace detail_ {
+
+inline void* import_ptr(const pool::handle_t pool_handle, const ptr_handle_t& handle)
+{
+	CUdeviceptr imported;
+	auto status = cuMemPoolImportPointer(&imported, pool_handle, const_cast<ptr_handle_t*>(&handle));
+	throw_if_error_lazy(status, "Failed importing an IPC-exported a pool-allocated pointer");
+	return as_pointer(imported);
+}
+
+} // namespace detail_
+
+/**
+ * @brief A smart-pointer-like class for memory obtained via IPC (inter-process communication),
+ * allocated in a memory also shared over IPC.
+ *
+ * @note This class does not allocate any memory itself; and as for its "freeing" - it does
+ * supposedly "free" the shared pointer - but that does not free it in the original pool;
+ * it is merely a prerequisite for it being freed there.
+ *
+ * @note if a stream is provided upon construction, freeing will be scheduled on that stream;
+ * otherwise, freeing will be streamless and may be synchronous/blocking.
+ */
+class imported_ptr_t;
+
+imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle);
+imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle, const stream_t& freeing_stream);
 
 } // namespace ipc
+
+} // namespace pool
+#endif // CUDA_VERSION >= 11020
+
 } // namespace memory
 
 namespace event {
