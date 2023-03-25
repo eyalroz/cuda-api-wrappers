@@ -1,3 +1,12 @@
+/**
+ * @file
+ *
+ * @brief This is a simple program, which uses very little of the CUDA 
+ * C++ API wrappers (but more than nothing); it is intended for checking
+ * whether the wrappers can be compiled using different values for the
+ * C++ language standard, beyond the library's minimum supported 
+ * standard version.
+ */
 #include <cuda/api.hpp>
 #include <cuda/nvtx.hpp>
 #include <cuda/rtc.hpp>
