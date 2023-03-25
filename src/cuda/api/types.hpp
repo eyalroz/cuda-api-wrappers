@@ -148,25 +148,28 @@ struct span {
 	using size_type = size_t;
 	using difference_type = ::std::ptrdiff_t;
 	using pointer = T*;
-	using const_pointer = const T*;
+	using const_pointer = T const *;
 	using reference = T&;
 	using const_reference = const T&;
 
-	T *data_;
+	pointer data_;
 	size_t size_;
 
-	T *data() const noexcept { return data_; }
-	constexpr size_t size() const noexcept { return size_; }
+	pointer       data() const noexcept { return data_; }
+	size_type     size() const noexcept { return size_; }
 
-	T const *cbegin() const noexcept { return data(); }
-	T const *cend()   const noexcept { return data() + size_; }
-	T       *begin()  const noexcept { return data(); }
-	T       *end()    const noexcept { return data() + size_; }
+	// About cbegin() and cend() for spans, see:
+	// https://stackoverflow.com/q/62757700/1593077
+	// (for which reason, they're not implemented here)
+	pointer       begin()  const noexcept { return data(); }
+	pointer       end()    const noexcept { return data() + size_; }
+
+	reference operator[](size_t idx) const noexcept { return data_[idx]; }
 
 	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
 	template<
-	    typename U = T,
+	    typename U = value_type,
 		typename = typename ::std::enable_if<not ::std::is_const<U>::value>::type
 	>
 	operator span<const U>()
@@ -177,7 +180,6 @@ struct span {
 };
 
 #endif
-
 
 /**
  * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,
