@@ -541,7 +541,8 @@ public: // mutators
 			memory::device::async::free(associated_stream, region_start);
 		}
 
-		void free(memory::region_t region) {
+		void free(memory::region_t region) const
+		{
 			memory::device::async::free(associated_stream, region);
 		}
 #endif
