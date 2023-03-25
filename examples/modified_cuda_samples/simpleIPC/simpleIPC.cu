@@ -39,7 +39,7 @@ typedef struct ipcCUDA_st
 	int device;
 	pid_t pid;
 	cuda::event::ipc::handle_t eventHandle;
-	cuda::memory::ipc::handle_t memHandle;
+	cuda::memory::ipc::ptr_handle_t memHandle;
 } ipcCUDA_t;
 
 typedef struct ipcDevices_st
@@ -257,7 +257,8 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		procBarrier();
 
 		{
-			cuda::memory::ipc::imported_t<int> d_ptr(s_mem[0].memHandle);
+			auto imported = cuda::memory::ipc::import(s_mem[0].memHandle);
+			auto d_ptr = imported.get<int>();
 
 			printf("> Process %3d: Run kernel on GPU%d, taking source data from and writing results to process %d, GPU%d...\n",
 				   index, s_mem[index].device, 0, s_mem[0].device);
@@ -267,7 +268,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 			cuda::launch(
 				simpleKernel,
 				{ blocks, threads },
-				d_ptr.get() + index *data_buffer_size, d_ptr.get(), index + 1
+				d_ptr + index *data_buffer_size, d_ptr, index + 1
 			);
 			event.record();
 

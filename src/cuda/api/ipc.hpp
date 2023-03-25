@@ -15,7 +15,7 @@
  * <p>CUDA provides several functions to enable different processes
  * to share at least memory addresses and events, which are wrapped
  * here. In addition to the free-standing functions, the class
- * @ref cuda::memory::ipc::imported_t is defined, usable by receiving
+ * @ref cuda::memory::ipc::imported_ptr_t is defined, usable by receiving
  * processes as an 'adapter' to incoming handles which may be passed
  * as-is to code requiring a proper pointer.
  *
@@ -44,27 +44,12 @@ namespace ipc {
  * The concrete value passed between processes, used to tell
  * the CUDA Runtime API which memory area is desired.
  */
-using handle_t = CUipcMemHandle;
+using ptr_handle_t = CUipcMemHandle;
 
-/**
- * Obtain a handle for a region of on-device memory which can
- * be transmitted for use in another operating system process
- *
- * @note The name contains an underscore so as not to clash
- * with the C++ reserved word `export`
- *
- * @param device_ptr beginning of the region of memory
- * to be shared with other processes
- * @return a handle which another process can call @ref import()
- * on to obtain a device pointer it can use
- */
-inline handle_t export_(void* device_ptr) {
-	handle_t handle;
-	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
-	throw_if_error_lazy(status, "Failed producing an IPC memory handle for device pointer "
-		+ cuda::detail_::ptr_as_hex(device_ptr));
-	return handle;
-}
+class imported_ptr_t;
+imported_ptr_t wrap(void * ptr,	bool owning) noexcept;
+
+namespace detail_ {
 
 /**
  * @brief Obtain a CUDA pointer from a handle passed
@@ -76,13 +61,12 @@ inline handle_t export_(void* device_ptr) {
  * @return a pointer to the relevant address (which may not have the same value
  * as it would on a different processor.
  */
-template <typename T = void>
-inline T* import(const handle_t& handle)
+inline void* import(const ptr_handle_t& handle)
 {
 	CUdeviceptr device_ptr;
 	auto status = cuIpcOpenMemHandle(&device_ptr, handle, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
 	throw_if_error_lazy(status, "Failed obtaining a device pointer from an IPC memory handle");
-	return reinterpret_cast<T*>(device_ptr);
+	return memory::as_pointer(device_ptr);
 }
 
 /**
@@ -96,54 +80,96 @@ inline void unmap(void* ipc_mapped_ptr)
 	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
 }
 
+} // namespace detail_
+
+/**
+ * Obtain a handle for a region of on-device memory which can
+ * be transmitted for use in another operating system process
+ *
+ * @note The name contains an underscore so as not to clash
+ * with the C++ reserved word `export`
+ *
+ * @param device_ptr beginning of the region of memory
+ * to be shared with other processes
+ * @return a handle which another process can call @ref import()
+ * on to obtain a device pointer it can use
+ */
+inline ptr_handle_t export_(void *device_ptr)
+{
+	ptr_handle_t handle;
+	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
+	throw_if_error_lazy(status, "Failed producing an IPC memory handle for device pointer "
+		+ cuda::detail_::ptr_as_hex(device_ptr));
+	return handle;
+}
+
 /**
  * @brief A smart-pointer-like class for memory obtained via inter-process communication.
  *
  * This RAII wrapper class maps memory in the current process' address space on
  * construction, and unmaps it on destruction, using a CUDA IPC handle.
- *
- * @tparam the element type in the stretch of IPC-shared memory
  */
-template <typename T = void>
-class imported_t {
-public: // constructors & destructor
-	explicit imported_t(const handle_t& handle) : ptr_(import<T>(handle))
+class imported_ptr_t {
+protected: // constructors & destructor
+	 imported_ptr_t(void *ptr, bool owning) : ptr_(ptr), owning_(owning)
 	{
 		if (ptr_ == nullptr) {
 			throw ::std::logic_error("IPC memory handle yielded a null pointer");
 		}
 	}
 
+public: // constructors & destructors
+	friend imported_ptr_t wrap(void * ptr, bool owning) noexcept;
+
 	/**
 	 * @note This may (?) throw! Be very careful.
 	 */
-	~imported_t() noexcept(false)
+	~imported_ptr_t() noexcept(false)
 	{
-		if (ptr_ == nullptr) { return; }
-		unmap(ptr_);
+		if (owning_) { detail_::unmap(ptr_); }
 	}
 
 public: // operators
 
-	imported_t(const imported_t& other) = delete;
-	imported_t& operator=(const imported_t& other) = delete;
-	imported_t& operator=(imported_t&& other) = delete;
-	imported_t(const imported_t&& other) = delete;
+	imported_ptr_t(const imported_ptr_t &other) = delete;
+	imported_ptr_t &operator=(const imported_ptr_t &other) = delete;
+	imported_ptr_t &operator=(imported_ptr_t &&other) noexcept
+	{
+		::std::swap(ptr_, other.ptr_);
+		::std::swap(owning_, other.owning_);
+		return *this;
+	}
 
-	operator T*() const { return ptr_; }
+	imported_ptr_t(imported_ptr_t &&other) noexcept = default;
 
 public: // getters
 
-	T* get() const { return ptr_; }
+	template<typename T = void>
+	T *get() const noexcept
+	{
+		// If you're wondering why this cast is necessary - some IDEs/compilers
+		// have the notion that if the method is const, `ptr_` is a const void* within it
+		return static_cast<T *>(const_cast<void *>(ptr_));
+	}
+
+	bool is_owning() const noexcept { return owning_; }
 
 protected: // data members
-	/**
-	 * Also used to indicate ownership of the handle; if it's nullptr,
-	 * ownership has passed to another imported_t and we don't need
-	 * to close the handle
-	 */
-	T*         ptr_;
-}; // class imported_t
+	void *ptr_;
+	bool owning_;
+}; // class imported_ptr_t
+
+inline imported_ptr_t wrap(void * ptr, bool owning) noexcept
+{
+	return imported_ptr_t(ptr, owning);
+}
+
+inline imported_ptr_t import(const ptr_handle_t& ptr_handle)
+{
+	auto raw_ptr = detail_::import(ptr_handle);
+	return wrap(raw_ptr, do_take_ownership);
+}
+
 
 } // namespace ipc
 } // namespace memory
