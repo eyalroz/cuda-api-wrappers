@@ -167,11 +167,11 @@ struct span {
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
 	template<
 	    typename U = T,
-		typename = typename std::enable_if<not std::is_const<U>::value>::type
+		typename = typename ::std::enable_if<not ::std::is_const<U>::value>::type
 	>
 	operator span<const U>()
 	{
-		static_assert(std::is_same<U,T>::value, "Invalid type specified");
+		static_assert(::std::is_same<U,T>::value, "Invalid type specified");
 		return { data_, size_ };
 	}
 };
