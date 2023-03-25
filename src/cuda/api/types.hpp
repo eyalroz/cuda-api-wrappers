@@ -621,6 +621,25 @@ public:
 			"Attempt to construct a non-const memory region from a const span");
 	}
 
+	template <typename U>
+	explicit operator span<U>() const
+	{
+		static_assert(
+			::std::is_const<U>::value or not ::std::is_const<typename ::std::remove_pointer<T>::type>::value,
+			"Attempt to create a non-const span referencing a const memory region");
+#ifndef NDEBUG
+		if (size() == 0) {
+			throw ::std::logic_error("Attempt to use a span of size 0 as a sequence of typed elements");
+		}
+		if (size() % sizeof(U) != 0) {
+			throw ::std::logic_error("Attempt to use a region of size not an integral multiple of the size of a type,"
+									 "as a span of elements of that type");
+		}
+#endif
+		return span<U> { static_cast<U*>(data()), size() / sizeof(U) };
+	}
+
+
 	T*& start() noexcept { return start_; }
 	size_t& size() noexcept { return size_in_bytes_; }
 
