@@ -185,7 +185,7 @@ void parentProcess(const char *path_to_this_executable)
 	auto shm_and_info = create_shared_interprocess_memory();
 	auto shared_mem = shm_and_info.shm;
 
-	auto selected_devices= get_usable_devices();
+	auto selected_devices = get_usable_devices();
 
 	auto num_processes = (int) selected_devices.size();
 	shared_mem->nprocesses = num_processes;

@@ -53,8 +53,11 @@ int main(int argc, char **argv)
 	std::cout  << "Skipping this example program on an ARM CPU - relevant functionality not supported.\n";
 #else
 	if (argc == 1) {
+		// This is how you, the user, run this example
 		parentProcess(argv[0]);
 	} else {
+		// This is how the parent process spawns its children;
+		// you don't have to worry about the extra argument
 		childProcess(std::stoi(argv[1]), std::stoi(argv[2]), argv);
 	}
 #endif
