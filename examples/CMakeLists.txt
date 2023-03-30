@@ -1,3 +1,5 @@
+include(CheckIncludeFiles)
+
 enable_language(CXX)
 enable_language(CUDA)
 
@@ -43,6 +45,15 @@ endif()
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.2")
 	add_executable(streamOrderedAllocation modified_cuda_samples/streamOrderedAllocation/streamOrderedAllocation.cu)
 	add_executable(streamOrderedAllocationP2P modified_cuda_samples/streamOrderedAllocationP2P/streamOrderedAllocationP2P.cu)
+	if (UNIX)
+		set(streamOrderedAllocationIPC_include_files unistd.h sched.h sys/mman.h sys/wait.h linux/version.h)
+		CHECK_INCLUDE_FILES("${simpleIPC_include_files}" have_streamOrderedAllocationIPC_include_files LANGUAGE CXX)
+		if (have_streamOrderedAllocationIPC_include_files)
+			add_executable(streamOrderedAllocationIPC
+					modified_cuda_samples/streamOrderedAllocationIPC/streamOrderedAllocationIPC.cu
+					modified_cuda_samples/streamOrderedAllocationIPC/helper_multiprocess.cpp)
+		endif()
+	endif()
 endif()
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.3")
 	# Needs direct cubin access for NVRTC programs
