@@ -40,14 +40,14 @@ constexpr const char *name = "vectorAdd_kernel";
 } // namespace kernel
 
 namespace virtual_mem = cuda::memory::virtual_;
-using allocation_properties_t = virtual_mem::physical_allocation::properties_t;
-constexpr const auto shared_mem_handle_kind = (virtual_mem::physical_allocation::kind_t)
+using allocation_properties_t = cuda::memory::physical_allocation::properties_t;
+constexpr const auto shared_mem_handle_kind = (cuda::memory::physical_allocation::shared_handle_kind_t)
 #if defined(__linux__)
 	CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
 #else
 	CU_MEM_HANDLE_TYPE_WIN32;
 #endif
-using shared_allocation_handle_t = virtual_mem::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
+using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
 using mem_region_t = cuda::memory::region_t;
 using ::std::vector;
 
@@ -84,7 +84,7 @@ cuda::size_t determine_reservation_size(
 
 	for (const auto &vec: {backing_devices, mapping_devices} ) {
 		for (const auto &device: vec) {
-			auto props = virtual_mem::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
+			auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 			min_overall_granularity = ::std::max(min_overall_granularity, props.minimum_granularity());
 		}
 	}
@@ -154,13 +154,14 @@ setup_virtual_memory(cuda::size_t desired_region_size,
 			// we no longer need and can release the allocation; it will be kept live until
 			// it is unmapped.
 			auto physical_allocation =
-				virtual_mem::physical_allocation::create<shared_mem_handle_kind>(stripe_size, device);
+				cuda::memory::physical_allocation::create<shared_mem_handle_kind>(stripe_size, device);
 			auto single_device_subregion = reserved_range.region().subregion(stripe_size * index, stripe_size);
 			return virtual_mem::map(single_device_subregion, physical_allocation);
 		}
 	);
 
-	virtual_mem::set_access_mode(reserved_range.region(), mapping_devices, virtual_mem::read_and_write_access);
+	virtual_mem::set_access_mode(reserved_range.region(), mapping_devices,
+		cuda::memory::access_permissions_t::read_and_write());
 
 	return { ::std::move(reserved_range), ::std::move(mappings) };
 }

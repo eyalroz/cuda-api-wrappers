@@ -42,7 +42,7 @@ std::vector<memory_mapping_t> import_and_map_allocations(
    cuda::device_t device)
 {
 	namespace virtual_mem = cuda::memory::virtual_;
-	namespace allocation = virtual_mem::physical_allocation;
+	namespace allocation = cuda::memory::physical_allocation;
 
 	auto subregion_size = mappings_region.size() / shareable_handles.size();
 
@@ -57,7 +57,8 @@ std::vector<memory_mapping_t> import_and_map_allocations(
 		});
 
 	// Retain peer access and map all chunks to mapDevice
-	virtual_mem::set_access_mode(mappings_region, device, virtual_mem::access_mode_t::read_and_write_access);
+	virtual_mem::set_access_mode(mappings_region, device,
+		cuda::memory::access_permissions_t::read_and_write());
 	return mappings;
 }
 

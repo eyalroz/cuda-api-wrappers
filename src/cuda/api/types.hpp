@@ -563,6 +563,69 @@ constexpr size_t composite_dimensions_t::dimensionality() const { return flatten
  */
 namespace memory {
 
+enum : bool {
+	read_enabled = true,
+	read_disabled = false,
+	write_enabled = true,
+	write_disabled = false
+};
+
+struct access_permissions_t {
+	bool read : 1;
+	bool write : 1;
+
+	operator CUmemAccess_flags() const noexcept
+	{
+		return read ?
+			   (write ? CU_MEM_ACCESS_FLAGS_PROT_READWRITE : CU_MEM_ACCESS_FLAGS_PROT_READ) :
+			   CU_MEM_ACCESS_FLAGS_PROT_NONE;
+	}
+
+	static access_permissions_t from_access_flags(CUmemAccess_flags access_flags)
+	{
+		access_permissions_t result;
+		result.read = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READ);
+		result.write = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+		return result;
+	}
+
+	static constexpr access_permissions_t read_and_write()
+	{
+		return access_permissions_t{ read_enabled, write_enabled };
+	}
+};
+
+#if CUDA_VERSION >= 10020
+namespace physical_allocation {
+
+// TODO: Consider simply aliasing CUmemAllocationHandleType and using constexpr const's or anonymous enums
+enum class shared_handle_kind_t : ::std::underlying_type<CUmemAllocationHandleType>::type {
+#if CUDA_VERSION >= 11020
+	no_export             = CU_MEM_HANDLE_TYPE_NONE,
+#endif
+	posix_file_descriptor = CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
+	win32_handle          = CU_MEM_HANDLE_TYPE_WIN32,
+	win32_kmt             = CU_MEM_HANDLE_TYPE_WIN32_KMT,
+};
+
+namespace detail_ {
+
+template<shared_handle_kind_t SharedHandleKind> struct shared_handle_type_helper;
+
+template <> struct shared_handle_type_helper<shared_handle_kind_t::posix_file_descriptor> { using type = int; };
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+template <> struct shared_handle_type_helper<shared_handle_kind_t::win32_handle> { using type = void *; };
+#endif
+// TODO: What about WIN32_KMT?
+
+} // namespace detail_
+
+template<shared_handle_kind_t SharedHandleKind>
+using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandleKind>::type;
+
+} // namespace physical_allocation
+#endif // CUDA_VERSION >= 10020
+
 namespace pointer {
 
 using attribute_t = CUpointer_attribute;

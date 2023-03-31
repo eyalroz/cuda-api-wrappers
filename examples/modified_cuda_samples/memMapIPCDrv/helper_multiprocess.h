@@ -41,7 +41,7 @@
 #include <vector>
 #include <system_error>
 
-using allocation_t = cuda::memory::virtual_::physical_allocation_t;
+using allocation_t = cuda::memory::physical_allocation_t;
 
 typedef struct sharedMemoryInfo_st {
     void *addr;
@@ -53,14 +53,14 @@ typedef struct sharedMemoryInfo_st {
 #endif
 } sharedMemoryInfo;
 
-constexpr const auto shared_mem_handle_kind = (cuda::memory::virtual_::physical_allocation::kind_t)
+constexpr const auto shared_mem_handle_kind = (cuda::memory::physical_allocation::shared_handle_kind_t)
 #if defined(__linux__)
 	CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
 #else
 	CU_MEM_HANDLE_TYPE_WIN32;
 #endif
 
-using shared_allocation_handle_t = cuda::memory::virtual_::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
+using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
 using ShareableHandle = shared_allocation_handle_t;
 using memory_mapping_t = cuda::memory::virtual_::mapping_t;
 

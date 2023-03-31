@@ -14,10 +14,97 @@
 namespace cuda {
 // TODO: Perhaps move this down into the device namespace ?
 namespace memory {
+
+
+class physical_allocation_t;
+
+namespace physical_allocation {
+
+using handle_t = CUmemGenericAllocationHandle;
+
+namespace detail_ {
+
+physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit);
+
+} // namespace detail_
+
+namespace detail_ {
+enum class granularity_kind_t : ::std::underlying_type<CUmemAllocationGranularity_flags_enum>::type {
+	minimum_required = CU_MEM_ALLOC_GRANULARITY_MINIMUM,
+	recommended_for_performance = CU_MEM_ALLOC_GRANULARITY_RECOMMENDED
+};
+
+} // namespace detail_
+
+// Note: Not inheriting from CUmemAllocationProp_st, since
+// that structure is a bit messed up
+struct properties_t {
+	// Note: Specifying a compression type is currently unsupported,
+	// as the driver API does not document semantics for the relevant
+	// properties field
+
+public: // getters
+	cuda::device_t device() const;
+
+	// TODO: Is this only relevant to requests?
+	shared_handle_kind_t requested_kind() const
+	{
+		return shared_handle_kind_t(raw.requestedHandleTypes);
+	};
+
+protected: // non-mutators
+	size_t granularity(detail_::granularity_kind_t kind) const {
+		size_t result;
+		auto status = cuMemGetAllocationGranularity(&result, &raw,
+			static_cast<CUmemAllocationGranularity_flags>(kind));
+		throw_if_error_lazy(status, "Could not determine physical allocation granularity");
+		return result;
+	}
+
+public: // non-mutators
+	size_t minimum_granularity()     const { return granularity(detail_::granularity_kind_t::minimum_required); }
+	size_t recommended_granularity() const { return granularity(detail_::granularity_kind_t::recommended_for_performance); }
+
+public:
+	properties_t(CUmemAllocationProp_st raw_properties) : raw(raw_properties)
+	{
+		if (raw.location.type != CU_MEM_LOCATION_TYPE_DEVICE) {
+			throw ::std::runtime_error("Unexpected physical_allocation type - we only know about devices!");
+		}
+	}
+
+	properties_t(properties_t&&) = default;
+	properties_t(const properties_t&) = default;
+
+public:
+	CUmemAllocationProp_st raw;
+
+};
+
+namespace detail_ {
+
+template<physical_allocation::shared_handle_kind_t SharedHandleKind>
+properties_t create_properties(cuda::device::id_t device_id)
+{
+	CUmemAllocationProp_st raw_props{};
+	raw_props.type = CU_MEM_ALLOCATION_TYPE_PINNED;
+	raw_props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+	raw_props.location.id = (int) device_id;
+	raw_props.requestedHandleTypes = (CUmemAllocationHandleType) SharedHandleKind;
+	raw_props.win32HandleMetaData = nullptr;
+	return properties_t{raw_props};
+}
+
+} // namespace detail_
+
+template<physical_allocation::shared_handle_kind_t SharedHandleKind>
+properties_t create_properties_for(cuda::device_t device);
+
+} // namespace physical_allocation
+
 namespace virtual_ {
 
 class reserved_address_range_t;
-class physical_allocation_t;
 class mapping_t;
 
 namespace detail_ {
@@ -39,7 +126,7 @@ enum alignment : alignment_t {
 
 namespace detail_ {
 
-reserved_address_range_t wrap(region_t addres_range, alignment_t alignment, bool take_ownership);
+reserved_address_range_t wrap(region_t address_range, alignment_t alignment, bool take_ownership);
 
 } // namespace detail_
 
@@ -101,111 +188,12 @@ inline reserved_address_range_t reserve(size_t requested_size, alignment_t align
 	return reserve(region_t{ nullptr, requested_size }, alignment);
 }
 
-namespace physical_allocation {
-
-// TODO: Consider simply aliasing CUmemAllocationHandleType and using constexpr const's or anonymous enums
-enum class kind_t : ::std::underlying_type<CUmemAllocationHandleType>::type {
-	posix_file_descriptor = CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
-	win32_handle          = CU_MEM_HANDLE_TYPE_WIN32,
-	win32_kmt             = CU_MEM_HANDLE_TYPE_WIN32_KMT,
-};
-
-namespace detail_ {
-enum class granularity_kind_t : ::std::underlying_type<CUmemAllocationGranularity_flags_enum>::type {
-	minimum_required            = CU_MEM_ALLOC_GRANULARITY_MINIMUM,
-	recommended_for_performance = CU_MEM_ALLOC_GRANULARITY_RECOMMENDED
-};
-
-template<kind_t SharedHandleKind> struct shared_handle_type_helper;
-
-template <> struct shared_handle_type_helper<kind_t::posix_file_descriptor> { using type = int; };
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-template <> struct shared_handle_type_helper<kind_t::win32_handle> { using type = void *; };
-#endif
-// TODO: What about WIN32_KMT?
-} // namespace detail_
-
-template<kind_t SharedHandleKind>
-using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandleKind>::type;
-
-// Note: Not inheriting from CUmemAllocationProp_st, since
-// that structure is a bit messed up
-struct properties_t {
-	// Note: Specifying a compression type is currently unsupported,
-	// as the driver API does not document semantics for the relevant
-	// properties field
-
-public: // getters
-	cuda::device_t device() const;
-
-	// TODO: Is this only relevant to requests?
-	physical_allocation::kind_t requested_kind() const
-	{
-		return kind_t(raw.requestedHandleTypes);
-	};
-
-protected: // non-mutators
-	size_t granularity(detail_::granularity_kind_t granuality_kind) const {
-		size_t result;
-		auto status = cuMemGetAllocationGranularity(&result, &raw,
-			static_cast<CUmemAllocationGranularity_flags>(granuality_kind));
-		throw_if_error_lazy(status, "Could not determine physical allocation granularity");
-		return result;
-	}
-
-public: // non-mutators
-	size_t minimum_granularity()     const { return granularity(detail_::granularity_kind_t::minimum_required); }
-	size_t recommended_granularity() const { return granularity(detail_::granularity_kind_t::recommended_for_performance); }
-
-public:
-	properties_t(CUmemAllocationProp_st raw_properties) : raw(raw_properties)
-	{
-		if (raw.location.type != CU_MEM_LOCATION_TYPE_DEVICE) {
-			throw ::std::runtime_error("Unexpected physical_allocation type - we only know about devices!");
-		}
-	}
-
-	properties_t(properties_t&&) = default;
-	properties_t(const properties_t&) = default;
-
-public:
-	CUmemAllocationProp_st raw;
-
-};
-
-namespace detail_ {
-
-template<cuda::memory::virtual_::physical_allocation::kind_t SharedHandleKind>
-properties_t create_properties(cuda::device::id_t device_id)
-{
-	CUmemAllocationProp_st raw_props{};
-	raw_props.type = CU_MEM_ALLOCATION_TYPE_PINNED;
-	raw_props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-	raw_props.location.id = (int) device_id;
-	raw_props.requestedHandleTypes = (CUmemAllocationHandleType) SharedHandleKind;
-	raw_props.win32HandleMetaData = nullptr;
-	return properties_t{raw_props};
-}
-
-} // namespace detail_
-
-template<cuda::memory::virtual_::physical_allocation::kind_t SharedHandleKind>
-properties_t create_properties_for(cuda::device_t device);
-
-using handle_t = CUmemGenericAllocationHandle;
-
-namespace detail_ {
-
-physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit);
-
-} // namespace detail_
-
 } // namespace physical_allocation
 
 class physical_allocation_t {
 protected: // constructors
 	physical_allocation_t(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit)
-	: handle_(handle), size_(size), holds_refcount_unit_(holds_refcount_unit) { }
+		: handle_(handle), size_(size), holds_refcount_unit_(holds_refcount_unit) { }
 
 public: // constructors & destructor
 	physical_allocation_t(const physical_allocation_t& other) noexcept : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(false)
@@ -237,7 +225,7 @@ public: // non-mutators
 		return { raw_properties };
 	}
 
-	template <physical_allocation::kind_t SharedHandleKind>
+	template <physical_allocation::shared_handle_kind_t SharedHandleKind>
 	physical_allocation::shared_handle_t<SharedHandleKind> sharing_handle() const
 	{
 		physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
@@ -248,10 +236,11 @@ public: // non-mutators
 	}
 
 protected: // data members
-	const physical_allocation::handle_t handle_;
-	size_t size_;
-	bool holds_refcount_unit_;
+	const   physical_allocation::handle_t handle_;
+	size_t  size_;
+	bool    holds_refcount_unit_;
 };
+
 
 namespace physical_allocation {
 
@@ -301,7 +290,7 @@ inline properties_t properties_of(handle_t handle)
  *
  * @return the
  */
-template <physical_allocation::kind_t SharedHandleKind>
+template <physical_allocation::shared_handle_kind_t SharedHandleKind>
 physical_allocation_t import(shared_handle_t<SharedHandleKind> shared_handle, size_t size, bool holds_refcount_unit = false)
 {
 	handle_t result_handle;
@@ -321,13 +310,16 @@ inline ::std::string identify(physical_allocation_t physical_allocation) {
 
 } // namespace physical_allocation
 
+/*
 enum access_mode_t : ::std::underlying_type<CUmemAccess_flags>::type {
 	no_access             = CU_MEM_ACCESS_FLAGS_PROT_NONE,
 	read_access           = CU_MEM_ACCESS_FLAGS_PROT_READ,
 	read_and_write_access = CU_MEM_ACCESS_FLAGS_PROT_READWRITE,
 	rw_access             = read_and_write_access
 };
+*/
 
+namespace virtual_ {
 namespace mapping {
 namespace detail_ {
 
@@ -342,7 +334,7 @@ inline ::std::string identify(region_t address_range) {
 
 namespace detail_ {
 
-inline access_mode_t get_access_mode(region_t fully_mapped_region, cuda::device::id_t device_id)
+inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::device::id_t device_id)
 {
 	CUmemLocation_st location { CU_MEM_LOCATION_TYPE_DEVICE, device_id };
 	unsigned long long flags;
@@ -351,7 +343,7 @@ inline access_mode_t get_access_mode(region_t fully_mapped_region, cuda::device:
 		+ cuda::device::detail_::identify(device_id)
 		+ " to the virtual memory mapping to the range of size "
 		+ ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
-	return (access_mode_t) flags; // Does this actually work?
+	return access_permissions_t::from_access_flags(static_cast<CUmemAccess_flags>(flags)); // Does this actually work?
 }
 
 } // namespace detail_
@@ -362,13 +354,13 @@ inline access_mode_t get_access_mode(region_t fully_mapped_region, cuda::device:
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-access_mode_t get_access_mode(region_t fully_mapped_region, device_t device);
+access_permissions_t get_access_mode(region_t fully_mapped_region, device_t device);
 
 /**
  * Determines what kind of access a device has to a the region of memory mapped to a single
  * physical allocation.
  */
-access_mode_t get_access_mode(mapping_t mapping, device_t device);
+access_permissions_t get_access_mode(mapping_t mapping, device_t device);
 
 /**
  * Set the access mode from a single device to a mapped region in the (universal) address space
@@ -376,13 +368,13 @@ access_mode_t get_access_mode(mapping_t mapping, device_t device);
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-void set_access_mode(region_t fully_mapped_region, device_t device, access_mode_t access_mode);
+void set_access_mode(region_t fully_mapped_region, device_t device, access_permissions_t access_mode);
 
 /**
  * Set the access mode from a single device to the region of memory mapped to a single
  * physical allocation.
  */
-void set_access_mode(mapping_t mapping, device_t device, access_mode_t access_mode);
+void set_access_mode(mapping_t mapping, device_t device, access_permissions_t access_mode);
 ///@}
 
 /**
@@ -396,13 +388,13 @@ template <template <typename... Ts> class ContiguousContainer>
 void set_access_mode(
 	region_t fully_mapped_region,
 	const ContiguousContainer<device_t>& devices,
-	access_mode_t access_mode);
+	access_permissions_t access_mode);
 
 template <template <typename... Ts> class ContiguousContainer>
 void set_access_mode(
 	region_t fully_mapped_region,
 	ContiguousContainer<device_t>&& devices,
-	access_mode_t access_mode);
+	access_permissions_t access_mode);
 ///@}
 
 /**
@@ -414,13 +406,13 @@ template <template <typename... Ts> class ContiguousContainer>
 inline void set_access_mode(
 	mapping_t mapping,
 	const ContiguousContainer<device_t>& devices,
-	access_mode_t access_mode);
+	access_permissions_t access_mode);
 
 template <template <typename... Ts> class ContiguousContainer>
 inline void set_access_mode(
 	mapping_t mapping,
 	ContiguousContainer<device_t>&& devices,
-	access_mode_t access_mode);
+	access_permissions_t access_mode);
 ///@}
 
 
@@ -428,7 +420,7 @@ class mapping_t {
 protected:  // constructors
 	mapping_t(region_t region, bool owning) : address_range_(region), owning_(owning) { }
 
-public: // constructors & destructions
+public: // constructors & destructors
 
 	friend mapping_t mapping::detail_::wrap(region_t address_range, bool owning);
 
@@ -444,18 +436,18 @@ public: // constructors & destructions
 	region_t address_range() const noexcept { return address_range_; }
 	bool is_owning() const noexcept { return owning_; }
 
-	access_mode_t get_access_mode(device_t device) const;
-	void set_access_mode(device_t device, access_mode_t access_mode) const;
+	access_permissions_t get_access_mode(device_t device) const;
+	void set_access_mode(device_t device, access_permissions_t access_mode) const;
 
 	template <template <typename... Ts> class ContiguousContainer>
 	inline void set_access_mode(
 		const ContiguousContainer<device_t>& devices,
-		access_mode_t access_mode) const;
+		access_permissions_t access_mode) const;
 
 	template <template <typename... Ts> class ContiguousContainer>
 	inline void set_access_mode(
 		ContiguousContainer<device_t>&& devices,
-		access_mode_t access_mode) const;
+		access_permissions_t access_mode) const;
 
 	~mapping_t() noexcept(false)
 	{
@@ -516,7 +508,6 @@ inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 	constexpr const bool is_owning { true };
 	return mapping::detail_::wrap(region, is_owning);
 }
-
 
 } // namespace virtual_
 } // namespace memory

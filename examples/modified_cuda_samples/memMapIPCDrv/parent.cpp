@@ -131,7 +131,7 @@ void getDefaultSecurityDescriptor(CUmemAllocationProp *prop)
 
 allocation_t make_allocation(cuda::device_t device,	size_t single_allocation_size)
 {
-	auto props = cuda::memory::virtual_::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
+	auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 
 	// Get the minimum granularity supported for physical_allocation with cuMemCreate()
 	auto granularity = props.minimum_granularity();
@@ -148,7 +148,7 @@ allocation_t make_allocation(cuda::device_t device,	size_t single_allocation_siz
 	// other handle types, pass NULL.
 	getDefaultSecurityDescriptor(&props.raw);
 
-	return cuda::memory::virtual_::physical_allocation::create(single_allocation_size, props);
+	return cuda::memory::physical_allocation::create(single_allocation_size, props);
 }
 
 Process spawn_child_process(const char* path_to_this_executable, std::size_t process_index, cuda::device_t device)
