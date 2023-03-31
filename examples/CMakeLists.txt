@@ -42,6 +42,7 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
 endif()
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.2")
 	add_executable(streamOrderedAllocation modified_cuda_samples/streamOrderedAllocation/streamOrderedAllocation.cu)
+	add_executable(streamOrderedAllocationP2P modified_cuda_samples/streamOrderedAllocationP2P/streamOrderedAllocationP2P.cu)
 endif()
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.3")
 	# Needs direct cubin access for NVRTC programs
