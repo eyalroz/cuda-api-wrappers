@@ -59,15 +59,8 @@ int main(int argc, char **argv)
 	// ------------------------------------------
 
 	std::cout
-		<< "The PTX version used in compiling device function " << kernel_name
-		<< " is " << kernel.ptx_version() << ".\n";
-
-	std::string cache_preference_names[] = {
-		"No preference",
-		"Equal L1 and shared memory",
-		"Prefer shared memory over L1",
-		"Prefer L1 over shared memory",
-	};
+		<< "The PTX version used in compiling device function \"" << kernel_name
+		<< "\" is " << kernel.ptx_version() << ".\n";
 
 	// --------------------------------------------------------------
 	//  Attributes with a specific API call:
