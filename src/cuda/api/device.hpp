@@ -67,7 +67,7 @@ namespace detail_ {
 device_t wrap(
 	id_t id,
 	primary_context::handle_t primary_context_handle = context::detail_::none,
-	bool holds_primary_context_refcount_unit = false) noexcept;
+	bool holds_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG;
 
 } // namespace detail
 
@@ -78,7 +78,7 @@ device_t wrap(
  *
  * @note Effectively, this is an alias of the @ref get function.
  */
-device_t wrap(id_t id) noexcept;
+device_t wrap(id_t id) NOEXCEPT_IF_NDEBUG;
 
 using stream_priority_range_t = context::stream_priority_range_t;
 
@@ -93,7 +93,7 @@ inline ::std::string get_name(id_t id)
 	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));
 	auto try_getting_name = [&](char* buffer, size_type buffer_size) -> size_type {
 		auto status =  cuDeviceGetName(buffer, buffer_size-1, id);
-		throw_if_error_lazy(status, "Failed obtaining the CUDA device name");
+		throw_if_error_lazy(status, "Failed obtaining the CUDA device name of device " + ::std::to_string(id));
 		buffer[buffer_size-1] = '\0';
 		return (size_type) ::std::strlen(buffer);
 	};
@@ -627,17 +627,24 @@ protected: // constructors
 	explicit device_t(
 		device::id_t device_id,
 		device::primary_context::handle_t primary_context_handle = context::detail_::none,
-		bool hold_primary_context_refcount_unit = false) noexcept
+		bool hold_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG
 	:
 		id_(device_id),
 		primary_context_handle_(primary_context_handle),
-		holds_pc_refcount_unit(hold_primary_context_refcount_unit) { }
+		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
+	{
+#ifndef NDEBUG
+		if (id_ < 0) {
+			throw ::std::invalid_argument("Attempt to construct a CUDA device object for a negative device ID of " + ::std::to_string(id_));
+		}
+#endif
+	}
 
 public: // friends
 	friend device_t device::detail_::wrap(
 		device::id_t,
 		device::primary_context::handle_t handle,
-		bool hold_primary_context_refcount_unit) noexcept;
+		bool hold_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG;
 
 protected: // data members
 	device::id_t id_; /// Numeric ID of the proxied device.
@@ -668,14 +675,14 @@ namespace detail_ {
 inline device_t wrap(
 	id_t id,
 	primary_context::handle_t primary_context_handle,
-	bool hold_primary_context_refcount_unit) noexcept
+	bool hold_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG
 {
 	return device_t{ id, primary_context_handle, hold_primary_context_refcount_unit };
 }
 
 } // namespace detail_
 
-inline device_t wrap(id_t id) noexcept
+inline device_t wrap(id_t id) NOEXCEPT_IF_NDEBUG
 {
 	return detail_::wrap(id);
 }
@@ -689,6 +696,11 @@ inline device_t wrap(id_t id) noexcept
  */
 inline device_t get(id_t id)
 {
+#ifndef NDEBUG
+	if (id < 0) {
+		throw ::std::invalid_argument("Attempt to obtain a CUDA device with a negative device ID " + ::std::to_string(id));
+	}
+#endif
 	ensure_driver_is_initialized(); // The device_t class mostly assumes the driver has been initialized
 	return wrap(id);
 }
