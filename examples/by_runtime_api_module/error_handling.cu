@@ -7,9 +7,9 @@
  */
 #include "../common.hpp"
 
-using ::std::cout;
-using ::std::cerr;
-using ::std::flush;
+using std::cout;
+using std::cerr;
+using std::flush;
 
 int main(int, char **)
 {
@@ -32,6 +32,6 @@ int main(int, char **)
 		die_("An error was outstanding, despite our not having committed any 'sticky' errors)");
 	}
 
-	::std::cout << "SUCCESS\n";
+	std::cout << "SUCCESS\n";
 	return EXIT_SUCCESS;
 }

@@ -18,7 +18,7 @@
 
 #include "../../common.hpp"
 
-::std::string create_ptx_file()
+std::string create_ptx_file()
 {
 	const char* ptx_file_contents = R"(
 	.version 6.5
@@ -82,22 +82,22 @@
 	char temp_filename[] = "caw-simple-drv-runtime-ptx-XXXXXX";
 	int file_descriptor = mkstemp(temp_filename);
 	if (file_descriptor == -1) {
-		throw ::std::runtime_error(::std::string("Failed creating a temporary file using mkstemp(): ") + ::std::strerror(errno) + '\n');
+		throw std::runtime_error(std::string("Failed creating a temporary file using mkstemp(): ") + std::strerror(errno) + '\n');
 	}
 	FILE* ptx_file = fdopen(file_descriptor, "w");
 #else
 	char temp_filename[L_tmpnam];
-	::std::tmpnam(temp_filename);
+	std::tmpnam(temp_filename);
 	FILE* ptx_file = fopen(temp_filename, "w");
 #endif
 	if (ptx_file == nullptr) {
-        throw ::std::runtime_error(::std::string("Failed converting temporay file descriptor into a C library FILE structure: ") + ::std::strerror(errno) + '\n');
+        throw std::runtime_error(std::string("Failed converting temporay file descriptor into a C library FILE structure: ") + std::strerror(errno) + '\n');
     }
 	if (fputs(ptx_file_contents, ptx_file) == EOF) {
-        throw ::std::runtime_error("Failed writing PTX to temporary file " + ::std::string(temp_filename) + ": " + ::std::strerror(errno) + '\n');
+        throw std::runtime_error("Failed writing PTX to temporary file " + std::string(temp_filename) + ": " + std::strerror(errno) + '\n');
     }
 	if (fclose(ptx_file) == EOF) {
-        throw ::std::runtime_error("Failed closing temporary PTX file " + ::std::string(temp_filename) + ": " + ::std::strerror(errno) + '\n');
+        throw std::runtime_error("Failed closing temporary PTX file " + std::string(temp_filename) + ": " + std::strerror(errno) + '\n');
     }
 	return temp_filename;
 }
@@ -105,7 +105,7 @@
 // Host code
 int main(int argc, char** argv)
 {
-    ::std::cout << "simpleDrvRuntime - PTX version.\n";
+    std::cout << "simpleDrvRuntime - PTX version.\n";
     int N = 50000;
     size_t  size = N * sizeof(float);
 
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id =  (argc > 1) ?
-		::std::stoi(argv[1]) : cuda::device::default_device_id;
+		std::stoi(argv[1]) : cuda::device::default_device_id;
 
     auto device = cuda::device::get(device_id);
 
@@ -142,13 +142,13 @@ int main(int argc, char** argv)
 
     stream.synchronize();
 
-	auto h_A = ::std::unique_ptr<float[]>(new float[N]);
-	auto h_B = ::std::unique_ptr<float[]>(new float[N]);
-	auto h_C = ::std::unique_ptr<float[]>(new float[N]);
+	auto h_A = std::unique_ptr<float[]>(new float[N]);
+	auto h_B = std::unique_ptr<float[]>(new float[N]);
+	auto h_C = std::unique_ptr<float[]>(new float[N]);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	::std::generate_n(h_A.get(), N, generator);
-	::std::generate_n(h_B.get(), N, generator);
+	std::generate_n(h_A.get(), N, generator);
+	std::generate_n(h_B.get(), N, generator);
 
     // Allocate vectors in device memory
 	auto d_A = cuda::memory::device::make_unique<float[]>(device, N);
@@ -171,11 +171,11 @@ int main(int argc, char** argv)
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {
-		if (::std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
-			::std::cerr << "Result verification failed at element " << i << "\n";
+		if (std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
+			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
 	}
-    ::std::cout << "SUCCESS\n";
+    std::cout << "SUCCESS\n";
     return EXIT_SUCCESS;
 }

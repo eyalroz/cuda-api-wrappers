@@ -14,7 +14,7 @@
 #include <iostream>
 
 template <typename cuda::source_kind_t Kind>
-::std::ostream &operator<<(::std::ostream &os, const cuda::rtc::compilation_options_t<Kind> &opts)
+std::ostream &operator<<(std::ostream &os, const cuda::rtc::compilation_options_t<Kind> &opts)
 {
 	auto marshalled = cuda::rtc::marshal<Kind>(opts);
 //	os << '(' << marshalled.option_ptrs().size() << ") compilation options: ";
@@ -31,9 +31,9 @@ template <cuda::source_kind_t Kind>
 inline void print_compilation_options(cuda::rtc::compilation_options_t<Kind> compilation_options)
 {
 	auto marshalled = cuda::rtc::marshal<Kind>(compilation_options);
-	::std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
+	std::cout << "Compiling with " << marshalled.option_ptrs().size() << " compilation options:\n";
 	for (auto opt: marshalled.option_ptrs()) {
-		::std::cout << "Option: " << opt << '\n';
+		std::cout << "Option: " << opt << '\n';
 	}
 }
 

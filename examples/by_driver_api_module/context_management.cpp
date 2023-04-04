@@ -14,19 +14,19 @@ void test_context(
 	bool is_primary,
 	cuda::device::id_t device_id)
 {
-	::std::cout << "Testing " << (is_primary ? "" : "non-") << "primary context " << context << '\n';
+	std::cout << "Testing " << (is_primary ? "" : "non-") << "primary context " << context << '\n';
 	if (context.device_id() != device_id) {
 		die_("The device's primary context's reported ID and the device wrapper's ID differ: "
-			+ ::std::to_string(context.device_id()) + " !=" +  ::std::to_string(device_id));
+			+ std::to_string(context.device_id()) + " !=" +  std::to_string(device_id));
 	}
 
 	if (context.device().id() != device_id) {
 		die_("The context's associated device's ID is not the same as that of the device for which we obtained the context: "
-			+ ::std::to_string(context.device().id()) + " !=" +  ::std::to_string(device_id) );
+			+ std::to_string(context.device().id()) + " !=" +  std::to_string(device_id) );
 	}
 
 	if (context.is_primary() != is_primary) {
-		die_(::std::string("The ") + (is_primary ? "" : "non-") + "primary context " + ::std::to_string(context)
+		die_(std::string("The ") + (is_primary ? "" : "non-") + "primary context " + std::to_string(context)
 			+ " \"believes\" it is " + (is_primary ? "not " : "") + "primary.");
 	}
 
@@ -36,7 +36,7 @@ void test_context(
 	// ----------------------------------------------------------------
 
 	auto cache_preference = context.cache_preference();
-	::std::cout << "The cache preference for context " << context << " is: " << cache_preference << ".\n";
+	std::cout << "The cache preference for context " << context << " is: " << cache_preference << ".\n";
 
 	auto new_cache_preference =
 		cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
@@ -45,7 +45,7 @@ void test_context(
 	context.set_cache_preference(new_cache_preference);
 	cache_preference = context.cache_preference();
 	assert_(cache_preference == new_cache_preference);
-	::std::cout << "The cache preference for context " << context << " has now been set to: " << new_cache_preference << ".\n";
+	std::cout << "The cache preference for context " << context << " has now been set to: " << new_cache_preference << ".\n";
 
 	auto shared_mem_bank_size = context.shared_memory_bank_size();
 	shared_mem_bank_size =
@@ -54,13 +54,13 @@ void test_context(
 	context.set_shared_memory_bank_size(shared_mem_bank_size);
 	auto stream_priority_range = context.stream_priority_range();
 	if (stream_priority_range.is_trivial()) {
-		::std::cout << "Context " << context <<  " does not support stream priorities. "
+		std::cout << "Context " << context <<  " does not support stream priorities. "
 			"All streams will have the same (default) priority.\n";
 	}
 	else {
-		::std::cout << "Streams in context " << context << " have priorities between "
+		std::cout << "Streams in context " << context << " have priorities between "
 			<< stream_priority_range.least << " (highest numeric value, least prioritized) and "
-			<< ::std::to_string(stream_priority_range.greatest) << "(lowest numeric values, most prioritized).\n";
+			<< std::to_string(stream_priority_range.greatest) << "(lowest numeric values, most prioritized).\n";
 		assert(stream_priority_range.least > stream_priority_range.greatest);
 	}
 
@@ -68,7 +68,7 @@ void test_context(
 	// --------------------
 
 	auto printf_fifo_size = context.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
-	::std::cout << "The printf FIFO size for context " << context << " is " << printf_fifo_size << ".\n";
+	std::cout << "The printf FIFO size for context " << context << " is " << printf_fifo_size << ".\n";
 	decltype(printf_fifo_size) new_printf_fifo_size =
 		(printf_fifo_size <= 1024) ?  2 * printf_fifo_size : printf_fifo_size - 512;
 	context.set_limit(CU_LIMIT_PRINTF_FIFO_SIZE, new_printf_fifo_size);
@@ -78,10 +78,10 @@ void test_context(
 	// Flags - yes, yet another kind of attribute/property
 	// ----------------------------------------------------
 
-	::std::cout << "Context " << context << " uses a"
+	std::cout << "Context " << context << " uses a"
 		<< (context.synch_scheduling_policy() ? " synchronous" : "n asynchronous")
 		<< " scheduling policy.\n";
-	::std::cout << "Context " << context << " is set to "
+	std::cout << "Context " << context << " is set to "
 		<< (context.keeping_larger_local_mem_after_resize() ? "keep" : "discard")
 		<< " shared memory allocation after launch.\n";
 	// TODO: Change the settings as well obtaining them
@@ -114,11 +114,11 @@ void current_context_manipulation(
 
 	auto context_3 = cuda::context::create_and_push(device);
 
-//	::std::cout << "Contexts:\n";
-//	::std::cout << "context_0: " << context_0 << '\n';
-//	::std::cout << "context_1: " << context_1 << '\n';
-//	::std::cout << "context_2: " << context_2 << '\n';
-//	::std::cout << "context_3: " << context_3 << '\n';
+//	std::cout << "Contexts:\n";
+//	std::cout << "context_0: " << context_0 << '\n';
+//	std::cout << "context_1: " << context_1 << '\n';
+//	std::cout << "context_2: " << context_2 << '\n';
+//	std::cout << "context_3: " << context_3 << '\n';
 
 	{
 		cuda::context::current::scoped_override_t context_for_this_block { context_3 };
@@ -143,15 +143,15 @@ int main(int argc, char **argv)
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id = (argc > 1) ?
-		::std::stoi(argv[1]) : cuda::device::default_device_id;
+		std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	if (cuda::device::count() <= device_id) {
-		die_("No CUDA device with ID " + ::std::to_string(device_id));
+		die_("No CUDA device with ID " + std::to_string(device_id));
 	}
 
 	auto device = cuda::device::get(device_id);
 
-	::std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
+	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
 	if (cuda::device::primary_context::is_active(device)) {
 		std::ostringstream oss;
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 	{
 		auto popped = cuda::context::current::pop();
 		if (popped != pc) {
-			die_("After pushing context " + ::std::to_string(pc) + " and popping it - the pop result is a different context, " + ::std::to_string(popped));
+			die_("After pushing context " + std::to_string(pc) + " and popping it - the pop result is a different context, " + std::to_string(popped));
 		}
 	}
 
@@ -189,18 +189,18 @@ int main(int argc, char **argv)
 	test_context(created_context, isnt_primary, device_id);
 	current_context_manipulation(device, pc, created_context);
 
-	::std::cout << ::std::endl;
+	std::cout << std::endl;
 //	report_context_stack("After current_context_manipulation");
 	cuda::context::current::push(created_context);
 	cuda::context::current::push(created_context);
 	// We should have 3 copies of created_context on the stack at this point, and nothing else
 	cudaSetDevice(device_id);
-//	report_context_stack("After cudaSetDevice " + ::std::to_string(device_id));
+//	report_context_stack("After cudaSetDevice " + std::to_string(device_id));
 	// We should have the primary context of the device
 
 
 	device.synchronize();
 	device.reset();
 
-	::std::cout << "\nSUCCESS\n";
+	std::cout << "\nSUCCESS\n";
 }
