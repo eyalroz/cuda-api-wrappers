@@ -19,12 +19,17 @@ namespace tests {
 
 void basics(cuda::device::id_t device_id)
 {
-	// TODO: cudaChooseDevice
+	auto num_devices = cuda::device::count();
+	if (num_devices == 0) {
+		die_("No CUDA devices on this system");
+	}
 
-	// Being very cavalier about our command-line arguments here...
-
-	if (cuda::device::count() <= device_id) {
-		die_("No CUDA device with ID " + std::to_string(device_id));
+	if (device_id < 0) {
+		die_("A negative device ID cannot be valid");
+	}
+	if (num_devices <= device_id) {
+		die_("CUDA device " +  std::to_string(device_id) + " was requested, but there are only "
+			 + std::to_string(num_devices) + " CUDA devices on this system");
 	}
 
 	auto device = cuda::device::get(device_id);
@@ -251,11 +256,6 @@ void current_device_manipulation()
 
 int main(int argc, char **argv)
 {
-	// TODO: cudaChooseDevice
-
-	if (cuda::device::count() == 0) {
-		die_("No CUDA devices on this system");
-	}
 	cuda::device::id_t device_id =  (argc > 1) ?
 		std::stoi(argv[1]) : cuda::device::default_device_id;
 

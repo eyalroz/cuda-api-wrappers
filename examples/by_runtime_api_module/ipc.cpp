@@ -36,9 +36,7 @@
 
 int main(int argc, char **argv)
 {
-	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+	auto device_id = choose_device(argc, argv);
 	auto device = cuda::device::get(device_id);
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";

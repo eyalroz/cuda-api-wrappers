@@ -194,4 +194,26 @@ typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 	return dividend / divisor + !!(dividend % divisor);
 }
 
+cuda::device::id_t choose_device(int argc, char** argv)
+{
+	auto num_devices = cuda::device::count();
+	if (num_devices == 0) {
+		die_("No CUDA devices on this system");
+	}
+
+	// Being very cavalier about our command-line arguments here...
+	cuda::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+
+	if (device_id < 0) {
+		die_("A negative device ID cannot be valid");
+	}
+	if (num_devices <= device_id) {
+		die_("CUDA device " +  std::to_string(device_id) + " was requested, but there are only "
+			+ std::to_string(num_devices) + " CUDA devices on this system");
+	}
+	std::cout << "Using CUDA device " << cuda::device::detail_::get_name(device_id) << " (having device ID " << device_id << ")\n";
+	return device_id;
+}
+
+
 #endif // EXAMPLES_COMMON_HPP_

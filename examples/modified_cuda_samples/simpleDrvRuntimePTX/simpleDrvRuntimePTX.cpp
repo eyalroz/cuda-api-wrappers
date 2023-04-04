@@ -109,17 +109,7 @@ int main(int argc, char** argv)
     int N = 50000;
     size_t  size = N * sizeof(float);
 
-    // Initialize
-    cuda::initialize_driver();
-
-	if (cuda::device::count() == 0) {
-		die_("No CUDA devices on this system");
-	}
-
-	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
-
+    auto device_id = choose_device(argc, argv);
     auto device = cuda::device::get(device_id);
 
     // Create context

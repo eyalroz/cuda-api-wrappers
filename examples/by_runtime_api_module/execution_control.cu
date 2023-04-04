@@ -46,23 +46,12 @@ __global__ void grid_cooperating_foo(int bar)
 
 int main(int argc, char **argv)
 {
-	if (cuda::device::count() == 0) {
-		die_("No CUDA devices on this system");
-	}
+	auto device_id = choose_device(argc, argv);
+	auto device = cuda::device::get(device_id).make_current();
 
 	const auto kernel_function = foo;
 	const auto kernel_name = "foo"; // no reflection, sadly...
 
-	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
-
-	if (cuda::device::count() <= device_id) {
-		die_("No CUDA device with ID " + std::to_string(device_id));
-	}
-
-	auto device = cuda::device::get(device_id).make_current();
-	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 	auto kernel = cuda::kernel::get(device, kernel_function);
 
 	// ------------------------------------------
