@@ -1387,12 +1387,12 @@ namespace host {
  *
  * @return a pointer to the allocated stretch of memory
  */
-void* allocate(
+region_t allocate(
 	size_t              size_in_bytes,
 	allocation_options  options);
 
 
-inline void* allocate(
+inline region_t allocate(
 	size_t                       size_in_bytes,
 	portability_across_contexts  portability = portability_across_contexts(false),
 	cpu_write_combining          cpu_wc = cpu_write_combining(false))
@@ -1400,7 +1400,7 @@ inline void* allocate(
 	return allocate(size_in_bytes, allocation_options{ portability, cpu_wc } );
 }
 
-inline void* allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
+inline region_t allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 {
 	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
 }
@@ -1426,7 +1426,7 @@ inline void free(region_t region) {	return free(region.data()); }
 namespace detail_ {
 
 struct allocator {
-	void* operator()(size_t num_bytes) const { return cuda::memory::host::allocate(num_bytes); }
+	void* operator()(size_t num_bytes) const { return cuda::memory::host::allocate(num_bytes).data(); }
 };
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::host::free(ptr); }

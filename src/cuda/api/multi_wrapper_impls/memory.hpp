@@ -472,7 +472,7 @@ namespace host {
  * trigger the creation of a primary context on the default device, and "leak"
  * a refcount unit for it.
  */
-inline void* allocate(
+inline region_t allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
@@ -488,7 +488,7 @@ inline void* allocate(
 		result = static_cast<status_t>(status::named_t::unknown);
 	}
 	throw_if_error_lazy(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
-	return allocated;
+	return { allocated, size_in_bytes };
 }
 
 } // namespace host

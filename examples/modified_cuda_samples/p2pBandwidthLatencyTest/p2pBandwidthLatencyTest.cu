@@ -176,7 +176,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
     vector<cuda::event_t> stop;
 
     auto flag = reinterpret_cast<volatile int *>(
-        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
+        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable).data()
     );
 
     for (auto device : cuda::devices()) {
@@ -307,7 +307,7 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
 
 
     auto flag = reinterpret_cast<volatile int *>(
-        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
+        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable).data()
     );
 
     for (auto device : cuda::devices()) {
@@ -417,7 +417,7 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
     vector<cuda::event_t> stop;
 
     auto flag = reinterpret_cast<volatile int *>(
-        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable)
+        cuda::memory::host::allocate(sizeof(int), cuda::memory::portability_across_contexts::is_portable).data()
     );
 
     for(auto device : cuda::devices()) {
