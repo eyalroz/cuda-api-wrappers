@@ -106,7 +106,8 @@ Finally, if you've started using the library in a publicly-available (FOSS or co
 
 Most, but not all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. Specifically, the following are missing:
 
-* Task graph management
+* Memory pool management and use (coming soon)
+* Execution graph management
 * Interoperability with OpenGL, Direct3D, EGL, VDAPU.
 
 Support for textures, arrays and surfaces exists, but is partial: Not all relevant API functions are covered.
@@ -125,14 +126,14 @@ We've all dreamed of being able to type in:
 On a slightly more serious note, though, let's demonstrate the principles listed above:
 
 #### Use of namespaces (and internal classes)
-With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of `cudaSetDevice()` and `cudaMalloc()` calls.
+With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` or `cuMemAllocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()` or `cuMemAlloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of API calls: `cuInit()`, `cuDevicePrimaryCtxRetain()`, `cuCtxPushCurrent()`, `cuMemAlloc()` etc.
 
 #### Adorning POD structs with convenience methods
 The expression
 ```
-my_device.properties().compute_capability() >= cuda::make_compute_capability(50)
+my_device.compute_capability() >= cuda::make_compute_capability(60)
 ```
-is a valid comparison, true for all devices with a Maxwell-or-later micro-architecture. This, despite the fact that `struct cuda::compute_capability_t` is a POD type with two unsigned integer fields, not a scalar. Note that `struct cuda::device::properties_t` (which is really basically a `struct cudaDeviceProp` of the Runtime API itself) does not have a `compute_capability` field.
+is a valid comparison, true for all devices with a Pascal-or-later micro-architecture. This, despite the fact that `struct cuda::compute_capability_t` is a POD type with two unsigned integer fields, not a scalar.
 
 #### Meaningful naming
 Instead of using
