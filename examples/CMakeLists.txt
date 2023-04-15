@@ -3,6 +3,11 @@ include(CheckIncludeFiles)
 enable_language(CXX)
 enable_language(CUDA)
 
+if(MSVC)
+    add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_DEPRECATE>")
+    add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_WARNINGS>")
+endif()
+
 if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 	include(FindCUDA/select_compute_arch)
 	# After having trouble going through CUDA_ARCHITECTURES, we're falling back on the old-style method of directly appending to CMAKE_CUDA_FLAGS.
