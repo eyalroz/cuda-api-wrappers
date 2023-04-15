@@ -4,7 +4,7 @@
 # your platform. They are not finicky with library dependencies, so
 # compatability is very likely. Also, the package's CMake binary will
 # not mistake any other local CMake-related files for its own.
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 # -----------------------------------
@@ -80,7 +80,14 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	target_link_libraries(CUDA::nvptxcompiler_static INTERFACE Threads::Threads) # Because the NVIDIA PTX compiler itself uses threads
 endif()
 
-target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvToolsExt ${CMAKE_DL_LIBS}) # libnvToolsExt uses dlclose
+target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver ${CMAKE_DL_LIBS}) # libnvToolsExt uses dlclose
+
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 10.0)
+	target_link_libraries(caw_nvtx INTERFACE CUDA::nvtx3)
+else()
+	target_link_libraries(caw_nvtx INTERFACE CUDA::nvToolsExt)
+endif()
+
 
 # Note: This is a bit like a poor man's configure.h file;
 # but for two settings I won't bother creating one of those
