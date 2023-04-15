@@ -76,7 +76,7 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 - Other software:
      - A C++11-capable compiler compatible with your version of CUDA.
-     - CMake v3.18 or later; it's very easy to [download and install](https://cmake.org/download/) a recent version - no need to build it yourself.
+     - CMake v3.25 or later; it's very easy to [download and install](https://cmake.org/download/) a recent version - no need to build it yourself.
 
 - An NVIDIA GPU supporting Unified Virtual Addressing (UVA), i.e. Fermi microarchitecture or later. With earlier GPUs, memory copying, and other functionality relying on automtically determining where a memory address is located, will fail.
 
