@@ -19,11 +19,7 @@
 // whether GPU has completed tasks.
 //
 
-// includes, system
-#include <stdio.h>
-
-// includes, project
-#include "../helper_cuda.hpp"
+#include "../../common.hpp"
 
 using datum = int;
 
