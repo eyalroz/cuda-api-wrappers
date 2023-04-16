@@ -97,7 +97,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
 				--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
-				-o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/memMapIPC_kernel.fatbin
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/memMapIPC_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 	)
@@ -109,7 +109,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
 				--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
-				-o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vectorAddMMAP_kernel.fatbin
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vectorAddMMAP_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
 	)
