@@ -63,7 +63,7 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	auto arr = cuda::array::create<float>(device, dims);
 	assert_(arr.device() == device);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
+	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), (float) 0.0);
 	auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
 	cuda::memory::copy(arr, ptr_in.get());
 	cuda::texture_view tv(arr);
@@ -119,7 +119,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	const cuda::array::dimensions_t<2> dims = {w, h};
 	auto arr = cuda::array::create<float>(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
-	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), 0);
+	std::iota(ptr_in.get(), ptr_in.get() + arr.size(), (float) 0);
 
 	std::cout << std::endl;
 
@@ -141,7 +141,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
     auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
     // The following is to make it easier to notice if nothing get copied
     // to the output
-    std::iota(ptr_out.get(), ptr_out.get() + arr.size(), 90);
+    std::iota(ptr_out.get(), ptr_out.get() + arr.size(), (float) 90);
 //    print_2d_array("Data at ptr_out after initialization", ptr_out.get(), w, h);
 
 	cuda::launch(

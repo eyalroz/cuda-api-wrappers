@@ -96,8 +96,6 @@ Process spawnProcess(const char *executable, char *const *args) {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   STARTUPINFO si = {0};
   BOOL status;
-  size_t arglen = 0;
-  size_t argIdx = 0;
   std::string arg_string;
   memset(&process, 0, sizeof(process));
 
@@ -390,7 +388,7 @@ int ipcCloseShareableHandle(ShareableHandle shHandle) {
 // Generic name to build individual Mailslot names by appending process ids.
 LPTSTR SlotName = (LPTSTR)TEXT("\\\\.\\mailslot\\sample_mailslot_");
 
-int ipcCreateSocket(ipcHandle *&handle, const char *name,
+int ipcCreateSocket(ipcHandle *&handle, const char *,
                     const std::vector<Process> &processes) {
   handle = new ipcHandle;
   handle->hMailslot.resize(processes.size());

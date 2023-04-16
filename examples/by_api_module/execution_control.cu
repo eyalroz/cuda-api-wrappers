@@ -93,11 +93,14 @@ int main(int argc, char **argv)
 		// Copy and move construction and assignment of launch configurations
 		auto launch_config_2 = cuda::make_launch_config(2, 2, 2);
 		auto launch_config_3 = cuda::make_launch_config(3, 3, 3);
-		[[maybe_unused]] cuda::launch_configuration_t launch_config_4{launch_config};
+		cuda::launch_configuration_t launch_config_4{launch_config};
+		(void) launch_config_4;
 		launch_config_4 = launch_config_2;
 		launch_config_4 = std::move(launch_config_3);
-		[[maybe_unused]] cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
-    	// In case the `[[maybe_unused]]` attribute is ignored, let's try to trick the compiler
+		cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
+		(void) launch_config_4;
+		// In case the `[[maybe_unused]]` attribute and the void-casting is ignored,
+		// let's try to trick the compiler
     	// into thinking we're actually using launch_config_4.
     	launch_config_4.dimensions == launch_config.dimensions;
 	}

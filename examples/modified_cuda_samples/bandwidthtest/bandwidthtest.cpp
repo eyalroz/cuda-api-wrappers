@@ -98,12 +98,12 @@ int main()
 	auto h_aPinned = pinned_host_buffers.first.get();
 	auto h_bPinned = pinned_host_buffers.second.get();
 
-	std::iota(h_aPageable, h_aPageable + nElements, 0);
+	std::iota(h_aPageable, h_aPageable + nElements, 0.0);
 	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
 	// Note: the following two instructions can be replaced with CUDA API wrappers
 	// calls - cuda::memory::host::zero(), but that won't improve anything
-	std::fill_n(h_bPageable, nElements, (float) 0);
-	std::fill_n(h_bPinned, nElements, (float) 0);
+	std::fill_n(h_bPageable, nElements, 0.0);
+	std::fill_n(h_bPinned, nElements, 0.0);
 
 	std::cout << "\nDevice: " << cuda::device::current::get().name() << "\n";
 	std::cout << "\nTransfer size (MB): " << (bytes / Mi) << "\n";

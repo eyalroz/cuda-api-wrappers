@@ -101,7 +101,7 @@ std::vector<buffer_set_t> generate_buffers(
 int main(int, char **)
 {
     constexpr size_t num_kernels     = 5;
-    constexpr size_t num_elements    = 1e7;
+    constexpr size_t num_elements    = 10 * 1000 * 1000;
 
     auto device = cuda::device::current::get();
     std::cout << "Using CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
