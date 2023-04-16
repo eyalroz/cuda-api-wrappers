@@ -46,10 +46,6 @@
 #include <cuda/api/kernel.hpp>
 #include <cuda/api/apriori_compiled_kernel.hpp>
 
-#if (__CUDACC_VER_MAJOR__ >= 9)
-#include <cooperative_groups.h>
-#endif
-
 #include <type_traits>
 #include <utility>
 
