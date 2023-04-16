@@ -453,14 +453,14 @@ public:
 		return *this;
 	}
 	launch_config_builder_t& overall_dimensions(
-		grid::dimension_t x,
-		grid::dimension_t y = 1,
-		grid::dimension_t z = 1)
+		grid::overall_dimension_t x,
+		grid::overall_dimension_t y = 1,
+		grid::overall_dimension_t z = 1)
 	{
 		return overall_dimensions(grid::overall_dimensions_t{x, y, z});
 	}
 
-	launch_config_builder_t& overall_size(grid::dimension_t size) { return overall_dimensions(size, 1, 1); }
+	launch_config_builder_t& overall_size(grid::overall_dimension_t size) { return overall_dimensions(size, 1, 1); }
 
 	launch_config_builder_t& block_cooperation(bool cooperation)
 	{
