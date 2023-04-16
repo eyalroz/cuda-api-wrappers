@@ -160,11 +160,15 @@ int main()
 		auto d_timers = cuda::memory::device::make_unique<clock_t []>(device, num_timers);
 		cuda::memory::copy(d_input.get(), input.get(), input_size * sizeof(float));
 
-		auto launch_config = cuda::make_launch_config(num_blocks, num_threads_per_block, dynamic_shmem_size);
+		auto launch_config = cuda::launch_config_builder()
+			.num_blocks(num_blocks)
+			.block_size(num_threads_per_block)
+			.dynamic_shared_memory_size(dynamic_shmem_size)
+			.build();
 		cuda::launch(kernel_in_module, launch_config, d_input.get(), d_output.get(), d_timers.get());
 		device.synchronize();
 		cuda::memory::copy(timers.get(), d_timers.get(), num_timers * sizeof(clock_t));
-	} // The allcoated device buffers are released here
+	} // The allocated device buffers are released here
 	long double average_elapsed_clock_ticks_per_block = compute_average_elapsed_clocks(timers.get(), num_blocks);
 
 	std::cout << "Average clocks/block: " << average_elapsed_clock_ticks_per_block << '\n';
