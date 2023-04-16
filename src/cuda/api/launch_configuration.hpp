@@ -14,10 +14,6 @@
 #include <cuda/api/constants.hpp>
 #include <cuda/api/types.hpp>
 
-#if (__CUDACC_VER_MAJOR__ >= 9)
-#include <cooperative_groups.h>
-#endif
-
 #include <type_traits>
 #include <utility>
 
