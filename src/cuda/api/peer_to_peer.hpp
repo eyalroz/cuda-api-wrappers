@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_
 #define CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_
 
-#include <cuda/api/current_context.hpp>
+#include "current_context.hpp"
 
 namespace cuda {
 

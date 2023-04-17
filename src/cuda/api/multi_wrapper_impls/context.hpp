@@ -20,7 +20,7 @@
 #include "../current_device.hpp"
 #include "../peer_to_peer.hpp"
 #include "../memory.hpp"
-#include "cuda/api/context.hpp"
+#include "../context.hpp"
 
 
 namespace cuda {

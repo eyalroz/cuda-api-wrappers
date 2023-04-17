@@ -10,10 +10,10 @@
 #ifndef CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 
-#include <cuda/api/launch_configuration.hpp>
-#include <cuda/api/kernel.hpp>
-#include <cuda/api/device.hpp>
-#include <cuda/api/types.hpp>
+#include "launch_configuration.hpp"
+#include "kernel.hpp"
+#include "device.hpp"
+#include "types.hpp"
 
 namespace cuda {
 

@@ -12,8 +12,8 @@
 #ifndef CUDA_API_WRAPPERS_ARRAY_HPP_
 #define CUDA_API_WRAPPERS_ARRAY_HPP_
 
-#include <cuda/api/context.hpp>
-#include <cuda/api/error.hpp>
+#include "context.hpp"
+#include "error.hpp"
 
 #include <cuda_runtime.h>
 #include <cuda.h>

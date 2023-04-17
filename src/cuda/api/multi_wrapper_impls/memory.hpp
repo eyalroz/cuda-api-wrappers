@@ -8,6 +8,9 @@
 #ifndef MULTI_WRAPPER_IMPLS_MEMORY_HPP_
 #define MULTI_WRAPPER_IMPLS_MEMORY_HPP_
 
+#include "context.hpp"
+#include "ipc.hpp"
+
 #include "../array.hpp"
 #include "../device.hpp"
 #include "../event.hpp"
@@ -18,9 +21,7 @@
 #include "../kernel.hpp"
 #include "../virtual_memory.hpp"
 #include "../memory_pool.hpp"
-#include "context.hpp"
 #include "../current_device.hpp"
-#include "ipc.hpp"
 
 namespace cuda {
 

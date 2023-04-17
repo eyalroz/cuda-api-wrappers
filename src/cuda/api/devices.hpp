@@ -7,7 +7,7 @@
 #ifndef CUDA_API_WRAPPERS_DEVICES_HPP_
 #define CUDA_API_WRAPPERS_DEVICES_HPP_
 
-#include <cuda/api/device.hpp>
+#include "device.hpp"
 
 namespace cuda {
 

@@ -5,8 +5,8 @@
 #ifndef CUDA_API_WRAPPERS_PRIMARY_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_PRIMARY_CONTEXT_HPP_
 
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/context.hpp> // A primary context is a context, so can't avoid this
+#include "current_context.hpp"
+#include "context.hpp" // A primary context is a context, so can't avoid this
 
 namespace cuda {
 

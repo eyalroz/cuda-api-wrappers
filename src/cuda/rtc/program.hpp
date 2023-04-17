@@ -7,11 +7,11 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
 
-#include <cuda/rtc/compilation_options.hpp>
-#include <cuda/rtc/compilation_output.hpp>
-#include <cuda/rtc/error.hpp>
-#include <cuda/rtc/types.hpp>
-#include <cuda/api.hpp>
+#include "compilation_options.hpp"
+#include "compilation_output.hpp"
+#include "error.hpp"
+#include "types.hpp"
+#include "../api.hpp"
 
 #include <vector>
 
