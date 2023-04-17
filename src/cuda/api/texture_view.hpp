@@ -9,9 +9,9 @@
 #ifndef CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 #define CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
 
-#include <cuda/api/array.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/memory.hpp>
+#include "array.hpp"
+#include "error.hpp"
+#include "memory.hpp"
 #include <cuda_runtime.h>
 
 namespace cuda {

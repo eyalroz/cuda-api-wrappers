@@ -7,7 +7,7 @@
 #ifndef SRC_CUDA_NVRTC_TYPES_HPP_
 #define SRC_CUDA_NVRTC_TYPES_HPP_
 
-#include <cuda/api/types.hpp>
+#include "../api/types.hpp"
 
 #include <nvrtc.h>
 #if CUDA_VERSION >= 11010

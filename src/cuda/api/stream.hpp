@@ -10,13 +10,13 @@
 #ifndef CUDA_API_WRAPPERS_STREAM_HPP_
 #define CUDA_API_WRAPPERS_STREAM_HPP_
 
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/current_device.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/kernel_launch.hpp>
-#include <cuda/api/memory.hpp>
-#include <cuda/api/miscellany.hpp>
-#include <cuda/api/types.hpp>
+#include "current_context.hpp"
+#include "current_device.hpp"
+#include "error.hpp"
+#include "kernel_launch.hpp"
+#include "memory.hpp"
+#include "miscellany.hpp"
+#include "types.hpp"
 
 #include <cuda_runtime_api.h>
 #include <cuda.h>

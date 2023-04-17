@@ -10,7 +10,7 @@
 #ifndef CUDA_API_WRAPPERS_CONSTANTS_HPP_
 #define CUDA_API_WRAPPERS_CONSTANTS_HPP_
 
-#include <cuda/api/types.hpp>
+#include "types.hpp"
 
 namespace cuda {
 

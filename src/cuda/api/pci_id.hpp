@@ -8,8 +8,8 @@
 #ifndef CUDA_API_WRAPPERS_PCI_ID_CUH_
 #define CUDA_API_WRAPPERS_PCI_ID_CUH_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/error.hpp>
+#include "types.hpp"
+#include "error.hpp"
 
 #include <cuda_runtime_api.h>
 

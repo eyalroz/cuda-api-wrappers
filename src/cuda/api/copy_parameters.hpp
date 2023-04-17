@@ -6,10 +6,10 @@
 #ifndef CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP
 #define CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP
 
-#include <cuda/api/array.hpp>
-#include <cuda/api/pointer.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/error.hpp>
+#include "array.hpp"
+#include "pointer.hpp"
+#include "constants.hpp"
+#include "error.hpp"
 
 namespace cuda {
 

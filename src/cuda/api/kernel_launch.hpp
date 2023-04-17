@@ -42,9 +42,9 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 #define CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_
 
-#include <cuda/api/launch_configuration.hpp>
-#include <cuda/api/kernel.hpp>
-#include <cuda/api/apriori_compiled_kernel.hpp>
+#include "launch_configuration.hpp"
+#include "kernel.hpp"
+#include "apriori_compiled_kernel.hpp"
 
 #include <type_traits>
 #include <utility>

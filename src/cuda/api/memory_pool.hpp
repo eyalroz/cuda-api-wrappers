@@ -10,7 +10,7 @@
 
 #if CUDA_VERSION >= 11020
 
-#include <cuda/api/memory.hpp>
+#include "memory.hpp"
 
 #include <cuda.h>
 

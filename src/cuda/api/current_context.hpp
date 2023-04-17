@@ -5,9 +5,9 @@
 #ifndef CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 
-#include <cuda/api/error.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/types.hpp>
+#include "error.hpp"
+#include "constants.hpp"
+#include "types.hpp"
 
 #include <cuda.h>
 

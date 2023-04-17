@@ -7,9 +7,9 @@
 #ifndef CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_
 #define CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_
 
-#include <cuda/api/common_ptx_compilation_options.hpp>
-#include <cuda/api/device_properties.hpp>
-#include <cuda/api/types.hpp>
+#include "common_ptx_compilation_options.hpp"
+#include "device_properties.hpp"
+#include "types.hpp"
 
 #include <array>
 

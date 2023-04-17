@@ -11,10 +11,10 @@
 #ifndef CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
 #define CUDA_API_WRAPPERS_UNIQUE_PTR_HPP_
 
-#include <cuda/api/current_device.hpp>
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/primary_context.hpp>
-#include <cuda/api/memory.hpp>
+#include "current_device.hpp"
+#include "current_context.hpp"
+#include "primary_context.hpp"
+#include "memory.hpp"
 
 namespace cuda {
 namespace memory {

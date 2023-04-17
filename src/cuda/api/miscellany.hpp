@@ -8,10 +8,10 @@
 #ifndef CUDA_API_WRAPPERS_MISCELLANY_HPP_
 #define CUDA_API_WRAPPERS_MISCELLANY_HPP_
 
-#include <cuda/api/types.hpp>
+#include "types.hpp"
 
 #include <cuda_runtime_api.h>
-#include <cuda/api/error.hpp>
+#include "error.hpp"
 
 #include <cuda.h>
 #include <ostream>
