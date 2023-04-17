@@ -10,12 +10,12 @@
 #ifndef CUDA_API_WRAPPERS_PROFILING_HPP_
 #define CUDA_API_WRAPPERS_PROFILING_HPP_
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/stream.hpp>
-#include <cuda/api/event.hpp>
-#include <cuda/api/device.hpp>
+#include "../api/types.hpp"
+#include "../api/error.hpp"
+#include "../api/current_context.hpp"
+#include "../api/stream.hpp"
+#include "../api/event.hpp"
+#include "../api/device.hpp"
 
 #include <cudaProfiler.h>
 

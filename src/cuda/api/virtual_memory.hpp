@@ -8,8 +8,8 @@
 
 #if CUDA_VERSION >= 10020
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/memory.hpp>
+#include "types.hpp"
+#include "memory.hpp"
 
 namespace cuda {
 // TODO: Perhaps move this down into the device namespace ?

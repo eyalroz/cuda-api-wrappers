@@ -20,10 +20,10 @@
 #ifndef CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 #define CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_
 
-#include <cuda/api/constants.hpp>
-#include <cuda/api/miscellany.hpp>
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/primary_context.hpp>
+#include "constants.hpp"
+#include "miscellany.hpp"
+#include "current_context.hpp"
+#include "primary_context.hpp"
 
 #include <cuda_runtime_api.h>
 

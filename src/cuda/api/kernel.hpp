@@ -10,11 +10,11 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_HPP_
 #define CUDA_API_WRAPPERS_KERNEL_HPP_
 
-#include <cuda/api/device_properties.hpp>
-#include <cuda/api/primary_context.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/types.hpp>
-#include <cuda/api/current_context.hpp>
+#include "device_properties.hpp"
+#include "primary_context.hpp"
+#include "error.hpp"
+#include "types.hpp"
+#include "current_context.hpp"
 
 #include <cuda_runtime.h>
 #include <cuda.h>

@@ -7,10 +7,10 @@
 #ifndef CUDA_API_WRAPPERS_LINK_HPP_
 #define CUDA_API_WRAPPERS_LINK_HPP_
 
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/link_options.hpp>
-#include <cuda/api/memory.hpp>
-#include <cuda/api/module.hpp>
+#include "current_context.hpp"
+#include "link_options.hpp"
+#include "memory.hpp"
+#include "module.hpp"
 #include <cuda.h>
 
 #if __cplusplus >= 201703L

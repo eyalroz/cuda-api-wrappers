@@ -7,12 +7,12 @@
 #ifndef CUDA_API_WRAPPERS_MODULE_HPP_
 #define CUDA_API_WRAPPERS_MODULE_HPP_
 
-#include <cuda/api/context.hpp>
-#include <cuda/api/primary_context.hpp>
-#include <cuda/api/kernel.hpp>
-#include <cuda/api/memory.hpp>
-#include <cuda/api/array.hpp>
-#include <cuda/api/link_options.hpp>
+#include "context.hpp"
+#include "primary_context.hpp"
+#include "kernel.hpp"
+#include "memory.hpp"
+#include "array.hpp"
+#include "link_options.hpp"
 #include <cuda.h>
 #include <array>
 

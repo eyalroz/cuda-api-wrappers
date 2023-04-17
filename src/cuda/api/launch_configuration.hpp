@@ -11,8 +11,8 @@
 #ifndef CUDA_API_WRAPPERS_LAUNCH_CONFIGURATION_CUH_
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIGURATION_CUH_
 
-#include <cuda/api/constants.hpp>
-#include <cuda/api/types.hpp>
+#include "constants.hpp"
+#include "types.hpp"
 
 #include <type_traits>
 #include <utility>

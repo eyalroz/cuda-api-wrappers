@@ -5,8 +5,8 @@
 #ifndef CUDA_API_WRAPPERS_LINK_HPP_
 #define CUDA_API_WRAPPERS_LINK_HPP_
 
-#include <cuda/api/link.hpp>
-#include <cuda/api/device.hpp>
+#include "../link.hpp"
+#include "../device.hpp"
 
 inline cuda::device_t link_t::device() const
 {

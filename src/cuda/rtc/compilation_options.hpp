@@ -8,10 +8,11 @@
 #ifndef CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
 #define CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
 
-#include <cuda/api/device_properties.hpp>
-#include <cuda/api/device.hpp>
-#include <cuda/api/common_ptx_compilation_options.hpp>
 #include "detail/marshalled_options.hpp"
+
+#include "../api/device_properties.hpp"
+#include "../api/device.hpp"
+#include "../api/common_ptx_compilation_options.hpp"
 
 #include <unordered_map>
 #include <unordered_set>

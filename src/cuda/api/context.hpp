@@ -7,11 +7,11 @@
 #ifndef CUDA_API_WRAPPERS_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_CONTEXT_HPP_
 
-#include <cuda/api/current_context.hpp>
-#include <cuda/api/versions.hpp>
-#include <cuda/api/error.hpp>
-#include <cuda/api/constants.hpp>
-#include <cuda/api/types.hpp>
+#include "current_context.hpp"
+#include "versions.hpp"
+#include "error.hpp"
+#include "constants.hpp"
+#include "types.hpp"
 
 #include <cuda.h>
 #include <string>

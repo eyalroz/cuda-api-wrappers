@@ -12,6 +12,6 @@
 #error "The CUDA API headers can only be compiled with C++11 or a later version of the C++ language standard"
 #endif
 
-#include <cuda/nvtx/profiling.hpp>
+#include "nvtx/profiling.hpp"
 
 #endif // CUDA_NVTX_WRAPPERS_HPP_

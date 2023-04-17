@@ -17,7 +17,7 @@
 #ifndef CUDA_API_WRAPPERS_ERROR_HPP_
 #define CUDA_API_WRAPPERS_ERROR_HPP_
 
-#include <cuda/api/types.hpp>
+#include "types.hpp"
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 

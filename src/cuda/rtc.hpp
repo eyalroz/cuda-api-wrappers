@@ -13,10 +13,10 @@
 #error "The CUDA API headers can only be compiled with C++11 or a later version of the C++ language standard"
 #endif
 
-#include <cuda/rtc/error.hpp>
-#include <cuda/rtc/compilation_options.hpp>
-#include <cuda/rtc/versions.hpp>
-#include <cuda/rtc/compilation_output.hpp>
-#include <cuda/rtc/program.hpp>
+#include "rtc/error.hpp"
+#include "rtc/compilation_options.hpp"
+#include "rtc/versions.hpp"
+#include "rtc/compilation_output.hpp"
+#include "rtc/program.hpp"
 
 #endif // CUDA_NVRTC_WRAPPERS_HPP_

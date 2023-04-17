@@ -8,8 +8,8 @@
 #define CUDA_API_WRAPPERS_COMMON_PTX_COMPILATION_OPTIONS_HPP_
 
 
-#include <cuda/api/types.hpp>
-#include <cuda/api/device.hpp>
+#include "types.hpp"
+#include "device.hpp"
 
 #include <array>
 

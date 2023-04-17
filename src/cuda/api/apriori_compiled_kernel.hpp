@@ -8,8 +8,8 @@
 #ifndef CUDA_API_WRAPPERS_APRIORI_COMPILED_KERNEL_HPP_
 #define CUDA_API_WRAPPERS_APRIORI_COMPILED_KERNEL_HPP_
 
-#include <cuda/api/kernel.hpp>
-#include <cuda/api/current_context.hpp>
+#include "kernel.hpp"
+#include "current_context.hpp"
 #include <type_traits>
 
 namespace cuda {
