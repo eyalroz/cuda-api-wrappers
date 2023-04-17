@@ -5,7 +5,7 @@
 
 | Table of contents |
 |:------------------|
-|<sub>[General description](#general-description)<br>  - [Key features](#key-features)<br>[Motivation](#motivation)<br>[Detailed documentation](#detailed-documentation)<br>[Requirements](#requirements)<br>[Using the library in your project](#using-the-library-in-your-project)<br>[Coverage of the APIs](#coverage-of-the-apis)<br>[A taste of some features in play](#a-taste-of-some-features-in-play)<br>[Example programs](#example-programs)<br>  - [Modified CUDA samples](#modified-cuda-samples)<br>  - ['Coverage' programs - by API module](#coverage-programs---by-api-module)<br>[Bugs, suggestions, feedback](#bugs-suggestions-feedback)</sub>|
+|<sub>[General description](#general-description)<br>  - [Key features](#key-features)<br>[Motivation](#motivation)<br>[Detailed documentation](#detailed-documentation)<br>[Requirements](#requirements)<br>[Using the library in your project](#using-the-library-in-your-project)<br>[Coverage of the APIs](#coverage-of-the-apis)<br>[A taste of some features in play](#a-taste-of-some-features-in-play)<br>[Example programs](#example-programs)<br>  - [Modified CUDA samples](#modified-cuda-samples)<br>  - ['Coverage' programs - by API module](#coverage-programs---by-api-module)<br>[Want to help? Report a bug? Give feedback?](#want-to-help-report-a-bug-give-feedback)</sub>|
 
 
 ## General description
@@ -169,6 +169,8 @@ The CUDA distribution contains sample programs demostrating various features and
 
 Gradually, an example program is being added for each one of the CUDA Runtime API [Modules](http://docs.nvidia.com/cuda/cuda-runtime-api/modules.html#modules), in which the approach replacing use of those module API calls by use of the API wrappers is demonstrated. These per-module example programs can be found [here](https://github.com/eyalroz/cuda-api-wrappers/tree/master/examples/by_runtime_api_module/).
 
-## Bugs, suggestions, feedback
+## Want to help? Report a bug? Give feedback?
 
-If you notice a specific issue which needs addressing, especially any sort of bug, compatibility problem, or missing functionality - please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub. If you'd like to contribute, or give some less-specific or less public feedback -  do [write me](mailto:eyalroz1@gmx.com). You can also write if you're interested in collaborating on related research or coding work.
+* If you're already familiar with the library, and want to help test new features and improvements, or help otherwise - please [email me](mailto:eyalroz1@gmx.com).
+* If you notice a bug, compatibility problem, missing functionality or other problem - please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub. If you'd like to give less public feedback -  you can do that [via email](mailto:eyalroz1@gmx.com).
+* You can also write if you're interested in collaborating on related research or coding work.
