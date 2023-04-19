@@ -3,12 +3,6 @@ include(CheckIncludeFiles)
 enable_language(CXX)
 enable_language(CUDA)
 
-if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
-    add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_DEPRECATE>")
-    add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_WARNINGS>")
-endif()
-
 if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 	include(FindCUDA/select_compute_arch)
 	# After having trouble going through CUDA_ARCHITECTURES, we're falling back on the old-style method of directly appending to CMAKE_CUDA_FLAGS.
@@ -28,7 +22,16 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
 
 include(CompileWithWarnings)
 
-set(CMAKE_CXX_STANDARD 11)
+if(MSVC)
+	# MSVC is very problematic!
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+	set(CMAKE_CXX_STANDARD 17)
+	add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_DEPRECATE>")
+	add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_WARNINGS>")
+else()
+	set(CMAKE_CXX_STANDARD 11)
+endif()
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -145,23 +148,25 @@ target_link_libraries(vectorAdd_profiled cuda-api-wrappers::nvtx)
 add_executable(manipulate_current_device other/manipulate_current_device.cu)
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp)
 target_link_libraries(inclusion_in_two_translation_units cuda-api-wrappers::rtc cuda-api-wrappers::nvtx)
-foreach(std_version "14" "17" "20" "23")
-	if("cxx_std_${std_version}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-		if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (${CMAKE_CXX_COMPILER_VERSION} LESS_EQUAL 8))
-			continue()
+if( NOT MSVC )
+	foreach(std_version "14" "17" "20" "23")
+		if("cxx_std_${std_version}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+			if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (${CMAKE_CXX_COMPILER_VERSION} LESS_EQUAL 8))
+				continue()
+			endif()
+			set(tgt "cpp_${std_version}")
+			add_executable(${tgt} other/new_cpp_standard/main.cpp)
+			target_link_libraries(${tgt} cuda-api-wrappers::rtc cuda-api-wrappers::nvtx)
+			if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+				target_link_libraries(${tgt} stdc++fs)
+			endif()
+			set_target_properties(${tgt} PROPERTIES
+				CXX_STANDARD ${std_version}
+				CXX_STANDARD_REQUIRED ON
+				CXX_EXTENSIONS OFF)
 		endif()
-		set(tgt "cpp_${std_version}")
-		add_executable(${tgt} other/new_cpp_standard/main.cpp)
-		target_link_libraries(${tgt} cuda-api-wrappers::rtc cuda-api-wrappers::nvtx)
-		if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-			target_link_libraries(${tgt} stdc++fs)
-		endif()
-		set_target_properties(${tgt} PROPERTIES
-			CXX_STANDARD ${std_version}
-			CXX_STANDARD_REQUIRED ON
-			CXX_EXTENSIONS OFF)
-	endif()
-endforeach()
+	endforeach()
+endif()
 add_executable(runtime_api_header_collection other/runtime_api_header_collection.cpp)
 add_executable(jitify other/jitify/jitify.cpp)
 set(jitify_headers_target_dir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/example_headers)

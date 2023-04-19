@@ -170,7 +170,7 @@ jobs:
 
       - name: Build
         run: 
-          cmake --version
+          cmake --version ;
           cmake --build ${{ env.build_dir }} --config ${{ env.build_type }} --verbose
 
       # - name: Test
