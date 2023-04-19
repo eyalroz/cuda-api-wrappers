@@ -441,7 +441,8 @@ public:
 		return grid_dimensions(grid::dimensions_t{x, y, z});
 	}
 
-	launch_config_builder_t& grid_size(grid::dimension_t size) {return grid_dimensions(size, 1, 1);	}
+	launch_config_builder_t& grid_size(grid::dimension_t size) {return grid_dimensions(size, 1, 1); }
+	launch_config_builder_t& num_blocks(grid::dimension_t size) {return grid_size(size); }
 
 	launch_config_builder_t& overall_dimensions(grid::overall_dimensions_t dims)
 	{
