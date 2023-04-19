@@ -25,9 +25,11 @@
 
 # Ideally choose from the list of meta-packages to minimise variance between cuda versions (although it does change too)
 CUDA_PACKAGES_IN=(
-    "command-line-tools"
-    "nvrtc-dev"
-    "cudart-dev"
+	"command-line-tools"
+	"nvrtc-dev"
+	"cudart-dev"
+	"nvcc"
+	"profiler-api"
 )
 
 ## -------------------
@@ -35,23 +37,23 @@ CUDA_PACKAGES_IN=(
 ## -------------------
 # returns 0 (true) if a >= b
 function version_ge() {
-    [ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
-    [ "$(printf '%s\n' "$@" | sort -V | head -n 1)" == "$2" ]
+	[ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
+	[ "$(printf '%s\n' "$@" | sort -V | head -n 1)" == "$2" ]
 }
 # returns 0 (true) if a > b
 function version_gt() {
-    [ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
-    [ "$1" = "$2" ] && return 1 || version_ge $1 $2
+	[ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
+	[ "$1" = "$2" ] && return 1 || version_ge $1 $2
 }
 # returns 0 (true) if a <= b
 function version_le() {
-    [ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
-    [ "$(printf '%s\n' "$@" | sort -V | head -n 1)" == "$1" ]
+	[ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
+	[ "$(printf '%s\n' "$@" | sort -V | head -n 1)" == "$1" ]
 }
 # returns 0 (true) if a < b
 function version_lt() {
-    [ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
-    [ "$1" = "$2" ] && return 1 || version_le $1 $2
+	[ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
+	[ "$1" = "$2" ] && return 1 || version_le $1 $2
 }
 
 ## -------------------
@@ -78,17 +80,17 @@ echo "UBUNTU_VERSION: ${UBUNTU_VERSION}"
 
 # If we don't know the CUDA_MAJOR or MINOR, error.
 if [ -z "${CUDA_MAJOR}" ] ; then
-    echo "Error: Unknown CUDA Major version. Aborting."
-    exit 1
+	echo "Error: Unknown CUDA Major version. Aborting."
+	exit 1
 fi
 if [ -z "${CUDA_MINOR}" ] ; then
-    echo "Error: Unknown CUDA Minor version. Aborting."
-    exit 1
+	echo "Error: Unknown CUDA Minor version. Aborting."
+	exit 1
 fi
 # If we don't know the Ubuntu version, error.
 if [ -z ${UBUNTU_VERSION} ]; then
-    echo "Error: Unknown Ubuntu version. Aborting."
-    exit 1
+	echo "Error: Unknown Ubuntu version. Aborting."
+	exit 1
 fi
 
 
@@ -105,25 +107,28 @@ fi
 CUDA_PACKAGES=""
 for package in "${CUDA_PACKAGES_IN[@]}"
 do : 
-    # @todo This is not perfect. Should probably provide a separate list for diff versions
-    # cuda-compiler-X-Y if CUDA >= 9.1 else cuda-nvcc-X-Y
-    if [[ "${package}" == "nvcc" ]] && version_ge "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
-        package="compiler"
-    elif [[ "${package}" == "compiler" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
-        package="nvcc"
-    fi
+	if [[ "${package}" == "profiler-api" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "11.8" ; then
+		continue
+	fi
+	# @todo This is not perfect. Should probably provide a separate list for diff versions
+	# cuda-compiler-X-Y if CUDA >= 9.1 else cuda-nvcc-X-Y
+	if [[ "${package}" == "nvcc" ]] && version_ge "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
+		package="compiler"
+	elif [[ "${package}" == "compiler" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
+		package="nvcc"
+	fi
 	# The curand library used to be prefixed with cuda-, and this changed. I'm trying to provide
 	# maximum flexibility here for whatever variant was specified in CUDA_PACKAGES_IN
 	if [[ "${package}" =~ ^(lib|cuda-)?curand ]] && version_ge "$CUDA_VERSION_MAJOR_MINOR" "11.0" ; then
 		package="$(echo "$package" | sed 's/^(lib|cuda-)?/cuda-/')"
 	elif [[ "${package}" =~ ^(lib|cuda-)?curand ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "11.0" ; then
 		package="$(echo "$package" | sed 's/^(lib|cuda-)?/lib/')"
-    fi
+	fi
 	[[ "${package}" =~ ^(lib[^-]|cuda-|nvidia-|xserver-|python3-|nsight-).* ]] || package="cuda-${package}"
 	[[ "${package}" =~ ^libraries ]] && package="cuda-${package}"
 	[[ "${package}" =~ ^cuda1- ]] && package="lib-${package}"
-    # Build the full package name and append to the string.
-    CUDA_PACKAGES+=" ${package}-${CUDA_MAJOR}-${CUDA_MINOR}"
+	# Build the full package name and append to the string.
+	CUDA_PACKAGES+=" ${package}-${CUDA_MAJOR}-${CUDA_MINOR}"
 done
 echo "CUDA_PACKAGES ${CUDA_PACKAGES}"
 
@@ -152,16 +157,16 @@ fi
 # Find if sudo is available
 has_sudo=false
 if command -v sudo &> /dev/null ; then
-    has_sudo=true
+	has_sudo=true
 fi
 # Decide if we can proceed or not (root or sudo is required) and if so store whether sudo should be used or not.
 if [ "$is_root" = false ] && [ "$has_sudo" = false ]; then
-    echo "Root or sudo is required. Aborting."
-    exit 1
+	echo "Root or sudo is required. Aborting."
+	exit 1
 elif [ "$is_root" = false ] ; then
-    USE_SUDO=sudo
+	USE_SUDO=sudo
 else
-    USE_SUDO=
+	USE_SUDO=
 fi
 
 ## -----------------
@@ -176,11 +181,11 @@ $USE_SUDO add-apt-repository "deb ${REPO_URL} /"
 $USE_SUDO apt-get update
 
 echo "Installing CUDA packages ${CUDA_PACKAGES}"
-$USE_SUDO apt-get -y install ${CUDA_PACKAGES}
+$USE_SUDO apt-get --ignore-missing -y install ${CUDA_PACKAGES}
 
 if [[ $? -ne 0 ]]; then
-    echo "CUDA Installation Error."
-    exit 1
+	echo "CUDA Installation Error."
+	exit 1
 fi
 
 ## -----------------
@@ -199,9 +204,9 @@ nvcc -V
 
 # If executed on github actions, make the appropriate echo statements to update the environment
 if [[ $GITHUB_ACTIONS ]]; then
-    # Set paths for subsequent steps, using ${CUDA_PATH}
-    echo "Adding CUDA to CUDA_PATH, PATH and LD_LIBRARY_PATH"
-    echo "CUDA_PATH=${CUDA_PATH}" >> $GITHUB_ENV
-    echo "${CUDA_PATH}/bin" >> $GITHUB_PATH
-    echo "LD_LIBRARY_PATH=${CUDA_PATH}/lib:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
+	# Set paths for subsequent steps, using ${CUDA_PATH}
+	echo "Adding CUDA to CUDA_PATH, PATH and LD_LIBRARY_PATH"
+	echo "CUDA_PATH=${CUDA_PATH}" >> $GITHUB_ENV
+	echo "${CUDA_PATH}/bin" >> $GITHUB_PATH
+	echo "LD_LIBRARY_PATH=${CUDA_PATH}/lib:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
 fi
