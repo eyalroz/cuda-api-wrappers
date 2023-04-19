@@ -34,6 +34,21 @@ jobs:
       matrix:
         include:
         - os: ubuntu-20.04
+          cuda: "12.1"
+          gcc: 10
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "12.0"
+          gcc: 10
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
+          cuda: "11.8"
+          gcc: 10
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-20.04
           cuda: "11.7"
           gcc: 10
           shell: "bash"
@@ -83,23 +98,23 @@ jobs:
           gcc: 9 # may fail with gcc-10 due to an internal compiler error
           shell: "bash"
           cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.2"
-          gcc: 8
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.1"
-          gcc: 8
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-18.04
-          cuda: "10.0"
-          gcc: 7 # fails with GCC 8 - no supported in CUDA 10.0
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-# GitHub has remoted ubuntu-16.04 runnings,
-# so we're not testing builds with older CUDA versions
+# NVIDIA has deprecated Ubuntu 16.04 and 18.04 runners
+#
+#        - os: ubuntu-18.04
+#          cuda: "10.2"
+#          gcc: 8
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
+#        - os: ubuntu-18.04
+#          cuda: "10.1"
+#          gcc: 8
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
+#        - os: ubuntu-18.04
+#          cuda: "10.0"
+#          gcc: 7 # fails with GCC 8 - no supported in CUDA 10.0
+#          shell: "bash"
+#          cmake-generator: "Unix Makefiles"
 #       - os: ubuntu-16.04
 #         cuda: "9.2"
 #         gcc: 6
