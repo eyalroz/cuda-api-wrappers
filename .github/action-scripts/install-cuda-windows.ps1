@@ -41,11 +41,15 @@ $CUDA_KNOWN_URLS = @{
     "11.6.0" = "https://developer.download.nvidia.com/compute/cuda/11.6.0/network_installers/cuda_11.6.0_windows_network.exe";
     "11.6.1" = "https://developer.download.nvidia.com/compute/cuda/11.6.1/network_installers/cuda_11.6.1_windows_network.exe";
     "11.6.2" = "https://developer.download.nvidia.com/compute/cuda/11.6.2/network_installers/cuda_11.6.2_windows_network.exe";
-    "11.7.0" = "https://developer.download.nvidia.com/compute/cuda/11.7.0/network_installers/cuda_11.7.0_windows_network.exe"
+    "11.7.0" = "https://developer.download.nvidia.com/compute/cuda/11.7.0/network_installers/cuda_11.7.0_windows_network.exe";
+    "11.8.0" = "https://developer.download.nvidia.com/compute/cuda/11.8.0/network_installers/cuda_11.8.0_windows_network.exe";
+    "12.0.1" = "https://developer.download.nvidia.com/compute/cuda/12.0.1/network_installers/cuda_12.0.1_windows_network.exe";
+    "12.1.1" = "https://developer.download.nvidia.com/compute/cuda/12.1.1/network_installers/cuda_12.1.1_windows_network.exe";
 }
 
 # @todo - change this to be based on _MSC_VER intead, or invert it to be CUDA keyed instead?
 $VISUAL_STUDIO_MIN_CUDA = @{
+    "2022" = "11.6.0";
     "2019" = "10.1";
     "2017" = "10.0"; # Depends on which version of 2017! 9.0 to 10.0 depending on  version
     "2015" = "8.0"; # might support older, unsure.
@@ -58,10 +62,11 @@ $CUDA_PACKAGES_IN = @(
     "visual_studio_integration";
     "curand_dev";
     "nvrtc_dev";
+    "nsight_nvtx";
     "nvtx";
     "cudart";
     "visual_studio_integration";
-	"nsight_nvtx";
+    "cuda_profiler_api";
 )
 
 
@@ -116,6 +121,15 @@ $CUDA_PACKAGES = ""
 
 Foreach ($package in $CUDA_PACKAGES_IN) {
     # Make sure the correct package name is used for nvcc.
+    if($package -eq "cuda_profiler_api" -and [version]$CUDA_VERSION_FULL -lt [version]"11.8"){
+        $package="nvprof"
+    }
+    if($package -eq "nvtx" -and [version]$CUDA_VERSION_FULL -lt [version]"12.0"){
+        continue
+    }
+    if($package -eq "nsight_nvtx" -and [version]$CUDA_VERSION_FULL -ge [version]"12.0"){
+        continue
+    }
     if($package -eq "nvcc" -and [version]$CUDA_VERSION_FULL -lt [version]"9.1"){
         $package="compiler"
     } elseif($package -eq "compiler" -and [version]$CUDA_VERSION_FULL -ge [version]"9.1") {
