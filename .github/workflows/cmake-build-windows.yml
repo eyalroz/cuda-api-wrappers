@@ -169,7 +169,9 @@ jobs:
         shell: bash
 
       - name: Build
-        run: cmake --build ${{ env.build_dir }} --config ${{ env.build_type }} --verbose
+        run: 
+          cmake --version
+          cmake --build ${{ env.build_dir }} --config ${{ env.build_type }} --verbose
 
       # - name: Test
         # working-directory: ${{github.workspace}}/build
