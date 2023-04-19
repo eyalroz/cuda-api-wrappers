@@ -8,6 +8,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
 
 namespace cuda {
 
