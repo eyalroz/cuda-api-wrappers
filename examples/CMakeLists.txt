@@ -179,7 +179,10 @@ foreach(hdr ${jitify_headers})
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${hdr} ${jitify_headers_target_dir})
 endforeach()
-target_link_libraries(jitify cuda-api-wrappers::rtc stdc++fs)
+target_link_libraries(jitify cuda-api-wrappers::rtc)
+if(NOT MSVC)
+	target_link_libraries(jitify stdc++fs)
+endif()
 
 if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
 
