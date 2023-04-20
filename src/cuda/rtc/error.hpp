@@ -100,6 +100,9 @@ inline ::std::string describe(rtc::status_t<ptx> status)
 	case named::compilation_failure: return "PTX compilation failure";
 	case named::unsupported_ptx_version: return "Unsupported PTX version";
 	case named::internal_error: return "Unknown PTX compilation error";
+#if CUDA_VERSION >= 12010
+	case named::unsupported_device_side_sync: return "Unsupported device-side synchronization";
+#endif
 	}
 	return "unknown error";
 }
