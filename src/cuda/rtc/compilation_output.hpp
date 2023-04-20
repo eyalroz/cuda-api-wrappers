@@ -151,22 +151,29 @@ inline void get_ptx(char* buffer, program::handle_t<cuda_cpp> program_handle, co
 
 #if CUDA_VERSION >= 11040
 
-inline size_t get_nvvm_size(program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline size_t get_lto_ir_size(program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
 {
 	size_t size;
+#if CUDA_VERSION >= 12000
+	auto status = nvrtcGetLTOIRSize(program_handle, &size);
+#else
 	auto status = nvrtcGetNVVMSize(program_handle, &size);
-	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed obtaining output NVVM size for compilation of "
+#endif
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed obtaining output LTO IR size for compilation of "
 		+ identify<cuda_cpp>(program_handle, program_name));
 	return size;
 }
 
-inline void get_nvvm(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline void get_lto_ir(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
 {
+#if CUDA_VERSION >= 12000
+	auto status = nvrtcGetLTOIR(program_handle, buffer);
+#else
 	auto status = nvrtcGetNVVM(program_handle, buffer);
-	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed obtaining output NVVM for compilation of "
+#endif
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed obtaining output LTO IR code for compilation of "
 		+ identify<cuda_cpp>(program_handle, program_name));
 }
-
 #endif // CUDA_VERSION >= 11040
 
 } // namespace detail_
@@ -401,47 +408,58 @@ public: // non-mutators
 
 #if CUDA_VERSION >= 11040
 	/**
-	 * Obtain a copy of the nvvm intermediate format result of the last compilation
+	 * Obtain a copy of the LTO IR result of the last compilation - the intermediate
+	 * representation used for link-time optimization
 	 *
 	 * @throws ::std::invalid_argument if the supplied buffer is too small to hold
-	 * the program's NVVM.
+	 * the program's LTO IR.
 	 *
 	 * @param[inout] buffer A writable buffer large enough to contain the compiled
-	 *     program's NVVM code.
+	 *     program's LTO IR code.
 	 * @return The sub-buffer, starting at the beginning of @p buffer, containing
-	 * exactly the compiled program's NVVM (i.e. sized down to fit the contents)
+	 *     exactly the compiled program's LTO-IR (i.e. sized down to fit the contents)
+	 *
+	 * @note LTO IR was called NVVM in CUDA 11.x .
 	 */
 	/// @{
-	span<char> nvvm(span<char> buffer) const
+	span<char> lto_ir(span<char> buffer) const
 	{
-		size_t size = program::detail_::get_nvvm_size(program_handle_, program_name_.c_str());
+		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
-			throw ::std::invalid_argument("Provided buffer size is insufficient for the compiled program's NVVM ("
+			throw ::std::invalid_argument("Provided buffer size is insufficient for the compiled program's LTO IR ("
 				+ ::std::to_string(buffer.size()) + " < " + ::std::to_string(size) + ": "
 				+ compilation_output::detail_::identify(*this));
 		}
-		program::detail_::get_nvvm(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail_::get_lto_ir(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
-	dynarray<char> nvvm() const
+	dynarray<char> lto_ir() const
 	{
-		size_t size = program::detail_::get_nvvm_size(program_handle_, program_name_.c_str());
+		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
-		program::detail_::get_nvvm(result.data(), program_handle_, program_name_.c_str());
+		program::detail_::get_lto_ir(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
 	/// @}
 
-	bool has_nvvm() const
+	/**
+	 * Check whether the compilation also resulted in LTO IR - intermediate representation
+	 * for link-time optimization
+	 */
+	bool has_lto_ir() const
 	{
 		size_t size;
+#if CUDA_VERSION >= 12000
+		auto status = nvrtcGetLTOIRSize(program_handle_, &size);
+#else
 		auto status = nvrtcGetNVVMSize(program_handle_, &size);
+#endif
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
-		throw_if_rtc_error_lazy(cuda_cpp, status, "Failed determining whether the NVRTC program has a compiled NVVM result: "
+		throw_if_rtc_error_lazy(cuda_cpp, status, "Failed determining whether the NVRTC program has a compiled LTO IR result: "
 			+ compilation_output::detail_::identify(*this));
 		if (size == 0) {
-			throw ::std::logic_error("NVVM size reported as 0 by NVRTC for program: "
+			throw ::std::logic_error("LTO IR size reported as 0 by NVRTC for program: "
 				+ compilation_output::detail_::identify(*this));
 		}
 		return true;
