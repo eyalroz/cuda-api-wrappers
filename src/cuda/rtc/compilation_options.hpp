@@ -322,8 +322,9 @@ public:
 	bool use_fast_math { false };
 
 	/**
-	 * Do not compile fully into PTX/Cubin. Instead, only generate NVVM (the LLVM IR variant), which is
-	 * combined with other NVVM pieces from LTO-compiled "objects", at device link time.
+	 * Do not compile fully into PTX/Cubin. Instead, only generate NVIDIA's "LTO IR", which is
+	 * combined with other LTO IR pieces from object files compiled with LTO support, at
+	 * device link time.
 	 */
 	bool link_time_optimization { false };
 
@@ -334,7 +335,7 @@ public:
 	bool source_dirs_in_include_path { true };
 
 	/**
-	 * Enables more aggressive device code vectorization in the NVVM optimizer.
+	 * Enables more aggressive device code vectorization in the LTO IR optimizer.
 	 */
 	bool extra_device_vectorization { false };
 
