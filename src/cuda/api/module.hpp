@@ -138,8 +138,10 @@ public: // getters
 
 	// TODO: Implement a surface reference and texture reference class rather than these raw pointers.
 
+#if CUDA_VERSION < 12000
 	CUsurfref get_surface(const char* name) const;
 	CUtexref get_texture_reference(const char* name) const;
+#endif
 
 protected: // constructors
 
