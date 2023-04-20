@@ -99,6 +99,9 @@ template <> struct types<ptx> {
 		compilation_failure = NVPTXCOMPILE_ERROR_COMPILATION_FAILURE,
 		unsupported_ptx_version = NVPTXCOMPILE_ERROR_UNSUPPORTED_PTX_VERSION,
 		internal_error = NVPTXCOMPILE_ERROR_INTERNAL,
+#if CUDA_VERSION >= 12010
+		unsupported_device_side_sync = NVPTXCOMPILE_ERROR_UNSUPPORTED_DEVSIDE_SYNC,
+#endif
 	};
 };
 #endif // CUDA_VERSION >= 11010
