@@ -124,6 +124,7 @@ inline module_t load_from_file(
 inline context_t module_t::context() const { return context::detail_::from_handle(context_handle_); }
 inline device_t module_t::device() const { return device::get(context::detail_::get_device_id(context_handle_)); }
 
+#if CUDA_VERSION < 12000
 inline CUsurfref module_t::get_surface(const char* name) const
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
@@ -143,6 +144,7 @@ inline CUtexref module_t::get_texture_reference(const char* name) const
 		+ module::detail_::identify(*this));
 	return raw_texture_reference;
 }
+#endif
 
 
 } // namespace cuda
