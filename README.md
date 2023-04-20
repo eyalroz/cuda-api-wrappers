@@ -107,6 +107,7 @@ Finally, if you've started using the library in a publicly-available (FOSS or co
 Most, but not all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. Specifically, the following are missing:
 
 * Execution graph management
+* CUDA 12.x "texture objects", "surface objects" and "tensor objects" (textures and texture references, introduced in earlier CUDA versions, are supported)
 * Interoperability with OpenGL, Direct3D, EGL, VDAPU.
 
 Support for textures, arrays and surfaces exists, but is partial: Not all relevant API functions are covered.
