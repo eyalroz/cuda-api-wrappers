@@ -1,5 +1,7 @@
 include(CheckIncludeFiles)
 
+option(CAW_WITH_COOPERATIVE_GROUPS "Enable cooperative-groups-related code in example programs" ON)
+
 enable_language(CXX)
 enable_language(CUDA)
 
@@ -23,7 +25,9 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
 include(CompileWithWarnings)
 
 if(MSVC)
-	# MSVC is very problematic!
+	# MSVC is very problematic! ... lets go easy on it
+
+	set(CAW_WITH_COOPERATIVE_GROUPS OFF)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
 	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /NODEFAULTLIB:nvptxcompiler_static.lib")
 	set(CMAKE_CXX_STANDARD 17)
@@ -39,6 +43,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
+
+if(CAW_WITH_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "9.0")
+	add_compile_definitions(USE_COOPERATIVE_GROUPS)
+	message(STATUS "Using cooperative groups in example programs")
+endif()
 
 link_libraries(cuda-api-wrappers::runtime-and-driver)
 
@@ -123,7 +132,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 endif()
 add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 add_executable(asyncAPI modified_cuda_samples/asyncAPI/asyncAPI.cu)
-if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
+if(USE_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
 	# This one needs cooperative_groups/reduce.h
 	add_executable(binaryPartitionCG modified_cuda_samples/binaryPartitionCG/binaryPartitionCG.cu)
 endif()
