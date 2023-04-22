@@ -30,8 +30,7 @@
 
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include "../helper_cuda.hpp"
-#include <cuda/runtime_api.hpp>
+#include "../../common.hpp"
 
 namespace cg = cooperative_groups;
 
@@ -95,7 +94,7 @@ __global__ void oddEvenCountAndSumCG(int *inputArr, int *numOfOdds, int *sumOfOd
  */
 int main(int argc, const char **argv)
 {
-    auto device = chooseCudaDevice(argc, argv);
+    auto device = cuda::device::get(choose_device(argc, argv));
 
     unsigned int arrSize = 1024 * 100;
 

@@ -41,7 +41,8 @@ const char *sEventSyncMethod[] =
 };
 
 // helper functions and utilities to work with CUDA
-#include "../helper_cuda.hpp"
+#include "../../common.hpp"
+#include "../helper_string.h"
 #include "../../common.hpp"
 
 #include <cstdlib>
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "\n> ";
-	auto device = chooseCudaDevice(argc, (const char **)argv);
+	auto device = cuda::device::get(choose_device(argc, argv));
 	device.make_current();
 		// This is "necessary", for now, for the memory operations whose API is context-unaware,
 		// but which would actually fail if the appropriate context is not the current one
