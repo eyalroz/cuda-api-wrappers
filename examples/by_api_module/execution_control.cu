@@ -14,11 +14,11 @@
  */
 #include "../common.hpp"
 
-#if __CUDACC_VER_MAJOR__ >= 9
-#define TEST_COOPERATIVE_GROUPS 1
+#ifdef USE_COOPERATIVE_GROUPS
+#if __CUDACC_VER_MAJOR__ < 9
+#error "Can't use the cooperative groups header with CUDA versions before 9.x!"
+#endif
 #include <cooperative_groups.h>
-#else
-#define TEST_COOPERATIVE_GROUPS 0
 #endif
 
 __global__ void foo(int bar)
@@ -28,7 +28,7 @@ __global__ void foo(int bar)
 	}
 }
 
-#if TEST_COOPERATIVE_GROUPS
+#if USE_COOPERATIVE_GROUPS
 __global__ void grid_cooperating_foo(int bar)
 {
 #ifdef _CG_HAS_GRID_GROUP
