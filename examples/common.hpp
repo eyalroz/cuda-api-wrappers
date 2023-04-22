@@ -194,7 +194,7 @@ typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 	return dividend / divisor + !!(dividend % divisor);
 }
 
-cuda::device::id_t choose_device(int argc, char** argv)
+cuda::device::id_t choose_device(int argc, char const** argv)
 {
 	auto num_devices = cuda::device::count();
 	if (num_devices == 0) {
@@ -213,6 +213,11 @@ cuda::device::id_t choose_device(int argc, char** argv)
 	}
 	std::cout << "Using CUDA device " << cuda::device::detail_::get_name(device_id) << " (having device ID " << device_id << ")\n";
 	return device_id;
+}
+
+cuda::device::id_t choose_device(int argc, char ** argv)
+{
+	return choose_device(argc, const_cast<char const**>(argv));
 }
 
 
