@@ -9,8 +9,6 @@
  * Use this reasonably. If you want to discuss licensing formalities, please
  */
 
-#include "../helper_string.h"
-
 #include <cuda/api.hpp>
 
 #include <stdio.h>
@@ -295,7 +293,7 @@ int main(int argc, char **argv)
 	if (!IsAppBuiltAs64())
 	{
 		printf("%s is only supported on 64-bit Linux OS and the application must be built as a 64-bit target. Test is being waived.\n", argv[0]);
-		exit(EXIT_WAIVED);
+		return EXIT_SUCCESS;
 	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
