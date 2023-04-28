@@ -201,8 +201,12 @@ cuda::device::id_t choose_device(int argc, char const** argv)
 		die_("No CUDA devices on this system");
 	}
 
+	cuda::device::id_t device_id { -1 };
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+	if (std::strncmp(argv[1],"--device=", std::strlen("--device=")) == 0) {
+		auto actual_arg = argv[1] + std::strlen("--device=");
+		device_id = (argc > 1) ? std::stoi(actual_arg) : cuda::device::default_device_id;
+	}
 
 	if (device_id < 0) {
 		die_("A negative device ID cannot be valid");
