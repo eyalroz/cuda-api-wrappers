@@ -15,7 +15,6 @@
 #include <vector>
 #include <cstdlib>
 
-#include "../helper_string.h"
 #include "../../common.hpp"
 
 using namespace std;
@@ -31,11 +30,6 @@ typedef enum
     CE = 0, 
     SM = 1,
 }P2PEngine;
-
-struct command_line_options {
-    bool test_p2p_read;
-    P2PEngine mechanism;
-};
 
 template <typename T>
 struct square_matrix {
@@ -536,32 +530,8 @@ void list_devices()
     }
 }
 
-command_line_options handle_command_line(int argc, char** argv)
+int main(int, char **)
 {
-    P2PEngine p2p_mechanism { CE }; // By default use Copy Engine
-    bool test_p2p_read { false };
-
-    if (checkCmdLineFlag(argc, (const char**) (argv), "help")) {
-        printHelp();
-        exit(EXIT_SUCCESS);
-    }
-    if (checkCmdLineFlag(argc, (const char**) (argv), "test_p2p_read")) {
-        test_p2p_read = P2P_READ;
-    }
-    if (checkCmdLineFlag(argc, (const char**) (argv), "sm_copy")) {
-#if CUDA_VERSION <= 10000
-        std::cerr << "This mechanism is unsupported by this program before CUDA 10.0" << std::endl;
-        exit(EXIT_FAILURE);
-#else
-        p2p_mechanism = SM;
-#endif
-    }
-    return { test_p2p_read, p2p_mechanism };
-}
-
-int main(int argc, char **argv)
-{
-    command_line_options opts = handle_command_line(argc, argv);
     std::cout << "[P2P (Peer-to-Peer) GPU Bandwidth Latency Test]\n";
 
     list_devices();
@@ -574,20 +544,16 @@ int main(int argc, char **argv)
         dont_measure_p2p = false
     };
 
-    outputBandwidthMatrix(opts.mechanism, dont_measure_p2p, P2P_WRITE);
-    outputBandwidthMatrix(opts.mechanism, do_measure_p2p, P2P_WRITE);
-    if (opts.test_p2p_read)
-    {
-        outputBandwidthMatrix(opts.mechanism, do_measure_p2p, P2P_READ);
-    }
-    outputBidirectionalBandwidthMatrix(opts.mechanism, dont_measure_p2p);
-    outputBidirectionalBandwidthMatrix(opts.mechanism, do_measure_p2p);
-
-    outputLatencyMatrix(opts.mechanism, dont_measure_p2p, P2P_WRITE);
-    outputLatencyMatrix(opts.mechanism, do_measure_p2p, P2P_WRITE);
-    if (opts.test_p2p_read)
-    {
-        outputLatencyMatrix(opts.mechanism, do_measure_p2p, P2P_READ);
-    }
+	for (const auto mechanism : { CE, SM }) {
+		std::cout << "\nTesting copy mechanism: " << ((mechanism == CE) ? "Copy Engine" : "Kernels") << "...\n\n";
+		outputBandwidthMatrix(mechanism, dont_measure_p2p, P2P_WRITE);
+		outputBandwidthMatrix(mechanism, do_measure_p2p, P2P_WRITE);
+		outputBandwidthMatrix(mechanism, do_measure_p2p, P2P_READ);
+		outputBidirectionalBandwidthMatrix(mechanism, dont_measure_p2p);
+		outputBidirectionalBandwidthMatrix(mechanism, do_measure_p2p);
+		outputLatencyMatrix(mechanism, dont_measure_p2p, P2P_WRITE);
+		outputLatencyMatrix(mechanism, do_measure_p2p, P2P_WRITE);
+		outputLatencyMatrix(mechanism, do_measure_p2p, P2P_READ);
+	}
     std::cout << "\nNOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.\n";
 }
