@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief
+ * @brief Graph template node proxy (base-)class base-class @ref node_t and supporting code.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_NODE_HPP

@@ -325,19 +325,6 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 		graph_template_handle, current_context_handle, std::forward<Ts>(params_ctor_args)...);
 }
 
-//template <node::kind_t Kind>
-//inline node::typed_node_t<Kind> blah(
-//	cuda::detail_::false_type, // We've not been given a context
-//	template_::handle_t graph_template_handle,
-//	cuda::memory::region_t& region,
-//	redome_memset_value& value)
-//{
-//	auto current_context_handle = context::current::detail_::get_handle();
-//	// TODO: Consider handling the case of no current context, e.g. by using the default device' primary context
-//	return build_params_and_insert_node<Kind>(graph_template_handle, current_context_handle, region, value);
-//}
-
-
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
@@ -364,12 +351,12 @@ node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
 }
 
 
-template <typename Callable>
-static void CUDA_CB graph_launched_host_call_adapter(void* callable)
-{
-	const auto& entyped_callable = *static_cast<const Callable*>(callable);
-	entyped_callable();
-}
+//template <typename Callable>
+//static void CUDA_CB graph_launched_host_call_adapter(void* callable)
+//{
+//	const auto& entyped_callable = *static_cast<const Callable*>(callable);
+//	entyped_callable();
+//}
 
 } // namespace detail_
 

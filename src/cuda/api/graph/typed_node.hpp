@@ -38,30 +38,6 @@ dynarray<void*> make_kernel_argument_pointers(const Ts&... kernel_arguments)
 	return { { const_cast<void *>(reinterpret_cast<const void*>(&kernel_arguments)) ... } };
 }
 
-/*
-// This should probably be a variant
-struct redome_memset_value {
-	int width_in_bytes;
-	unsigned value;
-};
-
-// Reconsider this - for non-integral POD types. Or perhaps consider a memzero node?
-template <typename T>
-redome_memset_value make_memset_value(T value)
-{
-	static_assert(std::is_integral<T>::value, "Expecting a numeric, integral value");
-	static_assert(sizeof(T) <= sizeof(unsigned), "Expecting a value of width no more than an unsigned int");
-	return { static_cast<int>(sizeof(T)), value };
-}
-
-
-template <size_t Size>
-redome_memset_value make_memset_value(unsigned value)
-{
-	static_assert(Size <= sizeof(unsigned), "Expecting a value of width no more than an unsigned int");
-	return { static_cast<int>(Size), value };
-}*/
-
 namespace node {
 
 enum class kind_t {
@@ -236,18 +212,14 @@ struct kind_traits<kind_t::memory_allocation> {
 	static raw_parameters_type marshal(parameters_type params)
 	{
 		raw_parameters_type raw_params;
-		raw_params.poolProps.allocType = CU_MEM_ALLOCATION_TYPE_PINNED; // No other option right now
-		raw_params.poolProps.handleTypes = CU_MEM_HANDLE_TYPE_NONE; // No exporting this allocation
-		raw_params.poolProps.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-		raw_params.poolProps.location.id = params.first.id();
-		raw_params.poolProps.win32SecurityAttributes = nullptr;
+		raw_params.poolProps = memory::pool::detail_::create_raw_properties<>(params.first.id());
 		// TODO: DO we need to specify the allocation location in an access descriptor?
 		raw_params.accessDescs = nullptr; // for now, assuming no peer access
 		raw_params.accessDescCount = 0; // for now, assuming no peer access
 		raw_params.bytesize = params.second;
-#ifndef NDEBUG
+		// TODO: Is the following really necessary to set to 0? Not sure, so let's
+		// do it as a precaution
 		raw_params.dptr = memory::device::address(nullptr);
-#endif
 		return raw_params;
 	}
 };
