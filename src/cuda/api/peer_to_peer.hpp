@@ -47,6 +47,14 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 	return value;
 }
 
+/**
+ * @brief Check whether a device can access another, peer device, subject
+ * to access being enabled.
+ *
+ * @note A true value returned from this function does not mean access is currently
+ * _enabled_, i.e. accesses might still fail when this is true if access has not been
+ * enabled.
+ */
 inline bool can_access(const device::id_t accessor, const device::id_t peer)
 {
 	int result;
