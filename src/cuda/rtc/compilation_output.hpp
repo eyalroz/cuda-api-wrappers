@@ -103,7 +103,7 @@ inline void get_log(char* buffer, program::handle_t<Kind> program_handle, const 
 }
 
 #if CUDA_VERSION >= 11010
-template <source_kind_t Kind>
+template <source_kind_t Kind, bool FailOnMissingCubin = true>
 inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
 {
 	size_t size;
@@ -112,7 +112,7 @@ inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char*
 		(status_t<Kind>) nvPTXCompilerGetCompiledProgramSize((program::handle_t<ptx>) program_handle, &size);
 	throw_if_error<Kind>(status, "Failed obtaining program output CUBIN size for "
 		+ identify<Kind>(program_handle, program_name));
-	if (size == 0) {
+	if (FailOnMissingCubin and size == 0) {
 		throw  (Kind == cuda_cpp) ?
 			::std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
 				+ identify<Kind>(program_handle, program_name)):
@@ -524,6 +524,7 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
+public: // non-mutators
 	dynarray<char> cubin() const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
@@ -591,14 +592,23 @@ template<> inline module_t create<cuda_cpp>(
 		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
 			+ cuda::rtc::program::detail_::identify<cuda_cpp>(compiled_program.program_handle()));
 	}
-#if CUDA_VERSION >= 11030
-	auto cubin = compiled_program.cubin();
-	return module::create(context, cubin, options);
-#else
-	// Note this is less likely to succeed :-(
+#if CUDA_VERSION >= 11010
+	auto program_handle = compiled_program.program_handle();
+	auto program_name = compiled_program.program_name().c_str();
+	static const bool dont_fail_on_missing_cubin { false };
+	auto cubin_size = rtc::program::detail_::get_cubin_size<cuda_cpp, dont_fail_on_missing_cubin>(program_handle, program_name);
+	// Note: The above won't fail even if no CUBIN was produced
+	bool has_cubin = (cubin_size > 0);
+	if (has_cubin) {
+		dynarray<char> cubin(cubin_size);
+		rtc::program::detail_::get_cubin<cuda_cpp>(cubin.data(), program_handle, program_name);
+		return module::create(context, cubin, options);
+	}
+	// Note: At this point, we must have PTX in the output, as otherwise the compilation could
+	// not have succeeded
+#endif
 	auto ptx = compiled_program.ptx();
 	return module::create(context, ptx, options);
-#endif
 }
 
 #if CUDA_VERSION >= 11010
