@@ -200,10 +200,10 @@ void peer_to_peer(std::pair<cuda::device::id_t,cuda::device::id_t> peer_ids)
 		<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 		<< "supported over the link from device " << device.id()
 		<< " to device " << peer.id() << ".\n";
-		device.disable_access_to(peer);
-		// TODO: Try some device-to-device access here, expect an exception
 		device.enable_access_to(peer);
 		// TODO: Try some device-to-device access here
+		device.disable_access_to(peer);
+		// TODO: Try some device-to-device access here, expect an exception
 	}
 }
 
