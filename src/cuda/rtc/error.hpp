@@ -128,8 +128,8 @@ public:
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t<Kind> error_code, const ::std::string& what_arg) :
-		::std::runtime_error(what_arg + ": " + describe(error_code)),
+	runtime_error(status_t<Kind> error_code, ::std::string what_arg) :
+		::std::runtime_error(::std::move(what_arg) + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	///@endcond
@@ -137,6 +137,17 @@ public:
 		runtime_error(static_cast<status_t<Kind>>(error_code)) { }
 	runtime_error(status::named_t<Kind> error_code, const ::std::string& what_arg) :
 		runtime_error(static_cast<status_t<Kind>>(error_code), what_arg) { }
+
+protected:
+	runtime_error(status_t<Kind> error_code, ::std::runtime_error err) :
+		::std::runtime_error(::std::move(err)), code_(error_code)
+	{ }
+
+public:
+	static runtime_error with_message_override(status_t<Kind> error_code, ::std::string complete_what_arg)
+	{
+		return runtime_error<Kind>(error_code, ::std::runtime_error(complete_what_arg));
+	}
 
 	/**
 	 * Obtain the CUDA status code which resulted in this error being thrown.
@@ -146,6 +157,7 @@ public:
 private:
 	status_t<Kind> code_;
 };
+
 
 } // namespace rtc
 
