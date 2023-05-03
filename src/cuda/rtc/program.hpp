@@ -71,6 +71,38 @@ inline void register_global(handle_t<cuda_cpp> program_handle, const char *globa
 		+ " with " + identify<cuda_cpp>(program_handle));
 }
 
+inline ::std::string get_concatenated_options(const const_cstrings_span& raw_options)
+{
+	static ::std::ostringstream oss;
+	oss.str("");
+	for (const auto option: raw_options) {
+		oss << " \"" << option << '\"';
+	}
+	return oss.str();
+}
+
+template <source_kind_t Kind>
+inline void maybe_handle_invalid_option(
+	status_t<Kind>,
+	const char *,
+	const const_cstrings_span&,
+	handle_t<Kind>)
+{ }
+
+template <>
+inline void maybe_handle_invalid_option<cuda_cpp>(
+	status_t<cuda_cpp>          status,
+	const char *                program_name,
+	const const_cstrings_span&  raw_options,
+	handle_t<cuda_cpp>          program_handle)
+{
+	if (status == (status_t<cuda_cpp>) status::named_t<cuda_cpp>::invalid_option) {
+		throw rtc::runtime_error<cuda_cpp>::with_message_override(status,
+			"Compilation options rejected when compiling " + identify<cuda_cpp>(program_handle, program_name) + ':'
+			+ get_concatenated_options(raw_options));
+	}
+}
+
 template <source_kind_t Kind>
 inline compilation_output_t<Kind> compile(
 	const char *                program_name,
@@ -84,11 +116,14 @@ inline compilation_output_t<Kind> compile(
 #endif // CUDA_VERSION >= 11010
 			(status_t<Kind>) nvrtcCompileProgram((handle_t<cuda_cpp>)program_handle, (int) raw_options.size(), raw_options.data());
 	bool succeeded = is_success<Kind>(status);
-	if (not (succeeded or (status == (status_t<Kind>) status::named_t<Kind>::compilation_failure))) {
-		throw rtc::runtime_error<Kind>(status, "Failed invoking compiler for " + identify<Kind>(program_handle));
+	switch(status) {
+	case status::named_t<Kind>::success:
+	case status::named_t<Kind>::compilation_failure:
+		return compilation_output::detail_::wrap<Kind>(program_handle, program_name, succeeded, do_take_ownership);
+	default:
+		maybe_handle_invalid_option<Kind>(status, program_name, raw_options, program_handle);
+		throw rtc::runtime_error<Kind>(status, "Failed invoking compiler for " + identify<Kind>(program_handle, program_name));
 	}
-	constexpr bool do_own_handle{true};
-	return compilation_output::detail_::wrap<Kind>(program_handle, program_name, succeeded, do_own_handle);
 }
 
 // Note: The program_source _cannot_ be nullptr; if all of your source code is preincluded headers,
