@@ -290,6 +290,17 @@ public:
 	runtime_error(status::named_t error_code, ::std::string&& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
+protected:
+	runtime_error(status_t error_code, ::std::runtime_error&& err) :
+		::std::runtime_error(::std::move(err)), code_(error_code)
+	{ }
+
+public:
+	static runtime_error with_message_override(status_t error_code, ::std::string complete_what_arg)
+	{
+		return runtime_error(error_code, ::std::runtime_error(::std::move(complete_what_arg)));
+	}
+
 	/**
 	 * Obtain the CUDA status code which resulted in this error being thrown.
 	 */
