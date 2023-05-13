@@ -1814,7 +1814,7 @@ inline region_t allocate(
  * this task (= less overhead)?
  */
 inline region_t allocate(
-	device_t              device,
+	const device_t&       device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
