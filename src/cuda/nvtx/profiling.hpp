@@ -16,6 +16,7 @@
 #include "../api/stream.hpp"
 #include "../api/event.hpp"
 #include "../api/device.hpp"
+#include "../api/multi_wrapper_impls/context.hpp"
 
 #include <cudaProfiler.h>
 
