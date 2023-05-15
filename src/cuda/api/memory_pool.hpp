@@ -246,6 +246,12 @@ struct reuse_policy_t {
 	bool allow_waiting_for_frees;
 };
 
+namespace ipc {
+
+class imported_ptr_t;
+
+} // namespace ipc
+
 } // namespace pool
 
 

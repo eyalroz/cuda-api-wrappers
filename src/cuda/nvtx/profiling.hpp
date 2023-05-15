@@ -49,6 +49,20 @@
 
 namespace cuda {
 
+namespace context {
+
+namespace current {
+
+namespace detail_ {
+
+class scoped_existence_ensurer_t;
+
+} // namespace detail_
+
+} // namespace current
+
+} // namespace context
+
 // Note: No implementation for now for nvtxStringHandle_t's
 
 namespace profiling {

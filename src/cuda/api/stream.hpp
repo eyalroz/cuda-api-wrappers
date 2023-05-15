@@ -33,6 +33,12 @@ class device_t;
 class event_t;
 class stream_t;
 
+namespace memory {
+
+class pool_t;
+
+} // namespace memory
+
 namespace stream {
 
 // Use this for the second argument to create_on_current_device()
