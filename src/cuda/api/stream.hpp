@@ -630,17 +630,17 @@ public: // mutators
 		 * with writes scheduled before it.
 		 */
 		template <typename T>
-		void set_single_value(T* __restrict__ address, T value, bool with_memory_barrier = true) const
+		void set_single_value(T* __restrict__ ptr, T value, bool with_memory_barrier = true) const
 		{
 			static_assert(
-				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+				::std::is_same<T,uint32_t>::value or ::std::is_same<T,uint64_t>::value,
 				"Unsupported type for stream value wait."
 			);
 			unsigned flags = with_memory_barrier ?
 				CU_STREAM_WRITE_VALUE_DEFAULT :
 				CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
 			auto result = static_cast<status_t>(
-				stream::detail_::write_value(associated_stream.handle_, address, value, flags));
+				stream::detail_::write_value(associated_stream.handle_, memory::device::address(ptr), value, flags));
 			throw_if_error_lazy(result, "Failed scheduling a write to global memory on "
 				+ stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
 				+ associated_stream.device_id_));
