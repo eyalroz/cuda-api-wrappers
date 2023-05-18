@@ -96,8 +96,8 @@ shm_and_info_t create_shared_interprocess_memory()
 		throw std::system_error(errno, std::system_category(), "creating an IPC shared memory handle");
 	}
 
-	result.shm = (volatile shmStruct *) result.info.addr;
-	memset((void *) result.shm, 0, sizeof(shmStruct));
+	result.shm = reinterpret_cast<volatile shmStruct *>(result.info.addr);
+	memset(const_cast<shmStruct *>(result.shm), 0, sizeof(shmStruct));
 	return result;
 }
 
@@ -187,7 +187,7 @@ void parentProcess(const char *path_to_this_executable)
 
 	auto selected_devices = get_usable_devices();
 
-	auto num_processes = (int) selected_devices.size();
+	auto num_processes = static_cast<int>(selected_devices.size());
 	shared_mem->nprocesses = num_processes;
 
 	auto first_selected_device = selected_devices[0];

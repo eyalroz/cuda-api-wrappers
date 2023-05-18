@@ -265,8 +265,8 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	 */
 	void set_maximum_dynamic_shared_memory_per_block(cuda::memory::shared::size_t amount_required_by_kernel) const
 	{
-		auto amount_required_by_kernel_ = (kernel::attribute_value_t) amount_required_by_kernel;
-		if (amount_required_by_kernel != (cuda::memory::shared::size_t) amount_required_by_kernel_) {
+		auto amount_required_by_kernel_ = static_cast<kernel::attribute_value_t>(amount_required_by_kernel);
+		if (amount_required_by_kernel != static_cast<cuda::memory::shared::size_t>(amount_required_by_kernel_)) {
 			throw ::std::invalid_argument("Requested amount of maximum shared memory exceeds the "
 				"representation range for kernel attribute values");
 		}
@@ -300,7 +300,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
 		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
-		auto result = cuFuncSetCacheConfig(handle(), (CUfunc_cache) preference);
+		auto result = cuFuncSetCacheConfig(handle(), static_cast<CUfunc_cache>(preference));
 		throw_if_error_lazy(result,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
 			"CUDA device function");
@@ -394,11 +394,11 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	int result;
 	cuda::status_t status = CUDA_SUCCESS;
 		// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
-	auto flags = (unsigned) disable_caching_override ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
+	auto flags = static_cast<unsigned>(disable_caching_override) ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
 	status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
-		&result, handle, (int) block_size_in_threads, dynamic_shared_memory_per_block, flags);
+		&result, handle, static_cast<int>(block_size_in_threads), dynamic_shared_memory_per_block, flags);
 	throw_if_error_lazy(status,
-		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dyanmic memory per block");
+		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");
 	return result;
 }
 
@@ -430,7 +430,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	throw_if_error_lazy(result,
 		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
-	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
+	return { static_cast<grid::dimension_t>(min_grid_size_in_blocks), static_cast<grid::block_dimension_t>(block_size) };
 }
 #endif // CUDA_VERSION >= 10000
 
@@ -448,10 +448,10 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 {
 	size_t result;
 	auto status = cuOccupancyAvailableDynamicSMemPerBlock(
-		&result, kernel.handle(), (int) blocks_on_multiprocessor, (int) block_size_in_threads);
+		&result, kernel.handle(), static_cast<int>(blocks_on_multiprocessor), static_cast<int>(block_size_in_threads));
 	throw_if_error_lazy(status,
 		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
-	return (memory::shared::size_t) result;
+	return static_cast<memory::shared::size_t>(result);
 }
 #endif // CUDA_VERSION >= 11000
 

@@ -53,11 +53,11 @@ typedef struct sharedMemoryInfo_st {
 #endif
 } sharedMemoryInfo;
 
-constexpr const auto shared_mem_handle_kind = (cuda::memory::physical_allocation::shared_handle_kind_t)
+constexpr const auto shared_mem_handle_kind = static_cast<cuda::memory::physical_allocation::shared_handle_kind_t>
 #if defined(__linux__)
-	CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
+	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
 #else
-	CU_MEM_HANDLE_TYPE_WIN32;
+	(CU_MEM_HANDLE_TYPE_WIN32);
 #endif
 
 using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;

@@ -35,7 +35,7 @@ const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 		"Prefer shared memory over L1",
 		"Prefer L1 over shared memory",
 	};
-	return cache_preference_names[(off_t) pref];
+	return cache_preference_names[static_cast<off_t>(pref)];
 }
 
 const char* host_thread_synch_scheduling_policy_name(cuda::context::host_thread_synch_scheduling_policy_t policy)
@@ -48,7 +48,7 @@ const char* host_thread_synch_scheduling_policy_name(cuda::context::host_thread_
 		"block",
 		nullptr
 	};
-	return names[(off_t) policy];
+	return names[static_cast<off_t>(policy)];
 }
 
 const char* memory_type_name(cuda::memory::type_t mem_type)

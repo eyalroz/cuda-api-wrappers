@@ -23,8 +23,8 @@ namespace detail_ {
 
 inline dimension_t div_rounding_up(overall_dimension_t dividend, block_dimension_t divisor)
 {
-	dimension_t quotient = (dimension_t) dividend / divisor;
-		// It is up to the caller to ensure we don't overlow the dimension_t type
+	dimension_t quotient = static_cast<dimension_t>(dividend / divisor);
+		// It is up to the caller to ensure we don't overflow the dimension_t type
 	return (divisor * quotient == dividend) ? quotient : quotient + 1;
 }
 
@@ -58,9 +58,9 @@ public:
 protected:
 	memory::shared::size_t  get_dynamic_shared_memory_size(grid::block_dimensions_t block_dims) const
 	{
-		return (memory::shared::size_t)	((dynamic_shared_memory_size_determiner_ == nullptr) ?
+		return static_cast<memory::shared::size_t>((dynamic_shared_memory_size_determiner_ == nullptr) ?
 			dynamic_shared_memory_size_ :
-			dynamic_shared_memory_size_determiner_((int) block_dims.volume()));
+			dynamic_shared_memory_size_determiner_(static_cast<int>(block_dims.volume())));
 			// Q: Why the need for type conversion?
 			// A: MSVC is being a bit finicky here for some reason
 	}
@@ -92,7 +92,7 @@ protected:
 
 			result.block = dimensions_.block.value();
 			auto dshmem_size = get_dynamic_shared_memory_size(dimensions_.block.value());
-			auto num_block_threads = (grid::block_dimension_t) dimensions_.block.value().volume();
+			auto num_block_threads = static_cast<grid::block_dimension_t>(dimensions_.block.value().volume());
 			auto blocks_per_multiprocessor = kernel_->max_active_blocks_per_multiprocessor(num_block_threads, dshmem_size);
 			auto num_multiprocessors = device().get_attribute(CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT);
 			result.grid = blocks_per_multiprocessor * num_multiprocessors;
@@ -269,9 +269,9 @@ protected:
 			+ " for " + device::detail_::identify(dev.id()));
 		}
 		auto dim_maxima  = grid::block_dimensions_t{
-			(grid::block_dimension_t) dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X),
-			(grid::block_dimension_t) dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y),
-			(grid::block_dimension_t) dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z)
+			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X)),
+			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y)),
+			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z))
 		};
 		auto check =
 			[dev](grid::block_dimension_t dim, grid::block_dimension_t max, const char* axis) {

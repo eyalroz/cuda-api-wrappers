@@ -337,7 +337,7 @@ public: // mutators
 	 *   my_stream.enqueue.copy(foo, bar, my_size)
 	 */
 	class enqueue_t {
-	protected:
+	private:
 		const stream_t& associated_stream;
 
 	public:
@@ -691,8 +691,8 @@ public: // mutators
 			CUstreamBatchMemOpParams op_params;
 			op_params.flushRemoteWrites.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
 			op_params.flushRemoteWrites.flags = 0;
-			unsigned count = 1;
-			unsigned flags = 0;
+			static const unsigned count = 1;
+			static const unsigned flags = 0;
 			// Let's cross our fingers and assume nothing else needs to be set here...
 			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
 			throw_if_error_lazy(status, "scheduling a flush-remote-writes memory operation as a 1-op batch");
@@ -704,8 +704,8 @@ public: // mutators
 			CUstreamBatchMemOpParams op_params;
 			op_params.memoryBarrier.operation = CU_STREAM_MEM_OP_BARRIER;
 			op_params.memoryBarrier.flags = static_cast<unsigned>(scope);
-			unsigned count = 1;
-			unsigned flags = 0;
+			static const unsigned count = 1;
+			static const unsigned flags = 0;
 			// Let's cross our fingers and assume nothing else needs to be set here...
 			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
 			throw_if_error_lazy(status, "scheduling a memory barrier operation as a 1-op batch");

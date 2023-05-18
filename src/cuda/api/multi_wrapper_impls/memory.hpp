@@ -514,7 +514,7 @@ attribute_value_t<attribute> get_attribute(const void *ptr)
 {
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
 	throw_if_error_lazy(status_and_attribute_value.status,
-		"Obtaining attribute " + ::std::to_string((int) attribute)
+		"Obtaining attribute " + ::std::to_string(static_cast<int>(attribute))
 		+ " for pointer " + cuda::detail_::ptr_as_hex(ptr) );
 	return status_and_attribute_value.value;
 }
@@ -727,7 +727,7 @@ shared_handle_t<Kind> export_(const pool_t& pool)
 {
 	shared_handle_t<Kind> result;
 	static constexpr const unsigned long long flags { 0 };
-	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), (CUmemAllocationHandleType) Kind, flags);
+	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), static_cast<CUmemAllocationHandleType>(Kind), flags);
 	throw_if_error_lazy(status, "Exporting " + pool::detail_::identify(pool) +" for inter-process use");
 	return result;
 }

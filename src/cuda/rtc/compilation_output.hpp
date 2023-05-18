@@ -75,43 +75,80 @@ inline ::std::string identify(program::handle_t<Kind> handle, const char *name =
 }
 
 template <source_kind_t Kind>
-inline size_t get_log_size(program::handle_t<Kind> program_handle, const char* program_name)
+inline size_t get_log_size(program::handle_t<Kind> program_handle, const char* program_name);
+
+template <>
+inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, const char* program_name)
 {
 	size_t size;
-	auto status =
-#if CUDA_VERSION >= 11010
-		(Kind == ptx) ?
-			(status_t<Kind>) nvPTXCompilerGetErrorLogSize((handle_t<ptx>) program_handle, &size) :
-#endif // CUDA_VERSION >= 11010
-			(status_t<Kind>) nvrtcGetProgramLogSize((handle_t<cuda_cpp>) program_handle, &size);
-	throw_if_error<Kind>(status, "Failed obtaining compilation log size for "
-		+ identify<Kind>(program_handle, program_name));
+	auto status = nvrtcGetProgramLogSize(program_handle, &size);
+	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation log size for "
+		+ identify<cuda_cpp>(program_handle, program_name));
 	return size;
 }
 
-template <source_kind_t Kind>
-inline void get_log(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr)
-{
-	auto status =
 #if CUDA_VERSION >= 11010
-		(Kind == ptx) ?
-			(status_t<Kind>) nvPTXCompilerGetErrorLog((handle_t<ptx>)program_handle, buffer) :
+template <>
+inline size_t get_log_size<ptx>(program::handle_t<ptx> program_handle, const char* program_name)
+{
+	size_t size;
+	auto status = nvPTXCompilerGetErrorLogSize(program_handle, &size);
+	throw_if_error<ptx>(status, "Failed obtaining compilation log size for "
+		+ identify<ptx>(program_handle, program_name));
+	return size;
+}
+#endif // CUDA_VERSION >= 11010
+
+template <source_kind_t Kind>
+inline void get_log(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+
+#if CUDA_VERSION >= 11010
+template <>
+inline void get_log<ptx>(char* buffer, program::handle_t<ptx> program_handle, const char *program_name)
+{
+	auto status = nvPTXCompilerGetErrorLog(program_handle, buffer);
+//			(status_t<Kind>) nvrtcGetProgramLog((handle_t<cuda_cpp>)program_handle, buffer);
+	throw_if_error<ptx>(status, "Failed obtaining compilation log for "
+		+ identify<ptx>(program_handle, program_name));
+}
 #endif
-			(status_t<Kind>) nvrtcGetProgramLog((handle_t<cuda_cpp>)program_handle, buffer);
-	throw_if_error<Kind>(status, "Failed obtaining compilation log for "
-		+ identify<Kind>(program_handle, program_name));
+
+template <>
+inline void get_log<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name)
+{
+	auto status = nvrtcGetProgramLog(program_handle, buffer);
+	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation log for "
+		+ identify<cuda_cpp>(program_handle, program_name));
 }
 
 #if CUDA_VERSION >= 11010
+template <source_kind_t Kind>
+inline size_t get_cubin_size_or_zero(program::handle_t<Kind> program_handle, const char* program_name);
+
+template <>
+inline size_t get_cubin_size_or_zero<ptx>(program::handle_t<ptx> program_handle, const char* program_name)
+{
+	size_t size;
+	auto status = nvPTXCompilerGetCompiledProgramSize(program_handle, &size);
+	throw_if_error<ptx>(status, "Failed obtaining program output CUBIN size for "
+		+ identify<ptx>(program_handle, program_name));
+	return size;
+}
+
+template <>
+inline size_t get_cubin_size_or_zero<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, const char* program_name)
+{
+	size_t size;
+	auto status = nvrtcGetCUBINSize(program_handle, &size);
+	throw_if_error<cuda_cpp>(status, "Failed obtaining program output CUBIN size for "
+		+ identify<cuda_cpp>(program_handle, program_name));
+	return size;
+}
+
 template <source_kind_t Kind, bool FailOnMissingCubin = true>
 inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
 {
-	size_t size;
-	status_t<Kind> status = (Kind == cuda_cpp) ?
-		(status_t<Kind>) nvrtcGetCUBINSize((program::handle_t<cuda_cpp>) program_handle, &size) :
-		(status_t<Kind>) nvPTXCompilerGetCompiledProgramSize((program::handle_t<ptx>) program_handle, &size);
-	throw_if_error<Kind>(status, "Failed obtaining program output CUBIN size for "
-		+ identify<Kind>(program_handle, program_name));
+	auto size = get_cubin_size_or_zero<Kind>(program_handle, program_name);
 	if (FailOnMissingCubin and size == 0) {
 		throw  (Kind == cuda_cpp) ?
 			::std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
@@ -123,13 +160,22 @@ inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char*
 }
 
 template <source_kind_t Kind>
-inline void get_cubin(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr)
+inline void get_cubin(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+
+template <>
+inline void get_cubin<ptx>(char* buffer, program::handle_t<ptx> program_handle, const char *program_name)
 {
-	status_t<Kind> status = (Kind == cuda_cpp) ?
-		(status_t<Kind>) nvrtcGetCUBIN((program::handle_t<cuda_cpp>) program_handle, buffer) :
-		(status_t<Kind>) nvPTXCompilerGetCompiledProgram((program::handle_t<ptx>) program_handle, buffer);
-	throw_if_error<Kind>(status, "Failed obtaining compilation output CUBIN for "
-		  + identify<Kind>(program_handle, program_name));
+	auto status = nvPTXCompilerGetCompiledProgram(program_handle, buffer);
+	throw_if_error<ptx>(status, "Failed obtaining compilation output CUBIN for "
+		+ identify<ptx>(program_handle, program_name));
+}
+
+template <>
+inline void get_cubin<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name)
+{
+	auto status = nvrtcGetCUBIN(program_handle, buffer);
+	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation output CUBIN for "
+		+ identify<cuda_cpp>(program_handle, program_name));
 }
 #endif // CUDA_VERSION >= 11010
 
@@ -175,6 +221,20 @@ inline void get_lto_ir(char* buffer, program::handle_t<cuda_cpp> program_handle,
 		+ identify<cuda_cpp>(program_handle, program_name));
 }
 #endif // CUDA_VERSION >= 11040
+
+template <source_kind_t Kind>
+status_t<Kind> destroy_and_return_status(handle_t<Kind> handle);
+
+#if CUDA_VERSION >= 11010
+template <> inline status_t<ptx> destroy_and_return_status<ptx>(handle_t<ptx> handle)
+{
+	return nvPTXCompilerDestroy(&handle);
+}
+#endif
+template <> inline status_t<cuda_cpp> destroy_and_return_status<cuda_cpp>(handle_t<cuda_cpp> handle)
+{
+	return nvrtcDestroyProgram(&handle);
+}
 
 } // namespace detail_
 
@@ -279,12 +339,7 @@ public: // constructors & destructor
 	~compilation_output_base_t() noexcept(false)
 	{
 		if (owns_handle_) {
-			auto status =
-#if CUDA_VERSION >= 11010
-				(Kind == ptx) ?
-					(status_t<Kind>) nvPTXCompilerDestroy((program::handle_t<ptx>*) &program_handle_) :
-#endif
-					(status_t<Kind>) nvrtcDestroyProgram((program::handle_t<cuda_cpp>*) &program_handle_);
+			auto status = program::detail_::destroy_and_return_status<Kind>(program_handle_);
 			throw_if_error<Kind>(status, "Destroying " + program::detail_::identify<Kind>(program_handle_, program_name_.c_str()));
 		}
 	}
@@ -323,11 +378,11 @@ public: // non-mutators
 	 * @note This will fail if the program has never been compiled.
 	 */
 	///@{
-	
+
 	/**
 	 * @param[inout] buffer A writable buffer large enough to contain the compiled
 	 *     program's PTX code.
-	 */ 	
+	 */
 	span<char> ptx(span<char> buffer) const
 	{
 		size_t size = program::detail_::get_ptx_size(parent::program_handle_, program_name_.c_str());

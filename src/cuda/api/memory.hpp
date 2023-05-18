@@ -150,7 +150,7 @@ inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 	auto status = cuMemAlloc(&allocated, num_bytes);
 	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
-		status = (status_t) status::unknown;
+		status = static_cast<status_t>(status::unknown);
 	}
 	throw_if_error_lazy(status, "Failed allocating " + ::std::to_string(num_bytes) +
 		" bytes of global memory on the current CUDA device");
@@ -219,7 +219,7 @@ region_t allocate(const stream_t& stream, size_t size_in_bytes);
 inline void free(void* ptr)
 {
 	auto result = cuMemFree(address(ptr));
-#if CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+#ifdef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
 	if (result == status::success) { return; }
 #else
 	if (result == status::success or result == status::context_is_destroyed) { return; }
@@ -340,7 +340,7 @@ void typed_set(T* start, const T& value, size_t num_elements);
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), (unsigned char) byte_value, num_bytes);
+	return typed_set<unsigned char>(static_cast<unsigned char*>(start), static_cast<unsigned char>(byte_value), num_bytes);
 }
 
 /**
@@ -1104,7 +1104,7 @@ namespace detail_ {
 inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t stream_handle)
 {
 	// TODO: Double-check that this call doesn't require setting the current device
-	auto result = cuMemsetD8Async(address(start), (unsigned char) byte_value, num_bytes, stream_handle);
+	auto result = cuMemsetD8Async(address(start), static_cast<unsigned char>(byte_value), num_bytes, stream_handle);
 	throw_if_error_lazy(result, "asynchronously memsetting an on-device buffer");
 }
 
@@ -1173,7 +1173,11 @@ void typed_set(T* start, const T& value, size_t num_elements, const stream_t& st
  */
 inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), (unsigned char) byte_value, num_bytes, stream);
+	return typed_set<unsigned char>(
+		static_cast<unsigned char*>(start),
+		static_cast<unsigned char>(byte_value),
+		num_bytes,
+		stream);
 }
 
 /**
@@ -1413,7 +1417,7 @@ inline region_t allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 inline void free(void* host_ptr)
 {
 	auto result = cuMemFreeHost(host_ptr);
-#if CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+#ifdef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
 	if (result == status::success) { return; }
 #else
 	if (result == status::success or result == status::context_is_destroyed) { return; }
@@ -1730,10 +1734,10 @@ inline region_t allocate_in_current_context(
 
 	// Note: Despite the templating by T, the size is still in bytes,
 	// not in number of T's
-	auto status = cuMemAllocManaged(&allocated, num_bytes, (unsigned) flags);
+	auto status = cuMemAllocManaged(&allocated, num_bytes, static_cast<unsigned>(flags));
 	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
-		status = (status_t) status::unknown;
+		status = static_cast<status_t>(status::unknown);
 	}
 	throw_if_error_lazy(status, "Failed allocating "
 		+ ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
@@ -1860,7 +1864,8 @@ namespace detail_ {
 
 inline void set(const_region_t region, kind_t advice, cuda::device::id_t device_id)
 {
-	auto result = cuMemAdvise(device::address(region.start()), region.size(), (managed::detail_::advice_t) advice, device_id);
+	auto result = cuMemAdvise(device::address(region.start()), region.size(),
+		static_cast<managed::detail_::advice_t>(advice), device_id);
 	throw_if_error_lazy(result, "Setting advice on a (managed) memory region at"
 		+ cuda::detail_::ptr_as_hex(region.start()) + " w.r.t. " + cuda::device::detail_::identify(device_id));
 }
@@ -1956,7 +1961,7 @@ inline region_pair allocate_in_current_context(
 	auto status = cuMemHostAlloc(&allocated.host_side, size_in_bytes, flags);
 	if (is_success(status) && (allocated.host_side == nullptr)) {
 		// Can this even happen? hopefully not
-		status = (status_t) status::named_t::unknown;
+		status = static_cast<status_t>(status::named_t::unknown);
 	}
 	throw_if_error_lazy(status,
 		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)

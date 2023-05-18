@@ -152,7 +152,7 @@ inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& 
 inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle)
 {
 	constexpr const auto free_using_stream { false };
-	auto free_without_using_stream = (bool) free_using_stream;
+	auto free_without_using_stream = static_cast<bool>(free_using_stream);
 	void* raw_ptr = detail_::import_ptr(shared_pool.handle(), ptr_handle);
 	static constexpr const bool is_owning { true };
 	return wrap(

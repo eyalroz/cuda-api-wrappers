@@ -40,7 +40,7 @@ void barrierWait(volatile int *barrier, volatile int *sense, int n)
 
 void barrierWait(volatile shmStruct* shm)
 {
-	barrierWait(&shm->barrier, &shm->sense, (int) shm->nprocesses + 1);
+	barrierWait(&shm->barrier, &shm->sense, static_cast<int>(shm->nprocesses) + 1);
 }
 
 void childProcess(int devId, int id_of_this_child, char **argv);

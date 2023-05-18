@@ -93,16 +93,16 @@ inline ::std::string get_name(id_t id)
 	static constexpr const size_type initial_size_reservation { 100 };
 	static constexpr const size_type larger_size { 1000 }; // Just in case
 	char stack_buffer[initial_size_reservation];
-	auto buffer_size = (size_type) (sizeof(stack_buffer) / sizeof(char));
-	auto try_getting_name = [&](char* buffer, size_type buffer_size) -> size_type {
-		auto status =  cuDeviceGetName(buffer, buffer_size-1, id);
+	auto buffer_size = static_cast<size_type>((sizeof(stack_buffer) / sizeof(char)));
+	auto try_getting_name = [&](char* buffer, size_type buffer_size_) -> size_type {
+		auto status = cuDeviceGetName(buffer, buffer_size-1, id);
 		throw_if_error_lazy(status, "Failed obtaining the CUDA device name of device " + ::std::to_string(id));
-		buffer[buffer_size-1] = '\0';
-		return (size_type) ::std::strlen(buffer);
+		buffer[buffer_size_-1] = '\0';
+		return static_cast<size_type>(::std::strlen(buffer));
 	};
 	auto prospective_name_length = try_getting_name(stack_buffer, initial_size_reservation);
 	if (prospective_name_length < buffer_size - 1) {
-		return { stack_buffer, (::std::string::size_type) prospective_name_length };
+		return { stack_buffer, static_cast<::std::string::size_type>(prospective_name_length) };
 	}
 	::std::string result;
 	result.reserve(prospective_name_length);
@@ -566,7 +566,7 @@ public:
 	void set_synch_scheduling_policy(context::host_thread_synch_scheduling_policy_t new_policy)
 	{
         auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
-        set_flags(other_flags | (flags_type) new_policy);
+        set_flags(other_flags | static_cast<flags_type>(new_policy));
 	}
 
 	bool keeping_larger_local_mem_after_resize() const

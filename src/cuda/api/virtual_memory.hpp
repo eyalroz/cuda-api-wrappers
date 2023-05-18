@@ -89,8 +89,8 @@ properties_t create_properties(cuda::device::id_t device_id)
 	CUmemAllocationProp_st raw_props{};
 	raw_props.type = CU_MEM_ALLOCATION_TYPE_PINNED;
 	raw_props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-	raw_props.location.id = (int) device_id;
-	raw_props.requestedHandleTypes = (CUmemAllocationHandleType) SharedHandleKind;
+	raw_props.location.id = static_cast<int>(device_id);
+	raw_props.requestedHandleTypes = static_cast<CUmemAllocationHandleType>(SharedHandleKind);
 	raw_props.win32HandleMetaData = nullptr;
 	return properties_t{raw_props};
 }
@@ -230,7 +230,7 @@ public: // non-mutators
 	{
 		physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
 		static constexpr const unsigned long long flags { 0 };
-		auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, (CUmemAllocationHandleType) SharedHandleKind, flags);
+		auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, static_cast<CUmemAllocationHandleType>(SharedHandleKind), flags);
 		throw_if_error_lazy(result, "Exporting a (generic CUDA) shared memory physical_allocation to a shared handle");
 		return shared_handle_;
 	}

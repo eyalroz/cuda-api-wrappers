@@ -62,21 +62,22 @@ public:
 		using reference = value_type&;
 		using iterator_category = std::forward_iterator_tag;
 
-		iterator(typename Container::iterator _it, size_type counter=0) : it(_it), counter(counter) {}
+		iterator(typename Container::iterator non_nenumerated_iterator, size_type counter = 0)
+		: inner_iter(non_nenumerated_iterator), counter_(counter) {}
 
-		iterator operator++() { return iterator(++it, ++counter); }
+		iterator operator++() { return iterator(++inner_iter, ++counter_); }
 
-		bool operator!=(iterator other) { return it != other.it; }
+		bool operator!=(iterator other) { return inner_iter != other.inner_iter; }
 
-		typename Container::iterator::value_type item() { return *it; }
+		typename Container::iterator::value_type item() { return *inner_iter; }
 
-		value_type operator*() { return value_type{counter, *it}; }
+		value_type operator*() { return value_type{counter_, *inner_iter}; }
 
-		size_type index() { return counter; }
+		size_type index() { return counter_; }
 
 	protected:
-		typename Container::iterator it;
-		size_type counter;
+		typename Container::iterator inner_iter;
+		size_type counter_;
 	};
 
 	// TODO: Reduce DRY here...
@@ -87,21 +88,22 @@ public:
 		using reference = const_value_type&;
 		using iterator_category = std::forward_iterator_tag;
 
-		const_iterator(typename Container::const_iterator _it, size_type counter=0) : it(_it), counter(counter) {}
+		const_iterator(typename Container::const_iterator non_nenumerated_iterator, size_type counter = 0)
+		: inner_iter(non_nenumerated_iterator), counter_(counter) {}
 
-		const_iterator operator++() { return const_iterator(++it, ++counter); }
+		const_iterator operator++() { return const_iterator(++inner_iter, ++counter_); }
 
-		bool operator!=(const_iterator other) { return it != other.it; }
+		bool operator!=(const_iterator other) { return inner_iter != other.inner_iter; }
 
-		typename Container::const_iterator::value_type item() { return *it; }
+		typename Container::const_iterator::value_type item() { return *inner_iter; }
 
-		const_value_type operator*() { return const_value_type{counter, *it}; }
+		const_value_type operator*() { return const_value_type{counter_, *inner_iter}; }
 
-		size_type index() { return counter; }
+		size_type index() { return counter_; }
 
 	protected:
-		typename Container::const_iterator it;
-		size_type counter;
+		typename Container::const_iterator inner_iter;
+		size_type counter_;
 	};
 
 	enumerator(Container& container) : container_(container) {}

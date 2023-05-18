@@ -190,7 +190,8 @@ pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
 	memory::pool::handle_t result;
 	static constexpr const unsigned long long flags { 0 };
 	void * ptr_to_handle = static_cast<void*>(const_cast<shared_handle_t<Kind>*>(&shared_pool_handle));
-	auto status = cuMemPoolImportFromShareableHandle(&result, ptr_to_handle, (CUmemAllocationHandleType) Kind, flags);
+	auto status = cuMemPoolImportFromShareableHandle(
+		&result, ptr_to_handle, static_cast<CUmemAllocationHandleType>(Kind), flags);
 	throw_if_error_lazy(status, "Importing an IPC-shared memory pool handle");
 	return result;
 }

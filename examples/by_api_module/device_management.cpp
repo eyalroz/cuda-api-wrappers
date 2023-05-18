@@ -246,7 +246,7 @@ void current_device_manipulation()
 	std::cout << "There are " << devices.size() << " 'elements' in devices().\n";
 	std::cout << "Let's count the device IDs... ";
 	for(auto device : cuda::devices()) {
-		std::cout << (int) device.id() << ' ';
+		std::cout << static_cast<int>(device.id()) << ' ';
 		device.synchronize();
 	}
 	std::cout << '\n';

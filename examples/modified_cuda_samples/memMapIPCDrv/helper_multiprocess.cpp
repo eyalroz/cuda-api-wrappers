@@ -175,7 +175,7 @@ int ipcCreateSocket(ipcHandle *&handle, const char *name,
 
   strncpy(servaddr.sun_path, name, sizeof(servaddr.sun_path));
 
-  if (bind(server_fd, (struct sockaddr *)&servaddr, SUN_LEN(&servaddr)) < 0) {
+  if (bind(server_fd, reinterpret_cast<struct sockaddr *>(&servaddr), SUN_LEN(&servaddr)) < 0) {
     perror("IPC failure: Binding socket failed");
     return -1;
   }
@@ -206,7 +206,7 @@ int ipcOpenSocket(ipcHandle *&handle) {
   sprintf(temp, "%u", getpid());
 
   strcpy(cliaddr.sun_path, temp);
-  if (bind(sock, (struct sockaddr *)&cliaddr, sizeof(cliaddr)) < 0) {
+  if (bind(sock, reinterpret_cast<struct sockaddr *>(&cliaddr), sizeof(cliaddr)) < 0) {
     perror("IPC failure: Binding socket failed");
     return -1;
   }
@@ -250,7 +250,7 @@ int ipcRecvShareableHandle(ipcHandle *handle, ShareableHandle *shHandle) {
   msg.msg_control = control_un.control;
   msg.msg_controllen = sizeof(control_un.control);
 
-  iov[0].iov_base = (void *)dummy_buffer;
+  iov[0].iov_base = const_cast<char *>(dummy_buffer);
   iov[0].iov_len = sizeof(dummy_buffer);
 
   msg.msg_iov = iov;
@@ -268,7 +268,7 @@ int ipcRecvShareableHandle(ipcHandle *handle, ShareableHandle *shHandle) {
     }
 
     memmove(&receivedfd, CMSG_DATA(cmptr), sizeof(receivedfd));
-    *(int *)shHandle = receivedfd;
+    *reinterpret_cast<int *>(shHandle) = receivedfd;
   } else {
     return -1;
   }
@@ -282,7 +282,7 @@ int ipcRecvDataFromClient(ipcHandle *serverHandle, void *data, size_t size) {
   socklen_t len = sizeof(cliaddr);
 
   readResult = recvfrom(serverHandle->socket, data, size, 0,
-                        (struct sockaddr *)&cliaddr, &len);
+                        reinterpret_cast<struct sockaddr *>(&cliaddr), &len);
   if (readResult == -1) {
     perror("IPC failure: Receiving data over socket failed");
     return -1;
@@ -300,7 +300,7 @@ int ipcSendDataToServer(ipcHandle *handle, const char *serverName,
   strncpy(serveraddr.sun_path, serverName, sizeof(serveraddr.sun_path) - 1);
 
   sendResult = sendto(handle->socket, data, size, 0,
-                      (struct sockaddr *)&serveraddr, sizeof(serveraddr));
+                      reinterpret_cast<struct sockaddr *>(&serveraddr), sizeof(serveraddr));
   if (sendResult <= 0) {
     perror("IPC failure: Sending data over socket failed");
   }
@@ -330,7 +330,7 @@ int ipcSendShareableHandle(ipcHandle *handle,
   strcpy(cliaddr.sun_path, temp);
 
   // Send corresponding shareable handle to the client
-  int sendfd = (int)shareableHandles[data];
+  int sendfd = static_cast<int>(shareableHandles[data]);
 
   msg.msg_control = control_un.control;
   msg.msg_controllen = sizeof(control_un.control);
@@ -342,10 +342,10 @@ int ipcSendShareableHandle(ipcHandle *handle,
 
   memmove(CMSG_DATA(cmptr), &sendfd, sizeof(sendfd));
 
-  msg.msg_name = (void *)&cliaddr;
+  msg.msg_name = &cliaddr;
   msg.msg_namelen = sizeof(struct sockaddr_un);
 
-  iov[0].iov_base = (void *)"";
+  iov[0].iov_base = const_cast<char*>("");
   iov[0].iov_len = 1;
   msg.msg_iov = iov;
   msg.msg_iovlen = 1;

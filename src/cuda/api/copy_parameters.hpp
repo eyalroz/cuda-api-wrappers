@@ -289,7 +289,7 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
 		else { dstHost = ptr; }
 	}
 	set_bytes_pitch(endpoint, dimensions.width);
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype)
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
 		(memory_type == memory::type_t::non_cuda ? memory::type_t::host_ : memory_type);
 	// Can't set the endpoint context - the basic data structure doesn't support that!
 	// (endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
@@ -387,7 +387,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 	}
 	set_bytes_pitch(endpoint, dimensions.width);
 	(endpoint == endpoint_t::source ? srcHeight : dstHeight) = dimensions.height;
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = (CUmemorytype)
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
 		(memory_type == memory::type_t::non_cuda ? memory::type_t::host_ : memory_type);
 	(endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
 	return *this;

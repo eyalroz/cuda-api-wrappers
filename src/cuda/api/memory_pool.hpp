@@ -125,7 +125,7 @@ attribute_value_t<attribute> get_attribute(handle_t pool_handle)
 {
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(pool_handle);
 	throw_if_error_lazy(status_and_attribute_value.status,
-		"Obtaining attribute " + ::std::to_string((int) attribute)
+		"Obtaining attribute " + ::std::to_string(static_cast<int>(attribute))
 		+ " of " + detail_::identify(pool_handle));
 	return status_and_attribute_value.value;
 }
@@ -137,7 +137,7 @@ void set_attribute(handle_t pool_handle, attribute_value_t<attribute> value)
 	using inner_type = typename attribute_value_inner_type<outer_type>::type;
 	inner_type value_ = static_cast<inner_type>(value);
 	auto status = cuMemPoolSetAttribute(pool_handle, attribute, &value_);
-	throw_if_error_lazy(status, "Setting attribute " + ::std::to_string((int) attribute)
+	throw_if_error_lazy(status, "Setting attribute " + ::std::to_string(static_cast<int>(attribute))
 		+ " of " + detail_::identify(pool_handle));
 }
 
@@ -274,7 +274,7 @@ public:
 	{
 		auto attribute_with_status = pool::detail_::get_attribute_with_status<attribute>(handle_);
 		throw_if_error_lazy(attribute_with_status.status, "Failed obtaining attribute "
-			+ ::std::to_string((int) attribute) + " of " + pool::detail_::identify(*this));
+			+ ::std::to_string(static_cast<int>(attribute)) + " of " + pool::detail_::identify(*this));
 		return attribute_with_status.value;
 	}
 
@@ -285,13 +285,13 @@ public:
 		using inner_type = typename pool::detail_::attribute_value_inner_type<outer_type>::type;
 		auto inner_value = static_cast<inner_type>(value);
 		auto status = cuMemPoolSetAttribute(handle_, attribute, &inner_value);
-		throw_if_error_lazy(status, "Failed setting attribute " + ::std::to_string((int) attribute)
+		throw_if_error_lazy(status, "Failed setting attribute " + ::std::to_string(static_cast<int>(attribute))
 			+ " of " + pool::detail_::identify(*this));
 	}
 
 	size_t release_threshold() const
 	{
-		return (size_t) get_attribute<CU_MEMPOOL_ATTR_RELEASE_THRESHOLD>();
+		return static_cast<size_t>(get_attribute<CU_MEMPOOL_ATTR_RELEASE_THRESHOLD>());
 	}
 
 	void set_release_threshold(size_t threshold) const

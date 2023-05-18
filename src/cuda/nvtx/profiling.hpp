@@ -100,20 +100,20 @@ struct color_t {
 
 	static constexpr color_t from_hex(underlying_type raw_argb) noexcept {
 		return {
-		(channel_value) ((raw_argb >> 24) & 0xFF),
-		(channel_value) ((raw_argb >> 16) & 0xFF),
-		(channel_value) ((raw_argb >>  8) & 0xFF),
-		(channel_value) ((raw_argb >>  0) & 0xFF),
+			static_cast<channel_value> ((raw_argb >> 24) & 0xFF),
+			static_cast<channel_value> ((raw_argb >> 16) & 0xFF),
+			static_cast<channel_value> ((raw_argb >>  8) & 0xFF),
+			static_cast<channel_value> ((raw_argb >>  0) & 0xFF),
 		};
 	}
 	operator underlying_type() const noexcept { return as_hex(); }
 	underlying_type as_hex() const noexcept
 	{
 		return
-		((underlying_type) alpha)  << 24 |
-		((underlying_type) red  )  << 16 |
-		((underlying_type) green)  <<  8 |
-		((underlying_type) blue )  <<  0;
+		static_cast<underlying_type>(alpha)  << 24 |
+		static_cast<underlying_type>(red)    << 16 |
+		static_cast<underlying_type>(green)  <<  8 |
+		static_cast<underlying_type>(blue)   <<  0;
 	}
 	static constexpr color_t Black()       noexcept { return from_hex(0x00000000); }
 	static constexpr color_t White()       noexcept { return from_hex(0x00FFFFFF); }
@@ -344,7 +344,7 @@ inline void name(::std::thread::id host_thread_id, const char* name)
 {
 	auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
 	uint32_t thread_id =
-#if _WIN32
+#ifdef _WIN32
 		GetThreadId(native_handle);
 #else
 		native_handle;

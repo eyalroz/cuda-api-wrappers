@@ -132,7 +132,7 @@ public:
 		);
 		throw_if_error_lazy(status,
 			"Failed adding input " + ::std::string(image.name) + " of type "
-			+ ::std::to_string((int) image.type) + " to a link.");
+			+ ::std::to_string(static_cast<int>(image.type)) + " to a link.");
 	}
 
 	void add_file(link::input::file_t file_input, const link::options_t &options) const
@@ -147,7 +147,7 @@ public:
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
-			"Failed loading an object of type " + ::std::to_string((int) file_input.type)
+			"Failed loading an object of type " + ::std::to_string(static_cast<int>(file_input.type))
 			+ " from file " + file_input.path);
 	}
 

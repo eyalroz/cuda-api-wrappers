@@ -123,8 +123,11 @@ struct properties_t : public cudaDeviceProp {
 	properties_t(const cudaDeviceProp& cdp) noexcept : cudaDeviceProp(cdp) { };
 	properties_t(cudaDeviceProp&& cdp) noexcept : cudaDeviceProp(cdp) { };
 	bool usable_for_compute() const noexcept;
-	compute_capability_t compute_capability() const noexcept { return { { (unsigned) major }, (unsigned) minor }; }
-	compute_architecture_t compute_architecture() const noexcept { return { (unsigned) major }; };
+	compute_capability_t compute_capability() const noexcept
+	{
+		return { { static_cast<unsigned>(major) }, static_cast<unsigned>(minor) };
+	}
+	compute_architecture_t compute_architecture() const noexcept { return { static_cast<unsigned>(major) }; };
 	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID, pci_location_t::unused }; }
 
 	unsigned long long max_in_flight_threads_on_device() const

@@ -416,7 +416,7 @@ struct dimensions_t // this almost-inherits dim3
 	// as constexpr, so it isn't
     __host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    constexpr __host__ __device__ size_t volume() const { return (size_t) x * y * z; }
+    constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
     constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1));

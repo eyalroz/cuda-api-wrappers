@@ -43,13 +43,13 @@ using named_t = typename rtc::detail_::types<Kind>::named_status;
 
 ///@cond
 template <source_kind_t Kind>
-constexpr bool operator==(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs == (status_t<Kind>) rhs;}
+constexpr bool operator==(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs == static_cast<status_t<Kind> >(rhs); }
 template <source_kind_t Kind>
-constexpr bool operator!=(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs != (status_t<Kind>) rhs;}
+constexpr bool operator!=(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs != static_cast<status_t<Kind> >(rhs); }
 template <source_kind_t Kind>
-constexpr bool operator==(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return (status_t<Kind>) lhs == rhs;}
+constexpr bool operator==(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return static_cast<status_t<Kind> >(lhs) == rhs; }
 template <source_kind_t Kind>
-constexpr bool operator!=(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return (status_t<Kind>) lhs != rhs;}
+constexpr bool operator!=(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return static_cast<status_t<Kind> >(lhs) != rhs; }
 ///@endcond
 
 } // namespace status
@@ -64,7 +64,7 @@ constexpr bool operator!=(const named_t<Kind>& lhs, const status_t<Kind>& rhs) {
  template <source_kind_t Kind>
 constexpr bool is_success(rtc::status_t<Kind> status)
 {
-	return (status == (rtc::status_t<Kind>) rtc::status::named_t<Kind>::success);
+	return (status == static_cast<rtc::status_t<Kind>>(rtc::status::named_t<Kind>::success));
 }
 ///@}
 

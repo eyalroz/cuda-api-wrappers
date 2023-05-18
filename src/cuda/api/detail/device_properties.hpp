@@ -274,7 +274,7 @@ namespace std {
   template <>
   struct hash<cuda::device::compute_capability_t>
   {
-    ::std::size_t operator()(const cuda::device::compute_capability_t& cc) const
+    ::std::size_t operator()(const cuda::device::compute_capability_t& cc) const noexcept
     {
       using ::std::hash;
 

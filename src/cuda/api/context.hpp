@@ -141,7 +141,7 @@ inline void set_cache_preference(handle_t handle, multiprocessor_cache_preferenc
 	auto status = cuCtxSetCacheConfig(static_cast<CUfunc_cache>(preference));
 	throw_if_error_lazy(status,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference to " +
-		::std::to_string((unsigned) preference) + " for " + identify(handle));
+		::std::to_string(static_cast<unsigned>(preference)) + " for " + identify(handle));
 }
 
 inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
@@ -150,7 +150,7 @@ inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
 	auto status = cuCtxGetCacheConfig(&preference);
 	throw_if_error_lazy(status,
 		"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + identify(handle));
-	return (multiprocessor_cache_preference_t) preference;
+	return static_cast<multiprocessor_cache_preference_t>(preference);
 }
 
 inline shared_memory_bank_size_t shared_memory_bank_size(handle_t handle)
@@ -481,7 +481,7 @@ public: // other non-mutator methods
 		unsigned int raw_version;
 		auto status = cuCtxGetApiVersion(handle_, &raw_version);
 		throw_if_error_lazy(status, "Failed obtaining the API version for " + context::detail_::identify(*this));
-		return version_t::from_single_number((int) raw_version);
+		return version_t::from_single_number(static_cast<combined_version_t>(raw_version));
 	}
 
 protected:

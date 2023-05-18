@@ -162,7 +162,7 @@ public: // other non-mutators
 	 */
 	T* get_for_device() const
 	{
-		return (T*) pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(ptr_);
+		return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(ptr_);
 	}
 
 	/**
@@ -174,7 +174,7 @@ public: // other non-mutators
 	 */
 	T* get_for_host() const
 	{
-		return (T*) pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_HOST_POINTER>(ptr_);
+		return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_HOST_POINTER>(ptr_);
 	}
 
 #if CUDA_VERSION >= 10020

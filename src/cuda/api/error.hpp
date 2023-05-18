@@ -191,10 +191,10 @@ enum named_t : ::std::underlying_type<status_t>::type {
 };
 
 ///@cond
-constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) noexcept { return lhs == (status_t) rhs;}
-constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) noexcept { return lhs != (status_t) rhs;}
-constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) noexcept { return (status_t) lhs == rhs;}
-constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) noexcept { return (status_t) lhs != rhs;}
+constexpr inline bool operator==(const status_t& lhs, const named_t& rhs) noexcept { return lhs == static_cast<status_t>(rhs); }
+constexpr inline bool operator!=(const status_t& lhs, const named_t& rhs) noexcept { return lhs != static_cast<status_t>(rhs); }
+constexpr inline bool operator==(const named_t& lhs, const status_t& rhs) noexcept { return static_cast<status_t>(lhs) == rhs; }
+constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) noexcept { return static_cast<status_t>(lhs) != rhs; }
 ///@endcond
 
 } // namespace status
@@ -202,7 +202,7 @@ constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) noexce
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
-constexpr bool is_success(status_t status)  { return status == (status_t) status::success; }
+constexpr bool is_success(status_t status)  { return status == static_cast<status_t>(status::success); }
 
 /**
  * @brief Determine whether the API call returning the specified status had failed
@@ -312,7 +312,7 @@ private:
 
 #define throw_if_error_lazy(status__, ... ) \
 do { \
-	status_t tie_status__ = static_cast<status_t>(status__); \
+	const status_t tie_status__ = static_cast<status_t>(status__); \
 	if (is_failure(tie_status__)) { \
 		throw runtime_error(tie_status__, (__VA_ARGS__)); \
 	} \

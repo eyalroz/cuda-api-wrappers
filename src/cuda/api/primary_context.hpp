@@ -208,7 +208,7 @@ public: // mutators of the proxied primary context, but not of the proxy
 	void set_synch_scheduling_policy(context::host_thread_synch_scheduling_policy_t new_policy) const
     {
         auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
-        set_flags(other_flags | (flags_type) new_policy);
+        set_flags(other_flags | static_cast<flags_type>(new_policy));
     }
 
     bool keeping_larger_local_mem_after_resize() const

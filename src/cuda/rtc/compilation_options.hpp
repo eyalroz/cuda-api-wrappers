@@ -47,8 +47,8 @@ constexpr const char* cpp_dialect_names[] =  {
 
 inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
 {
-	for(auto known_dialect = (int) cpp_dialect_t::cpp03;
-		known_dialect <= (int) cpp_dialect_t::last;
+	for(auto known_dialect = static_cast<int>(cpp_dialect_t::cpp03);
+		known_dialect <= static_cast<int>(cpp_dialect_t::last);
 		known_dialect++)
 	{
 		if (strcmp(detail_::cpp_dialect_names[known_dialect], dialect_name) == 0) {
@@ -527,9 +527,9 @@ inline const char* true_or_false(bool b) { return b ? "true" : "false"; }
 template <typename Delimiter>
 struct opt_start_t {
 	bool      ever_used;
-	Delimiter delimiter;
+	Delimiter delimiter_;
 
-	opt_start_t(Delimiter delimiter) : ever_used(false), delimiter(delimiter){ }
+	opt_start_t(Delimiter delimiter) : ever_used(false), delimiter_(delimiter){ }
 };
 
 } // namespace detail_
@@ -541,7 +541,7 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
 		opt_start.ever_used = true;
 	}
 	else {
-		mt << opt_start.delimiter;
+		mt << opt_start.delimiter_;
 	}
 	return mt;
 }
@@ -674,7 +674,7 @@ void process(
 	}
 
 	if (opts.specify_language_dialect) {
-		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[(unsigned) opts.language_dialect];
+		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect)];
 	}
 
 	if (opts.maximum_register_count) {

@@ -100,7 +100,7 @@ long double compute_average_elapsed_clocks(const clock_t* timers, std::size_t nu
 
 	for (std::size_t block_idx = 0; block_idx < num_blocks; block_idx++)
 	{
-		offset_sum += (long double) (timers[block_idx + num_blocks] - timers[block_idx]);
+		offset_sum += static_cast<long double>(timers[block_idx + num_blocks] - timers[block_idx]);
 	}
 
 	return offset_sum / num_blocks;
@@ -145,9 +145,9 @@ int main()
 		// Strangely, it seems CUDA's clock() intrinsic uses the C standard library's clock_t. Oh well.
 	std::unique_ptr<float[]> input(new float[input_size]);
 
-	auto generator = []() {
+	auto generator = []() -> float {
 		static size_t v = 0;
-		return (float) v++;
+		return v++;
 	};
 	std::generate_n(input.get(), input_size, generator);
 	// TODO: Too bad we don't have a generator variant which passes the element index

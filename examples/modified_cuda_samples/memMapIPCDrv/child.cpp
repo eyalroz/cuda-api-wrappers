@@ -84,7 +84,7 @@ shm_and_info_t open_shared_interprocess_memory()
 	   printf("Failed to create shared memory slab\n");
 	   exit(EXIT_FAILURE);
    }
-   result.shm = (volatile shmStruct *)result.info.addr;
+   result.shm = reinterpret_cast<shmStruct*>(result.info.addr);
    return result;
 }
 
@@ -135,11 +135,11 @@ bool results_are_valid(
 
 	// The contents should have the id_of_this_child of the sibling just after me
 	// (as that was the last sibling to over
-	char compareId = (char) ((id_of_this_child + 1) % num_processes);
+	char compareId = static_cast<char>((id_of_this_child + 1) % num_processes);
 	for (unsigned long long j = 0; j < data_buffer_size; j++) {
 		if (verification_buffer.get()[j] != compareId) {
 			std::cerr << "Process " << id_of_this_child << ": Verification mismatch at " << j << ": "
-					  << (int) verification_buffer[j] << " != " << (int) compareId;
+					  << static_cast<int>(verification_buffer[j]) << " != " << static_cast<int>(compareId);
 			return false;
 		}
 	}
@@ -161,7 +161,7 @@ void childProcess(int devId, int id_of_this_child, char **)
 	auto device{cuda::device::get(devId)};
 
 	auto shm_and_info = open_shared_interprocess_memory();
-	auto num_processes = (int) shm_and_info.shm->nprocesses;
+	auto num_processes = static_cast<int>(shm_and_info.shm->nprocesses);
 
 	barrierWait(shm_and_info.shm);
 
@@ -187,10 +187,11 @@ void childProcess(int devId, int id_of_this_child, char **)
 		auto sibling_process_id = (sibling_process_offset + id_of_this_child) % num_processes;
 
 		auto sibling_region = reserved_region.subregion(sibling_process_id * data_buffer_size, data_buffer_size);
-		char val = (char) id_of_this_child;
+		auto val = static_cast<char>(id_of_this_child);
 
 		// Push a simple kernel on th buffer.
-		stream.enqueue.kernel_launch(kernel, launch_config, (char*) sibling_region.data(), (int) sibling_region.size(), val);
+		stream.enqueue.kernel_launch(kernel, launch_config,
+			static_cast<char*>(sibling_region.data()), static_cast<int>(sibling_region.size()), val);
 		stream.synchronize();
 
 		// Wait for all my sibling processes to push this stage of their work

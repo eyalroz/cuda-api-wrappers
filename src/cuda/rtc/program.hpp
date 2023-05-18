@@ -23,23 +23,28 @@ namespace program {
 
 namespace detail_ {
 
-inline program::handle_t<cuda_cpp> create_cuda_cpp(
+template <source_kind_t Kind = cuda_cpp>
+inline program::handle_t<Kind> create(
 	const char *program_name,
-	const char *program_source,
-	int num_headers,
-	const char *const *header_sources,
-	const char *const *header_names)
+	string_view program_source,
+	int num_headers = 0,
+	const char *const *header_sources = nullptr,
+	const char *const *header_names = nullptr);
+
+template <> inline program::handle_t<cuda_cpp> create<cuda_cpp>(
+	const char *program_name, string_view program_source, int num_headers,
+	const char *const *header_sources, const char *const *header_names)
 {
 	program::handle_t<cuda_cpp> program_handle;
-	auto status = nvrtcCreateProgram(&program_handle, program_source, program_name, num_headers, header_sources, header_names);
+	auto status = nvrtcCreateProgram(&program_handle, program_source.data(), program_name, num_headers, header_sources, header_names);
 	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed creating " + detail_::identify<cuda_cpp>(program_name));
 	return program_handle;
 }
 
 #if CUDA_VERSION >= 11010
-inline program::handle_t<ptx> create_ptx(
-	const char *program_name,
-	string_view program_source)
+template <> inline program::handle_t<ptx> create<ptx>(
+	const char *program_name, string_view program_source,
+	int, const char *const *, const char *const *)
 {
 	program::handle_t<ptx> program_handle;
 	auto status = nvPTXCompilerCreate(&program_handle, program_source.size(), program_source.data());
@@ -47,22 +52,6 @@ inline program::handle_t<ptx> create_ptx(
 	return program_handle;
 }
 #endif // CUDA_VERSION >= 11010
-
-template <source_kind_t Kind = cuda_cpp>
-inline program::handle_t<Kind> create(
-	const char *program_name,
-	string_view program_source,
-	int num_headers = 0,
-	const char *const *header_sources = nullptr,
-	const char *const *header_names = nullptr)
-{
-	return
-#if CUDA_VERSION >= 11010
-		(Kind == ptx) ?
-			(program::handle_t<Kind>) create_ptx(program_name, program_source) :
-#endif // CUDA_VERSION >= 11010
-			(program::handle_t<Kind>) create_cuda_cpp(program_name, program_source.data(), num_headers, header_sources, header_names);
-}
 
 inline void register_global(handle_t<cuda_cpp> program_handle, const char *global_to_register)
 {
@@ -96,7 +85,7 @@ inline void maybe_handle_invalid_option<cuda_cpp>(
 	const const_cstrings_span&  raw_options,
 	handle_t<cuda_cpp>          program_handle)
 {
-	if (status == (status_t<cuda_cpp>) status::named_t<cuda_cpp>::invalid_option) {
+	if (status == static_cast<status_t<cuda_cpp>>(status::named_t<cuda_cpp>::invalid_option)) {
 		throw rtc::runtime_error<cuda_cpp>::with_message_override(status,
 			"Compilation options rejected when compiling " + identify<cuda_cpp>(program_handle, program_name) + ':'
 			+ get_concatenated_options(raw_options));
@@ -104,17 +93,36 @@ inline void maybe_handle_invalid_option<cuda_cpp>(
 }
 
 template <source_kind_t Kind>
+inline status_t<Kind> compile_and_return_status(
+	handle_t<Kind> program_handle,
+	const const_cstrings_span& raw_options);
+
+#if CUDA_VERSION >= 11010
+template <>
+inline status_t<ptx> compile_and_return_status<ptx>(
+	handle_t<ptx> program_handle,
+	const const_cstrings_span& raw_options)
+{
+	return nvPTXCompilerCompile(program_handle, static_cast<int>(raw_options.size()), raw_options.data());
+}
+#endif
+
+template <>
+inline status_t<cuda_cpp> compile_and_return_status<cuda_cpp>(
+	handle_t<cuda_cpp> program_handle,
+	const const_cstrings_span& raw_options)
+{
+	return nvrtcCompileProgram(program_handle, static_cast<int>(raw_options.size()), raw_options.data());
+}
+
+
+template <source_kind_t Kind>
 inline compilation_output_t<Kind> compile(
 	const char *                program_name,
 	const const_cstrings_span&  raw_options,
 	handle_t<Kind>              program_handle)
 {
-	auto status =
-#if CUDA_VERSION >= 11010
-		(Kind == ptx) ?
-			(status_t<Kind>) nvPTXCompilerCompile((handle_t<ptx>)program_handle, (int) raw_options.size(), raw_options.data()) :
-#endif // CUDA_VERSION >= 11010
-			(status_t<Kind>) nvrtcCompileProgram((handle_t<cuda_cpp>)program_handle, (int) raw_options.size(), raw_options.data());
+	auto status = compile_and_return_status<Kind>(program_handle, raw_options);
 	bool succeeded = is_success<Kind>(status);
 	switch(status) {
 	case status::named_t<Kind>::success:
@@ -141,8 +149,8 @@ inline compilation_output_t<cuda_cpp> compile(
 		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
 	}
 	// Note: Not rejecting empty/missing source, because we may be pre-including source files
-	auto num_headers = (int) header_names.size();
-	auto program_handle = create_cuda_cpp(
+	auto num_headers = static_cast<int>(header_names.size());
+	auto program_handle = create<cuda_cpp>(
 		program_name, program_source, num_headers, header_sources.data(), header_names.data());
 
 	for (const auto global_to_register: globals_to_register) {
@@ -163,7 +171,7 @@ inline compilation_output_t<ptx> compile_ptx(
 		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
 	}
 	// Note: Not rejecting empty/missing source, because we may be pre-including source files
-	auto program_handle = create_ptx(program_name, program_source);
+	auto program_handle = create<ptx>(program_name, program_source);
 
 	// Note: compilation is outside of any context
 	return compile<ptx>(program_name, raw_options, program_handle);
