@@ -118,7 +118,7 @@ inline handle_t create_raw_in_current_context(
 	priority_t    priority = stream::default_priority
 )
 {
-	unsigned int flags = (synchronizes_with_default_stream == sync) ?
+	const unsigned int flags = (synchronizes_with_default_stream == sync) ?
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
@@ -337,7 +337,7 @@ public: // mutators
 	 *   my_stream.enqueue.copy(foo, bar, my_size)
 	 */
 	class enqueue_t {
-	private:
+	protected:
 		const stream_t& associated_stream;
 
 	public:
