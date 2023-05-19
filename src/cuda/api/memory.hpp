@@ -2063,6 +2063,7 @@ inline bool is_part_of_a_region_pair(const void* ptr)
 
 } // namespace mapped
 
+
 } // namespace memory
 
 namespace symbol {

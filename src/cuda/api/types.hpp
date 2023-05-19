@@ -817,6 +817,22 @@ enum class barrier_scope_t : typename ::std::underlying_type<CUstreamMemoryBarri
 };
 #endif // CUDA_VERSION >= 11700
 
+/**
+ * Representation of memory resources external to CUDA
+ */
+namespace external {
+
+using handle_t = CUexternalMemory;
+
+/**
+ * Describes a subregion with the context of a larger (memory) region
+ */
+struct subregion_spec_t {
+	size_t offset;
+	size_t size;
+};
+
+} // namespace external
 
 } // namespace memory
 
