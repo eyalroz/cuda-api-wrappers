@@ -218,29 +218,8 @@ public:
 
 } // namespace detail_
 
-/**
- * A RAII-based mechanism for pushing a context onto the context stack
- * for what remains of the current (C++ language) scope - making it the
- * current context - then popping it back when exiting the scope -
- * restoring the stack and the current context to what they had been
- * previously.
- *
- * @note if some other code pushes/pops from the context stack during
- * the lifetime of this class, the pop-on-destruction may fail, or
- * succeed but pop some other context handle than the one originally.
- * pushed.
- *
- */
-class scoped_override_t;
-
-/**
- * This macro will set the current device for the remainder of the scope in which it is
- * invoked, and will change it back to the previous value when exiting the scope. Use
- * it as an opaque command, which does not explicitly expose the variable defined under
- * the hood to effect this behavior.
- */
-#define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
-	::cuda::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
+#define SET_CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
+	const ::cuda::context::current::scoped_override_t context_for_this_scope{ _cuda_context }
 
 inline void synchronize()
 {

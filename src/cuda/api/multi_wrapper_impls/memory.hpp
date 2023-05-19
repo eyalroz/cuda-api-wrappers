@@ -316,7 +316,7 @@ inline unique_ptr<T> make_unique(
 	size_t                n,
 	initial_visibility_t  initial_visibility)
 {
-	context::current::scoped_override_t set_context_for_this_scope(context);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context.handle());
 	return detail_::make_unique_in_current_context<T>(n, initial_visibility);
 }
 
@@ -345,7 +345,7 @@ inline unique_ptr<T> make_unique(
 	const context_t&      context,
 	initial_visibility_t  initial_visibility)
 {
-	context::current::scoped_override_t set_context_for_this_scope(context);
+	context::current::detail_::scoped_override_t set_context_for_this_scope(context.handle());
 	return detail_::make_unique_in_current_context<T>(initial_visibility);
 }
 
