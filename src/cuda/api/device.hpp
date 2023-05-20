@@ -38,7 +38,7 @@ class pool_t;
  * @brief Waits for all previously-scheduled tasks on all streams (= queues)
  * on a specified device to conclude.
  *
- * Depending on the host_thread_synch_scheduling_policy_t set for this
+ * Depending on the host_thread_sync_scheduling_policy_t set for this
  * device, the thread calling this method will either yield, spin or block
  * until all tasks scheduled previously scheduled on this device have been
  * concluded.
@@ -396,7 +396,7 @@ public:
 	 * @brief Waits for all previously-scheduled tasks on all streams (= queues)
 	 * on this device to conclude
 	 *
-	 * Depending on the host_thread_synch_scheduling_policy_t set for this
+	 * Depending on the host_thread_sync_scheduling_policy_t set for this
 	 * device, the thread calling this method will either yield, spin or block
 	 * until all tasks scheduled previously scheduled on this device have been
 	 * concluded.
@@ -524,7 +524,7 @@ public:
 		bool interprocess       = event::not_interprocess);
 
 	context_t create_context(
-		context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy = context::heuristic,
+		context::host_thread_sync_scheduling_policy_t   sync_scheduling_policy = context::heuristic,
 		bool                                            keep_larger_local_mem_after_resize = false) const;
 
 #if CUDA_VERSION >= 11020
@@ -558,12 +558,12 @@ public:
         return device::primary_context::detail_::flags(id_);
     }
 
-	context::host_thread_synch_scheduling_policy_t synch_scheduling_policy() const
+	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
 	{
-		return context::host_thread_synch_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
+		return context::host_thread_sync_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
 	}
 
-	void set_synch_scheduling_policy(context::host_thread_synch_scheduling_policy_t new_policy)
+	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy)
 	{
         auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
         set_flags(other_flags | static_cast<flags_type>(new_policy));

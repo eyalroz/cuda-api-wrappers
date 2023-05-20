@@ -95,11 +95,11 @@ inline void set_limit(limit_t limit_id, limit_value_t new_value)
 }
 
 constexpr flags_t inline make_flags(
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
 	return
-		  synch_scheduling_policy // this enum value is also a valid bitmask
+		  sync_scheduling_policy // this enum value is also a valid bitmask
 		| (keep_larger_local_mem_after_resize    ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
 }
 
@@ -393,7 +393,7 @@ public: // other non-mutator methods
 	 *
 	 * @todo Is this really a feature of the context? Not of the device?
 	 */
-	context::limit_value_t maximum_depth_of_child_grid_synch_calls() const
+	context::limit_value_t maximum_depth_of_child_grid_sync_calls() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH);
@@ -495,12 +495,12 @@ public: // methods which mutate the context, but not its wrapper
 	 * Gets the synchronization policy to be used for threads synchronizing
 	 * with this CUDA context.
 	 *
-	 * @note see @ref host_thread_synch_scheduling_policy_t
+	 * @note see @ref host_thread_sync_scheduling_policy_t
 	 * for a description of the various policies.
 	 */
-	context::host_thread_synch_scheduling_policy_t synch_scheduling_policy() const
+	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
 	{
-		return context::host_thread_synch_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
+		return context::host_thread_sync_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
 	}
 
 	bool keeping_larger_local_mem_after_resize() const
@@ -597,7 +597,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 		return set_limit(CU_LIMIT_MALLOC_HEAP_SIZE, new_value);
 	}
 
-	void set_maximum_depth_of_child_grid_synch_calls(context::limit_value_t new_value) const
+	void set_maximum_depth_of_child_grid_sync_calls(context::limit_value_t new_value) const
 	{
 		return set_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH, new_value);
 	}
@@ -707,11 +707,11 @@ inline context_t from_handle(
 
 inline handle_t create_and_push(
 	device::id_t                           device_id,
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = automatic,
+	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = automatic,
 	bool                                   keep_larger_local_mem_after_resize = false)
 {
 	auto flags = context::detail_::make_flags(
-		synch_scheduling_policy,
+		sync_scheduling_policy,
 		keep_larger_local_mem_after_resize);
 	handle_t handle;
 	auto status = cuCtxCreate(&handle, flags, device_id);
@@ -726,7 +726,7 @@ inline handle_t create_and_push(
  * @brief creates a new context on a given device
  *
  * @param device              The device on which to create the new stream
- * @param synch_scheduling_policy
+ * @param sync_scheduling_policy
  * @param keep_larger_local_mem_after_resize
  * @return
  * @note Until CUDA 11, there used to also be a flag for enabling/disabling
@@ -736,12 +736,12 @@ inline handle_t create_and_push(
  */
 context_t create(
 	device_t                               device,
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
+	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
 	bool                                   keep_larger_local_mem_after_resize = false);
 
 context_t create_and_push(
 	device_t                               device,
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy = heuristic,
+	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
 	bool                                   keep_larger_local_mem_after_resize = false);
 
 namespace current {

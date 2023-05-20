@@ -931,7 +931,7 @@ using flags_t = unsigned;
  * thread it is running in needs to wait for results from a certain
  * device
  */
-enum host_thread_synch_scheduling_policy_t : unsigned int {
+enum host_thread_sync_scheduling_policy_t : unsigned int {
 
     /**
      * @brief Default behavior; yield or spin based on a heuristic.
@@ -996,7 +996,7 @@ using handle_t = cuda::context::handle_t;
 
 } // namespace primary_context
 
-using host_thread_synch_scheduling_policy_t = context::host_thread_synch_scheduling_policy_t;
+using host_thread_sync_scheduling_policy_t = context::host_thread_sync_scheduling_policy_t;
 
 } // namespace device
 

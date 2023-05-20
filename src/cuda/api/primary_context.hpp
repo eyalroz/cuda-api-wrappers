@@ -157,11 +157,11 @@ protected:
     }
 
     void set_flags(
-        device::host_thread_synch_scheduling_policy_t
-               synch_scheduling_policy = device::host_thread_synch_scheduling_policy_t::heuristic,
+        device::host_thread_sync_scheduling_policy_t
+               sync_scheduling_policy = device::host_thread_sync_scheduling_policy_t::heuristic,
         bool   keep_larger_local_mem_after_resize = true)
     {
-        set_flags(context::detail_::make_flags(synch_scheduling_policy, keep_larger_local_mem_after_resize));
+        set_flags(context::detail_::make_flags(sync_scheduling_policy, keep_larger_local_mem_after_resize));
     }
 
 public:
@@ -205,7 +205,7 @@ public: // operators
 
 public: // mutators of the proxied primary context, but not of the proxy
 
-	void set_synch_scheduling_policy(context::host_thread_synch_scheduling_policy_t new_policy) const
+	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy) const
     {
         auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
         set_flags(other_flags | static_cast<flags_type>(new_policy));

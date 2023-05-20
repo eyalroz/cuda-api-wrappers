@@ -38,7 +38,7 @@ const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 	return cache_preference_names[static_cast<off_t>(pref)];
 }
 
-const char* host_thread_synch_scheduling_policy_name(cuda::context::host_thread_synch_scheduling_policy_t policy)
+const char* host_thread_sync_scheduling_policy_name(cuda::context::host_thread_sync_scheduling_policy_t policy)
 {
 	static const char *names[] = {
 		"heuristic",
@@ -75,9 +75,9 @@ std::ostream& operator<<(std::ostream& os, cuda::multiprocessor_cache_preference
 	return (os << cache_preference_name(pref));
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::context::host_thread_synch_scheduling_policy_t pref)
+std::ostream& operator<<(std::ostream& os, cuda::context::host_thread_sync_scheduling_policy_t pref)
 {
-	return (os << host_thread_synch_scheduling_policy_name(pref));
+	return (os << host_thread_sync_scheduling_policy_name(pref));
 }
 
 std::ostream& operator<<(std::ostream& os, cuda::context::handle_t handle)

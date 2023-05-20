@@ -178,7 +178,7 @@ void flags()
 	auto device = cuda::device::current::get() ;
 
 	std::cout << "Device " << device.id() << " uses a"
-	<< (device.synch_scheduling_policy() ? " synchronous" : "n asynchronous")
+	<< (device.sync_scheduling_policy() ? " synchronous" : "n asynchronous")
 	<< " scheduling policy.\n";
 	std::cout << "Device " << device.id() << " is set to "
 	<< (device.keeping_larger_local_mem_after_resize() ? "keeps" : "discards")

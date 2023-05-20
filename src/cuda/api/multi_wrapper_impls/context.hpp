@@ -197,21 +197,21 @@ public:
 } // namespace current
 
 inline context_t create_and_push(
-	device_t                               device,
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	device_t                              device,
+	host_thread_sync_scheduling_policy_t  sync_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
-	auto handle = detail_::create_and_push(device.id(), synch_scheduling_policy, keep_larger_local_mem_after_resize);
+	auto handle = detail_::create_and_push(device.id(), sync_scheduling_policy, keep_larger_local_mem_after_resize);
 	bool take_ownership = true;
 	return context::wrap(device.id(), handle, take_ownership);
 }
 
 inline context_t create(
 	device_t                               device,
-	host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
-	auto created = create_and_push(device, synch_scheduling_policy, keep_larger_local_mem_after_resize);
+	auto created = create_and_push(device, sync_scheduling_policy, keep_larger_local_mem_after_resize);
 	current::pop();
 	return created;
 }

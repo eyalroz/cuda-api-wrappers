@@ -79,7 +79,7 @@ void test_context(
 	// ----------------------------------------------------
 
 	std::cout << "Context " << context << " uses a"
-		<< (context.synch_scheduling_policy() ? " synchronous" : "n asynchronous")
+		<< (context.sync_scheduling_policy() ? " synchronous" : "n asynchronous")
 		<< " scheduling policy.\n";
 	std::cout << "Context " << context << " is set to "
 		<< (context.keeping_larger_local_mem_after_resize() ? "keep" : "discard")

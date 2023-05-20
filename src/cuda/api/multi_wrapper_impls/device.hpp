@@ -178,10 +178,10 @@ void device_t::launch(
 }
 
 inline context_t device_t::create_context(
-	context::host_thread_synch_scheduling_policy_t  synch_scheduling_policy,
+	context::host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
 	bool                                            keep_larger_local_mem_after_resize) const
 {
-	return context::create(*this, synch_scheduling_policy, keep_larger_local_mem_after_resize);
+	return context::create(*this, sync_scheduling_policy, keep_larger_local_mem_after_resize);
 }
 
 inline event_t device_t::create_event(

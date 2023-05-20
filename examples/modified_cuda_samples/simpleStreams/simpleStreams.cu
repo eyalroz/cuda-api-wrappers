@@ -49,7 +49,7 @@ const char *sEventSyncMethod[] =
 #include <iostream>
 #include <algorithm>
 
-using synch_policy_type = cuda::context::host_thread_synch_scheduling_policy_t;
+using sync_policy_type = cuda::context::host_thread_sync_scheduling_policy_t;
 
 
 
@@ -82,11 +82,11 @@ void printHelp()
 {
 	std::cout
 		<< "Usage: " << sSDKsample << " [options below]\n"
-		<< "\t--sync_method (" << (int) synch_policy_type::default_ << ") for CPU thread synchronization with GPU work."
-		<< "\t             Possible values: " << (int) synch_policy_type::heuristic << ", "
-		<< (int) synch_policy_type::spin << ", "
-		<< (int) synch_policy_type::yield << ", "
-		<< (int) synch_policy_type::block << ".\n"
+		<< "\t--sync_method (" << (int) sync_policy_type::default_ << ") for CPU thread synchronization with GPU work."
+		<< "\t             Possible values: " << (int) sync_policy_type::heuristic << ", "
+		<< (int) sync_policy_type::spin << ", "
+		<< (int) sync_policy_type::yield << ", "
+		<< (int) sync_policy_type::block << ".\n"
 		<< "\t--use_generic_memory (default) use generic page-aligned host memory allocation\n"
 		<< "\t--use_cuda_malloc_host (optional) use pinned host memory allocation\n";
 }
@@ -103,7 +103,7 @@ struct simple_streams_params_t
 void run_simple_streams_example(
 	const cuda::device_t& device,
 	simple_streams_params_t params,
-	const cuda::context::host_thread_synch_scheduling_policy_t synch_policy)
+	const cuda::context::host_thread_sync_scheduling_policy_t sync_policy)
 {
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                // number of times each experiment is repeated; originally 10
@@ -137,7 +137,7 @@ void run_simple_streams_example(
 
 	// create CUDA event handles
 	// use blocking sync
-	auto use_blocking_sync = (synch_policy == cudaDeviceBlockingSync);
+	auto use_blocking_sync = (sync_policy == cudaDeviceBlockingSync);
 
 	auto start_event = cuda::event::create(device, use_blocking_sync);
 	auto stop_event = cuda::event::create(device, use_blocking_sync);
@@ -279,14 +279,15 @@ int main(int argc, char **argv)
 
 	auto params = determine_params(device);
 
-	for (const auto synch_policy : {synch_policy_type::heuristic,
-									synch_policy_type::spin,
-									synch_policy_type::yield,
-									synch_policy_type::block })
+	for (const auto sync_policy : {
+		sync_policy_type::heuristic,
+		sync_policy_type::spin,
+		sync_policy_type::yield,
+		sync_policy_type::block })
 	{
-		std::cout << "> Running example using CPU/GPU Device Synchronization method " << synch_policy << '\n';
-		device.set_synch_scheduling_policy(synch_policy);
-		run_simple_streams_example(device, params, synch_policy);
+		std::cout << "> Running example using CPU/GPU Device Synchronization method " << sync_policy << '\n';
+		device.set_sync_scheduling_policy(sync_policy);
+		run_simple_streams_example(device, params, sync_policy);
 		std::cout << '\n';
 	}
 	std::cout << "SUCCESS\n";
