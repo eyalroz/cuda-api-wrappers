@@ -96,7 +96,7 @@ handle_t create_in_current_context(dimensions_t<2> dimensions)
 template <typename T, dimensionality_t NumDimensions>
 handle_t create(context::handle_t context_handle, dimensions_t<NumDimensions> dimensions)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return create_in_current_context<T>(dimensions);
 }
 
@@ -131,7 +131,7 @@ inline descriptor_t<4> get_descriptor_in_current_context<3>(handle_t handle)
 template <dimensionality_t NumDimensions>
 descriptor_t<NumDimensions> get_descriptor(context::handle_t context_handle, handle_t handle)
 {
-	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return get_descriptor_in_current_context<NumDimensions>(handle);
 }
 
@@ -160,7 +160,7 @@ dimensions_t<NumDimensions> dimensions_of_in_current_context(handle_t handle_in_
 template <dimensionality_t NumDimensions>
 dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, handle_t handle)
 {
-	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return dimensions_of_in_current_context<NumDimensions>(handle);
 }
 
@@ -217,7 +217,7 @@ public:
 
 	~array_t() noexcept(false)
 	{
-		cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		if (handle_) {
 			auto status = cuArrayDestroy(handle_);
 			// Note: Throwing in a noexcept destructor; if the free'ing fails, the program

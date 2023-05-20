@@ -163,7 +163,7 @@ public:
 	 */
 	bool can_access(device_t peer) const
 	{
-		context_setter_type set_for_this_scope(primary_context_handle());
+		CAW_SET_SCOPE_CONTEXT(primary_context_handle());
 		int result;
 		auto status = cuDeviceCanAccessPeer(&result, id(), peer.id());
 		throw_if_error_lazy(status, "Failed determining whether "
@@ -444,7 +444,7 @@ public:
 	    auto pc_handle = (primary_context_handle_ == context::detail_::none) ?
 	        device::primary_context::detail_::obtain_and_increase_refcount(id_) :
 	        primary_context_handle_;
-		context_setter_type set_context_for_this_scope{pc_handle};
+		CAW_SET_SCOPE_CONTEXT(pc_handle);
 		auto status = cudaDeviceReset();
 		throw_if_error_lazy(status, "Resetting " + device::detail_::identify(id_));
 	}

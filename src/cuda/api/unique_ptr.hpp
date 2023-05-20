@@ -64,7 +64,7 @@ template<typename T>
 inline ::std::unique_ptr<T, deleter>
 make_unique(context::handle_t context_handle, size_t n)
 {
-	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>(n);
 }
 
@@ -80,7 +80,7 @@ template<typename T>
 inline ::std::unique_ptr<T, deleter>
 make_unique(context::handle_t context_handle)
 {
-	cuda::context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return memory::detail_::make_unique<T, device::detail_::allocator, deleter>();
 }
 

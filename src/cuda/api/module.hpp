@@ -275,7 +275,7 @@ inline module_t load_from_file(
 	const char*             path,
 	const link::options_t&  link_options = {})
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context.handle());
+	CAW_SET_SCOPE_CONTEXT(context.handle());
 	return detail_::load_from_file_in_current_context(
 		context.device_id(), context.handle(), path, link_options);
 }
@@ -366,7 +366,7 @@ module_t create(const context_t& context, const void* module_data);
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuModuleUnload(handle);
 	throw_if_error_lazy(status, "Failed unloading " + identify(handle, context_handle, device_id));
 }

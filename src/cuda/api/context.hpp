@@ -169,13 +169,13 @@ inline void set_shared_memory_bank_size(handle_t handle, shared_memory_bank_size
 
 inline void synchronize(context::handle_t handle)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(handle);
+	CAW_SET_SCOPE_CONTEXT(handle);
 	context::current::detail_::synchronize(handle);
 }
 
 inline void synchronize(device::id_t device_id, context::handle_t handle)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(handle);
+	CAW_SET_SCOPE_CONTEXT(handle);
 	context::current::detail_::synchronize(device_id, handle);
 }
 
@@ -193,7 +193,7 @@ inline void destroy(handle_t handle, device::id_t device_index)
 
 inline context::flags_t get_flags(handle_t handle)
 {
-	current::detail_::scoped_override_t set_context_for_this_scope{handle};
+	CAW_SET_SCOPE_CONTEXT(handle);
 	return context::current::detail_::get_flags();
 }
 
@@ -220,7 +220,6 @@ inline void synchronize(const context_t& context);
  */
 class context_t {
 public: // types
-	using scoped_setter_type = context::current::detail_::scoped_override_t;
 	using flags_type = context::flags_t;
 
 	static_assert(
@@ -287,7 +286,7 @@ public: // inner classes
 		 */
 		size_t amount_total() const
 		{
-			scoped_setter_type set_context_for_this_scope(context_handle_);
+			CAW_SET_SCOPE_CONTEXT(context_handle_);
 			return context::detail_::total_memory(context_handle_);
 		}
 
@@ -296,7 +295,7 @@ public: // inner classes
 		 */
 		size_t amount_free() const
 		{
-			scoped_setter_type set_context_for_this_scope(context_handle_);
+			CAW_SET_SCOPE_CONTEXT(context_handle_);
 			return context::detail_::free_memory(context_handle_);
 		}
 	}; // class global_memory_type
@@ -326,7 +325,7 @@ public: // data member non-mutator getters
 	 */
 	size_t total_memory() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::total_memory(handle_);
 	}
 
@@ -338,7 +337,7 @@ public: // data member non-mutator getters
 	 */
 	size_t free_memory() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::free_memory(handle_);
 	}
 
@@ -350,7 +349,7 @@ public: // other non-mutator methods
 	 */
 	multiprocessor_cache_preference_t cache_preference() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::cache_preference(handle_);
 	}
 
@@ -361,7 +360,7 @@ public: // other non-mutator methods
 	 */
 	size_t stack_size() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_STACK_SIZE);
 	}
 
@@ -372,7 +371,7 @@ public: // other non-mutator methods
 	 */
 	context::limit_value_t printf_buffer_size() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	}
 
@@ -383,7 +382,7 @@ public: // other non-mutator methods
 	 */
 	context::limit_value_t memory_allocation_heap_size() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_MALLOC_HEAP_SIZE);
 	}
 
@@ -396,7 +395,7 @@ public: // other non-mutator methods
 	 */
 	context::limit_value_t maximum_depth_of_child_grid_synch_calls() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH);
 	}
 
@@ -412,7 +411,7 @@ public: // other non-mutator methods
 	 */
 	context::limit_value_t maximum_outstanding_kernel_launches() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT);
 	}
 
@@ -426,7 +425,7 @@ public: // other non-mutator methods
 	 */
 	context::limit_value_t l2_fetch_granularity() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_MAX_L2_FETCH_GRANULARITY);
 	}
 #endif
@@ -439,7 +438,7 @@ public: // other non-mutator methods
 	 */
 	context::shared_memory_bank_size_t shared_memory_bank_size() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::shared_memory_bank_size(handle_);
 	}
 
@@ -462,7 +461,7 @@ public: // other non-mutator methods
 	 */
 	context::stream_priority_range_t stream_priority_range() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		context::stream_priority_range_t result;
 		auto status = cuCtxGetStreamPriorityRange(&result.least, &result.greatest);
 		throw_if_error_lazy(status, "Obtaining the priority range for streams within " +
@@ -472,7 +471,7 @@ public: // other non-mutator methods
 
 	context::limit_value_t get_limit(context::limit_t limit_id) const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(limit_id);
 	}
 
@@ -541,7 +540,7 @@ public: // Methods which don't mutate the context, but affect the device itself
 
 	void reset_persisting_l2_cache() const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 #if (CUDA_VERSION >= 11000)
 		auto status = cuCtxResetPersistingL2Cache();
 		throw_if_error_lazy(status, "Failed resetting/clearing the persisting L2 cache memory");
@@ -561,7 +560,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
  	 */
 	void set_shared_memory_bank_size(context::shared_memory_bank_size_t bank_size) const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		context::detail_::set_shared_memory_bank_size(handle_, bank_size);
 	}
 
@@ -573,13 +572,13 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	 */
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		context::detail_::set_cache_preference(handle_, preference);
 	}
 
 	void set_limit(context::limit_t limit_id, context::limit_value_t new_value) const
 	{
-		scoped_setter_type set_context_for_this_scope(handle_);
+		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::set_limit(limit_id, new_value);
 	}
 

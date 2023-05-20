@@ -79,7 +79,7 @@ inline stream_t create(
 
 inline void stream_t::enqueue_t::wait(const event_t& event_) const
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+	CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 
 	// Required by the CUDA runtime API; the flags value is currently unused
 	static constexpr const unsigned int flags = 0;
@@ -113,7 +113,7 @@ inline event_t stream_t::enqueue_t::event(
 	bool          interprocess) const
 {
 	auto context_handle = associated_stream.context_handle_;
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 
 		// Note that even if this stream is in the primary context, the created event
 	auto ev = event::detail_::create_in_current_context(
@@ -150,7 +150,7 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 		throw ::std::invalid_argument("Attempt to copy attributes between streams on different contexts");
 	}
 #endif
-	context::current::detail_::scoped_override_t set_context_for_this_scope(dest.context_handle());
+	CAW_SET_SCOPE_CONTEXT(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
 	throw_if_error_lazy(status, "Copying attributes from " + stream::detail_::identify(src)
 		+ " to " + stream::detail_::identify(src));

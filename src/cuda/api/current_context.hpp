@@ -188,6 +188,17 @@ public:
 	~scoped_override_t() noexcept(false);
 };
 
+///@cond
+/*
+ * This macro is intended for use inside the cuda-api-wrappers implementation, to 
+ * save us some typing; it's quite usable on the outside, but you probably want to
+ * use the context_t objects, and for safety (e.g. w.r.t. primary device contexts),
+ * prefer @ref SET_CUDA_CONTEXT_FOR_THIS_SCOPE instead.
+ */
+#define CAW_SET_SCOPE_CONTEXT(context_handle_expr_) \
+const cuda::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
+///@endcond
+
 /**
  * @note See also the more complex @ref cuda::context::current::scoped_existence_ensurer_t ,
  * which does _not_ take a fallback context handle, and rather obtains a reference to
@@ -218,8 +229,14 @@ public:
 
 } // namespace detail_
 
-#define SET_CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
-	const ::cuda::context::current::scoped_override_t context_for_this_scope{ _cuda_context }
+/**
+ * This macro will set the current device for the remainder of the scope in which it is
+ * invoked, and will change it back to the previous value when exiting the scope. Use
+ * it as an opaque command, which does not explicitly expose the variable defined under
+ * the hood to effect this behavior.
+ */
+#define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
+	::cuda::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
 
 inline void synchronize()
 {

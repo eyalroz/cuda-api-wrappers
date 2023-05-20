@@ -37,7 +37,7 @@ module_t context_t::create_module(ContiguousContainer module_data, const link::o
 // These API calls are not really the way you want to work.
 inline cuda::kernel_t module_t::get_kernel(const char* name) const
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	kernel::handle_t kernel_function_handle;
 	auto result = cuModuleGetFunction(&kernel_function_handle, handle_, name);
 	throw_if_error_lazy(result, ::std::string("Failed obtaining function ") + name
@@ -53,7 +53,7 @@ namespace detail_ {
 template <typename Creator>
 module_t create(const context_t& context, const void* module_data, Creator creator_function)
 {
-	context::current::scoped_override_t set_context_for_this_scope(context);
+	CAW_SET_SCOPE_CONTEXT(context.handle());
 	handle_t new_module_handle;
 	auto status = creator_function(new_module_handle, module_data);
 	throw_if_error_lazy(status, ::std::string("Failed loading a module from memory location ")
@@ -127,7 +127,7 @@ inline device_t module_t::device() const { return device::get(context::detail_::
 #if CUDA_VERSION < 12000
 inline CUsurfref module_t::get_surface(const char* name) const
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUsurfref raw_surface_reference;
 	auto status = cuModuleGetSurfRef(&raw_surface_reference, handle_, name);
 	throw_if_error_lazy(status, ::std::string("Failed obtaining a reference to surface \"") + name + "\" from "
@@ -137,7 +137,7 @@ inline CUsurfref module_t::get_surface(const char* name) const
 
 inline CUtexref module_t::get_texture_reference(const char* name) const
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUtexref raw_texture_reference;
 	auto status = cuModuleGetTexRef(&raw_texture_reference, handle_, name);
 	throw_if_error_lazy(status, ::std::string("Failed obtaining a reference to texture \"") + name + "\" from "

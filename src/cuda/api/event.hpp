@@ -409,7 +409,7 @@ inline event_t create(
 	bool               records_timing,
 	bool               interprocess)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 
 	return detail_::create_in_current_context(
 		device_id, context_handle,
@@ -422,7 +422,7 @@ inline void destroy(
 	device::id_t       device_id,
 	context::handle_t  context_handle)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	destroy_in_current_context(handle, device_id, context_handle);
 }
 

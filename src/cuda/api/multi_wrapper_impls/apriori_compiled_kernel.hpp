@@ -38,7 +38,7 @@ namespace cuda {
 inline kernel::attributes_t apriori_compiled_kernel_t::attributes() const
 {
 	// Note: assuming the primary context is active
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	kernel::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
 	throw_if_error_lazy(status, "Failed obtaining attributes for a CUDA device function");
@@ -48,7 +48,7 @@ inline kernel::attributes_t apriori_compiled_kernel_t::attributes() const
 inline void apriori_compiled_kernel_t::set_cache_preference(multiprocessor_cache_preference_t preference) const
 {
 	// Note: assuming the primary context is active
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	auto result = cudaFuncSetCacheConfig(ptr_, (cudaFuncCache) preference);
 	throw_if_error_lazy(result,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
@@ -59,7 +59,7 @@ inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
 	multiprocessor_shared_memory_bank_size_option_t  config) const
 {
 	// Note: assuming the primary context is active
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
 	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + ::std::to_string(config));
 }
@@ -67,7 +67,7 @@ inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
 inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
 {
 	// Note: assuming the primary context is active
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	cudaFuncAttribute runtime_attribute = [attribute]() {
 		switch (attribute) {
 			case CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES:

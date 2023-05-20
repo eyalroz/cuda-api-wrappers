@@ -159,7 +159,7 @@ inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 
 inline region_t allocate(context::handle_t context_handle, size_t size_in_bytes)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return allocate_in_current_context(size_in_bytes);
 }
 
@@ -848,7 +848,7 @@ status_t multidim_copy(
 	copy_parameters_t<NumDimensions>  params,
 	stream::handle_t                  stream_handle)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
@@ -1780,7 +1780,7 @@ inline region_t allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return allocate_in_current_context(num_bytes, initial_visibility);
 }
 
@@ -1975,7 +1975,7 @@ inline region_pair allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return detail_::allocate_in_current_context(context_handle, size_in_bytes, options);
 }
 

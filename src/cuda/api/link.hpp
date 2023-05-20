@@ -186,7 +186,7 @@ public: // constructors and destructor
 	~link_t() noexcept(false)
 	{
 		if (owning) {
-			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+			CAW_SET_SCOPE_CONTEXT(context_handle_);
 			auto status = cuLinkDestroy(handle_);
 			throw_if_error_lazy(status,
 				::std::string("Failed destroying the link ") + detail_::ptr_as_hex(handle_) +

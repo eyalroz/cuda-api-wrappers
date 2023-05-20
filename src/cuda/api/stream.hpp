@@ -279,7 +279,7 @@ public: // other non-mutators
 	 */
 	bool has_work_remaining() const
 	{
-		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		auto status = cuStreamQuery(handle_);
 			// Could have used the equivalent runtime API call:
 			// cuStreamQuery(handle_);
@@ -425,7 +425,7 @@ public: // mutators
 		void memset(void *destination, int byte_value, size_t num_bytes) const
 		{
 			// Is it necessary to set the device? I wonder.
-			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 			memory::device::async::detail_::set(destination, byte_value, num_bytes, associated_stream.handle_);
 		}
 
@@ -447,7 +447,7 @@ public: // mutators
 		 */
 		void memzero(void *destination, size_t num_bytes) const
 		{
-			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 			memory::device::async::detail_::zero(destination, num_bytes, associated_stream.handle_);
 		}
 
@@ -577,7 +577,7 @@ public: // mutators
 			const void* managed_region_start,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream) const
 		{
-			context::current::detail_::scoped_override_t set_context_for_this_scope(associated_stream.context_handle_);
+			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
@@ -771,7 +771,7 @@ public: // mutators
 #if CUDA_VERSION >= 11000
 	stream::synchronization_policy_t synchronization_policy()
 	{
-		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
 		throw_if_error_lazy(status, ::std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
@@ -780,7 +780,7 @@ public: // mutators
 
 	void set_synchronization_policy(stream::synchronization_policy_t policy)
 	{
-		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
@@ -824,7 +824,7 @@ public: // constructors and destructor
 	~stream_t() noexcept(false)
 	{
 		if (owning) {
-			context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
+			CAW_SET_SCOPE_CONTEXT(context_handle_);
 			cuStreamDestroy(handle_);
 		}
 		// TODO: DRY
@@ -919,7 +919,7 @@ inline stream_t create(
 	priority_t         priority = stream::default_priority,
 	bool               hold_pc_refcount_unit = false)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto new_stream_handle = cuda::stream::detail_::create_raw_in_current_context(
 		synchronizes_with_default_stream, priority);
 	return wrap(device_id, context_handle, new_stream_handle, do_take_ownership, hold_pc_refcount_unit);
@@ -966,7 +966,7 @@ inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr addres
 template <typename Function>
 void enqueue_function_call(const stream_t& stream, Function function, void* argument)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 
 	// While we always register the same static function, `callback_adapter` as the
 	// callback - what it will actually _do_ is invoke the callback we were passed.
@@ -1034,7 +1034,7 @@ inline void synchronize(const stream_t& stream)
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble acting on a stream in another context - it balks at doing so under
 	// certain conditions, so we must place ourselves in the stream's context.
-	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	auto status = cuStreamSynchronize(stream.handle());
 	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail_::identify(stream));
 }

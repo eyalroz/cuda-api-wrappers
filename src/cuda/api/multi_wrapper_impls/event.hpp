@@ -57,7 +57,7 @@ inline event_t create(
 	//  context refcount.
 	//
 	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
-	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
+	CAW_SET_SCOPE_CONTEXT(pc.handle());
 	device::primary_context::detail_::increase_refcount(device.id());
 	return event::detail_::create_in_current_context(
 		device.id(),

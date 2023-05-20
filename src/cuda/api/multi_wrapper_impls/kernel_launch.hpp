@@ -103,7 +103,7 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 	{
 		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(arguments)...) };
 		auto function_handle = wrapped_kernel.handle();
-		context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+		CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 		launch_type_erased_in_current_context(
 			function_handle, stream.device_id(), stream.context_handle(),
 			stream.handle(), launch_config, marshalled_arguments.data());
@@ -122,7 +122,7 @@ void enqueue_launch(
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble enqueueing into a stream in another context - it balks at doing so under
 	// certain conditions, so we must place ourselves in the stream's context.
-	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
 		kernel_function, stream.handle(), launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
@@ -175,7 +175,7 @@ inline void launch_type_erased(
 		throw ::std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
 	}
 #endif
-	context::current::detail_::scoped_override_t set_context_for_this_scope{stream.context_handle()};
+	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	return detail_::launch_type_erased_in_current_context(
 		kernel.handle(),
 		stream.device_id(),

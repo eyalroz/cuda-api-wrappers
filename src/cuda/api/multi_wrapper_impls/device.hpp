@@ -163,7 +163,7 @@ inline device::primary_context_t device_t::primary_context(bool hold_pc_refcount
 inline void synchronize(const device_t& device)
 {
 	auto pc = device.primary_context();
-	context::current::detail_::scoped_override_t set_context_for_this_scope(pc.handle());
+	CAW_SET_SCOPE_CONTEXT(pc.handle());
 	context::current::detail_::synchronize(device.id(), pc.handle());
 }
 
