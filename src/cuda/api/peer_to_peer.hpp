@@ -162,7 +162,7 @@ namespace peer_to_peer {
  * @param peer device to be accessed
  * @return true iff acess is possible
  */
-inline bool can_access(device_t accessor, device_t peer);
+inline bool can_access(const device_t& accessor, const device_t& peer);
 
 /**
  * @brief Enable access by one CUDA device to the global memory of another
@@ -172,7 +172,7 @@ inline bool can_access(device_t accessor, device_t peer);
  *
  * @todo Consider disabling this, given that access is context-specific
  */
-inline void enable_access(device_t accessor, device_t peer);
+inline void enable_access(const device_t& accessor, const device_t& peer);
 
 /**
  * @brief Disable access by one CUDA device to the global memory of another
@@ -182,22 +182,22 @@ inline void enable_access(device_t accessor, device_t peer);
  *
  * @todo Consider disabling this, given that access is context-specific
  */
-inline void disable_access(device_t accessor, device_t peer);
+inline void disable_access(const device_t& accessor, const device_t& peer);
 
 /**
  * @brief Determine whether two CUDA devices can currently access each other.
  */
-inline bool can_access_each_other(device_t first, device_t second);
+inline bool can_access_each_other(const device_t& first, const device_t& second);
 
 /**
  * @brief Enable access both by the @p first to the @p second device and the other way around.
  */
-inline void enable_bidirectional_access(device_t first, device_t second);
+inline void enable_bidirectional_access(const device_t& first, const device_t& second);
 
 /**
  * @brief Disable access both by the @p first to the @p second device and the other way around.
  */
-inline void disable_bidirectional_access(device_t first, device_t second);
+inline void disable_bidirectional_access(const device_t& first, const device_t& second);
 
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
@@ -210,7 +210,7 @@ inline void disable_bidirectional_access(device_t first, device_t second);
  * @param second destination device
  * @return the numeric attribute value
  */
-inline attribute_value_t get_attribute(attribute_t attribute, device_t first, device_t second);
+inline attribute_value_t get_attribute(attribute_t attribute, const device_t& first, const device_t& second);
 
 } // namespace peer_to_peer
 } // namespace device

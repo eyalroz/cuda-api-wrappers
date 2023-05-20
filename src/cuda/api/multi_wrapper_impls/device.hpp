@@ -62,17 +62,17 @@ inline primary_context_t leaky_get(cuda::device::id_t device_id)
 
 namespace peer_to_peer {
 
-inline bool can_access(device_t accessor, device_t peer)
+inline bool can_access(const device_t& accessor, const device_t& peer)
 {
 	return detail_::can_access(accessor.id(), peer.id());
 }
 
-inline void enable_access(device_t accessor, device_t peer)
+inline void enable_access(const device_t& accessor, const device_t& peer)
 {
 	return context::peer_to_peer::enable_access(accessor.primary_context(), peer.primary_context());
 }
 
-inline void disable_access(device_t accessor, device_t peer)
+inline void disable_access(const device_t& accessor, const device_t& peer)
 {
 #ifndef NDEBUG
 	if (accessor == peer) {
@@ -82,12 +82,12 @@ inline void disable_access(device_t accessor, device_t peer)
 	context::peer_to_peer::disable_access(accessor.primary_context(), peer.primary_context());
 }
 
-inline bool can_access_each_other(device_t first, device_t second)
+inline bool can_access_each_other(const device_t& first, const device_t& second)
 {
 	return can_access(first, second) and can_access(second, first);
 }
 
-inline void enable_bidirectional_access(device_t first, device_t second)
+inline void enable_bidirectional_access(const device_t& first, const device_t& second)
 {
 #ifndef NDEBUG
 	if (first == second) {
@@ -97,7 +97,7 @@ inline void enable_bidirectional_access(device_t first, device_t second)
 	context::peer_to_peer::enable_bidirectional_access(first.primary_context(), second.primary_context());
 }
 
-inline void disable_bidirectional_access(device_t first, device_t second)
+inline void disable_bidirectional_access(const device_t& first, const device_t& second)
 {
 #ifndef NDEBUG
 	if (first == second) {
@@ -107,7 +107,7 @@ inline void disable_bidirectional_access(device_t first, device_t second)
 	context::peer_to_peer::disable_bidirectional_access(first.primary_context(), second.primary_context());
 }
 
-inline attribute_value_t get_attribute(attribute_t attribute, device_t first, device_t second)
+inline attribute_value_t get_attribute(attribute_t attribute, const device_t& first, const device_t& second)
 {
 #ifndef NDEBUG
 	if (first == second) {

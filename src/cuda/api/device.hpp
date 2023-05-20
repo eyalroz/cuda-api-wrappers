@@ -161,7 +161,7 @@ public:
 	 * @param peer the device which is to be accessed
 	 * @return true iff acesss is possible
 	 */
-	bool can_access(device_t peer) const
+	bool can_access(const device_t& peer) const
 	{
 		CAW_SET_SCOPE_CONTEXT(primary_context_handle());
 		int result;

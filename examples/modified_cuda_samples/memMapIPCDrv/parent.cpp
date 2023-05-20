@@ -129,7 +129,7 @@ void getDefaultSecurityDescriptor(CUmemAllocationProp *prop)
 #endif
 }
 
-allocation_t make_allocation(cuda::device_t device,	size_t single_allocation_size)
+allocation_t make_allocation(const cuda::device_t& device, size_t single_allocation_size)
 {
 	auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 

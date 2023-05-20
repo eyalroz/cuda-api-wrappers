@@ -98,7 +98,7 @@ properties_t create_properties(cuda::device::id_t device_id)
 } // namespace detail_
 
 template<physical_allocation::shared_handle_kind_t SharedHandleKind>
-properties_t create_properties_for(cuda::device_t device);
+properties_t create_properties_for(const device_t& device);
 
 } // namespace physical_allocation
 
@@ -353,13 +353,13 @@ inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-access_permissions_t get_access_mode(region_t fully_mapped_region, device_t device);
+access_permissions_t get_access_mode(region_t fully_mapped_region, const device_t& device);
 
 /**
  * Determines what kind of access a device has to a the region of memory mapped to a single
  * physical allocation.
  */
-access_permissions_t get_access_mode(mapping_t mapping, device_t device);
+access_permissions_t get_access_mode(mapping_t mapping, const device_t& device);
 
 /**
  * Set the access mode from a single device to a mapped region in the (universal) address space
@@ -367,13 +367,13 @@ access_permissions_t get_access_mode(mapping_t mapping, device_t device);
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-void set_access_mode(region_t fully_mapped_region, device_t device, access_permissions_t access_mode);
+void set_access_mode(region_t fully_mapped_region, const device_t& device, access_permissions_t access_mode);
 
 /**
  * Set the access mode from a single device to the region of memory mapped to a single
  * physical allocation.
  */
-void set_access_mode(mapping_t mapping, device_t device, access_permissions_t access_mode);
+void set_access_mode(mapping_t mapping, const device_t& device, access_permissions_t access_mode);
 ///@}
 
 /**
@@ -435,8 +435,8 @@ public: // constructors & destructors
 	region_t address_range() const noexcept { return address_range_; }
 	bool is_owning() const noexcept { return owning_; }
 
-	access_permissions_t get_access_mode(device_t device) const;
-	void set_access_mode(device_t device, access_permissions_t access_mode) const;
+	access_permissions_t get_access_mode(const device_t& device) const;
+	void set_access_mode(const device_t& device, access_permissions_t access_mode) const;
 
 	template <template <typename... Ts> class ContiguousContainer>
 	inline void set_access_mode(
