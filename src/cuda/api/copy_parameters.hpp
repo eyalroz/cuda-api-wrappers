@@ -78,7 +78,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 
 	this_type& set_context(endpoint_t endpoint, const context_t& context) noexcept;
 
-	this_type& set_single_context(endpoint_t endpoint, const context_t& context) noexcept
+	this_type& set_single_context(const context_t& context) noexcept
 	{
 		set_context(endpoint_t::source, context);
 		set_context(endpoint_t::destination, context);
