@@ -47,7 +47,6 @@ enum source_kind_t {
 namespace rtc {
 
 using const_cstrings_span = span<const char* const>;
-using const_cstring_pairs_span = span<::std::pair<const char* const, const char* const>>;
 
 namespace program {
 

@@ -484,11 +484,10 @@ public: // other non-mutator methods
 	}
 
 protected:
-	context::flags_t flags() const
+	virtual context::flags_t flags() const
 	{
 		return context::detail_::get_flags(handle_);
 	}
-
 
 public: // methods which mutate the context, but not its wrapper
 	/**

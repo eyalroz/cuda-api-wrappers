@@ -144,8 +144,8 @@ protected: // constructors
 
 protected:
 
-	// Note: Hides the base class' non-virtual sflags() method
-	context::flags_t flags() const
+	// Note: Hides the base class' non-virtual flags() method
+	context::flags_t flags() const override
 	{
 		return primary_context::detail_::flags(device_id_);
 	}

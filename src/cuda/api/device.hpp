@@ -149,9 +149,6 @@ public: // types
 	}
 
 protected: // types
-	using context_setter_type = context::current::detail_::scoped_override_t;
-		// Note the context setter only affects the _currency_ of a context, not the
-		// activity of a primary context
 
 public:
 	/**

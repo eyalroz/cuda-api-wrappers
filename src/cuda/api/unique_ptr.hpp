@@ -55,7 +55,7 @@ inline typename detail_::make_unique_selector<T, Deleter>::unbounded_array make_
 	void* space_ptr = Allocator()(sizeof(element_type) * num_elements);
 	return typename detail_::make_unique_selector<T, Deleter>::unbounded_array(static_cast<element_type*>(space_ptr));
 }
-template<typename T, typename Allocator, typename Deleter, typename... Args>
+template<typename T, typename /* Allocator */, typename Deleter, typename... Args>
 inline typename detail_::make_unique_selector<T, Deleter>::bounded_array make_unique(Args&&...) = delete;
 
 using deleter = device::detail_::deleter;

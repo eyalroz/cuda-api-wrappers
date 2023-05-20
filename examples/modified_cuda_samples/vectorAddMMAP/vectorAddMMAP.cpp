@@ -40,7 +40,6 @@ constexpr const char *name = "vectorAdd_kernel";
 } // namespace kernel
 
 namespace virtual_mem = cuda::memory::virtual_;
-using allocation_properties_t = cuda::memory::physical_allocation::properties_t;
 constexpr const auto shared_mem_handle_kind = static_cast<cuda::memory::physical_allocation::shared_handle_kind_t>
 #if defined(__linux__)
 	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
@@ -48,7 +47,6 @@ constexpr const auto shared_mem_handle_kind = static_cast<cuda::memory::physical
 	(CU_MEM_HANDLE_TYPE_WIN32);
 #endif
 using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
-using mem_region_t = cuda::memory::region_t;
 using std::vector;
 
 size_t safe_round_up(size_t x, size_t divisor)
@@ -98,7 +96,7 @@ cuda::size_t determine_reservation_size(
 	return rounded_up_size;
 }
 
-template <template <typename... Ts> class Container>
+template <template <typename...> class Container>
 struct reserved_range_and_mappings {
 	virtual_mem::reserved_address_range_t reserved_range;
 	Container<virtual_mem::mapping_t> mappings;

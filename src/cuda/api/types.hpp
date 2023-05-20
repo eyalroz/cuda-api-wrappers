@@ -93,7 +93,7 @@ template<bool... bs>
 using all_true = ::std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
 // This is available in C++17 as ::std::void_t, but we're only assuming C++11
-template<typename... Ts>
+template<typename...>
 using void_t = void;
 
 // This is available in C++14

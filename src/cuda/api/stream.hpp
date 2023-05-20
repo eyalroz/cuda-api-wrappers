@@ -757,8 +757,6 @@ public: // mutators
 
 	}; // class enqueue_t
 
-	friend class enqueue_t;
-
 	/**
 	 * Block or busy-wait until all previously-scheduled work
 	 * on this stream has been completed
@@ -1025,9 +1023,6 @@ stream_t create(
 ///@}
 
 } // namespace stream
-
-using queue_t = stream_t;
-using queue_id_t = stream::handle_t;
 
 inline void synchronize(const stream_t& stream)
 {

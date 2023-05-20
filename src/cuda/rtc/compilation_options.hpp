@@ -77,27 +77,6 @@ inline const char* option_name_part(handling_method_t method)
 
 } // namespace error
 
-// An optional<bool>-like class, but with slightly different semantics -
-// as operator bool() would be confusing
-struct maybe_forced_bool {
-	bool is_forced;
-	bool force_value;
-
-	void force(bool b)
-	{
-		is_forced = false;
-		force_value = b;
-	}
-
-	maybe_forced_bool& operator=(bool b)
-	{
-		force(b);
-		return *this;
-	}
-	void unset() { is_forced = false; }
-	void unforce() { is_forced = false; }
-};
-
 template <source_kind_t Kind>
 struct compilation_options_base_t {
 	template <typename T>

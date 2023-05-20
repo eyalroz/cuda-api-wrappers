@@ -26,8 +26,6 @@ enum fallback_strategy_t {
 	prefer_binary  = 1,
 };
 
-
-using register_index_t = unsigned;
 using option_t = CUjit_option;
 
 struct marshalled_options_t {

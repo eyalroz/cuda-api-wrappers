@@ -383,13 +383,13 @@ void set_access_mode(mapping_t mapping, const device_t& device, access_permissio
  * covered entirely by virtual memory mappings.
  */
 ///@{
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 void set_access_mode(
 	region_t fully_mapped_region,
 	const ContiguousContainer<device_t>& devices,
 	access_permissions_t access_mode);
 
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 void set_access_mode(
 	region_t fully_mapped_region,
 	ContiguousContainer<device_t>&& devices,
@@ -401,13 +401,13 @@ void set_access_mode(
  * physical allocation.
  */
 ///@{
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 inline void set_access_mode(
 	mapping_t mapping,
 	const ContiguousContainer<device_t>& devices,
 	access_permissions_t access_mode);
 
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 inline void set_access_mode(
 	mapping_t mapping,
 	ContiguousContainer<device_t>&& devices,
@@ -438,12 +438,12 @@ public: // constructors & destructors
 	access_permissions_t get_access_mode(const device_t& device) const;
 	void set_access_mode(const device_t& device, access_permissions_t access_mode) const;
 
-	template <template <typename... Ts> class ContiguousContainer>
+	template <template <typename...> class ContiguousContainer>
 	inline void set_access_mode(
 		const ContiguousContainer<device_t>& devices,
 		access_permissions_t access_mode) const;
 
-	template <template <typename... Ts> class ContiguousContainer>
+	template <template <typename...> class ContiguousContainer>
 	inline void set_access_mode(
 		ContiguousContainer<device_t>&& devices,
 		access_permissions_t access_mode) const;

@@ -619,7 +619,7 @@ inline void set_access_mode(mapping_t mapping, const device_t& device, access_pe
 	set_access_mode(mapping.address_range(), device, access_mode);
 }
 
-template <template <typename... Ts> class Container>
+template <template <typename...> class Container>
 inline void set_access_mode(
 	region_t                     fully_mapped_region,
 	const Container<device_t>&   devices,
@@ -635,7 +635,7 @@ inline void set_access_mode(
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
-template <template <typename... Ts> class Container>
+template <template <typename...> class Container>
 inline void set_access_mode(
 	region_t                     fully_mapped_region,
 	Container<device_t>&&        devices,
@@ -644,7 +644,7 @@ inline void set_access_mode(
 	return set_access_mode(fully_mapped_region, devices, access_mode);
 }
 
-template <template <typename... Ts> class Container>
+template <template <typename...> class Container>
 inline void set_access_mode(
 	mapping_t                    mapping,
 	const Container<device_t>&&  devices,
@@ -653,7 +653,7 @@ inline void set_access_mode(
 	set_access_mode(mapping.address_range(), devices, access_mode);
 }
 
-template <template <typename... Ts> class Container>
+template <template <typename...> class Container>
 inline void set_access_mode(
 	mapping_t                    mapping,
 	Container<device_t>&&        devices,
@@ -682,7 +682,7 @@ inline void mapping_t::set_access_mode(const device_t& device, access_permission
 	virtual_::set_access_mode(*this, device, access_mode);
 }
 
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 void mapping_t::set_access_mode(
 	const ContiguousContainer<device_t>&  devices,
 	access_permissions_t                  access_mode) const
@@ -690,7 +690,7 @@ void mapping_t::set_access_mode(
 	virtual_::set_access_mode(*this, devices, access_mode);
 }
 
-template <template <typename... Ts> class ContiguousContainer>
+template <template <typename...> class ContiguousContainer>
 void mapping_t::set_access_mode(
 	ContiguousContainer<device_t>&&       devices,
 	access_permissions_t                  access_mode) const
