@@ -54,7 +54,7 @@ void pointer_properties(const cuda::device_t& device)
 		}
 		assert_(pointers[i].get_for_device() == raw_pointers[i]);
 		try {
-			[[maybe_unused]] auto host_ptr = pointers[i].get_for_host();
+			auto host_ptr = pointers[i].get_for_host();
 			(void) host_ptr; // Some compilers don't respect [[maybe_unused]] :-(
 			die_("Was expecting the host_ptr() method to fail for a device-side pointer");
 		} catch(cuda::runtime_error& e) {

@@ -1,12 +1,16 @@
-//
-// Created by eyalroz on 6/10/22.
-//
-
-#ifndef CUDA_API_WRAPPERS_LINK_HPP_
-#define CUDA_API_WRAPPERS_LINK_HPP_
+/**
+ * @file
+ *
+ * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
+ * of runtime-linking-related functions.
+ */
+#ifndef MULTI_WRAPPER_IMPLS_LINK_HPP_
+#define MULTI_WRAPPER_IMPLS_LINK_HPP_
 
 #include "../link.hpp"
 #include "../device.hpp"
+
+namespace cuda {
 
 inline cuda::device_t link_t::device() const
 {
@@ -19,5 +23,6 @@ inline cuda::context_t link_t::context() const
 	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 
+} // namespace cuda
 
-#endif //CUDA_API_WRAPPERS_LINK_HPP_
+#endif //MULTI_WRAPPER_IMPLS_LINK_HPP_

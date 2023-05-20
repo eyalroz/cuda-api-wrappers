@@ -236,7 +236,7 @@ simple_streams_params_t determine_params(const cuda::device_t& device)
 	auto properties = device.properties();
 	auto compute_capability = properties.compute_capability();
 
-	if (compute_capability < cuda::device::compute_capability_t({1, 1}) ) {
+	if (compute_capability < cuda::device::compute_capability_t{1, 1} ) {
 		std::cout << properties.name << " does not have Compute Capability 1.1 or newer. Reducing workload.\n";
 	}
 	// number of iterations for the loop inside the example kernel
