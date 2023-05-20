@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <random>
 
 const char* vectorAdd_source = R"(
 
@@ -58,7 +59,12 @@ int main(void)
 	auto h_B = std::unique_ptr<float[]>(new float[numElements]);
 	auto h_C = std::unique_ptr<float[]>(new float[numElements]);
 
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() {
+		static std::random_device random_device;
+		static std::mt19937 randomness_generator { random_device() };
+		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
+		return distribution(randomness_generator);
+	};
 	std::generate(h_A.get(), h_A.get() + numElements, generator);
 	std::generate(h_B.get(), h_B.get() + numElements, generator);
 

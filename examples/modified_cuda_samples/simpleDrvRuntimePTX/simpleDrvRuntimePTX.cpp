@@ -17,6 +17,7 @@
  */
 
 #include "../../common.hpp"
+#include <random>
 
 std::string create_ptx_file()
 {
@@ -136,7 +137,12 @@ int main(int argc, char** argv)
 	auto h_B = std::unique_ptr<float[]>(new float[N]);
 	auto h_C = std::unique_ptr<float[]>(new float[N]);
 
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() {
+		static std::random_device random_device;
+		static std::mt19937 randomness_generator { random_device() };
+		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
+		return distribution(randomness_generator);
+	};
 	std::generate_n(h_A.get(), N, generator);
 	std::generate_n(h_B.get(), N, generator);
 

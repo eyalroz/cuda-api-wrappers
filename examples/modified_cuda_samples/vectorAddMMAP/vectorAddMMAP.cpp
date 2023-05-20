@@ -27,6 +27,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <random>
 
 #include "../../enumerate.hpp"
 
@@ -246,7 +247,12 @@ int main()
 	auto h_B = std::unique_ptr<float[]>(new float[num_elements]);
 	auto h_C = std::unique_ptr<float[]>(new float[num_elements]);
 
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() {
+		static std::random_device random_device;
+		static std::mt19937 randomness_generator { random_device() };
+		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
+		return distribution(randomness_generator);
+	};
 	std::generate(h_A.get(), h_A.get() + num_elements, generator);
 	std::generate(h_B.get(), h_B.get() + num_elements, generator);
 
