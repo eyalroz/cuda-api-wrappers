@@ -389,7 +389,7 @@ public: // other non-mutator methods
 	/**
 	 * @return the maximum grid depth at which a thread can issue the device
 	 * runtime call `cudaDeviceSynchronize()` / `cuda::device::synchronize()`
-     * to wait on child grid launches to complete.
+	 * to wait on child grid launches to complete.
 	 *
 	 * @todo Is this really a feature of the context? Not of the device?
 	 */

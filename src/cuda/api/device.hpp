@@ -204,17 +204,17 @@ public:
 
 protected:
 	void cache_and_ensure_primary_context_activation() const {
-        if (primary_context_handle_ == context::detail_::none) {
-            primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
+		if (primary_context_handle_ == context::detail_::none) {
+			primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
 			holds_pc_refcount_unit = true;
-        }
+		}
 	}
 
-    context::handle_t primary_context_handle() const
-    {
+	context::handle_t primary_context_handle() const
+	{
 		cache_and_ensure_primary_context_activation();
-        return primary_context_handle_;
-    }
+		return primary_context_handle_;
+	}
 
 
 public:
@@ -428,8 +428,8 @@ public:
 	/**
 	 * Invalidates all memory allocations and resets all state regarding this
 	 * CUDA device on the current operating system process.
-     *
-     * @todo Determine whether this actually performs a hardware reset or not
+	 *
+	 * @todo Determine whether this actually performs a hardware reset or not
 	 */
 	void reset() const
 	{
@@ -441,9 +441,9 @@ public:
 		// 2. We don't need the primary context to be active here, so not using the usual
 		//    primary_context_handle() getter mechanism.
 
-	    auto pc_handle = (primary_context_handle_ == context::detail_::none) ?
-	        device::primary_context::detail_::obtain_and_increase_refcount(id_) :
-	        primary_context_handle_;
+		auto pc_handle = (primary_context_handle_ == context::detail_::none) ?
+			device::primary_context::detail_::obtain_and_increase_refcount(id_) :
+			primary_context_handle_;
 		CAW_SET_SCOPE_CONTEXT(pc_handle);
 		auto status = cudaDeviceReset();
 		throw_if_error_lazy(status, "Resetting " + device::detail_::identify(id_));
@@ -553,10 +553,10 @@ public:
 	}
 
 public:
-    context::flags_t flags() const
-    {
-        return device::primary_context::detail_::flags(id_);
-    }
+	context::flags_t flags() const
+	{
+		return device::primary_context::detail_::flags(id_);
+	}
 
 	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
 	{
@@ -565,20 +565,20 @@ public:
 
 	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy)
 	{
-        auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
-        set_flags(other_flags | static_cast<flags_type>(new_policy));
+		auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
+		set_flags(other_flags | static_cast<flags_type>(new_policy));
 	}
 
 	bool keeping_larger_local_mem_after_resize() const
 	{
-	    return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
+		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
 	void keep_larger_local_mem_after_resize(bool keep = true)
 	{
-        auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
-        flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
-        set_flags(new_flags);
+		auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
+		flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
+		set_flags(new_flags);
 	}
 
 	void dont_keep_larger_local_mem_after_resize()

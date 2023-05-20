@@ -169,7 +169,7 @@ struct span {
 	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
 	template<
-	    typename U = value_type,
+		typename U = value_type,
 		typename = typename ::std::enable_if<not ::std::is_const<U>::value>::type
 	>
 	operator span<const U>()
@@ -406,18 +406,18 @@ struct dimensions_t // this almost-inherits dim3
 	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
 	: x(x_), y(y_), z(z_) { }
 
-    constexpr __host__ __device__ dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
-    constexpr __host__ __device__ dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
-    constexpr __host__ __device__ dimensions_t(dim3&& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+	constexpr __host__ __device__ dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
+	constexpr __host__ __device__ dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+	constexpr __host__ __device__ dimensions_t(dim3&& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
 
-    constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
+	constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
 
 	// This _should_ have been constexpr, but nVIDIA have not marked the dim3 constructors
 	// as constexpr, so it isn't
-    __host__ __device__ operator dim3(void) const { return { x, y, z }; }
+	__host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
-    constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
-    constexpr __host__ __device__ dimensionality_t dimensionality() const
+	constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
+	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1));
 	}
@@ -933,55 +933,55 @@ using flags_t = unsigned;
  */
 enum host_thread_sync_scheduling_policy_t : unsigned int {
 
-    /**
-     * @brief Default behavior; yield or spin based on a heuristic.
-     *
-     * The default value if the flags parameter is zero, uses a heuristic
-     * based on the number of active CUDA contexts in the process C and
-     * the number of logical processors in the system P. If C > P, then
-     * CUDA will yield to other OS threads when waiting for the device,
-     * otherwise CUDA will not yield while waiting for results and
-     * actively spin on the processor.
-     */
-    heuristic = CU_CTX_SCHED_AUTO,
+	/**
+	 * @brief Default behavior; yield or spin based on a heuristic.
+	 *
+	 * The default value if the flags parameter is zero, uses a heuristic
+	 * based on the number of active CUDA contexts in the process C and
+	 * the number of logical processors in the system P. If C > P, then
+	 * CUDA will yield to other OS threads when waiting for the device,
+	 * otherwise CUDA will not yield while waiting for results and
+	 * actively spin on the processor.
+	 */
+	heuristic = CU_CTX_SCHED_AUTO,
 
 	/**
 	 * @brief Alias for the default behavior; see @ref heuristic .
 	 */
 	default_ = heuristic,
 
-    /**
-     * @brief Keep control and spin-check for result availability
-     *
-     * Instruct CUDA to actively spin when waiting for results from the
-     * device. This can decrease latency when waiting for the device, but
-     * may lower the performance of CPU threads if they are performing
-     * work in parallel with the CUDA thread.
-     *
-     */
-    spin      = CU_CTX_SCHED_SPIN,
+	/**
+	 * @brief Keep control and spin-check for result availability
+	 *
+	 * Instruct CUDA to actively spin when waiting for results from the
+	 * device. This can decrease latency when waiting for the device, but
+	 * may lower the performance of CPU threads if they are performing
+	 * work in parallel with the CUDA thread.
+	 *
+	 */
+	spin      = CU_CTX_SCHED_SPIN,
 
-    /**
-     * @brief Block the thread until results are available.
-     *
-     * Instruct CUDA to block the CPU thread on a synchronization
-     * primitive when waiting for the device to finish work.
-     */
-    block     = CU_CTX_SCHED_BLOCKING_SYNC,
+	/**
+	 * @brief Block the thread until results are available.
+	 *
+	 * Instruct CUDA to block the CPU thread on a synchronization
+	 * primitive when waiting for the device to finish work.
+	 */
+	block     = CU_CTX_SCHED_BLOCKING_SYNC,
 
-    /**
-     * @brief Yield control while waiting for results.
-     *
-     * Instruct CUDA to yield its thread when waiting for results from
-     * the device. This can increase latency when waiting for the
-     * device, but can increase the performance of CPU threads
-     * performing work in parallel with the device.
-     *
-     */
-    yield     = CU_CTX_SCHED_YIELD,
+	/**
+	 * @brief Yield control while waiting for results.
+	 *
+	 * Instruct CUDA to yield its thread when waiting for results from
+	 * the device. This can increase latency when waiting for the
+	 * device, but can increase the performance of CPU threads
+	 * performing work in parallel with the device.
+	 *
+	 */
+	yield     = CU_CTX_SCHED_YIELD,
 
-    /** see @ref heuristic */
-    automatic = heuristic,
+	/** see @ref heuristic */
+	automatic = heuristic,
 };
 
 } // namespace context
@@ -1008,10 +1008,10 @@ template <typename T, typename U>
 inline T identity_cast(U&& x)
 {
 	static_assert(::std::is_same<
-            typename ::std::remove_reference<T>::type,
-            typename ::std::remove_reference<U>::type
-        >::value,
-        "Casting to a different type - don't use identity_cast");
+			typename ::std::remove_reference<T>::type,
+			typename ::std::remove_reference<U>::type
+		>::value,
+		"Casting to a different type - don't use identity_cast");
 	return static_cast<T>(::std::forward<U>(x));
 }
 

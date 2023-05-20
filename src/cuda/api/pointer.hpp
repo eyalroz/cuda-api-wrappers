@@ -40,10 +40,10 @@ namespace memory {
  * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
  */
 enum type_t : ::std::underlying_type<CUmemorytype>::type {
-    host_         = CU_MEMORYTYPE_HOST,
-    device_       = CU_MEMORYTYPE_DEVICE,
+	host_         = CU_MEMORYTYPE_HOST,
+	device_       = CU_MEMORYTYPE_DEVICE,
 	array         = CU_MEMORYTYPE_ARRAY,
-    unified_      = CU_MEMORYTYPE_UNIFIED,
+	unified_      = CU_MEMORYTYPE_UNIFIED,
 	managed_      = CU_MEMORYTYPE_UNIFIED, // an alias (more like the runtime API name)
 	non_cuda      = ~(::std::underlying_type<CUmemorytype>::type{0})
 };

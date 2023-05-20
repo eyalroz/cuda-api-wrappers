@@ -159,10 +159,10 @@ public:
 
 	~scoped_existence_ensurer_t()
 	{
-	    if (context_handle != context::detail_::none and decrease_pc_refcount_on_destruct_) {
-            context::current::detail_::pop();
-	        device::primary_context::detail_::decrease_refcount(device_id_);
-	    }
+		if (context_handle != context::detail_::none and decrease_pc_refcount_on_destruct_) {
+			context::current::detail_::pop();
+			device::primary_context::detail_::decrease_refcount(device_id_);
+		}
 	}
 };
 

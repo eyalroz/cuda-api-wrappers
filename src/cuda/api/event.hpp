@@ -145,8 +145,7 @@ public: // data member non-mutator getters
 	bool              is_owning()       const noexcept { return owning; }
 
 	/// True if this wrapper has been associated with an increase of the device's primary context's reference count
-	bool              holds_primary_context_reference()
-	                                    const noexcept { return holds_pc_refcount_unit; }
+	bool              holds_primary_context_reference() const noexcept { return holds_pc_refcount_unit; }
 
 	/// The device w.r.t. which the event is defined
 	device_t          device()          const;

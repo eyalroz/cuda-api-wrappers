@@ -705,7 +705,7 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
 template <typename T, dimensionality_t NumDimensions>
 void copy(T *destination, const array_t<T, NumDimensions>& source)
 {
-    copy(context_of(destination), destination, source);
+	copy(context_of(destination), destination, source);
 }
 
 template <typename T, dimensionality_t NumDimensions>
@@ -869,8 +869,8 @@ void copy(T *destination, const array_t<T, NumDimensions>& source, stream::handl
 	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
 	params.set_default_pitches();
 	params.clear_rest();
-    auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-    throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
+	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
+	throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
 }
 
 
@@ -888,8 +888,8 @@ void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream
 	params.set_endpoint(endpoint_t::destination, destination);
 	params.set_default_pitches();
 	params.clear_rest();
-    auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-    throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
+	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
+	throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
 }
 
 /**

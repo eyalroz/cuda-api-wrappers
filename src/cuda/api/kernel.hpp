@@ -122,7 +122,7 @@ public: // getters
 #ifndef NDEBUG
 		if (handle_ == nullptr) {
 			throw runtime_error(status::named_t::invalid_resource_handle,
-			    "CUDA driver handle unavailable for kernel");
+				"CUDA driver handle unavailable for kernel");
 		}
 #endif
 		return handle_;

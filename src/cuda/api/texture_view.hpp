@@ -117,7 +117,7 @@ public: // constructors and destructors
 
 		auto status = cuTexObjectCreate(&raw_view_handle, &resource_descriptor, &descriptor, nullptr);
 		throw_if_error_lazy(status, "failed creating a CUDA texture object");
-    }
+	}
 
 public: // operators
 

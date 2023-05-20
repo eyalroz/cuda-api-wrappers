@@ -317,7 +317,7 @@ public:
 	/**
 	 * @param device the device the kernels running on which are governed by this new setting
 	 * @param permissions new read and write permissions to use
-     */
+	 */
 	void set_access_permissions(const cuda::device_t& device, access_permissions_t permissions)
 	{
 		return memory::set_access_permissions(device, *this, permissions);
@@ -327,7 +327,7 @@ public:
 	 * @param device the device the kernels running on which are governed by this new setting
 	 * @param read_permission true if kernels are allowed to read from memory allocated by this pool
 	 * @param write_permission true if kernels are allowed to write to memory allocated by this pool
-     */
+	 */
 	void set_access_permissions(const cuda::device_t& device, bool read_permission, bool write_permission)
 	{
 		set_access_permissions(device, access_permissions_t{read_permission, write_permission});
@@ -336,7 +336,7 @@ public:
 	/**
 	 * @param device the devices the kernels running on which are governed by this new setting
 	 * @param permissions new read and write permissions to use
-     */
+	 */
 	template <typename DeviceRange>
 	void set_access_permissions(DeviceRange devices, access_permissions_t permissions)
 	{

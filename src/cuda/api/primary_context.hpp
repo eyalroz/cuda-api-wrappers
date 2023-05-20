@@ -21,31 +21,31 @@ namespace primary_context {
 namespace detail_ {
 
 struct state_t {
-    context::flags_t flags;
-    int              is_active; // non-zero value means true
+	context::flags_t flags;
+	int              is_active; // non-zero value means true
 };
 
 inline state_t raw_state(device::id_t device_id)
 {
-    state_t result;
-    auto status = cuDevicePrimaryCtxGetState(device_id, &result.flags, &result.is_active);
-    throw_if_error(status, "Failed obtaining the state of the primary context for " + device::detail_::identify(device_id));
-    return result;
+	state_t result;
+	auto status = cuDevicePrimaryCtxGetState(device_id, &result.flags, &result.is_active);
+	throw_if_error(status, "Failed obtaining the state of the primary context for " + device::detail_::identify(device_id));
+	return result;
 }
 
 inline context::flags_t flags(device::id_t device_id)
 {
-    return raw_state(device_id).flags & ~CU_CTX_MAP_HOST;
-        // CU_CTX_MAP_HOST is ignored since CUDA 3.2, and has been officially
-        // deprecated in CUDA 11. Moreover, in CUDA 11 (and possibly other versions),
-        // the flags you get with cuDevicePrimaryCtxGetState() and cuCtxGetFlag()
-        // differ on this particular flag - and cuDevicePrimaryCtxSetFlags() doesn't
-        // like seeing it.
+	return raw_state(device_id).flags & ~CU_CTX_MAP_HOST;
+		// CU_CTX_MAP_HOST is ignored since CUDA 3.2, and has been officially
+		// deprecated in CUDA 11. Moreover, in CUDA 11 (and possibly other versions),
+		// the flags you get with cuDevicePrimaryCtxGetState() and cuCtxGetFlag()
+		// differ on this particular flag - and cuDevicePrimaryCtxSetFlags() doesn't
+		// like seeing it.
 }
 
 inline bool is_active(device::id_t device_id)
 {
-    return raw_state(device_id).is_active;
+	return raw_state(device_id).is_active;
 }
 
 // We used this wrapper for a one-linear to track PC releases
@@ -73,7 +73,7 @@ inline handle_t obtain_and_increase_refcount(device::id_t device_id)
 
 inline void increase_refcount(device::id_t device_id)
 {
-    obtain_and_increase_refcount(device_id);
+	obtain_and_increase_refcount(device_id);
 }
 
 } // namespace detail_
@@ -111,23 +111,23 @@ class primary_context_t : public context_t {
 
 protected: // data members
 
-    /**
-     * @brief Responsibility for a unit of reference to the primary context.
-     *
-     * When true, the object is "responsible" for decreasing, at some point,
-     * the number of references registered with the CUDA driver to the
-     * device's primary context.
-     *
-     * When false, it is assumed whoever constructed the object has full
-     * responsibility for the CUDA driver reference count, will not let
-     * it drop to 0 while this object is alive, and does not need this
-     * object to reduce the reference count itself.
-     *
-     * These two values correspond to different use-cases of constructing
-     * an object of this type, in particular - construction by lvalue and
-     * rvalue/temporary device_t proxy objects.
-     */
-    bool owns_refcount_unit_;
+	/**
+	 * @brief Responsibility for a unit of reference to the primary context.
+	 *
+	 * When true, the object is "responsible" for decreasing, at some point,
+	 * the number of references registered with the CUDA driver to the
+	 * device's primary context.
+	 *
+	 * When false, it is assumed whoever constructed the object has full
+	 * responsibility for the CUDA driver reference count, will not let
+	 * it drop to 0 while this object is alive, and does not need this
+	 * object to reduce the reference count itself.
+	 *
+	 * These two values correspond to different use-cases of constructing
+	 * an object of this type, in particular - construction by lvalue and
+	 * rvalue/temporary device_t proxy objects.
+	 */
+	bool owns_refcount_unit_;
 
 protected: // constructors
 
@@ -137,10 +137,10 @@ protected: // constructors
 			bool               decrease_refcount_on_destruction) noexcept
 	: context_t(device_id, handle, false),
 	  owns_refcount_unit_(decrease_refcount_on_destruction) { }
-	    // Note we are _not_ increasing the reference count; we assume
-	    // the primary context is already active. Also, like any context
-	    // proxy, we are not making this context current on construction
-	    // nor expecting it to be current throughout its lifetime.
+		// Note we are _not_ increasing the reference count; we assume
+		// the primary context is already active. Also, like any context
+		// proxy, we are not making this context current on construction
+		// nor expecting it to be current throughout its lifetime.
 
 protected:
 
@@ -150,19 +150,19 @@ protected:
 		return primary_context::detail_::flags(device_id_);
 	}
 
-    void set_flags(flags_type new_flags) const
-    {
-        auto status = cuDevicePrimaryCtxSetFlags(device_id_, new_flags);
-        throw_if_error(status, "Failed setting primary context flags for " + device::detail_::identify(device_id_));
-    }
+	void set_flags(flags_type new_flags) const
+	{
+		auto status = cuDevicePrimaryCtxSetFlags(device_id_, new_flags);
+		throw_if_error(status, "Failed setting primary context flags for " + device::detail_::identify(device_id_));
+	}
 
-    void set_flags(
-        device::host_thread_sync_scheduling_policy_t
-               sync_scheduling_policy = device::host_thread_sync_scheduling_policy_t::heuristic,
-        bool   keep_larger_local_mem_after_resize = true)
-    {
-        set_flags(context::detail_::make_flags(sync_scheduling_policy, keep_larger_local_mem_after_resize));
-    }
+	void set_flags(
+		device::host_thread_sync_scheduling_policy_t
+		       sync_scheduling_policy = device::host_thread_sync_scheduling_policy_t::heuristic,
+		bool   keep_larger_local_mem_after_resize = true)
+	{
+		set_flags(context::detail_::make_flags(sync_scheduling_policy, keep_larger_local_mem_after_resize));
+	}
 
 public:
 
@@ -170,7 +170,7 @@ public:
 
 public: // friendship
 
-    friend class device_t;
+	friend class device_t;
 	friend primary_context_t device::primary_context::detail_::wrap(device::id_t, context::handle_t, bool) noexcept;
 
 public: // constructors and destructor
@@ -178,9 +178,9 @@ public: // constructors and destructor
 	primary_context_t(const primary_context_t& other)
 	: context_t(other), owns_refcount_unit_(other.owns_refcount_unit_)
 	{
-	    if (owns_refcount_unit_) {
-	        primary_context::detail_::obtain_and_increase_refcount(device_id_);
-	    }
+		if (owns_refcount_unit_) {
+			primary_context::detail_::obtain_and_increase_refcount(device_id_);
+		}
 	}
 
 
@@ -195,7 +195,7 @@ public: // constructors and destructor
 #else
 			primary_context::detail_::decrease_refcount(device_id_);
 #endif
-	    }
+		}
 	}
 
 public: // operators
@@ -206,27 +206,27 @@ public: // operators
 public: // mutators of the proxied primary context, but not of the proxy
 
 	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy) const
-    {
-        auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
-        set_flags(other_flags | static_cast<flags_type>(new_policy));
-    }
+	{
+		auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
+		set_flags(other_flags | static_cast<flags_type>(new_policy));
+	}
 
-    bool keeping_larger_local_mem_after_resize() const
-    {
-        return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
-    }
+	bool keeping_larger_local_mem_after_resize() const
+	{
+		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
+	}
 
-    void keep_larger_local_mem_after_resize(bool keep = true) const
-    {
-        auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
-        flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
-        set_flags(new_flags);
-    }
+	void keep_larger_local_mem_after_resize(bool keep = true) const
+	{
+		auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
+		flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
+		set_flags(new_flags);
+	}
 
-    void dont_keep_larger_local_mem_after_resize() const
-    {
-        keep_larger_local_mem_after_resize(false);
-    }
+	void dont_keep_larger_local_mem_after_resize() const
+	{
+		keep_larger_local_mem_after_resize(false);
+	}
 };
 
 namespace primary_context {
@@ -277,9 +277,9 @@ primary_context_t leaky_get(device::id_t device_id);
 // meaning that the handle must have been obtained with an "unmatched"
 // refcount increase
 inline device::primary_context_t wrap(
-    id_t      device_id,
-    handle_t  handle,
-    bool      decrease_refcount_on_destruct) noexcept
+	id_t      device_id,
+	handle_t  handle,
+	bool      decrease_refcount_on_destruct) noexcept
 {
 	return {device_id, handle, decrease_refcount_on_destruct};
 }

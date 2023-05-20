@@ -570,7 +570,7 @@ inline ::std::string identify(const void* ptr)
 }
 inline ::std::string identify(const void* ptr, device::id_t device_id)
 {
-    return identify(ptr) + " on " + device::detail_::identify(device_id);
+	return identify(ptr) + " on " + device::detail_::identify(device_id);
 }
 inline ::std::string identify(const void* ptr, context::handle_t context_handle)
 {

@@ -79,166 +79,166 @@ namespace detail_ {
 
 template<typename UnaryFunction, class T>
 static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_(
-    int           *minGridSize,
-    int           *blockSize,
-    T              func,
-    UnaryFunction  blockSizeToDynamicSMemSize,
-    int            blockSizeLimit = 0,
-    unsigned int   flags = 0)
+	int           *minGridSize,
+	int           *blockSize,
+	T              func,
+	UnaryFunction  blockSizeToDynamicSMemSize,
+	int            blockSizeLimit = 0,
+	unsigned int   flags = 0)
 {
-    cudaError_t status;
+	cudaError_t status;
 
-    // Device and function properties
-    int                       device;
-    struct cudaFuncAttributes attr;
+	// Device and function properties
+	int                       device;
+	struct cudaFuncAttributes attr;
 
-    // Limits
-    int maxThreadsPerMultiProcessor;
-    int warpSize;
-    int devMaxThreadsPerBlock;
-    int multiProcessorCount;
-    int funcMaxThreadsPerBlock;
-    int occupancyLimit;
-    int granularity;
+	// Limits
+	int maxThreadsPerMultiProcessor;
+	int warpSize;
+	int devMaxThreadsPerBlock;
+	int multiProcessorCount;
+	int funcMaxThreadsPerBlock;
+	int occupancyLimit;
+	int granularity;
 
-    // Recorded maximum
-    int maxBlockSize = 0;
-    int numBlocks    = 0;
-    int maxOccupancy = 0;
+	// Recorded maximum
+	int maxBlockSize = 0;
+	int numBlocks    = 0;
+	int maxOccupancy = 0;
 
-    // Temporary
-    int blockSizeToTryAligned;
-    int blockSizeToTry;
-    int blockSizeLimitAligned;
-    int occupancyInBlocks;
-    int occupancyInThreads;
-    size_t dynamicSMemSize;
+	// Temporary
+	int blockSizeToTryAligned;
+	int blockSizeToTry;
+	int blockSizeLimitAligned;
+	int occupancyInBlocks;
+	int occupancyInThreads;
+	size_t dynamicSMemSize;
 
-    ///////////////////////////
-    // Check user input
-    ///////////////////////////
+	///////////////////////////
+	// Check user input
+	///////////////////////////
 
-    if (!minGridSize || !blockSize || !func) {
-        return cudaErrorInvalidValue;
-    }
+	if (!minGridSize || !blockSize || !func) {
+		return cudaErrorInvalidValue;
+	}
 
-    //////////////////////////////////////////////
-    // Obtain device and function properties
-    //////////////////////////////////////////////
+	//////////////////////////////////////////////
+	// Obtain device and function properties
+	//////////////////////////////////////////////
 
-    status = ::cudaGetDevice(&device);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = ::cudaGetDevice(&device);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    status = cudaDeviceGetAttribute(
-        &maxThreadsPerMultiProcessor,
-        cudaDevAttrMaxThreadsPerMultiProcessor,
-        device);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = cudaDeviceGetAttribute(
+		&maxThreadsPerMultiProcessor,
+		cudaDevAttrMaxThreadsPerMultiProcessor,
+		device);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    status = cudaDeviceGetAttribute(
-        &warpSize,
-        cudaDevAttrWarpSize,
-        device);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = cudaDeviceGetAttribute(
+		&warpSize,
+		cudaDevAttrWarpSize,
+		device);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    status = cudaDeviceGetAttribute(
-        &devMaxThreadsPerBlock,
-        cudaDevAttrMaxThreadsPerBlock,
-        device);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = cudaDeviceGetAttribute(
+		&devMaxThreadsPerBlock,
+		cudaDevAttrMaxThreadsPerBlock,
+		device);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    status = cudaDeviceGetAttribute(
-        &multiProcessorCount,
-        cudaDevAttrMultiProcessorCount,
-        device);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = cudaDeviceGetAttribute(
+		&multiProcessorCount,
+		cudaDevAttrMultiProcessorCount,
+		device);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    status = cudaFuncGetAttributes(&attr, func);
-    if (status != cudaSuccess) {
-        return status;
-    }
+	status = cudaFuncGetAttributes(&attr, func);
+	if (status != cudaSuccess) {
+		return status;
+	}
 
-    funcMaxThreadsPerBlock = attr.maxThreadsPerBlock;
+	funcMaxThreadsPerBlock = attr.maxThreadsPerBlock;
 
-    /////////////////////////////////////////////////////////////////////////////////
-    // Try each block size, and pick the block size with maximum occupancy
-    /////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////
+	// Try each block size, and pick the block size with maximum occupancy
+	/////////////////////////////////////////////////////////////////////////////////
 
-    occupancyLimit = maxThreadsPerMultiProcessor;
-    granularity    = warpSize;
+	occupancyLimit = maxThreadsPerMultiProcessor;
+	granularity    = warpSize;
 
-    if (blockSizeLimit == 0) {
-        blockSizeLimit = devMaxThreadsPerBlock;
-    }
+	if (blockSizeLimit == 0) {
+		blockSizeLimit = devMaxThreadsPerBlock;
+	}
 
-    if (devMaxThreadsPerBlock < blockSizeLimit) {
-        blockSizeLimit = devMaxThreadsPerBlock;
-    }
+	if (devMaxThreadsPerBlock < blockSizeLimit) {
+		blockSizeLimit = devMaxThreadsPerBlock;
+	}
 
-    if (funcMaxThreadsPerBlock < blockSizeLimit) {
-        blockSizeLimit = funcMaxThreadsPerBlock;
-    }
+	if (funcMaxThreadsPerBlock < blockSizeLimit) {
+		blockSizeLimit = funcMaxThreadsPerBlock;
+	}
 
-    blockSizeLimitAligned = ((blockSizeLimit + (granularity - 1)) / granularity) * granularity;
+	blockSizeLimitAligned = ((blockSizeLimit + (granularity - 1)) / granularity) * granularity;
 
-    for (blockSizeToTryAligned = blockSizeLimitAligned; blockSizeToTryAligned > 0; blockSizeToTryAligned -= granularity) {
-        // This is needed for the first iteration, because
-        // blockSizeLimitAligned could be greater than blockSizeLimit
-        //
-        if (blockSizeLimit < blockSizeToTryAligned) {
-            blockSizeToTry = blockSizeLimit;
-        } else {
-            blockSizeToTry = blockSizeToTryAligned;
-        }
+	for (blockSizeToTryAligned = blockSizeLimitAligned; blockSizeToTryAligned > 0; blockSizeToTryAligned -= granularity) {
+		// This is needed for the first iteration, because
+		// blockSizeLimitAligned could be greater than blockSizeLimit
+		//
+		if (blockSizeLimit < blockSizeToTryAligned) {
+			blockSizeToTry = blockSizeLimit;
+		} else {
+			blockSizeToTry = blockSizeToTryAligned;
+		}
 
-        dynamicSMemSize = blockSizeToDynamicSMemSize(blockSizeToTry);
+		dynamicSMemSize = blockSizeToDynamicSMemSize(blockSizeToTry);
 
-        status = cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
-            &occupancyInBlocks,
-            func,
-            blockSizeToTry,
-            dynamicSMemSize,
-            flags);
+		status = cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+			&occupancyInBlocks,
+			func,
+			blockSizeToTry,
+			dynamicSMemSize,
+			flags);
 
-        if (status != cudaSuccess) {
-            return status;
-        }
+		if (status != cudaSuccess) {
+			return status;
+		}
 
-        occupancyInThreads = blockSizeToTry * occupancyInBlocks;
+		occupancyInThreads = blockSizeToTry * occupancyInBlocks;
 
-        if (occupancyInThreads > maxOccupancy) {
-            maxBlockSize = blockSizeToTry;
-            numBlocks    = occupancyInBlocks;
-            maxOccupancy = occupancyInThreads;
-        }
+		if (occupancyInThreads > maxOccupancy) {
+			maxBlockSize = blockSizeToTry;
+			numBlocks    = occupancyInBlocks;
+			maxOccupancy = occupancyInThreads;
+		}
 
-        // Early out if we have reached the maximum
-        //
-        if (occupancyLimit == maxOccupancy) {
-            break;
-        }
-    }
+		// Early out if we have reached the maximum
+		//
+		if (occupancyLimit == maxOccupancy) {
+			break;
+		}
+	}
 
-    ///////////////////////////
-    // Return best available
-    ///////////////////////////
+	///////////////////////////
+	// Return best available
+	///////////////////////////
 
-    // Suggested min grid size to achieve a full machine launch
-    //
-    *minGridSize = numBlocks * multiProcessorCount;
-    *blockSize = maxBlockSize;
+	// Suggested min grid size to achieve a full machine launch
+	//
+	*minGridSize = numBlocks * multiProcessorCount;
+	*blockSize = maxBlockSize;
 
-    return status;
+	return status;
 }
 
 #if CUDA_VERSION > 10000
@@ -246,48 +246,48 @@ static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWith
 // if block_size_limit is 0, it is ignored.
 template <typename UnaryFunction>
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-    const void*                    kernel_function_ptr,
-    cuda::device::id_t             device_id,
-    UnaryFunction                  determine_shared_mem_by_block_size,
-    cuda::grid::block_dimension_t  block_size_limit,
-    bool                           disable_caching_override)
+	const void*                    kernel_function_ptr,
+	cuda::device::id_t             device_id,
+	UnaryFunction                  determine_shared_mem_by_block_size,
+	cuda::grid::block_dimension_t  block_size_limit,
+	bool                           disable_caching_override)
 {
-    int min_grid_size_in_blocks { 0 };
-    int block_size { 0 };
-    // Note: only initializing the values her because of a
-    // spurious (?) compiler warning about potential uninitialized use.
+	int min_grid_size_in_blocks { 0 };
+	int block_size { 0 };
+	// Note: only initializing the values her because of a
+	// spurious (?) compiler warning about potential uninitialized use.
 
-    unsigned flags = disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
-    auto result = (cuda::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, const void*>(
-        &min_grid_size_in_blocks,
-        &block_size,
-        kernel_function_ptr,
-        determine_shared_mem_by_block_size,
-        (int) block_size_limit,
-        flags);
+	unsigned flags = disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
+	auto result = (cuda::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, const void*>(
+		&min_grid_size_in_blocks,
+		&block_size,
+		kernel_function_ptr,
+		determine_shared_mem_by_block_size,
+		(int) block_size_limit,
+		flags);
 
-    throw_if_error(result,
-        "Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_function_ptr, device_id)
-        + " with maximum occupancy given dynamic shared memory and block size data");
-    return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
+	throw_if_error(result,
+		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_function_ptr, device_id)
+		+ " with maximum occupancy given dynamic shared memory and block size data");
+	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 }
 #endif // CUDA_VERSION > 10000
 
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
-    const void*              kernel_function_ptr,
-    grid::block_dimension_t  block_size_in_threads,
-    memory::shared::size_t   dynamic_shared_memory_per_block,
-    bool                     disable_caching_override)
+	const void*              kernel_function_ptr,
+	grid::block_dimension_t  block_size_in_threads,
+	memory::shared::size_t   dynamic_shared_memory_per_block,
+	bool                     disable_caching_override)
 {
-    // Assuming we don't need to set the current device here
-    int result;
-    cuda::status_t status = CUDA_SUCCESS;
-    auto flags = (unsigned) disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
-    status = (cuda::status_t) cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
-        &result, kernel_function_ptr, (int) block_size_in_threads, (int) dynamic_shared_memory_per_block, flags);
-    throw_if_error(status,
-        "Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");
-    return result;
+	// Assuming we don't need to set the current device here
+	int result;
+	cuda::status_t status = CUDA_SUCCESS;
+	auto flags = (unsigned) disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
+	status = (cuda::status_t) cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+		&result, kernel_function_ptr, (int) block_size_in_threads, (int) dynamic_shared_memory_per_block, flags);
+	throw_if_error(status,
+		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");
+	return result;
 }
 
 #endif
@@ -341,12 +341,12 @@ public: // non-mutators
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
 	{
-	    auto shared_memory_size_determiner =
-	        [dynamic_shared_memory_size](int) -> size_t { return dynamic_shared_memory_size; };
-	    return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
-	        ptr(), device_id(),
-	        shared_memory_size_determiner,
-	        block_size_limit, disable_caching_override);
+		auto shared_memory_size_determiner =
+			[dynamic_shared_memory_size](int) -> size_t { return dynamic_shared_memory_size; };
+		return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+			ptr(), device_id(),
+			shared_memory_size_determiner,
+			block_size_limit, disable_caching_override);
 	}
 
 	grid::composite_dimensions_t min_grid_params_for_max_occupancy(
@@ -354,10 +354,10 @@ public: // non-mutators
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
 	{
-        return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
-            ptr(), device_id(),
-            shared_memory_size_determiner,
-            block_size_limit, disable_caching_override);
+		return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+			ptr(), device_id(),
+			shared_memory_size_determiner,
+			block_size_limit, disable_caching_override);
 	}
 #endif
 
@@ -384,11 +384,11 @@ public: // non-mutators
 		memory::shared::size_t dynamic_shared_memory_per_block,
 		bool disable_caching_override = false) const override
 	{
-        return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
-            ptr(),
-            block_size_in_threads,
-            dynamic_shared_memory_per_block,
-            disable_caching_override);
+		return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
+			ptr(),
+			block_size_in_threads,
+			dynamic_shared_memory_per_block,
+			disable_caching_override);
 	}
 #endif // CAN_GET_APRIORI_KERNEL_HANDLE
 

@@ -80,17 +80,17 @@ namespace detail_ {
 template<typename P>
 struct kernel_parameter_decay {
 private:
-    using U = typename ::std::remove_reference<P>::type;
+	using U = typename ::std::remove_reference<P>::type;
 public:
-    using type = typename ::std::conditional<
-        ::std::is_array<U>::value,
-        typename ::std::remove_extent<U>::type*,
-        typename ::std::conditional<
-            ::std::is_function<U>::value,
-            typename ::std::add_pointer<U>::type,
-            U
-        >::type
-    >::type;
+	using type = typename ::std::conditional<
+		::std::is_array<U>::value,
+		typename ::std::remove_extent<U>::type*,
+		typename ::std::conditional<
+			::std::is_function<U>::value,
+			typename ::std::add_pointer<U>::type,
+			U
+		>::type
+	>::type;
 };
 
 template<typename P>
@@ -98,7 +98,7 @@ using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
 
 template<typename Fun>
 struct is_function_ptr: ::std::integral_constant<bool,
-    ::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
+	::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
 
 inline void collect_argument_addresses(void**) { }
 
