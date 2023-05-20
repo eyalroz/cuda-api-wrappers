@@ -47,7 +47,7 @@ std::vector<memory_mapping_t> import_and_map_allocations(
 	auto subregion_size = mappings_region.size() / shareable_handles.size();
 
 	std::vector<memory_mapping_t> mappings;
-//	mappings.reserve(shareable_handles.size()); // vector reservation, not vmem reservation)
+//	mappings.reserve(shareable_handles.size()); // vector reservation, not virtual memory reservation)
 	auto enumerated_shared_handles = enumerate(shareable_handles);
 	std::transform(enumerated_shared_handles.cbegin(), enumerated_shared_handles.cend(), std::back_inserter(mappings),
 		[&](decltype(enumerated_shared_handles)::const_value_type index_and_handle) {
@@ -65,14 +65,14 @@ std::vector<memory_mapping_t> import_and_map_allocations(
 
 std::string get_file_contents(const char *path)
 {
-	std::ios::openmode openmode = std::ios::in | std::ios::binary;
-	std::ifstream ifs(path, openmode);
+	std::ios::openmode open_mode = std::ios::in | std::ios::binary;
+	std::ifstream ifs(path, open_mode);
 	if (ifs.bad() or ifs.fail()) {
 		throw std::system_error(errno, std::system_category(), std::string("opening ") + path + " in binary read mode");
 	}
-	std::ostringstream sstr;
-	sstr << ifs.rdbuf();
-	return sstr.str();
+	std::ostringstream oss;
+	oss << ifs.rdbuf();
+	return oss.str();
 }
 
 shm_and_info_t open_shared_interprocess_memory()

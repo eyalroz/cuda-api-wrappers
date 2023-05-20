@@ -152,7 +152,7 @@ int main()
 	std::generate_n(input.get(), input_size, generator);
 	// TODO: Too bad we don't have a generator variant which passes the element index
 	{
-		const auto dynamic_shmem_size = sizeof(float) * 2 * num_threads_per_block;
+		const auto dynamic_shared_mem_size = sizeof(float) * 2 * num_threads_per_block;
 
 		auto d_input = cuda::memory::device::make_unique<float[]>(device, input_size);
 		auto d_output = cuda::memory::device::make_unique<float[]>(device, num_blocks);
@@ -163,7 +163,7 @@ int main()
 		auto launch_config = cuda::launch_config_builder()
 			.num_blocks(num_blocks)
 			.block_size(num_threads_per_block)
-			.dynamic_shared_memory_size(dynamic_shmem_size)
+			.dynamic_shared_memory_size(dynamic_shared_mem_size)
 			.build();
 		cuda::launch(kernel_in_module, launch_config, d_input.get(), d_output.get(), d_timers.get());
 		device.synchronize();

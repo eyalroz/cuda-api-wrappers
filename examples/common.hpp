@@ -148,7 +148,6 @@ void print_context_stack()
 	while(cuda::context::current::exists()) {
 		contexts.push_back(cuda::context::current::detail_::pop());
 	}
-//	std::cout << "" << contexts.size() << " contexts; top to bottom:\n";
 	for (auto handle : contexts) {
 		auto device_id = cuda::context::detail_::get_device_id(handle);
 		std::cout << handle << " for device " << device_id;

@@ -34,7 +34,7 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 
 	if (gtid.x < w && gtid.y < h) {
 		const float x = tex2D<float>(texture_source, gtid.x, gtid.y);
-//		printf("Thread %u %u, reading value %.4g, and writing to index %3u\n", gtid.x, gtid.y, x, gtid_serliazed);
+//		printf("Thread %u %u, reading value %.4g, and writing to index %3u\n", gtid.x, gtid.y, x, gtid_serialized);
 		destination[gtid_serialized] = x;
 	}
 }

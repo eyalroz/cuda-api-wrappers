@@ -14,7 +14,7 @@
 // This sample illustrates the usage of CUDA events for both GPU timing and
 // overlapping CPU and GPU execution.  Events are inserted into a stream
 // of CUDA calls.  Since CUDA stream calls are asynchronous, the CPU can
-// perform computations while GPU is executing (including DMA memcopies
+// perform computations while GPU is executing (including DMA memory-copies
 // between the host and device).  CPU can query CUDA events to determine
 // whether GPU has completed tasks.
 //
@@ -52,12 +52,12 @@ int main(int, char **)
 	std::cout << "CUDA device [" <<  device.name() << "]\n";
 
 	int n = 16 * 1024 * 1024;
-	int nbytes = n * sizeof(datum);
+	int num_bytes = n * sizeof(datum);
 	int value = 26;
 
 	// allocate host memory
 	auto a = cuda::memory::host::make_unique<datum[]>(n);
-	cuda::memory::host::zero(a.get(), nbytes);
+	cuda::memory::host::zero(a.get(), num_bytes);
 
 	auto d_a = cuda::memory::device::make_unique<datum[]>(device, n);
 
@@ -80,9 +80,9 @@ int main(int, char **)
 	auto stream = device.default_stream(); // device.create_stream(cuda::stream::async);
 	auto cpu_time_start = std::chrono::high_resolution_clock::now();
 	stream.enqueue.event(start_event);
-	stream.enqueue.copy(d_a.get(), a.get(), nbytes);
+	stream.enqueue.copy(d_a.get(), a.get(), num_bytes);
 	stream.enqueue.kernel_launch(increment_kernel, launch_config, d_a.get(), value);
-	stream.enqueue.copy(a.get(), d_a.get(), nbytes);
+	stream.enqueue.copy(a.get(), d_a.get(), num_bytes);
 	stream.enqueue.event(end_event);
 	auto cpu_time_end = std::chrono::high_resolution_clock::now();
 
