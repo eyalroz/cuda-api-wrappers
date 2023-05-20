@@ -59,7 +59,7 @@ struct stream_priority_range_t {
  * Obtain a wrapper for an already-existing CUDA context
  *
  * @note This is a named constructor idiom instead of direct access to the ctor of the same
- * signature, to emphase what this construction means - a new context is _not_
+ * signature, to emphasize what this construction means - a new context is _not_
  * created.
  *
  * @param device_id Device with which the context is associated
@@ -259,7 +259,7 @@ public: // inner classes
 		/**
 		 * Allocates memory on the device whose pointer is also visible on the host,
 		 * and possibly on other devices as well - with the same address. This is
-		 * nVIDIA's "managed memory" mechanism.
+		 * NVIDIA's "managed memory" mechanism.
 		 *
 		 * @note Managed memory isn't as "strongly associated" with a single device
 		 * as the result of allocate(), since it can be read or written from any
@@ -333,7 +333,7 @@ public: // data member non-mutator getters
 	 *  The amount of unallocated global device memory available to this context
 	 *  and not yet allocated.
 	 *
-	 *  @note It is not guaranteed that this entire amount can actually be succefully allocated.
+	 *  @note It is not guaranteed that this entire amount can actually be successfully allocated.
 	 */
 	size_t free_memory() const
 	{

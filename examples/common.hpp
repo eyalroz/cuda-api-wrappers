@@ -201,18 +201,17 @@ cuda::device::id_t choose_device(int argc, char const** argv)
 		die_("No CUDA devices on this system");
 	}
 
-	cuda::device::id_t device_id { -1 };
-	if (argc == 1) {
-		device_id = cuda::device::default_device_id;
-	}
-	else {
+	auto device_id = [&]() -> cuda::device::id_t {
+		if (argc == 1) {
+			return cuda::device::default_device_id;
+		}
 		std::string device_id_arg { argv[1] };
 		std::string prefix { "--device=" };
 		if (device_id_arg.rfind(prefix) == 0) {
 			device_id_arg = device_id_arg.substr(prefix.length());
 		}
-		device_id = std::stoi(device_id_arg);
-	}
+		return std::stoi(device_id_arg);
+	}();
 
 	if (device_id < 0) {
 		die_("A negative device ID cannot be valid");

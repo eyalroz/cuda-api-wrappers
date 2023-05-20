@@ -19,7 +19,6 @@ int sharedMemoryCreate(const char *name, size_t sz, sharedMemoryInfo *info) {
 
   return 0;
 #else
-  int status = 0;
 
   info->size = sz;
 
@@ -28,7 +27,7 @@ int sharedMemoryCreate(const char *name, size_t sz, sharedMemoryInfo *info) {
     return errno;
   }
 
-  status = ftruncate(info->shmFd, sz);
+  int status = ftruncate(info->shmFd, sz);
   if (status != 0) {
     return status;
   }
@@ -187,7 +186,7 @@ int ipcCreateSocket(ipcHandle *&handle, const char *name,
 }
 
 int ipcOpenSocket(ipcHandle *&handle) {
-  int sock = 0;
+  int sock;
   struct sockaddr_un cliaddr;
 
   handle = new ipcHandle;
@@ -243,7 +242,6 @@ int ipcRecvShareableHandle(ipcHandle *handle, ShareableHandle *shHandle) {
   } control_un;
 
   struct cmsghdr *cmptr;
-  ssize_t n;
   int receivedfd;
   char dummy_buffer[1];
 
@@ -256,7 +254,7 @@ int ipcRecvShareableHandle(ipcHandle *handle, ShareableHandle *shHandle) {
   msg.msg_iov = iov;
   msg.msg_iovlen = 1;
 
-  if ((n = recvmsg(handle->socket, &msg, 0)) <= 0) {
+  if (recvmsg(handle->socket, &msg, 0) <= 0) {
     perror("IPC failure: Receiving data over socket failed");
     return -1;
   }

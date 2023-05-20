@@ -392,10 +392,9 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	bool                    disable_caching_override)
 {
 	int result;
-	cuda::status_t status = CUDA_SUCCESS;
 		// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
 	auto flags = static_cast<unsigned>(disable_caching_override) ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
-	status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+	cuda::status_t status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, handle, static_cast<int>(block_size_in_threads), dynamic_shared_memory_per_block, flags);
 	throw_if_error_lazy(status,
 		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");

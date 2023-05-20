@@ -108,12 +108,12 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 
 	switch (cuda::memory::type_of(ptr)) {
 	using namespace cuda::memory;
-	case non_cuda:      die_("Pointer incorrectly reported to point into non-CUDA-allocated memory"); break;
-	case host_:         die_("Pointer incorrectly reported to point into host memory"); break;
-	case array:         die_("Pointer incorrectly reported to point to array memory"); break;
-//	case unregistered_memory: die_("Pointer incorrectly reported to point to \"unregistered\" memory"); break;
+	case non_cuda:      die_("Pointer incorrectly reported to point into non-CUDA-allocated memory");
+	case host_:         die_("Pointer incorrectly reported to point into host memory");
+	case array:         die_("Pointer incorrectly reported to point to array memory");
+//	case unregistered_memory: die_("Pointer incorrectly reported to point to \"unregistered\" memory");
 	case unified_:       std::cout << "Allocated global-device-memory pointer reported to be of unified memory type.";
-		// die_("Pointer incorrectly reported not to point to managed memory"); break;
+		// die_("Pointer incorrectly reported not to point to managed memory");
 	case device_:       break;
 	}
 #if CUDA_VERSION >= 9020

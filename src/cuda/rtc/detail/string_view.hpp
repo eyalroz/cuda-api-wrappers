@@ -1107,7 +1107,7 @@ namespace bpstd {
     basic_string_view<CharT,Traits>::cend()
     const noexcept
   {
-    return cend();
+    return end();
   }
 
   template<typename CharT, typename Traits>
@@ -1139,7 +1139,7 @@ namespace bpstd {
     basic_string_view<CharT,Traits>::crend()
     const noexcept
   {
-    return crend();
+    return rend();
   }
 
   template <typename CharT, typename Traits>

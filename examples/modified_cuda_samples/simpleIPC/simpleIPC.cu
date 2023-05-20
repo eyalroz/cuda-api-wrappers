@@ -163,7 +163,7 @@ void getDeviceCount(ipcDevices_t *devices)
 	}
 }
 
-inline bool IsAppBuiltAs64()
+constexpr inline bool IsAppBuiltAs64()
 {
 	return sizeof(void*) == 8;
 }

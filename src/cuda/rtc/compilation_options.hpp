@@ -121,6 +121,9 @@ struct compilation_options_base_t {
 	::std::unordered_set<cuda::device::compute_capability_t> targets_;
 
 public:
+	// TODO: Drop the following methods and make targets a custom
+	// inner class which can assigned, added to or subtracted from
+
 	/**
 	 * Have the compilation also target a specific compute capability.
 	 *
@@ -140,6 +143,7 @@ public:
 	 * @note any previous target settings are dropped, i.e. no other compute
 	 * capability will be targeted.
 	 */
+	///@{
 	compilation_options_base_t& set_target(device::compute_capability_t compute_capability)
 	{
 		targets_.clear();
@@ -151,6 +155,7 @@ public:
 	{
 		return set_target(device.compute_capability());
 	}
+	///@}
 
 };
 
@@ -439,39 +444,6 @@ protected:
 	void process(T& opts) const;
 
 public: // "shorthands" for more complex option setting
-
-	// TODO: Drop the following methods and make targets a custom
-	// inner class which can assigned, added to or subtracted from
-
-	/**
-	 * Have the compilation also target a specific compute capability.
-	 *
-	 * @note previously-specified compute capabilities will be targeted in
-	 * addition to the one specified.
-	 */
-	compilation_options_t& add_target(device::compute_capability_t compute_capability)
-	{
-		parent::add_target(compute_capability);
-		return *this;
-	}
-
-	/**
-	 * Have the compilation target one one specific compute capability.
-	 *
-	 * @note any previous target settings are dropped, i.e. no other compute
-	 * capability will be targeted.
-	 */
-	compilation_options_t& set_target(device::compute_capability_t compute_capability)
-	{
-		parent::set_target(compute_capability);
-		return *this;
-	}
-
-	compilation_options_t& set_target(device_t device)
-	{
-		parent::set_target(device);
-		return *this;
-	}
 
 	compilation_options_t& set_language_dialect(cpp_dialect_t dialect)
 	{
