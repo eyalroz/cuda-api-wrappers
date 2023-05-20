@@ -49,6 +49,7 @@ void check_output_is_iota(std::string name, const T* actual, size_t length) noex
 		if (actual[i] != i) {
 			if (not failed) {
 				std::cerr << name << ": Output does not matched expected values:\n";
+				failed = true;
 			}
 			std::cerr << "output[" << std::setw(3) << i << "] = " << actual[i] << " != " << i << '\n';
 		}
