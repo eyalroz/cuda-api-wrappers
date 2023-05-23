@@ -118,7 +118,7 @@ inline handle_t push_default_if_missing()
  * as then, the caller would often need to maintain these contexts after the call. Instead,
  * we fall back on a primary context of one of the devices - and since no particular device
  * is specified, we choose that to be the default device. When we do want the caller to keep
- * a context alive - we increase the primary context's refererence count, keeping it alive
+ * a context alive - we increase the primary context's reference count, keeping it alive
  * automatically. In these situations, the ref unit "leaks" past the scope of the ensurer
  * object - but the instantiator would be aware of this, having asked for such behavior
  * explicitly; and would itself carry the onus of decreasing the ref unit at some point.
