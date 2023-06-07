@@ -1531,8 +1531,11 @@ inline void register_(
 		region.size(),
 		register_mapped_io_space,
 		map_into_device_space,
-		make_device_side_accesible_to_all,
-		considered_read_only_by_device);
+		make_device_side_accesible_to_all
+#if CUDA_VERSION >= 11010
+		, considered_read_only_by_device
+#endif // CUDA_VERSION >= 11010
+		);
 }
 
 
@@ -1969,8 +1972,7 @@ inline region_pair allocate_in_current_context(
 	region_pair allocated {};
 	// The default initialization is unnecessary, but let's play it safe
 	allocated.size_in_bytes = size_in_bytes;
-	auto flags = CU_MEMHOSTALLOC_DEVICEMAP &
-		cuda::memory::detail_::make_cuda_host_alloc_flags(options);
+	auto flags = cuda::memory::detail_::make_cuda_host_alloc_flags(options);
 	auto status = cuMemHostAlloc(&allocated.host_side, size_in_bytes, flags);
 	if (is_success(status) && (allocated.host_side == nullptr)) {
 		// Can this even happen? hopefully not
