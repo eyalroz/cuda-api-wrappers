@@ -1453,7 +1453,8 @@ inline void register_(const void *ptr, size_t size, unsigned flags)
 	auto result = cuMemHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error_lazy(result,
 		"Could not register and page-lock the region of " + ::std::to_string(size) +
-		" bytes of host memory at " + cuda::detail_::ptr_as_hex(ptr));
+		" bytes of host memory at " + cuda::detail_::ptr_as_hex(ptr) +
+		" with flags " + cuda::detail_::as_hex(flags));
 }
 
 inline void register_(const_region_t region, unsigned flags)
@@ -1498,13 +1499,20 @@ enum accessibility_on_all_devices : bool {
 inline void register_(const void *ptr, size_t size,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
-	bool make_device_side_accesible_to_all)
+	bool make_device_side_accesible_to_all
+#if CUDA_VERSION >= 11010
+	, bool considered_read_only_by_device
+#endif // CUDA_VERSION >= 11010
+	)
 {
 	detail_::register_(
 		ptr, size,
 		(register_mapped_io_space ? CU_MEMHOSTREGISTER_IOMEMORY : 0)
 		| (map_into_device_space ? CU_MEMHOSTREGISTER_DEVICEMAP : 0)
 		| (make_device_side_accesible_to_all ? CU_MEMHOSTREGISTER_PORTABLE : 0)
+#if CUDA_VERSION >= 11010
+		| (considered_read_only_by_device ? CU_MEMHOSTREGISTER_READ_ONLY : 0)
+#endif // CUDA_VERSION >= 11010
 	);
 }
 
@@ -1512,14 +1520,19 @@ inline void register_(
 	const_region_t region,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
-	bool make_device_side_accesible_to_all)
+	bool make_device_side_accesible_to_all
+#if CUDA_VERSION >= 11010
+	, bool considered_read_only_by_device
+#endif // CUDA_VERSION >= 11010
+	)
 {
 	register_(
 		region.start(),
 		region.size(),
 		register_mapped_io_space,
 		map_into_device_space,
-		make_device_side_accesible_to_all);
+		make_device_side_accesible_to_all,
+		considered_read_only_by_device);
 }
 
 
