@@ -439,12 +439,15 @@ public:
 	}
 
 	/**
-	 * @brief Register a pre-mangled name of a kernel, to make available for use
+	 * @brief Register a pre-mangled name of a global, to make available for use
 	 * after compilation
 	 *
-	 * @param name The text of an expression, e.g. "my_global_func()", "f1", "N1::N2::n2",
+	 * @param unmangled_name The text of an expression, e.g. "my_global_func()", "f1", "N1::N2::n2",
 	 *
+	 * @note The name must continue to exist past the compilation of the program - as it is not copied,
+	 * only referenced
 	 */
+	///@{
 	program_t& add_registered_global(const char* unmangled_name)
 	{
 		globals_to_register_.push_back(unmangled_name);
@@ -455,14 +458,40 @@ public:
 		globals_to_register_.push_back(unmangled_name.c_str());
 		return *this;
 	}
+	// TODO: Accept string_view's with C++17
+	///@}
+
+	/**
+	 * @brief Register multiple pre-mangled names of global, to make available for use
+	 * after compilation
+	 *
+	 * @param globals_to_register a container of elements constituting the text of an expression
+	 * identifying a global, e.g. "my_global_func()", "f1", "N1::N2::n2",
+	 *
+	 * @note All names in the container must continue to exist past the compilation of the
+	 * program - as they are not copied, only referenced. Thus, as a safety precaution, we
+	 * also assume the container continues to exist
+	 */
+	///@{
+	template <typename Container>
+	program_t& add_registered_globals(const Container& globals_to_register)
+	{
+		globals_to_register_.reserve(globals_to_register_.size() + globals_to_register.size());
+		for(const auto& global_name : globals_to_register) {
+			add_registered_global(global_name);
+		}
+		return *this;
+	}
 
 	template <typename Container>
 	program_t& add_registered_globals(Container&& globals_to_register)
 	{
-		globals_to_register_.reserve(globals_to_register_.size() + globals_to_register.size());
-		::std::copy(globals_to_register.cbegin(), globals_to_register.cend(), ::std::back_inserter(globals_to_register_));
-		return *this;
+		static_assert(::std::is_same<typename Container::value_type, const char*>::value,
+			"For an rvalue container, we only accept raw C strings as the value type, to prevent"
+			"the possible passing of string-like objects at the end of their lifetime");
+		return add_registered_globals(static_cast<const Container&>(globals_to_register));
 	}
+	///@}
 
 public: // constructors and destructor
 	program_t(::std::string name) : program_base_t(::std::move(name)) {}
