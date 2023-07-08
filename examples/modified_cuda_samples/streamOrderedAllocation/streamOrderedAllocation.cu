@@ -189,9 +189,9 @@ int main(int argc, char **argv)
 
 	size_t nelem = 1048576;
 
-	auto a = std::unique_ptr<float>(new float[nelem]);
-	auto b = std::unique_ptr<float>(new float[nelem]);
-	auto c = std::unique_ptr<float>(new float[nelem]);
+	auto a = std::unique_ptr<float[]>(new float[nelem]);
+	auto b = std::unique_ptr<float[]>(new float[nelem]);
+	auto c = std::unique_ptr<float[]>(new float[nelem]);
 	std::generate_n(a.get(), nelem, [&] { return rand() / (float) RAND_MAX; });
 	std::generate_n(b.get(), nelem, [&] { return rand() / (float) RAND_MAX; });
 
