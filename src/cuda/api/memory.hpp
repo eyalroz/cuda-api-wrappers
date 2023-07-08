@@ -634,7 +634,8 @@ void copy(copy_parameters_t<NumDimensions> params)
  * @tparam NumDimensions the number of array dimensions; only 2 and 3 are supported values
  * @tparam T array element type
  *
- * @param destination A {@tparam NumDimensions}-dimensional CUDA array
+ * @param destination A {@tparam NumDimensions}-dimensional CUDA array, including a specification
+ * of the context in which the array is defined.
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
  */

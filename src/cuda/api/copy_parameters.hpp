@@ -108,7 +108,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	}
 
 	// Note: This assumes default pitch
-	// TODO: Perhaps we should have an dimensioned offset type?
+	// TODO: Perhaps we should have a dimensioned offset type?
 	template<typename T>
 	this_type& set_endpoint(
 		endpoint_t endpoint,

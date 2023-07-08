@@ -33,7 +33,7 @@ apriori_compiled_kernel_t get(
 	static_assert(
 		::std::is_pointer<KernelFunctionPtr>::value
 		and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
-		"function_ptr must be a bona fide pointer to a kernel (__global__) function");
+		"function must be a bona fide pointer to a kernel (__global__) function");
 
 	auto ptr_ = reinterpret_cast<const void *>(function_ptr);
 #if CAN_GET_APRIORI_KERNEL_HANDLE
