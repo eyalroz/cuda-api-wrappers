@@ -156,7 +156,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		void *ptr,
 		dimensions_type dimensions) noexcept
 	{
-		set_endpoint(endpoint_t::destination, context_handle, ptr, dimensions);
+		set_endpoint_untyped(endpoint_t::destination, context_handle, ptr, dimensions);
 	}
 
 	template<typename T>
