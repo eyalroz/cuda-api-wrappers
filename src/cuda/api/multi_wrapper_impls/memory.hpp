@@ -630,7 +630,7 @@ inline void set_access_mode(
 		descriptors[i] = {{CU_MEM_LOCATION_TYPE_DEVICE, devices[i].id()}, CUmemAccess_flags(access_mode)};
 	}
 	auto result = cuMemSetAccess(
-	device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
+		device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
