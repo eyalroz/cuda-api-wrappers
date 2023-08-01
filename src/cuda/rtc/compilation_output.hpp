@@ -84,7 +84,7 @@ inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle,
 	auto status = nvrtcGetProgramLogSize(program_handle, &size);
 	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation log size for "
 		+ identify<cuda_cpp>(program_handle, program_name));
-	return size;
+	return (size > 0) ? size - 1 : 0;
 }
 
 #if CUDA_VERSION >= 11010
@@ -311,8 +311,14 @@ public: // non-mutators
 	dynarray<char> log() const
 	{
 		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
-		dynarray<char> result(size);
+		::std::vector<char> result(size+1);
+		if (size == 0) { return result; }
 		program::detail_::get_log<source_kind>(result.data(), program_handle_, program_name_.c_str());
+		// Q: Isn't it kind of "cheating" to use an ::std::vector, then return it as a dynarray? What
+		//    if we get a proper dynarray which doesn't alias ::std::vector?
+		// A: Well, kind of; it would mean we might have to copy. However - a proper dynarray might
+		//    allow us to construct it with an arbitrary buffer, or a larger dynarray etc. - and
+		//    then we could ensure the allocation happens only once.
 		return result;
 	}
 	///@}
@@ -399,6 +405,7 @@ public: // non-mutators
 	{
 		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
+		if (size == 0) { return result; }
 		program::detail_::get_ptx(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
@@ -444,6 +451,7 @@ public: // non-mutators
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
+		if (size == 0) { return result; }
 		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
@@ -493,6 +501,7 @@ public: // non-mutators
 	{
 		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
+		if (size == 0) { return result; }
 		program::detail_::get_lto_ir(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
@@ -584,6 +593,7 @@ public: // non-mutators
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		dynarray<char> result(size);
+		if (size == 0) { return result; }
 		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
