@@ -21,6 +21,7 @@
 #include "../peer_to_peer.hpp"
 #include "../memory.hpp"
 #include "../context.hpp"
+#include "../../nvml/types.hpp"
 
 
 namespace cuda {
@@ -188,8 +189,12 @@ inline context_t create_and_push(
 inline context_t create(
 	const device_t&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
-	bool                                   keep_larger_local_mem_after_resize)
+	bool                                   keep_larger_local_mem_after_resize,
+	optional<nvml::device::clock::mem_and_sm_frequencies_t>         clocks)
 {
+	if (clocks) {
+		device.set_clocks_for_new_context(clocks.value());
+	}
 	auto created = create_and_push(device, sync_scheduling_policy, keep_larger_local_mem_after_resize);
 	current::pop();
 	return created;
@@ -297,11 +302,24 @@ inline device_t context_t::device() const
 }
 
 inline stream_t context_t::create_stream(
-	bool                will_synchronize_with_default_stream,
-	stream::priority_t  priority) const
+	bool                        will_synchronize_with_default_stream,
+	stream::priority_t          priority) const
 {
 	return stream::detail_::create(device_id_, handle_, will_synchronize_with_default_stream, priority);
 }
+
+/*
+/// @note: This will fail if you're not root
+void set_clock_for_new_contexts(
+	const cuda::device_t& device,
+	nvml::device::clock::mhz_frequency_range_t frequency_range)
+{
+	nvml::device::clock::detail_::set_for_future_contexts(
+		device.id(), clock_kind_t::memory, frequency_range);
+}
+*/
+
+
 
 inline event_t context_t::create_event(
 	bool uses_blocking_sync,

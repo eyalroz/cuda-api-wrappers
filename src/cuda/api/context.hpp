@@ -12,6 +12,7 @@
 #include "error.hpp"
 #include "constants.hpp"
 #include "types.hpp"
+#include "../nvml/device.hpp"
 
 #include <string>
 #include <utility>
@@ -837,7 +838,8 @@ inline handle_t create_and_push(
 context_t create(
 	const device_t&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
-	bool                                   keep_larger_local_mem_after_resize = false);
+	bool                                   keep_larger_local_mem_after_resize = false,
+	optional<nvml::device::clock::mem_and_sm_frequencies_t>     clocks = {});
 
 /**
  * Creates a new CUDA context on a given device, as would @ref create() - and pushes it

@@ -10,6 +10,8 @@
 #define CUDA_API_WRAPPERS_DEVICE_HPP_
 
 #include "types.hpp"
+#include "../nvml/device.hpp"
+#include "../nvml/miscellany.hpp"
 #include "current_device.hpp"
 #include "device_properties.hpp"
 #include "memory.hpp"
@@ -114,6 +116,23 @@ inline ::std::string get_name(id_t id)
 	return result;
 }
 
+/**
+ * Ensures NVML is initialized and, if we haven't initialized the NVML device
+ * handle with its valid value, obtains it
+ *
+ * @note This code could well belong in the constructor for this class - or
+ * even for the device_t class; but - we don't want to force users to always
+ * initialize NVML, so we have this method instead - and it must be invoked
+ * whenever a method of @ref global_memory_type needs to use NVML for anything.
+ */
+void ensure_nvml_handle_is_obtained(id_t device_id, nvml::device::handle_t& handle)
+{
+	nvml::ensure_initialization();
+	if (handle == nullptr) {
+		handle = nvml::device::detail_::get_handle(device_id);
+	}
+}
+
 } // namespace detail
 
 } // namespace device
@@ -140,8 +159,31 @@ public: // types
 	using properties_t = device::properties_t;
 	using attribute_value_t = device::attribute_value_t;
 
+	using mhz_frequency_t = nvml::device::clock::mhz_frequency_t;
+	using mhz_frequency_range_t = nvml::device::clock::mhz_frequency_range_t;
+	using mem_and_sm_frequencies_t = nvml::device::clock::mem_and_sm_frequencies_t;
+	using clocked_entity_t = nvml::device::clock::clocked_entity_t;
+	using clock_scope_t = nvml::device::clock::scope_t;
+
 #if CUDA_VERSION >= 11040
 	class global_memory_type : public context_t::global_memory_type {
+	public:
+		using parent = context_t::global_memory_type;
+
+	protected: // data members
+		nvml::device::handle_t& nvml_device_handle_;
+
+	public:
+		global_memory_type(
+			context_t::global_memory_type context_global_mem,
+			nvml::device::handle_t& nvml_device_handle)
+			: parent(context_global_mem), nvml_device_handle_(nvml_device_handle) { }
+
+		global_memory_type(
+			device::id_t             device_id,
+			context::handle_t        context_handle,
+			nvml::device::handle_t&  nvml_device_handle)
+			: global_memory_type(parent(device_id, context_handle), nvml_device_handle) { }
 
 		/**
 		 * Obtains the amount of memory used for execution-graph-related resource on
@@ -205,7 +247,38 @@ public: // types
 			return result;
 		}
 
-	};
+	public:
+		nvml::device::handle_t nvml_device_handle() const
+		{
+			device::detail_::ensure_nvml_handle_is_obtained(device_id_, nvml_device_handle_);
+			return nvml_device_handle_;
+		}
+
+		/// @note: This will fail if you're not root
+		void set_clock_globally(mhz_frequency_range_t frequency_range) const
+		{
+			nvml::device::clock::detail_::set_global(nvml_device_handle(), clocked_entity_t::memory, frequency_range);
+		}
+
+		//
+		void set_clock(mhz_frequency_t frequency) const
+		{
+			set_clock_globally({ frequency, frequency });
+		}
+
+		// Will fail if you're not root
+		void reset_clock() const
+		{
+			nvml::device::clock::detail_::reset(nvml_device_handle(), clocked_entity_t::memory);
+		}
+
+		mhz_frequency_t clock(clock_scope_t scope = clock_scope_t::global_and_immediate) const
+		{
+			return nvml::device::clock::detail_::get(nvml_device_handle(), scope, clocked_entity_t::memory);
+		}
+
+	}; // global_memory_type
+
 #endif // CUDA_VERSION >= 11040
 
 	/**
@@ -214,8 +287,9 @@ public: // types
 	 *
 	 * @todo Consider a scoped/unscoped dichotomy.
 	 */
-	context_t::global_memory_type memory() const {
-		return primary_context().memory();
+	global_memory_type memory() const
+	{
+		return global_memory_type{primary_context().memory(), nvml_handle_};
 	}
 
 protected: // types
@@ -596,6 +670,41 @@ public:
 		return id_;
 	}
 
+	nvml::device::handle_t nvml_handle() const noexcept
+	{
+		device::detail_::ensure_nvml_handle_is_obtained(id_, nvml_handle_);
+		return nvml_handle_;
+	}
+
+	/// @note: This will fail if you're not root
+	void set_clock_globally(clocked_entity_t clocked_entity, mhz_frequency_range_t frequency_range) const
+	{
+		nvml::device::clock::detail_::set_global(nvml_handle(), clocked_entity, frequency_range);
+	}
+
+	/// @note: This will fail if you're not root
+	void set_clock(clocked_entity_t clocked_entity, mhz_frequency_t frequency) const
+	{
+		set_clock_globally(clocked_entity, { frequency, frequency });
+	}
+
+	/// @note: This will fail if you're not root
+	void set_clocks_for_new_context(nvml::device::clock::mem_and_sm_frequencies_t frequencies) const
+	{
+		nvml::device::clock::detail_::set_for_future_contexts(nvml_handle(), frequencies.memory, frequencies.sm);
+	}
+
+	/// @note: This will fail if you're not root
+	void reset_clock(clocked_entity_t clocked_entity) const
+	{
+		nvml::device::clock::detail_::reset(nvml_handle(), clocked_entity);
+	}
+
+	mhz_frequency_t clock(clocked_entity_t clocked_entity, clock_scope_t scope = clock_scope_t::global_and_immediate) const
+	{
+		return nvml::device::clock::detail_::get(nvml_handle(), scope, clocked_entity);
+	}
+
 	/**
 	 * Obtain a wrapper for the (always-existing) default stream within
 	 * the device' primary context.
@@ -620,7 +729,8 @@ public:
 	/// See @ref cuda::context::create()
 	context_t create_context(
 		context::host_thread_sync_scheduling_policy_t   sync_scheduling_policy = context::heuristic,
-		bool                                            keep_larger_local_mem_after_resize = false) const;
+		bool                                            keep_larger_local_mem_after_resize = false,
+		optional<mem_and_sm_frequencies_t>              clocks = {}) const;
 
 #if CUDA_VERSION >= 11020
 
@@ -791,9 +901,10 @@ protected: // data members
 	mutable device::primary_context::handle_t primary_context_handle_ { context::detail_::none };
 		/// Most work involving a device actually occurs using its primary context; we cache the handle
 		/// to this context here - albeit not necessary on construction
-	mutable bool holds_pc_refcount_unit_ {false };
+	mutable bool holds_pc_refcount_unit_ { false };
 		/// Since we're allowed to cache the primary context handle on constant device_t's, we
 		/// also need to keep track of whether this object "owns" this reference.
+	mutable nvml::device::handle_t nvml_handle_ { nvml::device::no_handle };
 };
 
 ///@cond

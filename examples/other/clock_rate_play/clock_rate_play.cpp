@@ -1,6 +1,6 @@
 #include "../../common.hpp"
 
-#include <nvml.h>
+#include <cuda/nvml.hpp>
 #include <iostream>
 #include <cstdlib>
 
@@ -33,21 +33,18 @@ void list_sm_clock_rates(unsigned int device_count)
 
 int main()
 {
-	auto status = nvmlInit_v2();
-	check_status(status);
-	unsigned int device_count;
-	status = nvmlDeviceGetCount_v2 (&device_count);
-	check_status(status);
+	cuda::nvml::initialize();
+	auto device_count = cuda::nvml::device::count();
 	std::cout << "Device count: " << device_count << '\n';
+	if (device_count == 0) { exit(EXIT_SUCCESS); }
 	list_sm_clock_rates(device_count);
-	nvmlDevice_t device;
-	status = nvmlDeviceGetHandleByIndex_v2(0, &device);
+	auto cuda_device = cuda::device::default_();
+	// auto nvml_device = cuda::nvml::device::detail_::get_handle(0);
 	std::cout << "Locking clocks to 500-550\n";
-	nvmlDeviceSetGpuLockedClocks(device, 500, 550);
-	check_status(status);
+	cuda_device.set_clock_globally(cuda::device_t::clocked_entity_t::sm, {500, 550});
+	//check_status(status);
 	list_sm_clock_rates(device_count);
 	std::cout << "Resetting clocks\n";
-	nvmlDeviceResetGpuLockedClocks(device);
-	check_status(status);
+	cuda_device.reset_clock(cuda::device_t::clocked_entity_t::sm);
 	list_sm_clock_rates(device_count);
 }
