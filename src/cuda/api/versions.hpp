@@ -131,7 +131,7 @@ inline version_t make(int major, int minor) noexcept
  * the maximum CUDA version it supports is returned.
  * If no version is supported, @ref version_numbers::none() is returned.
  */
-inline version_t driver() {
+inline version_t corresponding_to_driver() {
 	combined_version_t version;
 	auto status = cuDriverGetVersion(&version);
 		// The same value would be returned using cuDriverGetVersion()
@@ -142,7 +142,7 @@ inline version_t driver() {
 /**
  * Obtains the CUDA Runtime version
  *
- * @note unlike {@ref driver()}, the value of @ref none() cannot be returned,
+ * @note unlike {@ref corresponding_to_driver()}, the value of @ref none() cannot be returned,
  * as we are actually using the runtime to obtain the version.
  */
 inline version_t runtime() {
