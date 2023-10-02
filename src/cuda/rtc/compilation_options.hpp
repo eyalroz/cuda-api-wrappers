@@ -485,8 +485,8 @@ struct opt_start_t {
 
 } // namespace detail_
 
-template <typename MarshalTarget, typename Delimiter>
-MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& opt_start)
+template <typename Delimiter>
+std::ostream& operator<<(std::ostream& mt, detail_::opt_start_t<Delimiter>& opt_start)
 {
 	if (not opt_start.ever_used) {
 		opt_start.ever_used = true;

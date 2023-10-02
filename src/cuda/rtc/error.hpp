@@ -192,9 +192,9 @@ inline void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
 
 #define throw_if_rtc_error_lazy(Kind, status__, ... ) \
 do { \
-	rtc::status_t<Kind> tie_status__ = static_cast<rtc::status_t<Kind>>(status__); \
-	if (is_failure<Kind>(tie_status__)) { \
-		throw rtc::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
+	::cuda::rtc::status_t<Kind> tie_status__ = static_cast<::cuda::rtc::status_t<Kind>>(status__); \
+	if (::cuda::is_failure<Kind>(tie_status__)) { \
+		throw ::cuda::rtc::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
 	} \
 } while(false)
 

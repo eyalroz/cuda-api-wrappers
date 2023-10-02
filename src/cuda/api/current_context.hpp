@@ -196,7 +196,7 @@ public:
  * prefer @ref SET_CUDA_CONTEXT_FOR_THIS_SCOPE instead.
  */
 #define CAW_SET_SCOPE_CONTEXT(context_handle_expr_) \
-const cuda::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
+const ::cuda::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
 ///@endcond
 
 /**

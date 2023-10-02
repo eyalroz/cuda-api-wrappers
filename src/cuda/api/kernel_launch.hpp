@@ -162,6 +162,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 			stream_handle
 		>>>(::std::forward<KernelParameters>(parameters)...);
 		cuda::outstanding_error::ensure_none("Kernel launch failed");
+		throw_if_error_lazy(cudaGetLastError(), "Kernel launch failed");
 	}
 	else {
 #if CUDA_VERSION < 9000
