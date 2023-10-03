@@ -216,9 +216,14 @@ constexpr bool is_failure(status_t status)  { return not is_success(status); }
 ///@{
 inline ::std::string describe(status_t status)
 {
+	// Even though status_t aliases the driver's CUresult type, some values are actually
+	// runtime error codes. The driver will fail to identify them (they're luckily distinct),
+	// and we can't distinguish proper failure from the case of a Runtime-API-only error
+	// code - so we also try the runtime API.
 	const char* description;
 	auto description_lookup_status = cuGetErrorString(status, &description);
-	return (description_lookup_status != CUDA_SUCCESS) ? nullptr : description;
+	return (description_lookup_status == CUDA_SUCCESS) ?
+		description : cudaGetErrorString(static_cast<cudaError_t>(status));
 }
 inline ::std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
 ///@}
