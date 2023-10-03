@@ -181,7 +181,7 @@ inline void set_to_default() { return detail_::set(device::default_device_id); }
  * the hood to effect this behavior.
  */
 #define CUDA_DEVICE_FOR_THIS_SCOPE(_cuda_device) \
-	::cuda::device::current::scoped_override_t scoped_device_override{ _cuda_device }
+::cuda::device::current::scoped_override_t scoped_device_override{ _cuda_device }
 
 
 } // namespace current

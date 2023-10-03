@@ -312,9 +312,9 @@ private:
 
 #define throw_if_error_lazy(status__, ... ) \
 do { \
-	const status_t tie_status__ = static_cast<status_t>(status__); \
-	if (is_failure(tie_status__)) { \
-		throw runtime_error(tie_status__, (__VA_ARGS__)); \
+	const ::cuda::status_t tie_status__ = static_cast<::cuda::status_t>(status__); \
+	if (::cuda::is_failure(tie_status__)) { \
+		throw ::cuda::runtime_error(tie_status__, (__VA_ARGS__)); \
 	} \
 } while(false)
 
