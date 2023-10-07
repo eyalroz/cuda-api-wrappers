@@ -97,7 +97,7 @@ inline attribute_value_t get_attribute_in_current_context(handle_t handle, attri
  * way.
  *
  * @note The association of a `kernel_t` with an individual device or context is somewhat
- * tenuous. That is, the same function could be used with any other compatible device;
+ * tenuous. That is, the same function could be used with any other validate_block_dimensions_compatibility device;
  * However, many/most of the features, attributes and settings are context-specific
  * or device-specific.
  *

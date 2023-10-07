@@ -202,12 +202,18 @@ constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) noexce
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
+///@{
 constexpr bool is_success(status_t status)  { return status == static_cast<status_t>(status::success); }
+constexpr bool is_success(cudaError_t status) { return static_cast<status_t>(status) == static_cast<status_t>(status::success); }
+///@}
 
 /**
  * @brief Determine whether the API call returning the specified status had failed
  */
+///@{
 constexpr bool is_failure(status_t status)  { return not is_success(status); }
+constexpr bool is_failure(cudaError_t status)  { return is_failure(static_cast<status_t>(status)); }
+///@}
 
 /**
  * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status

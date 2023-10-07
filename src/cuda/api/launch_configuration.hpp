@@ -19,6 +19,33 @@
 
 namespace cuda {
 
+class kernel_t;
+
+namespace detail_ {
+
+inline void validate_block_dimensions(grid::block_dimensions_t block_dims)
+{
+	if (block_dims.volume() == 0) {
+		throw ::std::invalid_argument("Zero-volume grid-of-blocks dimensions provided");
+	}
+}
+
+inline void validate_grid_dimensions(grid::dimensions_t grid_dims)
+{
+	if (grid_dims.volume() == 0) {
+		throw ::std::invalid_argument("Zero-volume block dimensions provided");
+	}
+}
+
+// Note: The reason for the verbose name is the identity of the block and grid dimension types
+void validate_block_dimension_compatibility(const device_t &device, grid::block_dimensions_t block_dims);
+void validate_block_dimension_compatibility(const kernel_t &kernel, grid::block_dimensions_t block_dims);
+
+void validate_compatibility(const kernel_t &kernel, memory::shared::size_t shared_mem_size);
+void validate_compatibility(const device_t &device, memory::shared::size_t shared_mem_size);
+
+} // namespace detail_
+
 struct launch_configuration_t {
 	grid::composite_dimensions_t dimensions {0 , 0 };
 
@@ -122,17 +149,32 @@ constexpr bool operator!=(const launch_configuration_t lhs, const launch_configu
 
 namespace detail_ {
 
+// Note: This will not check anything related to the device or the kernel
+// with which the launch configuration is to be used
 inline void validate(launch_configuration_t launch_config) noexcept(false)
 {
-	if (launch_config.dimensions.grid.volume() == 0) {
-		throw ::std::invalid_argument("Launch config specifies a zero-volume grid-of-blocks");
-	}
-	if (launch_config.dimensions.block.volume() == 0) {
-		throw ::std::invalid_argument("Launch config specifies a zero-volume block dimensions");
-	}
-	// TODO: Consider adding device-specific validations here, like checking for
-	// block size limits, shared mem size limits etc - by taking an optional device
-	// as a parameter
+	validate_block_dimensions(launch_config.dimensions.block);
+	validate_grid_dimensions(launch_config.dimensions.grid);
+}
+
+inline void validate_compatibility(
+	const device_t& device,
+	launch_configuration_t launch_config) noexcept(false)
+{
+	validate(launch_config);
+	validate_block_dimension_compatibility(device, launch_config.dimensions.block);
+	//  Uncomment if we actually get such checks
+	//	validate_grid_dimension_compatibility(device, launch_config.dimensions.grid);
+}
+
+inline void validate_compatibility(
+	const kernel_t& kernel,
+	launch_configuration_t launch_config) noexcept(false)
+{
+	validate(launch_config);
+	validate_block_dimension_compatibility(kernel, launch_config.dimensions.block);
+	//  Uncomment if we actually get such checks
+	//	validate_grid_dimension_compatibility(kernel, launch_config.dimensions.grid);
 }
 
 } // namespace detail_

@@ -44,6 +44,20 @@ inline dimensions_t div_rounding_up(overall_dimensions_t overall_dims, block_dim
 
 } // namespace grid
 
+namespace detail_ {
+
+static void validate_all_dimension_compatibility(
+	grid::block_dimensions_t   block,
+	grid::dimensions_t         grid,
+	grid::overall_dimensions_t overall)
+{
+	if (grid * block != overall) {
+		throw ::std::invalid_argument("specified block, grid and overall dimensions do not agree");
+	}
+}
+
+} // namespace detail_
+
 class launch_config_builder_t {
 public:
 	void resolve_dimensions()  {
@@ -194,132 +208,76 @@ protected:
 
 	launch_config_builder_t& operator=(launch_configuration_t config)
 	{
+#ifndef NDEBUG
+		detail_::validate(config);
+		if (kernel_) { detail_::validate_compatibility(*kernel_, config); }
+		if (device_) { detail_::validate_compatibility(device(), config); }
+#endif
 		thread_block_cooperation = config.block_cooperation;
 		dynamic_shared_memory_size_ = config.dynamic_shared_memory_size;
-#ifndef NDEBUG
-		block_dims_acceptable_to_kernel_or_device(config.dimensions.block);
-#endif
 		dimensions(config.dimensions);
 		return *this;
 	}
 
 #ifndef NDEBUG
-	static void compatible(
+	static void validate_compatibility(
 		const kernel_t*         kernel_ptr,
 		memory::shared::size_t  shared_mem_size)
 	{
 		if (kernel_ptr == nullptr) { return; }
-		if (shared_mem_size == 0) { return; }
-		auto max_shared = kernel_ptr->get_maximum_dynamic_shared_memory_per_block();
-		if (shared_mem_size > max_shared) {
-			throw ::std::invalid_argument("Requested dynamic shared memory size "
-				+ ::std::to_string(shared_mem_size) + " exceeds kernel's maximum allowed value of "
-				+ ::std::to_string(max_shared));
-		}
+		detail_::validate_compatibility(*kernel_ptr, shared_mem_size);
 	}
 
-	static void compatible(
+	static void validate_compatibility(
 		optional<device::id_t> maybe_device_id,
 		memory::shared::size_t shared_mem_size)
 	{
 		if (not maybe_device_id) { return; }
-		if (shared_mem_size == 0) { return; }
-		auto max_shared = device(maybe_device_id).properties().max_shared_memory_per_block();
-		if (shared_mem_size > max_shared) {
-			throw ::std::invalid_argument(
-				"Requested dynamic shared memory size " + ::std::to_string(shared_mem_size)
-				+ " exceeds the device maximum of " + ::std::to_string(max_shared));
-		}
+		detail_::validate_compatibility(device(maybe_device_id), shared_mem_size);
 	}
 
 	void validate_dynamic_shared_memory_size(memory::shared::size_t size)
 	{
-		compatible(kernel_, size);
-		compatible(device_, size);
+		validate_compatibility(kernel_, size);
+		validate_compatibility(device_, size);
 	}
 
-	// Note: This ignores the value of dimensions.grid an dimensions.faltatt
-	static void compatible(
+	static void validate_block_dimension_compatibility(
 		const kernel_t*          kernel_ptr,
 		grid::block_dimensions_t block_dims)
 	{
 		if (kernel_ptr == nullptr) { return; }
-		auto max_block_size = kernel_ptr->maximum_threads_per_block();
-		auto volume = block_dims.volume();
-		if (volume > max_block_size) {
-			throw ::std::invalid_argument(
-				"specified block dimensions result in blocks of size " + ::std::to_string(volume)
-				+ ", exceeding the maximum possible block size of " + ::std::to_string(max_block_size)
-				+ " for " + kernel::detail_::identify(*kernel_ptr));
-		}
+		return detail_::validate_block_dimension_compatibility(*kernel_ptr, block_dims);
 	}
 
-	static void compatible(
+	static void validate_block_dimension_compatibility(
 		optional<device::id_t>    maybe_device_id,
 		grid::block_dimensions_t  block_dims)
 	{
 		if (not maybe_device_id) { return; }
-		auto dev = device(maybe_device_id);
-		auto max_block_size = dev.maximum_threads_per_block();
-		auto volume = block_dims.volume();
-		if (volume > max_block_size) {
-			throw ::std::invalid_argument(
-			"specified block dimensions result in blocks of size " + ::std::to_string(volume)
-			+ ", exceeding the maximum possible block size of " + ::std::to_string(max_block_size)
-			+ " for " + device::detail_::identify(dev.id()));
-		}
-		auto dim_maxima  = grid::block_dimensions_t{
-			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X)),
-			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y)),
-			static_cast<grid::block_dimension_t>(dev.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z))
-		};
-		auto check =
-			[dev](grid::block_dimension_t dim, grid::block_dimension_t max, const char* axis) {
-				if (max > dim) {
-					throw ::std::invalid_argument(
-						::std::string("specified block ") + axis + "-axis dimension " + ::std::to_string(dim)
-						+ " exceeds the maximum supported " + axis + " dimension of " + ::std::to_string(max)
-						+ " for " + device::detail_::identify(dev.id()));
-				}
-			};
-		check(block_dims.x, dim_maxima.x, "X");
-		check(block_dims.y, dim_maxima.y, "Y");
-		check(block_dims.z, dim_maxima.z, "Z");
-	}
-
-	void block_dims_acceptable_to_kernel_or_device(grid::block_dimensions_t block_dims) const
-	{
-		compatible(kernel_, block_dims);
-		compatible(device_, block_dims);
-	}
-
-	static void dimensions_compatible(
-		grid::block_dimensions_t   block,
-		grid::dimensions_t         grid,
-		grid::overall_dimensions_t overall)
-	{
-		if (grid * block != overall) {
-			throw ::std::invalid_argument("specified block, grid and overall dimensions do not agree");
-		}
+		detail_::validate_block_dimension_compatibility(device(maybe_device_id), block_dims);
 	}
 
 	void validate_block_dimensions(grid::block_dimensions_t block_dims) const
 	{
+		detail_::validate_block_dimensions(block_dims);
 		if (dimensions_.grid and dimensions_.overall) {
-			dimensions_compatible(block_dims, dimensions_.grid.value(), dimensions_.overall.value());
+			detail_::validate_all_dimension_compatibility(
+				block_dims, dimensions_.grid.value(), dimensions_.overall.value());
 		}
-		block_dims_acceptable_to_kernel_or_device(block_dims);
+		// TODO: Check divisibility
+		validate_block_dimension_compatibility(kernel_, block_dims);
+		validate_block_dimension_compatibility(device_, block_dims);
 	}
 
 	void validate_grid_dimensions(grid::dimensions_t grid_dims) const
 	{
+		detail_::validate_grid_dimensions(grid_dims);
 		if (dimensions_.block and dimensions_.overall) {
-			if (grid_dims * dimensions_.block.value() != dimensions_.overall.value()) {
-				throw ::std::invalid_argument(
-				"specified grid dimensions conflict with the already-specified "
-				"block and overall dimensions");
-			}
+			detail_::validate_all_dimension_compatibility(
+				dimensions_.block.value(), grid_dims, dimensions_.overall.value());
 		}
+		// TODO: Check divisibility
 	}
 
 	void validate_overall_dimensions(grid::overall_dimensions_t overall_dims) const
@@ -339,9 +297,9 @@ protected:
 			auto block_dims = dimensions_.block ?
 						dimensions_.block.value() :
 						get_composite_dimensions().block;
-			compatible(kernel_ptr, block_dims);
+			validate_block_dimension_compatibility(kernel_ptr, block_dims);
 		}
-		compatible(kernel_ptr, dynamic_shared_memory_size_);
+		validate_compatibility(kernel_ptr, dynamic_shared_memory_size_);
 	}
 
 	void validate_device(device::id_t device_id) const
@@ -350,17 +308,18 @@ protected:
 			auto block_dims = dimensions_.block ?
 				dimensions_.block.value() :
 				get_composite_dimensions().block;
-			compatible(device_id, block_dims);
+			validate_block_dimension_compatibility(device_id, block_dims);
 		}
-		compatible(device_id, dynamic_shared_memory_size_);
+		validate_compatibility(device_id, dynamic_shared_memory_size_);
 	}
 
 	void validate_composite_dimensions(grid::composite_dimensions_t composite_dims) const
 	{
-		compatible(kernel_, composite_dims.block);
-		compatible(device_, composite_dims.block);
+		validate_block_dimension_compatibility(kernel_, composite_dims.block);
+		validate_block_dimension_compatibility(device_, composite_dims.block);
 
 		// Is there anything to validate regarding the grid dims?
+		validate_block_dimension_compatibility(device_, composite_dims.grid);
 	}
 #endif // ifndef NDEBUG
 

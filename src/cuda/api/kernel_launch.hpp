@@ -151,7 +151,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 	static_assert(::std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
 		"Only a bona fide function can be launched as a CUDA kernel");
 #ifndef NDEBUG
-	detail_::validate(launch_configuration);
+	validate(launch_configuration);
 #endif
 	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
 		// regular plain vanilla launch
