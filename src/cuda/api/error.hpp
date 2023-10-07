@@ -415,11 +415,12 @@ namespace outstanding_error {
  * @return the code of a sticky (= context-corrupting) error,
  * if the CUDA driver has recently encountered any.
  */
-inline status_t get()
+inline status_t get(bool try_clearing = false) noexcept(true)
 {
 	static constexpr const unsigned dummy_flags{0};
 	auto status = cuInit(dummy_flags);
-	return static_cast<status_t>(status);
+	if (not is_success(status)) { return status; }
+	return static_cast<status_t>(try_clearing ? cudaGetLastError() : cudaPeekAtLastError());
 }
 
 /**
