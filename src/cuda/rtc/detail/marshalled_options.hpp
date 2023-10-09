@@ -14,6 +14,19 @@ namespace cuda {
 
 namespace rtc {
 
+namespace detail_ {
+
+// These two structs are streamed to a marshalled options object (see below)
+// to indicate the start of a new option or the conclusion of all options,
+// respectively
+
+template <typename Delimiter> struct opt_start_t;
+
+template<typename T>
+struct is_marshalling_control : ::std::false_type {};
+
+} // namespace detail_
+
 /**
  * This class is necessary for realizing everything we need from
  * the marshalled options: Easy access using an array of pointers,
@@ -23,6 +36,8 @@ namespace rtc {
 class marshalled_options_t {
 public:
 	using size_type = size_t;
+
+	struct advance_gadget {}; /// triggers an advance() when streamed into an object of this class
 
 	marshalled_options_t()
 	{
@@ -49,14 +64,13 @@ public:
 		return oss.tellp() == 0;
 	}
 
-	template <typename T>
+	template <typename T, typename = ::cuda::detail_::enable_if_t<not detail_::is_marshalling_control<typename ::std::decay<T>::type>::value>>
 	marshalled_options_t& operator<<(T&& x)
 	{
 		oss << x;
 		return *this;
 	}
 
-	// TODO: Make a similar "stream manipulator"?
 	marshalled_options_t& advance()
 	{
 		oss << '\0';
@@ -75,16 +89,19 @@ public:
 	}
 };
 
-namespace detail_ {
-
-inline void optend() { }
-
-} // namespace detail_
-
-inline marshalled_options_t& operator<< (marshalled_options_t& mo, decltype(detail_::optend))
+inline marshalled_options_t& operator<< (marshalled_options_t& mo, marshalled_options_t::advance_gadget)
 {
 	mo.advance();
 	return mo;
+}
+
+namespace detail_ {
+
+template<> struct is_marshalling_control<marshalled_options_t::advance_gadget> : ::std::true_type {};
+
+template<typename Delimiter>
+struct is_marshalling_control<opt_start_t<Delimiter>> : ::std::true_type {};
+
 }
 
 } // namespace rtc

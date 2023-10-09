@@ -470,10 +470,7 @@ public: // "shorthands" for more complex option setting
 	}
 };
 
-
 namespace detail_ {
-
-inline const char* true_or_false(bool b) { return b ? "true" : "false"; }
 
 template <typename Delimiter>
 struct opt_start_t {
@@ -497,17 +494,17 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
 	return mt;
 }
 
+
 /**
- * Use the left-shift operator (<<) to render a delimited sequence of
+ * Uses the streaming/left-shift operator (<<) to render a delimited sequence of
  * command-line-argument-like options (with or without a value as relevant)
- * into some target entity - which could be a buffer or a more complex
- * structure.
- *
+ * into some target entity - which could be a buffer of chars or a more complex
+ * structure like @ref marshalled_options_t.
  */
 template <typename MarshalTarget, typename Delimiter>
 void process(
 	const compilation_options_t<ptx>& opts, MarshalTarget& marshalled, Delimiter delimiter,
-	bool need_delimited_after_every_option = false)
+	bool need_delimiter_after_last_option = false)
 {
 	detail_::opt_start_t<Delimiter> opt_start { delimiter };
 	// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
@@ -581,7 +578,7 @@ void process(
 		}
 	}
 
-	if (need_delimited_after_every_option) {
+	if (need_delimiter_after_last_option) {
 		marshalled << opt_start; // If no options were marshalled, this does nothing
 	}
 }
@@ -589,7 +586,7 @@ void process(
 template <typename MarshalTarget, typename Delimiter>
 void process(
 	const compilation_options_t<cuda_cpp>& opts, MarshalTarget& marshalled, Delimiter delimiter,
-	bool need_delimited_after_every_option = false)
+	bool need_delimiter_after_last_option = false)
 {
 	detail_::opt_start_t<Delimiter> opt_start { delimiter };
 	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--relocatable-device-code=true";      }
@@ -675,7 +672,7 @@ void process(
 		marshalled << opt_start << extra_opt;
 	}
 
-	if (need_delimited_after_every_option) {
+	if (need_delimiter_after_last_option) {
 		marshalled << opt_start; // If no options were marshalled, this does nothing
 	}
 }
@@ -685,8 +682,8 @@ inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
 {
 	marshalled_options_t mo;
 	// TODO: Can we easily determine the max number of options here?
-	constexpr bool need_delimiter_after_every_option { true };
-	process(opts, mo, detail_::optend, need_delimiter_after_every_option);
+	constexpr bool need_delimiter_after_last_option { true };
+	process(opts, mo, marshalled_options_t::advance_gadget{}, need_delimiter_after_last_option);
 	return mo;
 }
 
