@@ -58,7 +58,7 @@ Driver API. These suffer from several deficiencies:
 * You have to manually check every call to every API function, everywhere.
 * You have to work with pointers a lot, and pointers-to-pointers, since the API functions mostly return status codes rather than outputs; this will also prevent you from composing.
 * You will need to remember to release all resources you allocate or create - or else bad things happen.
-* There is a very large number of API functions, many of are related, with similar names, and are easy to confuse.
+* There is a very large number of API functions, many of which are related, have similar names, and are easy to confuse.
 * You will be working with a lot of numeric and pointer-based handles, instead of class or structs. Other than the poor aesthetics, this makes it easy to mix up resource-handle and pure-number parameters to functions.
 
 You may have noticed this list reads like the opposite of the [key features](#key-features), listed above: The idea is to make this library overcome and rectify all of these deficiencies as much as possible.
@@ -98,7 +98,7 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 **Use not involving CMake:**
 
-* Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, nvrtc and/or nvtx libraries as appropriate.
+* Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, NVRTC and/or NVTX libraries as appropriate.
 
 Finally, if you've started using the library in a publicly-available (FOSS or commercial) project, please consider emailing [@eyalroz](https://github.com/eyalroz), or open an [issue](https://github.com/eyalroz/printf/issues/), to announce this.
 
