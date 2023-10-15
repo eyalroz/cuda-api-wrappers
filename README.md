@@ -116,14 +116,14 @@ The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indica
 
 ## A taste of some features in play
 
-We've all dreamed of being able to type in:
+Don't you wish you were able to type in, say:
 
 	auto callback =	[&foo] { std::cout << "Hello " << foo << " world!\n"; }
 	my_stream.enqueue.host_invokable(callback);
 
-... and have that just work, right? Well, now it does!
+... and have that just work? Well, now it does!
 
-On a slightly more serious note, though, let's demonstrate the principles listed above:
+To be a little more thorough than just an anecdote, let's relate back to some of the design principles listed above:
 
 #### Use of namespaces (and internal classes)
 With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` or `cuMemAllocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()` or `cuMemAlloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of API calls: `cuInit()`, `cuDevicePrimaryCtxRetain()`, `cuCtxPushCurrent()`, `cuMemAlloc()` etc.
