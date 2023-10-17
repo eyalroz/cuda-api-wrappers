@@ -363,8 +363,8 @@ public: // mutators
 		headers_.names.reserve(new_num_headers);
 		headers_.sources.reserve(new_num_headers);
 		// TODO: Use a zip iterator
-		for(auto name_it = header_names.cbegin(), source_it = header_sources.cbegin();
-		    name_it < header_names.cend();
+		for(auto name_it = header_names.begin(), source_it = header_sources.begin();
+		    name_it < header_names.end();
 			name_it++, source_it++) {
 			add_header(*name_it, *source_it);
 		}
