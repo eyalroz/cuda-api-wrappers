@@ -20,7 +20,7 @@ PROJECT(cuda-api-wrappers
 	VERSION 0.6.6
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
-	LANGUAGES CUDA CXX)
+)
 
 include(GNUInstallDirs)
 set(caw_namespace "cuda-api-wrappers")
