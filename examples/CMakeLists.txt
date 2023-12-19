@@ -1,3 +1,4 @@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 include(CheckIncludeFiles)
 
 option(CAW_WITH_COOPERATIVE_GROUPS "Enable cooperative-groups-related code in example programs" ON)
