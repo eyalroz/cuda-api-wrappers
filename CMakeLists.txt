@@ -13,7 +13,8 @@ PROJECT(cuda-api-wrappers
 )
 
 include(GNUInstallDirs)
-set(caw_namespace "cuda-api-wrappers")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 find_package(CUDAToolkit 9.0 REQUIRED)
 find_package(Threads REQUIRED)
@@ -23,11 +24,10 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 set(targets runtime-and-driver nvtx rtc)
 set(prefixed-targets "")
+set(caw_namespace "cuda-api-wrappers")
 
 foreach(wrapper_lib ${targets})
 	# First ugly hack to facilitate FetchContent use:
