@@ -6,15 +6,6 @@
 # not mistake any other local CMake-related files for its own.
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-# -----------------------------------
-# Project name, version & build type
-# -----------------------------------
-
-if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	# Avoid a build failure when the BUILD_SHARED_LIBS variable is set to true.
-	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
-
 PROJECT(cuda-api-wrappers
 	VERSION 0.6.6
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
@@ -34,10 +25,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
-
-# -------------------
-# Our library targets
-# -------------------
 
 set(targets runtime-and-driver nvtx rtc)
 set(prefixed-targets "")
@@ -67,6 +54,7 @@ foreach(wrapper_lib ${targets})
 		PROPERTIES
 		EXPORT_NAME ${wrapper_lib}
 		OUTPUT_NAME ${wrapper_lib}
+		WINDOWS_EXPORT_ALL_SYMBOLS ON
 	)
 endforeach()
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
