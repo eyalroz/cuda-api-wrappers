@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 PROJECT(cuda-api-wrappers
-	VERSION 0.6.6
+	VERSION 0.6.7
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 )
