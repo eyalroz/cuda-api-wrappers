@@ -84,30 +84,31 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 **Use involving CMake:**
 
-* Use CMake to configure, build and install the library. Then, in another CMake project, use `find_package(cuda_api_wrappers)` and make sure the library's install location is in CMake's package search path. This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`.
-* Use CMake's `FetchContent` module to obtain the project source code and make it part of your own project's build, e.g.:
-   ```
-   include(FetchContent)
-   FetchContent_Declare(cuda-api-wrappers_library
-       GIT_REPOSITORY https://github.com/eyalroz/cuda-api-wrappers.git
-       GIT_TAG v12.34.56 # Replace this with a real available version
-   )
-   FetchContent_MakeAvailable(cuda-api-wrappers_library)
-   ```
-   The _same_ target names, with the namespaces, will be available in this case.
-
-**Use involving vcpkg:**
+***General CMAKE Usage***
+* After incorporating the library via either FetchContent or vcpkg, use find_package(cuda-api-wrappers) in your CMake project. Make sure the library's install location or build directory is in CMake's package search path.
+Link to the library using these targets within the cuda-api-wrappers:: namespace: runtime-and-driver, nvrtc, and nvtx. This can be done as follows:
+  ```
+  find_package(cuda-api-wrappers CONFIG REQUIRED)
+  target_link_libraries(your_target_name PRIVATE cuda-api-wrappers::runtime-and-driver cuda-api-wrappers::nvrtc cuda-api-wrappers::nvtx)
+  ```
+   Replace your_target_name with the actual target name in your project.
+ 
+***Incorporating via FetchContent***
+* Use CMake's FetchContent module to include the project source code in your own project's build:
+  ```
+  include(FetchContent)
+  FetchContent_Declare(cuda-api-wrappers_library
+      GIT_REPOSITORY https://github.com/eyalroz/cuda-api-wrappers.git
+      GIT_TAG v12.34.56 # Replace this with a real available version
+  )
+  FetchContent_MakeAvailable(cuda-api-wrappers_library)
+  ```
+***Incorporating via vcpkg***
 
 * Install cuda-api-wrappers using [vcpkg](https://github.com/microsoft/vcpkg) by running:
   ```
   vcpkg install cuda-api-wrappers
   ```
-* In your CMake project, incorporate cuda-api-wrappers as follows:
-  ```
-  find_package(cuda-api-wrappers CONFIG REQUIRED)
-  target_link_libraries(your_target_name PRIVATE cuda-api-wrappers::runtime-and-driver cuda-api-wrappers::nvrtc cuda-api-wrappers::nvtx)
-  ```
-  Replace your_target_name with the actual target name in your project.
 
 **Use not involving CMake:**
 
