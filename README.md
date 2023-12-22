@@ -96,6 +96,19 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
    ```
    The _same_ target names, with the namespaces, will be available in this case.
 
+**Use involving vcpkg:**
+
+* Install cuda-api-wrappers using [vcpkg](https://github.com/microsoft/vcpkg) by running:
+```
+vcpkg install cuda-api-wrappers
+```
+* In your CMake project, incorporate cuda-api-wrappers as follows:
+```
+find_package(cuda-api-wrappers CONFIG REQUIRED)
+target_link_libraries(your_target_name PRIVATE cuda-api-wrappers::runtime-and-driver cuda-api-wrappers::nvrtc cuda-api-wrappers::nvtx)
+```
+Replace your_target_name with the actual target name in your project.
+
 **Use not involving CMake:**
 
 * Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, NVRTC and/or NVTX libraries as appropriate.
