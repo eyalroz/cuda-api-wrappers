@@ -99,15 +99,15 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 **Use involving vcpkg:**
 
 * Install cuda-api-wrappers using [vcpkg](https://github.com/microsoft/vcpkg) by running:
-```
-vcpkg install cuda-api-wrappers
-```
+  ```
+  vcpkg install cuda-api-wrappers
+  ```
 * In your CMake project, incorporate cuda-api-wrappers as follows:
-```
-find_package(cuda-api-wrappers CONFIG REQUIRED)
-target_link_libraries(your_target_name PRIVATE cuda-api-wrappers::runtime-and-driver cuda-api-wrappers::nvrtc cuda-api-wrappers::nvtx)
-```
-Replace your_target_name with the actual target name in your project.
+  ```
+  find_package(cuda-api-wrappers CONFIG REQUIRED)
+  target_link_libraries(your_target_name PRIVATE cuda-api-wrappers::runtime-and-driver cuda-api-wrappers::nvrtc cuda-api-wrappers::nvtx)
+  ```
+  Replace your_target_name with the actual target name in your project.
 
 **Use not involving CMake:**
 
