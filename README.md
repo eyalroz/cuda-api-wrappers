@@ -82,25 +82,35 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 ## Using the library in your project
 
-**Use involving CMake:**
+### Projects using CMake
 
-* Use CMake to configure, build and install the library. Then, in another CMake project, use `find_package(cuda_api_wrappers)` and make sure the library's install location is in CMake's package search path. This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`.
-* Use CMake's `FetchContent` module to obtain the project source code and make it part of your own project's build, e.g.:
+For CMake, you have three alternatives for obtaining the library for your project:
+
+1. (apriori) Manually download a release tarball from the [Releases](https://github.com/eyalroz/cuda-api-wrappers/releases) page. Then, configure it with CMake, build it, and install it - to a place visible to cmake when it searches for packages (see [CMAKE_PREFIX_PATH](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)).
+2. (apriori) Use the [vcpkg](https://github.com/microsoft/vcpkg) package management tool:
+   ```
+   vcpkg install cuda-api-wrappers
+   ```
+3. (at config time) use CMake's `FetchContent` module to have CMake itself obtain the project source code and make it part of your own project's build, e.g.:
    ```
    include(FetchContent)
    FetchContent_Declare(cuda-api-wrappers_library
        GIT_REPOSITORY https://github.com/eyalroz/cuda-api-wrappers.git
        GIT_TAG v12.34.56 # Replace this with a real available version
+       OVERRIDE_FIND_PACKAGE
    )
-   FetchContent_MakeAvailable(cuda-api-wrappers_library)
    ```
-   The _same_ target names, with the namespaces, will be available in this case.
-
+Now that you have the package, in your project's `CMakeLists.txt`, you write:
+```
+find_package(cuda-api-wrappers CONFIG REQUIRED)
+```
+This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`. For example:
+```
+target_link_library(my_app cuda-api-wrappers::runtime-and-driver)
+```
 **Use not involving CMake:**
 
-* Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, NVRTC and/or NVTX libraries as appropriate.
-
-Finally, if you've started using the library in a publicly-available (FOSS or commercial) project, please consider emailing [@eyalroz](https://github.com/eyalroz), or open an [issue](https://github.com/eyalroz/printf/issues/), to announce this.
+Since this is a header-only library, you can simply add the `src/` subdirectory as one of your project's include directories. However, if you do this, it will be up to you to make sure and have the CUDA include directory in you include path as well, and to link against the CUDA driver, runtime API, NVRTC and/or NVTX libraries as appropriate.
 
 ## Coverage of the APIs
 
@@ -172,6 +182,7 @@ Gradually, an example program is being added for each one of the CUDA Runtime AP
 
 ## Want to help? Report a bug? Give feedback?
 
-* If you're already familiar with the library, and want to help test new features and improvements, or help otherwise - please [email me](mailto:eyalroz1@gmx.com).
-* If you notice a bug, compatibility problem, missing functionality or other problem - please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub. If you'd like to give less public feedback -  you can do that [via email](mailto:eyalroz1@gmx.com).
-* You can also write if you're interested in collaborating on related research or coding work.
+* Noticed a bug, compatibility issue, missing functionality or other problem? Please [file the issue](https://github.com/eyalroz/cuda-api-wrappers/issues) here on GitHub.
+* Started using the library in a publicly-available project? Please email [@eyalroz](https://github.com/eyalroz).
+* Want to help test new, improved versions? Please email [@eyalroz](https://github.com/eyalroz).
+* Interested in collaborating on coding/research work related to the library? Have a look at [@eyalroz' website](https://github.com/eyalroz).
