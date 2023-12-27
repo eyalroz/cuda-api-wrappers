@@ -102,10 +102,7 @@ endif()
 # Installing the libraries
 # ------------------------
 
-configure_file("${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake.in"
-	"${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake" @ONLY)
-
-install(FILES "${PROJECT_BINARY_DIR}/cuda-api-wrappers-config.cmake"
+install(FILES "${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers")
 
 install(
