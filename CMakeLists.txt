@@ -17,6 +17,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 find_package(CUDAToolkit 9.0 REQUIRED)
+enable_language(CXX) # required for using Threads
 find_package(Threads REQUIRED)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	foreach(tgt in nvptxcompiler nvptxcompiler_static)
