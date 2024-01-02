@@ -61,6 +61,7 @@ foreach(wrapper_lib ${targets})
 		WINDOWS_EXPORT_ALL_SYMBOLS ON
 	)
 endforeach()
+add_library("${caw_namespace}::driver-and-runtime" ALIAS caw_runtime-and-driver)
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	if (TARGET CUDA::nvptxcompiler)
