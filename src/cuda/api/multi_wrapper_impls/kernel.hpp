@@ -84,7 +84,8 @@ inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attri
 	throw_if_error_lazy(result,
 		"Setting CUDA device function attribute " +
 		::std::string(kernel::detail_::attribute_name(attribute)) +
-		" to value " + ::std::to_string(value)	);
+		" to value " + ::std::to_string(value));
+#else
 	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
 #endif
 }
