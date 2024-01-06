@@ -229,8 +229,6 @@ protected: // data members
 
 namespace module {
 
-using handle_t = CUmodule;
-
 namespace detail_ {
 
 inline module_t load_from_file_in_current_context(
