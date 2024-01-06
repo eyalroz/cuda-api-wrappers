@@ -44,6 +44,8 @@ inline dimensions_t div_rounding_up(overall_dimensions_t overall_dims, block_dim
 
 } // namespace grid
 
+#ifndef NDEBUG
+
 namespace detail_ {
 
 static void validate_all_dimensions_compatibility(
@@ -57,6 +59,8 @@ static void validate_all_dimensions_compatibility(
 }
 
 } // namespace detail_
+
+#endif // NDEBUG
 
 class launch_config_builder_t {
 protected:
