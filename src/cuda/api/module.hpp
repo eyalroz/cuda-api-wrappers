@@ -39,7 +39,7 @@ inline module_t wrap(
 	device::id_t            device_id,
 	context::handle_t       context_handle,
 	handle_t                handle,
-	const link::options_t&  options,
+	const link::options_t&  link_options,
 	bool                    take_ownership = false,
 	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
@@ -67,12 +67,9 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 /**
  * Create a CUDA driver module from raw module image data.
  *
- * @param[inout] context The CUDA context into which the module data will be loaded (and
- *     in which the module contents may be used)
- * @param[inout] primary_context The CUDA context, being primary on its device, into which
- *     the module data will be loaded (and in which the module contents may be used); this is
- *     handled distinctly from a regular context, in that the primary context must be kept
- *     alive until the module has been destroyed.
+ * @param[in] locus either a @ref context_t or a @ref device_t - an entity for which one
+ *     can obtain a CUDA context. This is the context into which the module data is to
+ *     be loaded (and in which the module contents may be used)
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
  *     such as a span, a cuda::dynarray etc..
  */
@@ -106,8 +103,9 @@ public: // getters
 	module::handle_t handle() const { return handle_; }
 	context::handle_t context_handle() const { return context_handle_; }
 	device::id_t device_id() const { return device_id_; }
-	context_t context() const;
+	const link::options_t& link_options() const { return link_options_; }
 
+	context_t context() const;
 	device_t device() const;
 
 	/**
@@ -149,11 +147,11 @@ protected: // constructors
 		device::id_t device_id,
 		context::handle_t context,
 		module::handle_t handle,
-		const link::options_t& options,
+		const link::options_t& link_options,
 		bool owning,
 		bool holds_primary_context_refcount_unit)
 	noexcept
-		: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning_(owning),
+		: device_id_(device_id), context_handle_(context), handle_(handle), link_options_(link_options), owning_(owning),
 		  holds_pc_refcount_unit(holds_primary_context_refcount_unit)
 	{ }
 
@@ -171,7 +169,7 @@ public: // constructors and destructor
 			other.device_id_,
 			other.context_handle_,
 			other.handle_,
-			other.options_,
+			other.link_options_,
 			other.owning_,
 			other.holds_pc_refcount_unit)
 	{
@@ -207,7 +205,7 @@ public: // operators
 		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
 		::std::swap(handle_, other.handle_);
-		::std::swap(options_, other.options_);
+		::std::swap(link_options_, other.link_options_);
 		::std::swap(owning_, other.owning_);
 		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
 		return *this;
@@ -217,7 +215,7 @@ protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	module::handle_t   handle_;
-	link::options_t    options_;
+	link::options_t    link_options_;
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
@@ -336,12 +334,12 @@ inline module_t wrap(
 	device::id_t            device_id,
 	context::handle_t       context_handle,
 	handle_t                module_handle,
-	const link::options_t&  options,
+	const link::options_t&  link_options,
 	bool                    take_ownership,
 	bool                    hold_pc_refcount_unit
 ) noexcept
 {
-	return module_t{device_id, context_handle, module_handle, options, take_ownership, hold_pc_refcount_unit};
+	return module_t{device_id, context_handle, module_handle, link_options, take_ownership, hold_pc_refcount_unit};
 }
 
 /*
