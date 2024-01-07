@@ -40,6 +40,9 @@
 #include "api/event.hpp"
 #include "api/kernel.hpp"
 #include "api/module.hpp"
+#if CUDA_VERSION >= 12000
+#include "api/library.hpp"
+#endif
 #include "api/link.hpp"
 
 #include "api/current_device.hpp"
