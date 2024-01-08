@@ -22,9 +22,11 @@ enum kind_t : ::std::underlying_type<CUexternalMemoryHandleType_enum>::type {
 	opaque_globally_shared_windows_handle = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT,
 	direct3d_12_heap = CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP,
 	direct3d_12_committed_resource = CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE,
+#if CUDA_VERSION >= 10200
 	direct3d_resource_shared_windows_handle = CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE,
 	direct3d_resource_globally_shared_handle = CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT,
 	nvscibuf_object = CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF
+#endif // CUDA_VERSION >= 10200
 };
 
 using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
