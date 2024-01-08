@@ -817,6 +817,7 @@ enum class barrier_scope_t : typename ::std::underlying_type<CUstreamMemoryBarri
 };
 #endif // CUDA_VERSION >= 11700
 
+#if CUDA_VERSION >= 10000
 /**
  * Representation of memory resources external to CUDA
  */
@@ -833,6 +834,8 @@ struct subregion_spec_t {
 };
 
 } // namespace external
+
+#endif // CUDA_VERSION >= 10000
 
 } // namespace memory
 

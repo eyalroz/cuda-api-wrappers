@@ -52,7 +52,9 @@
 #include "api/launch_configuration.hpp"
 #include "api/kernel_launch.hpp"
 #include "api/virtual_memory.hpp"
+#if CUDA_VERSION >= 10000
 #include "api/external.hpp"
+#endif // CUDA_VERSION >= 10000
 
 #include "api/multi_wrapper_impls/pointer.hpp"
 #include "api/multi_wrapper_impls/array.hpp"
