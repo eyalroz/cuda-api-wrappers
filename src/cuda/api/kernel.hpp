@@ -87,7 +87,22 @@ inline attribute_value_t get_attribute_in_current_context(handle_t handle, attri
 	return attribute_value;
 }
 
+inline void set_attribute_in_current_context(handle_t handle, attribute_t attribute, attribute_value_t value)
+{
+#if CUDA_VERSION >= 9000
+	auto result = cuFuncSetAttribute(handle, static_cast<CUfunction_attribute>(attribute), value);
+	throw_if_error_lazy(result,
+		"Setting CUDA device function attribute " +
+		::std::string(kernel::detail_::attribute_name(attribute)) + " of function at "
+		+ cuda::kernel::detail_::identify(handle) + " to value " + ::std::to_string(value));
+#else
+	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+#endif
+}
+
 } // namespace detail_
+
+inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute);
 
 } // namespace kernel
 
@@ -149,8 +164,7 @@ public: // non-mutators
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	kernel::attribute_value_t get_attribute(kernel::attribute_t attribute) const
 	{
-		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
-		return kernel::detail_::get_attribute_in_current_context(handle(), attribute);
+		return kernel::get_attribute(*this, attribute);
 	}
 
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
@@ -379,6 +393,24 @@ inline kernel_t wrap(
 	bool hold_primary_context_refcount_unit)
 {
 	return kernel_t{ device_id, context_id, f, hold_primary_context_refcount_unit };
+}
+
+inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute)
+{
+	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
+	return detail_::get_attribute_in_current_context(kernel.handle(), attribute);
+}
+
+inline void set_attribute(const kernel_t& kernel, attribute_t attribute, attribute_value_t value)
+{
+	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
+	return detail_::set_attribute_in_current_context(kernel.handle(), attribute, value);
+}
+
+inline attribute_value_t set_attribute(const kernel_t& kernel, attribute_t attribute)
+{
+	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
+	return kernel::detail_::get_attribute_in_current_context(kernel.handle(), attribute);
 }
 
 namespace occupancy {

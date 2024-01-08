@@ -78,16 +78,7 @@ return device::get(device_id_);
 
 inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
 {
-#if CUDA_VERSION >= 9000
-	context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
-	auto result = cuFuncSetAttribute(handle_, static_cast<CUfunction_attribute>(attribute), value);
-	throw_if_error_lazy(result,
-		"Setting CUDA device function attribute " +
-		::std::string(kernel::detail_::attribute_name(attribute)) +
-		" to value " + ::std::to_string(value));
-#else
-	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
-#endif
+	kernel::detail_::set_attribute_in_current_context(handle_, attribute, value);
 }
 
 namespace detail_ {
