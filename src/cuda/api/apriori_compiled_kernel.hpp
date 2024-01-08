@@ -33,7 +33,6 @@ inline handle_t get_handle(const void *, const char* = nullptr)
 #else
 inline handle_t get_handle(const void *kernel_function_ptr, const char* name = nullptr)
 {
-
 	handle_t handle;
 	auto status = cudaGetFuncBySymbol(&handle, kernel_function_ptr);
 	throw_if_error_lazy(status, "Failed obtaining a CUDA function handle for "
@@ -390,7 +389,7 @@ public: // non-mutators
 			dynamic_shared_memory_per_block,
 			disable_caching_override);
 	}
-#endif // CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
 
 protected: // ctors & dtor
 	apriori_compiled_kernel_t(device::id_t device_id, context::handle_t primary_context_handle,
@@ -447,6 +446,39 @@ inline ::std::string identify(const apriori_compiled_kernel_t& kernel)
 #endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
 
 } // namespace detail
+
+#if CAN_GET_APRIORI_KERNEL_HANDLE
+inline attribute_value_t get_attribute(const void* function_ptr, attribute_t attribute)
+{
+	auto handle = detail_::get_handle(function_ptr);
+	return kernel::detail_::get_attribute_in_current_context(handle, attribute);
+}
+
+inline void set_attribute(const void* function_ptr, attribute_t attribute, attribute_value_t value)
+{
+	auto handle = detail_::get_handle(function_ptr);
+	return detail_::set_attribute_in_current_context(handle, attribute, value);
+}
+
+inline attribute_value_t get_attribute(
+	const context_t&  context,
+	const void*       function_ptr,
+	attribute_t       attribute)
+{
+	CAW_SET_SCOPE_CONTEXT(context.handle());
+	return get_attribute(function_ptr, attribute);
+}
+
+inline void set_attribute(
+	const context_t&   context,
+	const void*        function_ptr,
+	attribute_t        attribute,
+	attribute_value_t  value)
+{
+	CAW_SET_SCOPE_CONTEXT(context.handle());
+	return set_attribute(function_ptr, attribute, value);
+}
+#endif // CAN_GET_APRIORI_KERNEL_HANDLE
 
 /**
  * @note The returned kernel proxy object will keep the device's primary
