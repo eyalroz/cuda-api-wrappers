@@ -13,7 +13,6 @@
 #include <cuda_runtime_api.h>
 #include "error.hpp"
 
-#include <cuda.h>
 #include <ostream>
 #include <utility>
 

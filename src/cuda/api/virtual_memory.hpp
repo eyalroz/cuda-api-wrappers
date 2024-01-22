@@ -4,10 +4,11 @@
 #ifndef CUDA_API_WRAPPERS_VIRTUAL_MEMORY_HPP_
 #define CUDA_API_WRAPPERS_VIRTUAL_MEMORY_HPP_
 
+// We need this out of the #ifdef, as otherwise we don't know what
+// the CUDA_VERSION is...
 #include <cuda.h>
 
 #if CUDA_VERSION >= 10020
-
 #include "types.hpp"
 #include "memory.hpp"
 

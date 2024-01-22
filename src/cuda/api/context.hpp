@@ -13,7 +13,6 @@
 #include "constants.hpp"
 #include "types.hpp"
 
-#include <cuda.h>
 #include <string>
 #include <utility>
 

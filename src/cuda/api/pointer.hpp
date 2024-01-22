@@ -21,7 +21,6 @@
 #include "types.hpp"
 
 #include <cuda_runtime_api.h>
-#include <cuda.h>
 
 #ifndef NDEBUG
 #include <cassert>

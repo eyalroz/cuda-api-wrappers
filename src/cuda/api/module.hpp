@@ -13,7 +13,6 @@
 #include "memory.hpp"
 #include "array.hpp"
 #include "link_options.hpp"
-#include <cuda.h>
 #include <array>
 
 #if __cplusplus >= 201703L

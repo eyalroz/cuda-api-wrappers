@@ -16,7 +16,6 @@
 #include "error.hpp"
 
 #include <cuda_runtime.h>
-#include <cuda.h>
 
 #ifndef CUDA_NO_HALF
 #include <cuda_fp16.h>

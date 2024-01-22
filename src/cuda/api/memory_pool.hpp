@@ -12,8 +12,6 @@
 
 #include "memory.hpp"
 
-#include <cuda.h>
-
 namespace cuda {
 
 namespace memory {
