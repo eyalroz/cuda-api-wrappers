@@ -18,8 +18,6 @@
 #include "miscellany.hpp"
 #include "types.hpp"
 
-#include <cuda_runtime_api.h>
-
 #include <string>
 #include <memory>
 #include <utility>

@@ -16,7 +16,6 @@ namespace cuda {
 // TODO: Perhaps move this down into the device namespace ?
 namespace memory {
 
-
 class physical_allocation_t;
 
 namespace physical_allocation {
