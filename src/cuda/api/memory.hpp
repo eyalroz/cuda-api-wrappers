@@ -1371,24 +1371,29 @@ inline void copy(
  */
 namespace host {
 
+///@{
+
 /**
- * Allocate pinned host memory
+ * allocate pinned host memory
  *
- * @note This function will fail if
- *
- * @note "Pinned" memory is allocated in contiguous physical RAM
+ * @note "pinned" memory is allocated in contiguous physical ram
  * addresses, making it possible to copy to and from it to the the
- * GPU using DMA without assistance from the GPU. This improves
+ * gpu using dma without assistance from the gpu. this improves
  * the copying bandwidth significantly over naively-allocated
- * host memory, and reduces overhead for the CPU.
+ * host memory, and reduces overhead for the cpu.
  *
  * @throws cuda::runtime_error if allocation fails for any reason
  *
- * @todo Consider a variant of this supporting the cudaHostAlloc flags
- *
  * @param size_in_bytes the amount of memory to allocate, in bytes
- * @param options options to pass to the CUDA host-side memory allocator;
- * see {@ref memory::allocation_options}.
+ * @param options
+ *     options to pass to the cuda host-side memory allocator; see
+ *     {@ref memory::allocation_options}.
+ * @param portability_across_contexts
+ *     whether or not the allocated region can be used in different
+ *     CUDA contexts.
+ * @param cpu_write_combining
+ *     whether or not the GPU can batch multiple writes to this area
+ *     and propagate them at its convenience.
  *
  * @return a pointer to the allocated stretch of memory
  */
@@ -1409,6 +1414,8 @@ inline region_t allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 {
 	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
 }
+
+///@}
 
 /**
  * Free a region of pinned host memory which was allocated with @ref allocate.
@@ -1468,7 +1475,8 @@ inline void register_(const_region_t region, unsigned flags)
 /**
  * Whether or not the registration of the host-side pointer should map
  * it into the CUDA address space for access on the device. When true,
- * one can then obtain the device-space pointer using cudaHostGetDevicePointer().
+ * one can then obtain the device-space pointer using
+ * @ref `mapped:device_side_pointer_for()`
  */
 enum mapped_io_space : bool {
 	is_mapped_io_space               = true,
@@ -1478,7 +1486,8 @@ enum mapped_io_space : bool {
 /**
  * Whether or not the registration of the host-side pointer should map
  * it into the CUDA address space for access on the device. When true,
- * one can then obtain the device-space pointer using cudaHostGetDevicePointer().
+ * one can then obtain the device-space pointer using
+ * @ref `mapped:device_side_pointer_for()`
  */
 enum map_into_device_memory : bool {
 	map_into_device_memory           = true,
