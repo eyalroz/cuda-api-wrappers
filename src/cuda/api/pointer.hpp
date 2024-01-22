@@ -20,8 +20,6 @@
 #include "error.hpp"
 #include "types.hpp"
 
-#include <cuda_runtime_api.h>
-
 #ifndef NDEBUG
 #include <cassert>
 #endif

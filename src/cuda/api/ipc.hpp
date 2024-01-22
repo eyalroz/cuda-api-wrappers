@@ -28,8 +28,6 @@
 #include "types.hpp"
 #include "error.hpp"
 
-#include <cuda_runtime_api.h>
-
 #include <string>
 
 namespace cuda {

@@ -11,6 +11,8 @@
 #include "context.hpp"
 #include "ipc.hpp"
 
+#include <cuda_runtime_api.h>
+
 #include "../array.hpp"
 #include "../device.hpp"
 #include "../event.hpp"

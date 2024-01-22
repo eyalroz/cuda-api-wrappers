@@ -11,8 +11,6 @@
 
 #include "types.hpp"
 
-#include <cuda_runtime_api.h>
-
 #include <chrono> // for duration types
 #include "constants.hpp"
 #include "current_device.hpp"
