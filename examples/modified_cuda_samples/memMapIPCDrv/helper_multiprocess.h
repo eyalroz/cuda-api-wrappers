@@ -14,6 +14,7 @@
 
 #include <cuda/api/virtual_memory.hpp>
 #include <cuda/api/multi_wrapper_impls/memory.hpp>
+#include <cuda/api/multi_wrapper_impls/virtual_memory.hpp>
 #include <cuda/api/multi_wrapper_impls/module.hpp>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
