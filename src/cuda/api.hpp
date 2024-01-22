@@ -63,6 +63,7 @@
 #include "api/multi_wrapper_impls/context.hpp"
 #include "api/multi_wrapper_impls/stream.hpp"
 #include "api/multi_wrapper_impls/memory.hpp"
+#include "api/multi_wrapper_impls/virtual_memory.hpp"
 #include "api/multi_wrapper_impls/kernel.hpp"
 #include "api/multi_wrapper_impls/kernel_launch.hpp"
 #include "api/multi_wrapper_impls/apriori_compiled_kernel.hpp"
