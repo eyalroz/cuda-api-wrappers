@@ -16,8 +16,6 @@
 #include "types.hpp"
 #include "current_context.hpp"
 
-#include <cuda_runtime.h>
-
 #if CUDA_VERSION < 11000
 #define CAN_GET_APRIORI_KERNEL_HANDLE 0
 #define VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE virtual

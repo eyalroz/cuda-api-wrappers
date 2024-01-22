@@ -32,9 +32,7 @@
  * @note Even though when you use this wrapper, your code will not have the silly
  * chevron, you can't use it from regular `.cpp` files compiled with your host
  * compiler. Hence the `.cuh` extension. You _can_, however, safely include this
- * file from your `.cpp` for other definitions. Theoretically, we could have
- * used the `cudaLaunchKernel` API function, by creating an array on the stack
- * which points to all of the other arguments, but that's kind of redundant.
+ * file from your `.cpp` for other definitions.
  *
  */
 
@@ -45,6 +43,11 @@
 #include "launch_configuration.hpp"
 #include "kernel.hpp"
 #include "apriori_compiled_kernel.hpp"
+
+#if CUDA_VERSION >= 9000
+// The following is necessary for cudaLaunchCooperativeKernel
+#include <cuda_runtime.h>
+#endif // CUDA_VERSION >= 9000
 
 #include <type_traits>
 #include <utility>

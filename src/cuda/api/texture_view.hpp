@@ -12,7 +12,6 @@
 #include "array.hpp"
 #include "error.hpp"
 #include "memory.hpp"
-#include <cuda_runtime.h>
 
 namespace cuda {
 

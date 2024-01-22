@@ -9,8 +9,6 @@
 #define CUDA_API_WRAPPERS_MISCELLANY_HPP_
 
 #include "types.hpp"
-
-#include <cuda_runtime_api.h>
 #include "error.hpp"
 
 #include <ostream>
@@ -27,14 +25,14 @@ namespace cuda {
  */
 inline void initialize_driver()
 {
-	static constexpr const unsigned dummy_flags { 0 }; // this is the only allowed value for flags
+	static constexpr const unsigned dummy_flags{0}; // this is the only allowed value for flags
 	auto status = cuInit(dummy_flags);
 	throw_if_error_lazy(status, "Failed initializing the CUDA driver");
 }
 
 inline void ensure_driver_is_initialized()
 {
-	thread_local bool driver_known_to_be_initialized { false };
+	thread_local bool driver_known_to_be_initialized{false};
 	if (not driver_known_to_be_initialized) {
 		initialize_driver();
 		driver_known_to_be_initialized = true;
@@ -58,14 +56,17 @@ namespace device {
 inline device::id_t count()
 {
 	initialize_driver();
-		// This function is often called before any device is obtained (which is where we
-		// expect the driver to be initialized)
+	// This function is often called before any device is obtained (which is where we
+	// expect the driver to be initialized)
 	int device_count = 0; // Initializing, just to be on the safe side
 	status_t result = cuDeviceGetCount(&device_count);
-	switch(result) {
-		case status::no_device: return 0;
-		case status::success: break;
-		default: throw runtime_error(result, "Failed obtaining the number of CUDA devices on the system");
+	switch (result) {
+	case status::no_device:
+		return 0;
+	case status::success:
+		break;
+	default:
+		throw runtime_error(result, "Failed obtaining the number of CUDA devices on the system");
 	}
 	if (device_count < 0) {
 		throw ::std::logic_error("cudaGetDeviceCount() reports an invalid number of CUDA devices");
