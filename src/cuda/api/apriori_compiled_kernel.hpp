@@ -10,6 +10,11 @@
 
 #include "kernel.hpp"
 #include "current_context.hpp"
+
+// The following is needed for occupancy-related calculation convenience
+// and kernel-attribute-related API functions
+#include <cuda_runtime.h>
+
 #include <type_traits>
 
 namespace cuda {

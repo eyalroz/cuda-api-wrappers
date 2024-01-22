@@ -16,6 +16,9 @@
 #include "../pointer.hpp"
 #include "../device.hpp"
 
+// The following is needed for occupancy-related calculation convenience functions
+#include <cuda_runtime.h>
+
 namespace cuda {
 
 namespace detail_ {

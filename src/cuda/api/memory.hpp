@@ -34,7 +34,8 @@
 #include "pointer.hpp"
 #include "current_context.hpp"
 
-#include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
+// The following is needed for cudaGetSymbolAddress, cudaGetSymbolSize
+#include <cuda_runtime.h>
 
 #include <memory>
 #include <cstring> // for ::std::memset
