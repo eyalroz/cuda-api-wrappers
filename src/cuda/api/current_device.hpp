@@ -62,10 +62,6 @@ inline id_t get_id()
 	return cuda::context::current::detail_::get_device_id();
 	// ... which is the equivalent of doing:
 	//
-//	handle_t  device_id;
-//	auto status = cudaGetDevice(&device_id);
-//	throw_if_error_lazy(status, "Failure obtaining current device id");
-//	return device_id;
 }
 
 /**
