@@ -19,7 +19,6 @@
 
 #include "types.hpp"
 #include <cuda_runtime_api.h>
-#include <cuda.h>
 
 #include <type_traits>
 #include <string>

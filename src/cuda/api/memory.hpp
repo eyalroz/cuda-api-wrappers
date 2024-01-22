@@ -35,7 +35,6 @@
 #include "current_context.hpp"
 
 #include <cuda_runtime.h> // needed, rather than cuda_runtime_api.h, e.g. for cudaMalloc
-#include <cuda.h>
 
 #include <memory>
 #include <cstring> // for ::std::memset

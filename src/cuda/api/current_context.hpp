@@ -9,8 +9,6 @@
 #include "constants.hpp"
 #include "types.hpp"
 
-#include <cuda.h>
-
 namespace cuda {
 
 ///@cond

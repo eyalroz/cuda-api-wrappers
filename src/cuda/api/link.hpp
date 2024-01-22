@@ -11,7 +11,6 @@
 #include "link_options.hpp"
 #include "memory.hpp"
 #include "module.hpp"
-#include <cuda.h>
 
 #if __cplusplus >= 201703L
 #include <filesystem>

@@ -17,7 +17,6 @@
 #include "current_context.hpp"
 
 #include <cuda_runtime.h>
-#include <cuda.h>
 
 #if CUDA_VERSION < 11000
 #define CAN_GET_APRIORI_KERNEL_HANDLE 0
