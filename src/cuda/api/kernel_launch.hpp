@@ -43,6 +43,10 @@
 #include "launch_configuration.hpp"
 #include "kernel.hpp"
 #include "kernels/apriori_compiled.hpp"
+#if CUDA_VERSION >= 12000
+#include "kernels/in_library.hpp"
+#endif
+
 
 #if CUDA_VERSION >= 9000
 // The following is necessary for cudaLaunchCooperativeKernel
@@ -125,6 +129,7 @@ struct enqueue_launch_helper {
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	::std::integral_constant<bool, false>,
+	::std::integral_constant<bool, false>,
 	Kernel&&                kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -132,6 +137,16 @@ void enqueue_launch(
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
+	::std::integral_constant<bool, true>,
+	::std::integral_constant<bool, false>,
+	Kernel&&                kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
+
+template<typename Kernel, typename... KernelParameters>
+void enqueue_launch(
+	::std::integral_constant<bool, false>,
 	::std::integral_constant<bool, true>,
 	Kernel&&                kernel,
 	const stream_t&         stream,
@@ -308,12 +323,18 @@ void enqueue_launch(
 	static_assert(
 		detail_::all_true<::std::is_trivially_copy_constructible<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"All kernel parameter types must be of a trivially copy-constructible (decayed) type." );
-	static constexpr const bool wrapped_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+#if CUDA_VERSION >= 12000
+	static constexpr const bool library_kernel = cuda::detail_::is_library_kernel<Kernel>::value;
+#else
+	static constexpr const bool library_kernel = false;
+#endif // CUDA_VERSION >= 12000
 	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
 	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
 	// function for each of them will basically be just a one-liner :-(
 	detail_::enqueue_launch<Kernel, KernelParameters...>(
-		::std::integral_constant<bool, wrapped_kernel>{},
+		::std::integral_constant<bool, wrapped_contextual_kernel>{},
+		::std::integral_constant<bool, library_kernel>{},
 		::std::forward<Kernel>(kernel), stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
@@ -338,18 +359,31 @@ void launch(
  *     Type of the container for the marshalled arguments; typically, this
  *     would be `span<const void*>` - but it can be an `::std::vector`, or
  *     have non-const `void*` elements etc.
+ * @param kernel
+ *     A wrapped GPU kernel
  * @param stream
  *     Proxy for the stream on which to enqueue the kernel launch; may be the
  *     default stream of a context.
  * @param marshalled_arguments
  *     A container of `void` or `const void` pointers to the argument values
  */
+///@{
 template <typename SpanOfConstVoidPtrLike>
 void launch_type_erased(
 	const kernel_t&         kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
 	SpanOfConstVoidPtrLike  marshalled_arguments);
+
+#if CUDA_VERSION >= 12000
+template <typename SpanOfConstVoidPtrLike>
+void launch_type_erased(
+	const library::kernel_t&  kernel,
+	const stream_t&           stream,
+	launch_configuration_t    launch_configuration,
+	SpanOfConstVoidPtrLike    marshalled_arguments);
+///@}
+#endif // CUDA_VERSION >= 12000
 
 } // namespace cuda
 
