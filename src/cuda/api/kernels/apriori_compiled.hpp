@@ -18,12 +18,13 @@
 
 namespace cuda {
 
+namespace kernel {
+
 ///@cond
-class device_t;
-class apriori_compiled_kernel_t;
+class apriori_compiled_t;
 ///@nocond
 
-namespace kernel {
+namespace apriori_compiled {
 
 namespace detail_ {
 
@@ -46,15 +47,15 @@ inline handle_t get_handle(const void *kernel_function_ptr, const char* name = n
 }
 #endif
 
-apriori_compiled_kernel_t wrap(
+apriori_compiled_t wrap(
 	device::id_t device_id,
 	context::handle_t primary_context_handle,
 	kernel::handle_t f,
 	const void* ptr,
 	bool hold_primary_context_refcount_unit = false);
 
-
 } // namespace detail_
+
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
 /**
@@ -299,13 +300,13 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 
 } // namespace occupancy
 
-} // namespace kernel
+} // namespace apriori_compiled
 
 /**
  * @brief A subclass of the @ref `kernel_t` interface for kernels being
  * functions marked as __global__ in source files and compiled apriori.
  */
-class apriori_compiled_kernel_t final : public kernel_t {
+class apriori_compiled_t final : public kernel_t {
 public: // getters
 	const void *ptr() const noexcept { return ptr_; }
 	const void *get() const noexcept { return ptr_; }
@@ -316,7 +317,7 @@ public: // type_conversions
 public: // non-mutators
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
-	kernel::attributes_t attributes() const;
+	apriori_compiled::attributes_t attributes() const;
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const override;
 	void set_shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config) const override;
 
@@ -346,7 +347,7 @@ public: // non-mutators
 	{
 		auto shared_memory_size_determiner =
 			[dynamic_shared_memory_size](int) -> size_t { return dynamic_shared_memory_size; };
-		return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+		return kernel::apriori_compiled::occupancy::detail_::min_grid_params_for_max_occupancy(
 			ptr(), device_id(),
 			shared_memory_size_determiner,
 			block_size_limit, disable_caching_override);
@@ -357,7 +358,7 @@ public: // non-mutators
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
 	{
-		return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+		return kernel::apriori_compiled::occupancy::detail_::min_grid_params_for_max_occupancy(
 			ptr(), device_id(),
 			shared_memory_size_determiner,
 			block_size_limit, disable_caching_override);
@@ -387,7 +388,7 @@ public: // non-mutators
 		memory::shared::size_t dynamic_shared_memory_per_block,
 		bool disable_caching_override = false) const override
 	{
-		return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
+		return apriori_compiled::occupancy::detail_::max_active_blocks_per_multiprocessor(
 			ptr(),
 			block_size_in_threads,
 			dynamic_shared_memory_per_block,
@@ -396,7 +397,7 @@ public: // non-mutators
 #endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
 
 protected: // ctors & dtor
-	apriori_compiled_kernel_t(device::id_t device_id, context::handle_t primary_context_handle,
+	apriori_compiled_t(device::id_t device_id, context::handle_t primary_context_handle,
 		kernel::handle_t handle, const void *f, bool hold_pc_refcount_unit)
 	: kernel_t(device_id, primary_context_handle, handle, hold_pc_refcount_unit), ptr_(f) {
 		// TODO: Consider checking whether this actually is a device function, at all and in this context
@@ -404,34 +405,35 @@ protected: // ctors & dtor
 		assert(f != nullptr && "Attempt to construct a kernel object for a nullptr kernel function pointer");
 #endif
 	}
-	apriori_compiled_kernel_t(
+	apriori_compiled_t(
 		device::id_t device_id,
 		context::handle_t primary_context_handle,
 		const void *f,
 		bool hold_primary_context_refcount_unit)
-	: apriori_compiled_kernel_t(
+	: apriori_compiled_t(
 		device_id,
 		primary_context_handle,
-		kernel::detail_::get_handle(f),
+		apriori_compiled::detail_::get_handle(f),
 		f,
 		hold_primary_context_refcount_unit)
 	{ }
 
 public: // ctors & dtor
-	apriori_compiled_kernel_t(const apriori_compiled_kernel_t&) = default;
-	apriori_compiled_kernel_t(apriori_compiled_kernel_t&&) = default;
+	apriori_compiled_t(const apriori_compiled_t&) = default;
+	apriori_compiled_t(apriori_compiled_t&&) = default;
 
 public: // friends
-	friend apriori_compiled_kernel_t kernel::detail_::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
+	friend apriori_compiled_t apriori_compiled::detail_::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
 
 protected: // data members
 	const void *const ptr_;
-};
+}; // class apriori_compiled_t
 
-namespace kernel {
+namespace apriori_compiled {
+
 namespace detail_ {
 
-inline apriori_compiled_kernel_t wrap(
+inline apriori_compiled_t wrap(
 	device::id_t       device_id,
 	context::handle_t  primary_context_handle,
 	kernel::handle_t   f,
@@ -442,7 +444,7 @@ inline apriori_compiled_kernel_t wrap(
 }
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
-inline ::std::string identify(const apriori_compiled_kernel_t& kernel)
+inline ::std::string identify(const apriori_compiled_t& kernel)
 {
 	return "apriori-compiled kernel " + cuda::detail_::ptr_as_hex(kernel.ptr())
 		+ " in " + context::detail_::identify(kernel.context());
@@ -461,7 +463,7 @@ inline attribute_value_t get_attribute(const void* function_ptr, attribute_t att
 inline void set_attribute(const void* function_ptr, attribute_t attribute, attribute_value_t value)
 {
 	auto handle = detail_::get_handle(function_ptr);
-	return detail_::set_attribute_in_current_context(handle, attribute, value);
+	return kernel::detail_::set_attribute_in_current_context(handle, attribute, value);
 }
 
 inline attribute_value_t get_attribute(
@@ -484,15 +486,17 @@ inline void set_attribute(
 }
 #endif // CAN_GET_APRIORI_KERNEL_HANDLE
 
+} // namespace apriori_compiled
+
 /**
  * @note The returned kernel proxy object will keep the device's primary
  * context active while the kernel exists.
  */
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function_ptr);
+apriori_compiled_t get(const device_t& device, KernelFunctionPtr function_ptr);
 
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(context_t context, KernelFunctionPtr function_ptr);
+apriori_compiled_t get(context_t context, KernelFunctionPtr function_ptr);
 
 } // namespace kernel
 

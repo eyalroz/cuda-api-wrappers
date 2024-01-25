@@ -188,7 +188,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// look at things.
 		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
 #if CUDA_VERSION >= 11000
-		kernel::handle_t kernel_function_handle = kernel::detail_::get_handle( (const void*) kernel_function);
+		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail_::get_handle( (const void*) kernel_function);
 		auto status = cuLaunchCooperativeKernel(
 			kernel_function_handle,
 			launch_configuration.dimensions.grid.x,
@@ -248,7 +248,7 @@ struct raw_kernel_typegen {
 
 template<typename... KernelParameters>
 typename detail_::raw_kernel_typegen<KernelParameters...>::type
-unwrap(const apriori_compiled_kernel_t& kernel)
+unwrap(const kernel::apriori_compiled_t& kernel)
 {
 	using raw_kernel_t = typename detail_::raw_kernel_typegen<KernelParameters ...>::type;
 	return reinterpret_cast<raw_kernel_t>(const_cast<void *>(kernel.ptr()));
@@ -259,9 +259,9 @@ unwrap(const apriori_compiled_kernel_t& kernel)
 namespace detail_ {
 
 template<typename... KernelParameters>
-struct enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...> {
+struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
 	void operator()(
-		const apriori_compiled_kernel_t&  wrapped_kernel,
+		const kernel::apriori_compiled_t&  wrapped_kernel,
 		const stream_t &                  stream,
 		launch_configuration_t            launch_configuration,
 		KernelParameters &&...            parameters) const;

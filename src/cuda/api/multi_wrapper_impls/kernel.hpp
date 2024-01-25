@@ -15,7 +15,6 @@
 #include "../pointer.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
-#include "../current_context.hpp"
 
 namespace cuda {
 
