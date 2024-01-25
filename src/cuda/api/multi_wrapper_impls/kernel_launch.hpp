@@ -101,8 +101,8 @@ inline void validate_block_dimension_compatibility(
 }
 
 template<typename... KernelParameters>
-void enqueue_launch_helper<apriori_compiled_kernel_t, KernelParameters...>::operator()(
-	const apriori_compiled_kernel_t&  wrapped_kernel,
+void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::operator()(
+	const kernel::apriori_compiled_t&  wrapped_kernel,
 	const stream_t &                  stream,
 	launch_configuration_t            launch_configuration,
 	KernelParameters &&...            parameters) const
@@ -334,7 +334,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 } // namespace detail_
 
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const apriori_compiled_kernel_t&  kernel,
+	const kernel::apriori_compiled_t&  kernel,
 	memory::shared::size_t            dynamic_shared_memory_size,
 	grid::block_dimension_t           block_size_limit,
 	bool                              disable_caching_override)
@@ -345,7 +345,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const apriori_compiled_kernel_t&  kernel,
+	const kernel::apriori_compiled_t&  kernel,
 	UnaryFunction                     block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t           block_size_limit,
 	bool                              disable_caching_override)

@@ -15,23 +15,25 @@
 
 namespace cuda {
 
+namespace kernel {
+
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
 #if defined(__CUDACC__)
 
 // Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
 // from code compiled with a host-side-only compiler! See cuda_runtime.h for details
 
-inline kernel::attributes_t apriori_compiled_kernel_t::attributes() const
+inline apriori_compiled::attributes_t apriori_compiled_t::attributes() const
 {
 	// Note: assuming the primary context is active
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
-	kernel::attributes_t function_attributes;
+	apriori_compiled::attributes_t function_attributes;
 	auto status = cudaFuncGetAttributes(&function_attributes, ptr_);
 	throw_if_error_lazy(status, "Failed obtaining attributes for a CUDA device function");
 	return function_attributes;
 }
 
-inline void apriori_compiled_kernel_t::set_cache_preference(multiprocessor_cache_preference_t preference) const
+inline void apriori_compiled_t::set_cache_preference(multiprocessor_cache_preference_t preference) const
 {
 	// Note: assuming the primary context is active
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
@@ -41,7 +43,7 @@ inline void apriori_compiled_kernel_t::set_cache_preference(multiprocessor_cache
 		"CUDA device function");
 }
 
-inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
+inline void apriori_compiled_t::set_shared_memory_bank_size(
 	multiprocessor_shared_memory_bank_size_option_t  config) const
 {
 	// Note: assuming the primary context is active
@@ -50,7 +52,7 @@ inline void apriori_compiled_kernel_t::set_shared_memory_bank_size(
 	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + ::std::to_string(config));
 }
 
-inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
+inline void apriori_compiled_t::set_attribute(attribute_t attribute, attribute_value_t value) const
 {
 	// Note: assuming the primary context is active
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
@@ -70,9 +72,9 @@ inline void apriori_compiled_kernel_t::set_attribute(kernel::attribute_t attribu
 	throw_if_error_lazy(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
 }
 
-inline kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel::attribute_t attribute) const
+inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute) const
 {
-	kernel::attributes_t attrs = attributes();
+	apriori_compiled::attributes_t attrs = attributes();
 	switch(attribute) {
 		case CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
 			return attrs.maxThreadsPerBlock;
@@ -98,9 +100,9 @@ inline kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel
 			throw cuda::runtime_error(status::not_supported,
 				::std::string("Attribute ") +
 #ifdef NDEBUG
-					::std::to_string(static_cast<::std::underlying_type<kernel::attribute_t>::type>(attribute))
+					::std::to_string(static_cast<::std::underlying_type<attribute_t>::type>(attribute))
 #else
-					kernel::detail_::attribute_name(attribute)
+					detail_::attribute_name(attribute)
 #endif
 				+ " cannot be obtained for apriori-compiled kernels before CUDA version 11.0"
 			);
@@ -110,16 +112,15 @@ inline kernel::attribute_value_t apriori_compiled_kernel_t::get_attribute(kernel
 #endif // defined(__CUDACC__)
 #endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
 
-namespace kernel {
-
+namespace apriori_compiled {
 
 namespace detail_ {
 
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(
-	::cuda::device::id_t  device_id,
-	context::handle_t &   primary_context_handle,
-	KernelFunctionPtr     function_ptr)
+apriori_compiled_t get(
+	device::id_t         device_id,
+	context::handle_t &  primary_context_handle,
+	KernelFunctionPtr    function_ptr)
 {
 	static_assert(
 		::std::is_pointer<KernelFunctionPtr>::value
@@ -137,6 +138,8 @@ apriori_compiled_kernel_t get(
 
 } // namespace detail_
 
+} // namespace apriori_compiled
+
 
 /**
  * @brief Obtain a wrapped kernel object corresponding to a "raw" kernel function
@@ -148,10 +151,10 @@ apriori_compiled_kernel_t get(
  * context active while the kernel exists.
  */
 template<typename KernelFunctionPtr>
-apriori_compiled_kernel_t get(const device_t& device, KernelFunctionPtr function_ptr)
+apriori_compiled_t get(const device_t &device, KernelFunctionPtr function_ptr)
 {
 	auto primary_context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device.id());
-	return detail_::get(device.id(), primary_context_handle, function_ptr);
+	return apriori_compiled::detail_::get(device.id(), primary_context_handle, function_ptr);
 }
 
 } // namespace kernel
@@ -160,9 +163,9 @@ namespace detail_ {
 
 template<>
 inline ::cuda::device::primary_context_t
-get_implicit_primary_context<apriori_compiled_kernel_t>(apriori_compiled_kernel_t kernel)
+get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compiled_t kernel)
 {
-	const kernel_t& kernel_ = kernel;
+	const kernel_t &kernel_ = kernel;
 	return get_implicit_primary_context(kernel_);
 }
 
