@@ -34,7 +34,7 @@
 #include "api/devices.hpp"
 
 #include "api/detail/pci_id.hpp"
-#include "api/apriori_compiled_kernel.hpp"
+#include "api/kernels/apriori_compiled.hpp"
 #include "api/kernel.hpp"
 #include "api/launch_configuration.hpp"
 #include "api/kernel_launch.hpp"

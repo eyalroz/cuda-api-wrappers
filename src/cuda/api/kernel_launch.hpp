@@ -42,7 +42,7 @@
 
 #include "launch_configuration.hpp"
 #include "kernel.hpp"
-#include "apriori_compiled_kernel.hpp"
+#include "kernels/apriori_compiled.hpp"
 
 #if CUDA_VERSION >= 9000
 // The following is necessary for cudaLaunchCooperativeKernel

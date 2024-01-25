@@ -17,7 +17,7 @@
 #include "../stream.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
-#include "../apriori_compiled_kernel.hpp"
+#include "../kernels/apriori_compiled.hpp"
 #include "../current_context.hpp"
 #include "../current_device.hpp"
 #include "../peer_to_peer.hpp"

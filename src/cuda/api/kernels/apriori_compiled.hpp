@@ -5,11 +5,10 @@
  * compiled together with the host-side program.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_APRIORI_COMPILED_KERNEL_HPP_
-#define CUDA_API_WRAPPERS_APRIORI_COMPILED_KERNEL_HPP_
+#ifndef CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_
+#define CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_
 
-#include "kernel.hpp"
-#include "current_context.hpp"
+#include "../kernel.hpp"
 
 // The following is needed for occupancy-related calculation convenience
 // and kernel-attribute-related API functions
@@ -499,4 +498,4 @@ apriori_compiled_kernel_t get(context_t context, KernelFunctionPtr function_ptr)
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_APRIORI_COMPILED_KERNEL_HPP_
+#endif // CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_
