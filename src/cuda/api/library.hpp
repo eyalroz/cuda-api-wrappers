@@ -11,6 +11,7 @@
 #if CUDA_VERSION >= 12000
 
 #include "module.hpp"
+#include "error.hpp"
 
 #if __cplusplus >= 201703L
 #include <filesystem>
@@ -19,7 +20,6 @@
 namespace cuda {
 
 ///@cond
-class device_t;
 class context_t;
 class module_t;
 class library_t;
@@ -74,10 +74,25 @@ library_t create(
 	bool                       code_is_preserved);
 ///@}
 
+
+namespace detail_ {
+
+inline kernel::handle_t get_kernel(handle_t library_handle, const char* name)
+{
+	library::kernel::handle_t kernel_handle;
+	auto status = cuLibraryGetKernel(&kernel_handle, library_handle, name);
+	throw_if_error_lazy(status, ::std::string{"Failed obtaining kernel "} + name
+		+ "' from " + library::detail_::identify(library_handle));
+	return kernel_handle;
+}
+
+} // namespace detail_
+
+inline kernel_t get_kernel(const library_t& library, const char* name);
+
 } // namespace library
 
 memory::region_t get_global(const context_t& context, const library_t& library, const char* name);
-kernel_t get_kernel(const context_t& context, const library_t& library, const char* name);
 memory::region_t get_managed_region(const library_t& library, const char* name);
 
 namespace module {
@@ -110,15 +125,8 @@ public: // getters
 	 * @return An enqueable kernel proxy object for the requested kernel,
 	 * in the current context.
 	 */
-	cuda::kernel_t get_kernel(const char* name) const
-	{
-		return cuda::get_kernel(context::current::get(), *this, name);
-	}
-
-	cuda::kernel_t get_kernel(const ::std::string& name) const
-	{
-		return get_kernel(name.c_str());
-	}
+	library::kernel_t get_kernel(const char* name) const;
+	library::kernel_t get_kernel(const ::std::string& name) const;
 
 	memory::region_t get_global(const char* name) const
 	{
@@ -196,22 +204,10 @@ inline memory::region_t get_global(const context_t& context, const library_t& li
 	// Note: Nothing is holding a PC refcount unit here!
 }
 
-// Implement other get's
+// More library item getters
+namespace library {
 
-inline kernel_t get_kernel(const context_t& context, const library_t& library, const char* name)
-{
-	CAW_SET_SCOPE_CONTEXT(context.handle());
-	library::kernel::handle_t new_handle;
-	auto status = cuLibraryGetKernel(&new_handle, library.handle(), name);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining kernel '") + name
-								+ "' from " + library::detail_::identify(library));
-	kernel::handle_t new_proper_kernel_handle;
-	status = cuKernelGetFunction(&new_proper_kernel_handle, new_handle);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining a context-associated kernel ")
-		+ "from kernel '" + name + "' in " +  library::detail_::identify(library));
-	return kernel::wrap(context.device_id(), context.handle(),
-		new_proper_kernel_handle, do_hold_primary_context_refcount_unit);
-}
+} // namespace library
 
 inline memory::region_t get_managed_region(const library_t& library, const char* name)
 {
@@ -225,6 +221,9 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 
 namespace module {
 
+/**
+ * Create an in-context module from the compiled code within a loaded library
+ */
 inline module_t create(const context_t& context, const library_t& library)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
@@ -241,6 +240,7 @@ inline module_t create(const context_t& context, const library_t& library)
 
 } // namespace module
 
+// I really have no idea what this does!
 inline void* get_unified_function(const context_t& context, const library_t& library, const char* symbol)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());

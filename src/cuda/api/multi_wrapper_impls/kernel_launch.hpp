@@ -207,7 +207,8 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 template<typename RawKernelFunction, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, false>, // Got a raw kernel function
+	::std::integral_constant<bool, false>, // Not a wrapped contextual kernel,
+	::std::integral_constant<bool, false>, // and not a library kernel, so it must be a raw kernel function
 	RawKernelFunction&&       kernel_function,
 	const stream_t&           stream,
 	launch_configuration_t    launch_configuration,
@@ -228,7 +229,8 @@ void enqueue_launch(
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-::std::integral_constant<bool, true>, // a kernel wrapped in a kernel_t (sub)class
+	::std::integral_constant<bool, true>,  // a kernel wrapped in a kernel_t (sub)class
+	::std::integral_constant<bool, false>, // Not a library kernel
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -238,6 +240,23 @@ void enqueue_launch(
 		::std::forward<Kernel>(kernel), stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
+
+#if CUDA_VERSION >= 12000
+template<typename Kernel, typename... KernelParameters>
+void enqueue_launch(
+	::std::integral_constant<bool, false>, // Not a wrapped contextual kernel,
+	::std::integral_constant<bool, true>,  // but a library kernel
+	Kernel&&                kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	kernel_t contextualized = cuda::contextualize(kernel, stream.context());
+	enqueue_launch_helper<kernel_t, KernelParameters...> {}(
+		contextualized, stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
+}
+#endif // CUDA_VERSION >= 12000
 
 } // namespace detail_
 
@@ -253,8 +272,7 @@ inline void launch(
 	// Note: If Kernel is a kernel_t, and its associated device is different
 	// than the current device, the next call will fail:
 
-	enqueue_launch(kernel, stream, launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration, ::std::forward<KernelParameters>(parameters)...);
 }
 
 template <typename SpanOfConstVoidPtrLike>
@@ -282,6 +300,19 @@ inline void launch_type_erased(
 		launch_configuration,
 		static_cast<const void**>(marshalled_arguments.data()));
 }
+
+#if CUDA_VERSION >= 12000
+template <typename SpanOfConstVoidPtrLike>
+void launch_type_erased(
+	const library::kernel_t&  kernel,
+	const stream_t&           stream,
+	launch_configuration_t    launch_configuration,
+	SpanOfConstVoidPtrLike    marshalled_arguments)
+{
+	auto contextualized = contextualize(kernel, stream.context());
+	launch_type_erased(contextualized, stream, launch_configuration, marshalled_arguments);
+}
+#endif // CUDA_VERSION >= 12000
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
 
