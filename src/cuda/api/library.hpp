@@ -233,7 +233,7 @@ inline module_t create(const context_t& context, const library_t& library)
 	throw_if_error_lazy(status, ::std::string("Failed creating a module '") +
 		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
 	constexpr const bool is_owning { true };
-	return module::detail_::wrap(context.device_id(), context.handle(), new_handle, library.link_options(),
+	return module::detail_::wrap(context.device_id(), context.handle(), new_handle,
 		is_owning, do_hold_primary_context_refcount_unit);
 	// TODO: We could consider adding a variant of this function taking a context&&, and using that
 	// to decide whether or not to hold a PC refcount unit

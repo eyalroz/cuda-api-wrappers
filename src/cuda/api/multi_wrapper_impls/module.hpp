@@ -67,7 +67,7 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 	// TODO: Make sure the default-constructed options correspond to what cuModuleLoadData uses as defaults
 	return detail_::wrap(
 		context.device_id(), context.handle(), new_module_handle,
-		link::options_t{}, do_take_ownership, doesnt_hold_pc_refcount_unit);
+		do_take_ownership, doesnt_hold_pc_refcount_unit);
 }
 
 // TODO: Consider adding create_module() methods to context_t
@@ -104,19 +104,16 @@ inline device::primary_context_t get_context_for(device_t& locus) { return locus
 
 inline module_t load_from_file(
 	const device_t&         device,
-	const char*             path,
-	const link::options_t&  link_options)
+	const char*             path)
 {
 	auto pc = device.primary_context();
 	device::primary_context::detail_::increase_refcount(device.id());
-	return load_from_file(pc, path, link_options);
+	return load_from_file(pc, path);
 }
 
-inline module_t load_from_file(
-	const char*             path,
-	const link::options_t&  link_options)
+inline module_t load_from_file(const char* path)
 {
-	return load_from_file(device::current::get(), path, link_options);
+	return load_from_file(device::current::get(), path);
 }
 
 } // namespace module
