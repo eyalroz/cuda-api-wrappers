@@ -38,7 +38,6 @@ inline module_t wrap(
 	device::id_t            device_id,
 	context::handle_t       context_handle,
 	handle_t                handle,
-	const link::options_t&  link_options,
 	bool                    take_ownership = false,
 	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
@@ -102,7 +101,6 @@ public: // getters
 	module::handle_t handle() const { return handle_; }
 	context::handle_t context_handle() const { return context_handle_; }
 	device::id_t device_id() const { return device_id_; }
-	const link::options_t& link_options() const { return link_options_; }
 
 	context_t context() const;
 	device_t device() const;
@@ -146,18 +144,16 @@ protected: // constructors
 		device::id_t device_id,
 		context::handle_t context,
 		module::handle_t handle,
-		const link::options_t& link_options,
 		bool owning,
 		bool holds_primary_context_refcount_unit)
 	noexcept
-		: device_id_(device_id), context_handle_(context), handle_(handle), link_options_(link_options), owning_(owning),
+		: device_id_(device_id), context_handle_(context), handle_(handle), owning_(owning),
 		  holds_pc_refcount_unit(holds_primary_context_refcount_unit)
 	{ }
 
 public: // friendship
 
-	friend module_t module::detail_::wrap(
-		device::id_t, context::handle_t, module::handle_t, const link::options_t&, bool, bool) noexcept;
+	friend module_t module::detail_::wrap(device::id_t, context::handle_t, module::handle_t, bool, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -168,7 +164,6 @@ public: // constructors and destructor
 			other.device_id_,
 			other.context_handle_,
 			other.handle_,
-			other.link_options_,
 			other.owning_,
 			other.holds_pc_refcount_unit)
 	{
@@ -204,7 +199,6 @@ public: // operators
 		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
 		::std::swap(handle_, other.handle_);
-		::std::swap(link_options_, other.link_options_);
 		::std::swap(owning_, other.owning_);
 		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
 		return *this;
@@ -214,7 +208,6 @@ protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	module::handle_t   handle_;
-	link::options_t    link_options_;
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
@@ -232,7 +225,6 @@ inline module_t load_from_file_in_current_context(
 	device::id_t            current_context_device_id,
 	context::handle_t       current_context_handle,
 	const char *            path,
-	const link::options_t&  link_options,
 	bool                    holds_primary_context_refcount_unit = false)
 {
 	handle_t new_module_handle;
@@ -243,7 +235,6 @@ inline module_t load_from_file_in_current_context(
 		current_context_device_id,
 		current_context_handle,
 		new_module_handle,
-		link_options,
 		do_take_ownership,
 		holds_primary_context_refcount_unit);
 }
@@ -267,61 +258,50 @@ inline module_t load_from_file_in_current_context(
 ///@{
 inline module_t load_from_file(
 	const context_t&        context,
-	const char*             path,
-	const link::options_t&  link_options = {})
+	const char*             path)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return detail_::load_from_file_in_current_context(
-		context.device_id(), context.handle(), path, link_options);
+	return detail_::load_from_file_in_current_context(context.device_id(), context.handle(), path);
 }
 
 inline module_t load_from_file(
 	const context_t&        context,
-	const ::std::string&    path,
-	const link::options_t&  link_options = {})
+	const ::std::string&    path)
 {
-	return load_from_file(context, path.c_str(), link_options);
+	return load_from_file(context, path.c_str());
 }
 
 module_t load_from_file(
 	const device_t&         device,
-	const char*             path,
-	const link::options_t&  link_options = {});
+	const char*             path);
 
 inline module_t load_from_file(
 	const device_t&         device,
-	const ::std::string&    path,
-	const link::options_t&  link_options = {})
+	const ::std::string&    path)
 {
-	return load_from_file(device, path.c_str(), link_options);
+	return load_from_file(device, path.c_str());
 }
 
-module_t load_from_file(
-	const char*             path,
-	const link::options_t&  link_options = {});
+module_t load_from_file(const char* path);
 
-inline module_t load_from_file(
-	const ::std::string&    path,
-	const link::options_t&  link_options = {})
+inline module_t load_from_file(const ::std::string& path)
 {
-	return load_from_file(path.c_str(), link_options);
+	return load_from_file(path.c_str());
 }
 
 #if __cplusplus >= 201703L
 
 inline module_t load_from_file(
 	const device_t&                 device,
-	const ::std::filesystem::path&  path,
-	const link::options_t&          link_options = {})
+	const ::std::filesystem::path&  path)
 {
-	return load_from_file(device, path.c_str(), link_options);
+	return load_from_file(device, path.c_str());
 }
 
 inline module_t load_from_file(
-	const ::std::filesystem::path&  path,
-	const link::options_t&          link_options = {})
+	const ::std::filesystem::path&  path)
 {
-	return load_from_file(device::current::get(), path, link_options);
+	return load_from_file(device::current::get(), path);
 }
 
 #endif
@@ -333,12 +313,11 @@ inline module_t wrap(
 	device::id_t            device_id,
 	context::handle_t       context_handle,
 	handle_t                module_handle,
-	const link::options_t&  link_options,
 	bool                    take_ownership,
 	bool                    hold_pc_refcount_unit
 ) noexcept
 {
-	return module_t{device_id, context_handle, module_handle, link_options, take_ownership, hold_pc_refcount_unit};
+	return module_t{device_id, context_handle, module_handle, take_ownership, hold_pc_refcount_unit};
 }
 
 /*
