@@ -10,11 +10,10 @@
 #ifndef CUDA_API_WRAPPERS_KERNEL_HPP_
 #define CUDA_API_WRAPPERS_KERNEL_HPP_
 
-#include "device_properties.hpp"
 #include "primary_context.hpp"
+#include "current_context.hpp"
 #include "error.hpp"
 #include "types.hpp"
-#include "current_context.hpp"
 
 #if CUDA_VERSION < 11000
 #define CAN_GET_APRIORI_KERNEL_HANDLE 0
@@ -27,7 +26,6 @@
 namespace cuda {
 
 ///@cond
-class device_t;
 class kernel_t;
 ///@nocond
 
@@ -50,7 +48,7 @@ kernel_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_id,
 	kernel::handle_t   f,
-	bool hold_primary_context_refcount_unit = false);
+	bool               hold_primary_context_refcount_unit = false);
 
 namespace detail_ {
 
@@ -78,9 +76,7 @@ inline attribute_value_t get_attribute_in_current_context(handle_t handle, attri
 {
 	kernel::attribute_value_t attribute_value;
 	auto result = cuFuncGetAttribute(&attribute_value,  attribute, handle);
-	throw_if_error_lazy(result,
-		::std::string("Failed obtaining attribute ") + attribute_name(attribute)
-	);
+	throw_if_error_lazy(result, ::std::string("Failed obtaining attribute ") + attribute_name(attribute));
 	return attribute_value;
 }
 
@@ -109,16 +105,12 @@ inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attri
  * way.
  *
  * @note The association of a `kernel_t` with an individual device or context is somewhat
- * tenuous. That is, the same function could be used with any other validate_block_dimensions_compatibility device;
+ * tenuous. That is, the same function could be used with any other device;
  * However, many/most of the features, attributes and settings are context-specific
  * or device-specific.
  *
  * @note NVRTC-compiled kernels can only use this class, with apriori-compiled
  * kernels can use their own subclass.
- *
- * @todo Consider holding a module handle (possibly null/0/invalid), and a boolean
- * saying whether this kernel wrapper holds it. This would allow passing kernel_t's
- * without accompanying module_t's.
  */
 class kernel_t {
 
@@ -126,10 +118,12 @@ public: // getters
 	context_t context() const noexcept;
 	device_t device() const noexcept;
 
-	device::id_t      device_id() const noexcept { return device_id_; }
+	device::id_t device_id() const noexcept { return device_id_; }
 	context::handle_t context_handle() const noexcept { return context_handle_; }
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
-	kernel::handle_t  handle() const
+#if CAN_GET_APRIORI_KERNEL_HANDLE
+	kernel::handle_t handle() const noexcept { return handle_; }
+#else
+	kernel::handle_t handle() const
 	{
 #ifndef NDEBUG
 		if (handle_ == nullptr) {
@@ -139,8 +133,6 @@ public: // getters
 #endif
 		return handle_;
 	}
-#else
-	kernel::handle_t  handle() const noexcept { return handle_; }
 #endif
 
 public: // operators
@@ -349,7 +341,7 @@ public: // ctors & dtor
 
 	kernel_t(const kernel_t& other) :
 		kernel_t(other.device_id_, other.context_handle_, other.handle_, false) { }
-		// Note: be careful with subclasses
+
 	kernel_t(kernel_t&& other) :
 		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
 	{
@@ -357,9 +349,7 @@ public: // ctors & dtor
 	}
 
 public: // ctors & dtor
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
-	virtual
-#endif
+	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	~kernel_t() NOEXCEPT_IF_NDEBUG
 	{
 		// TODO: DRY
@@ -464,7 +454,6 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 
 } // namespace detail_
 
-
 #if CUDA_VERSION >= 11000
 /**
 * @brief See the Driver API documentation for @ref cuOccupancyAvailableDynamicSMemPerBlock
@@ -477,8 +466,8 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 	size_t result;
 	auto status = cuOccupancyAvailableDynamicSMemPerBlock(
 		&result, kernel.handle(), static_cast<int>(blocks_on_multiprocessor), static_cast<int>(block_size_in_threads));
-	throw_if_error_lazy(status,
-		"Determining the available dynamic memory per block, given the number of blocks on a multiprocessor and their size");
+	throw_if_error_lazy(status, "Determining the available dynamic memory per block, given "
+		"the number of blocks on a multiprocessor and their size");
 	return static_cast<memory::shared::size_t>(result);
 }
 #endif // CUDA_VERSION >= 11000
@@ -502,6 +491,7 @@ inline ::std::string identify(const kernel_t& kernel)
 }
 
 } // namespace detail_
+
 } // namespace kernel
 
 #if CUDA_VERSION >= 10000
