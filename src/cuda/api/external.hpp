@@ -124,7 +124,7 @@ protected: // data members
 
 inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership)
 {
-	return { handle, std::move(descriptor), take_ownership };
+	return { handle, ::std::move(descriptor), take_ownership };
 }
 
 /**
