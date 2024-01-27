@@ -207,8 +207,8 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 template<typename RawKernelFunction, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, false>, // Not a wrapped contextual kernel,
-	::std::integral_constant<bool, false>, // and not a library kernel, so it must be a raw kernel function
+	bool_constant<false>, // Not a wrapped contextual kernel,
+	bool_constant<false>, // and not a library kernel, so it must be a raw kernel function
 	RawKernelFunction&&       kernel_function,
 	const stream_t&           stream,
 	launch_configuration_t    launch_configuration,
@@ -229,8 +229,8 @@ void enqueue_launch(
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, true>,  // a kernel wrapped in a kernel_t (sub)class
-	::std::integral_constant<bool, false>, // Not a library kernel
+	bool_constant<true>,  // a kernel wrapped in a kernel_t (sub)class
+	bool_constant<false>, // Not a library kernel
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -244,8 +244,8 @@ void enqueue_launch(
 #if CUDA_VERSION >= 12000
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, false>, // Not a wrapped contextual kernel,
-	::std::integral_constant<bool, true>,  // but a library kernel
+	bool_constant<false>, // Not a wrapped contextual kernel,
+	bool_constant<true>,  // but a library kernel
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
