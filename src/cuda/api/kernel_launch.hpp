@@ -104,7 +104,7 @@ template<typename P>
 using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
 
 template<typename Fun>
-struct is_function_ptr: ::std::integral_constant<bool,
+struct is_function_ptr: bool_constant<
 	::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
 
 inline void collect_argument_addresses(void**) { }
@@ -128,8 +128,8 @@ struct enqueue_launch_helper {
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, false>,
-	::std::integral_constant<bool, false>,
+	bool_constant<false>,
+	bool_constant<false>,
 	Kernel&&                kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -137,8 +137,8 @@ void enqueue_launch(
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, true>,
-	::std::integral_constant<bool, false>,
+	bool_constant<true>,
+	bool_constant<false>,
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -146,8 +146,8 @@ void enqueue_launch(
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
-	::std::integral_constant<bool, false>,
-	::std::integral_constant<bool, true>,
+	bool_constant<false>,
+	bool_constant<true>,
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -333,8 +333,8 @@ void enqueue_launch(
 	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
 	// function for each of them will basically be just a one-liner :-(
 	detail_::enqueue_launch<Kernel, KernelParameters...>(
-		::std::integral_constant<bool, wrapped_contextual_kernel>{},
-		::std::integral_constant<bool, library_kernel>{},
+		detail_::bool_constant<wrapped_contextual_kernel>{},
+		detail_::bool_constant<library_kernel>{},
 		::std::forward<Kernel>(kernel), stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
