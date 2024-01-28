@@ -167,10 +167,11 @@ protected:
 public:
 	launch_configuration_t build() const
 	{
-		auto composite_dims = get_composite_dimensions();
-		auto dynamic_shmem_size = get_dynamic_shared_memory_size(composite_dims.block);
-
-		return launch_configuration_t{composite_dims, dynamic_shmem_size, thread_block_cooperation};
+		auto result = launch_configuration_t{ get_composite_dimensions() };
+		result.dynamic_shared_memory_size = get_dynamic_shared_memory_size(result.dimensions.block);
+		result.block_cooperation = thread_block_cooperation;
+		// TODO: More fields!
+		return result;
 	}
 
 protected:

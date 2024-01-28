@@ -126,6 +126,8 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 
 	detail_::enqueue_raw_kernel_launch_in_current_context(
 		unwrapped_kernel_function,
+		stream.device_id(),
+		stream.context_handle(),
 		stream.handle(),
 		launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
@@ -140,7 +142,7 @@ marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
 
 
 // Note: The last (valid) element of marshalled_arguments must be null
-inline void launch_type_erased_in_current_context(
+inline void enqueue_kernel_launch_by_handle_in_current_context(
 	kernel::handle_t        kernel_function_handle,
 	device::id_t            device_id,
 	context::handle_t       context_handle,
@@ -153,7 +155,19 @@ inline void launch_type_erased_in_current_context(
 #endif
 	status_t status;
 	const auto&lc = launch_config; // alias for brevity
-	if (launch_config.block_cooperation)
+#if CUDA_VERSION >= 12000
+	CUlaunchAttribute launch_attributes[detail_::maximum_possible_kernel_launch_attributes+1];
+	auto launch_attributes_span = span<CUlaunchAttribute>{
+		launch_attributes, sizeof(launch_attributes)/sizeof(launch_attributes[0])
+	};
+	CUlaunchConfig full_launch_config = detail_::marshal(lc, stream_handle, launch_attributes_span);
+	status = cuLaunchKernelEx(
+		&full_launch_config,
+		kernel_function_handle,
+		const_cast<void**>(marshalled_arguments),
+		nullptr);
+#else
+	if (launch_config.has_nondefault_attributes())
 		status = cuLaunchCooperativeKernel(
 			kernel_function_handle,
 			lc.dimensions.grid.x,  lc.dimensions.grid.y,  lc.dimensions.grid.z,
@@ -175,8 +189,8 @@ inline void launch_type_erased_in_current_context(
 			no_arguments_in_alternative_format
 		);
 	}
+#endif // CUDA_VERSION >= 12000
 	throw_if_error_lazy(status,
-		(lc.block_cooperation ? "Cooperative " : "") +
 		::std::string(" kernel launch failed for ") + kernel::detail_::identify(kernel_function_handle)
 		+ " on " + stream::detail_::identify(stream_handle, context_handle, device_id));
 }
@@ -198,7 +212,7 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 		validate_compatibility(wrapped_kernel, launch_config);
 #endif
 
-		launch_type_erased_in_current_context(
+		enqueue_kernel_launch_by_handle_in_current_context(
 			function_handle, stream.device_id(), stream.context_handle(),
 			stream.handle(), launch_config, marshalled_arguments.data());
 	}
@@ -223,7 +237,7 @@ void enqueue_launch(
 	// validating the configuration without the device should happen within the next function...
 #endif
 	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
-		kernel_function, stream.handle(), launch_configuration,
+		kernel_function, stream.device_id(), stream.context_handle(), stream.handle(), launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
 }
 
@@ -292,7 +306,7 @@ inline void launch_type_erased(
 	}
 #endif
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
-	return detail_::launch_type_erased_in_current_context(
+	return detail_::enqueue_kernel_launch_by_handle_in_current_context(
 		kernel.handle(),
 		stream.device_id(),
 		stream.context_handle(),

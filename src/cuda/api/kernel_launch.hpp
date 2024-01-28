@@ -153,9 +153,19 @@ void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
 
+inline void enqueue_kernel_launch_by_handle_in_current_context(
+	kernel::handle_t        kernel_function_handle,
+	device::id_t            device_id,
+	context::handle_t       context_handle,
+	stream::handle_t        stream_handle,
+	launch_configuration_t  launch_config,
+	const void**            marshalled_arguments);
+
 template<typename KernelFunction, typename... KernelParameters>
 void enqueue_raw_kernel_launch_in_current_context(
 	KernelFunction&&        kernel_function,
+	device::id_t            device_id,
+	context::handle_t       context_handle,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
@@ -171,7 +181,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 #ifndef NDEBUG
 	validate(launch_configuration);
 #endif
-	if (launch_configuration.block_cooperation == thread_blocks_may_not_cooperate) {
+	if (not launch_configuration.has_nondefault_attributes()) {
 		// regular plain vanilla launch
 		kernel_function <<<
 			launch_configuration.dimensions.grid,
@@ -184,13 +194,9 @@ void enqueue_raw_kernel_launch_in_current_context(
 	else {
 #if CUDA_VERSION < 9000
 		throw cuda::runtime_error(status::not_supported,
-			"Only CUDA versions 9.0 and later support launching kernels \"cooperatively\"");
+			"Only CUDA versions 9.0 and later support launching kernels with additional"
+			"arguments, e.g block cooperation");
 #else
-		// Cooperative launches cannot be made using the triple-chevron syntax,
-		// nor is there a variadic-template of the launch API call, so we need to
-		// a bit of useless work here. We could have done exactly the same thing
-		// for the non-cooperative case, mind you.
-
 		// The following hack is due to C++ not supporting arrays of length 0 -
 		// but such an array being necessary for collect_argument_addresses with
 		// multiple parameters. Other workarounds are possible, but would be
@@ -204,18 +210,17 @@ void enqueue_raw_kernel_launch_in_current_context(
 		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
 #if CUDA_VERSION >= 11000
 		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail_::get_handle( (const void*) kernel_function);
-		auto status = cuLaunchCooperativeKernel(
+		enqueue_kernel_launch_by_handle_in_current_context(
 			kernel_function_handle,
-			launch_configuration.dimensions.grid.x,
-			launch_configuration.dimensions.grid.y,
-			launch_configuration.dimensions.grid.z,
-			launch_configuration.dimensions.block.x,
-			launch_configuration.dimensions.block.y,
-			launch_configuration.dimensions.block.z,
-			launch_configuration.dynamic_shared_memory_size,
+			device_id,
+			context_handle,
 			stream_handle,
-			argument_ptrs);
-#else
+			launch_configuration,
+			const_cast<const void**>(argument_ptrs));
+
+#else // CUDA_VERSION is at least 9000 but under 11000
+		(void) device_id;
+		(void) context_handle;
 		auto status = cudaLaunchCooperativeKernel(
 			(const void *) kernel_function,
 			(dim3)(uint3)launch_configuration.dimensions.grid,
@@ -223,8 +228,8 @@ void enqueue_raw_kernel_launch_in_current_context(
 			&argument_ptrs[0],
 			(size_t)launch_configuration.dynamic_shared_memory_size,
 			cudaStream_t(stream_handle));
+		throw_if_error_lazy(status, "Kernel launch failed");
 #endif // CUDA_VERSION >= 11000
-		throw_if_error_lazy(status, "Cooperative kernel launch failed");
 #endif // CUDA_VERSION >= 9000
 	}
 }
