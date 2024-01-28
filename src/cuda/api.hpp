@@ -73,6 +73,7 @@
 #include "api/multi_wrapper_impls/apriori_compiled_kernel.hpp"
 #include "api/multi_wrapper_impls/module.hpp"
 #include "api/multi_wrapper_impls/ipc.hpp"
+#include "api/multi_wrapper_impls/launch_configuration.hpp"
 
 #include "api/launch_config_builder.hpp"
 
