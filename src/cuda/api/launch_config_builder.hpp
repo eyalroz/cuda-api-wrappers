@@ -85,7 +85,7 @@ protected:
 			if (use_min_params_for_max_occupancy_) {
 				throw ::std::logic_error(
 					"Cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
-					"the grid with fixed-size cubs.");
+					"the grid with fixed-size blocks.");
 			}
 #endif
 			if (not (kernel_)) {
@@ -464,11 +464,32 @@ public:
 
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
 	{
+		if (device_ and kernel_->device_id() != device_) {
+			throw ::std::invalid_argument("Launch config builder already associated with "
+			+ device::detail_::identify(*device_) + " and cannot further be associated "
+			"with " +kernel::detail_::identify(*wrapped_kernel_ptr));
+		}
 #ifndef NDEBUG
 		validate_kernel(wrapped_kernel_ptr);
 #endif
 		kernel_ = wrapped_kernel_ptr;
 		return *this;
+	}
+
+	launch_config_builder_t& device(const device::id_t device_id)
+	{
+		if (kernel_ and kernel_->device_id() !=  device_id) {
+			throw ::std::invalid_argument("Launch config builder already associated with "
+				+ kernel::detail_::identify(*kernel_) + " and cannot further be associated "
+				"another device: " + device::detail_::identify(device_id));
+		}
+		device_ = device_id;
+		return *this;
+	}
+
+	launch_config_builder_t& device(const device_t& device)
+	{
+		return this->device(device.id());
 	}
 
 	launch_config_builder_t& kernel_independent()
@@ -520,8 +541,6 @@ public:
 		saturate_with_active_blocks_ = false;
 		return *this;
 	}
-
-
 }; // launch_config_builder_t
 
 inline launch_config_builder_t launch_config_builder() { return {}; }
