@@ -155,9 +155,10 @@ int main(int argc, char** argv)
 	cuda::memory::async::copy(d_A.get(), h_A.get(), size, stream);
 	cuda::memory::async::copy(d_B.get(), h_B.get(), size, stream);
 
-    auto threadsPerBlock = 256;
-	auto blocksPerGrid   = (N + threadsPerBlock - 1) / threadsPerBlock;
-    auto launch_config = cuda::make_launch_config( blocksPerGrid, threadsPerBlock );
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(N)
+		.block_size(256)
+		.build();
 
     cuda::outstanding_error::ensure_none();
 

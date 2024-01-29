@@ -45,21 +45,6 @@ constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
     return (dividend / divisor) + !!(dividend % divisor);
 }
 
-/*
- * Produce a launch configuration with one thread covering each element
- */
-cuda::launch_configuration_t make_linear_launch_config(
-    const cuda::device_t  device,
-    size_t                length)
-{
-    auto threads_per_block = device.properties().max_threads_per_block();
-    auto num_blocks =  div_rounding_up(length, threads_per_block);
-    if (num_blocks > std::numeric_limits<cuda::grid::dimension_t>::max()) {
-        throw std::invalid_argument("Specified length exceeds CUDA's support for a linear grid");
-    }
-    return cuda::make_launch_config((cuda::grid::dimensions_t) num_blocks, threads_per_block, cuda::no_dynamic_shared_memory);
-}
-
 struct buffer_set_t {
     cuda::memory::host::unique_ptr<element_t[]> host_lhs;
     cuda::memory::host::unique_ptr<element_t[]> host_rhs;
@@ -115,8 +100,14 @@ int main(int, char **)
     std::generate_n(std::back_inserter(streams), num_kernels,
         [&]() { return device.create_stream(cuda::stream::async); });
 
-    auto common_launch_config = make_linear_launch_config(device, num_elements);
-    auto buffer_size = num_elements * sizeof(element_t);
+    auto common_launch_config = cuda::launch_config_builder()
+		.device(device)
+		.overall_size(num_elements)
+		.use_maximum_linear_block()
+		.build();
+
+
+	auto buffer_size = num_elements * sizeof(element_t);
 
     std::cout
         << "Running " << num_kernels << " sequences of HtoD-kernel-DtoH, in parallel" << std::endl;

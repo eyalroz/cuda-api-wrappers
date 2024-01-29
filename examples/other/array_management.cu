@@ -79,9 +79,11 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 		grid::dimension_t( div_rounding_up(h, block_dim) ),
 		grid::dimension_t( div_rounding_up(d, block_dim) )
 	};
+
+	auto launch_config = cuda::launch_configuration_t{grid_dims, block_dims};
 	cuda::launch(
 		kernels::from_3D_texture_to_memory_space,
-		cuda::make_launch_config(grid_dims, block_dims),
+		launch_config,
 		tv.raw_handle(), ptr_out.get(), w, h, d);
 	device.synchronize();
 	check_output_is_iota("copy from 3D texture into (managed) global memory", ptr_out.get(), arr.size());
@@ -115,8 +117,6 @@ void print_2d_array(const char* title, const T* a, size_t width, size_t height)
 
 void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 {
-	namespace grid = cuda::grid;
-
 	const cuda::array::dimensions_t<2> dims = {w, h};
 	auto arr = cuda::array::create<float>(device , dims);
 	auto ptr_in = cuda::memory::managed::make_unique<float[]>(arr.size());
@@ -130,14 +130,12 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	cuda::texture_view tv(arr);
 
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
-	constexpr auto block_dims = cuda::grid::block_dimensions_t::square(block_dim);
 	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
 	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
-	const cuda::grid::dimensions_t grid_dims = {
-		grid::dimension_t( div_rounding_up(w, block_dim) ),
-		grid::dimension_t( div_rounding_up(h, block_dim) ),
-		1
-	};
+	auto launch_config = cuda::launch_config_builder()
+		.overall_dimensions(w, h)
+		.block_dimensions(block_dim, block_dim)
+		.build();
 
     auto ptr_out = cuda::memory::managed::make_unique<float[]>(arr.size());
     // The following is to make it easier to notice if nothing get copied
@@ -147,7 +145,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
 	cuda::launch(
 		kernels::from_2D_texture_to_memory_space,
-		cuda::make_launch_config(grid_dims, block_dims),
+		launch_config,
 		tv.raw_handle(), ptr_out.get(), w, h);
 	cuda::memory::copy(ptr_out.get(), arr);
 	device.synchronize();

@@ -142,7 +142,7 @@ void enqueue_p2p_copy(
         auto grid_and_block_dims = copy_kernel.min_grid_params_for_max_occupancy();
         // Note: We could have alternatively used:
         // auto grid_and_block_dims = cuda::kernel::occupancy::min_grid_params_for_max_occupancy(copy_kernel);
-        auto launch_config = cuda::make_launch_config(grid_and_block_dims);
+        auto launch_config = cuda::launch_configuration_t{grid_and_block_dims};
 
         for (int r = 0; r < repeat; r++) {
             stream.enqueue.kernel_launch(copy_kernel, launch_config, (int4*)dest, (int4*)src, num_elems/sizeof(int4));
@@ -444,11 +444,11 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 
             // Block the stream until all the work is queued up
             // DANGER! - cudaMemcpy*Async may infinitely block waiting for
-            // room to push the operation, so keep the number of repeatitions
-            // relatively low.  Higher repeatitions will cause the delay kernel
+            // room to push the operation, so keep the number of repetitions
+            // relatively low.  Higher repetitions will cause the delay kernel
             // to timeout and lead to unstable results.
             *flag = 0;
-            auto single_thread = cuda::make_launch_config(cuda::grid::dimensions_t::point(), cuda::grid::block_dimensions_t::point());
+            auto single_thread = cuda::launch_configuration_t(cuda::grid::dimensions_t::point(), cuda::grid::block_dimensions_t::point());
             streams[i].enqueue.kernel_launch(delay, single_thread, flag, default_timeout_clocks);
             streams[i].enqueue.event(start[i]);
 

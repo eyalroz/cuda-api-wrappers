@@ -44,15 +44,17 @@ int main()
 	std::generate(buffer_B.get(), buffer_B.get() + numElements, generator);
 
 	// Launch the Vector Add CUDA Kernel
-	int threadsPerBlock = 256;
-	int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(numElements)
+		.block_size(256)
+		.build();
+
 	std::cout
-		<< "CUDA kernel launch with " << blocksPerGrid
-		<< " blocks of " << threadsPerBlock << " threads\n";
+		<< "CUDA kernel launch with " << launch_config.dimensions.grid.volume()
+		<< " blocks of " << launch_config.dimensions.block.volume() << " threads\n";
 
 	cuda::launch(
-		vectorAdd,
-		cuda::make_launch_config( blocksPerGrid, threadsPerBlock ),
+		vectorAdd, launch_config,
 		buffer_A.get(), buffer_B.get(), buffer_C.get(), numElements
 	);
 

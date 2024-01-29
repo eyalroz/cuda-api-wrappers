@@ -160,7 +160,7 @@ void my_kernel(T* data) {
 	T h_data = 5;
 	cuda::memory::copy_single<T>(d_data.get(), &h_data);
 
-	auto single_thread_launch_config = cuda::make_launch_config( cuda::grid::composite_dimensions_t::point());
+	auto single_thread_launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	device.launch(kernel, single_thread_launch_config, d_data.get());
 	cuda::memory::copy_single<T>(&h_data, d_data.get());
 	return are_close(h_data, 125.f);
@@ -247,7 +247,7 @@ void my_kernel2(float const* indata, float* outdata) {
 	T inval = 3.14159f;
 	cuda::memory::copy_single<T>(indata.get(), &inval);
 
-	auto launch_config = cuda::make_launch_config(cuda::grid::composite_dimensions_t::point());
+	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	cuda::launch(my_kernel1, launch_config, indata.get(), outdata.get());
 	cuda::launch(my_kernel2, launch_config, indata.get(), outdata.get());
 
@@ -309,7 +309,7 @@ __global__ void constant_test(int *x) {
 	cuda::memory::copy(b_a, &inval[1]);
 	cuda::memory::copy(c_b_a, &inval[2]);
 	auto outdata = cuda::memory::device::make_unique<int[]>(device, n_const);
-	auto launch_config = cuda::make_launch_config(cuda::grid::composite_dimensions_t::point());
+	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	cuda::launch(kernel, launch_config, outdata.get());
 	int outval[n_const];
 	cuda::memory::copy(outval, outdata.get(), sizeof(outval));
@@ -341,7 +341,7 @@ bool test_constant_2()
 	auto kernel = module.get_kernel(compilation_result.get_mangling_of(second_kernel_name));
 	int inval[] = {3, 5, 9};
 	cuda::memory::copy(anon_b_a, inval);
-	auto launch_config = cuda::make_launch_config(cuda::grid::composite_dimensions_t::point());
+	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	auto outdata = cuda::memory::device::make_unique<int[]>(device, n_const);
 	cuda::launch(kernel, launch_config, outdata.get());
 	int outval[n_const];

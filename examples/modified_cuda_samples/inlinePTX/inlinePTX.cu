@@ -50,9 +50,10 @@ int main(int, char **)
 
 	sequence_cpu(h_ptr.get(), N);
 
-	auto block_size = 256;
-	auto grid_size = div_rounding_up(N, block_size);
-	auto launch_config = cuda::make_launch_config(grid_size, block_size);
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(N)
+		.block_size(256)
+		.build();
 	device.launch(sequence_gpu, launch_config, d_ptr.get(), N);
 
 	cuda::outstanding_error::ensure_none();
