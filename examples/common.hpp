@@ -100,6 +100,15 @@ std::ostream& operator<<(std::ostream& os, const cuda::stream_t& stream)
 	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
+std::ostream& operator<<(std::ostream& os, const cuda::launch_configuration_t& lc)
+{
+	return os << "launch config [ "
+		<< "grid: ("  << lc.dimensions.grid.x << ", " << lc.dimensions.grid.y << ", " << lc.dimensions.grid.z << "), "
+		<< "block: (" << lc.dimensions.block.x << ", " << lc.dimensions.block.y << ", " << lc.dimensions.block.z << "), "
+		<< "dynamic shared mem: " << lc.dynamic_shared_memory_size
+		<< "]";
+}
+
 
 std::string to_string(const cuda::context_t& context)
 {
