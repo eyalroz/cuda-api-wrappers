@@ -114,26 +114,6 @@ struct launch_configuration_t {
    launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
-/**
- * @brief a named constructor idiom for a @ref launch_config_t
- */
-constexpr launch_configuration_t make_launch_config(
-	grid::composite_dimensions_t grid_and_block_dimensions,
-	memory::shared::size_t      dynamic_shared_memory_size = 0u,
-	bool                        block_cooperation = false) noexcept
-{
-	return { grid_and_block_dimensions, dynamic_shared_memory_size, block_cooperation };
-}
-
-constexpr launch_configuration_t make_launch_config(
-	grid::dimensions_t         grid_dimensions,
-	grid::block_dimensions_t   block_dimensions,
-	memory::shared::size_t     dynamic_shared_memory_size = 0u,
-	bool                       block_cooperation = false) noexcept
-{
-	return { { grid_dimensions, block_dimensions }, dynamic_shared_memory_size, block_cooperation };
-}
-
 constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return

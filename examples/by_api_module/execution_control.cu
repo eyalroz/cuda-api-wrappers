@@ -73,9 +73,6 @@ int main(int argc, char **argv)
 	kernel.set_shared_memory_bank_size(
 		cuda::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
 
-	// You may be wondering why we're only setting these "attributes' but not
-	// obtaining their existing values. Well - we can't! The runtime doesn't expose
-	// API calls for that (as of CUDA v8.0).
 
 	// ------------------
 	//  Kernel launching
@@ -85,14 +82,14 @@ int main(int argc, char **argv)
 	const unsigned num_blocks = 3;
 	std::cout << "Getting kernel attribute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
 	auto max_threads_per_block = kernel.get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
-	auto launch_config = cuda::make_launch_config(num_blocks, max_threads_per_block);
+	auto launch_config = cuda::launch_configuration_t(num_blocks, max_threads_per_block);
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " with " << num_blocks << " blocks, using cuda::launch()" << std::endl;
 	{
 		// Copy and move construction and assignment of launch configurations
-		auto launch_config_2 = cuda::make_launch_config(2, 2, 2);
-		auto launch_config_3 = cuda::make_launch_config(3, 3, 3);
+		auto launch_config_2 = cuda::launch_configuration_t{2, 2};
+		auto launch_config_3 = cuda::launch_configuration_t{3, 3};
 		cuda::launch_configuration_t launch_config_4{launch_config};
 		(void) launch_config_4;
 		launch_config_4 = launch_config_2;

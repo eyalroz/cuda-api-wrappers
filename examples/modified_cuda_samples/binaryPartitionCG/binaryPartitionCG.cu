@@ -117,12 +117,11 @@ int main(int argc, const char **argv)
 	stream.enqueue.memzero(d_sumOfOddEvenElems.get(), sizeof(int)*2);
 
 	auto kernel = cuda::kernel::get(device, oddEvenCountAndSumCG);
-	auto dims = kernel.min_grid_params_for_max_occupancy();
-	auto launch_config = cuda::make_launch_config(dims);
+	auto launch_config = cuda::launch_config_builder().min_params_for_max_occupancy().build();
 		// Note: While the kernel uses the "cooperative groups" CUDA-C++ headers,
 		// it doesn't involve any inter-block cooperation, so we don't indicate
 		// block cooperation in the launch configuration
-
+	auto dims = launch_config.dimensions;
 	if (dims.block.dimensionality() != 1 or dims.grid.dimensionality() != 1) {
 		throw std::logic_error("Unexpected grid parameters received from kernel_t::min_grid_params_for_max_occupancy - "
 			"block dims have " + std::to_string(dims.block.dimensionality()) + " dimensions and "

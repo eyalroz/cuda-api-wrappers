@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 	stream_1.enqueue.host_invokable(callback);
 	auto threads_per_block = cuda::kernel::get(device, increment).get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	auto num_blocks = div_rounding_up(buffer_size, threads_per_block);
-	auto launch_config = cuda::make_launch_config(num_blocks, threads_per_block);
+	auto launch_config = cuda::launch_configuration_t{num_blocks, threads_per_block};
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect
 	stream_1.enqueue.attach_managed_region(buffer.get());

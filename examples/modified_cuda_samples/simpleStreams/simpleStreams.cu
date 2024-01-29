@@ -108,8 +108,6 @@ void run_simple_streams_example(
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                // number of times each experiment is repeated; originally 10
 	std::size_t nbytes = params.n * sizeof(int);   // number of data bytes
-	dim3 threads, blocks;           // kernel launch configuration
-
 	int c = 5;                      // value to which the array will be initialized
 
 	// Allocate Host memory
@@ -151,10 +149,10 @@ void run_simple_streams_example(
 	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
 
 	// time kernel
-	threads=dim3(512, 1);
-	assert_(params.n % threads.x == 0);
-	blocks=dim3(params.n / threads.x, 1);
-	auto launch_config = cuda::make_launch_config(blocks, threads);
+	auto launch_config = cuda::launch_config_builder()
+		.overall_size(params.n)
+		.block_size(512)
+		.build();
 	start_event.record();
 	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.get(), d_c.get(), params.num_iterations);
 	stop_event.record();
@@ -164,9 +162,10 @@ void run_simple_streams_example(
 
 	//////////////////////////////////////////////////////////////////////
 	// time non-streamed execution for reference
-	threads=dim3(512, 1);
-	blocks=dim3(params.n / threads.x, 1);
-	launch_config = cuda::make_launch_config(blocks, threads);
+	launch_config = cuda::launch_config_builder()
+		.overall_size(params.n)
+		.block_size(512)
+		.build();
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
@@ -182,9 +181,10 @@ void run_simple_streams_example(
 
 	//////////////////////////////////////////////////////////////////////
 	// time execution with nstreams streams
-	threads=dim3(512,1);
-	blocks=dim3(params.n/(nstreams*threads.x),1);
-	launch_config = cuda::make_launch_config(blocks, threads);
+	launch_config = cuda::launch_config_builder()
+		.overall_size(params.n/nstreams)
+		.block_size(512)
+		.build();
 	// TODO: Avoid need to push and pop here
 	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
 	// This instruction is actually the only one in our program

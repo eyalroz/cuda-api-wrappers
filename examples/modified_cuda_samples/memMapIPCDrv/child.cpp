@@ -146,16 +146,6 @@ bool results_are_valid(
 	return true;
 }
 
-cuda::launch_configuration_t make_launch_config(const cuda::device_t &device, const cuda::kernel_t &kernel)
-{
-	const int num_threads_per_block = 128;
-	auto max_active_blocks_per_sm = kernel.max_active_blocks_per_multiprocessor(num_threads_per_block, 0);
-	auto num_blocks = max_active_blocks_per_sm * device.multiprocessor_count();
-	auto launch_config = cuda::make_launch_config(num_blocks, num_threads_per_block);
-	return launch_config;
-}
-
-
 void childProcess(int devId, int id_of_this_child, char **)
 {
 	auto device{cuda::device::get(devId)};
@@ -179,7 +169,11 @@ void childProcess(int devId, int id_of_this_child, char **)
 	auto module = cuda::module::create(device, fatbin);
 
 	auto kernel = module.get_kernel(kernel::name);
-	auto launch_config = make_launch_config(device, kernel);
+	auto launch_config = cuda::launch_config_builder()
+		.kernel(&kernel)
+		.block_size(128)
+		.saturate_with_active_blocks().build();
+
 
 	for (int sibling_process_offset = 0; sibling_process_offset < num_processes; sibling_process_offset++) {
 		// Interact with (cyclically) consecutive child processes after
