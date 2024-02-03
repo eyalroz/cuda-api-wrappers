@@ -431,13 +431,21 @@ struct dimensions_t // this almost-inherits dim3
 };
 
 ///@cond
-constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr inline bool operator!=(const dim3& lhs, const dim3& rhs) noexcept
+{
+	return not (lhs == rhs);
+}
+constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
+}
+constexpr inline bool operator!=(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+{
+	return not (lhs == rhs);
 }
 ///@endcond
 
