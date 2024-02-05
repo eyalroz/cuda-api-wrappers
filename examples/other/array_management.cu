@@ -130,8 +130,8 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 	cuda::texture_view tv(arr);
 
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
-	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
-	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
+	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<cuda::grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<cuda::grid::dimension_t>::max());
 	auto launch_config = cuda::launch_config_builder()
 		.overall_dimensions(w, h)
 		.block_dimensions(block_dim, block_dim)
