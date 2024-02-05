@@ -1,9 +1,9 @@
 /**
  * @file
  *
- * @brief Contains the @ref launch
+ * @brief Contains the @ref `cuda::launch_config_builder_t` class definition
  *
- * @note Launch configurations are  used mostly in @ref kernel_launch.hpp . 
+ * @note Launch configurations are used mostly in @ref `kernel_launch.hpp`.
  */
 
 #pragma once
@@ -178,6 +178,7 @@ protected:
 
 	struct {
 		optional<grid::block_dimensions_t  > block;
+		optional<grid::dimensions_t        > block_cluster;
 		optional<grid::dimensions_t        > grid;
 		optional<grid::overall_dimensions_t> overall;
 	} dimensions_;
@@ -188,7 +189,7 @@ protected:
 	// but the semantic is that if the determiner is not null, we use it;
 	// and if you want to force a concrete apriori value, then you nullify
 	// the determiner
-	kernel::shared_memory_size_determiner_t dynamic_shared_memory_size_determiner_ {nullptr };
+	kernel::shared_memory_size_determiner_t dynamic_shared_memory_size_determiner_ { nullptr };
 	memory::shared::size_t dynamic_shared_memory_size_ { 0 };
 
 	const kernel_t* kernel_ { nullptr };
@@ -224,7 +225,7 @@ protected:
 		memory::shared::size_t  shared_mem_size)
 	{
 		if (kernel_ptr == nullptr) { return; }
-		detail_::validate_compatibility(*kernel_ptr, shared_mem_size);
+		detail_::validate_shared_mem_size_compatibility(*kernel_ptr, shared_mem_size);
 	}
 
 	static void validate_compatibility(
@@ -232,7 +233,7 @@ protected:
 		memory::shared::size_t shared_mem_size)
 	{
 		if (not maybe_device_id) { return; }
-		detail_::validate_compatibility(device(maybe_device_id), shared_mem_size);
+		detail_::validate_shared_mem_compatibility(device(maybe_device_id), shared_mem_size);
 	}
 
 	void validate_dynamic_shared_memory_size(memory::shared::size_t size)
@@ -269,6 +270,15 @@ protected:
 		validate_block_dimension_compatibility(device_, block_dims);
 	}
 
+
+	static void validate_grid_dimension_compatibility(
+		optional<device::id_t>    maybe_device_id,
+		grid::block_dimensions_t  block_dims)
+	{
+		if (not maybe_device_id) { return; }
+		detail_::validate_grid_dimension_compatibility(device(maybe_device_id), block_dims);
+	}
+
 	void validate_grid_dimensions(grid::dimensions_t grid_dims) const
 	{
 		detail_::validate_grid_dimensions(grid_dims);
@@ -278,6 +288,16 @@ protected:
 		}
 		// TODO: Check divisibility
 	}
+
+#if CUDA_VERSION >= 12000
+	void validate_cluster_dimensions(grid::dimensions_t cluster_dims) const
+	{
+		if (dimensions_.grid and grid::dimensions_t::divides(cluster_dims, dimensions_.grid.value())) {
+			throw ::std::runtime_error("The requested block cluster dimensions do not "
+				"divide the grid dimensions (in blocks)");
+		}
+	}
+#endif // CUDA_VERSION >= 12000
 
 	void validate_overall_dimensions(grid::overall_dimensions_t overall_dims) const
 	{
@@ -309,7 +329,8 @@ protected:
 				get_composite_dimensions().block;
 			validate_block_dimension_compatibility(device_id, block_dims);
 		}
-		validate_compatibility(device_id, dynamic_shared_memory_size_);
+		detail_::validate_compatibility(
+			device_id, dynamic_shared_memory_size_, thread_block_cooperation, dimensions_.block_cluster);
 	}
 
 	void validate_composite_dimensions(grid::composite_dimensions_t composite_dims) const
@@ -318,7 +339,7 @@ protected:
 		validate_block_dimension_compatibility(device_, composite_dims.block);
 
 		// Is there anything to validate regarding the grid dims?
-		validate_block_dimension_compatibility(device_, composite_dims.grid);
+		validate_grid_dimension_compatibility(device_, composite_dims.grid);
 	}
 #endif // ifndef NDEBUG
 
@@ -377,6 +398,17 @@ public:
 		dimensions_.block = block_dims;
 		return *this;
 	}
+
+#if CUDA_VERSION >= 12000
+	launch_config_builder_t& cluster_blocks(grid::block_dimensions_t cluster_dims)
+	{
+#ifndef NDEBUG
+		validate_cluster_dimensions(cluster_dims);
+#endif
+		dimensions_.block_cluster = cluster_dims;
+		return *this;
+	}
+#endif
 
 	launch_config_builder_t& grid_dimensions(grid::dimensions_t dims)
 	{

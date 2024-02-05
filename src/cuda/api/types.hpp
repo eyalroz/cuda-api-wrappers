@@ -428,6 +428,14 @@ struct dimensions_t // this almost-inherits dim3
 	static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
 	static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
 	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
+
+	static bool divides(dimensions_t lhs, dimensions_t rhs)
+	{
+		return
+			(rhs.x % lhs.x == 0) and
+			(rhs.y % lhs.y == 0) and
+			(rhs.z % lhs.z == 0);
+	}
 };
 
 ///@cond

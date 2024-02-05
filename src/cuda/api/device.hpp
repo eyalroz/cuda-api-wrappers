@@ -357,6 +357,17 @@ public:
 		return get_attribute(CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH);
 	}
 
+#if CUDA_VERSION >= 12000
+	/**
+	 * True if this device supports "clusters" of grid blocks,
+	 * which can pool their shared memory together
+	 */
+	bool supports_block_clustering() const
+	{
+		return get_attribute(CU_DEVICE_ATTRIBUTE_CLUSTER_LAUNCH);
+	}
+#endif
+
 #if CUDA_VERSION >= 11020
 	/**
 	 * True if this device supports executing kernels in which blocks can

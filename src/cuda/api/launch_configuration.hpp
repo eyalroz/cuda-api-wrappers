@@ -207,7 +207,7 @@ namespace detail_ {
 
 // Note: This will not check anything related to the device or the kernel
 // with which the launch configuration is to be used
-inline void validate(launch_configuration_t launch_config) noexcept(false)
+inline void validate(const launch_configuration_t& launch_config) noexcept(false)
 {
 	validate_block_dimensions(launch_config.dimensions.block);
 	validate_grid_dimensions(launch_config.dimensions.grid);
@@ -223,15 +223,9 @@ inline void validate_compatibility(
 	//	validate_grid_dimension_compatibility(device, launch_config.dimensions.grid);
 }
 
-inline void validate_compatibility(
+void validate_compatibility(
 	const kernel_t& kernel,
-	launch_configuration_t launch_config) noexcept(false)
-{
-	validate(launch_config);
-	validate_block_dimension_compatibility(kernel, launch_config.dimensions.block);
-	//  Uncomment if we actually get such checks
-	//	validate_grid_dimension_compatibility(kernel, launch_config.dimensions.grid);
-}
+	launch_configuration_t launch_config) noexcept(false);
 
 using launch_attribute_index_t = unsigned int;
 

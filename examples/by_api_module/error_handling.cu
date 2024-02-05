@@ -38,6 +38,7 @@ int main(int, char **)
 	bool got_expected_exception = false;
 	try {
 		cuda::launch_configuration_t lc = cuda::launch_config_builder()
+			.device(device)
 			.overall_size(2048)
 			.block_dimensions(15000) // Note: higher than the possible maximum for know CUDA devices
 			.build();
