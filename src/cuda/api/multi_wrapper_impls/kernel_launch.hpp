@@ -21,9 +21,41 @@
 
 namespace cuda {
 
+template<typename Kernel, typename... KernelParameters>
+void enqueue_launch(
+	Kernel&&                kernel,
+	const stream_t&         stream,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	static_assert(
+		detail_::all_true<::std::is_trivially_copy_constructible<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
+		"All kernel parameter types must be of a trivially copy-constructible (decayed) type." );
+	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+#if CUDA_VERSION >= 12000
+	static constexpr const bool library_kernel = cuda::detail_::is_library_kernel<Kernel>::value;
+#else
+	static constexpr const bool library_kernel = false;
+#endif // CUDA_VERSION >= 12000
+#ifndef NDEBUG
+	// wrapped kernel and library kernel compatibility with the launch configuration
+	// will be validated further inside, when we differentiate them from raw kernels
+	detail_::validate(launch_configuration);
+#endif
+
+	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
+	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
+	// function for each of them will basically be just a one-liner :-(
+	detail_::enqueue_launch<Kernel, KernelParameters...>(
+		detail_::bool_constant<wrapped_contextual_kernel>{},
+		detail_::bool_constant<library_kernel>{},
+		::std::forward<Kernel>(kernel), stream, launch_configuration,
+		::std::forward<KernelParameters>(parameters)...);
+}
+
 namespace detail_ {
 
-inline void validate_compatibility(
+inline void validate_shared_mem_compatibility(
 	const device_t &device,
 	memory::shared::size_t shared_mem_size)
 {
@@ -40,6 +72,61 @@ inline void validate_compatibility(
 	}
 }
 
+inline void validate_compatibility(
+	const device::id_t            device_id,
+	memory::shared::size_t        shared_mem_size,
+	bool                          cooperative_launch,
+	optional<grid::dimensions_t>  block_cluster_dimensions)
+{
+	auto device = device::get(device_id);
+	if (not cooperative_launch or device.supports_block_cooperation()) {
+		throw ::std::runtime_error(device::detail_::identify(device_id)
+			+ " cannot launch kernels with inter-block cooperation");
+	}
+	validate_shared_mem_compatibility(device, shared_mem_size);
+	if (block_cluster_dimensions) {
+#if CUDA_VERSION >= 12000
+		if (not device.supports_block_clustering()) {
+			throw ::std::runtime_error(device::detail_::identify(device_id)
+				+ " cannot launch kernels with inter-block cooperation");
+			// TODO: Uncomment this once the CUDA driver offers info on the maximum
+			// cluster size...
+			//
+			// auto max_cluster_size = ???;
+			// auto cluster_size = block_cluster_dimensions.value().volume();
+			// if (cluster_size > max_cluster_size) {
+			// 	throw ::std::runtime_error(device::detail_::identify(device_id)
+			// 		+ " only supports as many as " + ::std::to_string(max_cluster_size)
+			// 		+ "blocks per block-cluster, but " + ::std::to_string(cluster_size));
+		}
+#else
+		throw ::std::runtime_error("Block clusters are not supported with CUDA versions earlier than 12.0");
+#endif // CUDA_VERSION >= 12000
+	}
+
+	// The CUDA driver does not offer us information with which we could check the validity
+	// of trying a programmatically dependent launch, or a programmatic completion event,
+	// or the use of a "remote" memory synchronization domain. So, assuming that's all valid
+}
+
+template <typename Dims>
+inline void validate_any_dimensions_compatibility(const device_t &device, Dims dims, Dims maxima, const char* kind)
+{
+	auto device_id = device.id();
+	auto check =
+		[device_id, kind](grid::dimension_t dim, grid::dimension_t max, const char *axis) {
+			if (max < dim) {
+				throw ::std::invalid_argument(
+					::std::string("specified ") + kind + " " + axis + "-axis dimension " + ::std::to_string(dim)
+					+ " exceeds the maximum supported " + axis + " dimension of " + ::std::to_string(max)
+					+ " for " + device::detail_::identify(device_id));
+			}
+		};
+	check(dims.x, maxima.x, "X");
+	check(dims.y, maxima.y, "Y");
+	check(dims.z, maxima.z, "Z");
+}
+
 inline void validate_block_dimension_compatibility(
 	const device_t &device,
 	grid::block_dimensions_t block_dims)
@@ -52,27 +139,28 @@ inline void validate_block_dimension_compatibility(
 			+ ", exceeding the maximum possible block size of " + ::std::to_string(max_block_size)
 			+ " for " + device::detail_::identify(device.id()));
 	}
-	auto dim_maxima = grid::block_dimensions_t{
+	auto maxima = grid::block_dimensions_t{
 		static_cast<grid::block_dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X)),
 		static_cast<grid::block_dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y)),
 		static_cast<grid::block_dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z))
 	};
-	auto device_id = device.id();
-	auto check =
-		[device_id](grid::block_dimension_t dim, grid::block_dimension_t max, const char *axis) {
-			if (max < dim) {
-				throw ::std::invalid_argument(
-					::std::string("specified block ") + axis + "-axis dimension " + ::std::to_string(dim)
-					+ " exceeds the maximum supported " + axis + " dimension of " + ::std::to_string(max)
-					+ " for " + device::detail_::identify(device_id));
-			}
-		};
-	check(block_dims.x, dim_maxima.x, "X");
-	check(block_dims.y, dim_maxima.y, "Y");
-	check(block_dims.z, dim_maxima.z, "Z");
+	validate_any_dimensions_compatibility(device, block_dims, maxima, "block");
 }
 
-inline void validate_compatibility(
+inline void validate_grid_dimension_compatibility(
+	const device_t &device,
+	grid::block_dimensions_t block_dims)
+{
+	auto maxima = grid::dimensions_t{
+		static_cast<grid::dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X)),
+		static_cast<grid::dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y)),
+		static_cast<grid::dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z))
+	};
+	validate_any_dimensions_compatibility(device, block_dims, maxima, "grid");
+}
+
+
+inline void validate_shared_mem_size_compatibility(
 	const kernel_t& kernel_ptr,
 	memory::shared::size_t shared_mem_size)
 {
@@ -118,11 +206,7 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 	//    `KernelParameter` pack may contain some references, arrays and so on - which CUDA
 	//    kernels cannot accept; so we massage those a bit.
 
-#ifndef NDEBUG
-	validate_compatibility(stream.device(), launch_configuration);
-	validate_compatibility(wrapped_kernel, launch_configuration);
-	// validating the configuration unto-itself should happen within the following function:
-#endif
+	// It is assumed arguments were already been validated
 
 	detail_::enqueue_raw_kernel_launch_in_current_context(
 		unwrapped_kernel_function,
@@ -140,7 +224,6 @@ marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
 	return ::std::array<const void*, sizeof...(KernelParameters)> { &parameters... };
 }
 
-
 // Note: The last (valid) element of marshalled_arguments must be null
 inline void enqueue_kernel_launch_by_handle_in_current_context(
 	kernel::handle_t        kernel_function_handle,
@@ -150,9 +233,8 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 	launch_configuration_t  launch_config,
 	const void**            marshalled_arguments)
 {
-#ifndef NDEBUG
-	validate(launch_config);
-#endif
+	// It is assumed arguments were already been validated
+
 	status_t status;
 	const auto&lc = launch_config; // alias for brevity
 #if CUDA_VERSION >= 12000
@@ -198,25 +280,30 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 
 template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel_t, KernelParameters...> {
+
 	void operator()(
 	const kernel_t&                       wrapped_kernel,
-	const stream_t &                      stream,
+	const stream_t&                       stream,
 	launch_configuration_t                launch_config,
-	KernelParameters &&...                arguments) const
+	KernelParameters&&...                 arguments) const
 	{
+	// It is assumed arguments were already been validated
+
+#ifndef NDEBUG
+		if (wrapped_kernel.context() != stream.context()) {
+			throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(wrapped_kernel)
+				+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
+		}
+		validate_compatibility(wrapped_kernel, launch_config);
+#endif
 		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(arguments)...) };
 		auto function_handle = wrapped_kernel.handle();
 		CAW_SET_SCOPE_CONTEXT(stream.context_handle());
-#ifndef NDEBUG
-		validate_compatibility(stream.device(), launch_config);
-		validate_compatibility(wrapped_kernel, launch_config);
-#endif
 
 		enqueue_kernel_launch_by_handle_in_current_context(
 			function_handle, stream.device_id(), stream.context_handle(),
 			stream.handle(), launch_config, marshalled_arguments.data());
-	}
-
+	} // operator()
 };
 
 template<typename RawKernelFunction, typename... KernelParameters>
@@ -228,14 +315,12 @@ void enqueue_launch(
 	launch_configuration_t    launch_configuration,
 	KernelParameters&&...     parameters)
 {
+	// It is assumed arguments were already been validated
+
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble enqueueing into a stream in another context - it balks at doing so under
 	// certain conditions, so we must place ourselves in the stream's context.
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
-#ifndef NDEBUG
-	validate_compatibility(stream.device(), launch_configuration);
-	// validating the configuration without the device should happen within the next function...
-#endif
 	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
 		kernel_function, stream.device_id(), stream.context_handle(), stream.handle(), launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
@@ -250,6 +335,15 @@ void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
+	// It is assumed arguments were already been validated - except for:
+#ifndef NDEBUG
+	if (kernel.context() != stream.context()) {
+		throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
+			+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
+	}
+	detail_::validate_compatibility(kernel, launch_configuration);
+#endif // #ifndef NDEBUG
+
 	enqueue_launch_helper<typename ::std::decay<Kernel>::type, KernelParameters...>{}(
 		::std::forward<Kernel>(kernel), stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
@@ -265,6 +359,10 @@ void enqueue_launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
+	// Launch configuration is assumed to have been validated separately
+	// from the kernel, and their compatibility will be validated further
+	// inside, against the contextualized kernel
+
 	kernel_t contextualized = cuda::contextualize(kernel, stream.context());
 	enqueue_launch_helper<kernel_t, KernelParameters...> {}(
 		contextualized, stream, launch_configuration,
@@ -280,6 +378,8 @@ inline void launch(
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)
 {
+	// Argument validation will occur within call to enqueue_launch
+
 	auto primary_context = detail_::get_implicit_primary_context(::std::forward<Kernel>(kernel));
 	auto stream = primary_context.default_stream();
 
@@ -296,11 +396,18 @@ inline void launch_type_erased(
 	launch_configuration_t  launch_configuration,
 	SpanOfConstVoidPtrLike  marshalled_arguments)
 {
+	// Note: We assume that kernel, stream and launch_configuration have already been validated.
 	static_assert(
 		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
 		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
 		"The element type of the marshalled arguments container type must be either void* or const void*");
 #ifndef NDEBUG
+	if (kernel.context() != stream.context()) {
+		throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
+			+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
+	}
+	detail_::validate_compatibility(kernel, launch_configuration);
+	detail_::validate(launch_configuration);
 	if (*(marshalled_arguments.end() - 1) != nullptr) {
 		throw ::std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
 	}
@@ -323,6 +430,7 @@ void launch_type_erased(
 	launch_configuration_t    launch_configuration,
 	SpanOfConstVoidPtrLike    marshalled_arguments)
 {
+	// Argument validation will occur inside the call to launch_type_erased
 	auto contextualized = contextualize(kernel, stream.context());
 	launch_type_erased(contextualized, stream, launch_configuration, marshalled_arguments);
 }

@@ -178,9 +178,6 @@ void enqueue_raw_kernel_launch_in_current_context(
 	using decayed_kf_type = typename ::std::decay<KernelFunction>::type;
 	static_assert(::std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
 		"Only a bona fide function can be launched as a CUDA kernel");
-#ifndef NDEBUG
-	validate(launch_configuration);
-#endif
 	if (not launch_configuration.has_nondefault_attributes()) {
 		// regular plain vanilla launch
 		kernel_function <<<
@@ -323,26 +320,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
-{
-	static_assert(
-		detail_::all_true<::std::is_trivially_copy_constructible<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
-		"All kernel parameter types must be of a trivially copy-constructible (decayed) type." );
-	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
-#if CUDA_VERSION >= 12000
-	static constexpr const bool library_kernel = cuda::detail_::is_library_kernel<Kernel>::value;
-#else
-	static constexpr const bool library_kernel = false;
-#endif // CUDA_VERSION >= 12000
-	// We would have liked an "if constexpr" here, but that is unsupported by C++11, so we have to
-	// use tagged dispatch for the separate behavior for raw and wrapped kernels - although the enqueue_launch
-	// function for each of them will basically be just a one-liner :-(
-	detail_::enqueue_launch<Kernel, KernelParameters...>(
-		detail_::bool_constant<wrapped_contextual_kernel>{},
-		detail_::bool_constant<library_kernel>{},
-		::std::forward<Kernel>(kernel), stream, launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
-}
+	KernelParameters&&...   parameters);
 
 /**
  * Variant of @ref enqueue_launch for use with the default stream in the current context.
