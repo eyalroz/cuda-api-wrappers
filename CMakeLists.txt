@@ -19,6 +19,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 find_package(CUDAToolkit 9.0 REQUIRED)
 enable_language(CXX) # required for using Threads
 find_package(Threads REQUIRED)
+include(CheckLibraryExists)
+check_library_exists(m pow "" libm_exists)
+if(libm_exists)
+	set(c_math_lib m)
+endif()
+
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	foreach(tgt in nvptxcompiler nvptxcompiler_static)
 		if (NOT TARGET ${tgt})
@@ -46,6 +52,14 @@ foreach(wrapper_lib ${targets})
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
 	target_link_libraries(${caw_lib} INTERFACE CUDA::cudart CUDA::cuda_driver)
+
+	# These next three dependencies should be carried by the CUDA libraries themselves...
+	# but they aren't - this is CMake bug 25665
+	target_link_libraries(${caw_lib} INTERFACE Threads::Threads ${CMAKE_DL_LIBS} ${c_math_lib} )
+	if(UNIX AND NOT APPLE)
+		target_link_libraries(${caw_lib} INTERFACE rt)
+	endif()
+
 	# Targets using these libraries should be compiled with C++11 _at least_,
 	# but it doesn't seem there's a way to express that at the CMake level
 
@@ -70,10 +84,9 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 		set(ptx_compiler_target nvptxcompiler_static)
 	endif()
 	target_link_libraries(caw_rtc INTERFACE CUDA::${ptx_compiler_target})
-	target_link_libraries(caw_rtc INTERFACE Threads::Threads) # Because the NVIDIA PTX compiler itself uses threads
 endif()
 
-target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver ${CMAKE_DL_LIBS}) # libnvToolsExt uses dlclose
+target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver)
 
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 10.0)
 	target_link_libraries(caw_nvtx INTERFACE CUDA::nvtx3)
