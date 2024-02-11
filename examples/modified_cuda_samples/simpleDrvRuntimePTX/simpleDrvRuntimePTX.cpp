@@ -147,9 +147,9 @@ int main(int argc, char** argv)
 	std::generate_n(h_B.get(), N, generator);
 
     // Allocate vectors in device memory
-	auto d_A = cuda::memory::device::make_unique<float[]>(device, N);
-	auto d_B = cuda::memory::device::make_unique<float[]>(device, N);
-	auto d_C = cuda::memory::device::make_unique<float[]>(device, N);
+	auto d_A = cuda::memory::make_unique<float[]>(device, N);
+	auto d_B = cuda::memory::make_unique<float[]>(device, N);
+	auto d_C = cuda::memory::make_unique<float[]>(device, N);
 
 
 	cuda::memory::async::copy(d_A.get(), h_A.get(), size, stream);

@@ -156,7 +156,7 @@ void my_kernel(T* data) {
 	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
-	auto d_data = cuda::memory::device::make_unique<T>(device);
+	auto d_data = cuda::memory::make_unique<T>(device);
 	T h_data = 5;
 	cuda::memory::copy_single<T>(d_data.get(), &h_data);
 
@@ -242,8 +242,8 @@ void my_kernel2(float const* indata, float* outdata) {
 	auto my_kernel1 = module.get_kernel(mangled_kernel_names[0]);
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
-	auto indata = cuda::memory::device::make_unique<T>(device);
-	auto outdata = cuda::memory::device::make_unique<T>(device);
+	auto indata = cuda::memory::make_unique<T>(device);
+	auto outdata = cuda::memory::make_unique<T>(device);
 	T inval = 3.14159f;
 	cuda::memory::copy_single<T>(indata.get(), &inval);
 
@@ -308,7 +308,7 @@ __global__ void constant_test(int *x) {
 	cuda::memory::copy(a, &inval[0]);
 	cuda::memory::copy(b_a, &inval[1]);
 	cuda::memory::copy(c_b_a, &inval[2]);
-	auto outdata = cuda::memory::device::make_unique<int[]>(device, n_const);
+	auto outdata = cuda::memory::make_unique<int[]>(device, n_const);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	cuda::launch(kernel, launch_config, outdata.get());
 	int outval[n_const];
@@ -342,7 +342,7 @@ bool test_constant_2()
 	int inval[] = {3, 5, 9};
 	cuda::memory::copy(anon_b_a, inval);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	auto outdata = cuda::memory::device::make_unique<int[]>(device, n_const);
+	auto outdata = cuda::memory::make_unique<int[]>(device, n_const);
 	cuda::launch(kernel, launch_config, outdata.get());
 	int outval[n_const];
 	auto ptr = outdata.get();

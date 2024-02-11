@@ -105,9 +105,9 @@ int main(int argc, const char **argv)
    
     auto stream = device.create_stream(cuda::stream::async);
 	// Note: With CUDA 11, we could allocate these asynchronously on the stream
-	auto d_inputArr = cuda::memory::device::make_unique<int[]>(device, arrSize);
-	auto d_numOfOdds = cuda::memory::device::make_unique<int>(device);
-	auto d_sumOfOddEvenElems = cuda::memory::device::make_unique<int[]>(device, 2);
+	auto d_inputArr = cuda::memory::make_unique<int[]>(device, arrSize);
+	auto d_numOfOdds = cuda::memory::make_unique<int>(device);
+	auto d_sumOfOddEvenElems = cuda::memory::make_unique<int[]>(device, 2);
 
 	// Note: There's some code repetition here; unique pointers don't also keep track of the allocated size.
 	// Unfortunately, the standard library does not offer an owning dynamically-allocated memory region

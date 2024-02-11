@@ -115,8 +115,8 @@ void run_simple_streams_example(
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::device::make_unique<int[]>(device, params.n);
-	auto d_c = cuda::memory::device::make_unique<int>(device);
+	auto d_a = cuda::memory::make_unique<int[]>(device, params.n);
+	auto d_c = cuda::memory::make_unique<int>(device);
 	cuda::memory::copy_single(d_c.get(), &c);
 
 	std::cout << "\nStarting Test\n";
