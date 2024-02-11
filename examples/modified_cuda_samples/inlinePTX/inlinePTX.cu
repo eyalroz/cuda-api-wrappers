@@ -43,7 +43,7 @@ int main(int, char **)
 	cuda::device::current::set_to_default();
 	auto device = cuda::device::current::get();
 
-	auto d_ptr = cuda::memory::device::make_unique<int[]>(device, N);
+	auto d_ptr = cuda::memory::make_unique<int[]>(device, N);
 	auto h_ptr = cuda::memory::host::make_unique<int[]>(N);
 
 	std::cout << "Generating data on CPU\n";

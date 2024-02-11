@@ -59,7 +59,7 @@ int main(int, char **)
 	auto a = cuda::memory::host::make_unique<datum[]>(n);
 	cuda::memory::host::zero(a.get(), num_bytes);
 
-	auto d_a = cuda::memory::device::make_unique<datum[]>(device, n);
+	auto d_a = cuda::memory::make_unique<datum[]>(device, n);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(n)

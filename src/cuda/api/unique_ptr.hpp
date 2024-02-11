@@ -127,6 +127,27 @@ inline unique_ptr<T> make_unique();
 
 } // namespace device
 
+/// See @ref `device::make_unique(const context_t& context, size_t num_elements)`
+template<typename T>
+inline device::unique_ptr<T> make_unique(const context_t& context, size_t num_elements)
+{
+	return device::make_unique<T>(context, num_elements);
+}
+
+/// See @ref `device::make_unique(const device_t& device, size_t num_elements)`
+template<typename T>
+inline device::unique_ptr<T> make_unique(const device_t& device, size_t num_elements)
+{
+	return device::make_unique<T>(device, num_elements);
+}
+
+/// See @ref `device::make_unique(const device_t& device)`
+template<typename T>
+inline device::unique_ptr<T> make_unique(const device_t& device)
+{
+	return device::make_unique<T>(device);
+}
+
 namespace host {
 
 template<typename T>
