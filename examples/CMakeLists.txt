@@ -56,6 +56,7 @@ link_libraries(cuda-api-wrappers::runtime-and-driver)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 add_executable(vectorAdd modified_cuda_samples/vectorAdd/vectorAdd.cu)
+add_executable(vectorAdd_unique_regions modified_cuda_samples/vectorAdd_unique_regions/vectorAdd_unique_regions.cu)
 add_executable(vectorAddMapped modified_cuda_samples/vectorAddMapped/vectorAddMapped.cu)
 add_executable(vectorAddManaged modified_cuda_samples/vectorAddManaged/vectorAddManaged.cu)
 add_executable(vectorAdd_nvrtc modified_cuda_samples/vectorAdd_nvrtc/vectorAdd_nvrtc.cpp)
