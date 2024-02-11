@@ -28,13 +28,13 @@ void pointer_properties(const cuda::device_t& device)
 		cuda::context::create(device),
 		cuda::context::create(device)
 	};
-	cuda::memory::device::unique_ptr<char[]> regions[2] = {
-		cuda::memory::make_unique<char[]>(contexts[0], fixed_size),
-		cuda::memory::make_unique<char[]>(contexts[1], fixed_size)
+	cuda::memory::device::unique_region regions[2] = {
+		cuda::memory::make_unique_region(contexts[0], fixed_size),
+		cuda::memory::make_unique_region(contexts[1], fixed_size)
 	};
 	void* raw_pointers[2] = {
-		regions[0].get(),
-		regions[1].get()
+		regions[0].data(),
+		regions[1].data()
 	};
 	cuda::memory::pointer_t<void> pointers[2] = {
 		cuda::memory::pointer::wrap(raw_pointers[0]),
