@@ -540,6 +540,16 @@ inline void copy(region_t destination, void* source, size_t num_bytes)
 	return copy(destination.start(), source, num_bytes);
 }
 
+inline void copy(void* destination, const_region_t source, size_t num_bytes)
+{
+#ifndef NDEBUG
+	if (source.size() < num_bytes) {
+		throw ::std::logic_error("Number of bytes to copy exceeds source size");
+	}
+#endif
+	return copy(destination, source.start(), num_bytes);
+}
+
 inline void copy(region_t destination, void* source)
 {
 	return copy(destination, source, destination.size());
