@@ -43,26 +43,26 @@ int main(int, char **)
 	cuda::device::current::set_to_default();
 	auto device = cuda::device::current::get();
 
-	auto d_ptr = cuda::memory::make_unique<int[]>(device, N);
-	auto h_ptr = cuda::memory::host::make_unique<int[]>(N);
+	auto d_span = cuda::memory::make_unique_span<int>(device, N);
+	auto h_span = cuda::memory::host::make_unique_span<int>(N);
 
 	std::cout << "Generating data on CPU\n";
 
-	sequence_cpu(h_ptr.get(), N);
+	sequence_cpu(h_span.data(), h_span.size());
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(N)
 		.block_size(256)
 		.build();
-	device.launch(sequence_gpu, launch_config, d_ptr.get(), N);
+	device.launch(sequence_gpu, launch_config, d_span.data(), d_span.size());
 
 	cuda::outstanding_error::ensure_none();
 	device.synchronize();
 
-	auto h_d_ptr = cuda::memory::host::make_unique<int[]>(N);
-	cuda::memory::copy(h_d_ptr.get(), d_ptr.get(), N * sizeof(int));
+	auto h_d_span = cuda::memory::host::make_unique_span<int>(N);
+	cuda::memory::copy(h_d_span, d_span);
 
-	auto results_are_correct =	std::equal(h_ptr.get(), h_ptr.get() + N, h_d_ptr.get());
+	auto results_are_correct =	std::equal(h_span.begin(), h_span.end(), h_d_span.begin());
 	if (not results_are_correct) {
 		die_("Results check failed.");
 	}

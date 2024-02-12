@@ -54,7 +54,6 @@ int main(void)
 	auto module = cuda::module::create(context, compilation_output);
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
-	// If we could rely on C++14, we would  use std::make_unique
 	auto h_A = std::unique_ptr<float[]>(new float[numElements]);
 	auto h_B = std::unique_ptr<float[]>(new float[numElements]);
 	auto h_C = std::unique_ptr<float[]>(new float[numElements]);
@@ -68,12 +67,12 @@ int main(void)
 	std::generate(h_A.get(), h_A.get() + numElements, generator);
 	std::generate(h_B.get(), h_B.get() + numElements, generator);
 
-	auto d_A = cuda::memory::make_unique<float[]>(device, numElements);
-	auto d_B = cuda::memory::make_unique<float[]>(device, numElements);
-	auto d_C = cuda::memory::make_unique<float[]>(device, numElements);
+	auto d_A = cuda::memory::make_unique_span<float>(device, numElements);
+	auto d_B = cuda::memory::make_unique_span<float>(device, numElements);
+	auto d_C = cuda::memory::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A.get(), h_A.get(), size);
-	cuda::memory::copy(d_B.get(), h_B.get(), size);
+	cuda::memory::copy(d_A, h_A.get(), size);
+	cuda::memory::copy(d_B, h_B.get(), size);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(numElements)
@@ -89,7 +88,7 @@ int main(void)
 		d_A.get(), d_B.get(), d_C.get(), numElements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C.get(), size);
+	cuda::memory::copy(h_C.get(), d_C, size);
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {

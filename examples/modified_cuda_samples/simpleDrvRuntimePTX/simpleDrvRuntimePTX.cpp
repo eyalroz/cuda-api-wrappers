@@ -147,13 +147,13 @@ int main(int argc, char** argv)
 	std::generate_n(h_B.get(), N, generator);
 
     // Allocate vectors in device memory
-	auto d_A = cuda::memory::make_unique<float[]>(device, N);
-	auto d_B = cuda::memory::make_unique<float[]>(device, N);
-	auto d_C = cuda::memory::make_unique<float[]>(device, N);
+	auto d_A = cuda::memory::make_unique_span<float>(device, N);
+	auto d_B = cuda::memory::make_unique_span<float>(device, N);
+	auto d_C = cuda::memory::make_unique_span<float>(device, N);
 
 
-	cuda::memory::async::copy(d_A.get(), h_A.get(), size, stream);
-	cuda::memory::async::copy(d_B.get(), h_B.get(), size, stream);
+	cuda::memory::async::copy(d_A, h_A.get(), size, stream);
+	cuda::memory::async::copy(d_B, h_B.get(), size, stream);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(N)
@@ -162,9 +162,9 @@ int main(int argc, char** argv)
 
     cuda::outstanding_error::ensure_none();
 
-    stream.enqueue.kernel_launch(vecAdd_kernel, launch_config, d_A.get(), d_B.get(), d_C.get(), N);
+    stream.enqueue.kernel_launch(vecAdd_kernel, launch_config, d_A.data(), d_B.data(), d_C.data(), N);
 
-	cuda::memory::async::copy(h_C.get(), d_C.get(), size, stream);
+	cuda::memory::async::copy(h_C.get(), d_C, size, stream);
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {

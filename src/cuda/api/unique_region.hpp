@@ -247,6 +247,7 @@ inline unique_region make_unique_region(
 } // namespace managed
 
 } // namespace memory
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_UNIQUE_REGION_HPP_

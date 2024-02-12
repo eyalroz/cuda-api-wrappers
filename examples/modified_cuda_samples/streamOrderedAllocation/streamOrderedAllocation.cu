@@ -155,9 +155,10 @@ int streamOrderedAllocationPostSync(
 	// Record the start event
 	auto start_event = stream.enqueue.event();
 	for (int i = 0; i < MAX_ITER; i++) {
-		auto d_a = span<float>(stream.enqueue.allocate(a.size() * sizeof(float)));
-		auto d_b = span<float>(stream.enqueue.allocate(b.size() * sizeof(float)));
-		auto d_c = span<float>(stream.enqueue.allocate(c.size() * sizeof(float)));
+		// Not: Not using unique_span's,
+		auto d_a = cuda::span<float>(stream.enqueue.allocate(a.size() * sizeof(float)));
+		auto d_b = cuda::span<float>(stream.enqueue.allocate(b.size() * sizeof(float)));
+		auto d_c = cuda::span<float>(stream.enqueue.allocate(c.size() * sizeof(float)));
 		stream.enqueue.copy(d_a, a);
 		stream.enqueue.copy(d_b, b);
 		stream.enqueue.kernel_launch(vectorAddGPU, launch_config, d_a.data(), d_b.data(), d_c.data(), c.size());

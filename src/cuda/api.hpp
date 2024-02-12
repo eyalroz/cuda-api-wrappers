@@ -33,6 +33,7 @@
 #endif
 #include "api/unique_ptr.hpp"
 #include "api/unique_region.hpp"
+#include "api/unique_span.hpp"
 #include "api/link_options.hpp"
 
 #include "api/device.hpp"
@@ -70,6 +71,7 @@
 #include "api/multi_wrapper_impls/stream.hpp"
 #include "api/multi_wrapper_impls/memory.hpp"
 #include "api/multi_wrapper_impls/unique_region.hpp"
+#include "api/multi_wrapper_impls/unique_span.hpp"
 #include "api/multi_wrapper_impls/virtual_memory.hpp"
 #include "api/multi_wrapper_impls/kernel.hpp"
 #include "api/multi_wrapper_impls/kernel_launch.hpp"
