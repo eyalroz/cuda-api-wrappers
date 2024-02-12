@@ -29,12 +29,12 @@ __global__ void increment_kernel(datum*g_data, datum inc_value)
 	g_data[global_idx] = g_data[global_idx] + inc_value;
 }
 
-bool correct_output(int *data, const int n, const int x)
+bool correct_output(cuda::span<const int> data, const int x)
 {
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < data.size(); i++)
 		if (data[i] != x)
 		{
-			printf("Error! data[%d] = %d, ref = %d\n", i, data[i], x);
+			printf("Error! data[%lu] = %d, ref = %d\n", i, data[i], x);
 			return false;
 		}
 	return true;
@@ -51,15 +51,14 @@ int main(int, char **)
 
 	std::cout << "CUDA device [" <<  device.name() << "]\n";
 
-	int n = 16 * 1024 * 1024;
-	int num_bytes = n * sizeof(datum);
+	const int n = 16 * 1024 * 1024;
 	int value = 26;
 
 	// allocate host memory
-	auto a = cuda::memory::host::make_unique<datum[]>(n);
-	cuda::memory::host::zero(a.get(), num_bytes);
+	auto a = cuda::memory::host::make_unique_span<datum>(n);
+	cuda::memory::host::zero(a);
 
-	auto d_a = cuda::memory::make_unique<datum[]>(device, n);
+	auto d_a = cuda::memory::make_unique_span<datum>(device, n);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(n)
@@ -80,9 +79,9 @@ int main(int, char **)
 	auto stream = device.default_stream(); // device.create_stream(cuda::stream::async);
 	auto cpu_time_start = std::chrono::high_resolution_clock::now();
 	stream.enqueue.event(start_event);
-	stream.enqueue.copy(d_a.get(), a.get(), num_bytes);
-	stream.enqueue.kernel_launch(increment_kernel, launch_config, d_a.get(), value);
-	stream.enqueue.copy(a.get(), d_a.get(), num_bytes);
+	stream.enqueue.copy(d_a, a);
+	stream.enqueue.kernel_launch(increment_kernel, launch_config, d_a.data(), value);
+	stream.enqueue.copy(a, d_a);
 	stream.enqueue.event(end_event);
 	auto cpu_time_end = std::chrono::high_resolution_clock::now();
 
@@ -99,7 +98,7 @@ int main(int, char **)
 	std::cout << "time spent by CPU in CUDA calls: " << std::setprecision(2)<< (cpu_time_end - cpu_time_start).count() << '\n';
 	std::cout << "CPU executed " << counter << " iterations while waiting for GPU to finish\n";
 
-	auto bFinalResults = correct_output(a.get(), n, value);
+	auto bFinalResults = correct_output(a, value);
 
 	std::cout << (bFinalResults ? "SUCCESS" : "FAILURE") << '\n';
 

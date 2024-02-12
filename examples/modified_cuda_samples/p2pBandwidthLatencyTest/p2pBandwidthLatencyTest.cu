@@ -124,9 +124,8 @@ void checkP2Paccess()
 }
 
 void enqueue_p2p_copy(
-    int *dest,
-    int *src,
-    std::size_t num_elems,
+    cuda::memory::region_t dest,
+	cuda::memory::region_t src,
     int repeat,
     bool p2paccess,
     P2PEngine p2p_mechanism,
@@ -145,7 +144,7 @@ void enqueue_p2p_copy(
         auto launch_config = cuda::launch_configuration_t{grid_and_block_dims};
 
         for (int r = 0; r < repeat; r++) {
-            stream.enqueue.kernel_launch(copy_kernel, launch_config, (int4*)dest, (int4*)src, num_elems/sizeof(int4));
+            stream.enqueue.kernel_launch(copy_kernel, launch_config, (int4*)dest.data(), (int4*)src.data(), src.size()/sizeof(int4));
         }
     }
     else
@@ -155,7 +154,7 @@ void enqueue_p2p_copy(
         // Since we assume Compute Capability >= 2.0, all devices support the
         // Unified Virtual Address Space, so we don't need to use
         // cudaMemcpyPeerAsync - cudaMemcpyAsync is enough.
-            cuda::memory::async::copy(dest, src, sizeof(*dest)*num_elems, stream);
+            cuda::memory::async::copy(dest, src, stream);
         }
     }
 }
@@ -165,8 +164,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
     int numElems = 10000000;
     int repeat = 5;
 	vector<cuda::stream_t> streams;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffers;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::memory::device::unique_span<int>> buffers;
+    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
@@ -176,8 +175,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
     for (auto device : cuda::devices()) {
         streams.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique<int[]>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique<int[]>(device, numElems));
+        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }
@@ -212,17 +211,17 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
             if (i == j) {
                 // Perform intra-GPU, D2D copies
-                enqueue_p2p_copy(buffers[i].get(), buffersD2D[i].get(), numElems, repeat, p2p_access_possible, mechanism, streams[i]);
+                enqueue_p2p_copy(buffers[i], buffersD2D[i], repeat, p2p_access_possible, mechanism, streams[i]);
 
             }
             else {
                 if (p2p_method == P2P_WRITE)
                 {
-                    enqueue_p2p_copy(buffers[j].get(), buffers[i].get(), numElems, repeat, p2p_access_possible, mechanism, streams[i]);
+                    enqueue_p2p_copy(buffers[j], buffers[i], repeat, p2p_access_possible, mechanism, streams[i]);
                 }
                 else
                 {
-                    enqueue_p2p_copy(buffers[i].get(), buffers[j].get(), numElems, repeat, p2p_access_possible, mechanism, streams[i]);
+                    enqueue_p2p_copy(buffers[i], buffers[j], repeat, p2p_access_possible, mechanism, streams[i]);
                 }
             }
 
@@ -295,8 +294,8 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
 
 	vector<cuda::stream_t> streams_0;
 	vector<cuda::stream_t> streams_1;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffers;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::memory::device::unique_span<int>> buffers;
+    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
@@ -308,8 +307,8 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
     for (auto device : cuda::devices()) {
         streams_0.push_back(device.create_stream(cuda::stream::async));
         streams_1.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique<int[]>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique<int[]>(device, numElems));
+        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }
@@ -350,12 +349,12 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
 
             if (i == j) {
                 // For intra-GPU perform 2 memcopies buffersD2D <-> buffers
-                enqueue_p2p_copy(buffers[i].get(), buffersD2D[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams_0[i]);
-                enqueue_p2p_copy(buffersD2D[i].get(), buffers[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams_1[i]);
+                enqueue_p2p_copy(buffers[i], buffersD2D[i], repeat, p2p_access_possible, p2p_mechanism, streams_0[i]);
+                enqueue_p2p_copy(buffersD2D[i], buffers[i], repeat, p2p_access_possible, p2p_mechanism, streams_1[i]);
             }
             else {
-                enqueue_p2p_copy(buffers[i].get(), buffers[j].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams_1[j]);
-                enqueue_p2p_copy(buffers[j].get(), buffers[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams_0[i]);
+                enqueue_p2p_copy(buffers[i], buffers[j], repeat, p2p_access_possible, p2p_mechanism, streams_1[j]);
+                enqueue_p2p_copy(buffers[j], buffers[i], repeat, p2p_access_possible, p2p_mechanism, streams_0[i]);
             }
 
             // Notify stream0 that stream1 is complete and record the time of
@@ -406,8 +405,8 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 	//
 
 	vector<cuda::stream_t> streams;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffers;
-    vector<cuda::memory::device::unique_ptr<int[]>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::memory::device::unique_span<int>> buffers;
+    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
@@ -417,8 +416,8 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 
     for(auto device : cuda::devices()) {
         streams.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique<int[]>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique<int[]>(device, numElems));
+        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }
@@ -455,16 +454,16 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
             auto time_before_copy = std::chrono::high_resolution_clock::now();
             if (i == j) {
                 // Perform intra-GPU, D2D copies
-                enqueue_p2p_copy(buffers[i].get(), buffersD2D[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
+                enqueue_p2p_copy(buffers[i], buffersD2D[i], repeat, p2p_access_possible, p2p_mechanism, streams[i]);
             }
             else {
                 if (p2p_method == P2P_WRITE)
                 {
-                    enqueue_p2p_copy(buffers[j].get(), buffers[i].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
+                    enqueue_p2p_copy(buffers[j], buffers[i], repeat, p2p_access_possible, p2p_mechanism, streams[i]);
                 }
                 else
                 {
-                    enqueue_p2p_copy(buffers[i].get(), buffers[j].get(), numElems, repeat, p2p_access_possible, p2p_mechanism, streams[i]);
+                    enqueue_p2p_copy(buffers[i], buffers[j], repeat, p2p_access_possible, p2p_mechanism, streams[i]);
                 }
             }
             auto time_after_copy = std::chrono::high_resolution_clock::now();

@@ -67,11 +67,12 @@ __global__ void init_array(int *g_data, const int *factor, int num_iterations)
 	}
 }
 
-bool check_resulting_data(const int *a, const int n, const int c)
+template <typename Container>
+bool check_resulting_data(Container const & container, const int c)
 {
-	for (int i = 0; i < n; i++) {
-		if (a[i] != c) {
-			std::cerr << i << ": " << a[i] << " " << c << "\n";
+	for (size_t i = 0; i < container.size(); i++) {
+		if (container[i] != c) {
+			std::cerr << i << ": " << container[i] << " " << c << "\n";
 			return false;
 		}
 	}
@@ -111,13 +112,13 @@ void run_simple_streams_example(
 	int c = 5;                      // value to which the array will be initialized
 
 	// Allocate Host memory
-	auto h_a = cuda::memory::host::make_unique<int[]>(params.n);
+	auto h_a = cuda::memory::host::make_unique_span<int>(params.n);
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::make_unique<int[]>(device, params.n);
-	auto d_c = cuda::memory::make_unique<int>(device);
-	cuda::memory::copy_single(d_c.get(), &c);
+	auto d_a = cuda::memory::make_unique_span<int>(device, params.n);
+	auto d_c = cuda::memory::make_unique_span<int>(device, 1);
+	cuda::memory::copy_single(d_c.data(), &c);
 
 	std::cout << "\nStarting Test\n";
 
@@ -142,7 +143,7 @@ void run_simple_streams_example(
 
 	// time memcpy from device
 	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed
-	cuda::memory::async::copy(h_a.get(), d_a.get(), nbytes, streams[0]);
+	cuda::memory::async::copy(h_a.get(), d_a, streams[0]);
 	stop_event.record();
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -154,7 +155,7 @@ void run_simple_streams_example(
 		.block_size(512)
 		.build();
 	start_event.record();
-	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.get(), d_c.get(), params.num_iterations);
+	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
 	stop_event.record();
 	stop_event.synchronize();
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -170,8 +171,8 @@ void run_simple_streams_example(
 
 	for (int k = 0; k < nreps; k++)
 	{
-		device.launch(init_array, launch_config, d_a.get(), d_c.get(), params.num_iterations);
-		cuda::memory::copy(h_a.get(), d_a.get(), nbytes);
+		device.launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
+		cuda::memory::copy(h_a.get(), d_a);
 	}
 
 	stop_event.record();
@@ -186,11 +187,11 @@ void run_simple_streams_example(
 		.block_size(512)
 		.build();
 	// TODO: Avoid need to push and pop here
-	memset(h_a.get(), 255, nbytes);     // set host memory bits to all 1s, for testing correctness
+	std::fill(h_a.begin(), h_a.end(), 255);     // set host memory bits to all 1s, for testing correctness
 	// This instruction is actually the only one in our program
 	// for which the device.make_current() command was necessary.
 	// TODO: Avoid having to do that altogether...
-	cuda::memory::device::zero(cuda::memory::region_t{d_a.get(), nbytes}); // set device memory to all 0s, for testing correctness
+	cuda::memory::device::zero(d_a); // set device memory to all 0s, for testing correctness
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
@@ -199,7 +200,7 @@ void run_simple_streams_example(
 		for (int i = 0; i < nstreams; i++)
 		{
 			streams[i].enqueue.kernel_launch(
-				init_array, launch_config, d_a.get() + i * params.n / nstreams, d_c.get(), params.num_iterations);
+				init_array, launch_config, d_a.data() + i * params.n / nstreams, d_c.data(), params.num_iterations);
 		}
 
 		// asynchronously launch nstreams memcopies.  Note that memcopy in stream x will only
@@ -207,8 +208,8 @@ void run_simple_streams_example(
 		for (int i = 0; i < nstreams; i++)
 		{
 			cuda::memory::async::copy(
-				h_a.get() + i * params.n / nstreams,
-				d_a.get() + i * params.n / nstreams, nbytes / nstreams,
+				h_a.data() + i * params.n / nstreams,
+				d_a.data() + i * params.n / nstreams, nbytes / nstreams,
 				streams[i]);
 		}
 	}
@@ -220,7 +221,7 @@ void run_simple_streams_example(
 
 	// check whether the output is correct
 	std::cout << "-------------------------------\n";
-	if (not check_resulting_data(h_a.get(), params.n, c * nreps * params.num_iterations)) {
+	if (not check_resulting_data(h_a, c * nreps * params.num_iterations)) {
 		die_("Result check FAILED.");
 	}
 }

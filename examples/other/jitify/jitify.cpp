@@ -156,13 +156,13 @@ void my_kernel(T* data) {
 	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
-	auto d_data = cuda::memory::make_unique<T>(device);
+	auto d_data = cuda::memory::make_unique_span<T>(device, 1);
 	T h_data = 5;
-	cuda::memory::copy_single<T>(d_data.get(), &h_data);
+	cuda::memory::copy_single<T>(d_data.data(), &h_data);
 
 	auto single_thread_launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	device.launch(kernel, single_thread_launch_config, d_data.get());
-	cuda::memory::copy_single<T>(&h_data, d_data.get());
+	cuda::memory::copy_single<T>(&h_data, d_data.data());
 	return are_close(h_data, 125.f);
 }
 
@@ -205,7 +205,7 @@ void my_kernel2(float const* indata, float* outdata) {
 		// Note: In the original jitify.cpp function, there were 6 different equivalent ways to trigger an
 		// instantiation of the template. I don't see why that's at all useful, but regardless - here we
 		// instantiate by simply printing whatever is passed to the instantiation function (which is not
-		// part of the CUDA API wrappers, but is actually both straightforward and flexible).
+		// part of the CUDA API wgetrappers, but is actually both straightforward and flexible).
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, my_kernel2_instantiation_name);
 	std::vector<std::pair<const char*, const char*>> headers = {
 		{"example_headers/my_header4.cuh", my_header4_cuh_contents }
@@ -242,17 +242,17 @@ void my_kernel2(float const* indata, float* outdata) {
 	auto my_kernel1 = module.get_kernel(mangled_kernel_names[0]);
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
-	auto indata = cuda::memory::make_unique<T>(device);
-	auto outdata = cuda::memory::make_unique<T>(device);
+	auto indata = cuda::memory::make_unique_span<T>(device, 1);
+	auto outdata = cuda::memory::make_unique_span<T>(device, 1);
 	T inval = 3.14159f;
-	cuda::memory::copy_single<T>(indata.get(), &inval);
+	cuda::memory::copy_single<T>(indata.data(), &inval);
 
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	cuda::launch(my_kernel1, launch_config, indata.get(), outdata.get());
 	cuda::launch(my_kernel2, launch_config, indata.get(), outdata.get());
 
 	T outval = 0;
-	cuda::memory::copy_single(&outval, outdata.get());
+	cuda::memory::copy_single(&outval, outdata.data());
 	// std::cout << inval << " -> " << outval << std::endl;
 	return are_close(inval, outval);
 }
@@ -308,9 +308,9 @@ __global__ void constant_test(int *x) {
 	cuda::memory::copy(a, &inval[0]);
 	cuda::memory::copy(b_a, &inval[1]);
 	cuda::memory::copy(c_b_a, &inval[2]);
-	auto outdata = cuda::memory::make_unique<int[]>(device, n_const);
+	auto outdata = cuda::memory::make_unique_span<int>(device, n_const);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	cuda::launch(kernel, launch_config, outdata.get());
+	cuda::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
 	cuda::memory::copy(outval, outdata.get(), sizeof(outval));
 
@@ -342,8 +342,8 @@ bool test_constant_2()
 	int inval[] = {3, 5, 9};
 	cuda::memory::copy(anon_b_a, inval);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	auto outdata = cuda::memory::make_unique<int[]>(device, n_const);
-	cuda::launch(kernel, launch_config, outdata.get());
+	auto outdata = cuda::memory::make_unique_span<int>(device, n_const);
+	cuda::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
 	auto ptr = outdata.get();
 	cuda::memory::copy(outval, ptr);

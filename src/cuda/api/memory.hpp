@@ -34,6 +34,7 @@
 #include "pointer.hpp"
 #include "current_context.hpp"
 #include "region.hpp"
+#include "detail/unique_span.hpp"
 
 // The following is needed for cudaGetSymbolAddress, cudaGetSymbolSize
 #include <cuda_runtime.h>
@@ -2189,6 +2190,116 @@ inline bool is_part_of_a_region_pair(const void* ptr)
 
 } // namespace mapped
 
+
+
+
+namespace device {
+
+template <typename T>
+using unique_span = cuda::unique_span<T, detail_::deleter>;
+
+namespace detail_ {
+
+template <typename T>
+unique_span<T> make_unique_span(const context::handle_t context_handle, size_t size)
+{
+	// Note: _Not_ asserting trivial-copy-constructibility here; so if you want to copy data
+	// to/from the device using this object - it's your own repsonsibility to ensure that's
+	// a valid thing to do.
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return unique_span<T>{ allocate_in_current_context(size * sizeof(T)) };
+}
+
+} // namespace detail_
+
+/**
+ * @brief Create a variant of ::std::unique_pointer for an array in
+ * device-global memory.
+ *
+ * @note CUDA's runtime API always has a current device; but -
+ * there is not necessary a current context; so a primary context
+ * for a device may be created through this call.
+ *
+ * @tparam T  an array type; _not_ the type of individual elements
+ *
+ * @param context       The CUDA device context in which to make the
+ *                      allocation.
+ * @param num_elements  the number of elements to allocate
+ *
+ * @return an ::std::unique_ptr pointing to the constructed T array
+*/
+template <typename T>
+unique_span<T> make_unique_span(const context_t& context, size_t size);
+template <typename T>
+unique_span<T> make_unique_span(const device_t& device, size_t size);
+template <typename T>
+unique_span<T> make_unique_span(size_t size);
+
+} // namespace device
+
+/// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
+template <typename T>
+inline device::unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
+{
+	return device::make_unique_span<T>(context, num_elements);
+}
+
+/// See @ref `device::make_unique_span(const device_t& device, size_t num_elements)`
+template <typename T>
+inline device::unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
+{
+	return device::make_unique_span<T>(device, num_elements);
+}
+
+namespace host {
+
+template <typename T>
+using unique_span = cuda::unique_span<T, detail_::deleter>;
+
+template <typename T>
+unique_span<T> make_unique_span(const context_t& context, size_t size, allocation_options options = {});
+template <typename T>
+unique_span<T> make_unique_span(const device_t& device, size_t size);
+template <typename T>
+unique_span<T> make_unique_span(size_t size);
+
+} // namespace host
+
+namespace managed {
+
+template <typename T>
+using unique_span = cuda::unique_span<T, detail_::deleter>;
+
+namespace detail_ {
+
+template <typename T>
+unique_span<T> make_unique_span(
+	const context::handle_t  context_handle,
+	size_t                   size,
+	initial_visibility_t     initial_visibility = initial_visibility_t::to_all_devices)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return unique_span<T>{ allocate_in_current_context(size * sizeof(T), initial_visibility) };
+}
+
+} // namespace detail_
+
+template <typename T>
+unique_span<T> make_unique_span(
+	const context_t&      context,
+	size_t                size,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+template <typename T>
+unique_span<T> make_unique_span(
+	const device_t&       device,
+	size_t                size,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+template <typename T>
+unique_span<T> make_unique_span(
+	size_t                size,
+	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+} // namespace managed
 
 } // namespace memory
 
