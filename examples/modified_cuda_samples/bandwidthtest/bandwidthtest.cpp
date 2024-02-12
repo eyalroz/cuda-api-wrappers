@@ -89,17 +89,17 @@ int main()
 		std::unique_ptr<float[]>(new float[nElements])
 	);
 
-	auto device_buffer = cuda::memory::device::make_unique<float[]>(nElements);
+	auto device_buffer = cuda::memory::device::make_unique_span<float>(nElements);
 
 	auto pinned_host_buffers = std::make_pair(
-		cuda::memory::host::make_unique<float[]>(nElements),
-		cuda::memory::host::make_unique<float[]>(nElements)
+		cuda::memory::host::make_unique_span<float>(nElements),
+		cuda::memory::host::make_unique_span<float>(nElements)
 	);
 
 	auto h_aPageable = pageable_host_buffers.first.get();
 	auto h_bPageable = pageable_host_buffers.second.get();
-	auto h_aPinned = pinned_host_buffers.first.get();
-	auto h_bPinned = pinned_host_buffers.second.get();
+	auto h_aPinned = pinned_host_buffers.first.data();
+	auto h_bPinned = pinned_host_buffers.second.data();
 
 	std::iota(h_aPageable, h_aPageable + nElements, 0.0);
 	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
@@ -112,6 +112,6 @@ int main()
 	std::cout << "\nTransfer size (MB): " << (bytes / Mi) << "\n";
 
 	// perform copies and report bandwidth
-	profileCopies(h_aPageable, h_bPageable, device_buffer.get(), nElements, "Pageable");
-	profileCopies(h_aPinned, h_bPinned, device_buffer.get(), nElements, "Pinned");
+	profileCopies(h_aPageable, h_bPageable, device_buffer.data(), nElements, "Pageable");
+	profileCopies(h_aPinned, h_bPinned, device_buffer.data(), nElements, "Pinned");
 }
