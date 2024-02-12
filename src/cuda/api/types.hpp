@@ -24,15 +24,12 @@
 #endif
 
 #include "detail/optional.hpp"
+#include "detail/span.hpp"
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
 #endif
 #include <cuda.h>
-
-#if __cplusplus >= 202002L
-#include <span>
-#endif
 
 #include <type_traits>
 #include <utility>
@@ -127,59 +124,6 @@ struct is_kinda_like_contiguous_container :
 	> {};
 
 } // namespace detail_
-
-#if __cplusplus >= 202002L
-using ::std::span;
-#else
-
-/**
- * @brief A "poor man's" span class
- *
- * @todo: Replace this with a more proper span, possibly in a file of its own.
- *
- * @note Remember a span is a reference type. That means that changes to the
- * pointed-to data are _not_considered changes to the span, hence you can get
- * to that data with const methods.
- */
-template<typename T>
-struct span {
-	using value_type = T;
-	using element_type = T;
-	using size_type = size_t;
-	using difference_type = ::std::ptrdiff_t;
-	using pointer = T*;
-	using const_pointer = T const *;
-	using reference = T&;
-	using const_reference = const T&;
-
-	pointer data_;
-	size_t size_;
-
-	pointer       data() const noexcept { return data_; }
-	size_type     size() const noexcept { return size_; }
-
-	// About cbegin() and cend() for spans, see:
-	// https://stackoverflow.com/q/62757700/1593077
-	// (for which reason, they're not implemented here)
-	pointer       begin()  const noexcept { return data(); }
-	pointer       end()    const noexcept { return data() + size_; }
-
-	reference operator[](size_t idx) const noexcept { return data_[idx]; }
-
-	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
-	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
-	template<
-		typename U = value_type,
-		typename = typename ::std::enable_if<not ::std::is_const<U>::value>::type
-	>
-	operator span<const U>()
-	{
-		static_assert(::std::is_same<U,T>::value, "Invalid type specified");
-		return { data_, size_ };
-	}
-};
-
-#endif
 
 /**
  * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,
