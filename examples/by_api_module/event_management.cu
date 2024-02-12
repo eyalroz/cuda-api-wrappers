@@ -94,13 +94,12 @@ int main(int argc, char **argv)
 		cuda::event::do_record_timings,
 		cuda::event::not_interprocess);
 
-	constexpr size_t buffer_size = 12345678;
-	auto buffer = cuda::memory::managed::make_unique<char[]>(
-		device, buffer_size, cuda::memory::managed::initial_visibility_t::to_all_devices);
+	auto buffer = cuda::memory::managed::make_unique_span<char>(
+		device, 12345678, cuda::memory::managed::initial_visibility_t::to_all_devices);
 	auto wrapped_kernel = cuda::kernel::get(device, increment);
 	auto launch_config = cuda::launch_config_builder()
 		.kernel(&wrapped_kernel)
-		.overall_size(buffer_size)
+		.overall_size(buffer.size())
 		.use_maximum_linear_block()
 		.build();
 
@@ -110,7 +109,7 @@ int main(int argc, char **argv)
 		report_occurrence("In first callback (enqueued after first event but before first kernel)", event_1, event_2);
 	};
 	stream.enqueue.host_invokable(first_callback);
-	stream.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
+	stream.enqueue.kernel_launch(increment, launch_config, buffer.data(), buffer.size());
 	auto second_callback = [&] {
 		report_occurrence("In second callback (enqueued after the first kernel but before the second event)",
 			event_1, event_2);
@@ -136,7 +135,7 @@ int main(int argc, char **argv)
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
 	std::cout
 		<< cuda::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "
-		<< "executing the second kernel (\"increment\") on a buffer of " << buffer_size
+		<< "executing the second kernel (\"increment\") on a buffer of " << buffer.size()
 		<< " chars and triggering two callbacks.\n";
 	// ... and this should make the third kernel execute
 	stream.synchronize();

@@ -35,13 +35,13 @@ int main()
 	int numElements = 50000;
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	auto buffer_A = cuda::memory::managed::make_unique<float[]>(numElements);
-	auto buffer_B = cuda::memory::managed::make_unique<float[]>(numElements);
-	auto buffer_C = cuda::memory::managed::make_unique<float[]>(numElements);
+	auto buffer_A = cuda::memory::managed::make_unique_span<float>(numElements);
+	auto buffer_B = cuda::memory::managed::make_unique_span<float>(numElements);
+	auto buffer_C = cuda::memory::managed::make_unique_span<float>(numElements);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(buffer_A.get(), buffer_A.get() + numElements, generator);
-	std::generate(buffer_B.get(), buffer_B.get() + numElements, generator);
+	std::generate(buffer_A.begin(), buffer_A.end(), generator);
+	std::generate(buffer_B.begin(), buffer_B.end(), generator);
 
 	// Launch the Vector Add CUDA Kernel
 	auto launch_config = cuda::launch_config_builder()
@@ -55,7 +55,7 @@ int main()
 
 	cuda::launch(
 		vectorAdd, launch_config,
-		buffer_A.get(), buffer_B.get(), buffer_C.get(), numElements
+		buffer_A.data(), buffer_B.data(), buffer_C.data(), numElements
 	);
 
 	// Synchronization is necessary here despite the synchronous nature of the default stream -

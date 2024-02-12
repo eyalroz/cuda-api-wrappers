@@ -154,21 +154,21 @@ int main(int argc, char **argv)
 #endif
 
 	constexpr auto buffer_size = 12345678;
-	auto buffer = cuda::memory::managed::make_unique<char[]>(
+	auto buffer = cuda::memory::managed::make_unique_span<char>(
 		buffer_size,
 		device.supports_concurrent_managed_access() ?
 			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access:
 			cuda::memory::managed::initial_visibility_t::to_all_devices);
-	print_first_char(buffer.get());
-	std::fill(buffer.get(), buffer.get() + buffer_size, 'a');
-	print_first_char(buffer.get());
+	print_first_char(buffer.data());
+	std::fill(buffer.begin(), buffer.end(), 'a');
+	print_first_char(buffer.data());
 
 	auto event_1 = cuda::event::create(device, cuda::event::sync_by_blocking);
 	stream_1.enqueue.kernel_launch(print_message<N,3>, single_thread_config, message<N>("I'm on stream 1"));
-	stream_1.enqueue.memset(buffer.get(), 'b', buffer_size);
+	stream_1.enqueue.memset(buffer, 'b');
 	auto callback = [&]() {
 		std::cout << "Callback from stream 1!... \n";
-		print_first_char(buffer.get());
+		print_first_char(buffer.data());
 	};
 	stream_1.enqueue.host_invokable(callback);
 	auto threads_per_block = cuda::kernel::get(device, increment).get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
@@ -177,15 +177,15 @@ int main(int argc, char **argv)
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect
 	stream_1.enqueue.attach_managed_region(buffer.get());
-	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.get(), buffer_size);
+	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.data(), buffer_size);
 	event_1.record(stream_1);
 	stream_1.enqueue.kernel_launch(print_message<N,4>, single_thread_config, message<N>("I'm on stream 1"));
 	stream_2.enqueue.wait(event_1);
-	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.get());
+	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.data());
 	stream_2.enqueue.kernel_launch(print_message<N,5>, single_thread_config, message<N>("I'm on stream 2"));
 	bool idleness_1 = stream_2.has_work_remaining();
 	device.synchronize();
-	print_first_char(buffer.get());
+	print_first_char(buffer.data());
 	// cuda::memory::managed::free(buffer);
 	bool idleness_2 = stream_2.has_work_remaining();
 	std::cout << std::boolalpha

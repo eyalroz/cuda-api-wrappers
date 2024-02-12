@@ -69,7 +69,7 @@ public:
 			throw ::std::logic_error("Attempt to use a span of size 0 as a sequence of typed elements");
 		}
 		if (size() % sizeof(U) != 0) {
-			throw ::std::logic_error("Attempt to use a region of size not an integral multiple of the size of a type,"
+			throw ::std::logic_error("Attempt to use a region of size not an integral multiple of the size of a type, "
 				"as a span of elements of that type");
 		}
 #endif

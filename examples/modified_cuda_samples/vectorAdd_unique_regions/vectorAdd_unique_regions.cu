@@ -34,7 +34,6 @@ int main()
 	int numElements = 50000;
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	// If we could rely on C++14, we would  use std::make_unique
 	auto h_A = std::unique_ptr<float[]>(new float[numElements]);
 	auto h_B = std::unique_ptr<float[]>(new float[numElements]);
 	auto h_C = std::unique_ptr<float[]>(new float[numElements]);

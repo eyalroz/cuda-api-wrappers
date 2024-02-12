@@ -46,12 +46,12 @@ constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
 }
 
 struct buffer_set_t {
-    cuda::memory::host::unique_ptr<element_t[]> host_lhs;
-    cuda::memory::host::unique_ptr<element_t[]> host_rhs;
-    cuda::memory::host::unique_ptr<element_t[]> host_result;
-    cuda::memory::device::unique_ptr<element_t[]> device_lhs;
-    cuda::memory::device::unique_ptr<element_t[]> device_rhs;
-    cuda::memory::device::unique_ptr<element_t[]> device_result;
+    cuda::memory::host::unique_span<element_t> host_lhs;
+    cuda::memory::host::unique_span<element_t> host_rhs;
+    cuda::memory::host::unique_span<element_t> host_result;
+    cuda::memory::device::unique_span<element_t> device_lhs;
+    cuda::memory::device::unique_span<element_t> device_rhs;
+    cuda::memory::device::unique_span<element_t> device_result;
 };
 
 std::vector<buffer_set_t> generate_buffers(
@@ -68,12 +68,12 @@ std::vector<buffer_set_t> generate_buffers(
         [&]() {
             return buffer_set_t {
                 // Sticking to C++11 here...
-                cuda::memory::host::make_unique<element_t[]>(num_elements),
-                cuda::memory::host::make_unique<element_t[]>(num_elements),
-                cuda::memory::host::make_unique<element_t[]>(num_elements),
-                cuda::memory::make_unique<element_t[]>(device, num_elements),
-                cuda::memory::make_unique<element_t[]>(device, num_elements),
-                cuda::memory::make_unique<element_t[]>(device, num_elements)
+                cuda::memory::host::make_unique_span<element_t>(num_elements),
+                cuda::memory::host::make_unique_span<element_t>(num_elements),
+                cuda::memory::host::make_unique_span<element_t>(num_elements),
+                cuda::memory::make_unique_span<element_t>(device, num_elements),
+                cuda::memory::make_unique_span<element_t>(device, num_elements),
+                cuda::memory::make_unique_span<element_t>(device, num_elements)
             };
         }
     );
@@ -116,14 +116,14 @@ int main(int, char **)
     for(size_t k = 0; k < num_kernels; k++) {
         auto& stream = streams[k];
         auto& buffer_set = buffers[k];
-        stream.enqueue.copy(buffer_set.device_lhs.get(), buffer_set.host_lhs.get(), buffer_size);
-        stream.enqueue.copy(buffer_set.device_rhs.get(), buffer_set.host_rhs.get(), buffer_size);
+        stream.enqueue.copy(buffer_set.device_lhs, buffer_set.host_lhs);
+        stream.enqueue.copy(buffer_set.device_rhs, buffer_set.host_rhs);
         stream.enqueue.kernel_launch(
             add<element_t>,
             common_launch_config,
-            buffer_set.device_lhs.get(),
-            buffer_set.device_rhs.get(),
-            buffer_set.device_result.get(),
+            buffer_set.device_lhs.data(),
+            buffer_set.device_rhs.data(),
+            buffer_set.device_result.data(),
             num_elements);
         stream.enqueue.copy(buffer_set.host_result.get(), buffer_set.device_result.get(), buffer_size);
 	auto callback = [=] {

@@ -216,7 +216,7 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 	auto status = cuLibraryGetManaged(&region_start, &region_size, library.handle(), name);
 	throw_if_error_lazy(status, ::std::string("Failed obtaining the managed memory region '") + name
 		+ "' from " + library::detail_::identify(library));
-	return { region_start, region_size };
+	return { memory::as_pointer(region_start), region_size };
 }
 
 namespace module {

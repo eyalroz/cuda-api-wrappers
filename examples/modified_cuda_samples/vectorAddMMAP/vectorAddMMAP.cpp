@@ -99,8 +99,14 @@ cuda::size_t determine_reservation_size(
 
 template <template <typename...> class Container>
 struct reserved_range_and_mappings {
+	size_t requested_size;
 	virtual_mem::reserved_address_range_t reserved_range;
 	Container<virtual_mem::mapping_t> mappings;
+
+	cuda::memory::region_t as_requested() const noexcept
+	{
+		return reserved_range.region().subregion(0, requested_size);
+	}
 };
 
 /**
@@ -129,12 +135,12 @@ struct reserved_range_and_mappings {
  * plus meet the allocation granularity requirements of each device.
  */
 reserved_range_and_mappings<std::vector>
-setup_virtual_memory(cuda::size_t desired_region_size,
+setup_virtual_memory(cuda::size_t requested_region_size,
 	const vector<cuda::device_t> &backing_devices,
 	const vector<cuda::device_t> &mapping_devices,
 	virtual_mem::alignment_t alignment = virtual_mem::alignment::default_)
 {
-	auto size_to_reserve = determine_reservation_size(desired_region_size, backing_devices, mapping_devices);
+	auto size_to_reserve = determine_reservation_size(requested_region_size, backing_devices, mapping_devices);
 	auto stripe_size = size_to_reserve / backing_devices.size();
 	auto reserved_range = virtual_mem::reserve(size_to_reserve, alignment);
 
@@ -171,7 +177,7 @@ setup_virtual_memory(cuda::size_t desired_region_size,
 	}
 #endif
 
-	return { std::move(reserved_range), std::move(mappings) };
+	return { requested_region_size, std::move(reserved_range), std::move(mappings) };
 }
 
 //collect all of the devices whose memory can be mapped from a given device.
@@ -268,14 +274,12 @@ int main()
 	auto d_B = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
 	auto d_C = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
 
-	auto d_A_ptr = d_A.reserved_range.region().start();
-	auto d_B_ptr = d_B.reserved_range.region().start();
-	auto d_C_ptr = d_C.reserved_range.region().start();
+	auto d_A_sp = d_A.as_requested().as_span<float>();
+	auto d_B_sp = d_B.as_requested().as_span<float>();
+	auto d_C_sp = d_C.as_requested().as_span<float>();
 
-//	std::cout << "Done setting up virtual memory" << std::endl;
-
-	cuda::memory::copy(d_A_ptr, h_A.get(), size_in_bytes);
-	cuda::memory::copy(d_B_ptr, h_B.get(), size_in_bytes);
+	cuda::memory::copy(d_A_sp, h_A.get());
+	cuda::memory::copy(d_B_sp, h_B.get());
 
 	// Launch the Vector Add CUDA Kernel
 	auto launch_config = cuda::launch_config_builder()
@@ -288,10 +292,10 @@ int main()
 		<< " blocks of " << launch_config.dimensions.grid.volume() << " threads" << std::endl;
 
 	cuda::launch(kernel, launch_config,
-		d_A_ptr, d_B_ptr, d_C_ptr, num_elements
+		d_A_sp.data(), d_B_sp.data(), d_C_sp.data(), num_elements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C_ptr, size_in_bytes);
+	cuda::memory::copy(h_C.get(), d_C_sp);
 
 //	std::cout << "Checking results...\n\n";
 
