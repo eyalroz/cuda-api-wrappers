@@ -1596,6 +1596,11 @@ inline void zero(void* start, size_t num_bytes)
 	set(start, 0, num_bytes);
 }
 
+inline void zero(region_t region)
+{
+	set(region, 0);
+}
+
 template <typename T>
 inline void zero(T* ptr)
 {
