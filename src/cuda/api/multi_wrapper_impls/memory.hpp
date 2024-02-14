@@ -471,20 +471,18 @@ inline region_pair allocate(
 
 namespace host {
 
+namespace detail_ {
+
 /**
  * @note The allocation does not keep any device context alive/active; that is
  * the caller's responsibility. However, if there is no current context, it will
  * trigger the creation of a primary context on the default device, and "leak"
  * a refcount unit for it.
  */
-inline region_t allocate(
+inline region_t allocate_in_current_context(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	static constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
-	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_a_context{
-		dont_decrease_pc_refcount_on_destruct
-	};
 	void* allocated = nullptr;
 	auto flags = memory::detail_::make_cuda_host_alloc_flags(options);
 	auto result = cuMemHostAlloc(&allocated, size_in_bytes, flags);
@@ -495,6 +493,46 @@ inline region_t allocate(
 	throw_if_error_lazy(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
 	return { allocated, size_in_bytes };
 }
+
+inline region_t allocate(
+	const context::handle_t  context_handle,
+	size_t                   size_in_bytes,
+	allocation_options       options)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return allocate_in_current_context(size_in_bytes, options);
+}
+
+} // namespace detail_
+
+/**
+ * @note The allocation does not keep any device context alive/active; that is
+ * the caller's responsibility. However, if there is no current context, it will
+ * trigger the creation of a primary context on the default device, and "leak"
+ * a refcount unit for it. For this (and other) reasons, one should avoid
+ * it, and prefer passing a context, or at least a device, to the allocation
+ * function
+ */
+inline region_t allocate(
+	size_t              size_in_bytes,
+	allocation_options  options)
+{
+	static constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
+	context::current::detail_::scoped_existence_ensurer_t context_ensurer{ dont_decrease_pc_refcount_on_destruct };
+	// Note: We allow a PC to leak here, in case no other context existed, so as not to risk
+	// the allocation being invalidated by the only CUDA context getting destroyed when
+	// leaving this function
+	return detail_::allocate_in_current_context(size_in_bytes, options);
+}
+
+inline region_t allocate(
+	const context_t&    context,
+	size_t              size_in_bytes,
+	allocation_options  options)
+{
+	return detail_::allocate(context.handle(), size_in_bytes, options);
+}
+
 
 } // namespace host
 

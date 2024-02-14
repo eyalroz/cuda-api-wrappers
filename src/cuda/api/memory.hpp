@@ -59,8 +59,8 @@ namespace memory {
  * have with the Runtime API).
  */
 enum class portability_across_contexts : bool {
-	is_portable   = true,//!< is_portable
-	isnt_portable = false//!< isnt_portable
+	isnt_portable = false,
+	is_portable   = true,
 };
 
 /**
@@ -79,8 +79,8 @@ enum class portability_across_contexts : bool {
  * host only writes to.
  */
 enum cpu_write_combining : bool {
+	without_wc = false,
 	with_wc    = true,
-	without_wc = false
 };
 
 /**
@@ -1372,7 +1372,18 @@ inline void copy(
  */
 namespace host {
 
-///@{
+namespace detail_ {
+
+// Even though the pinned memory should not in principle be associated in principle with a context or a device, in
+// practice it needs to be registered somewhere - and that somewhere is a context. Passing a context does not mean
+// the allocation will have special affinity to the device terms of better performance etc.
+inline region_t allocate(
+	const context::handle_t  context_handle,
+	size_t                   size_in_bytes,
+	allocation_options       options);
+
+} // namespace detail_
+
 
 /**
  * allocate pinned host memory
@@ -1386,6 +1397,8 @@ namespace host {
  * @throws cuda::runtime_error if allocation fails for any reason
  *
  * @param size_in_bytes the amount of memory to allocate, in bytes
+ * @param context
+ *
  * @param options
  *     options to pass to the cuda host-side memory allocator; see
  *     {@ref memory::allocation_options}.
@@ -1398,10 +1411,16 @@ namespace host {
  *
  * @return a pointer to the allocated stretch of memory
  */
-region_t allocate(
+///@{
+
+inline region_t allocate(
+	const context_t&    context,
 	size_t              size_in_bytes,
 	allocation_options  options);
 
+region_t allocate(
+	size_t              size_in_bytes,
+	allocation_options  options);
 
 inline region_t allocate(
 	size_t                       size_in_bytes,
