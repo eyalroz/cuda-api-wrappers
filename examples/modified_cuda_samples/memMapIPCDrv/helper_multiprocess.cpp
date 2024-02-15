@@ -174,7 +174,7 @@ int ipcCreateSocket(ipcHandle *&handle, const char *name,
 
   strncpy(servaddr.sun_path, name, sizeof(servaddr.sun_path));
 
-  if (bind(server_fd, reinterpret_cast<struct sockaddr *>(&servaddr), SUN_LEN(&servaddr)) < 0) {
+  if (bind(server_fd, reinterpret_cast<struct sockaddr *>(&servaddr), (socklen_t) SUN_LEN(&servaddr)) < 0) {
     perror("IPC failure: Binding socket failed");
     return -1;
   }
@@ -364,7 +364,7 @@ int ipcSendShareableHandles(
   for (std::size_t i = 0; i < shareableHandles.size(); i++) {
     for (std::size_t j = 0; j < processes.size(); j++) {
       checkIpcErrors(
-          ipcSendShareableHandle(handle, shareableHandles, processes[j], i));
+          ipcSendShareableHandle(handle, shareableHandles, processes[j], static_cast<int>(i)));
     }
   }
   return 0;

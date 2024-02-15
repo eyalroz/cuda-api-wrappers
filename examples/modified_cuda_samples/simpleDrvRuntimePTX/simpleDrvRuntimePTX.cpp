@@ -168,7 +168,7 @@ int main(int argc, char** argv)
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {
-		if (std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
+		if (std::fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5f)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
