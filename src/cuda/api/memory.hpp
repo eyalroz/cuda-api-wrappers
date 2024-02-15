@@ -33,6 +33,7 @@
 #include "error.hpp"
 #include "pointer.hpp"
 #include "current_context.hpp"
+#include "region.hpp"
 
 // The following is needed for cudaGetSymbolAddress, cudaGetSymbolSize
 #include <cuda_runtime.h>
