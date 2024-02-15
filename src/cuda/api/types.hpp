@@ -141,7 +141,7 @@ using size_t = ::std::size_t;
  * The index or number of dimensions of an entity (as opposed to the extent in any
  * dimension) - typically just 0, 1, 2 or 3.
  */
-using dimensionality_t = unsigned;
+using dimensionality_t = size_t;
 
 namespace array {
 

@@ -342,15 +342,17 @@ inline void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
 
 inline void name(::std::thread::id host_thread_id, const char* name)
 {
-	auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
-	uint32_t thread_id =
+    auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
 #ifdef _WIN32
-		GetThreadId(native_handle);
+    uint32_t thread_id = GetThreadId(native_handle);
 #else
-		native_handle;
+    if (native_handle >= ::std::numeric_limits<uint32_t>::max()) {
+        throw ::std::runtime_error("Native thread ID " + ::std::to_string(native_handle) +
+            " exceeds maximum representable thread ID " + ::std::to_string(::std::numeric_limits<uint32_t>::max()));
+    }
+    auto thread_id = static_cast<uint32_t>(native_handle);
 #endif
-	name_host_thread(thread_id, name);
-}
+    name_host_thread(thread_id, name);}
 
 } // namespace detail_
 
