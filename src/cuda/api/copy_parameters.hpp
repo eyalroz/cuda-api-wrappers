@@ -231,10 +231,10 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		return *this;
 	}
 
-	this_type& set_bytes_extent(dimensions_type extent) noexcept;
+	this_type& set_bytes_extent(dimensions_type extent_in_bytes) noexcept;
 
 	template<typename T>
-	this_type& set_extent(dimensions_type extent) noexcept;
+	this_type& set_extent(dimensions_type extent_in_elements) noexcept;
 	// Sets how much is being copies, as opposed to the sizes of the endpoints which may be larger
 
 	dimensions_type bytes_extent() const noexcept;
@@ -443,35 +443,39 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::clear_rest() noexcept
 
 template<>
 template<typename T>
-inline copy_parameters_t<2> &copy_parameters_t<2>::set_extent(dimensions_type extent) noexcept
+inline copy_parameters_t<2> &copy_parameters_t<2>::set_extent(dimensions_type extent_in_elements) noexcept
 {
-	WidthInBytes = extent.width * sizeof(T);
-	Height = extent.height;
+	WidthInBytes = extent_in_elements.width * sizeof(T);
+	Height = extent_in_elements.height;
 	return *this;
 }
 
 template<>
-inline copy_parameters_t<2>& copy_parameters_t<2>::set_bytes_extent(dimensions_type extent) noexcept
+inline copy_parameters_t<2>& copy_parameters_t<2>::set_bytes_extent(dimensions_type extent_in_elements) noexcept
 {
-	WidthInBytes = extent.width;
-	Height = extent.height;
+	WidthInBytes = extent_in_elements.width;
+	Height = extent_in_elements.height;
 	return *this;
 }
 
 template<>
-inline copy_parameters_t<3>& copy_parameters_t<3>::set_bytes_extent(dimensions_type extent) noexcept
+inline copy_parameters_t<3>& copy_parameters_t<3>::set_bytes_extent(dimensions_type extent_in_elements) noexcept
 {
-	WidthInBytes = extent.width;
-	Height = extent.height;
-	Depth = extent.depth;
+	WidthInBytes = extent_in_elements.width;
+	Height = extent_in_elements.height;
+	Depth = extent_in_elements.depth;
 	return *this;
 }
 
 template<>
 template<typename T>
-copy_parameters_t<3>& copy_parameters_t<3>::set_extent(dimensions_type extent) noexcept
+copy_parameters_t<3>& copy_parameters_t<3>::set_extent(dimensions_type extent_in_elements) noexcept
 {
-	dimensions_type extent_in_bytes{extent.width * sizeof(T), extent.height, extent.depth};
+	dimensions_type extent_in_bytes{
+	        extent_in_elements.width * sizeof(T),
+	        extent_in_elements.height,
+	        extent_in_elements.depth
+	};
 	return set_bytes_extent(extent_in_bytes);
 }
 
