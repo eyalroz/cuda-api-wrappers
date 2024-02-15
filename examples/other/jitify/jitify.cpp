@@ -60,7 +60,7 @@ namespace fs = std::experimental::filesystem;
 
 template <typename T>
 bool are_close(T in, T out) {
-  return fabs(in - out) <= 1e-5f * fabs(in);
+  return fabs(in - out) <= 1e-5 * fabs(in);
 }
 
 /**

@@ -58,8 +58,11 @@ void profileCopies(float        *h_a,
 	stream.enqueue.event(events.second);
 	stream.synchronize();
 
-	auto duration = cuda::event::time_elapsed_between(events.first, events.second);
-	std::cout << "  Host to Device bandwidth (GB/s): " << (bytes * 1e-6 / duration.count()) << "\n";
+	cuda::event::duration_t duration;
+    auto to_gb = [&duration](size_t bytes_) {
+        return static_cast<double>(bytes_) * 1e-6 / static_cast<double>(duration.count());
+    };
+	std::cout << "  Host to Device bandwidth (GB/s): " << to_gb(bytes) << "\n";
 
 	stream.enqueue.event(events.first);
 	stream.enqueue.copy(h_b, d, bytes);
@@ -67,7 +70,7 @@ void profileCopies(float        *h_a,
 	stream.synchronize();
 
 	duration = cuda::event::time_elapsed_between(events);
-	std::cout << "  Device to Host bandwidth (GB/s): " << (bytes * 1e-6 / duration.count()) << "\n";
+	std::cout << "  Device to Host bandwidth (GB/s): " << to_gb(bytes) << "\n";
 
 	bool are_equal = std::equal(h_a, h_a + nElements, h_b);
 	if (not are_equal) {
