@@ -18,6 +18,7 @@
 #define CUDA_API_WRAPPERS_ERROR_HPP_
 
 #include "types.hpp"
+#include "detail/region.hpp"
 #include <cuda_runtime_api.h>
 
 #include <type_traits>
