@@ -29,7 +29,6 @@
 #if CUDA_VERSION >= 11020
 #include "api/memory_pool.hpp"
 #endif
-#include "api/unique_ptr.hpp"
 #include "api/unique_region.hpp"
 #include "cuda/api/detail/unique_span.hpp"
 #include "api/link_options.hpp"
