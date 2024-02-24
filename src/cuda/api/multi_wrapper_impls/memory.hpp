@@ -317,23 +317,23 @@ namespace managed {
 
 namespace detail_ {
 
-template <typename T>
-inline device_t base_region_t<T>::preferred_location() const
+template <typename GenericRegion>
+inline device_t region_helper<GenericRegion>::preferred_location() const
 {
-	auto device_id = detail_::get_scalar_range_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	auto device_id = get_scalar_range_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 	return cuda::device::get(device_id);
 }
 
-template <typename T>
-inline void base_region_t<T>::set_preferred_location(device_t& device) const
+template <typename GenericRegion>
+inline void region_helper<GenericRegion>::set_preferred_location(device_t& device) const
 {
-	detail_::set_range_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
+	set_range_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
 }
 
-template <typename T>
-inline void base_region_t<T>::clear_preferred_location() const
+template <typename GenericRange>
+inline void region_helper<GenericRange>::clear_preferred_location() const
 {
-	detail_::unset_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	unset_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 }
 
 } // namespace detail_

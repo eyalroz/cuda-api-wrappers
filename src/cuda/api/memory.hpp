@@ -1707,10 +1707,9 @@ inline T get_scalar_range_attribute(const_region_t region, range_attribute_t att
 inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id);
 // inline void advise(const_region_t region, advice_t attribute);
 
-template <typename T>
-struct base_region_t : public memory::detail_::base_region_t<T> {
-	using parent = memory::detail_::base_region_t<T>;
-	using parent::parent;
+template <typename GenericRegion>
+struct region_helper : public GenericRegion {
+	using GenericRegion::GenericRegion;
 
 	bool is_read_mostly() const
 	{
@@ -1728,13 +1727,18 @@ struct base_region_t : public memory::detail_::base_region_t<T> {
 	}
 
 	device_t preferred_location() const;
-	void set_preferred_location(device_t& device) const;
-	void clear_preferred_location() const;
 
-	// TODO: Consider using a field proxy
+	void set_preferred_location(device_t &device) const;
+
+	void clear_preferred_location() const;
 };
 
 } // namespace detail_
+
+/// A child class of the generic @ref region_t with some managed-memory-specific functionality
+using region_t = detail_::region_helper<memory::region_t>;
+/// A child class of the generic @ref const_region_t with some managed-memory-specific functionality
+using const_region_t = detail_::region_helper<memory::const_region_t>;
 
 void advise_expected_access_by(const_region_t region, device_t& device);
 void advise_no_access_expected_by(const_region_t region, device_t& device);
