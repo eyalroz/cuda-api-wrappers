@@ -10,7 +10,6 @@
 #define CUDA_API_WRAPPERS_EXTERNAL_HPP_
 
 #include "memory.hpp"
-#include "unique_ptr.hpp"
 
 namespace cuda {
 namespace memory {
@@ -156,6 +155,8 @@ inline region_t map(handle_t handle, subregion_spec_t subregion)
 mapped_region_t wrap(region_t mapped_region);
 
 /**
+ * TODO: Rebase this on unique_region
+ *
  * Essentially, a unique_ptr-like class, with the allocator and deleter being
  * mapping and unmapping parts of an external memory resource, and - a size.
  */

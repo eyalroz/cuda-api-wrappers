@@ -172,7 +172,6 @@ unique_span<T> make_unique_span(const context::handle_t context_handle, size_t s
  *
  * @param context       The CUDA device context in which to make the
  *                      allocation.
- * @param num_elements  the number of elements to allocate
  *
  * @return an ::std::unique_ptr pointing to the constructed T array
 */
