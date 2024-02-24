@@ -23,7 +23,6 @@
 #include "api/memory.hpp"
 #include "api/pointer.hpp"
 #include "api/texture_view.hpp"
-#include "api/unique_ptr.hpp"
 #include "api/ipc.hpp"
 
 #include "api/stream.hpp"

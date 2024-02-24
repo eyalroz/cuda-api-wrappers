@@ -18,7 +18,6 @@
 #include "../event.hpp"
 #include "../pointer.hpp"
 #include "../stream.hpp"
-#include "../unique_ptr.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
 #include "../virtual_memory.hpp"
@@ -129,127 +128,6 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 
 } // namespace async
 
-
-/**
- * @brief Create a variant of ::std::unique_pointer for an array in
- * device-global memory.
- *
- * @note CUDA's runtime API always has a current device; but -
- * there is not necessary a current context; so a primary context
- * for a device may be created through this call.
- *
- * @tparam T  an array type; _not_ the type of individual elements
- *
- * @param context       The CUDA device context in which to make the
- *                      allocation.
- * @param num_elements  the number of elements to allocate
- *
- * @return an ::std::unique_ptr pointing to the constructed T array
-*/
-template <typename T>
-inline unique_ptr<T> make_unique(const context_t& context, size_t num_elements)
-{
-	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	return memory::detail_::make_unique<T>(context.handle(), num_elements);
-}
-
-/**
- * @brief Create a variant of ::std::unique_pointer for an array in
- * device-global memory
- *
- * @tparam T  an array type; _not_ the type of individual elements
- *
- * @param device        on which to construct the array of elements
- * @param num_elements  the number of elements to allocate
- * @return an ::std::unique_ptr pointing to the constructed T array
- */
-template<typename T>
-inline unique_ptr<T> make_unique(const device_t& device, size_t num_elements)
-{
-	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	auto pc = device.primary_context();
-	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	return memory::detail_::make_unique<T, device::detail_::allocator, device::detail_::deleter>(num_elements);
-}
-
-/**
- * @brief Create a variant of ::std::unique_pointer for an array in
- * device-global memory on the current device.
- *
- * @note The allocation will be made in the device's primary context -
- * which will be created if it has not yet been.
- *
- * @tparam T  an array type; _not_ the type of individual elements
- *
- * @param num_elements  the number of elements to allocate
- *
- * @return an ::std::unique_ptr pointing to the constructed T array
- */
-template<typename T>
-inline unique_ptr<T> make_unique(size_t num_elements)
-{
-	static_assert(::std::is_array<T>::value, "make_unique<T>() can only be invoked for T being an array type, T = U[]");
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique<T>(pc, num_elements);
-}
-
-/**
- * @brief Create a variant of ::std::unique_pointer for a single value
- * in device-global memory.
- *
- * @tparam T  the type of value to construct in device memory
- *
- * @param device  on which to construct the T element
- * @return an ::std::unique_ptr pointing to the allocated memory
- */
-template <typename T>
-inline unique_ptr<T> make_unique(const context_t& context)
-{
-	return cuda::memory::detail_::make_unique<T>(context.handle());
-}
-
-/**
- * @brief Create a variant of ::std::unique_pointer for a single value
- * in device-global memory.
- *
- * @tparam T  the type of value to construct in device memory
- *
- * @param device  on which to construct the T element
- * @return an ::std::unique_ptr pointing to the allocated memory
- */
-template <typename T>
-inline unique_ptr<T> make_unique(const device_t& device)
-{
-	auto pc = device.primary_context();
-	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	return memory::detail_::make_unique<T, device::detail_::allocator, device::detail_::deleter>();
-}
-
-/**
- * @brief Create a variant of ::std::unique_pointer for a single value
- * in device-global memory, on the current device
- *
- * @note The allocation will be made in the device's primary context -
- * which will be created if it has not yet been.
- *
- * @note If called when the device' primary context is inactive,
- * this
- *
- * @tparam T  the type of value to construct in device memory
- *
- * @param num_elements  the number of elements to allocate
- *
- * @return an ::std::unique_ptr pointing to the allocated memory
- */
-template<typename T>
-inline unique_ptr<T> make_unique()
-{
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique<T>(pc);
-}
-
 } // namespace device
 
 namespace inter_context {
@@ -337,65 +215,6 @@ inline void base_region_t<T>::clear_preferred_location() const
 }
 
 } // namespace detail_
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	const context_t&      context,
-	size_t                n,
-	initial_visibility_t  initial_visibility)
-{
-	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return detail_::make_unique_in_current_context<T>(n, initial_visibility);
-}
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	const device_t&       device,
-	size_t                n,
-	initial_visibility_t  initial_visibility)
-{
-	auto pc = device.primary_context();
-	return make_unique<T>(pc, n, initial_visibility);
-}
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	size_t                n,
-	initial_visibility_t  initial_visibility)
-{
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique<T>(pc, n, initial_visibility);
-}
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	const context_t&      context,
-	initial_visibility_t  initial_visibility)
-{
-	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return detail_::make_unique_in_current_context<T>(initial_visibility);
-}
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	const device_t&       device,
-	initial_visibility_t  initial_visibility)
-{
-	auto pc = device.primary_context();
-	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	return detail_::make_unique_in_current_context<T>(initial_visibility);
-}
-
-template<typename T>
-inline unique_ptr<T> make_unique(
-	initial_visibility_t  initial_visibility)
-{
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique<T>(pc, initial_visibility);
-}
-
 
 inline void advise_expected_access_by(const_region_t region, device_t& device)
 {
