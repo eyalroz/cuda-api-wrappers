@@ -593,7 +593,7 @@ public: // mutators
 		 * you must pass whatever @ref cuda::memory::managed::allocate() returned.
 		 */
 		void attach_managed_region(
-			memory::managed::region_t region,
+			memory::region_t region,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream) const
 		{
 			attach_managed_region(region.start(), attachment);

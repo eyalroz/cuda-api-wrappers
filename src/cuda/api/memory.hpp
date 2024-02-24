@@ -1697,17 +1697,15 @@ inline void zero(T* ptr)
  */
 namespace managed {
 
-struct const_region_t;
-
 namespace detail_ {
 
 using advice_t = CUmem_advise;
 
 template <typename T>
-inline T get_scalar_range_attribute(managed::const_region_t region, range_attribute_t attribute);
+inline T get_scalar_range_attribute(const_region_t region, range_attribute_t attribute);
 
-inline void advise(managed::const_region_t region, advice_t advice, cuda::device::id_t device_id);
-// inline void advise(managed::const_region_t region, advice_t attribute);
+inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id);
+// inline void advise(const_region_t region, advice_t attribute);
 
 template <typename T>
 struct base_region_t : public memory::detail_::base_region_t<T> {
@@ -1738,26 +1736,16 @@ struct base_region_t : public memory::detail_::base_region_t<T> {
 
 } // namespace detail_
 
-struct region_t : public detail_::base_region_t<void> {
-	using base_region_t<void>::base_region_t;
-	operator memory::region_t() { return memory::region_t{ start(), size() }; }
-};
-
-struct const_region_t : public detail_::base_region_t<void const> {
-	using base_region_t<void const>::base_region_t;
-	const_region_t(const region_t& r) : detail_::base_region_t<void const>(r.start(), r.size()) {}
-};
-
-void advise_expected_access_by(managed::const_region_t region, device_t& device);
-void advise_no_access_expected_by(managed::const_region_t region, device_t& device);
+void advise_expected_access_by(const_region_t region, device_t& device);
+void advise_no_access_expected_by(const_region_t region, device_t& device);
 
 template <typename Allocator = ::std::allocator<cuda::device_t> >
-	typename ::std::vector<device_t, Allocator> accessors(managed::const_region_t region, const Allocator& allocator = Allocator() );
+	typename ::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail_ {
 
 template <typename T>
-inline T get_scalar_range_attribute(managed::const_region_t region, range_attribute_t attribute)
+inline T get_scalar_range_attribute(const_region_t region, range_attribute_t attribute)
 {
 	uint32_t attribute_value { 0 };
 	auto result = cuMemRangeGetAttribute(
@@ -1769,14 +1757,14 @@ inline T get_scalar_range_attribute(managed::const_region_t region, range_attrib
 
 // CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
 // not called cuMemRangeSetAttribute, and uses a different enum.
-inline void advise(managed::const_region_t region, advice_t advice, cuda::device::id_t device_id)
+inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
 {
 	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
 	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
 	+ cuda::detail_::ptr_as_hex(region.start()));
 }
 
-// inline void set_range_attribute(managed::const_region_t region, range_attribute_t attribute, cuda::device::handle_t device_id)
+// inline void set_range_attribute(const_region_t region, range_attribute_t attribute, cuda::device::handle_t device_id)
 
 inline advice_t as_advice(range_attribute_t attribute, bool set)
 {
@@ -1793,13 +1781,13 @@ inline advice_t as_advice(range_attribute_t attribute, bool set)
 	}
 }
 
-inline void set_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute, cuda::device::id_t device_id)
+inline void set_range_attribute(const_region_t region, range_attribute_t settable_attribute, cuda::device::id_t device_id)
 {
 	static constexpr const bool set { true };
 	advise(region, as_advice(settable_attribute, set), device_id);
 }
 
-inline void unset_range_attribute(managed::const_region_t region, range_attribute_t settable_attribute)
+inline void unset_range_attribute(const_region_t region, range_attribute_t settable_attribute)
 {
 	static constexpr const bool unset { false };
 	static constexpr const cuda::device::id_t dummy_device_id { 0 };
