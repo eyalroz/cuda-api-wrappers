@@ -43,6 +43,19 @@ inline void copy(array_t<T, NumDimensions>& destination, const T* source, const 
 	detail_::copy<T, NumDimensions>(destination, source, stream.handle());
 }
 
+template <typename T, dimensionality_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (source.size() != destination.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy " + ::std::to_string(source.size()) +
+			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
+	}
+#endif
+	detail_::copy<T, NumDimensions>(destination, source.data(), stream.handle());
+}
+
 // Note: Assumes the destination, source and stream are all usable on the same content
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
@@ -53,6 +66,19 @@ inline void copy(T* destination, const array_t<T, NumDimensions>& source, const 
 									+ stream::detail_::identify(stream));
 	}
 	detail_::copy<T, NumDimensions>(destination, source, stream.handle());
+}
+
+template <typename T, dimensionality_t NumDimensions>
+inline void copy(span<T> destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
+{
+#ifndef NDEBUG
+	if (destination.size() != source.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy " + ::std::to_string(source.size()) +
+			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
+	}
+#endif
+	copy(destination.data(), source, stream);
 }
 
 template <typename T>
