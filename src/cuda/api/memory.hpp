@@ -445,11 +445,22 @@ template <typename T, size_t N>
 inline void copy(region_t destination, const T(&source)[N])
 {
 #ifndef NDEBUG
-	if (destination.size() < N) {
+	if (destination.size() < N * sizeof(T)) {
 		throw ::std::logic_error("Source size exceeds destination size");
 	}
 #endif
 	return copy(destination.start(), source, sizeof(T) * N);
+}
+
+template <typename T, size_t N>
+inline void copy(span<T> destination, const T(&source)[N])
+{
+#ifndef NDEBUG
+	if (destination.size() < N) {
+		throw ::std::logic_error("Source size exceeds destination size");
+	}
+#endif
+	return copy(destination.data(), source, sizeof(T) * N);
 }
 
 /**
@@ -466,6 +477,19 @@ inline void copy(T(&destination)[N], const_region_t source)
 		throw ::std::invalid_argument(
 			"Attempt to copy a region of " + ::std::to_string(source.size()) +
 				" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
+	}
+#endif
+	return copy(destination, source.start(), sizeof(T) * N);
+}
+
+template <typename T, size_t N>
+inline void copy(T(&destination)[N], span<T const> source)
+{
+#ifndef NDEBUG
+	if (source.size() > N) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a span of " + ::std::to_string(source.size()) +
+			" elements into an array of " + ::std::to_string(N) + " elements");
 	}
 #endif
 	return copy(destination, source.start(), sizeof(T) * N);
@@ -669,6 +693,19 @@ void copy(const array_t<T, NumDimensions>& destination, const T *source)
 	copy(destination, context_of(source), source);
 }
 
+template<typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>& destination, span<T const> source)
+{
+#ifndef NDEBUG
+	if (destination.size() < source.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a span of " + ::std::to_string(source.size()) +
+			" elements into a CUDA array of " + ::std::to_string(destination.size()) + " elements");
+	}
+#endif
+	copy(destination, source.data());
+}
+
 /**
  * Synchronously copies data into a CUDA array from non-array memory.
  *
@@ -711,6 +748,19 @@ void copy(T *destination, const array_t<T, NumDimensions>& source)
 }
 
 template <typename T, dimensionality_t NumDimensions>
+void copy(span<T> destination, const array_t<T, NumDimensions>& source)
+{
+#ifndef NDEBUG
+	if (destination.size() < source.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a CUDA array of " + ::std::to_string(source.size()) +
+			" elements into a span of " + ::std::to_string(destination.size()) + " elements");
+	}
+#endif
+	copy(destination.data(), source);
+}
+
+template <typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source)
 {
 	auto dims = source.dimensions();
@@ -742,7 +792,7 @@ void copy(const array_t<T, NumDimensions>& destination, const_region_t source)
 	if (destination.size_bytes() < source.size()) {
 		throw ::std::logic_error("Attempt to copy into an array from a source region larger than the array's size");
 	}
-	copy(destination, source.start());
+	copy(destination, static_cast<T const*>(source.start()));
 }
 
 /**
@@ -853,7 +903,6 @@ status_t multidim_copy(
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
-
 
 // Assumes the array and the stream share the same context, and that the destination is
 // accessible from that context (e.g. allocated within it, or being managed memory, etc.)
@@ -1021,7 +1070,7 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, const s
 			" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
 	}
 #endif
-	copy(destination, source.start(), stream);
+	copy(destination, static_cast<T const*>(source.start()), stream);
 }
 
 /**
