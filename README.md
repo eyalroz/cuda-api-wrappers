@@ -84,7 +84,7 @@ Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/ey
 
 ### Projects using CMake
 
-For CMake, you have three alternatives for obtaining the library for your project:
+For CMake, you have three alternatives for obtaining the library to use in your project:
 
 1. (apriori) Manually download a release tarball from the [Releases](https://github.com/eyalroz/cuda-api-wrappers/releases) page. Then, configure it with CMake, build it, and install it - to a place visible to cmake when it searches for packages (see [CMAKE_PREFIX_PATH](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)).
 3. (apriori) Use the [conan](https://conan.io) package management tool: Follow the instructions in the Conan tutorial on [Building a simple CMake project using Conan](https://docs.conan.io/2/tutorial/consuming_packages/build_simple_cmake_project.html), but instead of `zlib`, use `cuda-api-wrappers` with the version you're interested in. Briefly, you will need to create an appropriate `conanfile.txt` file; make sure you have a Conan profile; and use `conan install` to target your project's build directory. This will create a [CMake toolchain file](https://cmake.org/cmake/help/latest/variable/CMAKE_TOOLCHAIN_FILE.html) with which you actually build your project.
@@ -137,7 +137,7 @@ Don't you wish you were able to type in, say:
 To be a little more thorough than just an anecdote, let's relate back to some of the design principles listed above:
 
 #### Use of namespaces (and internal classes)
-With this library, you would do `cuda::memory::host::allocate()` instead of `cudaMallocHost()` or `cuMemAllocHost()` and `cuda::device_t::memory::allocate()` instead of setting the current device and then `cudaMalloc()` or `cuMemAlloc()`. Note, though, that `device_t::memory::allocate()` is not a freestanding function but a method of an internal class, so a call to it might be `cuda::device::get(my_device_id).memory.allocate(my_size)`. The compiled version of this supposedly complicated construct will be nothing but the sequence of API calls: `cuInit()`, `cuDevicePrimaryCtxRetain()`, `cuCtxPushCurrent()`, `cuMemAlloc()` etc.
+With this library, you would do `cuda::memory::host::allocate(num_bytes)` instead of calling `cudaMallocHost()` or `cuMemAllocHost()`; and if you want to allocate global device memory, it would be `my_device.memory.allocate(num_bytes)` (or `cuda::device::get(device_id).memory.allocate(num_bytes)`. Or it could be a stand-alone function as well, i.e. `cuda::memory::device::allocate(my_device, num_bytes)`. The compiled version of these calls will be nothing but the sequence of API calls: `cuInit()`, `cuDevicePrimaryCtxRetain()`, `cuCtxPushCurrent()`, `cuMemAlloc()` etc.
 
 #### Adorning POD structs with convenience methods
 The expression
