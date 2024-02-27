@@ -34,15 +34,6 @@
 
 namespace cg = cooperative_groups;
 
-void initOddEvenArr(int *inputArr, unsigned int size)
-{
-    for (unsigned int i=0; i < size; i++)
-    {
-        inputArr[i] = rand() % 50;
-    }
-}
-
-
 /**
  * CUDA kernel device code
  * 
@@ -98,26 +89,28 @@ int main(int argc, const char **argv)
 
     unsigned int arrSize = 1024 * 100;
 
-	auto h_inputArr = cuda::memory::host::make_unique<int[]>(arrSize);
-	auto h_numOfOdds = cuda::memory::host::make_unique<int>();
-	auto h_sumOfOddEvenElems = cuda::memory::host::make_unique<int[]>(2);
-    initOddEvenArr(h_inputArr.get(), arrSize);
-   
-    auto stream = device.create_stream(cuda::stream::async);
+	auto h_inputArr = cuda::memory::host::make_unique_span<int>(arrSize);
+	auto h_numOfOdds = cuda::memory::host::make_unique_span<int>(1);
+	auto h_sumOfOddEvenElems = cuda::memory::host::make_unique_span<int>(2);
+	std::generate(h_inputArr.begin(), h_inputArr.end(), [] { return rand() % 50; });
+
+	auto stream = device.create_stream(cuda::stream::async);
 	// Note: With CUDA 11, we could allocate these asynchronously on the stream
-	auto d_inputArr = cuda::memory::make_unique<int[]>(device, arrSize);
-	auto d_numOfOdds = cuda::memory::make_unique<int>(device);
-	auto d_sumOfOddEvenElems = cuda::memory::make_unique<int[]>(device, 2);
+	auto d_inputArr = cuda::memory::make_unique_span<int>(device, arrSize);
+	auto d_numOfOdds = cuda::memory::make_unique_span<int>(device, 1);
+	auto d_sumOfOddEvenElems = cuda::memory::make_unique_span<int>(device, 2);
 
 	// Note: There's some code repetition here; unique pointers don't also keep track of the allocated size.
 	// Unfortunately, the standard library does not offer an owning dynamically-allocated memory region
 	// abstraction, other than std::vector which is not CUDA-device-friendly
-	stream.enqueue.copy(d_inputArr.get(), h_inputArr.get(), sizeof(int)*arrSize);
-	stream.enqueue.memzero(d_numOfOdds.get(), sizeof(int));
-	stream.enqueue.memzero(d_sumOfOddEvenElems.get(), sizeof(int)*2);
+	stream.enqueue.copy(d_inputArr, h_inputArr);
+	stream.enqueue.memzero(d_numOfOdds);
+	stream.enqueue.memzero(d_sumOfOddEvenElems);
 
 	auto kernel = cuda::kernel::get(device, oddEvenCountAndSumCG);
-	auto launch_config = cuda::launch_config_builder().min_params_for_max_occupancy().build();
+	auto launch_config = cuda::launch_config_builder()
+		.kernel(&kernel)
+		.min_params_for_max_occupancy().build();
 		// Note: While the kernel uses the "cooperative groups" CUDA-C++ headers,
 		// it doesn't involve any inter-block cooperation, so we don't indicate
 		// block cooperation in the launch configuration
@@ -129,19 +122,18 @@ int main(int argc, const char **argv)
 	}
 	std::cout << "\nLaunching " << dims.block.volume() << " blocks with " << dims.grid.volume() << " threads...\n\n";
 
-	stream.enqueue.kernel_launch(kernel, launch_config, d_inputArr.get(), d_numOfOdds.get(), d_sumOfOddEvenElems.get(), arrSize);
+	stream.enqueue.kernel_launch(kernel, launch_config, d_inputArr.data(), d_numOfOdds.data(), d_sumOfOddEvenElems.data(), arrSize);
 
-	cuda::memory::async::copy(h_numOfOdds.get(), d_numOfOdds.get(), sizeof(int), stream);
-	cuda::memory::async::copy(h_sumOfOddEvenElems.get(), d_sumOfOddEvenElems.get(), sizeof(int)*2, stream);
+	cuda::memory::async::copy(h_numOfOdds, d_numOfOdds, stream);
+	cuda::memory::async::copy(h_sumOfOddEvenElems, d_sumOfOddEvenElems, stream);
 
 	stream.synchronize();
 
     std::cout
-		<< "Array size = " << arrSize
-		<< " Num of Odds = " << h_numOfOdds.get()[0]
-		<< " Sum of Odds = " << h_sumOfOddEvenElems.get()[0]
-		<< " Sum of Evens " << h_sumOfOddEvenElems.get()[1]
-		<< "\n";
+		<< "Array size   = " << arrSize << '\n'
+		<< "Num of Odds  = " << h_numOfOdds[0] << '\n'
+		<< "Sum of Odds  = " << h_sumOfOddEvenElems[0] << '\n'
+		<< "Sum of Evens = " << h_sumOfOddEvenElems[1] << '\n';
 
     std::cout << "\nSUCCESS\n"; // Actually, we don't even check the sum, but... that's what NVIDIA wrote.
 
