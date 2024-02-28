@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <vector>
 
 __global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)
 {
@@ -32,21 +33,21 @@ int main()
 	int numElements = 50000;
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	auto h_A = std::unique_ptr<float[]>(new float[numElements]);
-	auto h_B = std::unique_ptr<float[]>(new float[numElements]);
-	auto h_C = std::unique_ptr<float[]>(new float[numElements]);
+	auto h_A = std::vector<float>(numElements);
+	auto h_B = std::vector<float>(numElements);
+	auto h_C = std::vector<float>(numElements);
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(h_A.get(), h_A.get() + numElements, generator);
-	std::generate(h_B.get(), h_B.get() + numElements, generator);
+	std::generate(h_A.begin(), h_A.end(), generator);
+	std::generate(h_B.begin(), h_B.end(), generator);
 
 	auto device = cuda::device::current::get();
 	auto d_A = cuda::memory::make_unique_span<float>(device, numElements);
 	auto d_B = cuda::memory::make_unique_span<float>(device, numElements);
 	auto d_C = cuda::memory::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A, h_A.get());
-	cuda::memory::copy(d_B, h_B.get());
+	cuda::memory::copy(d_A, h_A.data());
+	cuda::memory::copy(d_B, h_B.data());
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(numElements)
@@ -62,11 +63,11 @@ int main()
 		d_A.data(), d_B.data(), d_C.data(), numElements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C);
+	cuda::memory::copy(h_C.data(), d_C);
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (fabs(h_A.get()[i] + h_B.get()[i] - h_C.get()[i]) > 1e-5)  {
+		if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
