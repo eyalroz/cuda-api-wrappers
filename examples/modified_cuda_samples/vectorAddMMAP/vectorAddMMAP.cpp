@@ -242,10 +242,9 @@ int main()
 
 //	std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << std::endl;
 
-	// TODO: When switching to C++14, replace these with std::make_unique
-	auto h_A = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_B = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_C = std::unique_ptr<float[]>(new float[num_elements]);
+	auto h_A = std::vector<float>(num_elements);
+	auto h_B = std::vector<float>(num_elements);
+	auto h_C = std::vector<float>(num_elements);
 
 	auto generator = []() {
 		static std::random_device random_device;
@@ -253,8 +252,8 @@ int main()
 		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
 		return distribution(randomness_generator);
 	};
-	std::generate(h_A.get(), h_A.get() + num_elements, generator);
-	std::generate(h_B.get(), h_B.get() + num_elements, generator);
+	std::generate(h_A.begin(), h_A.end(), generator);
+	std::generate(h_B.begin(), h_B.end(), generator);
 
 	// Allocate vectors in device memory
 	//
@@ -268,14 +267,14 @@ int main()
 	auto d_B = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
 	auto d_C = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
 
-	auto d_A_ptr = d_A.reserved_range.region().start();
-	auto d_B_ptr = d_B.reserved_range.region().start();
-	auto d_C_ptr = d_C.reserved_range.region().start();
+	auto d_A_sp = d_A.reserved_range.region().as_span<float>();
+	auto d_B_sp = d_B.reserved_range.region().as_span<float>();
+	auto d_C_sp = d_C.reserved_range.region().as_span<float>();
 
 //	std::cout << "Done setting up virtual memory" << std::endl;
 
-	cuda::memory::copy(d_A_ptr, h_A.get(), size_in_bytes);
-	cuda::memory::copy(d_B_ptr, h_B.get(), size_in_bytes);
+	cuda::memory::copy(d_A_sp, h_A.data());
+	cuda::memory::copy(d_B_sp, h_A.data());
 
 	// Launch the Vector Add CUDA Kernel
 	auto launch_config = cuda::launch_config_builder()
@@ -288,14 +287,14 @@ int main()
 		<< " blocks of " << launch_config.dimensions.grid.volume() << " threads" << std::endl;
 
 	cuda::launch(kernel, launch_config,
-		d_A_ptr, d_B_ptr, d_C_ptr, num_elements
+		d_A_sp.data(), d_B_sp.data(), d_C_sp.data(), num_elements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C_ptr, size_in_bytes);
+	cuda::memory::copy(h_C.data(), d_C_sp);
 
 //	std::cout << "Checking results...\n\n";
 
-	if (results_are_valid(h_A.get(), h_B.get(), h_C.get(), num_elements)) {
+	if (results_are_valid(h_A.data(), h_B.data(), h_C.data(), num_elements)) {
 		std::cout << "Test PASSED\n";
 		std::cout << "SUCCESS\n";
 	} else {

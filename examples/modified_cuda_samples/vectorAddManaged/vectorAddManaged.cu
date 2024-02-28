@@ -64,7 +64,7 @@ int main()
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (std::fabs(buffer_A.get()[i] + buffer_B.get()[i] - buffer_C.get()[i]) > 1e-5)  {
+		if (std::fabs(buffer_A[i] + buffer_B[i] - buffer_C[i]) > 1e-5f)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
