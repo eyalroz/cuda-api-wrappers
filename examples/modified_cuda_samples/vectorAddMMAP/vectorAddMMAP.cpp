@@ -248,10 +248,9 @@ int main()
 
 //	std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << std::endl;
 
-	// TODO: When switching to C++14, replace these with std::make_unique
-	auto h_A = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_B = std::unique_ptr<float[]>(new float[num_elements]);
-	auto h_C = std::unique_ptr<float[]>(new float[num_elements]);
+	auto h_A = std::vector<float>(num_elements);
+	auto h_B = std::vector<float>(num_elements);
+	auto h_C = std::vector<float>(num_elements);
 
 	auto generator = []() {
 		static std::random_device random_device;
@@ -259,8 +258,8 @@ int main()
 		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
 		return distribution(randomness_generator);
 	};
-	std::generate(h_A.get(), h_A.get() + num_elements, generator);
-	std::generate(h_B.get(), h_B.get() + num_elements, generator);
+	std::generate(h_A.begin(), h_A.end(), generator);
+	std::generate(h_B.begin(), h_B.end(), generator);
 
 	// Allocate vectors in device memory
 	//
@@ -278,8 +277,8 @@ int main()
 	auto d_B_sp = d_B.as_requested().as_span<float>();
 	auto d_C_sp = d_C.as_requested().as_span<float>();
 
-	cuda::memory::copy(d_A_sp, h_A.get());
-	cuda::memory::copy(d_B_sp, h_B.get());
+	cuda::memory::copy(d_A_sp, h_A.data());
+	cuda::memory::copy(d_B_sp, h_B.data());
 
 	// Launch the Vector Add CUDA Kernel
 	auto launch_config = cuda::launch_config_builder()
@@ -295,11 +294,11 @@ int main()
 		d_A_sp.data(), d_B_sp.data(), d_C_sp.data(), num_elements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C_sp);
+	cuda::memory::copy(h_C.data(), d_C_sp);
 
 //	std::cout << "Checking results...\n\n";
 
-	if (results_are_valid(h_A.get(), h_B.get(), h_C.get(), num_elements)) {
+	if (results_are_valid(h_A.data(), h_B.data(), h_C.data(), num_elements)) {
 		std::cout << "Test PASSED\n";
 		std::cout << "SUCCESS\n";
 	} else {
