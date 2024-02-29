@@ -41,6 +41,7 @@
 #include <memory>
 #include <cstring> // for ::std::memset
 #include <vector>
+#include <utility>
 
 namespace cuda {
 
@@ -114,7 +115,13 @@ inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 namespace mapped {
 
 // TODO: Perhaps make this an array of size 2 and use aspects to index it?
-// Or maybe inherit a pair?
+
+template <typename T>
+struct span_pair_t {
+	span<T> host_side, device_side;
+
+	constexpr operator ::std::pair<span<T>, span<T>>() const { return { host_side, device_side }; }
+};
 
 /**
  * @brief A pair of memory regions, one in system (=host) memory and one on a
@@ -123,10 +130,15 @@ namespace mapped {
  * @note this is the mapped-pair equivalent of a `void *`; it is not a
  * proper memory region abstraction, i.e. it has no size information
  */
-struct region_pair {
-	void* host_side;
-	void* device_side;
-	size_t size_in_bytes; /// the allocated number of bytes, common to both sides
+struct region_pair_t {
+	/// identical in size
+	memory::region_t host_side, device_side;
+
+	template <typename T>
+	constexpr span_pair_t<T> as_spans() const
+	{
+		return { host_side.as_span<T>(), device_side.as_span<T>() };
+	}
 };
 
 } // namespace mapped
@@ -2017,17 +2029,29 @@ namespace mapped {
 template <typename T>
 inline T* device_side_pointer_for(T* host_memory_ptr)
 {
+	auto unconsted_host_mem_ptr = const_cast<typename std::remove_const<T>::type *>(host_memory_ptr);
 	device::address_t device_side_ptr;
 	auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
 	auto status = cuMemHostGetDevicePointer(
 		&device_side_ptr,
-		host_memory_ptr,
+		unconsted_host_mem_ptr,
 		get_device_pointer_flags);
 	throw_if_error_lazy(status,
 		"Failed obtaining the device-side pointer for host-memory pointer "
 		+ cuda::detail_::ptr_as_hex(host_memory_ptr) + " supposedly mapped to device memory");
 	return as_pointer(device_side_ptr);
 }
+
+inline region_t device_side_region_for(region_t region)
+{
+	return { device_side_pointer_for(region.start()), region.size() };
+}
+
+inline const_region_t device_side_region_for(const_region_t region)
+{
+	return { device_side_pointer_for(region.start()), region.size() };
+}
+
 
 namespace detail_ {
 
@@ -2040,28 +2064,29 @@ namespace detail_ {
  * the region pair
  * @return the allocated pair (with both regions being non-null)
  */
-inline region_pair allocate_in_current_context(
+inline region_pair_t allocate_in_current_context(
 	context::handle_t   current_context_handle,
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	region_pair allocated {};
+	region_pair_t allocated {};
 	// The default initialization is unnecessary, but let's play it safe
-	allocated.size_in_bytes = size_in_bytes;
 	auto flags = cuda::memory::detail_::make_cuda_host_alloc_flags(options);
-	auto status = cuMemHostAlloc(&allocated.host_side, size_in_bytes, flags);
-	if (is_success(status) && (allocated.host_side == nullptr)) {
+	void* allocated_ptr;
+	auto status = cuMemHostAlloc(&allocated_ptr, size_in_bytes, flags);
+	if (is_success(status) && (allocated_ptr == nullptr)) {
 		// Can this even happen? hopefully not
 		status = static_cast<status_t>(status::named_t::unknown);
 	}
 	throw_if_error_lazy(status,
 		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)
 		+ " bytes of global memory in " + context::detail_::identify(current_context_handle));
-	allocated.device_side = device_side_pointer_for(allocated.host_side);
+	allocated.host_side = { allocated_ptr, size_in_bytes };
+	allocated.device_side = device_side_region_for(allocated.host_side);
 	return allocated;
 }
 
-inline region_pair allocate(
+inline region_pair_t allocate(
 	context::handle_t   context_handle,
 	size_t              size_in_bytes,
 	allocation_options  options)
@@ -2088,7 +2113,7 @@ inline void free(void* host_side_pair)
  * @param size_in_bytes amount of memory to allocate (in each of the regions)
  * @param options see @ref allocation_options
  */
-region_pair allocate(
+region_pair_t allocate(
 	cuda::context_t&    context,
 	size_t              size_in_bytes,
 	allocation_options  options);
@@ -2101,7 +2126,7 @@ region_pair allocate(
  * @param size_in_bytes amount of memory to allocate (in each of the regions)
  * @param options see @ref allocation_options
  */
-region_pair allocate(
+region_pair_t allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
 	allocation_options  options = allocation_options{});
@@ -2113,9 +2138,9 @@ region_pair allocate(
  * @param pair a pair of regions allocated with @ref allocate (or with
  * the C-style CUDA runtime API directly)
  */
-inline void free(region_pair pair)
+inline void free(region_pair_t pair)
 {
-	detail_::free(pair.host_side);
+	detail_::free(pair.host_side.data());
 }
 
 /**

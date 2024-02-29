@@ -475,7 +475,7 @@ inline region_t allocate(size_t num_bytes)
 
 namespace mapped {
 
-inline region_pair allocate(
+inline region_pair_t allocate(
 	cuda::device_t&     device,
 	size_t              size_in_bytes,
 	allocation_options  options)
@@ -485,7 +485,7 @@ inline region_pair allocate(
 }
 
 
-inline region_pair allocate(
+inline region_pair_t allocate(
 	cuda::context_t&    context,
 	size_t              size_in_bytes,
 	allocation_options  options)
