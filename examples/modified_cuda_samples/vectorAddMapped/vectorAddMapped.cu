@@ -41,13 +41,12 @@ int main()
 	auto buffer_B = cuda::memory::mapped::allocate(device, size);
 	auto buffer_C = cuda::memory::mapped::allocate(device, size);
 
-	auto h_A = (float*) buffer_A.host_side; auto d_A = (float*) buffer_A.device_side;
-	auto h_B = (float*) buffer_B.host_side; auto d_B = (float*) buffer_B.device_side;
-	auto h_C = (float*) buffer_C.host_side; auto d_C = (float*) buffer_C.device_side;
+	auto a = buffer_A.as_spans<float>();
+	auto b = buffer_B.as_spans<float>();
+	auto c = buffer_C.as_spans<float>();
 
 	auto generator = []() { return rand() / (float) RAND_MAX; };
-	std::generate(h_A, h_A + numElements, generator);
-	std::generate(h_B, h_B + numElements, generator);
+	std::generate(a.host_side.begin(), b.host_side.end(), generator);
 
 	// Launch the Vector Add CUDA Kernel
 
@@ -62,7 +61,7 @@ int main()
 
 	cuda::launch(
 		vectorAdd, launch_config,
-		d_A, d_B, d_C, numElements);
+		a.device_side.data(), b.device_side.data(), c.device_side.data(), numElements);
 
 	// Synchronization is necessary here despite the synchronous nature of the default stream -
 	// since the copying-back of data is not something we've waited for
@@ -71,7 +70,7 @@ int main()
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
-		if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)  {
+		if (fabs(a.host_side[i] + b.host_side[i] - c.host_side[i]) > 1e-5)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
