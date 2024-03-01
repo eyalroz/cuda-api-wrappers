@@ -241,7 +241,6 @@ public: // inner classes
 		global_memory_type(device::id_t device_id, context::handle_t context_handle)
 			: device_id_(device_id), context_handle_(context_handle)
 		{}
-		///@endcond
 
 		device_t associated_device() const;
 

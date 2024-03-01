@@ -16,7 +16,9 @@ namespace cuda {
 // TODO: Perhaps move this down into the device namespace ?
 namespace memory {
 
+///@cond
 class physical_allocation_t;
+///@endcond
 
 namespace physical_allocation {
 

@@ -22,7 +22,7 @@ namespace kernel {
 
 ///@cond
 class apriori_compiled_t;
-///@nocond
+///@endcond
 
 namespace apriori_compiled {
 

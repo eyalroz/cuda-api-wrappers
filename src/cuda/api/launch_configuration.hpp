@@ -20,7 +20,9 @@
 
 namespace cuda {
 
+///@cond
 class kernel_t;
+///@endcond
 
 namespace detail_ {
 
