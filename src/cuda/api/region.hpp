@@ -9,10 +9,6 @@
 #ifndef CUDA_API_WRAPPERS_REGION_HPP_
 #define CUDA_API_WRAPPERS_REGION_HPP_
 
-#if (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
-#error "The CUDA API headers can only be compiled with C++11 or a later version of the C++ language standard"
-#endif
-
 #include "types.hpp"
 
 namespace cuda {
