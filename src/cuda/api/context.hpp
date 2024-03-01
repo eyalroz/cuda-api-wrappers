@@ -211,9 +211,9 @@ inline void synchronize(const context_t& context);
  * @note By default this class has RAII semantics, i.e. it creates a
  * context on construction and destroys it on destruction, and isn't merely
  * an ephemeral wrapper one could apply and discard; but this second kind of
- * semantics is also supported, through the @ref context_t::holds_refcount_unit_ field.
+ * semantics is also supported, through the @ref context_t::owning_ field.
  *
- * @note A context is a specific to a device; see, therefore, also @ref device_t .
+ * @note A context is a specific to a device; see, therefore, also {@ref cuda::device_t}.
  * @note This class is a "reference type", not a "value type". Therefore, making changes
  * to properties of the context is a const-respecting operation on this class.
  */
@@ -228,9 +228,9 @@ public: // types
 public: // inner classes
 
 	/**
-	 * @brief A class to create a faux member in a @ref device_t, in lieu of an in-class
+	 * @brief A class to create a faux member in a @ref context_t, in lieu of an in-class
 	 * namespace (which C++ does not support); whenever you see a function
-	 * `my_dev.memory::foo()`, think of it as a `my_dev::memory::foo()`.
+	 * `my_context.memory::foo()`, think of it as a `my_dev::memory::foo()`.
 	 */
 	class global_memory_type {
 	protected: // data members
@@ -492,7 +492,7 @@ public: // methods which mutate the context, but not its wrapper
 	 * Gets the synchronization policy to be used for threads synchronizing
 	 * with this CUDA context.
 	 *
-	 * @note see @ref host_thread_sync_scheduling_policy_t
+	 * @note see @ref context::host_thread_sync_scheduling_policy_t
 	 * for a description of the various policies.
 	 */
 	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
@@ -664,6 +664,7 @@ public: // operators
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  handle_;
+	/// When true, the object is a valud type, and the context must be destroyed on destruction
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered

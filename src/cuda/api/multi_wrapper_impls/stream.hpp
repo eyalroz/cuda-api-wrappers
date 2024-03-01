@@ -5,7 +5,7 @@
  * and which regard streams. Specifically:
  *
  * 1. Functions in the `cuda::stream` namespace.
- * 2. Methods of @ref `cuda::stream_t` and possibly some relates classes.
+ * 2. Methods of @ref cuda::stream_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_STREAM_HPP_

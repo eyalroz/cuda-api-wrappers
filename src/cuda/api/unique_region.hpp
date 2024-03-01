@@ -18,7 +18,7 @@ namespace cuda {
 namespace memory {
 
 /**
- * A class for holding a @ref `region_t` of memory owned "uniquely" by
+ * A class for holding a @ref region_t of memory owned "uniquely" by
  * its creator - similar to how `::std::unique_ptr` holds a uniquely-
  * owned pointer.
  *
@@ -127,11 +127,12 @@ public:
         return released;
     }
 
-    /** @brief Replace the stored pointer.
+    /** @brief Replace the memory region held by this object.
      *
-     * @param ptr  The new pointer to store.
+     * @param region  The new region to maintain with unique ownership.
      *
-     * The deleter will be invoked if a pointer is already owned.
+     * @note The deleter is invoked on the previously-held region, if
+     * one exists.
      */
     void reset(region_t region = region_t{})
     {
@@ -163,35 +164,33 @@ inline unique_region make_unique_region(const context::handle_t context_handle, 
 } // namespace detail_
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
- * device-global memory.
+ * @brief Allocate an array in device-global memory and return an owning class for it
  *
- * @note CUDA's runtime API always has a current device; but -
- * there is not necessary a current context; so a primary context
- * for a device may be created through this call.
- *
- * @tparam T  an array type; _not_ the type of individual elements
- *
- * @param context       The CUDA device context in which to make the
- *                      allocation.
- * @param num_elements  the number of elements to allocate
- *
- * @return an ::std::unique_ptr pointing to the constructed T array
-*/
-inline unique_region make_unique_region(const context_t& context, size_t num_bytes);
-inline unique_region make_unique_region(const device_t& device, size_t num_bytes);
-inline unique_region make_unique_region(size_t num_bytes);
+ * @param num_bytes  the size in bytes of the allocated region
+ */
+///@{
+/**
+ * @param device     The CUDA device in whose global memory to make the allocation.
+ */
+unique_region make_unique_region(const context_t& context, size_t num_bytes);
+/**
+ * @param context    The CUDA context in which to make the allocation.
+ */
+unique_region make_unique_region(const device_t& device, size_t num_bytes);
+
+unique_region make_unique_region(size_t num_bytes);
+///}@
 
 } // namespace device
 
 
-/// See @ref `device::make_unique_region(const context_t& context, size_t num_elements)`
+/// See @ref device::make_unique_region(const context_t& context, size_t num_elements)
 inline device::unique_region make_unique_region(const context_t& context, size_t num_elements)
 {
 	return device::make_unique_region(context, num_elements);
 }
 
-/// See @ref `device::make_unique_region(const device_t& device, size_t num_elements)`
+/// See @ref device::make_unique_region(const device_t& device, size_t num_elements)
 inline device::unique_region make_unique_region(const device_t& device, size_t num_elements)
 {
 	return device::make_unique_region(device, num_elements);

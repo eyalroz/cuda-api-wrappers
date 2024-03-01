@@ -57,7 +57,7 @@ namespace detail_ {
 
 inline void validate_shared_mem_compatibility(
 	const device_t &device,
-	memory::shared::size_t shared_mem_size)
+	memory::shared::size_t shared_mem_size) noexcept(false)
 {
 	if (shared_mem_size == 0) { return; }
 	memory::shared::size_t max_shared = device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN);
@@ -76,7 +76,7 @@ inline void validate_compatibility(
 	const device::id_t            device_id,
 	memory::shared::size_t        shared_mem_size,
 	bool                          cooperative_launch,
-	optional<grid::dimensions_t>  block_cluster_dimensions)
+	optional<grid::dimensions_t>  block_cluster_dimensions) noexcept(false)
 {
 	auto device = device::get(device_id);
 	if (not cooperative_launch or device.supports_block_cooperation()) {
@@ -110,7 +110,10 @@ inline void validate_compatibility(
 }
 
 template <typename Dims>
-inline void validate_any_dimensions_compatibility(const device_t &device, Dims dims, Dims maxima, const char* kind)
+inline void validate_any_dimensions_compatibility(
+	const device_t &device, Dims dims,
+	Dims maxima,
+	const char* kind) noexcept(false)
 {
 	auto device_id = device.id();
 	auto check =
@@ -129,7 +132,7 @@ inline void validate_any_dimensions_compatibility(const device_t &device, Dims d
 
 inline void validate_block_dimension_compatibility(
 	const device_t &device,
-	grid::block_dimensions_t block_dims)
+	grid::block_dimensions_t block_dims) noexcept(false)
 {
 	auto max_block_size = device.maximum_threads_per_block();
 	auto volume = block_dims.volume();
@@ -149,7 +152,7 @@ inline void validate_block_dimension_compatibility(
 
 inline void validate_grid_dimension_compatibility(
 	const device_t &device,
-	grid::block_dimensions_t block_dims)
+	grid::block_dimensions_t block_dims) noexcept(false)
 {
 	auto maxima = grid::dimensions_t{
 		static_cast<grid::dimension_t>(device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X)),
@@ -373,7 +376,7 @@ void enqueue_launch(
 } // namespace detail_
 
 template<typename Kernel, typename... KernelParameters>
-inline void launch(
+void launch(
 	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters)

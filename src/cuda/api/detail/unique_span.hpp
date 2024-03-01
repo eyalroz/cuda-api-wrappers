@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains an implementation of an std::dynarray-like class, @ref `cuda::unique_span`
+ * @brief Contains the class @ref cuda::unique_span
  *
  * @note There is no CUDA-specific code in this file; the class is usable entirely independently
  * of the CUDA APIs and GPUs in general

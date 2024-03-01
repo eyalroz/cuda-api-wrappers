@@ -1,11 +1,10 @@
 /**
  * @file
  *
- * @brief Contains the class @ref `launch_configuration_t`, an enhanced child class of the
- * CUlaunchConfig struct of CUDA 12.x and later, with an emulation of it for earlier CUDA
- * versions.
+ * @brief Contains the class @ref cuda::launch_configuration_t and some supporting code.
  *
- * @note Launch configurations are  used mostly in @ref kernel_launch.hpp . 
+ * @note Launch configurations are used mostly in `kernel_launch.hpp` , and can be built
+ * more easily using @ref launch_config_builer_t from `launch_config_builder.hpp`.
  */
 
 #pragma once
@@ -21,6 +20,8 @@
 namespace cuda {
 
 ///@cond
+class device_t;
+class event_t;
 class kernel_t;
 ///@endcond
 
@@ -92,7 +93,7 @@ struct launch_configuration_t {
 	 * have issued the `griddepcontrol.launch_dependents` instruction (a.k.a. the
 	 * `cudaTriggerProgrammaticLaunchCompletion()` function).
 	 *
-	 * @note This is a non-owning pointer; no @ref `event_t` is allocated or released
+	 * @note This is a non-owning pointer; no @ref event_t is allocated or released
 	 * while using this class. Also, the actual CUDA event must be valid and not be reused
 	 * or destroyed until the kernel concludes and the event fires.
 	 *

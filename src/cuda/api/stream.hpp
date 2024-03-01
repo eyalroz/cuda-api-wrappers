@@ -164,17 +164,17 @@ void enqueue_function_call(const stream_t& stream, Function function, void * arg
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new stream is _not_ created.
  *
- * @param id ID of the device for which the stream is defined
+ * @param device_id ID of the device for which the stream is defined
  * @param context_handle handle of the context in which the stream was created
  * @param stream_handle handle of the pre-existing stream
  * @param take_ownership When set to `false`, the stream
- * will not be destroyed along with the wrapper; use this setting
- * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to `true`,
- * the proxy class will act as it does usually, destroying the stream
- * when being destructed itself.
+ *     will not be destroyed along with the wrapper; use this setting
+ *     when temporarily working with a stream existing irrespective of
+ *     the current context and outlasting it. When set to `true`,
+ *     the proxy class will act as it does usually, destroying the stream
+ *     when being destructed itself.
  * @return an instance of the stream proxy class, with the specified
- * device-stream combination.
+ *     device-stream combination.
  */
 stream_t wrap(
 	device::id_t       device_id,
@@ -294,7 +294,7 @@ public: // other non-mutators
 	}
 
 	/**
-	 * The opposite of @ref has_work()
+	 * The opposite of @ref has_work_remaining()
 	 *
 	 * @return true if there is no work pending, false if all
 	 * previously-scheduled work has been completed
@@ -306,25 +306,6 @@ public: // other non-mutators
 	 * API names this functionality
 	 */
 	bool query() const { return is_clear(); }
-
-
-protected: // static methods
-
-	/**
-	 * @brief A function to @ref `host_function_launch_adapter`, for use with the old-style CUDA Runtime API call,
-	 * which passes more arguments to the invokable - and calls the host function even on device failures.
-	 *
-	 * @param stream_handle the ID of the stream for which a host function call was triggered - this
-	 * will be passed by the CUDA runtime
-	 * @note status indicates the status the CUDA status when the host function call is triggered; anything
-	 * other than @ref `cuda::status::success` means there's been a device error previously - but
-	 * in that case, we won't invoke the invokable, as such execution is deprecated; see:
-	 * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html#group__CUDART__STREAM
-	 * @param device_id_and_invokable a pair-value, containing the ID of the device to which the stream launching
-	 * the host function call is associated, as well as the invokable callback which was passed to
-	 * @ref enqueue_t::host_function_call, and which the programmer actually wants to be called.
-	 */
-
 
 public: // mutators
 
@@ -458,8 +439,8 @@ public: // mutators
 		/**
 		 * Have an event 'fire', i.e. marked as having occurred,
 		 * after all hereto-scheduled work on this stream has been completed.
-		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
-		 * for continued execution.
+		 * Threads which are @ref waiting on the event (via the @ref wait method) will
+		 * become available for continued execution.
 		 *
 		 * @param existing_event A pre-created CUDA event (for the stream's device); any existing
 		 * "registration" of the event to occur elsewhere is overwritten.
@@ -472,7 +453,7 @@ public: // mutators
 		/**
 		 * Have an event 'fire', i.e. marked as having occurred,
 		 * after all hereto-scheduled work on this stream has been completed.
-		 * Threads which are @ref stream_t::wait_on() 'ing the event will become available
+		 * Threads which are waiting on the event (via the @ref wait method) will become available
 		 * for continued execution.
 		 *
 		 * @note the parameters are the same as for @ref event::create()
@@ -623,7 +604,7 @@ public: // mutators
 		 *
 		 * @tparam T the value to schedule a setting of. Can only be a raw
 		 * uint32_t or uint64_t !
-		 * @param address location in global device memory to set at the appropriate time.
+		 * @param ptr location in global device memory to set at the appropriate time.
 		 * @param value the value to write to @p address.
 		 * @param with_memory_barrier if false, allows reordering of this write operation
 		 * with writes scheduled before it.
@@ -681,9 +662,6 @@ public: // mutators
 		/**
 		 * Guarantee all remote writes to the specified address are visible to subsequent operations
 		 * scheduled on this stream.
-		 *
-		 * @param address location the previous remote writes to which need to be visible to
-		 * subsequent operations.
 		 */
 		void flush_remote_writes() const
 		{
@@ -989,20 +967,21 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
  *
  * @param device the device on which a stream is to be created
  * @param synchronizes_with_default_stream if true, no work on this stream
- * will execute concurrently with work from the default stream (stream 0)
+ *     will execute concurrently with work from the default stream (stream 0)
  * @param priority priority of tasks on the stream, relative to other streams,
- * for execution scheduling; lower numbers represent higher properties. Each
- * device has a range of priorities, which can be obtained using
- * @ref device_t::stream_priority_range() .
- * @return The newly-created stream
+ *     for execution scheduling; lower numbers represent higher properties;
+ *     each device has a range of priorities, which can be obtained using
+ *     @ref device_t::stream_priority_range()
+ * @param hold_pc_refcount_unit when the event's context is a device's primary
+ *     context, this controls whether that context must be kept active while the
+ *     event continues to exist
+  * @return The newly-created stream
  */
 ///@{
 
 /**
  * @brief Create a new stream (= queue) in the primary execution context
  * of a CUDA device.
- *
- * @param device the device on which a stream is to be created
  */
 stream_t create(
 	const device_t&   device,

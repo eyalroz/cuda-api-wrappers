@@ -4,23 +4,26 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard devices, including primary contexts. Specifically:
  *
- * 1. Functions in the `cuda::device` namespace.
- * 2. Methods of @ref `cuda::device_t` and possibly some relates classes.
+ * 1. Functions in the cuda::device namespace.
+ * 2. Methods of @ref cuda::device_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_DEVICE_HPP_
 #define MULTI_WRAPPER_IMPLS_DEVICE_HPP_
 
 #include "../device.hpp"
+#include "../error.hpp"
 #include "../event.hpp"
 #include "../kernel_launch.hpp"
 #include "../stream.hpp"
 #include "../primary_context.hpp"
-#include "../kernel.hpp"
-#include "../kernels/apriori_compiled.hpp"
 #include "../current_context.hpp"
 #include "../current_device.hpp"
 #include "../peer_to_peer.hpp"
+
+#include "../types.hpp"
+
+#include <string>
 
 namespace cuda {
 
@@ -155,7 +158,7 @@ inline device::primary_context_t device_t::primary_context(bool hold_pc_refcount
 		//    ensured this has already happened for this object?
 		// A: Because an unscoped primary_context_t needs its own refcount
 		//    unit (e.g. in case this object gets destructed but the
-		//    primary_context_t is still alive.
+		//    primary_context_t is still alive).
 	}
 	return device::primary_context::detail_::wrap(id_, pc_handle, hold_pc_refcount_unit);
 }
@@ -167,14 +170,14 @@ inline void synchronize(const device_t& device)
 	context::current::detail_::synchronize(device.id(), pc.handle());
 }
 
-template <typename KernelFunction, typename ... KernelParameters>
+template <typename Kernel, typename ... KernelParameters>
 void device_t::launch(
-	KernelFunction kernel_function, launch_configuration_t launch_configuration,
-	KernelParameters ... parameters) const
+	Kernel                  kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters...     parameters) const
 {
 	auto pc = primary_context();
-	pc.default_stream().enqueue.kernel_launch(
-	kernel_function, launch_configuration, parameters...);
+	pc.default_stream().enqueue.kernel_launch(kernel, launch_configuration, parameters...);
 }
 
 inline context_t device_t::create_context(

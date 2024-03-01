@@ -514,39 +514,60 @@ public:
 		return id_;
 	}
 
+	/**
+	 * Obtain a wrapper for the (always-existing) default stream within
+	 * the device' primary context.
+	 *
+	 * @param hold_primary_context_refcount_unit when true, the returned stream
+	 *     wrapper will keep the device' primary context in existence during
+	 *     its lifetime.
+	 */
 	stream_t default_stream(bool hold_primary_context_refcount_unit = false) const;
 
-	/**
-	 * See @ref cuda::stream::create()
-	 */
+	/// See @ref cuda::stream::create()
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
 		stream::priority_t  priority = cuda::stream::default_priority) const;
 
-	/**
-	 * See @ref cuda::event::create()
-	 */
+	/// See @ref cuda::event::create()
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
 		bool interprocess       = event::not_interprocess);
 
+	/// See @ref cuda::context::create()
 	context_t create_context(
 		context::host_thread_sync_scheduling_policy_t   sync_scheduling_policy = context::heuristic,
 		bool                                            keep_larger_local_mem_after_resize = false) const;
 
 #if CUDA_VERSION >= 11020
 
+	/// See @ref cuda::memory::pool::create()
 	template <memory::pool::shared_handle_kind_t Kind = memory::pool::shared_handle_kind_t::no_export>
 	memory::pool_t create_memory_pool() const;
 
 #endif
 
-	template<typename KernelFunction, typename ... KernelParameters>
+	/**
+	 * Launch a kernel on the default stream of the device' primary context
+	 *
+	 * @tparam Kernel May be either a plain function type (for a `__global__` function
+	 *     accessible to the translation unit, or (a reference to) any subclass of
+	 * `   `cuda::kernel_t`.
+	 * @param kernel_function
+	 *     the kernel to launch; may be either a (`__global__`) function pointer,
+	 *     or a kernel proxy class.
+	 * @param launch_configuration
+	 *     the configuration with which to launch the kernel;
+	 * @param arguments
+	 *     the arguments with which to launch @p kernel (but note that references
+	 *     are not maintained).
+	 */
+	template<typename Kernel, typename ... KernelParameters>
 	void launch(
-		KernelFunction          kernel_function,
+		Kernel                  kernel,
 		launch_configuration_t  launch_configuration,
-		KernelParameters...     parameters) const;
+		KernelParameters...     arguments) const;
 
 	/**
 	 * Determines the range of possible priorities for streams on this device.

@@ -99,8 +99,7 @@ inline primary_context_t wrap(
 } // namespace primary_context
 
 /**
- * A class for holding the primary context of a CUDA device (@ref device_t).
- *
+ * A class for holding the primary context of a CUDA device.
  *
  * @note Since the runtime API tends to make such contexts active and not
  * let them go inactive very easily, this class assumes the primary context

@@ -5,7 +5,7 @@
  * and which regard modules. Specifically:
  *
  * 1. Functions in the `cuda::module` namespace.
- * 2. Methods of @ref `cuda::module_t` and possibly some relates classes.
+ * 2. Methods of @ref cuda::module_t and possibly some relates classes.
  * 3. The `context_t::create_module()` methods; see issue #320 on the issue tracker.
  */
 #pragma once

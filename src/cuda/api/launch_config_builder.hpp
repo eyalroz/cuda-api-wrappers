@@ -1,9 +1,9 @@
 /**
  * @file
  *
- * @brief Contains the @ref `cuda::launch_config_builder_t` class definition
+ * @brief Contains the @ref cuda::launch_config_builder_t class definition
  *
- * @note Launch configurations are used mostly in @ref `kernel_launch.hpp`.
+ * @note Launch configurations are used mostly in {@ref kernel_launch.hpp}.
  */
 
 #pragma once
@@ -11,11 +11,22 @@
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 
 #include "launch_configuration.hpp"
-#include "kernel.hpp"
+#include "kernel_launch.hpp"
 #include "device.hpp"
 #include "types.hpp"
 
 namespace cuda {
+
+namespace detail_ {
+
+inline void validate_shared_mem_size_compatibility(const kernel_t& kernel_ptr, memory::shared::size_t shared_mem_size) noexcept(false);
+inline void validate_shared_mem_compatibility(const device_t &device, memory::shared::size_t shared_mem_size) noexcept(false);
+inline void validate_grid_dimension_compatibility(const device_t &device, grid::block_dimensions_t block_dims) noexcept(false);
+inline void validate_compatibility(const kernel_t& kernel, launch_configuration_t launch_config) noexcept(false);
+inline void validate_compatibility(const device::id_t, memory::shared::size_t, bool, optional<grid::dimensions_t>) noexcept(false);
+
+} // namespace detail_
+
 
 namespace grid {
 
@@ -62,6 +73,19 @@ static void validate_all_dimensions_compatibility(
 
 #endif // NDEBUG
 
+/**
+ * A convenience class for gradually constructing a @ref launch_configuration_t instance,
+ * as per the "builder pattern".
+ *
+ * @note with a constructed class, repeatedly invoke a member function to add settings -
+ *     the result of the application is the same builder, so you can combine all settings
+ *     into a single expression, then finally invoke @ref launch_config_builder_t::build to
+ *     finalize the build and obtain the @ref launch_configuration_t object.
+ *
+ * @note This class will perform some validation of the settings you make - but do not
+ *     assume it guarantees validity. Also, the validations may be either eager (when making
+ *     a setting) or lazy (when finally building the launch configuration).
+ */
 class launch_config_builder_t {
 protected:
 	memory::shared::size_t  get_dynamic_shared_memory_size(grid::block_dimensions_t block_dims) const

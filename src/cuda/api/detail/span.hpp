@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains an implementation of an std::span-like class, @ref `cuda::span`
+ * @brief Contains an implementation of an std::span-like class, @ref cuda::span
  *
  * @note When compiling with C++20 or later, the actual std::span is used instead
  */

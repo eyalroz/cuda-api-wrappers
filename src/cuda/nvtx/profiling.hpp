@@ -360,10 +360,8 @@ inline void name(::std::thread::id host_thread_id, const char* name)
  * @brief Have the profiler refer to the current thread, or another host
  * thread, using a specified string identifier (rather than its numeric ID).
  *
- * @param[in] thread_id  A native numeric ID of the thread; on Linux systems
- * this would be a `pthread_t`, and on Windows - a DWORD (as is returned,
- * for example, by `GetCurrentThreadId()`)
- * @param[in] name The string identifier to use for the specified thread
+ * @param[in] host_thread  A C++-recognized thread to name in profiling results
+ * @param[in] name The name to use for the specified thread
  */
 ///@{
 template <typename CharT>

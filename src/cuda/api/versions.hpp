@@ -17,24 +17,34 @@
 
 namespace cuda {
 
+/**
+ * A combination of the major and minor version numbers for a CUDA release
+ * into a single integer, e.g. CUDA 11.3 is represented by the combined
+ * version number 11300. Se also @ref version_t.
+ */
 using combined_version_t = int;
 
 /**
- * CUDA Runtime version
+ * A structure representing a CUDA release version
  *
- * @note not to be confused with @ref device::compute_capability_t !
+ * @note not to be confused with @ref device::compute_capability_t , nor
+ * with a CUDA driver version!
  */
 struct version_t {
+	///@cond
 	int major;
 	int minor;
+	///@endcond
 
+	/// Parse the combined single-number representation, separating it
 	static version_t from_single_number(combined_version_t combined_version) noexcept
 	{
 		return { combined_version / 1000, (combined_version % 100) / 10 };
 	}
 
+	///@cond
 	operator ::std::pair<int, int>() const noexcept { return { major, minor }; }
-
+	///@endcond
 };
 
 ///@cond
@@ -129,12 +139,11 @@ inline version_t make(int major, int minor) noexcept
  *
  * @return If an nVIDIA GPU driver is installed on this system,
  * the maximum CUDA version it supports is returned.
- * If no version is supported, @ref version_numbers::none() is returned.
+ * If no version is supported, @ref none() is returned.
  */
 inline version_t driver() {
 	combined_version_t version;
 	auto status = cuDriverGetVersion(&version);
-		// The same value would be returned using cuDriverGetVersion()
 	throw_if_error_lazy(status, "Failed obtaining the CUDA driver version");
 	return version_t::from_single_number(version);
 }

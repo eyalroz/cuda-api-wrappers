@@ -12,6 +12,7 @@
 
 #include "primary_context.hpp"
 #include "current_context.hpp"
+#include "device_properties.hpp"
 #include "error.hpp"
 #include "types.hpp"
 
@@ -39,15 +40,18 @@ using shared_memory_size_determiner_t = size_t (CUDA_CB *)(int block_size);
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new kernel is _not_ somehow created.
  *
- * @param id Device on which the texture is located
- * @param context_handle Handle of the context in which the kernel was created or added
- * @param handle raw CUDA driver handle for the kernel
+ * @param device_id Device of the context in which the kernel was created
+ * @param context_handle Handle of the context in which the kernel was created
+ * @param handle Raw CUDA driver handle for the kernel
+ * @param hold_pc_refcount_unit when the event's context is a device's primary
+ *     context, this controls whether that context must be kept active while the
+ *     event continues to exist.
  * @return a wrapper object associated with the specified kernel
  */
 kernel_t wrap(
 	device::id_t       device_id,
-	context::handle_t  context_id,
-	kernel::handle_t   f,
+	context::handle_t  context_handle,
+	kernel::handle_t   handle,
 	bool               hold_primary_context_refcount_unit = false);
 
 namespace detail_ {
@@ -115,12 +119,18 @@ inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attri
 class kernel_t {
 
 public: // getters
+
+	/// Get (a proxy for) the context in which this kernel is defined
 	context_t context() const noexcept;
+	/// Get (a proxy for) the device for (a context of) which this kernel is defined
 	device_t device() const noexcept;
 
+	/// Get the id of the device for (a context of) which this kernel is defined
 	device::id_t device_id() const noexcept { return device_id_; }
+	/// Get the raw handle of the context in which this kernel is defined
 	context::handle_t context_handle() const noexcept { return context_handle_; }
 #if CAN_GET_APRIORI_KERNEL_HANDLE
+	/// Get the raw (intra-context) CUDA handle for this kernel
 	kernel::handle_t handle() const noexcept { return handle_; }
 #else
 	kernel::handle_t handle() const
@@ -375,11 +385,11 @@ namespace kernel {
 
 inline kernel_t wrap(
 	device::id_t       device_id,
-	context::handle_t  context_id,
-	kernel::handle_t   f,
+	context::handle_t  context_handle,
+	kernel::handle_t   handle,
 	bool hold_primary_context_refcount_unit)
 {
-	return kernel_t{ device_id, context_id, f, hold_primary_context_refcount_unit };
+	return kernel_t{device_id, context_handle, handle, hold_primary_context_refcount_unit };
 }
 
 inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute)
