@@ -32,8 +32,10 @@
 
 namespace cuda {
 
+///@cond
 class device_t;
 class event_t;
+///@endcond
 
 namespace memory {
 
