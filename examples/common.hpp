@@ -27,11 +27,13 @@ void report_context_stack(const std::string& prefix);
 #include <iomanip>
 #include <numeric>
 
+#if __GNUC__
 template <typename T>
 [[gnu::warning("type printed for your convenience")]]
 bool your_type_was_() { return true; }
 
 #define print_type_of(_x) your_type_was_<decltype(_x)>()
+#endif
 
 const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 {
