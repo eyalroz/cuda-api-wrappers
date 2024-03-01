@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Implementations of @ref `make_unique_span()` functions
+ * @brief Implementations of utility functions related to the @ref cuda::unique_span class
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_UNIQUE_SPAN_HPP_
@@ -13,6 +13,7 @@
 #include "../primary_context.hpp"
 #include "../memory.hpp"
 #include "../types.hpp"
+#include "../device.hpp"
 
 namespace cuda {
 

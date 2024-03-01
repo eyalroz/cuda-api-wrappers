@@ -49,7 +49,6 @@ namespace bpstd { // back-port std
   ///
   /// This is an implementation of the C++17 string_view proposal
   ///
-  /// \ingroup core
   ////////////////////////////////////////////////////////////////////////////
   template<
     typename CharT,

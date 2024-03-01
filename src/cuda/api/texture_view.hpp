@@ -51,14 +51,13 @@ struct descriptor_t : public CUDA_TEXTURE_DESC {
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new texture view is _not_ created.
  *
- * @param id device on which the texture is located
  * @param context_handle handle of the context in which the texture_view was created
  * @param handle raw CUDA API handle for the texture view
  * @param take_ownership when true, the wrapper will have the CUDA Runtime API destroy
  * the texture view when it destructs (making an "owning" texture view wrapper;
  * otherwise, it is assume that some other code "owns" the texture view and will
  * destroy it when necessary (and not while the wrapper is being used!)
- * @return a  wrapper object associated with the specified texture view
+ * @return a proxy object associated with the specified texture view
  */
 inline texture_view wrap(
 	context::handle_t      context_handle,
@@ -180,4 +179,4 @@ inline texture_view wrap(
 
 } // namespace cuda
 
-#endif  // CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
+#endif // CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP

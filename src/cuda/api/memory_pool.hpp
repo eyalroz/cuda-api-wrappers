@@ -254,7 +254,10 @@ class imported_ptr_t;
 
 } // namespace pool
 
-
+/**
+ * A proxy class for CUDA memory pools, from which one can allocate memory without
+ * "draining" the memory available to other pools.
+ */
 class pool_t {
 
 public:

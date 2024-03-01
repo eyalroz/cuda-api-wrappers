@@ -744,7 +744,7 @@ enum multiprocessor_shared_memory_bank_size_option_t
 
 /**
  * @brief Definitions and functionality related to CUDA devices (not
- * including the device wrapper type @ref device_t itself)
+ * including the device wrapper type @ref cuda::device_t itself)
  */
 namespace device {
 
