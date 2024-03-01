@@ -10,6 +10,8 @@
 
 #include "../launch_configuration.hpp"
 #include "../kernel.hpp"
+#include "../device.hpp"
+#include "../event.hpp"
 
 namespace cuda {
 

@@ -5,13 +5,15 @@
  * and which regard apriori-compiled kernels. Specifically:
  *
  * 1. Functions in the `cuda::kernel` namespace.
- * 2. Methods of @ref `cuda::kernel_t` and possibly some relates classes.
+ * 2. Methods of @ref cuda::kernel_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_APRIORI_COMPILED_KERNEL_HPP_
 #define MULTI_WRAPPER_IMPLS_APRIORI_COMPILED_KERNEL_HPP_
 
 #include "../kernels/apriori_compiled.hpp"
+#include "device.hpp"
+#include "kernel.hpp"
 
 namespace cuda {
 

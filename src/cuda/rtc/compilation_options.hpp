@@ -275,28 +275,28 @@ public:
 	/**
 	 * When performing single-precision floating-point operations, flush denormal values to zero.
 	 *
-	 * @Setting @ref use_fast_math implies setting this to true.
+	 * @note Setting @ref use_fast_math implies setting this to true.
 	 */
 	bool flush_denormal_floats_to_zero { false };
 
 	/**
 	 * For single-precision floating-point square root, use IEEE round-to-nearest mode or use a faster approximation.
 	 *
-	 * @Setting @ref use_fast_math implies setting this to false.
+	 * Setting @ref use_fast_math implies setting this to false.
 	 */
 	bool use_precise_square_root { true };
 
 	/**
 	 * For single-precision floating-point division and reciprocals, use IEEE round-to-nearest mode or use a faster approximation.
 	 *
-	 * @Setting @ref use_fast_math implies setting this to false.
+	 * Setting @ref use_fast_math implies setting this to false.
 	 */
 	bool use_precise_division { true };
 
 	/**
 	 * Enables (disables) the contraction of floating-point multiplies and adds/subtracts into floating-point multiply-add operations (FMAD, FFMA, or DFMA).
 	 *
-	 * @Setting @ref use_fast_math implies setting this to false.
+	 * Setting @ref use_fast_math implies setting this to false.
 	 */
 	bool use_fused_multiply_add { true };
 
@@ -390,7 +390,7 @@ public:
 	bool builtin_move_and_forward { true };
 
 	/**
-	 * Use @ref setrlimit() to increase the stack size to the maximum the OS allows.
+	 * Use `setrlimit()` to increase the stack size to the maximum the OS allows.
 	 * The limit is reverted to its previous value after compilation.
 	 *
 	 * @note :

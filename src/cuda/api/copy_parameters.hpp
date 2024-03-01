@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief The @ref copy_parameters class template and related definitions.
+ * @brief The @ref cuda::memory::copy_parameters_t class template and related definitions.
  */
 #ifndef CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP
 #define CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP

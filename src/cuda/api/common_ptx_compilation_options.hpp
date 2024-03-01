@@ -134,7 +134,6 @@ struct common_ptx_compilation_options_t {
 
 	/**
 	 * The minimum number of threads per block which the compiler should target
-	 * @note can't be combined with a value for the @ref target property.
 	 */
 	optional<grid::block_dimension_t> min_num_threads_per_block{};
 

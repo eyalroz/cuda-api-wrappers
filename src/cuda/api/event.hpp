@@ -79,14 +79,17 @@ namespace event {
  * @note This is a named constructor idiom, existing of direct access to the ctor
  * of the same signature, to emphasize that a new event is _not_ created.
  *
+ * @param device_id Index of the device to which the event relates
  * @param context_handle Handle of the context in which this event was created
  * @param event_handle handle of the pre-existing event
- * @param take_ownership When set to `false`, the CUDA event
- * will not be destroyed along with proxy; use this setting
- * when temporarily working with a stream existing irrespective of
- * the current context and outlasting it. When set to `true`,
- * the proxy class will act as it does usually, destroying the event
- * when being destructed itself.
+ * @param take_ownership When set to `false`, the CUDA event will not be destroyed
+ *     along with proxy; use this setting when temporarily working with a stream
+ *     existing irrespective of  the current context and outlasting it. When set to
+ *     `true`, the proxy class will act as it does usually, destroying the event
+ *      when being destructed itself.
+ * @param hold_pc_refcount_unit when the event's context is a device's primary
+ *     context, this controls whether that context must be kept active while
+ *     the event continues to exist.
  * @return an event wrapper associated with the specified event
  */
 event_t wrap(
@@ -125,7 +128,7 @@ inline void wait(const event_t& event);
  * @note By default this class has RAII semantics, i.e. it has the runtime create
  * an event on construction and destroy it on destruction, and isn't merely
  * an ephemeral wrapper one could apply and discard; but this second kind of
- * semantics is also (sort of) supported, through the @ref event_t::owning field.
+ * semantics is also (sort of) supported, through the @ref event_t::owning_ field.
  */
 class event_t {
 

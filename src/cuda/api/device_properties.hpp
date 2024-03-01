@@ -108,14 +108,14 @@ constexpr compute_capability_t make_compute_capability(unsigned major, unsigned 
 /**
  * @brief A structure holding a collection various properties of a device
  *
- * @note Somewhat annoyingly, CUDA devices have attributes, properties and flags.
+ * @note Somewhat annoyingly, CUDA devices have all of attributes, properties and flags.
  * Attributes have integral number values; properties have all sorts of values,
- * including arrays and limited-length strings (see
- * @ref cuda::device::properties_t), and flags are either binary or
- * small-finite-domain type fitting into an overall flagss value (see
- * @ref cuda::device_t::flags_t). Flags and properties are obtained all at once,
+ * including arrays and limited-length strings, and flags are actually associated with
+ * a device's primary context, as it is actually _contexts_ which have flags (which are
+ * either binary or small-finite-domain type fitting into an overall flags value:
+ * {@ref context::flags_t}). Flags and properties are obtained all at once (the latter,
+ * using the runtime API),
  * attributes are more one-at-a-time.
- *
  */
 struct properties_t : public cudaDeviceProp {
 
