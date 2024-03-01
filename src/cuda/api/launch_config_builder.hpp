@@ -497,7 +497,7 @@ public:
 
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
 	{
-		if (device_ and kernel_->device_id() != device_) {
+		if (device_ and kernel_->device_id() != device_.value()) {
 			throw ::std::invalid_argument("Launch config builder already associated with "
 			+ device::detail_::identify(*device_) + " and cannot further be associated "
 			"with " +kernel::detail_::identify(*wrapped_kernel_ptr));
@@ -511,7 +511,7 @@ public:
 
 	launch_config_builder_t& device(const device::id_t device_id)
 	{
-		if (kernel_ and kernel_->device_id() !=  device_id) {
+		if (kernel_ and kernel_->device_id() != device_id) {
 			throw ::std::invalid_argument("Launch config builder already associated with "
 				+ kernel::detail_::identify(*kernel_) + " and cannot further be associated "
 				"another device: " + device::detail_::identify(device_id));
