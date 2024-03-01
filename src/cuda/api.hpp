@@ -9,7 +9,7 @@
 #define CUDA_API_WRAPPERS_HPP_
 
 #include "api/types.hpp"
-#include "cuda/api/region.hpp"
+#include "api/region.hpp"
 
 #include "api/pci_id.hpp"
 #include "api/constants.hpp"
