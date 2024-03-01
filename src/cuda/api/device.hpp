@@ -359,8 +359,8 @@ public:
 
 #if CUDA_VERSION >= 11020
 	/**
-	 * True if this device supports executing kernels in which blocks can
-	 * directly cooperate beyond the use of global-memory atomics.
+	 * True if this device supports integrated memory pool and
+         * stream ordered memory allocator.
 	 */
 	bool supports_memory_pools() const
 	{
