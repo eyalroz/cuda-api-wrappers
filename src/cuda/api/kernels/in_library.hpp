@@ -14,7 +14,7 @@ namespace cuda {
 
 ///@cond
 class kernel_t;
-///@nocond
+///@endcond
 
 namespace detail_ {
 
@@ -30,7 +30,7 @@ namespace library {
 
 ///@cond
 class kernel_t;
-///@nocond
+///@endcond
 
 namespace kernel {
 

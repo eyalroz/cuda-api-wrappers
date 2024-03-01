@@ -15,7 +15,9 @@
 
 namespace cuda {
 
+///@cond
 class texture_view;
+///@endcond
 
 namespace texture {
 
