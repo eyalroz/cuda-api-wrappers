@@ -34,7 +34,9 @@ class context_t;
 namespace memory {
 
 /**
- * @brief see @ref memory::host, @ref memory::device, @ref memory::managed
+ * @brief The CUDA execution ecosystem involves different memory spaces in their relation
+ *     to a GPU device or their treatment by the CUDA driver; this type distinguishes among
+ *     them.
  */
 enum type_t : ::std::underlying_type<CUmemorytype>::type {
 	host_         = CU_MEMORYTYPE_HOST,

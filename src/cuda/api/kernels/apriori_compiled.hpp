@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief An implementation of a subclass of @ref `kernel_t` for kernels
+ * @brief An implementation of a subclass of @ref kernel_t for kernels
  * compiled together with the host-side program.
  */
 #pragma once
@@ -303,7 +303,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 } // namespace apriori_compiled
 
 /**
- * @brief A subclass of the @ref `kernel_t` interface for kernels being
+ * @brief A subclass of the @ref kernel_t interface for kernels being
  * functions marked as __global__ in source files and compiled apriori.
  */
 class apriori_compiled_t final : public kernel_t {

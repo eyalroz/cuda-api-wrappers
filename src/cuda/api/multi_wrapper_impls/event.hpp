@@ -5,7 +5,7 @@
  * and which regard events. Specifically:
  *
  * 1. Functions in the `cuda::event` namespace.
- * 2. Methods of @ref `cuda::event_t` and possibly some relates classes.
+ * 2. Methods of @ref cuda::event_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_EVENT_HPP_

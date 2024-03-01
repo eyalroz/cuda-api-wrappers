@@ -94,7 +94,7 @@ inline void unmap(void* ipc_mapped_ptr)
  *
  * @param device_ptr beginning of the region of memory
  * to be shared with other processes
- * @return a handle which another process can call @ref import()
+ * @return a handle which another process can call @ref detail_::import()
  * on to obtain a device pointer it can use
  */
 inline ptr_handle_t export_(void* device_ptr)
@@ -302,6 +302,7 @@ inline handle_t export_(const event_t& event);
  * @param event_ipc_handle the handle obtained via inter-process communications
  */
 ///@{
+
  /**
   * @param device the device with which the imported event is associated
   */
@@ -309,8 +310,10 @@ inline event_t import(const device_t& device, const handle_t& event_ipc_handle);
 
 /**
  * @param context the device-context with which the imported event is associated
+ * @param event_ipc_handle The handle created by another process, to be imported
+ * @return An event usable in the current process
  */
-inline event_t import(const context_t& device, const handle_t& event_ipc_handle);
+inline event_t import(const context_t& context, const handle_t& event_ipc_handle);
 ///@}
 
 } // namespace ipc
