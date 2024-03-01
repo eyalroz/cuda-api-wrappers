@@ -147,7 +147,7 @@ int main()
 
 	auto generator = []() -> float {
 		static size_t v = 0;
-		return v++;
+		return static_cast<float>(v++);
 	};
 	std::generate_n(input.get(), input_size, generator);
 	// TODO: Too bad we don't have a generator variant which passes the element index
