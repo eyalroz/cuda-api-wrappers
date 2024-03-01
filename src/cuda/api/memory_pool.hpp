@@ -16,7 +16,9 @@ namespace cuda {
 
 namespace memory {
 
+///@cond
 class pool_t;
+///@endcond
 
 namespace pool {
 

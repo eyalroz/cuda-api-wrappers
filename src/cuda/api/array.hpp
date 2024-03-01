@@ -21,7 +21,9 @@
 
 namespace cuda {
 
+///@cond
 class device_t;
+///@endcond
 
 template <typename T, dimensionality_t NumDimensions>
 class array_t;
