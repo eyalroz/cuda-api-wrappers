@@ -1,8 +1,8 @@
 /**
  * @file
  *
- * @brief A memory region class (@ref `cuda::memory::region`) and related
- * functinality.
+ * @brief A memory region class (@ref cuda::memory::region_t and @ref cuda::memory::const_region_t) and related
+ * functionality.
  */
 
 #pragma once
@@ -121,6 +121,9 @@ bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
 
 }  // namespace detail_
 
+/**
+ * An untyped, but sized, region in some memory space
+ */
 struct region_t : public detail_::base_region_t<void> {
 	using base_region_t<void>::base_region_t;
 	region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
@@ -130,6 +133,9 @@ struct region_t : public detail_::base_region_t<void> {
 	}
 };
 
+/**
+ * An untyped, but sized, region with const-constained data in some memory space
+ */
 struct const_region_t : public detail_::base_region_t<void const> {
 	using base_region_t<void const>::base_region_t;
 	const_region_t(const region_t& r) : base_region_t(r.start(), r.size()) {}

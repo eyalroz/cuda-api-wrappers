@@ -20,15 +20,17 @@ namespace cuda {
 ///@cond
 class device_t;
 class context_t;
+///@endcond
 
 namespace rtc {
 template <source_kind_t Kind>
 class compilation_output_t;
 } // namespace rtc
 
+///@cond
 namespace link {
 struct options_t;
-} // namespace rtc
+} // namespace link
 
 namespace device {
 class primary_context_t;
@@ -36,6 +38,7 @@ class primary_context_t;
 
 class module_t;
 ///@endcond
+
 namespace module {
 
 template <source_kind_t Kind>

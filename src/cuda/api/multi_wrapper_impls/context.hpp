@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard contexts. Specifically:
  *
- * 1. Functions in the `cuda::context` namespace.
- * 2. Methods of @ref `cuda::context_t` and possibly some relates classes.
+ * 1. Functions in the @ref cuda::context namespace.
+ * 2. Methods of @ref cuda::context_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_CONTEXT_HPP_

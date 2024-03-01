@@ -1,20 +1,32 @@
 /**
  * @file
  *
- * @brief A @ref A wrapper class for compiled kernels in a loaded library,
- * which are unassociated with a device and a context.
+ * @brief The cuda::library::kernel_t class and related code.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_IN_LIBRARY_KERNEL_HPP_
 #define CUDA_API_WRAPPERS_IN_LIBRARY_KERNEL_HPP_
 
+#if CUDA_VERSION >= 12000
+
 #include "../library.hpp"
+
+#include <type_traits>
 
 namespace cuda {
 
 ///@cond
 class kernel_t;
+class context_t;
 ///@endcond
+
+namespace library {
+
+///@cond
+class kernel_t;
+///@endcond
+
+} // namespace library
 
 namespace detail_ {
 
@@ -27,10 +39,6 @@ struct is_library_kernel : ::std::is_same<typename ::std::decay<Kernel>::type, l
 kernel_t contextualize(const library::kernel_t& kernel, const context_t& context);
 
 namespace library {
-
-///@cond
-class kernel_t;
-///@endcond
 
 namespace kernel {
 
@@ -117,8 +125,8 @@ inline void set_attribute(
 } // namespace kernel
 
 /**
- * @brief A subclass of the @ref `kernel_t` interface for kernels being
- * functions marked as __global__ in source files and compiled apriori.
+ * @brief A proxy class for compiled kernels in a loaded library, which are
+ * unassociated with a device and a context.
  */
 class kernel_t {
 public: // getters
@@ -202,6 +210,8 @@ inline library::kernel_t library_t::get_kernel(const ::std::string& name) const
 }
 
 } // namespace cuda
+
+#endif // CUDA_VERSION >= 12000
 
 #endif // CUDA_API_WRAPPERS_IN_LIBRARY_KERNEL_HPP_
 

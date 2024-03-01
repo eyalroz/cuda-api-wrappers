@@ -1,8 +1,7 @@
 /**
  * @file
  *
- * @brief Contains an implementation of an std::unique_span-like class, @ref `cuda::unique_span`
- *
+ * @brief Contains the class @ref cuda::unique_span
  */
 
 #pragma once
@@ -184,14 +183,14 @@ unique_span<T> make_unique_span(size_t size);
 
 } // namespace device
 
-/// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
+/// See @ref device::make_unique_span(const context_t& context, size_t num_elements)
 template <typename T> 
 inline device::unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
 {
 	return device::make_unique_span<T>(context, num_elements);
 }
 
-/// See @ref `device::make_unique_span(const device_t& device, size_t num_elements)`
+/// See @ref device::make_unique_span(const device_t& device, size_t num_elements)
 template <typename T>
 inline device::unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
 {

@@ -24,11 +24,6 @@
  * @ref cuda::launch_configuration_t .
  * </ul>
  *
- * @note You'd probably better avoid launching kernels using these
- * function directly, and go through the @ref cuda::stream_t or @ref cuda::device_t
- * proxy classes' launch mechanism (e.g.
- * `my_stream.enqueue.kernel_launch(...)`).
- *
  * @note Even though when you use this wrapper, your code will not have the silly
  * chevron, you can't use it from regular `.cpp` files compiled with your host
  * compiler. Hence the `.cuh` extension. You _can_, however, safely include this
@@ -335,8 +330,8 @@ void launch(
 
 /**
  * Launch a kernel with the arguments pre-marshalled into the (main) form
- * which @ref cuLaunchKernel accepts variables in: A null-terminated sequence
- * of (possibly const) `void *`'s to the argument values.
+ * which the CUDA driver's launch primitive accepts variables in: A null-
+ * terminated sequence of (possibly const) `void *`'s to the argument values.
  *
  * @tparam SpanOfConstVoidPtrLike
  *     Type of the container for the marshalled arguments; typically, this

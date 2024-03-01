@@ -1,7 +1,8 @@
 /**
  * @file
  *
- * @brief Implementations of @ref `make_unique_region()` functions
+ * @brief Implementations of `make_unique_region()` functions in different
+ * memory spaces
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_UNIQUE_REGION_HPP_
@@ -9,6 +10,7 @@
 
 #include "../unique_region.hpp"
 #include "../types.hpp"
+#include "../device.hpp"
 
 namespace cuda {
 

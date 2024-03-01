@@ -35,7 +35,7 @@ namespace status {
  * @note unfortunately, this enum can't inherit from @ref cuda::status_t
  */
 enum named_t : ::std::underlying_type<status_t>::type {
-	success                          = CUDA_SUCCESS,
+	success                          = CUDA_SUCCESS, /// Operation was successful; no errors
 	memory_allocation_failure        = CUDA_ERROR_OUT_OF_MEMORY, // corresponds to cudaErrorMemoryAllocation
 	not_yet_initialized              = CUDA_ERROR_NOT_INITIALIZED, // corresponds to cudaErrorInitializationError
 	already_deinitialized            = CUDA_ERROR_DEINITIALIZED, // corresponds to cudaErrorCudartUnloading
@@ -337,7 +337,7 @@ do { \
  * Do nothing... unless the status indicates an error, in which case
  * a @ref cuda::runtime_error exception is thrown
  *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref status::success  - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
 inline void throw_if_error(status_t status, const ::std::string& message) noexcept(false)
@@ -454,16 +454,13 @@ inline void ensure_none(const char *message) noexcept(false)
 }
 
 /**
- * @brief Does nothing (unless throwing an exception)
+ * @brief Does nothing (except possibly throwing an exception)
  *
  * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws cuda::runtime_error if the CUDA runtime API has
- * encountered previously encountered an (uncleared) error
- *
- * @param clear_any_error When true, clears the CUDA Runtime API's state from
- * recalling errors arising from before this oment
+ * @throws cuda::runtime_error if the CUDA runtime API has encountered previously
+ * encountered an (uncleared) error
  */
 inline void ensure_none() noexcept(false)
 {

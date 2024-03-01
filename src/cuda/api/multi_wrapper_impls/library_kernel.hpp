@@ -8,8 +8,11 @@
 #ifndef CUDA_API_WRAPPERS_MULTI_WRAPPER_LIBRARY_KERNEL_HPP
 #define CUDA_API_WRAPPERS_MULTI_WRAPPER_LIBRARY_KERNEL_HPP
 
+#if CUDA_VERSION >= 12000
+
 #include "kernel.hpp"
 #include "../library.hpp"
+#include "../kernels/in_library.hpp"
 
 namespace cuda {
 
@@ -17,7 +20,7 @@ namespace library {
 
 namespace kernel {
 
-attribute_value_t get_attribute(
+inline attribute_value_t get_attribute(
 	const library::kernel_t&  library_kernel,
 	kernel::attribute_t       attribute,
 	const device_t&           device)
@@ -47,4 +50,6 @@ cuda::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
 
 } // namespace cuda
 
-#endif CUDA_API_WRAPPERS_MULTI_WRAPPER_LIBRARY_KERNEL_HPP
+#endif // CUDA_VERSION >= 12000
+
+#endif // CUDA_API_WRAPPERS_MULTI_WRAPPER_LIBRARY_KERNEL_HPP
