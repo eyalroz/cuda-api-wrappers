@@ -86,9 +86,10 @@ inline attribute_value_t get_attribute(
 	throw_if_error_lazy(status, ::std::string("Failed getting attribute ")
 		+ cuda::kernel::detail_::attribute_name(attribute) + " for " + identify(library_kernel_handle)
 		+ " on " + device::detail_::identify(device_id));
+	return value;
 }
 
-inline attribute_value_t set_attribute(
+inline void set_attribute(
 	kernel::handle_t     library_kernel_handle,
 	device::id_t         device_id,
 	kernel::attribute_t  attribute,

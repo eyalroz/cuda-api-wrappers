@@ -394,12 +394,6 @@ inline void set_attribute(const kernel_t& kernel, attribute_t attribute, attribu
 	return detail_::set_attribute_in_current_context(kernel.handle(), attribute, value);
 }
 
-inline attribute_value_t set_attribute(const kernel_t& kernel, attribute_t attribute)
-{
-	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
-	return kernel::detail_::get_attribute_in_current_context(kernel.handle(), attribute);
-}
-
 namespace occupancy {
 
 namespace detail_ {
