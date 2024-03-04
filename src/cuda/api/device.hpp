@@ -203,7 +203,7 @@ protected:
 	void cache_and_ensure_primary_context_activation() const {
 		if (primary_context_handle_ == context::detail_::none) {
 			primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
-			holds_pc_refcount_unit = true;
+			holds_pc_refcount_unit_ = true;
 		}
 	}
 
@@ -597,7 +597,7 @@ public:
 protected:
 	void maybe_decrease_primary_context_refcount() const
 	{
-		if (holds_pc_refcount_unit) {
+		if (holds_pc_refcount_unit_) {
 			device::primary_context::detail_::decrease_refcount(id_);
 		}
 	}
@@ -608,7 +608,7 @@ public: 	// constructors and destructor
 	{
 		::std::swap(lhs.id_, rhs.id_);
 		::std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
-		::std::swap(lhs.holds_pc_refcount_unit, rhs.holds_pc_refcount_unit);
+		::std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
 	}
 
 	~device_t() NOEXCEPT_IF_NDEBUG
@@ -616,7 +616,7 @@ public: 	// constructors and destructor
 #ifndef NDEBUG
 		maybe_decrease_primary_context_refcount();
 #else
-		if (holds_pc_refcount_unit)  {
+		if (holds_pc_refcount_unit_)  {
 			device::primary_context::detail_::decrease_refcount_nothrow(id_);
 				// Swallow any error to avoid termination on throwing from a dtor
 		}
@@ -641,7 +641,7 @@ public: 	// constructors and destructor
 		maybe_decrease_primary_context_refcount();
 		id_ = other.id_;
 		primary_context_handle_ = other.primary_context_handle_;
-		holds_pc_refcount_unit = false;
+		holds_pc_refcount_unit_ = false;
 		return *this;
 	}
 
@@ -664,7 +664,7 @@ protected: // constructors
 	:
 		id_(device_id),
 		primary_context_handle_(primary_context_handle),
-		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
+		holds_pc_refcount_unit_(hold_primary_context_refcount_unit)
 	{
 #ifndef NDEBUG
 		if (id_ < 0) {
@@ -684,7 +684,7 @@ protected: // data members
 	mutable device::primary_context::handle_t primary_context_handle_ { context::detail_::none };
 		/// Most work involving a device actually occurs using its primary context; we cache the handle
 		/// to this context here - albeit not necessary on construction
-	mutable bool holds_pc_refcount_unit { false };
+	mutable bool holds_pc_refcount_unit_ {false };
 		/// Since we're allowed to cache the primary context handle on constant device_t's, we
 		/// also need to keep track of whether this object "owns" this reference.
 };
