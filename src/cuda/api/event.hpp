@@ -140,10 +140,10 @@ public: // data member non-mutator getters
 	event::handle_t   handle()          const noexcept { return handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
-	bool              is_owning()       const noexcept { return owning; }
+	bool              is_owning()       const noexcept { return owning_; }
 
 	/// True if this wrapper has been associated with an increase of the device's primary context's reference count
-	bool              holds_primary_context_reference() const noexcept { return holds_pc_refcount_unit; }
+	bool              holds_primary_context_reference() const noexcept { return holds_pc_refcount_unit_; }
 
 	/// The device w.r.t. which the event is defined
 	device_t          device()          const;
@@ -231,8 +231,8 @@ protected: // constructors
 		device_id_(device_id),
 		context_handle_(context_handle),
 		handle_(event_handle),
-		owning(take_ownership),
-		holds_pc_refcount_unit(hold_pc_refcount_unit) { }
+		owning_(take_ownership),
+		holds_pc_refcount_unit_(hold_pc_refcount_unit) { }
 
 public: // friendship
 
@@ -254,15 +254,15 @@ public: // constructors and destructor
 	event_t(const event_t& other) = delete;
 
 	event_t(event_t&& other) noexcept : event_t(
-		other.device_id_, other.context_handle_, other.handle_, other.owning, other.holds_pc_refcount_unit)
+		other.device_id_, other.context_handle_, other.handle_, other.owning_, other.holds_pc_refcount_unit_)
 	{
-		other.owning = false;
-		other.holds_pc_refcount_unit = false;
+		other.owning_ = false;
+		other.holds_pc_refcount_unit_ = false;
 	};
 
 	~event_t() noexcept(false)
 	{
-		if (owning) {
+		if (owning_) {
 #ifdef NDEBUG
 			cuEventDestroy(handle_);
 				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
@@ -272,7 +272,7 @@ public: // constructors and destructor
 #endif
 		}
 		// TODO: DRY
-		if (holds_pc_refcount_unit) {
+		if (holds_pc_refcount_unit_) {
 #ifdef NDEBUG
 			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
 				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
@@ -291,8 +291,8 @@ public: // operators
 		::std::swap(device_id_, other.device_id_);
 		::std::swap(context_handle_, other.context_handle_);
 		::std::swap(handle_, other.handle_);
-		::std::swap(owning, other.owning);
-		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		::std::swap(owning_, other.owning_);
+		::std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
 		return *this;
 	}
 
@@ -300,10 +300,10 @@ protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	event::handle_t    handle_;
-	bool               owning;
+	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
-	bool               holds_pc_refcount_unit;
+	bool               holds_pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction
