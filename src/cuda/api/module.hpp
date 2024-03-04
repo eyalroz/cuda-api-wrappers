@@ -148,7 +148,7 @@ protected: // constructors
 		bool holds_primary_context_refcount_unit)
 	noexcept
 		: device_id_(device_id), context_handle_(context), handle_(handle), owning_(owning),
-		  holds_pc_refcount_unit(holds_primary_context_refcount_unit)
+		  holds_pc_refcount_unit_(holds_primary_context_refcount_unit)
 	{ }
 
 public: // friendship
@@ -165,10 +165,10 @@ public: // constructors and destructor
 			other.context_handle_,
 			other.handle_,
 			other.owning_,
-			other.holds_pc_refcount_unit)
+			other.holds_pc_refcount_unit_)
 	{
 		other.owning_ = false;
-		other.holds_pc_refcount_unit = false;
+		other.holds_pc_refcount_unit_ = false;
 	};
 
 	// Note: It is up to the user of this class to ensure that it is destroyed _before_ the context
@@ -180,7 +180,7 @@ public: // constructors and destructor
 			module::detail_::destroy(handle_, context_handle_, device_id_);
 		}
 		// TODO: DRY
-		if (holds_pc_refcount_unit) {
+		if (holds_pc_refcount_unit_) {
 #ifdef NDEBUG
 			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
 				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
@@ -200,7 +200,7 @@ public: // operators
 		::std::swap(context_handle_, other.context_handle_);
 		::std::swap(handle_, other.handle_);
 		::std::swap(owning_, other.owning_);
-		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		::std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
 		return *this;
 	}
 
@@ -211,7 +211,7 @@ protected: // data members
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
-	bool holds_pc_refcount_unit;
+	bool holds_pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this module
 		// may be "keeping that context alive" through the refcount - in which
 		// case it must release its refcount unit on destruction
