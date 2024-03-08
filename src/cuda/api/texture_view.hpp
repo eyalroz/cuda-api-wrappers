@@ -61,7 +61,7 @@ struct descriptor_t : public CUDA_TEXTURE_DESC {
  * @return a  wrapper object associated with the specified texture view
  */
 inline texture_view wrap(
-	context::handle_t      context_handle_,
+	context::handle_t      context_handle,
 	texture::raw_handle_t  handle,
 	bool                   take_ownership) noexcept;
 
@@ -169,11 +169,11 @@ inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcep
 namespace texture {
 
 inline texture_view wrap(
-	context::handle_t      context_handle_,
+	context::handle_t      context_handle,
 	texture::raw_handle_t  handle,
 	bool                   take_ownership) noexcept
 {
-	return { context_handle_, handle, take_ownership };
+	return { context_handle, handle, take_ownership };
 }
 
 } // namespace texture
