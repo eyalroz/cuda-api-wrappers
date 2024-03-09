@@ -15,6 +15,14 @@
 #include <type_traits>
 #include <stdexcept>
 
+#ifndef CPP14_CONSTEXPR
+#if __cplusplus >= 201402L
+#define CPP14_CONSTEXPR constexpr
+#else
+#define CPP14_CONSTEXPR
+#endif
+#endif
+
 #ifndef NOEXCEPT_IF_NDEBUG
 #ifdef NDEBUG
 #define NOEXCEPT_IF_NDEBUG noexcept(true)
@@ -48,19 +56,19 @@ private:
 	// If we were using C++17 or later, we could forget about this and use `std::byte`
 	using char_type = typename ::std::conditional<::std::is_const<T>::value, const char *, char *>::type;
 public:
-	base_region_t() noexcept = default;
-	base_region_t(pointer start, size_type size_in_bytes) noexcept
+	constexpr base_region_t() noexcept = default;
+	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
 
 	template <typename U>
-	base_region_t(span<U> span) noexcept : start_(span.data()), size_in_bytes_(span.size() * sizeof(U))
+	constexpr base_region_t(span<U> span) noexcept : start_(span.data()), size_in_bytes_(span.size() * sizeof(U))
 	{
 		static_assert(::std::is_const<T>::value or not ::std::is_const<U>::value,
 			"Attempt to construct a non-const memory region from a const span");
 	}
 
 	template <typename U>
-	span<U> as_span() const NOEXCEPT_IF_NDEBUG
+	CPP14_CONSTEXPR span<U> as_span() const NOEXCEPT_IF_NDEBUG
 	{
 		static_assert(
 			::std::is_const<U>::value or not ::std::is_const<typename ::std::remove_pointer<T>::type>::value,
@@ -78,23 +86,20 @@ public:
 	}
 
 	template <typename U>
-	operator span<U>() const NOEXCEPT_IF_NDEBUG { return as_span<U>(); }
+	CPP14_CONSTEXPR operator span<U>() const NOEXCEPT_IF_NDEBUG { return as_span<U>(); }
 
-	pointer& start() noexcept { return start_; }
-	size_type& size() noexcept { return size_in_bytes_; }
-
-	size_type size() const noexcept { return size_in_bytes_; }
-	pointer start() const noexcept { return start_; }
-	pointer data() const noexcept { return start(); }
-	pointer get() const noexcept { return start(); }
+	constexpr pointer start() const noexcept { return start_; }
+	constexpr size_type size() const noexcept { return size_in_bytes_; }
+	constexpr pointer data() const noexcept { return start(); }
+	constexpr pointer get() const noexcept { return start(); }
 
 protected:
-	base_region_t subregion(size_type offset_in_bytes, size_type size_in_bytes) const
+	constexpr base_region_t subregion(size_type offset_in_bytes, size_type size_in_bytes) const
 #ifdef NDEBUG
 		noexcept
 #endif
 	{
-#ifndef NDEBUG
+#if ! defined(NDEBUG) && __cplusplus >= 201402L
 		if (offset_in_bytes >= size_in_bytes_) {
 			throw ::std::invalid_argument("subregion begins past region end");
 		}
@@ -107,14 +112,14 @@ protected:
 };
 
 template <typename T>
-bool operator==(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+constexpr bool operator==(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
 {
 	return lhs.start() == rhs.start()
 		and lhs.size() == rhs.size();
 }
 
 template <typename T>
-bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+constexpr bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
 {
 	return not (lhs == rhs);
 }
@@ -126,10 +131,9 @@ bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
  */
 struct region_t : public detail_::base_region_t<void> {
 	using base_region_t<void>::base_region_t;
-	region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
+	constexpr region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
 	{
-		auto parent_class_subregion = base_region_t<void>::subregion(offset_in_bytes, size_in_bytes);
-		return { parent_class_subregion.data(), parent_class_subregion.size() };
+		return { base_region_t<void>::subregion(offset_in_bytes, size_in_bytes).data(), size_in_bytes };
 	}
 };
 
@@ -141,8 +145,10 @@ struct const_region_t : public detail_::base_region_t<void const> {
 	const_region_t(region_t r) : base_region_t(r.start(), r.size()) {}
 	const_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
 	{
-		auto parent_class_subregion = base_region_t<void const>::subregion(offset_in_bytes, size_in_bytes);
-		return { parent_class_subregion.data(), parent_class_subregion.size() };
+		return {
+			base_region_t<void const>::subregion(offset_in_bytes, size_in_bytes).data(),
+			size_in_bytes
+		};
 	}
 };
 
