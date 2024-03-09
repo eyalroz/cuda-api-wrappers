@@ -538,10 +538,12 @@ inline void set_access_permissions(const cuda::device_t& device, const pool_t& p
 template <typename DeviceRange>
 void set_access_permissions(DeviceRange devices, const pool_t& pool, access_permissions_t permissions)
 {
-	cuda::dynarray<cuda::device::id_t> device_ids(devices.size());
-	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.begin());
-	span<cuda::device::id_t> device_ids_span {device_ids.data(), device_ids.size()};
-	cuda::memory::detail_::set_access_permissions(device_ids_span, pool.handle(), permissions);
+	// Not depending on unique_span here :-(
+	auto device_ids = ::std::unique_ptr<cuda::device::id_t[]>(new cuda::device::id_t[devices.size()]);
+	auto device_to_id = [](device_t const& device){ return device.id(); };
+	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.get(), device_to_id);
+	cuda::memory::detail_::set_access_permissions(
+		{ device_ids.get(), devices.size() }, pool.handle(), permissions);
 }
 #endif // #if CUDA_VERSION >= 11020
 
