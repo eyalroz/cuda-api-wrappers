@@ -604,7 +604,7 @@ inline program_t<Kind> create(const ::std::string& program_name)
 } // namespace program
 
 #if CUDA_VERSION >= 11020
-inline dynarray<device::compute_capability_t>
+inline unique_span<device::compute_capability_t>
 supported_targets()
 {
 	int num_supported_archs;
@@ -613,9 +613,8 @@ supported_targets()
 	auto raw_archs = ::std::unique_ptr<int[]>(new int[num_supported_archs]);
 	status = nvrtcGetSupportedArchs(raw_archs.get());
 	throw_if_error<cuda_cpp>(status, "Failed obtaining the architectures supported by NVRTC");
-	dynarray<device::compute_capability_t> result;
-	result.reserve(num_supported_archs);
-	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::back_inserter(result),
+	auto result = make_unique_span<device::compute_capability_t>(num_supported_archs);
+	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::begin(result),
 		[](int raw_arch) { return device::compute_capability_t::from_combined_number(raw_arch); });
 	return result;
 }

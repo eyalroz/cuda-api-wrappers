@@ -895,11 +895,6 @@ using handle_t = CUfunction;
 
 } // namespace kernel
 
-// The C++ standard library doesn't offer ::std::dynarray (although it almost did),
-// and we won't introduce our own here. So...
-template <typename T>
-using dynarray = ::std::vector<T>;
-
 } // namespace cuda
 
 #ifndef __CUDACC__

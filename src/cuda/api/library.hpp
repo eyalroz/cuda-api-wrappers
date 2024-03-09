@@ -63,7 +63,7 @@ inline ::std::string identify(const library::handle_t &handle)
  * Create a CUDA driver library of compiled code from raw image data.
  *
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
- *     such as a span, a cuda::dynarray etc..
+ *     such as a span, a cuda::unique_span etc..
  */
 ///@{
 template <typename ContiguousContainer,

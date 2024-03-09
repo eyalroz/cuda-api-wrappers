@@ -69,7 +69,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
  *     can obtain a CUDA context. This is the context into which the module data is to
  *     be loaded (and in which the module contents may be used)
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
- *     such as a span, a cuda::dynarray etc..
+ *     such as a span, a cuda::unique_span etc..
  */
 ///@{
 template <typename Locus, typename ContiguousContainer,

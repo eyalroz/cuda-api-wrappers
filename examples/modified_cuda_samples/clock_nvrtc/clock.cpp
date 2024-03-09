@@ -106,7 +106,7 @@ long double compute_average_elapsed_clocks(const clock_t* timers, std::size_t nu
 	return offset_sum / num_blocks;
 }
 
-cuda::dynarray<char> compile_to_cubin(
+cuda::unique_span<char> compile_to_cubin(
 	const char* kernel_source,
 	const char* kernel_name,
 	cuda::device_t target_device)
@@ -134,7 +134,7 @@ int main()
 	auto device_id { 0 }; // Not bothering with supporting a command-line argument here
 	auto device = cuda::device::get(device_id);
 	auto cubin = compile_to_cubin(clock_kernel::source, clock_kernel::name, device);
-	auto module = cuda::module::create(device, cubin);
+	auto module = cuda::module::create(device, cubin.get());
 	auto kernel_in_module = module.get_kernel(clock_kernel::name);
 
 	cuda::grid::dimension_t num_blocks { 64 };

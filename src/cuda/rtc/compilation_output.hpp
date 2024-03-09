@@ -311,23 +311,22 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
-	dynarray<char> log() const
+	unique_span<char> log() const
 	{
 		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
-		::std::vector<char> result(size+1);
-		if (size == 0) { return result; }
+		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
+		if (size == 0) {
+			result[size] = '\0';
+			return result;
+		}
 		program::detail_::get_log<source_kind>(result.data(), program_handle_, program_name_.c_str());
-		// Q: Isn't it kind of "cheating" to use an ::std::vector, then return it as a dynarray? What
-		//    if we get a proper dynarray which doesn't alias ::std::vector?
-		// A: Well, kind of; it would mean we might have to copy. However - a proper dynarray might
-		//    allow us to construct it with an arbitrary buffer, or a larger dynarray etc. - and
-		//    then we could ensure the allocation happens only once.
+		result[size] = '\0';
 		return result;
 	}
 	///@}
 
 #if CUDA_VERSION >= 11010
-	virtual dynarray<char> cubin() const = 0;
+	virtual unique_span<char> cubin() const = 0;
 	virtual bool has_cubin() const = 0;
 #endif
 
@@ -404,12 +403,16 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
-	dynarray<char> ptx() const
+	unique_span<char> ptx() const
 	{
 		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
-		dynarray<char> result(size);
-		if (size == 0) { return result; }
+		auto result = make_unique_span<char>(size+1);  // Let's append a trailing nul character, to be on the safe side
+		if (size == 0) {
+			result[size] = '\0';
+			return result;
+		}
 		program::detail_::get_ptx(result.data(), program_handle_, program_name_.c_str());
+		result[size] = '\0';
 		return result;
 	}
 	///@}
@@ -450,10 +453,10 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
-	dynarray<char> cubin() const override
+	unique_span<char> cubin() const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
-		dynarray<char> result(size);
+		auto result = make_unique_span<char>(size);
 		if (size == 0) { return result; }
 		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		return result;
@@ -500,12 +503,16 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
-	dynarray<char> lto_ir() const
+	unique_span<char> lto_ir() const
 	{
 		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
-		dynarray<char> result(size);
-		if (size == 0) { return result; }
+		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
+		if (size == 0) {
+			result[size] = '\0';
+			return result;
+		}
 		program::detail_::get_lto_ir(result.data(), program_handle_, program_name_.c_str());
+		result[size] = '\0';
 		return result;
 	}
 	/// @}
@@ -592,12 +599,16 @@ public: // non-mutators
 	}
 
 public: // non-mutators
-	dynarray<char> cubin() const override
+	unique_span<char> cubin() const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
-		dynarray<char> result(size);
-		if (size == 0) { return result; }
+		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
+		if (size == 0) {
+			result[size] = '\0';
+ 			return result;
+		}
 		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
+		result[size] = '\0';
 		return result;
 	}
 	///@}
@@ -668,15 +679,15 @@ template<> inline module_t create<cuda_cpp>(
 	// Note: The above won't fail even if no CUBIN was produced
 	bool has_cubin = (cubin_size > 0);
 	if (has_cubin) {
-		dynarray<char> cubin(cubin_size);
+		auto cubin = make_unique_span<char>(cubin_size);
 		rtc::program::detail_::get_cubin<cuda_cpp>(cubin.data(), program_handle, program_name);
-		return module::create(context, cubin, options);
+		return module::create(context, cubin.get(), options);
 	}
 	// Note: At this point, we must have PTX in the output, as otherwise the compilation could
 	// not have succeeded
 #endif
 	auto ptx = compiled_program.ptx();
-	return module::create(context, ptx, options);
+	return module::create(context, ptx.get(), options);
 }
 
 #if CUDA_VERSION >= 11010
@@ -690,7 +701,7 @@ template<> inline module_t create<source_kind_t::ptx>(
 			+ cuda::rtc::program::detail_::identify<source_kind_t::ptx>(compiled_program.program_handle()));
 	}
 	auto cubin = compiled_program.cubin();
-	return module::create(context, cubin, options);
+	return module::create(context, cubin.get(), options);
 }
 #endif // CUDA_VERSION >= 11010
 
