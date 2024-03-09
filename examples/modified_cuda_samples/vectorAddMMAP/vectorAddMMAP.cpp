@@ -60,14 +60,14 @@ size_t safe_round_up(size_t x, size_t divisor)
 	auto roundup_amount = divisor - remainder;
 	if (std::numeric_limits<size_t>::max() - x < roundup_amount) {
 		throw std::invalid_argument("A rounding up of " + std::to_string(x)
-			+ " to a multiple of " + std::to_string(divisor) +  " would overflow");
+		+ " to a multiple of " + std::to_string(divisor) + " would overflow");
 	}
 	return x + roundup_amount;
 }
 
 size_t div_rounding_up(size_t dividend, size_t divisor)
 {
-	return dividend/divisor + ((dividend % divisor == 0) ? 0 : 1);
+	return dividend / divisor + ((dividend % divisor == 0) ? 0 : 1);
 }
 
 // We cannot necessarily satisfy the exact request for a allocated-and-mapped region
@@ -81,7 +81,7 @@ cuda::size_t determine_reservation_size(
 	vector<cuda::size_t> allocation_granularities; // for both mapping and backing devices
 	cuda::size_t min_overall_granularity{0};
 
-	for (const auto &vec: {backing_devices, mapping_devices} ) {
+	for (const auto &vec: {backing_devices, mapping_devices}) {
 		for (const auto &device: vec) {
 			auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 			min_overall_granularity = std::max(min_overall_granularity, props.minimum_granularity());
@@ -135,7 +135,8 @@ struct reserved_range_and_mappings {
  * plus meet the allocation granularity requirements of each device.
  */
 reserved_range_and_mappings<std::vector>
-setup_virtual_memory(cuda::size_t requested_region_size,
+setup_virtual_memory(
+	cuda::size_t requested_region_size,
 	const vector<cuda::device_t> &backing_devices,
 	const vector<cuda::device_t> &mapping_devices,
 	virtual_mem::alignment_t alignment = virtual_mem::alignment::default_)
