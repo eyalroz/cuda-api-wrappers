@@ -50,6 +50,7 @@ struct span {
 
 	pointer       data() const noexcept { return data_; }
 	size_type     size() const noexcept { return size_; }
+	bool          empty() const noexcept { return size() == 0; }
 
 	// About cbegin() and cend() for spans, see:
 	// https://stackoverflow.com/q/62757700/1593077
