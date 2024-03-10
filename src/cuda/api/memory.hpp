@@ -33,7 +33,6 @@
 #include "error.hpp"
 #include "pointer.hpp"
 #include "current_context.hpp"
-#include "region.hpp"
 #include "detail/unique_span.hpp"
 
 // The following is needed for cudaGetSymbolAddress, cudaGetSymbolSize

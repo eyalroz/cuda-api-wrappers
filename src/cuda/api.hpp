@@ -13,8 +13,6 @@
 #endif
 
 #include "api/types.hpp"
-#include "cuda/api/region.hpp"
-
 #include "api/pci_id.hpp"
 #include "api/constants.hpp"
 #include "api/error.hpp"

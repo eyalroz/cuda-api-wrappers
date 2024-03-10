@@ -25,6 +25,7 @@
 
 #include "detail/optional.hpp"
 #include "detail/span.hpp"
+#include "detail/region.hpp"
 
 #ifndef __CUDACC__
 #include <builtin_types.h>
@@ -56,11 +57,13 @@
 #endif
 #endif
 
+#ifndef NOEXCEPT_IF_NDEBUG
 #ifdef NDEBUG
 #define NOEXCEPT_IF_NDEBUG noexcept(true)
 #else
 #define NOEXCEPT_IF_NDEBUG noexcept(false)
 #endif
+#endif // NOEXCEPT_IF_NDEBUG
 
 #ifdef _MSC_VER
 /*
@@ -623,6 +626,8 @@ inline address_t address(const void* device_ptr) noexcept
 	static_assert(sizeof(void*) == sizeof(address_t), "Incompatible sizes for a void pointer and memory::device::address_t");
 	return reinterpret_cast<address_t>(device_ptr);
 }
+
+inline address_t address(memory::const_region_t region) noexcept { return address(region.start()); }
 
 } // namespace device
 
