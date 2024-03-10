@@ -12,7 +12,7 @@
 #ifndef CUDA_API_WRAPPERS_REGION_HPP_
 #define CUDA_API_WRAPPERS_REGION_HPP_
 
-#include <type_traits>
+#include "type_traits.hpp"
 #include <stdexcept>
 
 #ifndef CPP14_CONSTEXPR
@@ -60,11 +60,17 @@ public:
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
 
-	template <typename U>
-	constexpr base_region_t(span<U> span) noexcept : start_(span.data()), size_in_bytes_(span.size() * sizeof(U))
+	/**
+	 * A constructor from types such as `::std::span`'s or `::std::vector`'s, whose data is in
+	 * a contiguous region of memory
+	 */
+	template <typename ContiguousContainer, typename = cuda::detail_::enable_if_t<
+		cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, void>>
+	constexpr base_region_t(ContiguousContainer&& contiguous_container) noexcept
+	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
-		static_assert(::std::is_const<T>::value or not ::std::is_const<U>::value,
-			"Attempt to construct a non-const memory region from a const span");
+		static_assert(::std::is_const<T>::value or not ::std::is_const<decltype(*(contiguous_container.data()))>::value,
+			"Attempt to construct a non-const memory region from a container of const data");
 	}
 
 	template <typename U>
