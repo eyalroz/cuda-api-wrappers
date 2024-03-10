@@ -51,8 +51,8 @@ int main()
 	auto sp_B = d_B.as_span<float>();
 	auto sp_C = d_C.as_span<float>();
 
-	cuda::memory::copy(sp_A, h_A.data());
-	cuda::memory::copy(sp_B, h_B.data());
+	cuda::memory::copy(sp_A, h_A);
+	cuda::memory::copy(sp_B, h_B);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(numElements)
@@ -68,7 +68,7 @@ int main()
 		sp_A.data(), sp_B.data(), sp_C.data(), numElements
 	);
 
-	cuda::memory::copy(h_C.data(), sp_C);
+	cuda::memory::copy(h_C, sp_C);
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {
