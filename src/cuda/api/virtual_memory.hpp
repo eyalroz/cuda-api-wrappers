@@ -176,11 +176,11 @@ inline reserved_address_range_t reserve(region_t requested_region, alignment_t a
 {
 	unsigned long flags { 0 };
 	CUdeviceptr ptr;
-	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, requested_region.device_address(), flags);
+	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, device::address(requested_region), flags);
 	throw_if_error_lazy(status, "Failed making a reservation of " + cuda::memory::detail_::identify(requested_region)
 		+ " with alignment value " + ::std::to_string(alignment));
 	bool is_owning { true };
-	return detail_::wrap(memory::region_t { ptr, requested_region.size() }, alignment, is_owning);
+	return detail_::wrap(memory::region_t {as_pointer(ptr), requested_region.size() }, alignment, is_owning);
 }
 
 inline reserved_address_range_t reserve(size_t requested_size, alignment_t alignment = alignment::default_)
@@ -337,7 +337,7 @@ inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::
 {
 	CUmemLocation_st location { CU_MEM_LOCATION_TYPE_DEVICE, device_id };
 	unsigned long long flags;
-	auto result = cuMemGetAccess(&flags, &location, fully_mapped_region.device_address() );
+	auto result = cuMemGetAccess(&flags, &location, device::address(fully_mapped_region) );
 	throw_if_error_lazy(result, "Failed determining the access mode for "
 		+ cuda::device::detail_::identify(device_id)
 		+ " to the virtual memory mapping to the range of size "
@@ -451,7 +451,7 @@ public: // constructors & destructors
 	~mapping_t() noexcept(false)
 	{
 		if (not owning_) { return; }
-		auto result = cuMemUnmap(address_range_.device_address(), address_range_.size());
+		auto result = cuMemUnmap(device::address(address_range_), address_range_.size());
 		throw_if_error_lazy(result, "Failed unmapping " + mapping::detail_::identify(address_range_));
 	}
 
@@ -499,7 +499,7 @@ inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 	size_t offset_into_allocation { 0 }; // not yet supported, but in the API
 	constexpr const unsigned long long flags { 0 };
 	auto handle = physical_allocation.handle();
-	auto status = cuMemMap(region.device_address(), region.size(), offset_into_allocation, handle, flags);
+	auto status = cuMemMap(device::address(region), region.size(), offset_into_allocation, handle, flags);
 	throw_if_error_lazy(status, "Failed making a virtual memory mapping of "
 		+ physical_allocation::detail_::identify(physical_allocation)
 		+ " to the range of size " + ::std::to_string(region.size()) + " bytes at " +

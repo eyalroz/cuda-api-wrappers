@@ -2,28 +2,31 @@
  * @file
  *
  * @brief A memory region class (@ref `cuda::memory::region`) and related
- * functinality.
+ * functionality.
+ *
+ * @note There is no CUDA-specific functionality here, and this class could be
+ * used irrespective of the CUDA APIs and GPUs in general.
  */
 
 #pragma once
 #ifndef CUDA_API_WRAPPERS_REGION_HPP_
 #define CUDA_API_WRAPPERS_REGION_HPP_
 
-#if (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
-#error "The CUDA API headers can only be compiled with C++11 or a later version of the C++ language standard"
-#endif
+#include <type_traits>
+#include <stdexcept>
 
-#include "types.hpp"
+#ifndef NOEXCEPT_IF_NDEBUG
+#ifdef NDEBUG
+#define NOEXCEPT_IF_NDEBUG noexcept(true)
+#else
+#define NOEXCEPT_IF_NDEBUG noexcept(false)
+#endif
+#endif // NOEXCEPT_IF_NDEBUG
+
 
 namespace cuda {
 
 namespace memory {
-
-namespace device {
-
-using address_t = CUdeviceptr;
-
-} // namespace device
 
 namespace detail_ {
 
@@ -48,8 +51,6 @@ public:
 	base_region_t() noexcept = default;
 	base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
-	base_region_t(device::address_t start, size_type size_in_bytes) noexcept
-		: start_(as_pointer(start)), size_in_bytes_(size_in_bytes) {}
 
 	template <typename U>
 	base_region_t(span<U> span) noexcept : start_(span.data()), size_in_bytes_(span.size() * sizeof(U))
@@ -86,11 +87,6 @@ public:
 	pointer start() const noexcept { return start_; }
 	pointer data() const noexcept { return start(); }
 	pointer get() const noexcept { return start(); }
-
-	device::address_t device_address() const noexcept
-	{
-		return device::address(start_);
-	}
 
 protected:
 	base_region_t subregion(size_type offset_in_bytes, size_type size_in_bytes) const
@@ -136,7 +132,7 @@ struct region_t : public detail_::base_region_t<void> {
 
 struct const_region_t : public detail_::base_region_t<void const> {
 	using base_region_t<void const>::base_region_t;
-	const_region_t(const region_t& r) : base_region_t(r.start(), r.size()) {}
+	const_region_t(region_t r) : base_region_t(r.start(), r.size()) {}
 	const_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
 	{
 		auto parent_class_subregion = base_region_t<void const>::subregion(offset_in_bytes, size_in_bytes);

@@ -13,7 +13,7 @@
 #define CUDA_API_WRAPPERS_UNIQUE_SPAN_HPP_
 
 #include "span.hpp"
-#include "../region.hpp"
+#include "region.hpp"
 
 #include <type_traits>
 #include <memory>
