@@ -255,7 +255,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		return extent_;
 	}
 
-	this_type& set_pitches(array::dimension_t uniform_pitch_in_bytes) noexcept
+	this_type& set_pitches(dimension_type uniform_pitch_in_bytes) noexcept
 	{
 		set_pitch(endpoint_t::source, uniform_pitch_in_bytes);
 		set_pitch(endpoint_t::destination, uniform_pitch_in_bytes);
