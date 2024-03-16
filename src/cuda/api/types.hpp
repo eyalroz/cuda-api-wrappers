@@ -51,9 +51,7 @@
 #endif
 
 
-/**
- * @brief All definitions and functionality wrapping the CUDA Runtime API.
- */
+/// @brief Definitions and functionality wrapping CUDA APIs.
 namespace cuda {
 
 /**

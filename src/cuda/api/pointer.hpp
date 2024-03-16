@@ -104,6 +104,11 @@ inline cuda::device::id_t device_id_of(const void* ptr);
 
 } // namespace pointer
 
+/**
+ * Determine the type of memory at a given address vis-a-vis the CUDA ecosystem:
+ * Was it allocated by the CUDA driver? Does it reside solely on a GPU device'?
+ * Solely on the host? Movable between locations? etc.
+ */
 inline memory::type_t type_of(const void* ptr)
 {
 	auto result = pointer::detail_::get_attribute_with_status<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
@@ -113,8 +118,9 @@ inline memory::type_t type_of(const void* ptr)
 		memory::type_t::non_cuda : result.value;
 }
 
+/// Obtain (a non-owning wrapper for) the CUDA context with which a memory address is associated
+/// (e.g. being the result of an allocation or mapping in that context)
 inline context_t context_of(const void* ptr);
-
 
 /**
  * A convenience wrapper around a raw pointer "known" to the CUDA runtime
@@ -129,8 +135,10 @@ public: // getters and operators
 	 * @return Address of the pointed-to memory, regardless of which memory
 	 * space it's in and whether or not it is accessible from the host
 	 */
+	///@{
 	T* get() const { return ptr_; }
 	operator T*() const { return ptr_; }
+	///@}
 
 protected:
 	template <pointer::attribute_t attribute>
@@ -217,6 +225,7 @@ public: // other non-mutators
 	}
 
 public: // constructors
+	/// Wrap a raw pointer in this class
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }
 	pointer_t(const pointer_t& other) noexcept = default;
 	pointer_t(pointer_t&& other) noexcept = default;

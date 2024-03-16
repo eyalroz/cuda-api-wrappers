@@ -19,19 +19,28 @@
 #if __cplusplus >= 201703L
 #include <string_view>
 namespace cuda {
+///@cond
 using string_view = ::std::string_view;
+///@endcond
 }
 #else
 #include <cuda/rtc/detail/string_view.hpp>
 namespace cuda {
+///@cond
 using string_view = bpstd::string_view;
+///@endcond
 }
 #endif
 
 namespace cuda {
 
+/// The API wrappers support different kinds of source code, accepted by
+/// different NVIDIA run-time compilation libraries
 enum source_kind_t {
+	/// The CUDA variant of C++, accepted by the NVRTC library
 	cuda_cpp = 0,
+	/// NVIDIA's architecture-inspecific intermediate program representation
+	/// language, known as PTX or Parallel Thread Execution
 	ptx = 1
 };
 
@@ -46,6 +55,7 @@ enum source_kind_t {
  */
 namespace rtc {
 
+/// A span of C-style strings the contents of which must not be modified
 using const_cstrings_span = span<const char* const>;
 
 namespace program {
@@ -109,11 +119,15 @@ template <> struct types<ptx> {
 
 namespace program {
 
+/// Raw program handle used by the NVIDIA run-time compilation libraries's API calls:
+///// The NVRTC library for CUDA C++, and the PTX compiler library
 template <source_kind_t Kind>
 using handle_t = typename cuda::rtc::detail_::types<Kind>::handle_type;
 
 } // namespace program
 
+/// Status values returned by the NVIDIA run-time compilation libraries's API calls:
+/// The NVRTC library for CUDA C++, and the PTX compiler library
 template <source_kind_t Kind>
 using status_t = typename detail_::types<Kind>::status_type;
 

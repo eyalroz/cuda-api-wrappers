@@ -145,6 +145,7 @@ public: // operators
 
 public: // getters
 
+	/// @return the unwrapped, raw, pointer to the imported memory
 	template <typename T = void>
 	T* get() const noexcept
 	{
@@ -152,6 +153,8 @@ public: // getters
 		// have the notion that if the method is const, `ptr_` is a const void* within it
 		return static_cast<T*>(const_cast<void*>(ptr_));
 	}
+
+	/// @return true if this object is charged with unmapping the imported memory upon destruction
 	bool is_owning() const noexcept { return owning_; }
 
 protected: // data members
@@ -159,11 +162,13 @@ protected: // data members
 	bool   owning_;
 }; // class imported_ptr_t
 
+/// Construct an instance of our wrapper class for IPC-imported memory from a raw pointer to the mapping
 inline imported_ptr_t wrap(void * ptr, bool owning) noexcept
 {
 	return imported_ptr_t(ptr, owning);
 }
 
+/// Import memory from another process, given the appropriate handle
 inline imported_ptr_t import(const ptr_handle_t& ptr_handle)
 {
 	auto raw_ptr = detail_::import(ptr_handle);

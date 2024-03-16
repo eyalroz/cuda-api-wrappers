@@ -64,6 +64,7 @@ apriori_compiled_t wrap(
  */
 struct attributes_t : cudaFuncAttributes {
 
+	/// See @ref apriori_compiled_t::ptx_version()
 	cuda::device::compute_capability_t ptx_version() const noexcept {
 		return device::compute_capability_t::from_combined_number(ptxVersion);
 	}
@@ -308,19 +309,39 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
  */
 class apriori_compiled_t final : public kernel_t {
 public: // getters
+	/**
+	 * Access the raw `__global__` kernel function pointer - without any type information.
+	 *
+	 * @note to imbue this pointer with type information, use the @ref kernel::get()
+	 * function instead.
+	 */
+	///@{
 	const void *ptr() const noexcept { return ptr_; }
 	const void *get() const noexcept { return ptr_; }
 
 public: // type_conversions
 	explicit operator const void *() noexcept { return ptr_; }
+	///@}
 
 public: // non-mutators
 
 #if ! CAN_GET_APRIORI_KERNEL_HANDLE
+
+	/// Obtain the set of all attributes one can obtain individually with @ref get_attribute
 	apriori_compiled::attributes_t attributes() const;
+
+	/// See @ref context_t::cache_preference()
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const override;
+
+	/// See @ref context_t::shared_memory_bank_size()
 	void set_shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config) const override;
 
+	/**
+	 * The PTX intermediate-representation language used in the compilation of this kernel
+	 * (whether as the original source code or as an output of the compilation front-end).
+	 *
+	 * @note PTX version is _not_ of the same category as compute capability.
+	 */
 	cuda::device::compute_capability_t ptx_version() const override
 	{
 		return attributes().ptx_version();
@@ -331,7 +352,11 @@ public: // non-mutators
 		return attributes().binary_compilation_target_architecture();
 	}
 
-
+	/**
+	 * The constraint on the block size in threads for launch grids of this kernel in its associated
+	 * context (e.g. due to the number of registers required by each thread vis-a-vis the overall
+	 * register file size).
+	 */
 	grid::block_dimension_t maximum_threads_per_block() const override
 	{
 		return attributes().maxThreadsPerBlock;
@@ -489,12 +514,22 @@ inline void set_attribute(
 } // namespace apriori_compiled
 
 /**
+ * Choose an association of a `__global__` kernel function with
+ * a context (or a device's primary context), and produce a proxy object for that
+ * association with which the library can more readily act.
+ */
+ ///@{
+
+/**
  * @note The returned kernel proxy object will keep the device's primary
- * context active while the kernel exists.
+ *
+ * @param device The device with whose primary context to construct an associated
+ * kernel object
  */
 template<typename KernelFunctionPtr>
 apriori_compiled_t get(const device_t& device, KernelFunctionPtr function_ptr);
 
+/// @param context The context for which to construct an associated kernel object
 template<typename KernelFunctionPtr>
 apriori_compiled_t get(context_t context, KernelFunctionPtr function_ptr);
 

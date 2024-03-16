@@ -214,6 +214,13 @@ inline bool operator!= (
 
 } // namespace detail_
 
+/**
+ * @returns all CUDA-supporting GPU devices on the system - as a gadget for iteration, so
+ * that one can write:
+ *
+ *     for(auto& dev : cuda::devices) { do_stuff_with(dev); }
+ *
+ */
 inline detail_::all_devices devices()
 {
 	return detail_::all_devices();

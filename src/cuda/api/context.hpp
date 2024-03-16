@@ -618,7 +618,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	 * Avoid executing any additional instructions on this thread until all work on all streams
 	 * in this context has been concluded.
 	 *
-	 * @note The synchronization will occur using this content's @ref sync_scheduling_policy()
+	 * @note The synchronization will occur using this context's @ref sync_scheduling_policy()
 	 */
 	void synchronize() const
 	{

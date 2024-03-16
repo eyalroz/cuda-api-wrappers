@@ -16,6 +16,7 @@
 #include "error.hpp"
 #include "types.hpp"
 
+///@cond
 #if CUDA_VERSION < 11000
 #define CAN_GET_APRIORI_KERNEL_HANDLE 0
 #define VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE virtual
@@ -23,6 +24,7 @@
 #define CAN_GET_APRIORI_KERNEL_HANDLE 1
 #define VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 #endif
+///@endcond
 
 namespace cuda {
 
@@ -32,6 +34,13 @@ class kernel_t;
 
 namespace kernel {
 
+/**
+ * @brief Signature of a function for determining the shared memory size
+ * a kernel will use, given the block size in threads. This functions is
+ * necessary for allowing CUDA to determine an optimal block size for a
+ * kernel - since CUDA cannot itself determine this value (and it will
+ * need to, for several different possible block sizes).
+ */
 using shared_memory_size_determiner_t = size_t (CUDA_CB *)(int block_size);
 
 /**
@@ -43,9 +52,9 @@ using shared_memory_size_determiner_t = size_t (CUDA_CB *)(int block_size);
  * @param device_id Device of the context in which the kernel was created
  * @param context_handle Handle of the context in which the kernel was created
  * @param handle Raw CUDA driver handle for the kernel
- * @param hold_pc_refcount_unit when the event's context is a device's primary
- *     context, this controls whether that context must be kept active while the
- *     event continues to exist.
+ * @param hold_primary_context_refcount_unit when the event's context is a device's
+ *     primary context, this controls whether that context must be kept active while
+ *     the event continues to exist.
  * @return a wrapper object associated with the specified kernel
  */
 kernel_t wrap(
@@ -129,8 +138,13 @@ public: // getters
 	device::id_t device_id() const noexcept { return device_id_; }
 	/// Get the raw handle of the context in which this kernel is defined
 	context::handle_t context_handle() const noexcept { return context_handle_; }
+	/**
+	 * Get the raw (intra-context) CUDA handle for this kernel
+	 *
+	 * @note for earlier versions of CUDA, and for apriori-compiled kernels, this
+	 * handle may be unavailable.
+	 */
 #if CAN_GET_APRIORI_KERNEL_HANDLE
-	/// Get the raw (intra-context) CUDA handle for this kernel
 	kernel::handle_t handle() const noexcept { return handle_; }
 #else
 	kernel::handle_t handle() const
@@ -166,6 +180,7 @@ public: // non-mutators
 		return kernel::get_attribute(*this, attribute);
 	}
 
+	/// @returns the PTX version used as the target for the compilation of this kernel
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	cuda::device::compute_capability_t ptx_version() const
 	{
@@ -173,6 +188,7 @@ public: // non-mutators
 		return device::compute_capability_t::from_combined_number(raw_attribute);
 	}
 
+	/// @returns the physical microarchitecture which this kernel was compiled to target
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	cuda::device::compute_capability_t binary_compilation_target_architecture() const {
 		auto raw_attribute = get_attribute(CU_FUNC_ATTRIBUTE_BINARY_VERSION);
