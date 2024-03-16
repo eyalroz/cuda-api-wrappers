@@ -101,6 +101,7 @@ inline context::flags_t get_flags()
 	context::flags_t result;
 	auto status = cuCtxGetFlags(&result);
 	throw_if_error_lazy(status, "Failed obtaining the current context's flags");
+	// Note: Not sanitizing the flags from having CU_CTX_MAP_HOST set
 	return result;
 }
 
