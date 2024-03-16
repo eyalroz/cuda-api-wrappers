@@ -198,26 +198,19 @@ constexpr inline bool operator!=(const named_t& lhs, const status_t& rhs) noexce
 
 } // namespace status
 
-/**
- * @brief Determine whether the API call returning the specified status had succeeded
- */
+/// Determine whether the API call returning the specified status had succeeded
 ///@{
 constexpr bool is_success(status_t status)  { return status == static_cast<status_t>(status::success); }
 constexpr bool is_success(cudaError_t status) { return static_cast<status_t>(status) == static_cast<status_t>(status::success); }
 ///@}
 
-/**
- * @brief Determine whether the API call returning the specified status had failed
- */
+/// @brief Determine whether the API call returning the specified status had failed
 ///@{
 constexpr bool is_failure(status_t status)  { return not is_success(status); }
 constexpr bool is_failure(cudaError_t status)  { return is_failure(static_cast<status_t>(status)); }
 ///@}
 
-/**
- * Obtain a brief textual explanation for a specified kind of CUDA Runtime API status
- * or error code.
- */
+/// Obtain a brief textual explanation for a specified kind of CUDA Runtime API status or error code.
 ///@{
 inline ::std::string describe(status_t status)
 {
@@ -232,7 +225,6 @@ inline ::std::string describe(status_t status)
 }
 inline ::std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
 ///@}
-
 
 namespace detail_ {
 
@@ -279,7 +271,6 @@ inline ::std::string ptr_as_hex(const I* ptr)
 class runtime_error : public ::std::runtime_error {
 public:
 	///@cond
-	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(status_t error_code) :
 		::std::runtime_error(describe(error_code)), code_(error_code)
 	{ }
@@ -306,20 +297,22 @@ protected:
 	{ }
 
 public:
+	/// Construct a runtime error which will not produce the default description for the error code,
+	/// but rather only the specified message.
 	static runtime_error with_message_override(status_t error_code, ::std::string complete_what_arg)
 	{
 		return runtime_error(error_code, ::std::runtime_error(::std::move(complete_what_arg)));
 	}
 
-	/**
-	 * Obtain the CUDA status code which resulted in this error being thrown.
-	 */
+	/// Obtain the CUDA status code which resulted in this error being thrown.
 	status_t code() const { return code_; }
 
 private:
 	status_t code_;
 };
 
+/// A macro for only throwing an error if we've failed - which also ensures no string
+/// is constructed unless we actually need to throw
 #define throw_if_error_lazy(status__, ... ) \
 do { \
 	const ::cuda::status_t tie_status__ = static_cast<::cuda::status_t>(status__); \
@@ -328,17 +321,17 @@ do { \
 	} \
 } while(false)
 
-// TODO: The following could use ::std::optional arguments - which would
-// prevent the need for dual versions of the functions - but we're
-// not writing C++17 here
-
 /**
  * Do nothing... unless the status indicates an error, in which case
  * a @ref cuda::runtime_error exception is thrown
  *
+ * @note Using these functions means the string will (almost certainly) be constructed,
+ * hence you might want to use the @ref throw_if_error_lazy macro instead
+ *
  * @param status should be @ref status::success  - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
+///@{
 inline void throw_if_error(status_t status, const ::std::string& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
@@ -358,11 +351,15 @@ inline void throw_if_error(cudaError_t status, ::std::string&& message) noexcept
 {
 	return throw_if_error(static_cast<status_t>(status), message);
 }
+///@}
 
 /**
  * Does nothing - unless the status indicates an error, in which case
  * a @ref cuda::runtime_error exception is thrown
  *
+ * @note Using these functions means the string will (almost certainly) be constructed,
+ * hence you might want to use the @ref throw_if_error_lazy macro instead
+*
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  */
 inline void throw_if_error(status_t status) noexcept(false)
@@ -431,6 +428,10 @@ inline status_t get(bool try_clearing = false) noexcept(true)
 /**
  * @brief Does nothing (unless throwing an exception)
  *
+ * @note Invoking this function will both make an API call and guarantee the construction
+ * of the string message, regardless of whether an error has occurred, so it doesn't
+ * quite do "nothing".
+ *
  * @note similar to @ref cuda::throw_if_error, but uses the CUDA driver's
  * own state regarding whether or not a sticky error has occurred
  */
@@ -441,8 +442,7 @@ inline void ensure_none(const ::std::string &message) noexcept(false)
 }
 
 /**
- * @brief A variant of @ref ensure_none() which takes
- * a C-style string.
+ * @brief A variant of @ref ensure_none() which takes a C-style string.
  *
  * @note exists so as to avoid incorrect overload resolution of
  * `ensure_none(my_c_string)` calls.
