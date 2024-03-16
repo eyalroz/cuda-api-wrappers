@@ -138,6 +138,9 @@ public:
 
 };
 
+/// Commonly-used phrases regarding the optimization level (e.g. from GCC's
+/// command-line arguments), translated into the numeric levels the RTC
+/// compilation actually accepts
 enum : rtc::optimization_level_t {
 	O0 = 0,
 	no_optimization = O0,
