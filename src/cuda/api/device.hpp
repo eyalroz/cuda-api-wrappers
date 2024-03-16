@@ -227,6 +227,12 @@ public:
 
 	void set_flags(flags_type new_flags) const
 	{
+		new_flags &= ~CU_CTX_MAP_HOST;
+		// CU_CTX_MAP_HOST is (mostly) ignored since CUDA 3.2, and has been officially
+		// deprecated in CUDA 11. Moreover, in CUDA 11 (and possibly other versions),
+		// the flags you get with cuDevicePrimaryCtxGetState() and cuCtxGetFlag()
+		// differ on this particular flag - and cuDevicePrimaryCtxSetFlags() doesn't
+		// like seeing it.
 		auto status = cuDevicePrimaryCtxSetFlags(id(), new_flags);
 		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
 	}
