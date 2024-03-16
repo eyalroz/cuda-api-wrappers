@@ -30,13 +30,14 @@ class array_t;
 
 namespace array {
 
+/// Raw CUDA driver handle for arrays (of any dimension)
 using handle_t = CUarray;
+
+/// Raw CUDA driver descriptor structure for an array of dimension @tparam NumDimensions
 template <dimensionality_t NumDimensions>
 using descriptor_t = typename ::std::conditional<NumDimensions == 2, CUDA_ARRAY_DESCRIPTOR, CUDA_ARRAY3D_DESCRIPTOR>::type;
 
-/**
- * @brief Wrap an existing CUDA array in an @ref array_t instance.
- */
+/// Wrap an existing CUDA array in an @ref array_t instance.
 template <typename T, dimensionality_t NumDimensions>
 array_t<T, NumDimensions> wrap(
 	device::id_t                 device_id,
@@ -188,14 +189,20 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
  *
  * @note Instances of this class do _not_ keep devices' primary contexts
  * alive/active - just like memory allocations (but unlike events and streams).
+ *
+ * @tparam T array element type
+ * @tparam NumDimensions number of array dimensions - either 2 or 3
  */
 template <typename T, dimensionality_t NumDimensions>
 class array_t {
 	static_assert(NumDimensions == 2 or NumDimensions == 3, "CUDA only supports 2D and 3D arrays");
 
 public:
+	/// See @ref array::handle_t
 	using handle_type = array::handle_t;
+	/// See @ref array::descriptor_t
 	using descriptor_type = array::descriptor_t<NumDimensions>;
+	/// See @ref array::dimensions_t
 	using dimensions_type = array::dimensions_t<NumDimensions>;
 
 	/**
@@ -227,14 +234,21 @@ public:
 
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, context::handle_t, handle_type, dimensions_type) noexcept;
 
-	handle_type get() const noexcept { return handle_; }
+ 	handle_type get() const noexcept { return handle_; }
 	device::id_t device_id() const noexcept { return device_id_; }
 	context::handle_t context_handle() const noexcept { return context_handle_; }
 	dimensions_type dimensions() const noexcept { return dimensions_; }
 	device_t device() const noexcept;
 	context_t context() const;
+
+	/// Overall number of elements in the array, over all dimensions
 	::std::size_t size() const noexcept { return dimensions().size(); }
+
+	/// Overall size in bytes of the elements of the array, over all dimensions
 	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
+
+	/// Get the full set of features of this array in a single structure,
+	/// recognizable by the CUDA driver (e.g. for creating additional arrays)
 	descriptor_type descriptor() const	{ return array::detail_::get_descriptor<NumDimensions>(context_handle_, handle_); }
 
 protected:

@@ -1,12 +1,12 @@
 /**
  * @file
  *
- * @brief Definitions and utility functions relating to just-in-time compilation and linking of CUDA code.
+ * @brief Definitions and utility functions relating to just-in-time compilation and linking of
+ * CUDA PTX code
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_COMMON_PTX_COMPILATION_OPTIONS_HPP_
 #define CUDA_API_WRAPPERS_COMMON_PTX_COMPILATION_OPTIONS_HPP_
-
 
 #include "types.hpp"
 #include "device.hpp"
@@ -17,17 +17,25 @@ namespace cuda {
 
 namespace rtc {
 
+/// The type used to specify the maximum number of SM registers to use,
+/// to the PTX compiler
 using ptx_register_count_t = int16_t;
+
+/// The type used to specify the intensity, and extent of allowed implication,
+/// of optimization efforts, for the PTX compilation
 using optimization_level_t = int;
 
 } // namespace rtc
 
-
 enum class memory_operation_t { load, store };
 
+/// A helper struct for templatizing caching<Op>::mode
 template <memory_operation_t Op> struct caching;
 
 template <> struct caching<memory_operation_t::load> {
+
+	/// The combination of effects the execution of an instruction will have
+	/// on the GPU caching mechanisms
 	enum mode {
 		/**
 		 * ca - Cache at all levels, likely to be accessed again.
@@ -83,15 +91,20 @@ template <> struct caching<memory_operation_t::load> {
 	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
 };
 
-
 template <> struct caching<memory_operation_t::store> {
+
+	/// The combination of effects the execution of an instruction will have
+	/// on the GPU caching mechanisms
 	enum mode {
 		wb = 0, write_back = wb, write_back_coherent_levels = wb,
 		cg = 1, global = cg, cache_global = cg, cache_at_global_level = cg,
 		cs = 2, evict_first = cs, cache_as_evict_first = cs, cache_streaming = cs,
 		wt = 3, write_through = wt, write_through_to_system_memory = wt
 	};
+
+	/// @cond
 	static constexpr const char* mode_names[] = { "wb", "cg", "cs", "wt" };
+	/// @endcond
 };
 
 template <memory_operation_t Op>
@@ -107,11 +120,13 @@ const char* name(caching_mode_t<Op> mode)
 
 } // namespace detail_
 
+///@cond
 template <memory_operation_t Op>
 inline ::std::ostream& operator<< (::std::ostream& os, caching_mode_t<Op> lcm)
 {
 	return os << detail_::name(lcm);
 }
+///@endcond
 
 namespace rtc {
 
@@ -131,51 +146,43 @@ constexpr const struct {
  */
 struct common_ptx_compilation_options_t {
 
-	/**
-	 * Limit the number of registers which a kernel thread may use.
-	 */
+	/// Limit the number of registers which a kernel thread may use.
 	optional<ptx_register_count_t> max_num_registers_per_thread{};
 
-	/**
-	 * The minimum number of threads per block which the compiler should target
-	 */
+	///The minimum number of threads per block which the compiler should target
 	optional<grid::block_dimension_t> min_num_threads_per_block{};
 
-	/**
-	 * Compilation optimization level (as in -O1, -O2 etc.)
-	 */
+	/// Compilation optimization level (as in -O1, -O2 etc.)
 	optional<optimization_level_t> optimization_level{};
 
+	/// Which NVIDIA physical architecture to generate SASS code for
 	optional<device::compute_capability_t> specific_target;
 
-	/**
-	 *  Generate indications of which PTX/SASS instructions correspond to which
-	 *  lines of the source code, within the compiled output
-	 */
+	/// Generate indications of which PTX/SASS instructions correspond to which
+	/// lines of the source code, within the compiled output
 	bool generate_source_line_info {false};
 
-	/*
-	 * Generate debugging information for within the compiled output (-g)
-	 */
+	/// Generate debugging information associating SASS instructions to locations
+	/// in the source, embedding it within the compilation output (-g)
 	bool generate_debug_info {false};
 
-	/**
-	 *  Specifies which of the PTX load caching modes use by default,
-	 *  when no caching mode is specified in a PTX instruction
-	 */
-	///@{
+	/// Which of the memory-load-instruction caching modes (see
+	/// {@ref caching_mode_t}) to use by default, when no caching mode is specified
+	/// in a PTX instruction.
 	optional<caching_mode_t<memory_operation_t::load>> default_load_caching_mode_;
 
+	/// see @ref default_load_caching_mode_
+	///@{
 	virtual optional<caching_mode_t<memory_operation_t::load>>& default_load_caching_mode()
 	{
 		return default_load_caching_mode_;
 	}
+
 	virtual optional<caching_mode_t<memory_operation_t::load>> default_load_caching_mode() const
 	{
 		return default_load_caching_mode_;
 	}
 	///@}
-
 
 	/**
 	 * Generate relocatable code that can be linked with other relocatable device code.

@@ -32,8 +32,15 @@ struct options_t;
 
 namespace context {
 
+/// Features of contexts which can be configured individually during a
+/// context's lifetime
 using limit_t = CUlimit;
+
+/// Type for the actual values for @ref context (see @ref `limit_t` for the
+/// possible kinds of limits whose value can be set)
 using limit_value_t = size_t;
+
+/// Choice of the number of bytes in each bank of the shared memory
 using shared_memory_bank_size_t = CUsharedconfig;
 
 /**
@@ -41,8 +48,11 @@ using shared_memory_bank_size_t = CUsharedconfig;
  * higher numeric value to the lower.
  */
 struct stream_priority_range_t {
-	stream::priority_t least; /// Higher numeric value, lower priority
-	stream::priority_t greatest; /// Lower numeric value, higher priority
+	/// Higher numeric value, lower priority
+	stream::priority_t least;
+
+	/// Lower numeric value, higher priority
+	stream::priority_t greatest;
 
 	/**
 	 * When true, stream prioritization is not supported, i.e. all streams have
@@ -219,6 +229,7 @@ inline void synchronize(const context_t& context);
  */
 class context_t {
 public: // types
+	/// A container type for the features of a context configurable at creation time
 	using flags_type = context::flags_t;
 
 	static_assert(
@@ -242,8 +253,10 @@ public: // inner classes
 			: device_id_(device_id), context_handle_(context_handle)
 		{}
 
+		/// Device on which te memory managed with this object is allocated
 		device_t associated_device() const;
 
+		/// Context in which te memory managed with this object is recognized / usable
 		context_t associated_context() const;
 
 		/**
@@ -301,20 +314,12 @@ public: // inner classes
 
 public: // data member non-mutator getters
 
-	/**
-	 * The CUDA context ID this object is wrapping
-	 */
 	context::handle_t handle() const noexcept { return handle_; }
-
-	/**
-	 * The device with which this context is associated
-	 */
 	device::id_t device_id() const noexcept { return device_id_; }
 	device_t device() const;
 
-	/**
-	 * Is this wrapper responsible for having the wrapped CUDA context destroyed on destruction?
-	 */
+	/// @return True if this wrapper is the one responsible for having the wrapped CUDA
+	/// context destroyed eventually
 	bool is_owning() const noexcept { return owning_;  }
 
 	/**
@@ -351,33 +356,23 @@ public: // other non-mutator methods
 		return context::detail_::cache_preference(handle_);
 	}
 
-	/**
-	 * @return the stack size in bytes of each GPU thread
-	 *
-	 * @todo Is this really a feature of the context? Not of the device?
-	 */
+	/// @return the stack size in bytes of each GPU thread when running kernels within this context
 	size_t stack_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_STACK_SIZE);
 	}
 
-	/**
-	 * @return the size of the FIFO (first-in, first-out) buffer used by the printf() function available to device kernels
-	 *
-	 * @todo Is this really a feature of the context? Not of the device?
-	 */
+	/// @return the size of the FIFO (first-in, first-out) buffer used by the `printf()` function
+	/// available in device-side code, of kernels within this context
 	context::limit_value_t printf_buffer_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	}
 
-	/**
-	 * @return the size in bytes of the heap used by the malloc() and free() device system calls.
-	 *
-	 * @todo Is this really a feature of the context? Not of the device?
-	 */
+	/// @return the size in bytes of the heap available to malloc() & free() calls in device-side
+	/// code, of kernels within this context
 	context::limit_value_t memory_allocation_heap_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
@@ -397,6 +392,7 @@ public: // other non-mutator methods
 		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH);
 	}
 
+	/// Get a wrapper object for this context's associated device-global memory
 	global_memory_type memory() const
 	{
 		return { device_id_, handle_ };
@@ -440,23 +436,17 @@ public: // other non-mutator methods
 		return context::detail_::shared_memory_bank_size(handle_);
 	}
 
-	/**
-	 * Determine if this context is the system's current CUDA context.
-	 */
+	/// @return True if this context is the current CUDA context for this thread (i.e. the
+	/// top item in the context stack)
 	bool is_current() const
 	{
 		return context::current::detail_::is_(handle_);
 	}
 
-	/**
-	 * Determine if this context is the primary context for its associated device.
-	 */
+	/// @return True if this context is the primary context for its associated device.
 	bool is_primary() const;
 
-	/**
-	 *
-	 * @todo isn't this a feature of devices?
-	 */
+	/// Get the range of priority values one can set for streams in this context
 	context::stream_priority_range_t stream_priority_range() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
@@ -467,12 +457,20 @@ public: // other non-mutator methods
 		return result;
 	}
 
+	/// Get one of the configurable limits for this context (and events, streams,
+	/// kernels, etc. defined in this context).
 	context::limit_value_t get_limit(context::limit_t limit_id) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::get_limit(limit_id);
 	}
 
+	/**
+	 * Returns a version number corresponding to the capabilities of this context, which can be used
+	 * can use to direct work targeting a specific API version among contexts.
+	 *
+	 * @note The versions returned by this call are not the same as the driver version.
+	 */
 	version_t api_version() const
 	{
 		unsigned int raw_version;
@@ -482,10 +480,12 @@ public: // other non-mutator methods
 	}
 
 protected:
+	///@cond
 	virtual context::flags_t flags() const
 	{
 		return context::detail_::get_flags(handle_);
 	}
+	///@endcond
 
 public: // methods which mutate the context, but not its wrapper
 	/**
@@ -505,21 +505,22 @@ public: // methods which mutate the context, but not its wrapper
 		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
-	/**
-	 * See @ref cuda::stream::create()
-	 */
+	/// Create a new event within this context; see @ref cuda::stream::create() for details
+	/// regarding the parameters
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
 		stream::priority_t  priority = cuda::stream::default_priority);
 
-	/**
-	 * See @ref cuda::event::create()
-	 */
+	/// Create a new event within this context; see @ref cuda::event::create() for details
+	/// regarding the parameters
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
 		bool interprocess       = event::not_interprocess);
 
+	/// Create a new module of kernels and global memory regions within this context;
+	/// see also @ref cuda::module::create()
+	///@{
 	template <typename ContiguousContainer,
 		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
@@ -527,14 +528,18 @@ public: // methods which mutate the context, but not its wrapper
 	template <typename ContiguousContainer,
 		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data) const;
+	///@}
 
 public: // Methods which don't mutate the context, but affect the device itself
 
 
+	/// Allow kernels and memory operations within this context to involve memory allocated in a peer context
 	void enable_access_to(const context_t& peer) const;
 
+	/// Prevent kernels and memory operations within this context from involving memory allocated in a peer context
 	void disable_access_to(const context_t& peer) const;
 
+	/// Clear the L2 cache memory which persists between invocations of kernels
 	void reset_persisting_l2_cache() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
@@ -573,12 +578,17 @@ public: // other methods which don't mutate this class as a reference, but do mu
 		context::detail_::set_cache_preference(handle_, preference);
 	}
 
+	/// Set one of the configurable limits for this context (and events, streams,
+	/// kernels, etc. defined in this context).
 	void set_limit(context::limit_t limit_id, context::limit_value_t new_value) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::set_limit(limit_id, new_value);
 	}
 
+	/// Set the limit on the size of the stack a kernel thread can use when running
+	///
+	/// @todo Verify this is in bytes!
 	void stack_size(context::limit_value_t new_value) const
 	{
 		return set_limit(CU_LIMIT_STACK_SIZE, new_value);
@@ -605,8 +615,10 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	}
 
 	/**
-	 * Have the calling thread wait - either busy-waiting or blocking - and
-	 * return only after all pending actions within this context have concluded.
+	 * Avoid executing any additional instructions on this thread until all work on all streams
+	 * in this context has been concluded.
+	 *
+	 * @note The synchronization will occur using this content's @ref sync_scheduling_policy()
 	 */
 	void synchronize() const
 	{
@@ -624,10 +636,12 @@ protected: // constructors
 
 public: // friendship
 
+	///@cond
 	friend context_t context::wrap(
 		device::id_t       device_id,
 		context::handle_t  context_id,
 		bool               take_ownership) noexcept;
+	///@endcond
 
 public: // constructors and destructor
 
@@ -664,7 +678,7 @@ public: // operators
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  handle_;
-	/// When true, the object is a valud type, and the context must be destroyed on destruction
+	/// When true, the object is a valued type, and the context must be destroyed on destruction
 	bool               owning_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
@@ -673,6 +687,8 @@ protected: // data members
 	// primary or not?
 };
 
+/// @note: The comparison ignores whether or not the wrapper is owning
+///@{
 inline bool operator==(const context_t& lhs, const context_t& rhs)
 {
 	return lhs.handle() == rhs.handle();
@@ -682,9 +698,15 @@ inline bool operator!=(const context_t& lhs, const context_t& rhs)
 {
 	return lhs.handle() != rhs.handle();
 }
+///@}
 
 namespace context {
 
+/**
+ *
+ */
+/// Wrap the fundamental information regarding a CUDA context into an instance of
+/// the context_t wrapper class.
 inline context_t wrap(
 	device::id_t       device_id,
 	handle_t           context_id,
@@ -737,6 +759,16 @@ context_t create(
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
 	bool                                   keep_larger_local_mem_after_resize = false);
 
+/**
+ * Creates a new CUDA context on a given device, as would @ref create() - and pushes it
+ * onto the top of the context stack.
+ *
+ * @note The effect of this function could, of course, be achieved by creating a context
+ * without a push, then pushing it onto the top of the stack - both functions offered in
+ * this same namespace. However, the CUDA Driver API actually offers _this_ functionality
+ * directly, i.e. just creating a context means creating-and-pushing, then popping, which
+ * is a waste.
+ */
 context_t create_and_push(
 	const device_t&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
@@ -758,21 +790,43 @@ inline context_t get()
 	return context::detail_::from_handle(handle);
 }
 
+/**
+ * Set the context at the top of the stack to a specified context
+ *
+ * @note If the context stack is empty, the context (reference) is pushed as the
+ * single element; otherwise, the top item on the stack is _replaced_ with the
+ * specified context, with the number of elements on the stack not changing.
+ */
 inline void set(const context_t& context)
 {
 	return detail_::set(context.handle());
 }
 
+/// Push a (reference to a) context onto the top of the context stack - unless
+/// that context is already at the top of the stack, in which case do nothing
 inline bool push_if_not_on_top(const context_t& context)
 {
 	return context::current::detail_::push_if_not_on_top(context.handle());
 }
 
+/**
+ * Push a (reference to a) context onto the top of the context stack
+ *
+ * @note if the specified context is already at the top of the stack - it is
+ * still pushed, i.e. there will now be one additional reference to the context
+ * on the stack.
+ */
 inline void push(const context_t& context)
 {
 	return context::current::detail_::push(context.handle());
 }
 
+/**
+ * Pop the top off of the context stack.
+ *
+ * @return a non-owning context wrapper for the context (previously) at the top
+ * of the stack
+ */
 inline context_t pop()
 {
 	static constexpr const bool do_not_take_ownership { false };
@@ -820,6 +874,16 @@ inline ::std::string identify(const context_t& context)
 
 } // namespace context
 
+/**
+ * Avoid executing any additional instructions on this thread until all work on all streams
+ * in @p context has been concluded.
+ *
+ * @param context The context all of whose streams are synchronized when a
+ *     call to this function is made.
+ *
+ * @note There are multiple ways to effect a synchronization - and the choice is
+ * the context's host synchronization policy; see @ref context_t::sync_scheduling_policy
+ */
 inline void synchronize(const context_t& context)
 {
 	context::detail_::synchronize(context.device_id(), context.handle());
