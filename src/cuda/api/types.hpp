@@ -182,17 +182,12 @@ struct dimensions_t<2>
  */
 namespace event {
 
-/**
- * The CUDA Runtime API's numeric handle for events
- */
+/// The CUDA driver's raw handle for events
 using handle_t = CUevent;
 
 namespace ipc {
 
-/**
- * The concrete value passed between processes, used to tell
- * the CUDA Runtime API which event is desired.
- */
+/// The CUDA driver's raw handle for events passed between processes
 using handle_t = CUipcEventHandle;
 
 } // namespace ipc
@@ -206,10 +201,8 @@ using handle_t = CUipcEventHandle;
 
 namespace stream {
 
-/**
- * The CUDA API's handle for streams
- */
-using handle_t             = CUstream;
+/// The CUDA driver's raw handle for streams
+using handle_t = CUstream;
 
 /**
  * CUDA streams have a scheduling priority, with lower values meaning higher priority.
@@ -218,15 +211,13 @@ using handle_t             = CUstream;
  */
 using priority_t       = int;
 enum : priority_t {
-	/**
-	 * the scheduling priority of a stream created without specifying any other priority
-	 * value
-	 */
+	/// the scheduling priority of a stream created without specifying any other priority value
 	default_priority   = 0
 };
 
 namespace detail_ {
 
+/// The CUDA driver's raw handle for a host-side callback function
 #if CUDA_VERSION >= 10000
 using callback_t = CUhostFn;
 #else
@@ -234,7 +225,6 @@ using callback_t = CUstreamCallback;
 #endif
 
 } // namespace detail_
-
 
 } // namespace stream
 
@@ -292,6 +282,8 @@ struct dimensions_t // this almost-inherits dim3
 	__host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
 	constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
+	/// Number of dimensions in which this dimension structure is non-trivial, i.e. coordinates can
+	/// have more than a single value
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((z > 1) + (y > 1) + (x > 1));
