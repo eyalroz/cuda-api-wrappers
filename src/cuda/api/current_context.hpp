@@ -237,6 +237,12 @@ public:
 #define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
 ::cuda::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
 
+/**
+ * Avoid executing any additional instructions on this thread until all work on all streams
+ * in the current context has been concluded.
+ *
+ * @note The synchronization will occur using the current context's @ref sync_scheduling_policy()
+ */
 inline void synchronize()
 {
 	auto status = cuCtxSynchronize();

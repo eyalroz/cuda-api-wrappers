@@ -258,6 +258,12 @@ struct raw_kernel_typegen {
 
 } // namespace detail_
 
+/**
+ * A function similar to ::std::any_cast for retrieving the function pointer wrapped
+ * by a @ref cuda::kernel::apriori_compiled_t object: Only the user knows the exact
+ * set of kernel function parameters, and the must supply them as template arguments
+ * to obtain the function pointer they are after.
+ */
 template<typename... KernelParameters>
 typename detail_::raw_kernel_typegen<KernelParameters...>::type
 unwrap(const kernel::apriori_compiled_t& kernel)
@@ -342,6 +348,9 @@ void launch(
  * @param stream
  *     Proxy for the stream on which to enqueue the kernel launch; may be the
  *     default stream of a context.
+ * @param launch_configuration
+ *     The configuration information for the grid of blocks of threads and
+ *     other configuration with which to configure the launch
  * @param marshalled_arguments
  *     A container of `void` or `const void` pointers to the argument values
  */

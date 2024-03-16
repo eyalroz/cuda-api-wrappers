@@ -1,7 +1,8 @@
 /**
  * @file
  *
- * @brief Contains the @ref cuda::launch_config_builder_t class definition
+ * @brief Contains the @ref cuda::launch_config_builder_t class definition and
+ * related definitions.
  *
  * @note Launch configurations are used mostly in {@ref kernel_launch.hpp}.
  */
@@ -88,6 +89,9 @@ static void validate_all_dimensions_compatibility(
  */
 class launch_config_builder_t {
 protected:
+	/// Used the information already put in to the builder to determine either the
+	/// _actual_ size of the dynamic shared memory to be used for this kernel (i.e. not
+	/// an upper bound)
 	memory::shared::size_t  get_dynamic_shared_memory_size(grid::block_dimensions_t block_dims) const
 	{
 		return static_cast<memory::shared::size_t>((dynamic_shared_memory_size_determiner_ == nullptr) ?
