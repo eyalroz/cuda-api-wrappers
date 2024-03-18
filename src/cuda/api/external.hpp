@@ -10,6 +10,7 @@
 #define CUDA_API_WRAPPERS_EXTERNAL_HPP_
 
 #include "memory.hpp"
+#include "unique_region.hpp"
 
 namespace cuda {
 namespace memory {
@@ -73,7 +74,6 @@ inline handle_t import(const descriptor_t& descriptor)
 class resource_t;
 
 resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership = false);
-class mapped_region_t;
 
 /**
  * A CUDA-recognized external memory resource - i.e. one that is not simply a region
@@ -152,40 +152,18 @@ inline region_t map(handle_t handle, subregion_spec_t subregion)
 
 } // namespace detail_
 
-mapped_region_t wrap(region_t mapped_region);
+using unique_region = memory::unique_region<device::detail_::deleter>;
 
-/**
- * TODO: Rebase this on unique_region
- *
- * Essentially, a unique_ptr-like class, with the allocator and deleter being
- * mapping and unmapping parts of an external memory resource, and - a size.
- */
-class mapped_region_t {
-public:
-	friend mapped_region_t wrap(region_t mapped_region);
-
-	operator region_t() const { return region_; }
-	region_t raw_region() const { return region_; }
-
-	mapped_region_t(const mapped_region_t& other) = delete;
-	mapped_region_t(mapped_region_t&& other) : mapped_region_t(other.region_) { }
-	~mapped_region_t() { memory::device::free(region_); }
-
-protected:
-	mapped_region_t(region_t region) : region_(region) { }
-
-	region_t region_;
-};
-
-inline mapped_region_t wrap(region_t mapped_region)
+/// Construct a unique_region of already-mapped external memory
+inline unique_region wrap(region_t mapped_region)
 {
-	return { mapped_region };
+	return unique_region{ mapped_region };
 }
 
 /**
  * Map a sub-region of a memory resource into the CUDA-accessible address space
  */
-inline mapped_region_t map(const resource_t& resource, subregion_spec_t subregion_to_map)
+inline unique_region map(const resource_t& resource, subregion_spec_t subregion_to_map)
 {
 	auto mapped_region = detail_::map(resource.handle(), subregion_to_map);
 	return wrap(mapped_region);
@@ -194,7 +172,7 @@ inline mapped_region_t map(const resource_t& resource, subregion_spec_t subregio
 /**
  * Map an external memory resource into the CUDA-accessible address space
  */
-inline mapped_region_t map(const resource_t& resource)
+inline unique_region map(const resource_t& resource)
 {
 	auto subregion_spec = subregion_spec_t { 0u, resource.size() };
 	return map(resource, subregion_spec);
