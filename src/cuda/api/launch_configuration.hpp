@@ -140,7 +140,7 @@ public: // non-mutators
 		if (block_cooperation) { return true; }
 #if CUDA_VERSION >= 12000
 		return  programmatically_dependent_launch or programmatic_completion.event
-			or in_remote_memory_synchronization_domain or clustering.cluster_dimensions == grid::dimensions_t::point();
+			or in_remote_memory_synchronization_domain or clustering.cluster_dimensions != grid::dimensions_t::point();
 #else
 		return false;
 #endif
@@ -196,6 +196,8 @@ constexpr bool operator==(const launch_configuration_t lhs, const launch_configu
 		and lhs.programmatically_dependent_launch == rhs.programmatically_dependent_launch
 		and lhs.programmatic_completion.event == rhs.programmatic_completion.event
 		and lhs.in_remote_memory_synchronization_domain == rhs.in_remote_memory_synchronization_domain
+		and lhs.clustering.cluster_dimensions == rhs.clustering.cluster_dimensions
+		and lhs.clustering.scheduling_policy == rhs.clustering.scheduling_policy
 #endif // CUDA_VERSION >= 12000
 		;
 }
