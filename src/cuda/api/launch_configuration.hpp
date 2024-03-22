@@ -126,6 +126,9 @@ struct launch_configuration_t {
 	} clustering;
 #endif // CUDA_VERSION >= 12000
 
+#if __cplusplus >= 202002L
+	constexpr auto operator<=>(const launch_configuration_t&) const noexcept = default;
+#endif
 public: // non-mutators
 
 	/**
@@ -186,6 +189,7 @@ public: // non-mutators
 	CPP14_CONSTEXPR launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
+#if __cplusplus < 202002L
 constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return
@@ -206,6 +210,7 @@ constexpr bool operator!=(const launch_configuration_t lhs, const launch_configu
 {
 	return not (lhs == rhs);
 }
+#endif
 
 namespace detail_ {
 
