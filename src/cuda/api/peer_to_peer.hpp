@@ -25,7 +25,6 @@ constexpr const attribute_t	native_atomics_support = CU_DEVICE_P2P_ATTRIBUTE_NAT
 constexpr const attribute_t	array_access_support = CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED; /// 1 if special array iterpolatory access operations are supported across the link, 0 otherwise
 #endif
 
-
 namespace detail_ {
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
@@ -76,8 +75,17 @@ namespace current {
 
 namespace peer_to_peer {
 
+/**
+ * @brief Allow operations in one context to access the memory space of another context
+ * to access being enabled.
+ *
+ * @note Calling this function does not ensure access will succeed, as access might
+ * be impossible due to hardware and/or driver specifics.
+ */
 void enable_access_to(const context_t &context, const context_t &peer_context);
 
+/// Prevent operations in one context to access the memory space of another context
+/// to access being enabled.
 void disable_access_to(const context_t &context, const context_t &peer_context);
 
 } // namespace peer_to_peer

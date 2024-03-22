@@ -20,14 +20,14 @@ namespace cuda {
 
 ///@cond
 class device_t;
-
 class module_t;
-
 class link_t;
 ///@endcond
 
+/// Definitions related to CUDA linking-processes, captured by the  @ref link_t wrapper class
 namespace link {
 
+/// Kinds of images which can be used by the linker (some may require driver compilation work)
 enum class input_kind_t {
 	cubin,    /// Compiled device-class-specific device code
 	ptx,      /// PTX (microarchitecture-inspecific intermediate representation)
@@ -36,9 +36,14 @@ enum class input_kind_t {
 	library,  /// An archive of objects files with embedded device code; a `.a` file
 };
 
+/// A raw CUDA driver handle for a linking-process
 using handle_t = CUlinkState;
 
-// TODO: Check if the linking has been completed!
+/**
+ * @brief Wrap an existing CUDA link-process in a @ref link_t wrapper class instance.
+ *
+ * @todo : Consider checking if the linking has already been completed!
+ */
 inline link_t wrap(
 	device::id_t device_id,
 	context::handle_t context_handle,
@@ -48,21 +53,19 @@ inline link_t wrap(
 
 inline link_t create(const void *image, const link::options_t &options);
 
-// TODO: Use a clase-class with C++17 of later, made up of the two classes here
+/// Definitions relating to inputs to CUDA linking-processes
 namespace input {
 
-/**
- * A typed, named, image in memory which can be used as an input to a runtime
- * CUDA linking process.
- */
+/// A typed, named, image in memory which can be used as an input to a runtime CUDA linking-process
 struct image_t : memory::region_t {
-	const char *name;
-	link::input_kind_t type;
+	const char *name; /// Link images are attached a name when registered in a linking-process
+	link::input_kind_t type; /// type of contents found in the memory region
 };
 
+/// A typed, named, image in a file which can be used as an input to a runtime CUDA linking-process
 struct file_t {
-	const char *path; // TODO: Use a proper path in C++14 and later
-	link::input_kind_t type;
+	const char *path;
+	link::input_kind_t type; /// type of contents found in the file
 };
 
 } // namespace input
@@ -115,7 +118,16 @@ public:
 		return memory::region_t{cubin_output_start, cubin_output_size};
 	}
 
-	// TODO: Replace this with methods which take wrapper classes.
+	/**
+	 * Add another linkable image, from memory, to this linking-process
+	 *
+	 * @param[in] image Memory region containing the image
+	 * @param[in] ptx_compilation_options Options for compiling PTX code to cubin, if necessary,
+	 *     before linking.
+	 *
+	 * @note some types of linkable images are not, in fact, even compiled - but can be compiled
+	 * by the driver with the specified @p options.
+	 */
 	void add(link::input::image_t image, const link::options_t &ptx_compilation_options = {}) const
 	{
 		auto marshalled_options = link::detail_::marshal(ptx_compilation_options);
@@ -134,6 +146,17 @@ public:
 			+ ::std::to_string(static_cast<int>(image.type)) + " to a link.");
 	}
 
+	/**
+	 * Add another linkable image, from a file, to this linking-process
+	 *
+	 * @param[in] file_input Path of the image file to be added
+	 * @param[in] ptx_compilation_options Options for compiling PTX code to cubin, if necessary,
+	 *     before linking.
+	 *
+	 * @note some types of linkable images are not, in fact, even compiled - but can be compiled
+	 * by the driver with the specified @p options.
+	 */
+	///@{
 	void add_file(link::input::file_t file_input, const link::options_t &options) const
 	{
 		auto marshalled_options = link::detail_::marshal(options);
@@ -156,6 +179,7 @@ public:
 		return add_file(path.c_str(), file_contents_type);
 	}
 #endif
+	///@}
 
 protected: // constructors
 
@@ -219,6 +243,7 @@ protected: // data members
 
 namespace link {
 
+/// Create a new link-process (before adding any compiled images or or image-files)
 inline link_t create(const link::options_t &options = link::options_t{})
 {
 	handle_t new_link_handle;
@@ -241,13 +266,12 @@ inline link_t create(const link::options_t &options = link::options_t{})
 		do_take_ownership);
 }
 
-// TODO: Check if the linking has been completed!
 inline link_t wrap(
-	device::id_t device_id,
-	context::handle_t context_handle,
-	link::handle_t handle,
-	const link::options_t &options,
-	bool take_ownership) noexcept
+	device::id_t             device_id,
+	context::handle_t        context_handle,
+	link::handle_t           handle,
+	const link::options_t &  options,
+	bool                     take_ownership) noexcept
 {
 	return link_t{device_id, context_handle, handle, options, take_ownership};
 }

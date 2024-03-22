@@ -861,6 +861,7 @@ inline context_t get_with_fallback_push()
 
 } // namespace current
 
+/// @return true if the context is the primary context of its device
 bool is_primary(const context_t& context);
 
 namespace detail_ {
