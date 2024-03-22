@@ -101,11 +101,7 @@ protected:
 			// A: MSVC is being a bit finicky here for some reason
 	}
 
-#ifndef NDEBUG
 	grid::composite_dimensions_t get_unvalidated_composite_dimensions() const noexcept(false)
-#else
-	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
-#endif
 	{
 		grid::composite_dimensions_t result;
 		if (saturate_with_active_blocks_) {
@@ -183,14 +179,14 @@ protected:
 		}
 	}
 
-#ifndef NDEBUG
 	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
 	{
 		auto result = get_unvalidated_composite_dimensions();
+#ifndef NDEBUG
 		validate_composite_dimensions(result);
+#endif
 		return result;
 	}
-#endif
 
 public:
 	launch_configuration_t build() const
