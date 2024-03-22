@@ -50,14 +50,13 @@ enum source_kind_t {
 // this is not entirely sufficient, as we should probably not
 // provide a container which may then be resized.
 
-/**
- * @brief Real-time compilation of CUDA programs using the NVIDIA NVRTC library.
- */
+/// Real-time compilation of programs using the NVIDIA libraries.
 namespace rtc {
 
 /// A span of C-style strings the contents of which must not be modified
 using const_cstrings_span = span<const char* const>;
 
+/// Definitions relating to source-code programs to be compiled
 namespace program {
 
 namespace detail_ {

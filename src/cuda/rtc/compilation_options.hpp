@@ -62,7 +62,11 @@ inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(fa
 
 namespace error {
 
+/// Possible ways of handling a potentially problematic finding by the compiler 
+/// in the program source code
 enum handling_method_t { raise_error = 0, suppress = 1, warn = 2 };
+
+/// Errors, or problematic findings, by the compiler are identified by a number of this type
 using number_t = unsigned;
 
 namespace detail_ {
@@ -77,6 +81,7 @@ inline const char* option_name_part(handling_method_t method)
 
 } // namespace error
 
+/// Compilation options common to all kinds of JIT-compilable programs
 template <source_kind_t Kind>
 struct compilation_options_base_t {
 	template <typename T>
@@ -135,8 +140,7 @@ public:
 		return set_target(device.compute_capability());
 	}
 	///@}
-
-};
+}; // compilation_options_base_t
 
 /// Commonly-used phrases regarding the optimization level (e.g. from GCC's
 /// command-line arguments), translated into the numeric levels the RTC
@@ -150,66 +154,126 @@ enum : rtc::optimization_level_t {
 	maximum_optimization = O3
 };
 
-
+/**
+ * Options to be passed to one of the NVIDIA JIT compilers along with a program's source code
+ *
+ * @note at the raw API level, the options are passed in a simpler form, less convenient for
+ * modification. This is handled by the @ref program_t class.
+ */
 template <source_kind_t Kind>
 class compilation_options_t;
 
+/// Options for JIT-compilation of CUDA PTX code
 template <>
 class compilation_options_t<ptx> final :
 	public compilation_options_base_t<ptx>,
 	public common_ptx_compilation_options_t
 {
 public:
+	///@cond
 	using parent = compilation_options_base_t<ptx>;
 	using parent::parent;
+	///@endcond
+
+	/// Makes the PTX compiler run without producing any CUBIN output (for PTX verification only)
+	bool parse_without_code_generation { false };
+
+	/// Allow the JIT compiler to perform expensive optimizations using maximum available resources
+	/// (memory and compile-time).
+	bool allow_expensive_optimizations_below_O2 { false };
 
 	/**
-	 * Makes the PTX compiler run without producing any CUBIN output - for verifying
-	 * the input PTX only.
+	 * Compile as patch code for CUDA tools.
+     *
+	 * @note :
+	 *
+	 * 1. Cannot Shall not be used in conjunction with @ref parse_without_code_generation
+	 *    or {@ref compile_extensible_whole_program}.
+	 * 2. Some PTX ISA features may not be usable in this compilation mode.
 	 */
-	bool parse_without_code_generation { false };
-	bool allow_expensive_optimizations_below_O2 { false };
 	bool compile_as_tools_patch { false };
+
+	/**
+	 * Expecting only whole-programs to be directly usable, allow some calls to not be resolved
+	 * until device-side linking is performed (see @ref link_t).
+	 */
 	bool compile_extensible_whole_program { false };
+
+	/// Enable the contraction of multiplcations-followed-by-additions (or subtractions) into single
+	/// fused instructions (FMAD, FFMA, DFMA)
 	bool use_fused_multiply_add { true };
+
+	/// Print code generation statistics along with the compilation log
 	bool verbose { false };
+
+	/**
+	 * Prevent the compiler from merging consecutive basic blocks
+	 * (@ref https://en.wikipedia.org/wiki/Basic_block) into a single block.
+	 *
+	 * Normally, the compiler attempts to merge consecutive "basic blocks" as part of its optimization
+	 * process. However, for debuggable code this is very confusing.
+	 */
 	bool dont_merge_basicblocks { false };
+
+	/// The equivalent of suppressing all findings which currently trigger a warning
 	bool disable_warnings { false };
+
+	/// Disable use of the "optimizer constant bank" feature
 	bool disable_optimizer_constants { false };
+
+	/// Prevents the optimizing away of the return instruction at the end of a program (a kernel?),
+	/// making it possible to set a breakpoint just at that point
 	bool return_at_end_of_kernel { false };
+
+	/// Generate relocatable references for variables and preserve relocations generated for them in
+	/// the linked executable.
 	bool preserve_variable_relocations { false };
+
+	/// Warnings about situations likely to result in poor performance
+	/// or other problems.
 	struct {
 		bool double_precision_ops { false };
 		bool local_memory_use { false };
 		bool registers_spill_to_local_memory { false };
-		bool indeterminable_stack_size {true };
+		bool indeterminable_stack_size { true };
 		// Does the PTX compiler library actually support this? ptxas does, but the PTX compilation API
 		// doesn't mention it
 		bool double_demotion { false };
 	} situation_warnings;
+
+	/// Limits on the number of registers which generated object code (of different kinds) is allowed
+	/// to use
 	struct {
 		optional<rtc::ptx_register_count_t> kernel {};
 		optional<rtc::ptx_register_count_t> device_function {};
 	} maximum_register_counts;
 
+	/// Options for fully-specifying a caching mode
 	struct caching_mode_spec_t {
 		optional<caching_mode_t<memory_operation_t::load>> load {};
 		optional<caching_mode_t<memory_operation_t::store>> store {};
 	};
 	struct {
+		/// The caching mode to be used for instructions which don't specify a caching mode
 		caching_mode_spec_t default_ {};
+		/// A potential forcing of the caching mode, overriding even what instructions themselves
+		/// specify
 		caching_mode_spec_t forced {};
 	} caching_modes;
 
+	/// Get a reference to the caching mode the compiler will be told to use as the default, for load
+	/// instructions which don't explicitly specify a particular caching mode.
 	optional<caching_mode_t<memory_operation_t::load>>& default_load_caching_mode() override
 	{
 		return caching_modes.default_.load;
 	}
+
+	/// Get the caching mode the compiler will be told to use as the default, for load instructions
+	/// which don't explicitly specify a particular caching mode.
 	optional<caching_mode_t<memory_operation_t::load>> default_load_caching_mode() const override
 	{
 		return caching_modes.default_.load;
 	}
-
 
 	/**
 	 * Specifies the GPU kernels, or `__global__` functions in CUDA-C++ terms, or `.entry`
@@ -222,8 +286,9 @@ public:
 	::std::vector<::std::string>& entries();
 	::std::vector<::std::string>& kernels();
 	::std::vector<::std::string>& kernel_names();
-};
+}; // compilation_options_t<ptx>
 
+/// Options for JIT-compilation of CUDA C++ code
 template <>
 class compilation_options_t<cuda_cpp> final :
 	public compilation_options_base_t<cuda_cpp>,
@@ -303,10 +368,8 @@ public:
 	 */
 	bool use_fused_multiply_add { true };
 
-	/**
-	 * Make use of fast math operations. Implies use_fused_multiply_add,
-	 * not use_precise_division and not use_precise_square_root.
-	 */
+	/// Make use of fast math operations. Implies use_fused_multiply_add,
+	/// not use_precise_division and not use_precise_square_root.
 	bool use_fast_math { false };
 
 	/**
@@ -316,48 +379,39 @@ public:
 	 */
 	bool link_time_optimization { false };
 
-	/**
-	 * Implicitly add the directories of source files (TODO: Which source files?) as
-	 * include file search paths.
-	 */
+	/// Implicitly add the directories of source files (TODO: Which source files?) as include
+	/// file search paths.
 	bool source_dirs_in_include_path { true };
 
-	/**
-	 * Enables more aggressive device code vectorization in the LTO IR optimizer.
-	 */
+	///Enables more aggressive device code vectorization in the LTO IR optimizer.
 	bool extra_device_vectorization { false };
 
-	/**
-	 * Set language dialect to C++03, C++11, C++14 or C++17.
-	 *
-	 */
+	/// The dialect of C++ as which the compiler will be forced to interpret the program source code
 	optional<cpp_dialect_t> language_dialect { };
 
+	/// Preprocessor macros to have the compiler define, without specifying a particular value
 	::std::unordered_set<::std::string> no_value_defines;
+
+	/// Preprocessor macros to tell the compiler to specifically _un_define.
 	::std::unordered_set<::std::string> undefines;
+
+	/// Preprocessor macros to have the compiler define to specific values
 	::std::unordered_map<::std::string,::std::string> valued_defines;
 
+	/// Have the compiler treat all warnings as though they were suppressed, and print nothing
 	bool disable_warnings { false };
 
-	/**
-	 * Treat all kernel pointer parameters as if they had the `restrict` (or `__restrict`) qualifier.
-	 */
+	/// Treat all kernel pointer parameters as if they had the `restrict` (or `__restrict`) qualifier.
 	bool assume_restrict { false };
 
-	/**
-	 * Assume functions without an explicit specification of their execution space are `__device__`
-	 * rather than `__host__` functions.
-	 */
+	/// Assume functions without an explicit specification of their execution space are `__device__`
+	/// rather than `__host__` functions.
 	bool default_execution_space_is_device { false };
 
-	/**
-	 * Display (error) numbers for warning (and error?) messages, in addition to the message itself.
-	 */
+	/// Display (error) numbers for warning (and error?) messages, in addition to the message itself.
 	bool display_error_numbers { true };
 
-	/**
-	 * Extra options for the PTX compiler (a.k.a. "PTX optimizing assembler").
-	 */
+	/// Extra options for the PTX compiler (a.k.a. "PTX optimizing assembler").
 	::std::string ptxas;
 
 	/**
@@ -421,18 +475,23 @@ public:
 
 public: // "shorthands" for more complex option setting
 
-	compilation_options_t& set_language_dialect(cpp_dialect_t dialect)
-	{
-		language_dialect = dialect;
-		return *this;
-	}
-
+	/// Let the compiler interpret the program source code using its default-assumption for the
+	/// C++ language dialect
 	compilation_options_t& clear_language_dialect()
 	{
 		language_dialect = {};
 		return *this;
 	}
 
+	/// Set which dialect of the C++ language the compiler will try to interpret
+	/// the program source code as.
+	compilation_options_t& set_language_dialect(cpp_dialect_t dialect)
+	{
+		language_dialect = dialect;
+		return *this;
+	}
+
+	/// @copydoc set_language_dialect(cpp_dialect_t)
 	compilation_options_t& set_language_dialect(const char* dialect_name)
 	{
 		return (dialect_name == nullptr or *dialect_name == '\0') ?
@@ -440,6 +499,7 @@ public: // "shorthands" for more complex option setting
 			set_language_dialect(detail_::cpp_dialect_from_name(dialect_name));
 	}
 
+	/// @copydoc set_language_dialect(cpp_dialect_t)
 	compilation_options_t& set_language_dialect(const ::std::string& dialect_name)
 	{
 		return dialect_name.empty() ?
@@ -447,24 +507,30 @@ public: // "shorthands" for more complex option setting
 			set_language_dialect(dialect_name.c_str());
 	}
 
+	/// Ignore compiler findings of the specified number (rather than warnings about
+	/// them or raising an error)
 	compilation_options_t& suppress_error(error::number_t error_number)
 	{
 		error_handling_overrides[error_number] = error::suppress;
 		return *this;
 	}
 
+	/// Treat compiler findings of the specified number as an error (rather than
+	/// suppressing them or just warning about them)
 	compilation_options_t& treat_as_error(error::number_t error_number)
 	{
 		error_handling_overrides[error_number] = error::raise_error;
 		return *this;
 	}
 
+	/// Treat compiler findings of the specified number as warnings (rather than
+	/// raising an error or ignoring them)
 	compilation_options_t& warn_about(error::number_t error_number)
 	{
 		error_handling_overrides[error_number] = error::warn;
 		return *this;
 	}
-};
+}; // compilation_options_t<cuda_cpp>
 
 namespace detail_ {
 
@@ -488,7 +554,6 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
 	return mt;
 }
 
-
 /**
  * Uses the streaming/left-shift operator (<<) to render a delimited sequence of
  * command-line-argument-like options (with or without a value as relevant)
@@ -508,8 +573,7 @@ void process(
 	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--compile-only";                  }
 	if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
 	if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                  }
-	if (opts.generate_source_line_info)
-	                                            { marshalled << opt_start << "--generate-line-info";            }
+	if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";            }
 	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
 	if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
 	if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
@@ -671,6 +735,15 @@ void process(
 	}
 }
 
+/**
+ * Finalize a compilation options "building" object into a structure passable to some of the
+ * CUDA JIT compilation APIs
+ *
+ * @tparam Kind The kind of JITable program options to render
+ *
+ * @return A structure of multiple strings, passable to various CUDA APIs, but no longer
+ * easy to modify and manipulate.
+ */
 template <source_kind_t Kind>
 inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
 {
@@ -683,6 +756,14 @@ inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
 
 } // namespace detail_
 
+/**
+ * Finalize a set of compilation options into the form of a string appendable to a command-line
+ *
+ * @tparam Kind The kind of JITable program options to render
+ *
+ * @return a string made up of command-line options - switches and options with arguments,
+ * designated by single or double dashes.
+ */
 template <source_kind_t Kind>
 inline ::std::string render(const compilation_options_t<Kind>& opts)
 {

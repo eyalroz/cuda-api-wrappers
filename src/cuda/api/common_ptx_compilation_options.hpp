@@ -32,6 +32,7 @@ enum class memory_operation_t { load, store };
 /// A helper struct for templatizing caching<Op>::mode
 template <memory_operation_t Op> struct caching;
 
+/// Load operation caching settings
 template <> struct caching<memory_operation_t::load> {
 
 	/// The combination of effects the execution of an instruction will have
@@ -91,6 +92,7 @@ template <> struct caching<memory_operation_t::load> {
 	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
 };
 
+/// Store operation caching settings
 template <> struct caching<memory_operation_t::store> {
 
 	/// The combination of effects the execution of an instruction will have
@@ -193,7 +195,7 @@ struct common_ptx_compilation_options_t {
 	bool generate_relocatable_device_code { false };
 
 	// What about store caching?
-};
+}; // common_ptx_compilation_options_t
 
 } // namespace rtc
 } // namespace cuda

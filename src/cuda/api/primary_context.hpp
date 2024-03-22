@@ -75,6 +75,12 @@ inline void increase_refcount(device::id_t device_id)
 
 } // namespace detail_
 
+/**
+ * @returns true if the device's primary context is active (i.e. has resources allocated for it),
+ * which implies we are holding a refcount unit for it somewhere.
+ *
+ * @note recall a primary context being active does not mean that it is the _current_ context
+ */
 inline bool is_active(const device_t& device);
 
 /**
@@ -140,6 +146,9 @@ protected: // constructors
 
 public:
 
+	/// @return a stream object for the default-ID stream of the device, which
+	/// is pre-created and on which actions are scheduled when the runtime API
+	/// is used and no stream is specified.
 	stream_t default_stream() const noexcept;
 
 public: // friendship
@@ -280,6 +289,7 @@ inline bool is_current(device::id_t device_id)
 
 } // namespace detail
 
+/// @return true if the current context is its device's primary context
 inline bool is_current()
 {
 	auto device_id = context::current::detail_::get_device_id();

@@ -28,7 +28,7 @@ unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
 }
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
+ * @brief Allocate (but do)
  * device-global memory
  *
  * @tparam T  an array type; _not_ the type of individual elements

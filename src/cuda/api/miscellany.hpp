@@ -30,6 +30,13 @@ inline void initialize_driver()
 	throw_if_error_lazy(status, "Failed initializing the CUDA driver");
 }
 
+/**
+ * A mechanism for ensuring a @ref cuInit() call has been made, to use before making
+ * any other driver API calls.
+ *
+ * @note differs from simply calling `initialize_driver()` in that repeated calls
+ * from the same thread will avoid additional @ref cuInit() call.
+ */
 inline void ensure_driver_is_initialized()
 {
 	thread_local bool driver_known_to_be_initialized{false};

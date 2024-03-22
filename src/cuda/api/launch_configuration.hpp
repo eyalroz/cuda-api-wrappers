@@ -58,7 +58,16 @@ enum class cluster_scheduling_policy_t {
 };
 #endif
 
+/**
+ * The full set of possible configuration parameters for launching a kernel on a GPU.
+ *
+ * @note Consider using a @ref launch_configuration_builder_t to incrementally construct
+ * these structs.
+ *
+ * @note this structure must be constructed with at least the grid and block dimensions.
+ */
 struct launch_configuration_t {
+	/// Dimensions of the launch grid in blocks, and of the individual blocks in the grid.
 	grid::composite_dimensions_t dimensions { grid::dimensions_t{ 0u, 0u, 0u }, grid::block_dimensions_t{ 0u, 0u, 0u } };
 
 	/**
@@ -160,6 +169,20 @@ public: // non-mutators
 	constexpr launch_configuration_t(const launch_configuration_t&) = default;
 	constexpr launch_configuration_t(launch_configuration_t&&) = default;
 
+	/**
+	 * Constructors corresponding to the CUDA runtime API's triple-chevron launch
+	 * syntax:
+	 *
+	 *     my_kernel <<< grid_Dims, block_dims, dynamic_shmem_size, my_stream >>> (
+	 *         arg1, arg2, arg3, etc);
+	 *
+	 * ... where the specified aspects of the launch configuration are the dimensions
+	 * and the dynamic shared memory size.
+	 *
+	 * @note The choices of stream and kernel function are _not_ part of the launch
+	 * configuration.
+	 */
+	///@{
 	constexpr launch_configuration_t(
 		grid::composite_dimensions_t grid_and_block_dimensions,
 		memory::shared::size_t dynamic_shared_mem = 0u
@@ -184,12 +207,14 @@ public: // non-mutators
 		grid::block_dimensions_t(block_dims),
 		dynamic_shared_mem)
 	{ }
+	///@}
 
 	CPP14_CONSTEXPR launch_configuration_t& operator=(const launch_configuration_t& other) = default;
 	CPP14_CONSTEXPR launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
 #if __cplusplus < 202002L
+///@cond
 constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
 {
 	return
@@ -210,6 +235,7 @@ constexpr bool operator!=(const launch_configuration_t lhs, const launch_configu
 {
 	return not (lhs == rhs);
 }
+///@endcond
 #endif
 
 namespace detail_ {
@@ -242,7 +268,7 @@ using launch_attribute_index_t = unsigned int;
 constexpr launch_attribute_index_t maximum_possible_kernel_launch_attributes = 7;
 
 #if CUDA_VERSION >= 12000
-// Note: The atttribute_storage must have a capacity of maximum_possible_kernel_launch_attributes+1 at least
+// Note: The attribute_storage must have a capacity of maximum_possible_kernel_launch_attributes+1 at least
 CUlaunchConfig marshal(
 	const launch_configuration_t& config,
 	const stream::handle_t stream_handle,

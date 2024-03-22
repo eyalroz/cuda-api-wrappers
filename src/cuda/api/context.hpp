@@ -210,6 +210,15 @@ inline context::flags_t get_flags(handle_t handle)
 
 } // namespace context
 
+/**
+ * Waits for all previously-scheduled tasks on all streams (= queues)
+ * in a CUDA context to conclude, before returning.
+ *
+ * Depending on the `host_thread_sync_scheduling_policy_t` set for the
+ * specified context, the thread calling this method will either yield,
+ * spin or block until all tasks scheduled previously scheduled on streams
+ * within this context have concluded.
+ */
 inline void synchronize(const context_t& context);
 
 /**
@@ -745,10 +754,18 @@ inline handle_t create_and_push(
 /**
  * @brief creates a new context on a given device
  *
- * @param device              The device on which to create the new stream
+ * @param device
+ *     The device which the new context will regard
  * @param sync_scheduling_policy
+ *     Choice of how host threads are to perform synchronization with pending
+ *     actions in streams within this context. See
+ *     @ref host_thread_sync_scheduling_policy_t for a description of these
+ *     choices.
  * @param keep_larger_local_mem_after_resize
- * @return
+ *     If true, larger allocations of global device memory, used by kernels
+ *     requiring a larger amount of local memory, will be kept (so that future
+ *     kernels with such requirements will not trigger a re-allocation).
+ *
  * @note Until CUDA 11, there used to also be a flag for enabling/disabling
  * the ability of mapping pinned host memory to device addresses. However, it was
  * being ignored since CUDA 3.2 already, with the minimum CUDA version supported
@@ -861,6 +878,7 @@ inline context_t get_with_fallback_push()
 
 } // namespace current
 
+/// @return true if the context is the primary context of its device
 bool is_primary(const context_t& context);
 
 namespace detail_ {

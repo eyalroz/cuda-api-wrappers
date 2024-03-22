@@ -21,6 +21,7 @@ class texture_view;
 
 namespace texture {
 
+/// The CUDA driver's raw, opaque handle for texture objects
 using raw_handle_t = CUtexObject;
 
 /**
@@ -111,7 +112,6 @@ public: // constructors and destructors
 		other.owning_ = false;
 	};
 
-
 	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
 		const cuda::array_t<T, NumDimensions>& arr,
@@ -160,7 +160,10 @@ protected: // constructor
 
 public: // non-mutating getters
 
+	/// @returns A non-owning proxy object for the CUDA context in which this texture is defined
 	context_t context() const;
+
+	/// @returns A non-owning proxy object for the CUDA device on which this texture is defined
 	device_t device() const;
 
 public: // friendship
@@ -174,7 +177,7 @@ protected:
 	bool owning_;
 };
 
-
+///@cond
 inline bool operator==(const texture_view& lhs, const texture_view& rhs) noexcept
 {
 	return lhs.raw_handle() == rhs.raw_handle();
@@ -184,7 +187,7 @@ inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcep
 {
 	return lhs.raw_handle() != rhs.raw_handle();
 }
-
+///@endcond
 namespace texture {
 
 inline texture_view wrap(

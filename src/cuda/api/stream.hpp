@@ -50,6 +50,11 @@ enum : bool {
 	nonblocking = async,
 };
 
+/**
+ * Kinds of conditions to apply to a value in GPU global memory
+ * when waiting on that value, i.e. on what condition to stop
+ * waiting.
+ */
 enum wait_condition_t : unsigned {
 	greater_or_equal_to            = CU_STREAM_WAIT_VALUE_GEQ,
 	geq                            = CU_STREAM_WAIT_VALUE_GEQ,
@@ -173,6 +178,9 @@ void enqueue_function_call(const stream_t& stream, Function function, void * arg
  *     the current context and outlasting it. When set to `true`,
  *     the proxy class will act as it does usually, destroying the stream
  *     when being destructed itself.
+ * @param hold_pc_refcount_unit when the stream's context is a device's primary
+ *     context, this controls whether that context must be kept active while the
+ *     stream continues to exist
  * @return an instance of the stream proxy class, with the specified
  *     device-stream combination.
  */
@@ -255,6 +263,8 @@ public: // other non-mutators
 		return flags & CU_STREAM_NON_BLOCKING;
 	}
 
+	/// @returns the execution priority of a tasks on this stream (relative to other
+	/// tasks in other streams on the same device
 	stream::priority_t priority() const
 	{
 		int the_priority;
@@ -321,8 +331,21 @@ public: // mutators
 		const stream_t& associated_stream;
 
 	public:
+		///@cond
 		enqueue_t(const stream_t& stream) : associated_stream(stream) {}
+		///@endcond
 
+		/**
+		 * Schedule a kernel launch on the associated stream
+		 *
+		 * @param kernel A wrapper around the kernel to launch
+		 * @param launch_configuration A description of how to launch the kernel (e.g.
+		 *     block and grid dimensions).
+		 * @param parameters to arguments to be passed to the kernel for this launch
+		 *
+		 * @note This function is cognizant of the types of all arguments passed to it;
+		 * for a type-erased version, see @ref type_erased_kernel_launch()
+		 */
 		template<typename KernelFunction, typename... KernelParameters>
 		void kernel_launch(
 			const KernelFunction&       kernel_function,
@@ -336,6 +359,19 @@ public: // mutators
 				::std::forward<KernelParameters>(parameters)...);
 		}
 
+		/**
+		 * Schedule a kernel launch on the associated stream
+		 *
+		 * @param kernel A wrapper around the kernel to launch
+		 * @param launch_configuration A description of how to launch the kernel (e.g.
+		 *     block and grid dimensions).
+		 * @param marshalled_arguments Pointers to arguments to be passed to the kernel
+		 *     for this launch
+		 *
+		 * @note This signature does not require any type information regarding the kernel
+		 * function type; see @ref kernel_launch() for a type-observing version of the
+		 * same schedulign operation.
+		 */
 		void type_erased_kernel_launch(
 			const kernel_t&         kernel,
 			launch_configuration_t  launch_configuration,
@@ -345,21 +381,14 @@ public: // mutators
 		}
 
 		/**
-		 * Have the CUDA device perform an I/O operation between two specified
-		 * memory regions (on or off the actual device)
+		 * Copy operations
 		 *
+		 * The source and destination memory regions may be anywhere the CUDA driver can
+		 * map  (e.g. the device's global memory, host/system memory, the global memory of
+		 * another device, constant memory etc.)
 		 */
-
 		///@{
-		/**
-		 * @param destination destination region into which to copy. May be
-		 * anywhere in which memory can be mapped to the device's memory space (e.g.
-		 * the device's global memory, host memory or the global memory of another device)
-		 * @param source destination region from which to copy. May be
-		 * anywhere in which memory can be mapped to the device's memory space (e.g.
-		 * the device's global memory, host memory or the global memory of another device)
-		 * @param num_bytes size of the region to copy
-		 **/
+		/// Schedule a copy of one region of memory to another
 		void copy(void *destination, const void *source, size_t num_bytes) const
 		{
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
@@ -368,6 +397,7 @@ public: // mutators
 			memory::async::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
+		/// @copybrief copy(void *, const void *, size_t) const
 		void copy(void* destination, memory::const_region_t source, size_t num_bytes) const
 		{
 #ifndef NDEBUG
@@ -378,16 +408,23 @@ public: // mutators
 			copy(destination, source.start(), num_bytes);
 		}
 
+		/**
+		 * @copybrief copy(void *, const void *, size_t) const
+		 *
+		 * @note @p num_bytes may be smaller than the sizes of any of the regions
+		 */
 		void copy(memory::region_t destination, memory::const_region_t source, size_t num_bytes) const
 		{
 			copy(destination.start(), source, num_bytes);
 		}
 
+		/// @copybrief copy(void *, const void *, size_t) const
 		void copy(memory::region_t destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
 		}
 
+		/// @copybrief copy(void *, const void *, size_t) const
 		void copy(void* destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
@@ -398,9 +435,9 @@ public: // mutators
 		 * Set all bytes of a certain region in device memory (or unified memory,
 		 * but using the CUDA device to do it) to a single fixed value.
 		 *
-		 * @param destination Beginning of the region to fill
+		 * @param start Beginning of the region to fill
 		 * @param byte_value the value with which to fill the memory region bytes
-		 * @param num_bytes size of the region to fill
+		 * @param num_bytes size in bytes of the region to fill
 		 */
 		void memset(void *start, int byte_value, size_t num_bytes) const
 		{
@@ -409,6 +446,7 @@ public: // mutators
 			memory::device::async::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
 		}
 
+		/// @copydoc memset(void *, int, size_t) const
 		void memset(memory::region_t region, int byte_value) const
 		{
 			memset(region.data(), byte_value, region.size());
@@ -422,7 +460,7 @@ public: // mutators
 		 * API call for setting to zero; does that mean there are special facilities
 		 * for zero'ing memory faster? Who knows.
 		 *
-		 * @param destination Beginning of the region to fill
+		 * @param start Beginning of the region to fill
 		 * @param num_bytes size of the region to fill
 		 */
 		void memzero(void *start, size_t num_bytes) const
@@ -431,6 +469,9 @@ public: // mutators
 			memory::device::async::detail_::zero(start, num_bytes, associated_stream.handle_);
 		}
 
+		/**
+		 * @copydoc memzero(void *, size_t) const
+		 */
 		void memzero(memory::region_t region) const
 		{
 			memzero(region.data(), region.size());
@@ -492,6 +533,7 @@ public: // mutators
 		}
 
 	public:
+		/// Enqueues a host-invokable object, typically a function or closure object call.
 		template <typename Invokable>
 		void host_invokable(Invokable& invokable) const
 		{
@@ -529,13 +571,16 @@ public: // mutators
 			memory::device::async::free(associated_stream, region);
 		}
 #endif
-		///@{
 
 		/**
 		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
 		 * on all CUDA devices and the host) in one of several supported attachment modes.
 		 *
-		 * The attachmentis actually a commitment vis-a-vis the CUDA driver and the GPU itself
+		 * @param managed_region_start a pointer to the beginning of the managed memory region.
+		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
+		 * pass whatever @ref cuda::memory::managed::allocate() returned.
+		 *
+		 * The attachment is actually a commitment vis-a-vis the CUDA driver and the GPU itself
 		 * that it doesn't need to worry about accesses to this memory from devices other than
 		 * its object of attachment, so that the driver can optimize scheduling accordingly.
 		 *
@@ -546,12 +591,6 @@ public: // mutators
 		 * @note Attachment happens asynchronously, as an operation on this stream, i.e.
 		 * the attachment goes into effect (some time after) previous scheduled actions have
 		 * concluded.
-		 */
-		///@{
-		/**
-		 * @param managed_region_start a pointer to the beginning of the managed memory region.
-		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-		 * pass whatever @ref cuda::memory::managed::allocate() returned.
 		 */
 		void attach_managed_region(
 			const void* managed_region_start,
@@ -572,8 +611,23 @@ public: // mutators
 		}
 
 		/**
-		 * @param region the managed memory region to attach; it cannot be a sub-region -
-		 * you must pass whatever @ref cuda::memory::managed::allocate() returned.
+		 * @copybrief attach_managed_region(const void*, memory::managed::attachment_t) const
+		 *
+		 * @param region the entire managed memory region; note this must not be a sub-region;
+		 * you must pass whatever the CUDA memory allocation or construction code provided
+		 * you with, in full.
+		 *
+		 * The attachment is actually a commitment vis-a-vis the CUDA driver and the GPU itself
+		 * that it doesn't need to worry about accesses to this memory from devices other than
+		 * its object of attachment, so that the driver can optimize scheduling accordingly.
+		 *
+		 * @note by default, the memory region is attached to this specific stream on its
+		 * specific device. In this case, the host will be allowed to read from this memory
+		 * region whenever no kernels are pending on this stream.
+		 *
+		 * @note Attachment happens asynchronously, as an operation on this stream, i.e.
+		 * the attachment goes into effect (some time after) previous scheduled actions have
+		 * concluded.
 		 */
 		void attach_managed_region(
 			memory::region_t region,
@@ -581,8 +635,6 @@ public: // mutators
 		{
 			attach_managed_region(region.start(), attachment);
 		}
-		///@}
-
 
 		/**
 		 * Will pause all further activity on the stream until the specified event has
@@ -862,16 +914,21 @@ protected: // data members
 		// it must release its refcount unit on destruction
 
 public: // data members - which only exist in lieu of namespaces
+
+	/// This data member is a gadget for use instead of a "class-local" namespace;
+	/// we do not need it as a distinct object
 	const enqueue_t     enqueue { *this };
 		// The use of *this here is safe, since enqueue_t doesn't do anything with it
 		// on its own. Any use of enqueue only happens through, well, *this - and
 		// after construction.
 };
 
+///@cond
 inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
+///@endcond
 
 namespace stream {
 
@@ -972,16 +1029,7 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
  *     for execution scheduling; lower numbers represent higher properties;
  *     each device has a range of priorities, which can be obtained using
  *     @ref device_t::stream_priority_range()
- * @param hold_pc_refcount_unit when the event's context is a device's primary
- *     context, this controls whether that context must be kept active while the
- *     event continues to exist
-  * @return The newly-created stream
- */
-///@{
-
-/**
- * @brief Create a new stream (= queue) in the primary execution context
- * of a CUDA device.
+ * @return The newly-created stream
  */
 stream_t create(
 	const device_t&   device,
@@ -992,6 +1040,16 @@ stream_t create(
  * @brief Create a new stream (= queue) in a CUDA execution context.
  *
  * @param context the execution context in which to create the stream
+ * @param synchronizes_with_default_stream if true, no work on this stream
+ *     will execute concurrently with work from the default stream (stream 0)
+ * @param priority priority of tasks on the stream, relative to other streams,
+ *     for execution scheduling; lower numbers represent higher properties;
+ *     each device has a range of priorities, which can be obtained using
+ *     @ref device_t::stream_priority_range()
+ * @param hold_pc_refcount_unit when the stream's context is a device's primary
+ *     context, this controls whether that context must be kept active while the
+ *     steam continues to exist
+ * @return The newly-created stream
  */
 stream_t create(
 	const context_t&  context,
@@ -1002,7 +1060,16 @@ stream_t create(
 
 } // namespace stream
 
-inline void synchronize(const stream_t& stream)
+/**
+ * Waits for all previously-scheduled tasks on a given stream to conclude,
+ * before returning.
+ *
+ * Depending on the `host_thread_sync_scheduling_policy_t` set for the
+ * specified stream, the thread calling this method will either yield,
+ * spin or block until all tasks scheduled previously scheduled on the
+ * stream have concluded.
+ */
+ inline void synchronize(const stream_t& stream)
 {
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble acting on a stream in another context - it balks at doing so under

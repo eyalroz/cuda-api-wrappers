@@ -72,6 +72,14 @@ inline unique_region make_unique_region(size_t num_bytes)
 
 namespace managed {
 
+/**
+ * @brief Allocate a region of managed memory, accessible both from CUDA devices
+ * and from the CPU.
+ *
+ * @param context A context of possible single-device-visibility
+ *
+ * @returns An owning RAII/CADRe object for the allocated managed memory region
+ */
 inline unique_region make_unique_region(
 	const context_t&      context,
 	size_t                num_bytes,
@@ -81,6 +89,14 @@ inline unique_region make_unique_region(
 	return unique_region { detail_::allocate_in_current_context(num_bytes, initial_visibility) };
 }
 
+/**
+ * @brief Allocate a region of managed memory, accessible both from CUDA devices
+ * and from the CPU.
+ *
+ * @param context A context of possible single-device-visibility
+ *
+ * @returns An owning RAII/CADRe object for the allocated managed memory region
+ */
 inline unique_region make_unique_region(
 	const device_t&       device,
 	size_t                num_bytes,
