@@ -23,6 +23,19 @@ namespace program {
 
 namespace detail_ {
 
+/**
+ * Create a new program object from source code
+ *
+ * @tparam Kind We can create a program with any one of the (two...) kinds of supported
+ *     source code
+ * @param program_name arbitrary identifier to recognize the program by; it's suggested
+ *     not to get too crazy
+ * @param program_source The source code of the program, possibly with include directives
+ *     in the case of C++
+ * @param num_headers The number of pairs of header "file" names and header content strings
+ * @param header_sources Pointers to nul-terminated per-header source code
+ * @param header_names Pointers to nul-terminated names of the different headers
+ */
 template <source_kind_t Kind = cuda_cpp>
 inline program::handle_t<Kind> create(
 	const char *program_name,
@@ -53,6 +66,7 @@ template <> inline program::handle_t<ptx> create<ptx>(
 }
 #endif // CUDA_VERSION >= 11010
 
+/// Have NVRTC add the specified global to those accessible/usable after compilation
 inline void register_global(handle_t<cuda_cpp> program_handle, const char *global_to_register)
 {
 	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
@@ -60,6 +74,8 @@ inline void register_global(handle_t<cuda_cpp> program_handle, const char *globa
 		+ " with " + identify<cuda_cpp>(program_handle));
 }
 
+/// Splice multiple raw string options together with a ' ' separator character, and
+/// surrounding each option with double-quotes
 inline ::std::string get_concatenated_options(const const_cstrings_span& raw_options)
 {
 	static ::std::ostringstream oss;
@@ -186,14 +202,22 @@ public: // types and constants
 	using status_type = status_t<source_kind>;
 
 public: // getters
-
+    /// Getters for the constituent object fields
+    ///@{
 	const ::std::string& name() const { return name_; }
+
+	/// Full source code of the program (possibly with preprocessor directives such as `#include`)
 	const char* source() const { return source_; }
+
+	/// Compilation options to be passed to the JIT compiling library along with the source code
 	const compilation_options_t<Kind>& options() const { return options_; }
 	// TODO: Think of a way to set compilation options without having
 	// to break the statement, e.g. if options had a reflected enum value
 	// or some such arrangement.
+
+	/// Compilation options to be passed to the JIT compiling library along with the source code
 	compilation_options_t<Kind>& options() { return options_; }
+	///@}
 
 public: // constructors and destructor
 	explicit base_t(::std::string name) : name_(::std::move(name)) {};
@@ -225,6 +249,9 @@ class program_t;
  * @note This class is a "reference type", not a "value type". Therefore, making changes
  * to the program is a const-respecting operation on this class.
  *
+ * @note Many of this class' methods could have been placed in the base class, and are
+ * "duplicated" in program_t<ptx> - except that they return the program object itself,
+ * allowing for builder-pattern-like use.
  */
 template <>
 class program_t<cuda_cpp> : public program::detail_::base_t<cuda_cpp> {
@@ -233,26 +260,50 @@ public: // types
 
 public: // getters
 
+	/// Names of the "memoized"/off-file-system headers made available to the program
+	/// (and usable as identifiers for `#include` directives)
 	const_cstrings_span header_names() const
 	{
 		return { headers_.names.data(),headers_.names.size()};
 	}
+
+	/// Sources of the "memoized"/off-file-system headers made available to the program
+	/// (and usable as identifiers for `#include` directives)
+	///
+	/// @note each header source string corresponds to the name of the same index 
+	/// accessible via {@ref header_names()}.
 	const_cstrings_span header_sources() const
 	{
 		return { headers_.sources.data(), headers_.sources.size()};
 	}
+
+	/// @returns the number of memoized/off-the-file-system headers made available
+	/// to the program
 	size_t num_headers() const { return headers_.sources.size(); }
 
 public: // setters - duplicated with PTX programs
 
+	/// Have the compilation produce code for devices with a given compute capability
 	program_t& set_target(device::compute_capability_t target_compute_capability)
 	{
 		options_.set_target(target_compute_capability);
 		return *this;
 	}
+
+	/// Have the compilation produce code for devices with the same compute capability
+	/// as a given device
 	program_t& set_target(const device_t& device) { return set_target(device.compute_capability());}
+
+	/// Have the compilation produce code for devices with the same compute capability
+	/// as the device of a given context
 	program_t& set_target(const context_t& context) { return set_target(context.device()); }
+
+	/// Remove all compute capabilities which were chosen to have code produced for them
+	/// by the compilation
 	program_t& clear_targets() { options_.targets_.clear(); return *this; }
+
+	/// Remove all compute capabilities which were chosen to have code produced for them
+	/// by the compilation
 	template <typename Container>
 	program_t& set_targets(Container target_compute_capabilities)
 	{
@@ -262,12 +313,21 @@ public: // setters - duplicated with PTX programs
 		}
 		return *this;
 	}
+
+	/// Have the compilation also produce code for devices with a given compute
+	/// capability
 	program_t& add_target(device::compute_capability_t target_compute_capability)
 	{
 		options_.add_target(target_compute_capability);
 		return *this;
 	}
+
+	/// Have the compilation also produce code for devices with the same compute
+	/// capability as a given device
 	void add_target(const device_t& device) { add_target(device.compute_capability()); }
+
+	/// Have the compilation also produce code for devices with the same compute
+	/// capability as the device of a given context
 	void add_target(const context_t& context) { add_target(context.device()); }
 
 	program_t& set_source(const char* source) { source_ = source; return *this; }
@@ -285,7 +345,7 @@ public: // setters - duplicated with PTX programs
 
 protected:
 	template <typename String>
-	static inline void check_string_type()
+	static void check_string_type()
 	{
 		using no_cref_string_type = typename ::std::remove_const<typename ::std::remove_reference<String>::type>::type;
 		static_assert(
@@ -315,6 +375,15 @@ protected:
 	void add_header_source_(::std::string&& source) = delete;
 
 public: // mutators
+	/**
+	 * Adds another "memoized" header to the program
+	 *
+	 * @param name The header name for use in `#include` directives
+	 * @param source The full source code of the header "file", possibly with its own
+	 *     preprocessor directives (e.g. `#include`).
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename String1, typename String2>
 	program_t& add_header(String1&& name, String2&& source)
 	{
@@ -323,6 +392,15 @@ public: // mutators
 		return *this;
 	}
 
+	/**
+	 * Adds another "memoized" header to the program
+	 *
+	 * @param name_and_source A pair of strings, one being the name for use in `#include`
+	 *     directives, the other being the full source code of the header "file", possibly
+	 *     with its own preprocessor directives (e.g. `#include`).
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename String1, typename String2>
 	program_t& add_header(const ::std::pair<String1, String2>& name_and_source)
 	{
@@ -331,6 +409,7 @@ public: // mutators
 		return *this;
 	}
 
+	/// @copydoc add_header<String1, String2>(String1&&, String2&&)
 	template <typename String1, typename String2>
 	program_t& add_header(::std::pair<String1, String2>&& name_and_source)
 	{
@@ -339,6 +418,15 @@ public: // mutators
 		return add_header(name_and_source);
 	}
 
+	/**
+	 * Adds multiple "memoized" headers to the program
+	 *
+	 * @param name Names of the headers, for use in `#include` directives
+	 * @param source The full source code of each of the header "file", possibly
+	 *     with their own preprocessor directivess.
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename RangeOfNames, typename RangeOfSources>
 	const program_t& add_headers(
 		RangeOfNames   header_names,
@@ -357,7 +445,7 @@ public: // mutators
 #ifndef NDEBUG
 		if (new_num_headers > ::std::numeric_limits<int>::max()) {
 			throw ::std::invalid_argument("Cannot use more than "
-										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
+				+ ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
 		}
 #endif
 		headers_.names.reserve(new_num_headers);
@@ -371,6 +459,15 @@ public: // mutators
 		return *this;
 	}
 
+	/**
+	 * Adds multiple "memoized" headers to the program
+	 *
+	 * @param name_and_source_pairs A container of pairs of strings, each being made
+	 *     up of a name for use in `#include` directives, and the full source code
+	 *     of the header "file", possibly with its own preprocessor directives.
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename RangeOfNameAndSourcePairs>
 	program_t& add_headers(RangeOfNameAndSourcePairs&& named_header_pairs)
 	{
@@ -392,6 +489,15 @@ public: // mutators
 		return *this;
 	}
 
+	/**
+	 * Replaces the set of "memoized" headers used in the program's compilation
+	 *
+	 * @param name Names of the headers, for use in `#include` directives
+	 * @param source The full source code of each of the header "file", possibly
+	 *     with their own preprocessor directivess.
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename RangeOfNames, typename RangeOfSources>
 	const program_t& set_headers(
 		RangeOfNames&&   names,
@@ -401,6 +507,15 @@ public: // mutators
 		return add_headers(names, sources);
 	}
 
+	/**
+	 * Replaces the set of "memoized" headers used in the program's compilation
+	 *
+	 * @param name_and_source_pairs A container of pairs of strings, each being made
+	 *     up of a name for use in `#include` directives, and the full source code
+	 *     of the header "file", possibly with its own preprocessor directives.
+	 *
+	 * @note "names" with path separators can be used, but are discouraged
+	 */
 	template <typename RangeOfNameAndSourcePairs>
 	program_t& set_headers(RangeOfNameAndSourcePairs&& named_header_pairs)
 	{
@@ -409,6 +524,7 @@ public: // mutators
 		return *this;
 	}
 
+	/// Removes all "memoized" headers to be used in the program's compilation
 	program_t& clear_headers()
 	{
 		headers_.names.clear();
@@ -416,12 +532,21 @@ public: // mutators
 		return *this;
 	}
 
+	/// Clears any forced values of compilation options, reverting the compilation
+	/// to the default values
 	program_t& clear_options() { options_ = {}; return *this; }
 
 public:
 
 	// TODO: Support specifying all compilation option in a single string and parsing it
 
+	/**
+	 * Compiles the program represented by this object (which, until this point, is
+	 * just a bunch of unrelated sources and options).
+	 *
+	 * @note Carefully examines the @ref compilation_output_t class to understand what
+	 * exactly the compilation produces.
+	 */
 	compilation_output_t<cuda_cpp> compile() const
 	{
 		if ((source_ == nullptr or *source_ == '\0') and options_.preinclude_files.empty()) {
@@ -447,19 +572,19 @@ public:
 	 * @note The name must continue to exist past the compilation of the program - as it is not copied,
 	 * only referenced
 	 */
-	///@{
 	program_t& add_registered_global(const char* unmangled_name)
 	{
 		globals_to_register_.push_back(unmangled_name);
 		return *this;
 	}
+
+	/// @copydoc add_registered_global(const char*)
 	program_t& add_registered_global(const ::std::string& unmangled_name)
 	{
 		globals_to_register_.push_back(unmangled_name.c_str());
 		return *this;
 	}
 	// TODO: Accept string_view's with C++17
-	///@}
 
 	/**
 	 * @brief Register multiple pre-mangled names of global, to make available for use
@@ -472,7 +597,6 @@ public:
 	 * program - as they are not copied, only referenced. Thus, as a safety precaution, we
 	 * also assume the container continues to exist
 	 */
-	///@{
 	template <typename Container>
 	program_t& add_registered_globals(const Container& globals_to_register)
 	{
@@ -483,6 +607,7 @@ public:
 		return *this;
 	}
 
+	/// @copydic add_registered_globals(const Container&)
 	template <typename Container>
 	program_t& add_registered_globals(Container&& globals_to_register)
 	{
@@ -491,7 +616,6 @@ public:
 			"the possible passing of string-like objects at the end of their lifetime");
 		return add_registered_globals(static_cast<const Container&>(globals_to_register));
 	}
-	///@}
 
 public: // constructors and destructor
 	program_t(::std::string name) : base_t(::std::move(name)) {}
@@ -500,9 +624,10 @@ public: // constructors and destructor
 	~program_t() = default;
 
 public: // operators
-
+	///@cond
 	program_t& operator=(const program_t& other) = default;
 	program_t& operator=(program_t&& other) = default;
+	///@endcond
 
 protected: // data members
 	struct {
@@ -514,23 +639,42 @@ protected: // data members
 
 #if CUDA_VERSION >= 11010
 
+/**
+ * Wrapper class for a CUDA PTX (runtime-compilable) program
+ *
+ * @note This class is a "reference type", not a "value type". Therefore, making changes
+ * to the program is a const-respecting operation on this class.
+ *
+ * @note Many of this class' methods could have been placed in the base class, and are
+ * "duplicated" in program_t<ptx> - except that they return the program object itself,
+ * allowing for builder-pattern-like use.
+ */
 template <>
 class program_t<ptx> : public program::detail_::base_t<ptx> {
 public: // types
 	///@cond
 	using parent = program::detail_::base_t<source_kind>;
-	///@nocond
+	///@endcond
 
 public: // setters - duplicated with CUDA-C++/NVRTC programs
 
+	/// @copydoc program_t<cuda_cpp>::set_target(device::compute_capability_t)
 	program_t& set_target(device::compute_capability_t target_compute_capability)
 	{
 		options_.set_target(target_compute_capability);
 		return *this;
 	}
+
+	/// @copydoc program_t<cuda_cpp>::set_target(const device_t&)
 	program_t& set_target(const device_t& device) { return set_target(device.compute_capability());}
+
+	/// @copydoc program_t<cuda_cpp>::set_target(const context_t&)
 	program_t& set_target(const context_t& context) { return set_target(context.device()); }
+
+	/// @copydoc program_t<cuda_cpp>::clear_targets()
 	program_t& clear_targets() { options_.targets_.clear(); return *this; }
+
+	/// @copydoc program_t<cuda_cpp>::set_targets<Container>(Container)
 	template <typename Container>
 	program_t& set_targets(Container target_compute_capabilities)
 	{
@@ -540,27 +684,40 @@ public: // setters - duplicated with CUDA-C++/NVRTC programs
 		}
 		return *this;
 	}
+
+	/// @copydoc program_t<cuda_cpp>::add_target(device::compute_capability_t)
 	program_t& add_target(device::compute_capability_t target_compute_capability)
 	{
 		options_.add_target(target_compute_capability);
 		return *this;
 	}
+
+	/// @copydoc program_t<cuda_cpp>::clear_targets()
 	void add_target(const device_t& device) { add_target(device.compute_capability()); }
+
+	/// @copydoc program_t<cuda_cpp>::set_targets<Container>(Container)
 	void add_target(const context_t& context) { add_target(context.device()); }
 
-	program_t& set_source(const char* source) { source_ = source; return *this; }
+	/// @copydoc program_t<cuda_cpp>::set_source(char const*)
+	program_t& set_source(char const* source) { source_ = source; return *this; }
+
+	/// @copydoc program_t<cuda_cpp>::set_source(const ::std::string&)
 	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
+
+	/// @copydoc program_t<cuda_cpp>::set_options(compilation_options_t<ptx>)
 	program_t& set_options(compilation_options_t<source_kind> options)
 	{
 		options_ = ::std::move(options);
 		return *this;
 	}
+	/// @copydoc program_t<cuda_cpp>::clear_options()
 	program_t& clear_options() { options_ = {}; return *this; }
 
 public:
 
 	// TODO: Support specifying all compilation option in a single string and parsing it
 
+	/// @copydoc program_t<cuda_cpp>::compile()
 	compilation_output_t<ptx> compile() const
 	{
 		if (source_ == nullptr or *source_ == '\0') {
@@ -574,7 +731,6 @@ public:
 			{option_ptrs.data(), option_ptrs.size()});
 	}
 
-
 public: // constructors and destructor
 	program_t(::std::string name) : parent(std::move(name)) {}
 	program_t(const program_t&) = default;
@@ -583,20 +739,27 @@ public: // constructors and destructor
 
 public: // operators
 
+	///@cond
 	program_t& operator=(const program_t& other) = default;
 	program_t& operator=(program_t&& other) = default;
+	///@endcond
 }; // class program_t<ptx>
 
 #endif // CUDA_VERSION >= 11010
 
 namespace program {
 
+/**
+ * Create a new (not-yet-compiled) program without setting most of its
+ * constituent fields.
+ */
 template <source_kind_t Kind>
 inline program_t<Kind> create(const char* program_name)
 {
 	return program_t<Kind>(program_name);
 }
 
+/// @copydoc create <source_kind_t>(const char*)
 template <source_kind_t Kind>
 inline program_t<Kind> create(const ::std::string& program_name)
 {
@@ -605,6 +768,12 @@ inline program_t<Kind> create(const ::std::string& program_name)
 
 } // namespace program
 
+/**
+ * @returns all compute capabilities supported as targets by NVRTC and (most likely)
+ * also by the PTX compilation library.
+ *
+ * @note the compute capabilities are returned in ascending order.
+ */
 #if CUDA_VERSION >= 11020
 inline unique_span<device::compute_capability_t>
 supported_targets()

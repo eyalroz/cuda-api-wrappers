@@ -270,16 +270,20 @@ array_t<T, NumDimensions> wrap(
 	return { device_id, context_handle, handle, dimensions };
 }
 
+/// Create a new (typed) CUDA array of the specified dimensions
+///@{
+/// @param context ... in which the array is to be created
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
 	const context_t&             context,
 	dimensions_t<NumDimensions>  dimensions);
 
+/// @param device ... in whose primary context the array is to be created
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
 	const device_t&              device,
 	dimensions_t<NumDimensions>  dimensions);
-
+///@}
 
 } // namespace array
 

@@ -38,7 +38,7 @@ class pool_t;
  * @brief Waits for all previously-scheduled tasks on all streams (= queues)
  * on a specified device to conclude.
  *
- * Depending on the host_thread_sync_scheduling_policy_t set for this
+ * Depending on the host_thread_sync_scheduling_policy_t set for the specified
  * device, the thread calling this method will either yield, spin or block
  * until all tasks scheduled previously scheduled on this device have been
  * concluded.
@@ -49,7 +49,7 @@ namespace device {
 
 ///@cond
 class primary_context_t;
-///@cendond
+///@endcond
 
 using limit_t = context::limit_t;
 using limit_value_t = context::limit_value_t;
@@ -604,11 +604,17 @@ public:
 		set_flags(other_flags | static_cast<flags_type>(new_policy));
 	}
 
+	/// @returns true if the device will keep larger amounts of global device memory allocated
+	/// for use as local memory, after a kernel was executed which required a larger-than-usual
+	/// allocation
 	bool keeping_larger_local_mem_after_resize() const
 	{
 		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
+	/// @brief Instructs the (primary context of) the device to keep larger amounts of global
+	/// device memory allocated for use as local memory, after a kernel was executed which
+	/// required a larger-than-usual allocation
 	void keep_larger_local_mem_after_resize(bool keep = true)
 	{
 		auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
@@ -616,6 +622,9 @@ public:
 		set_flags(new_flags);
 	}
 
+	/// @brief Instructs the (primary context of) the device to discard allocations of larger
+	/// amounts of global device memory which were used by a kernel requiring a larger amount
+	/// of local memory, and has concluded execution.
 	void dont_keep_larger_local_mem_after_resize()
 	{
 		keep_larger_local_mem_after_resize(false);

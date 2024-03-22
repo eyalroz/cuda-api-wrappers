@@ -37,7 +37,6 @@ namespace cuda {
  *
  * @tparam T the type of individual elements in the unique_span
  */
-
 template<typename T, typename Deleter = ::std::default_delete<T[]>>
 class unique_span : public ::cuda::span<T> {
 public: // span types

@@ -151,6 +151,7 @@ public:
 
 namespace device {
 
+/// A unique region of device-global memory
 using unique_region = memory::unique_region<detail_::deleter>;
 
 namespace detail_ {
@@ -164,20 +165,30 @@ inline unique_region make_unique_region(const context::handle_t context_handle, 
 } // namespace detail_
 
 /**
- * @brief Allocate an array in device-global memory and return an owning class for it
+ * @brief Allocate a region in device-global memory
  *
- * @param num_bytes  the size in bytes of the allocated region
- */
-///@{
-/**
- * @param device     The CUDA device in whose global memory to make the allocation.
+ * @param context The context within which (and in the device global memory
+ *     of which) to make the allocation
+ * @param num_bytes Size of the region to be allocated, in bytes
+ * @returns An owning RAII/CADRe object for the allocated memory region
  */
 unique_region make_unique_region(const context_t& context, size_t num_bytes);
+
 /**
- * @param context    The CUDA context in which to make the allocation.
+ * @brief Allocate a region in device-global memory
+ *
+ * @param device The device in the global memory of which to make the allocation
+ * @returns An owning RAII/CADRe object for the allocated memory region
  */
 unique_region make_unique_region(const device_t& device, size_t num_bytes);
 
+/**
+ * @brief Allocate a region in device-global memory within the primary context
+ * of the current CUDA device
+ *
+ * @param device The device in the global memory of which to make the allocation
+ * @returns An owning RAII/CADRe object for the allocated memory region
+ */
 unique_region make_unique_region(size_t num_bytes);
 ///}@
 
@@ -198,19 +209,21 @@ inline device::unique_region make_unique_region(const device_t& device, size_t n
 
 namespace host {
 
+/// A unique region of pinned host memory
 using unique_region = memory::unique_region<detail_::deleter>;
 
-inline unique_region make_unique_region(
-	const context_t&    context,
-	size_t              num_bytes,
-	allocation_options  options = allocation_options{});
-inline unique_region make_unique_region(const device_t& device, size_t num_bytes);
+/**
+ * @brief Allocate a physical-address-pinned region of system memory
+ *
+ * @returns An owning RAII/CADRe object for the allocated memory region
+ */
 inline unique_region make_unique_region(size_t num_bytes);
 
 } // namespace host
 
 namespace managed {
 
+/// A unique region of managed memory, see @ref cuda::memory::managed
 using unique_region = memory::unique_region<detail_::deleter>;
 
 namespace detail_ {
@@ -226,14 +239,34 @@ inline unique_region make_unique_region(
 
 } // namespace detail_
 
+/**
+ * @copydoc make_unique_region(size_t num_bytes)
+ *
+ * @param context A context, to set when allocating the memory region, for whatever
+ *     association effect that may have.
+ */
 inline unique_region make_unique_region(
     const context_t&      context,
     size_t                num_bytes,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @copydoc make_unique_region(size_t num_bytes)
+ *
+ * @param device A context, whose primary context will be current when allocating
+ *     the memory region, for whatever association effect that may have.
+ */
 inline unique_region make_unique_region(
     const device_t&       device,
     size_t                num_bytes,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @brief Allocate a region of managed memory, accessible both from CUDA devices
+ * and from the CPU.
+ *
+ * @returns An owning RAII/CADRe object for the allocated managed memory region
+ */
 inline unique_region make_unique_region(
     size_t                num_bytes);
 

@@ -179,6 +179,8 @@ protected:
 		}
 	}
 
+	/// Use the information specified for the builder to figure out the grid and block
+	/// dimensions with which the kernel is to be launched
 	grid::composite_dimensions_t get_composite_dimensions() const noexcept(false)
 	{
 		auto result = get_unvalidated_composite_dimensions();
@@ -189,6 +191,10 @@ protected:
 	}
 
 public:
+	/// Use the information specified to the builder (and defaults for the unspecified
+	/// information) to finalize the construction of a kernel launch configuration,
+	/// which can then be passed along with the kernel to a kernel-launching function,
+	/// e.g. the standalone @ref kernel::launch or the stream command @ref stream_t::enqueue_t::kernel_launch
 	launch_configuration_t build() const
 	{
 		auto result = launch_configuration_t{ get_composite_dimensions() };
@@ -392,6 +398,7 @@ public:
 
 	}
 
+	/// Set the dimensions for each block in the intended kernel launch grid
 	launch_config_builder_t& block_dimensions(
 		grid::block_dimension_t x,
 		grid::block_dimension_t y = 1,
@@ -400,8 +407,17 @@ public:
 		return block_dimensions(grid::block_dimensions_t{x, y, z});
 	}
 
+	/// Set the block in the intended kernel launch grid to be uni-dimensional
+	/// with a specified size
 	launch_config_builder_t& block_size(grid::block_dimension_t size) { return block_dimensions(size, 1, 1); }
 
+	/**
+	 * Set the intended kernel launch grid to have 1D blocks, of the maximum
+	 * length possible given the information specified to the builder.
+	 *
+	 * @note This will fail if neither a kernel nor a device have been chosen
+	 * for the launch.
+	 */
 	launch_config_builder_t& use_maximum_linear_block()
 	{
 		grid::block_dimension_t max_size;
@@ -424,6 +440,16 @@ public:
 	}
 
 #if CUDA_VERSION >= 12000
+	/**
+	 * Set the dimensions of multi-block clusters within the grid.
+	 *
+	 * @note There is only a small number of possible dimension combinations of clusters;
+	 * and this function does _not_ guarantee to fail immediately if you specify an
+	 * invalid such combination.
+	 *
+	 * @note This setting does not affect the overall dimensions of the grid in terms of
+	 * blocks.
+	 */
 	launch_config_builder_t& cluster_blocks(grid::block_dimensions_t cluster_dims)
 	{
 #ifndef NDEBUG
@@ -434,6 +460,9 @@ public:
 	}
 #endif
 
+	/// Set the dimension of the grid for the intended kernel launch, in terms
+	/// of blocks
+	///@{
 	launch_config_builder_t& grid_dimensions(grid::dimensions_t dims)
 	{
 #ifndef NDEBUG
@@ -447,6 +476,7 @@ public:
 		return *this;
 	}
 
+	///@}
 	launch_config_builder_t& grid_dimensions(
 		grid::dimension_t x,
 		grid::dimension_t y = 1,
@@ -455,9 +485,17 @@ public:
 		return grid_dimensions(grid::dimensions_t{x, y, z});
 	}
 
+	/// Set the grid for the intended launch to be one-dimensional, with a specified number
+	/// of blocks
+	///@{
 	launch_config_builder_t& grid_size(grid::dimension_t size) {return grid_dimensions(size, 1, 1); }
 	launch_config_builder_t& num_blocks(grid::dimension_t size) {return grid_size(size); }
+	///@}
 
+
+	/// Set the overall number of _threads_, in each dimension, of all blocks
+	/// in the grid of the intended kernel launch
+	///@{
 	launch_config_builder_t& overall_dimensions(grid::overall_dimensions_t dims)
 	{
 #ifndef NDEBUG
@@ -474,16 +512,30 @@ public:
 	{
 		return overall_dimensions(grid::overall_dimensions_t{x, y, z});
 	}
+	///@}
 
+	/// Set the intended launch grid to be linear, with a specified overall number of _threads_
+	/// over all (1D) blocks in the grid
 	launch_config_builder_t& overall_size(grid::overall_dimension_t size) { return overall_dimensions(size, 1, 1); }
 
+	/**
+	 * Set whether or blocks may synchronize with each other or not
+	 *
+	 * @note recall that even "non-cooperative" blocks can still access the same global memory
+	 * locations, and can use atomic operations on such locations for (slow) synchronization.
+	 */
 	launch_config_builder_t& block_cooperation(bool cooperation)
 	{
 		thread_block_cooperation = cooperation;
 		return *this;
 	}
 
+	/// Let kernel thread blocks synchronize with each other, or are guaranteed to act independently
+	/// (atomic global memory operations notwithstanding)
 	launch_config_builder_t& blocks_may_cooperate() { return block_cooperation(true); }
+
+	/// Prevent kernel thread blocks synchronize with each other, guaranteeing each block will
+	/// work entirely independently (atomic global memory operations notwithstanding)
 	launch_config_builder_t& blocks_dont_cooperate() { return block_cooperation(false); }
 
 	launch_config_builder_t& dynamic_shared_memory_size(
@@ -493,11 +545,18 @@ public:
 		return *this;
 	}
 
+	/// Indicate that the intended launch should not allocate any shared
+	/// memory for the kernel to use beyond the static amount necessitated
+	/// by its (compiled) code.
 	launch_config_builder_t& no_dynamic_shared_memory()
 	{
 		return dynamic_shared_memory_size(memory::shared::size_t(0));
 	}
 
+	/// Indicate that the intended launch should allocate a certain amount of shared
+	/// memory for the kernel to use beyond the static amount necessitated
+	/// by its (compiled) code.
+	///@{
 	launch_config_builder_t& dynamic_shared_memory_size(memory::shared::size_t size)
 	{
 #ifndef NDEBUG
@@ -512,13 +571,32 @@ public:
 	{
 		return dynamic_shared_memory_size(size);
 	}
+	///@}
 
+	/**
+	 * Indicate that the intended launch should allocate additional shared
+	 * memory for the kernel to use beyond the static amount necessitated
+	 * by its (compiled) code - with the amount to be determined based on
+	 * the block size
+	 *
+	 * @param shared_mem_size_determiner a function determining the dynamic
+	 * shared memory size given the kernel launch block size
+	 */
 	launch_config_builder_t& dynamic_shared_memory(
 		kernel::shared_memory_size_determiner_t shared_mem_size_determiner)
 	{
 		return dynamic_shared_memory_size(shared_mem_size_determiner);
 	}
 
+	/**
+	 * Indicate that the specified wrapped kernel will be the one launched
+	 * with the configuration to be produced by this object.  Such an indication
+	 * provides this object with information about the device and context in
+	 * which the kernel is to be launched, and ranges of possible values for
+	 * certain parameters (e.g. shared memory size, dimensions).
+	 *
+	 * @note Calling this method obviates a call to the @ref device() method.
+	 */
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
 	{
 		if (device_ and kernel_->device_id() != device_.value()) {
@@ -533,6 +611,15 @@ public:
 		return *this;
 	}
 
+	/**
+	 * Indicate that the intended kernel launch would occur on (some stream in
+	 * some context on) the specified device. Such an indication provides this
+	 * object with some information regarding ranges of possible values for
+	 * certain parameters (e.g. shared memory size, dimensions).
+	 *
+	 * @note Do not call both this and the @ref kernel() method; prefer just that one.
+	 */
+	///@{
 	launch_config_builder_t& device(const device::id_t device_id)
 	{
 		if (kernel_ and kernel_->device_id() != device_id) {
@@ -548,7 +635,11 @@ public:
 	{
 		return this->device(device.id());
 	}
+	///@}
 
+	/// Clear the association with a specific kernel (which may have been
+	/// set using the @ref kernel method)
+	///@{
 	launch_config_builder_t& kernel_independent()
 	{
 		kernel_ = nullptr;
@@ -559,13 +650,14 @@ public:
 		kernel_ = nullptr;
 		return *this;
 	}
+	///@}
 
 	/**
-	 * @brief THis will use information about the kernel, the already-set block size,
+	 * @brief This will use information about the kernel, the already-set block size,
 	 * and the device to create a unidimensional grid of blocks to exactly saturate
 	 * the CUDA device's capacity for simultaneous active blocks.
 	 *
-	 * @note This will _not_ set the block size - unlike
+	 * @note This will _not_ set the block size - unlike {@ref min_params_for_max_occupancy()}.
 	 */
 	launch_config_builder_t& saturate_with_active_blocks()
 	{
@@ -584,6 +676,14 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief This will use information about the kernel and the device to define
+	 * a minimum launch grid which should guarantee maximum occupancy of the GPU's
+	 * multiprocessors.
+	 *
+	 * @note A builder after this call _will_ set the block dimensions - unlike
+	 * {@ref saturate_with_active_blocks()} .
+	 */
 	launch_config_builder_t& min_params_for_max_occupancy()
 	{
 		if (not (kernel_)) {
@@ -600,6 +700,7 @@ public:
 	}
 }; // launch_config_builder_t
 
+/// A slightly shorter-named construction idiom for @ref launch_config_builder_t
 inline launch_config_builder_t launch_config_builder() { return {}; }
 
 } // namespace cuda

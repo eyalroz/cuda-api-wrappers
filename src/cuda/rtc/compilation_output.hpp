@@ -23,8 +23,18 @@ class context_t;
 ///@endcond
 
 namespace rtc {
+
+/**
+ * The output produced by a compilation process by one of the CUDA libraries,
+ * including any byproducts.
+ *
+ * @tparam Kind Which language was compiled to produce the result
+ *
+ * @note A failed compilation is also a (useful) kind of compilation output.
+ */
 template <source_kind_t Kind>
 class compilation_output_t;
+
 } // namespace rtc
 
 ///@cond
@@ -41,6 +51,7 @@ class module_t;
 
 namespace module {
 
+/// Build a contextualized module from the results of a successful compilation
 template <source_kind_t Kind>
 inline module_t create(
 	const context_t&                        context,
@@ -49,9 +60,6 @@ inline module_t create(
 
 } // namespace module
 
-/**
- * @brief Real-time compilation of CUDA programs using the NVIDIA NVRTC library.
- */
 namespace rtc {
 
 namespace program {
@@ -237,6 +245,7 @@ template <> inline status_t<cuda_cpp> destroy_and_return_status<cuda_cpp>(handle
 
 } // namespace program
 
+/// Definitions relating to and supporting the @ref compilation_output_t class
 namespace compilation_output {
 
 namespace detail_ {
@@ -256,12 +265,14 @@ inline compilation_output_t<Kind> wrap(
 } // namespace compilation_output
 
 /**
- * Wrapper class for the result of an NVRTC compilation (including the program handle) -
- * whether it succeeded or failed due to errors in the program itself.
+ * The result of the compilation of an {@ref rtc::program_t}, whether successful or
+ * failed, with any related byproducts.
  *
- * @note This class _may_ own an NVRTC low-level program handle.
+ * @note This class _may_ own a low-level program handle.
+ *
  * @note If compilation failed due to apriori-invalid arguments - an exception will
- * have been thrown. The only failure this class may represent
+ * have been thrown. A failure indication in this class indicates a program whose
+ * compilation actually _took place_ and ended with a failure.
  */
 template <source_kind_t Kind>
 class compilation_output_base_t {
@@ -271,27 +282,30 @@ public: // types and constants
 	using status_type = status_t<source_kind>;
 
 public: // getters
+
+	/// @returns `true` if the compilation resulting in this output had succeeded
 	bool succeeded() const { return succeeded_; }
+
+	/// @returns `true` if the compilation resulting in this output had failed
 	bool failed() const { return not succeeded_; }
+
+	/// @returns `true` if the compilation resulting in this output had succeeded, `false` otherwise
 	operator bool() const { return succeeded_; }
 	const ::std::string& program_name() const { return program_name_; }
 	handle_type program_handle() const { return program_handle_; }
 
 public: // non-mutators
 
-	// Unfortunately, C++'s standard string class is very inflexible,
-	// and it is not possible for us to get it to have an appropriately-
-	// sized _uninitialized_ buffer. We will therefore have to use
-	// a clunkier return type.
-	//
-	// ::std::string log() const
-
 	/**
-	 * Obtain a copy of the log of the last compilation
+	 * Write a copy of the program compilation log into a user-provided buffer
 	 *
-	 * @note This will fail if the program has never been compiled.
+     * @param[inout] buffer A writable buffer large enough to contain the compilation log
+     *
+	 * @return the buffer passed in (which has now been overwritten with the log)
+	 *
+	 * @note This will fail if the program has never been compiled, or if the
+	 * buffer is not large enough to hold the complete log (plus nul character).
 	 */
-	///@{
 	span<char> log(span<char> buffer) const
 	{
 		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
@@ -305,6 +319,13 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
+	/**
+	 * Obtain a copy of the compilation log
+	 *
+	 * @returns an owning container with a nul-terminated copy of the log
+	 *
+	 * @note This will fail if the program has never been compiled.
+	 */
 	unique_span<char> log() const
 	{
 		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
@@ -317,11 +338,34 @@ public: // non-mutators
 		result[size] = '\0';
 		return result;
 	}
-	///@}
 
 #if CUDA_VERSION >= 11010
-	virtual unique_span<char> cubin() const = 0;
+	/**
+	 * Write the CUBIN result of the last compilation into a buffer.
+	 *
+	 * @param[inout] buffer A writable buffer large enough to contain the compiled
+	 *     program's CUBIN code.
+	 * @return The sub-buffer, starting at the beginning of @p buffer, containing
+	 *     exactly the compiled program's CUBIN (i.e. sized down to fit the contents)
+	 *
+	 * @note This will fail if the program has never been compiled; due to
+	 * compilation failure and also due to LTO/linking failure.
+	 */
 	virtual span<char> cubin(span<char> buffer) const = 0;
+
+	/**
+	 * Obtain a copy of the CUBIN code resulting from the program compilation
+	 *
+	 * @returns an owning container with a copy of the CUBIN code
+	 *
+	 * @note This will fail if the program has never been compiled; if the compilation
+	 * target was a virtual architecture (in which case only PTX is available); due to
+	 * compilation failure and also due to LTO/linking failure.
+	 */
+	virtual unique_span<char> cubin() const = 0;
+
+	/// @returns true if the program has been successfully compiled, with the result
+	/// containing CUBIN code.
 	virtual bool has_cubin() const = 0;
 #endif
 
@@ -360,6 +404,7 @@ protected: // data members
 
 };
 
+/// Output of CUDA C++ code JIT-compilation
 template <>
 class compilation_output_t<cuda_cpp> : public compilation_output_base_t<cuda_cpp> {
 public:
@@ -382,9 +427,17 @@ public: // non-mutators
 	 */
 	///@{
 
+
 	/**
+	 * Write a copy of the PTX resulting from the compilation into a user-provided buffer
+	 *
 	 * @param[inout] buffer A writable buffer large enough to contain the compiled
 	 *     program's PTX code.
+	 * @return The sub-buffer, starting at the beginning of @p buffer, containing
+	 *     exactly the compiled program's PTX (i.e. sized down to fit the contents)
+	 *
+	 * @note This will throw if the program has never been compiled, or if the buffer
+	 * is not large enough to contain the compiled PTX code.
 	 */
 	span<char> ptx(span<char> buffer) const
 	{
@@ -398,6 +451,13 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
+	/**
+	 * Obtain a copy of the PTX resulting from the program compilation
+	 *
+	 * @returns an owning container with a nul-terminated copy of the PTX code
+	 *
+	 * @note This will fail if the program compilation has not produced any PTX
+	 */
 	unique_span<char> ptx() const
 	{
 		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
@@ -410,8 +470,9 @@ public: // non-mutators
 		result[size] = '\0';
 		return result;
 	}
-	///@}
 
+	/// @returns true if the program has been successfully compiled, with the result containing
+	/// PTX code
 	bool has_ptx() const
 	{
 		size_t size;
@@ -427,15 +488,6 @@ public: // non-mutators
 	}
 
 #if CUDA_VERSION >= 11010
-	/**
-	 * Obtain a copy of the CUBIN result of the last compilation.
-	 *
-	 * @note CUBIN output is not available when compiling for a virtual architecture only.
-	 * Also, it may be missing in cases such as compilation failure or link-time
-	 * optimization compilation.
-	 * @note This will fail if the program has never been compiled.
-	 */
-	///@{
 	span<char> cubin(span<char> buffer) const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
@@ -456,7 +508,6 @@ public: // non-mutators
 		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
-	///@}
 
 	bool has_cubin() const override
 	{
@@ -467,13 +518,12 @@ public: // non-mutators
 			+ compilation_output::detail_::identify(*this));
 		return (size > 0);
 	}
-
 #endif
 
 #if CUDA_VERSION >= 11040
 	/**
-	 * Obtain a copy of the LTO IR result of the last compilation - the intermediate
-	 * representation used for link-time optimization
+	 * Write the LTO IR result of the last compilation - the intermediate
+	 * representation used for link-time optimization - into a buffer
 	 *
 	 * @throws ::std::invalid_argument if the supplied buffer is too small to hold
 	 * the program's LTO IR.
@@ -485,7 +535,6 @@ public: // non-mutators
 	 *
 	 * @note LTO IR was called NVVM in CUDA 11.x .
 	 */
-	/// @{
 	span<char> lto_ir(span<char> buffer) const
 	{
 		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
@@ -498,6 +547,15 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
+	/**
+	 * Obtain a copy of the intermediate representation, for LTO purposes (LTO IR) resulting
+	 * from the program compilation
+	 *
+	 * @returns an owning container with a nul-terminated copy of the LTO-IR code
+	 *
+	 * @note This will fail if the program was not compiled successfully with the LTO IR option
+	 * enabled
+	 */
 	unique_span<char> lto_ir() const
 	{
 		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
@@ -510,12 +568,9 @@ public: // non-mutators
 		result[size] = '\0';
 		return result;
 	}
-	/// @}
 
-	/**
-	 * Check whether the compilation also resulted in LTO IR - intermediate representation
-	 * for link-time optimization
-	 */
+	/// @returns true if the program has been successfully compiled, with the result containing
+	/// IR (intermediate representation) code usable for LTO (link-time optimization)
 	bool has_lto_ir() const
 	{
 		size_t size;
@@ -533,14 +588,13 @@ public: // non-mutators
 		}
 		return true;
 	}
-
 #endif
 
 	/**
 	 * Obtain the mangled/lowered form of an expression registered earlier, after
 	 * the compilation.
 	 *
-	 * @param unmangled_name A name of a __global__ or __device__ function or variable.
+	 * @param unmangled_name A name of a `__global__` or `__device__` function or variable.
 	 * @return The mangled name (which can actually be used for invoking kernels,
 	 * moving data etc.). The memory is owned by the NVRTC program and will be
 	 * released when it is destroyed.
@@ -554,6 +608,7 @@ public: // non-mutators
 		return result;
 	}
 
+	/// @copydoc get_mangling_of(const char*) const
 	const char* get_mangling_of(const ::std::string& unmangled_name) const
 	{
 		return get_mangling_of(unmangled_name.c_str());
@@ -575,12 +630,6 @@ public:
 		bool           own_handle);
 
 public: // non-mutators
-	/**
-	 * Obtain a copy of the CUBIN result of the last compilation.
-	 *
-	 * @note This will fail if the program has never been compiled.
-	 */
-	///@{
 	span<char> cubin(span<char> buffer) const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
@@ -593,7 +642,6 @@ public: // non-mutators
 		return { buffer.data(), size };
 	}
 
-public: // non-mutators
 	unique_span<char> cubin() const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
@@ -606,7 +654,6 @@ public: // non-mutators
 		result[size] = '\0';
 		return result;
 	}
-	///@}
 
 	bool has_cubin() const override
 	{
@@ -695,6 +742,8 @@ template<> inline module_t create<source_kind_t::ptx>(
 #endif // CUDA_VERSION >= 11010
 
 
+/// Build a module from the results of a successful compilation, in the primary context
+/// of the specified device
 template <source_kind_t Kind>
 inline module_t create(
 	device_t&                               device,

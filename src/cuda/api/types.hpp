@@ -2,7 +2,7 @@
  * @file
  *
  * @brief Fundamental CUDA-related type definitions.
-
+ *
  * This is a common file for all definitions of fundamental CUDA-related types,
  * some shared by different APIs.
  *
@@ -64,16 +64,21 @@ namespace cuda {
  */
 using status_t = CUresult;
 
+/// A size type for use throughout the wrappers library (except when specific API functions
+/// limit the size further)
 using size_t = ::std::size_t;
 
-/**
- * The index or number of dimensions of an entity (as opposed to the extent in any
- * dimension) - typically just 0, 1, 2 or 3.
- */
+/// The index or number of dimensions of an entity (as opposed to the extent in any
+/// dimension) - typically just 0, 1, 2 or 3.
 using dimensionality_t = size_t;
 
+/**
+ * CUDA facilities for interpolating access to multidimensional array objects,
+ * in particular via the @ref array_t class.
+ */
 namespace array {
 
+/// An individual dimension extent for an array
 using dimension_t = size_t;
 
 /**
@@ -87,12 +92,11 @@ using dimension_t = size_t;
 template<dimensionality_t NumDimensions>
 struct dimensions_t;
 
-/**
- * Dimensions for 3D CUDA arrays
- */
+/// Dimensions for 3D CUDA arrays
 template<>
 struct dimensions_t<3> // this almost-inherits cudaExtent
 {
+	/// The three constituent individual dimensions, named
 	dimension_t width, height, depth;
 
 	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_, dimension_t depth_)
@@ -117,25 +121,32 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 			// 2. It doesn't do anything except construct the plain struct - as of CUDA 10 at least
 	}
 
+	/// The total number of elements in a 3D entity with these dimensions
 	constexpr __host__ __device__ size_t volume() const { return width * height * depth; }
+
+	/// @copydoc volume
 	constexpr __host__ __device__ size_t size() const { return volume(); }
+
+	/// The number of non-trivial dimensions in this object (axes in which an object with
+	/// these dimensions is not "flat")
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((width > 1) + (height> 1) + (depth > 1));
 	}
 
-	// Named constructor idioms
-
+	/// Named constructor idiom: Dimensions for an equi-lateral cube
 	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+
+	///Named constructor idiom: Dimensions for a one-element object: "Flat" in all individual
+	// dimensions
 	static constexpr __host__ __device__ dimensions_t zero() { return cube(0); }
 };
 
-/**
- * Dimensions for 2D CUDA arrays
- */
+/// Dimensions for 2D CUDA arrays
 template<>
 struct dimensions_t<2>
 {
+	/// The two constituent individual dimensions, named; no "depth" for the 2D case.
 	dimension_t width, height;
 
 	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_)
@@ -159,8 +170,14 @@ struct dimensions_t<2>
 		return *this;
 	}
 
+	/// The total number of elements in a 2D entity with these dimensions
 	constexpr __host__ __device__ size_t area() const { return width * height; }
+
+	/// @copydoc area
 	constexpr __host__ __device__ size_t size() const { return area(); }
+
+	/// The number of non-trivial dimensions in this object (axes in which an object with
+	/// these dimensions is not "flat")
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
 		return ((width > 1) + (height> 1));
@@ -168,21 +185,29 @@ struct dimensions_t<2>
 
 	// Named constructor idioms
 
+	/// Named constructor idiom: Dimensions for an equi-lateral cube
 	static constexpr __host__ __device__ dimensions_t square(dimension_t x)   { return dimensions_t{ x, x }; }
+
+	///Named constructor idiom: Dimensions for a one-element object: "Flat" in all individual
+	// dimensions
 	static constexpr __host__ __device__ dimensions_t zero() { return square(0); }
 };
 
 } // namespace array
 
 /**
- * @brief Definitions and functionality related to CUDA events (not
- * including the event wrapper type @ref event_t itself)
+ * CUDA timing functionality, via events and their related code (not including
+ * the event wrapper type @ref event_t itself)
  */
 namespace event {
 
 /// The CUDA driver's raw handle for events
 using handle_t = CUevent;
 
+/**
+ * Definitions and functionality related to CUDA events (not
+ * including the event wrapper type @ref event_t itself)
+ */
 namespace ipc {
 
 /// The CUDA driver's raw handle for events passed between processes
@@ -193,10 +218,9 @@ using handle_t = CUipcEventHandle;
 } // namespace event
 
 /**
- * @brief Definitions and functionality related to CUDA streams (not
+ * Definitions and functionality related to CUDA streams (not
  * including the device wrapper type @ref stream_t itself)
  */
-
 namespace stream {
 
 /// The CUDA driver's raw handle for streams
@@ -279,7 +303,9 @@ struct dimensions_t // this almost-inherits dim3
 	// as constexpr, so it isn't
 	__host__ __device__ operator dim3(void) const { return { x, y, z }; }
 
+	/// The number of total elements in a 3D object with these dimensions
 	constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
+
 	/// Number of dimensions in which this dimension structure is non-trivial, i.e. coordinates can
 	/// have more than a single value
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
@@ -289,11 +315,20 @@ struct dimensions_t // this almost-inherits dim3
 
 	// Named constructor idioms
 
+	/// Dimensions of an equi-lateral 3D cube
 	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+
+	/// Dimensions of an equi-lateral 2D square, with a trivial third dimension
 	static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
+
+	/// Dimensions of a 1D line, with the last two dimensions trivial
 	static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
+
+	/// Dimensions of a single point - trivial in in all axes
 	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
 
+	/// @returns true if the dimensions on the left-hand side divide, elementwise, those
+	/// on the right-hand side
 	static bool divides(dimensions_t lhs, dimensions_t rhs)
 	{
 		return
@@ -378,6 +413,7 @@ struct overall_dimensions_t
 	}
 };
 
+///@cond
 constexpr bool operator==(overall_dimensions_t lhs, overall_dimensions_t rhs) noexcept
 {
 	return (lhs.x == rhs.x) and (lhs.y == rhs.y) and (lhs.z == rhs.z);
@@ -396,6 +432,7 @@ constexpr overall_dimensions_t operator*(dimensions_t grid_dims, block_dimension
 		grid_dims.z * overall_dimension_t { block_dims.z },
 	};
 }
+///@endcond
 
 /**
  * Composite dimensions for a grid - in terms of blocks, then also down
@@ -405,18 +442,24 @@ struct composite_dimensions_t {
 	grid::dimensions_t       grid;
 	grid::block_dimensions_t block;
 
+	/// @returns The overall dimensions of the entire grid as a single 3D entity
 	constexpr overall_dimensions_t flatten() const { return grid * block; }
 
+	/// @returns The total number of threads over all blocks of the grid
 	constexpr size_t volume() const { return flatten().volume(); }
 
+	/// @returns the number of axes in which the grid overall has non-trivial dimension
 	constexpr size_t dimensionality() const { return flatten().dimensionality(); }
 
+	/// A named constructor idiom for the composite dimensions of a single-block grid
+	/// with a single-thread block
 	static constexpr composite_dimensions_t point()
 	{
 		return { dimensions_t::point(), block_dimensions_t::point() };
 	}
 };
 
+///@cond
 constexpr bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
 	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
@@ -426,18 +469,15 @@ constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs
 {
 	return not (lhs == rhs);
 }
+///@endcond
 
 } // namespace grid
 
-/**
- * @namespace memory
- *
- * @brief Representation, allocation and manipulation of CUDA-related memory, of different
- * kinds.
- */
+/// Representation, allocation and manipulation of CUDA-related memory, of different
 namespace memory {
 
 #if CUDA_VERSION >= 10020
+/// Named boolean constants used in memory read and write access control
 enum : bool {
 	read_enabled = true,
 	read_disabled = false,
@@ -445,10 +485,19 @@ enum : bool {
 	write_disabled = false
 };
 
+/**
+ * An access permission specification structure for physical allocations
+ * performed by / registered with the CUDA driver
+ *
+ * @note defined for each of use instead of the raw CUDA driver's @ref CUmemAccess_flags
+ * type.
+ */
 struct access_permissions_t {
 	bool read : 1;
 	bool write : 1;
 
+	/// This allows passing this access permissions structure to CUDA driver memory
+	/// access control API functions
 	operator CUmemAccess_flags() const noexcept
 	{
 		return read ?
@@ -456,6 +505,7 @@ struct access_permissions_t {
 			   CU_MEM_ACCESS_FLAGS_PROT_NONE;
 	}
 
+	/// A named constructor idiom for access permissions
 	static access_permissions_t from_access_flags(CUmemAccess_flags access_flags)
 	{
 		access_permissions_t result;
@@ -464,6 +514,7 @@ struct access_permissions_t {
 		return result;
 	}
 
+	/// A named constructor idiom for allowing both reading and writing
 	static constexpr access_permissions_t read_and_write()
 	{
 		return access_permissions_t{ read_enabled, write_enabled };
@@ -472,7 +523,8 @@ struct access_permissions_t {
 
 namespace physical_allocation {
 
-// TODO: Consider simply aliasing CUmemAllocationHandleType and using constexpr const's or anonymous enums
+/// The different kinds of memory handles the CUDA driver recognizes, and can possibly
+/// utilize
 enum class shared_handle_kind_t : ::std::underlying_type<CUmemAllocationHandleType>::type {
 #if CUDA_VERSION >= 11020
 	no_export             = CU_MEM_HANDLE_TYPE_NONE,
@@ -494,6 +546,7 @@ template <> struct shared_handle_type_helper<shared_handle_kind_t::win32_handle>
 
 } // namespace detail_
 
+/// The raw handle for different kinds of shared memory the CUDA driver recognizes
 template<shared_handle_kind_t SharedHandleKind>
 using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandleKind>::type;
 
@@ -501,12 +554,18 @@ using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandle
 #endif // CUDA_VERSION >= 10020
 #if CUDA_VERSION >= 11020
 
+/// pool-based allocation functionality
 namespace pool {
-/**
- * @note Unsupported for now
- */
+
+/// Raw CUDA driver handle for a memory pool; avoid using these and prefer @ref memory::pool_t}.
 using handle_t = CUmemoryPool;
+
+/// The different kinds of memory handles the CUDA driver recognizes, and can
+/// possibly be used with pool allocation
 using shared_handle_kind_t = physical_allocation::shared_handle_kind_t;
+
+/// The raw handle for different kinds of shared memory the CUDA driver recognizes, for
+/// possible use with memory pools
 using physical_allocation::shared_handle_t;
 
 namespace ipc {
@@ -522,23 +581,26 @@ using ptr_handle_t = CUmemPoolPtrExportData;
 
 namespace pointer {
 
+/// Raw CUDA driver choice type for attributes of pointers
 using attribute_t = CUpointer_attribute;
 
 } // namespace pointer
 
 namespace device {
 
-/**
- * The numeric type which can represent the range of memory addresses on a CUDA device.
- */
+/// The numeric type which can represent the range of memory addresses on a CUDA device.
+/// As these addresses are typically just part of the single, unified all-system memory
+/// space, this should be the same type as a system memory address' numeric equivalent.
+
 using address_t = CUdeviceptr;
 
 static_assert(sizeof(void *) == sizeof(device::address_t), "Unexpected address size");
 
 /**
- * Return a pointers address as a numeric value of the type appropriate for device
- * @param device_ptr a pointer into device memory
- * @return a reinterpretation of @p device_address as a numeric address.
+ * @returns a cast of a proper pointer into a numeric address in device memory space
+ * (which is usually just a part of the unified all-system memory space)
+ *
+ * @note Typically, this is just a reinterpretation of the same value.
  */
 inline address_t address(const void* device_ptr) noexcept
 {
@@ -546,16 +608,34 @@ inline address_t address(const void* device_ptr) noexcept
 	return reinterpret_cast<address_t>(device_ptr);
 }
 
+/**
+ * @returns The numeric address of the beginning of a memory region
+ *
+ * @note Typically, this is just a reinterpretation of the same value.
+ */
 inline address_t address(memory::const_region_t region) noexcept { return address(region.start()); }
 
 } // namespace device
 
+/// @returns a cast of a numeric address in device memory space (which, in recent CUDA
+/// versions, is just a part of the unified all-system memory space) into a proper
+/// pointer.
 inline void* as_pointer(device::address_t address) noexcept
 {
 	static_assert(sizeof(void*) == sizeof(device::address_t), "Incompatible sizes for a void pointer and memory::device::address_t");
 	return reinterpret_cast<void*>(address);
 }
 
+/**
+ * A memory space whose contents is shared by all threads in a CUDA kernel block,
+ * but specific to each kernel block separately. Shared memory is stored in a special
+ * area in each of a GPU's individual physical cores (symmetric multiprocessors, or
+ * SM's, in NVIDIA parlance) - which is also the area used for L1 cache. One may
+ * therefore think of it as L1-cache-like memory which holds arbitrary data rather
+ * than a cached copy of any global memory locations. It is only usable in
+ * device-side (= kernel) code, but control and inspection of its size is part of
+ * the CUDA API functionality.
+ */
 namespace shared {
 
 /**
@@ -574,30 +654,50 @@ using size_t = unsigned;
 
 } // namespace shared
 
+/**
+ * Paged memory accessible in both device-side and host-side code by triggering transfers
+ * of pages between physical system memory and physical device memory.
+ *
+ * This type of memory, also known as _unified_ memory, appears within a unified, all-system
+ * address space - and is used with the same address range on the host and on all relevant
+ * CUDA devices on a system. It is paged, so that it may exceed the physical size of a CUDA
+ * device's global memory. The CUDA driver takes care of "swapping" pages "out" from a device
+ * to host memory or "swapping" them back "in", as well as of propagation of changes between
+ * devices and host-memory.
+ *
+ * @note For more details, see
+ * <a href="https://devblogs.nvidia.com/parallelforall/unified-memory-cuda-beginners/">
+ * Unified Memory for CUDA Beginners</a> on the
+ * <a href="https://devblogs.nvidia.com/parallelforall">Parallel4All blog</a>.
+ */
 namespace managed {
 
+/// The choices of which categories CUDA devices must a managed memory region be visible to
 enum class initial_visibility_t {
 	to_all_devices,
 	to_supporters_of_concurrent_managed_access,
 };
 
+/// A specifier of one of the attributes of managed memory regions
 using range_attribute_t = CUmem_range_attribute;
 
 } // namespace managed
 
 #if CUDA_VERSION >= 11070
+/// Memory barriers can apply to different scops of scheduled work which must reach it before
+/// continuing
 enum class barrier_scope_t : typename ::std::underlying_type<CUstreamMemoryBarrier_flags>::type {
+	/// All wortk on
 	device = CU_STREAM_MEMORY_BARRIER_TYPE_GPU,
 	system = CU_STREAM_MEMORY_BARRIER_TYPE_SYS
 };
 #endif // CUDA_VERSION >= 11700
 
 #if CUDA_VERSION >= 10000
-/**
- * Representation of memory resources external to CUDA
- */
+/// Representation of memory resources external to CUDA
 namespace external {
 
+/// Raw CUDA driver handle for an external memory resource represented for the driver
 using handle_t = CUexternalMemory;
 
 /**
@@ -700,15 +800,13 @@ using attribute_t = CUdevice_P2PAttribute;
 
 namespace context {
 
+/// Raw CUDA driver handle for a context; see {@ref context_t}.
 using handle_t = CUcontext;
 
 using flags_t = unsigned;
 
-/**
- * Scheduling policies the Runtime API may use when the host-side
- * thread it is running in needs to wait for results from a certain
- * device
- */
+/// Scheduling policies the CUDA driver may use when the host-side thread it is
+/// running in needs to wait for results from a certain device or context.
 enum host_thread_sync_scheduling_policy_t : unsigned int {
 
 	/**
@@ -770,10 +868,12 @@ using flags_t = context::flags_t;
 
 namespace primary_context {
 
+/// Raw CUDA driver handle for a device's primary context
 using handle_t = cuda::context::handle_t;
 
 } // namespace primary_context
 
+/// @copydoc context::host_thread_sync_scheduling_policy_t
 using host_thread_sync_scheduling_policy_t = context::host_thread_sync_scheduling_policy_t;
 
 } // namespace device
@@ -793,21 +893,27 @@ inline T identity_cast(U&& x)
 
 } // namespace detail_
 
+/// The CUDA-driver-specific representation of a UUID value; see also {@ref device_t::uuid()}
 using uuid_t = CUuuid;
 
 namespace module {
 
+/// Raw CUDA driver handle of a module of compiled code; see @ref module_t
 using handle_t = CUmodule;
 
 } // namespace module
 
 namespace kernel {
 
+/// Raw CUDA driver selector of a kernel attribute
 using attribute_t = CUfunction_attribute;
+
+/// The uniform type the CUDA driver uses for all kernel attributes; it is typically more
+/// appropriate to use @ref cuda::kernel_t methods, which also employ more specific,
+/// appropriate types.
 using attribute_value_t = int;
 
-// TODO: Is this really only for kernels, or can any device-side function be
-// represented by a CUfunction?
+// A raw CUDA driver handle for a kernel; prefer using the @ref cuda::kernel_t type.
 using handle_t = CUfunction;
 
 } // namespace kernel

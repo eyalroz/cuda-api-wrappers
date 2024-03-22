@@ -120,7 +120,7 @@ inline memory::type_t type_of(const void* ptr)
 
 /// Obtain (a non-owning wrapper for) the CUDA context with which a memory address is associated
 /// (e.g. being the result of an allocation or mapping in that context)
-inline context_t context_of(const void* ptr);
+context_t context_of(void const* ptr);
 
 /**
  * A convenience wrapper around a raw pointer "known" to the CUDA runtime

@@ -85,11 +85,14 @@ enum cpu_write_combining : bool {
 };
 
 /**
- * @brief options accepted by CUDA's allocator of memory with a host-side aspect
+ * options accepted by CUDA's allocator of memory with a host-side aspect
  * (host-only or managed memory).
  */
 struct allocation_options {
+	/// whether or not the allocated region can be used in different CUDA contexts.
 	portability_across_contexts  portability;
+
+	/// whether or not the GPU can batch multiple writes to this area and propagate them at its convenience.
 	cpu_write_combining          write_combining;
 };
 
@@ -105,7 +108,6 @@ inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 } // namespace detail_
 
 /**
- * @namespace mapped
  * Memory regions appearing in both on the host-side and device-side address
  * spaces with the regions in both spaces mapped to each other (i.e. guaranteed
  * to have the same contents on access up to synchronization details). Consult the
@@ -116,25 +118,37 @@ namespace mapped {
 
 // TODO: Perhaps make this an array of size 2 and use aspects to index it?
 
+/**
+ * A pair of memory spans, one in device-global memory and one in host/system memory,
+ * mapped to it.
+ *
+ * @note This can be thought of as a type-imbued @ref region_pair_t
+ */
 template <typename T>
 struct span_pair_t {
+	/// The two regions mapped to each other by the CUDA driver; they must be
+	/// identical in size.
 	span<T> host_side, device_side;
 
+	///@cond
 	constexpr operator ::std::pair<span<T>, span<T>>() const { return { host_side, device_side }; }
 	constexpr operator ::std::pair<region_t, region_t>() const { return { host_side, device_side }; }
+	///@endcond
 };
 
 /**
- * @brief A pair of memory regions, one in system (=host) memory and one on a
+ * A pair of memory regions, one in system (=host) memory and one on a
  * CUDA device's memory - mapped to each other
  *
  * @note this is the mapped-pair equivalent of a `void *`; it is not a
  * proper memory region abstraction, i.e. it has no size information
  */
 struct region_pair_t {
-	/// identical in size
+	/// The two regions mapped to each other by the CUDA driver; they must be
+	/// identical in size.
 	memory::region_t host_side, device_side;
 
+	/// @returns two spans, one for the each of the host-side and device-side regions
 	template <typename T>
 	constexpr span_pair_t<T> as_spans() const
 	{
@@ -144,9 +158,7 @@ struct region_pair_t {
 
 } // namespace mapped
 
-/**
- * @brief CUDA-Device-global memory on a single device (not accessible from the host)
- */
+///CUDA-Device-global memory on a single device (not accessible from the host)
 namespace device {
 
 namespace detail_ {
@@ -184,9 +196,7 @@ namespace async {
 
 namespace detail_ {
 
-/**
- * Allocate memory asynchronously on a specified stream.
- */
+/// Allocate memory asynchronously on a specified stream.
 inline region_t allocate(
 	context::handle_t  context_handle,
 	stream::handle_t   stream_handle,
@@ -226,10 +236,7 @@ region_t allocate(const stream_t& stream, size_t size_in_bytes);
 } // namespace async
 #endif
 
-/**
- * Free a region of device-side memory (regardless of how it was allocated)
- */
-///@{
+/// Free a region of device-side memory (regardless of how it was allocated)
 inline void free(void* ptr)
 {
 	auto result = cuMemFree(address(ptr));
@@ -240,8 +247,9 @@ inline void free(void* ptr)
 #endif
 	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
+
+/// @copydoc free(void*)
 inline void free(region_t region) { free(region.start()); }
-///@}
 
 #if CUDA_VERSION >= 11020
 namespace async {
@@ -280,7 +288,6 @@ inline void free(const stream_t& stream, region_t region)
 
 } // namespace async
 #endif
-
 
 /**
  * Allocate device-side memory on a CUDA device context.
@@ -324,9 +331,8 @@ struct deleter {
 
 } // namespace detail_
 
-
 /**
- * @brief Sets consecutive elements of a region of memory to a fixed
+ * Sets consecutive elements of a region of memory to a fixed
  * value of some width
  *
  * @note A generalization of `set()`, for different-size units.
@@ -340,14 +346,11 @@ template <typename T>
 void typed_set(T* start, const T& value, size_t num_elements);
 
 /**
- * @brief Sets all bytes in a region of memory to a fixed value
+ * Sets all bytes in a region of memory to a fixed value
  *
  * @note The equivalent of @ref ::std::memset for CUDA device-side memory
  *
  * @param byte_value value to set the memory region to
- */
-///@{
-/**
  * @param start starting address of the memory region to set, in a CUDA
  * device's global memory
  * @param num_bytes size of the memory region in bytes
@@ -358,21 +361,23 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 }
 
 /**
+ * Sets all bytes in a region of memory to a fixed value
+ *
+ * @note The equivalent of @ref ::std::memset for CUDA device-side memory
+ *
+ * @param byte_value value to set the memory region to
  * @param region a region to zero-out, in a CUDA device's global memory
  */
 inline void set(region_t region, int byte_value)
 {
 	set(region.start(), byte_value, region.size());
 }
-///@}
 
 /**
- * @brief Sets all bytes in a region of memory to 0 (zero)
- */
-///@{
-/**
- * @param start the beginning of a region of memory to zero-out, in a CUDA
- *     device's global memory
+ * Sets all bytes in a region of memory to 0 (zero)
+ *
+ * @param start the beginning of a region of memory to zero-out, accessible
+ *     within a CUDA device's global memory
  * @param num_bytes the size in bytes of the region of memory to zero-out
  */
 inline void zero(void* start, size_t num_bytes)
@@ -381,19 +386,22 @@ inline void zero(void* start, size_t num_bytes)
 }
 
 /**
- * @param region the memory region to zero-out, in a CUDA device's global memory
+ * Sets all bytes in a region of memory to 0 (zero)
+ *
+ * @param region the memory region to zero-out, accessible as a part of a
+ * CUDA device's global memory
  */
 inline void zero(region_t region)
 {
 	zero(region.start(), region.size());
 }
-///@}
+
 
 /**
- * @brief Sets all bytes of a single pointed-to value to 0
+ * Sets all bytes of a single pointed-to value to 0
  *
- * @param ptr pointer to a value of a certain type, in a CUDA device's
- * global memory
+ * @param ptr pointer to a value of a certain type, accessible within
+ *     in a CUDA device's global memory
  */
 template <typename T>
 inline void zero(T* ptr)
@@ -404,20 +412,20 @@ inline void zero(T* ptr)
 } // namespace device
 
 /**
- * Synchronously copies data between memory spaces or within a memory space.
- *
  * @note Since we assume Compute Capability >= 2.0, all devices support the
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
+ * used in a copy function, where the data is located, and one does not have to specify this.
  *
  * @note the sources and destinations may all be in any memory space addressable
  * in the the unified virtual address space, which could be host-side memory,
  * device global memory, device constant memory etc.
  *
- * @param destination A pointer to a memory region of size @p num_bytes.
  */
 ///@{
+
 /**
+ * Synchronously copy data between different locations in memory
+ *
  * @param source A pointer to a a memory region of size @p num_bytes.
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  */
@@ -465,6 +473,14 @@ inline void copy(region_t destination, const T(&source)[N])
 	return copy(destination.start(), source, sizeof(T) * N);
 }
 
+/**
+ * Copy the contents of a C-style array into a span of same-type elements
+ *
+ * @param destination A span of elements to overwrite with the array contents.
+ * @param source A fixed-size C-style array from which copy data into
+ *     @p destination,. As this is taken by reference rather than by address
+ *     of the first element, there is no array-decay.
+ */
 template <typename T, size_t N>
 inline void copy(span<T> destination, const T(&source)[N])
 {
@@ -477,6 +493,9 @@ inline void copy(span<T> destination, const T(&source)[N])
 }
 
 /**
+ * Copy the contents of memory region into a C-style array, interpreting the memory
+ * as a sequence of elements of the array's element type
+ *
  * @param destination A region of memory to which to copy the data in @p source,
  *     of size at least that of @p source.
  * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
@@ -496,6 +515,15 @@ inline void copy(T(&destination)[N], const_region_t source)
 	return copy(destination, source.start(), sizeof(T) * N);
 }
 
+/**
+ * Copy the contents of a span into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source A span of the same element type as the destination array,
+ *     containing the data to be copied
+ */
 template <typename T, size_t N>
 inline void copy(T(&destination)[N], span<T const> source)
 {
@@ -509,6 +537,15 @@ inline void copy(T(&destination)[N], span<T const> source)
 	return copy(destination, source.start(), sizeof(T) * N);
 }
 
+/**
+ * Copy the contents of a C-style array to another location in memory
+ *
+ * @param destination The starting address of a sequence of @tparam N values
+ *     of type @tparam T to overwrite with the array contents.
+ * @param source A fixed-size C-style array from which copy data into
+ *     @p destination,. As this is taken by reference rather than by address
+ *     of the first element, there is no array-decay.
+ */
 template <typename T, size_t N>
 inline void copy(void* destination, T (&source)[N])
 {
@@ -516,9 +553,12 @@ inline void copy(void* destination, T (&source)[N])
 }
 
 /**
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source The starting address of @tparam N elements to copy
+ * Copy memory into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source The starting address of a sequence of @tparam N elements to copy
  */
 template <typename T, size_t N>
 inline void copy(T(&destination)[N], T* source)
@@ -527,6 +567,8 @@ inline void copy(T(&destination)[N], T* source)
 }
 
 /**
+ * Copy one region of memory into another
+ *
  * @param destination A region of memory to which to copy the data in @p source,
  *     of size at least that of @p source.
  * @param source A pointer to a a memory region of size @p num_bytes.
@@ -542,6 +584,14 @@ inline void copy(region_t destination, void* source, size_t num_bytes)
 	return copy(destination.start(), source, num_bytes);
 }
 
+/**
+ * Copy one region of memory to another location
+ *
+ * @param destination The beginning of a target region of memory (of size at least
+ *     @p num_bytes) into which to copy
+ * @param source A region of memory from which to copy, of size at least @p num_bytes
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ */
 inline void copy(void* destination, const_region_t source, size_t num_bytes)
 {
 #ifndef NDEBUG
@@ -552,6 +602,13 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes)
 	return copy(destination, source.start(), num_bytes);
 }
 
+/**
+ * Copy memory between memory regions
+ *
+ * @param destination A target region of memory into which to copy; enough memory will
+ *     be copied to fill this region
+ * @param source The beginning of a region of memory from which to copy
+ */
 inline void copy(region_t destination, void* source)
 {
 	return copy(destination, source, destination.size());
@@ -559,7 +616,7 @@ inline void copy(region_t destination, void* source)
 ///@}
 
 /**
- * @brief Sets a number of bytes in memory to a fixed value
+ * Sets a number of bytes in memory to a fixed value
  *
  * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
  * memory spaces
@@ -572,7 +629,7 @@ inline void copy(region_t destination, void* source)
 void set(void* ptr, int byte_value, size_t num_bytes);
 
 /**
- * @brief Sets all bytes in a region of memory to a fixed value
+ * Sets all bytes in a region of memory to a fixed value
  *
  * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
  * memory spaces
@@ -587,10 +644,8 @@ inline void set(region_t region, int byte_value)
 }
 
 /**
- * @brief Sets all bytes in a region of memory to 0 (zero)
- */
-///@{
-/**
+ * Sets all bytes in a region of memory to 0 (zero)
+ *
  * @param region the memory region to zero-out; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
  */
@@ -600,7 +655,9 @@ inline void zero(region_t region)
 }
 
 /**
- * @param start the beginning of a region of memory to zero-out; may be in host-side
+ * Zero-out a region of memory
+ *
+ * @param ptr the beginning of a region of memory to zero-out; may be in host-side
  *     memory, global CUDA-device-side memory or CUDA-managed memory.
  * @param num_bytes the size in bytes of the region of memory to zero-out
  */
@@ -608,10 +665,9 @@ inline void zero(void* ptr, size_t num_bytes)
 {
 	return set(ptr, 0, num_bytes);
 }
-///@}
 
 /**
- * @brief Sets all bytes of a single pointed-to value to 0
+ * Sets all bytes of a single pointed-to value to 0
  *
  * @param ptr pointer to a single element of a certain type, which may
  * be in host-side memory, global CUDA-device-side memory or CUDA-managed
@@ -663,7 +719,7 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params)
 } // namespace detail_
 
 /**
- * @brief An almost-generalized-case memory copy, taking a rather complex structure of
+ * An almost-generalized-case memory copy, taking a rather complex structure of
  * copy parameters - wrapping the CUDA driver's own most-generalized-case copy
  *
  * @tparam NumDimensions The number of dimensions of the parameter structure.
@@ -686,9 +742,11 @@ void copy(copy_parameters_t<NumDimensions> params)
  * @tparam T array element type
  *
  * @param destination A {@tparam NumDimensions}-dimensional CUDA array, including a specification
- * of the context in which the array is defined.
+ *     of the context in which the array is defined.
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
- * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ *     of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * @param context The context in which the source memory was allocated - possibly different than
+ *     the target array context
  */
 template<typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source)
@@ -719,6 +777,14 @@ void copy(const array_t<T, NumDimensions>& destination, const T *source)
 	copy(destination, context_of(source), source);
 }
 
+/**
+ * Copies a contiguous sequence of elements in memory into a CUDA array
+ *
+ * @tparam T a trivially-copy-constructible, trivially-copy-destructible type of array elements
+ *
+ * @note only as many elements as fit in the array are copied, and any extra elements
+ * in the source span are ignored
+ */
 template<typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, span<T const> source)
 {
@@ -773,6 +839,13 @@ void copy(T *destination, const array_t<T, NumDimensions>& source)
 	copy(context_of(destination), destination, source);
 }
 
+/**
+ * Copies the contents of a CUDA array into a sequence of contiguous elements in memory
+ *
+ * @tparam T a trivially-copy-constructible, trivially-destructible, type of array elements
+ *
+ * @note The @p destination span must be at least as larger as the volume of the array.
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(span<T> destination, const array_t<T, NumDimensions>& source)
 {
@@ -786,6 +859,13 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source)
 	copy(destination.data(), source);
 }
 
+/**
+ * Copies the contents of one CUDA array to another
+ *
+ * @tparam T a trivially-copy-constructible type of array elements
+ *
+ * @note The destination array must be at least as large in each dimension as the source array.
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source)
 {
@@ -803,6 +883,14 @@ void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDime
 	throw_if_error_lazy(status, "Copying from a CUDA array into a regular memory region");
 }
 
+/**
+ * Copies the contents of a CUDA array into a region of memory
+ *
+ * @tparam T a trivially-copy-constructible type of array elements
+ *
+ * @note the @p destination region must be large enough to hold all elements of the array,
+ * and may also be larger.
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source)
 {
@@ -812,6 +900,14 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source)
 	copy(destination.start(), source);
 }
 
+/**
+ * Copies the contents of a region of memory into a CUDA array
+ *
+ * @tparam T a trivially-copy-constructible type of array elements
+ *
+ * @note only as many elements as fit in the array are copied, while the source region may
+ * be larger than what they take up.
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const_region_t source)
 {
@@ -835,25 +931,26 @@ void copy_single(T* destination, const T* source)
 	copy(destination, source, sizeof(T));
 }
 
+/// Asynchronous memory operations
 namespace async {
 
 namespace detail_ {
 
 /**
- * Asynchronously copies data between memory spaces or within a memory space, but
- * within a single CUDA context.
+ * Asynchronous versions of @ref memory::copy functions.
+ *
  *
  * @note Since we assume Compute Capability >= 2.0, all devices support the
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
  * where the data is located, and one does not have to specify this.
- *
- * @note asynchronous version of @ref memory::copy
- *
- * @param stream_handle A stream on which to enqueue the copy operation
  */
 
 ///@{
+
 /**
+ * Asynchronously copies data between memory spaces or within a memory space, but
+ * within a single CUDA context.
+ *
  * @param destination A pointer to a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param source A pointer to a memory region of size at least @p num_bytes, either in
@@ -977,10 +1074,10 @@ void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream
  * @note assumes the source and destination are all valid in the same context as that of the
  * context handle
  *
- * @param destination a value residing either in host memory or on any CUDA
- * device's global memory
- * @param source a value residing either in host memory or on any CUDA
- * device's global memory
+ * @param destination a value residing either in host memory or on any CUDA device's
+ *     global memory
+ * @param source a value residing either in host memory or on any CUDA device's global
+ *     memory
  * @param stream_handle A stream on which to enqueue the copy operation
  */
 template <typename T>
@@ -1000,18 +1097,28 @@ void copy_single(T& destination, const T& source, stream::handle_t stream_handle
  *
  * @note asynchronous version of {@ref memory::copy(void*, void const*, size_t)}
  *
- * @param destination A (pointer to) a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory. Must be defined in the same context
- * as the stream.
- * @param source A (pointer to) a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory. Must be defined in the same context
- * as the stream
+ * @param destination A pointer to a memory region of size @p num_bytes, either in host
+ *     memory or on any CUDA device's global memory. Must be defined in the same context
+ *     as the stream.
+ * @param source A pointer to a memory region of size @p num_bytes, either in host
+ *     memory or on any CUDA device's global memory. Must be defined in the same context
+ *     as the stream.
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-///@{
 void copy(void* destination, void const* source, size_t num_bytes, const stream_t& stream);
 
+/**
+ * Asynchronously copies data between memory regions
+ *
+ * @param destination The beginning of a memory region of size @p num_bytes, either in host
+ *     memory or on any CUDA device's global memory. Must be registered with, or visible in,
+ *     in the same context as @p stream.
+ * @param source A memory region of size @p num_bytes, either in host memory or on any
+ *     CUDA device's global memory. Must be defined in the same context as the stream.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(void* destination, const_region_t source, size_t num_bytes, const stream_t& stream)
 {
 #ifndef NDEBUG
@@ -1022,6 +1129,17 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, con
 	copy(destination, source.start(), num_bytes, stream);
 }
 
+/**
+ * Asynchronously copies data between memory spaces or within a memory space.
+ *
+ * @param destination A memory region of size no less than @p num_bytes, either in host
+ *     memory or on any CUDA device's global memory. Must be registered with, or visible
+ *     in, in the same context as @p stream.
+ * @param source A memory region of size @p num_bytes, either in host memory or on any
+ *     CUDA device's global memory. Must be defined in the same contextas the stream.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(region_t destination, const_region_t source, size_t num_bytes, const stream_t& stream)
 {
 #ifndef NDEBUG
@@ -1032,21 +1150,58 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
 	copy(destination.start(), source.start(), num_bytes, stream);
 }
 
+/**
+ * Asynchronously copies data between memory regions
+ *
+ * @param destination Beginning of a memory region into which to copy data, either in host
+ *      memory or on any CUDA device's global memory. The memory must be registered in,
+ *      or visible within, the same context as {@p stream}.
+ * @param source A memory region of size @p num_bytes, either in host memory or on any CUDA
+ *     device's global memory. Must be defined in the same context as the stream.
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(void* destination, const_region_t source, const stream_t& stream)
 {
 	copy(destination, source, source.size(), stream);
 }
 
+/**
+ * Asynchronously copies data between memory regions
+ *
+ * @param destination A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param source A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(region_t destination, const_region_t source, const stream_t& stream)
 {
 	copy(destination, source, source.size(), stream);
 }
 
+/**
+ * Asynchronously copies data between memory regions
+ *
+ * @param destination A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param source A pointer to region of memory, of size like that of @p destination,
+ *     either in host memory or on any CUDA device's global memory. Must be defined
+ *     in the same context as the stream.
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(region_t destination, void* source, const stream_t& stream)
 {
 	return copy(destination.start(), source, destination.size(), stream);
 }
 
+/**
+ * Asynchronously copies data from an array into a memory region
+ *
+ * @param destination A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param source An array, either in host memory or on any CUDA device's global memory.
+ * @param stream A stream on which to enqueue the copy operation
+ */
 template <typename T, size_t N>
 inline void copy(region_t destination, const T(&source)[N], const stream_t& stream)
 {
@@ -1058,6 +1213,15 @@ inline void copy(region_t destination, const T(&source)[N], const stream_t& stre
 	return copy(destination.start(), source, sizeof(T) * N, stream);
 }
 
+/**
+ * Asynchronously copies data from one region of memory to another
+ *
+ * @param destination A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param source Beginning of the region of memory to copy
+ * @param num_bytes Amount of memory to copy
+ * @param stream A stream on which to enqueue the copy operation
+ */
 inline void copy(region_t destination, void* source, size_t num_bytes, const stream_t& stream)
 {
 #ifndef NDEBUG
@@ -1067,10 +1231,9 @@ inline void copy(region_t destination, void* source, size_t num_bytes, const str
 #endif
 	return copy(destination.start(), source, num_bytes, stream);
 }
-///@}
 
 /**
- * Asynchronously copies data from memory spaces into CUDA arrays.
+ * Asynchronously copies data into a CUDA array.
  *
  * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
  *
@@ -1081,6 +1244,15 @@ inline void copy(region_t destination, void* source, size_t num_bytes, const str
 template <typename T, dimensionality_t NumDimensions>
 void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
 
+/**
+ * Asynchronously copies data into a CUDA array.
+ *
+ * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
+ *
+ * @param destination A CUDA array to copy data into
+ * @param source A memory region of size `destination.size() * sizeof(T)`
+ * @param stream schedule the copy operation into this CUDA stream
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(array_t<T, NumDimensions>& destination, const_region_t source, const stream_t& stream)
 {
@@ -1096,7 +1268,7 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, const s
 }
 
 /**
- * Asynchronously copies data from CUDA arrays into memory spaces.
+ * Asynchronously copies data from a CUDA array elsewhere
  *
  * @note asynchronous version of @ref memory::copy
  *
@@ -1107,6 +1279,15 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, const s
 template <typename T, dimensionality_t NumDimensions>
 void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream);
 
+/**
+ * Asynchronously copies data from a CUDA array elsewhere
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array_t
+ * @param stream schedule the copy operation in this CUDA stream
+ */
 template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
 {
@@ -1122,9 +1303,13 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, const s
 }
 
 /**
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source The starting address of @tparam N elements to copy
+ * Asynchronously copies data from a memory region into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source The starting address of a sequence of @tparam N elements to copy
+ * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
 inline void copy(T(&destination)[N], T* source, const stream_t& stream)
@@ -1133,9 +1318,14 @@ inline void copy(T(&destination)[N], T* source, const stream_t& stream)
 }
 
 /**
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill @p destination
+ * Asynchronously copies data from a memory region into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
+ *     the @p destination array.
+ * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
 inline void copy(T(&destination)[N], const_region_t source, const stream_t& stream)
@@ -1151,9 +1341,8 @@ inline void copy(T(&destination)[N], const_region_t source, const stream_t& stre
 	return copy(destination, source.start(), sizeof(T) * N, stream);
 }
 
-
 /**
- * Synchronously copies a single (typed) value between memory spaces or within a memory space.
+ * Copy a single (typed) value between memory locations
  *
  * @note asynchronous version of @ref memory::copy_single<T>(T&, const T&)
  *
@@ -1217,8 +1406,7 @@ inline void typed_set(T* start, const T& value, size_t num_elements, stream::han
 
 
 /**
- * @brief Sets consecutive elements of a region of memory to a fixed
- * value of some width
+ * Sets consecutive elements of a region of memory to a fixed value of some width
  *
  * @note A generalization of `async::set()`, for different-size units.
  *
@@ -1264,7 +1452,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& s
 void zero(void* start, size_t num_bytes, const stream_t& stream);
 
 /**
- * @brief Asynchronously sets all bytes of a single pointed-to value
+ * Asynchronously sets all bytes of a single pointed-to value
  * to 0 (zero).
  *
  * @note asynchronous version of @ref memory::zero(T*)
@@ -1402,6 +1590,7 @@ inline void copy(
 
 } // namespace detail_
 
+/// Asynchronously copy a region of memory defined in one context into a region defined in another
 void copy(
 	void *           destination_address,
 	context_t        destination_context,
@@ -1410,6 +1599,7 @@ void copy(
 	size_t           num_bytes,
 	const stream_t&  stream);
 
+/// Asynchronously copy a region of memory defined in one context into a region defined in another
 void copy(
 	void *           destination,
 	context_t        destination_context,
@@ -1417,6 +1607,7 @@ void copy(
 	context_t        source_context,
 	const stream_t&  stream);
 
+/// Asynchronously copy a region of memory defined in one context into a region defined in another
 inline void copy(
 	region_t        destination,
 	context_t        destination_context,
@@ -1424,6 +1615,7 @@ inline void copy(
 	context_t        source_context,
 	const stream_t&  stream);
 
+/// Asynchronously copy a CUDA array defined in one context into a CUDA array defined in another
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(
 	array_t<T, NumDimensions>  destination,
@@ -1434,16 +1626,12 @@ inline void copy(
 	return memory::async::copy(destination, source, stream);
 }
 
-
 } // namespace async
 
 } // namespace inter_context
 
-/**
- * @namespace host
- * Host-side (= system) memory which is "pinned", i.e. resides in
- * a fixed physical location - and allocated by the CUDA driver.
- */
+/// Host-side (= system) memory which is "pinned", i.e. resides in
+/// a fixed physical location - and allocated by the CUDA driver.
 namespace host {
 
 namespace detail_ {
@@ -1458,9 +1646,8 @@ inline region_t allocate(
 
 } // namespace detail_
 
-
 /**
- * allocate pinned host memory
+ * Allocates pinned host memory
  *
  * @note "pinned" memory is allocated in contiguous physical ram
  * addresses, making it possible to copy to and from it to the the
@@ -1470,25 +1657,17 @@ inline region_t allocate(
  *
  * @throws cuda::runtime_error if allocation fails for any reason
  *
- * @param context
  * @param size_in_bytes the amount of memory to allocate, in bytes
  * @param options
  *     options to pass to the cuda host-side memory allocator; see
  *     {@ref memory::allocation_options}.
  * @return a pointer to the allocated stretch of memory
  */
-///@{
-
-inline region_t allocate(
-	const context_t&    context,
-	size_t              size_in_bytes,
-	allocation_options  options);
-
-region_t allocate(
-	size_t              size_in_bytes,
-	allocation_options  options);
+region_t allocate(size_t size_in_bytes, allocation_options options);
 
 /**
+ * @copydoc allocate(size_t, allocation_options)
+ *
  * @param portability
  *     whether or not the allocated region can be used in different
  *     CUDA contexts.
@@ -1505,16 +1684,18 @@ inline region_t allocate(
 	return allocate(size_in_bytes, allocation_options{ portability, cpu_wc } );
 }
 
+/// @copydoc allocate(size_t, portability_across_contexts, cpu_write_combining)
 inline region_t allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 {
 	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
 }
 
-///@}
-
 /**
- * Free a region of pinned host memory which was allocated with one of the pinned host
+ * Frees a region of pinned host memory which was allocated with one of the pinned host
  * memory allocation functions.
+ *
+ * @note The address provided must be the _beginning_ of the region of allocated memory;
+ * and the entire region is freed (i.e. the region size is known to/determined by the driver)
  */
 inline void free(void* host_ptr)
 {
@@ -1527,6 +1708,11 @@ inline void free(void* host_ptr)
 	throw runtime_error(result, "Freeing pinned host memory at " + cuda::detail_::ptr_as_hex(host_ptr));
 }
 
+/**
+ * @copybrief free(void*)
+ *
+ * @param region The region of memory to free
+ */
 inline void free(region_t region) {	return free(region.data()); }
 
 namespace detail_ {
@@ -1538,9 +1724,8 @@ struct deleter {
 	void operator()(void* ptr) const { cuda::memory::host::free(ptr); }
 };
 
-
 /**
- * @brief Makes a preallocated memory region behave as though it were allocated with @ref host::allocate.
+ * Makes a pre-allocated memory region behave as though it were allocated with @ref host::allocate.
  *
  * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
  * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
@@ -1598,12 +1783,36 @@ enum accessibility_on_all_devices : bool {
 	is_not_accessible_on_all_devices = false//!< is_not_accessible_on_all_devices
 };
 
-
-// Can't use register(), since that's a reserved word
+/**
+ * Register a memory region with the CUDA driver
+ *
+ * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
+ * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
+ * automatically accelerate calls to functions such as cuMemcpy().
+ *
+ * @TODO Currently works within the current context
+ *
+ * @note we can't use the name `register`, since that's a reserved word
+ *
+ * @param ptr The beginning of a pre-allocated region of host memory
+ * @param size the size in bytes the memory region to register
+ * @param register_mapped_io_space region will be treated as being some memory-mapped
+ *     I/O space, e.g. belonging to a third-party PCIe device. See
+ *     @ref CU_MEMHOSTREGISTER_IOMEMORY for more details.
+ * @param map_into_device_space If true, map the region to a region of addresses
+ *     accessible from the (current context's) device; in practice, and with modern
+ *     GPUs, this means the region itself will be accessible from the device. See
+ *     @ref CU_MEMHOSTREGISTER_DEVICEMAP for more details.
+ * @param make_device_side_accessible_to_all Make the region accessible in all
+ *     CUDA contexts.
+ * @param  considered_read_only_by_device Device-side code will consider this region
+ *     (or rather the region it is mapped to and accessible from the device) as
+ *     read-only; see @ref CU_MEMHOSTREGISTER_READ_ONLY for more details.
+ */
 inline void register_(const void *ptr, size_t size,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
-	bool make_device_side_accesible_to_all
+	bool make_device_side_accessible_to_all
 #if CUDA_VERSION >= 11010
 	, bool considered_read_only_by_device
 #endif // CUDA_VERSION >= 11010
@@ -1613,18 +1822,43 @@ inline void register_(const void *ptr, size_t size,
 		ptr, size,
 		(register_mapped_io_space ? CU_MEMHOSTREGISTER_IOMEMORY : 0)
 		| (map_into_device_space ? CU_MEMHOSTREGISTER_DEVICEMAP : 0)
-		| (make_device_side_accesible_to_all ? CU_MEMHOSTREGISTER_PORTABLE : 0)
+		| (make_device_side_accessible_to_all ? CU_MEMHOSTREGISTER_PORTABLE : 0)
 #if CUDA_VERSION >= 11010
 		| (considered_read_only_by_device ? CU_MEMHOSTREGISTER_READ_ONLY : 0)
 #endif // CUDA_VERSION >= 11010
 	);
 }
 
+/**
+ * Register a memory region with the CUDA driver
+ *
+ * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
+ * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
+ * automatically accelerate calls to functions such as cuMemcpy().
+ *
+ * @TODO Currently works within the current context
+ *
+ * @note we can't use the name `register`, since that's a reserved word
+ *
+ * @param region The region to register
+ * @param register_mapped_io_space region will be treated as being some memory-mapped
+ *     I/O space, e.g. belonging to a third-party PCIe device. See
+ *     @ref CU_MEMHOSTREGISTER_IOMEMORY for more details.
+ * @param map_into_device_space If true, map the region to a region of addresses
+ *     accessible from the (current context's) device; in practice, and with modern
+ *     GPUs, this means the region itself will be accessible from the device. See
+ *     @ref CU_MEMHOSTREGISTER_DEVICEMAP for more details.
+ * @param make_device_side_accessible_to_all Make the region accessible in all
+ *     CUDA contexts.
+ * @param  considered_read_only_by_device Device-side code will consider this region
+ *     (or rather the region it is mapped to and accessible from the device) as
+ *     read-only; see @ref CU_MEMHOSTREGISTER_READ_ONLY for more details.
+ */
 inline void register_(
 	const_region_t region,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
-	bool make_device_side_accesible_to_all
+	bool make_device_side_accessible_to_all
 #if CUDA_VERSION >= 11010
 	, bool considered_read_only_by_device
 #endif // CUDA_VERSION >= 11010
@@ -1635,28 +1869,58 @@ inline void register_(
 		region.size(),
 		register_mapped_io_space,
 		map_into_device_space,
-		make_device_side_accesible_to_all
+		make_device_side_accessible_to_all
 #if CUDA_VERSION >= 11010
 		, considered_read_only_by_device
 #endif // CUDA_VERSION >= 11010
 		);
 }
 
-
+/**
+ * Register a memory region with the CUDA driver
+ *
+ * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
+ * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
+ * automatically accelerate calls to functions such as cuMemcpy().
+ *
+ * @TODO Currently works within the current context
+ *
+ * @note we can't use the name `register`, since that's a reserved word
+ *
+ * @param ptr The beginning of a pre-allocated region of host memory
+ * @param size the size in bytes the memory region to register
+ */
 inline void register_(void const *ptr, size_t size)
 {
 	unsigned no_flags_set { 0 };
 	detail_::register_(ptr, size, no_flags_set);
 }
 
+/**
+ * Register a memory region with the CUDA driver
+ *
+ * Page-locks the memory range specified by ptr and size and maps it for the device(s) as specified by
+ * flags. This memory range also is added to the same tracking mechanism as cuMemAllocHost() to
+ * automatically accelerate calls to functions such as cuMemcpy().
+ *
+ * @TODO Currently works within the current context
+ *
+ * @note we can't use the name `register`, since that's a reserved word
+ *
+ * @param region The region to register
+ */
 inline void register_(const_region_t region)
 {
 	register_(region.start(), region.size());
 }
 
-// the CUDA API calls this "unregister", but that's semantically
-// inaccurate. The registration is not undone, rolled back, it's
-// just ended
+/**
+ * Have the CUDA driver "forget" about a region of memory which was previously registered
+ * with it, and page-unlock it
+ *
+ * @note the CUDA API calls this action "unregister", but that's semantically inaccurate. The
+ * registration is not undone, rolled back, it's just ended
+ */
 inline void deregister(const void *ptr)
 {
 	auto result = cuMemHostUnregister(const_cast<void *>(ptr));
@@ -1664,13 +1928,14 @@ inline void deregister(const void *ptr)
 		"Could not unregister the memory segment starting at address *a");
 }
 
+/// @copydoc deregister(const void *)
 inline void deregister(const_region_t region)
 {
 	deregister(region.start());
 }
 
 /**
- * @brief Sets all bytes in a stretch of host-side memory to a single value
+ * Sets all bytes in a stretch of host-side memory to a single value
  *
  * @note a wrapper for @ref ::std::memset
  *
@@ -1685,16 +1950,33 @@ inline void set(void* start, int byte_value, size_t num_bytes)
 	// TODO: Error handling?
 }
 
+/**
+ * Zero-out a region of host memory
+ *
+ * @param ptr the beginning of a region of host memory to zero-out
+ * @param num_bytes the size in bytes of the region of memory to zero-out
+ */
 inline void zero(void* start, size_t num_bytes)
 {
 	set(start, 0, num_bytes);
 }
 
+/**
+ * Zero-out a region of host memory
+ *
+ * @param region the region of host-side memory to zero-out
+ */
 inline void zero(region_t region)
 {
 	set(region, 0);
 }
 
+/**
+ * Asynchronously sets all bytes of a single pointed-to value
+ * to 0 (zero).
+ *
+ * @param ptr a pointer to the value to be to zero, in host memory
+ */
 template <typename T>
 inline void zero(T* ptr)
 {
@@ -1704,22 +1986,6 @@ inline void zero(T* ptr)
 
 } // namespace host
 
-/**
- * This type of memory, also known as _unified_ memory, appears within
- * a unified, all-system address space - and is used with the same
- * address range on the host and on all relevant CUDA devices on a
- * system. It is paged, so that it may exceed the physical size of
- * a CUDA device's global memory. The CUDA driver takes care of
- * "swapping" pages "out" from a device to host memory or "swapping"
- * them back "in", as well as of propagation of changes between
- * devices and host-memory.
- *
- * @note For more details, see
- * <a href="https://devblogs.nvidia.com/parallelforall/unified-memory-cuda-beginners/">
- * Unified Memory for CUDA Beginners</a> on the
- * <a href="https://devblogs.nvidia.com/parallelforall">Parallel4All blog</a>.
- *
- */
 namespace managed {
 
 namespace detail_ {
@@ -1761,11 +2027,15 @@ struct base_region_t : public memory::detail_::base_region_t<T> {
 
 } // namespace detail_
 
+/// Advice the CUDA driver that @p device is expected to access @p region
 void advise_expected_access_by(const_region_t region, device_t& device);
+
+/// Advice the CUDA driver that @p device is not expected to access @p region
 void advise_no_access_expected_by(const_region_t region, device_t& device);
 
+/// @return the devices which are marked by attribute as being the accessors of a specifier memory region
 template <typename Allocator = ::std::allocator<cuda::device_t> >
-	typename ::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator = Allocator() );
+typename ::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator = Allocator() );
 
 namespace detail_ {
 
@@ -1788,8 +2058,6 @@ inline void advise(const_region_t region, advice_t advice, cuda::device::id_t de
 	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
 	+ cuda::detail_::ptr_as_hex(region.start()));
 }
-
-// inline void set_range_attribute(const_region_t region, range_attribute_t attribute, cuda::device::handle_t device_id)
 
 inline advice_t as_advice(range_attribute_t attribute, bool set)
 {
@@ -1821,7 +2089,7 @@ inline void unset_range_attribute(const_region_t region, range_attribute_t setta
 
 } // namespace detail_
 
-
+/// Kinds of managed memory region attachments
 enum class attachment_t : unsigned {
 	global        = CU_MEM_ATTACH_GLOBAL,
 	host          = CU_MEM_ATTACH_HOST,
@@ -1862,18 +2130,18 @@ inline region_t allocate_in_current_context(
  *
  * @note You can't just use @ref cuMemFree - or you'll leak a primary context reference unit.
  */
-///@{
 inline void free(void* ptr)
 {
 	auto result = cuMemFree(device::address(ptr));
 	cuda::device::primary_context::detail_::decrease_refcount(cuda::device::default_device_id);
 	throw_if_error_lazy(result, "Freeing managed memory at " + cuda::detail_::ptr_as_hex(ptr));
 }
+
+/// @copydoc free(void*)
 inline void free(region_t region)
 {
 	free(region.start());
 }
-///@}
 
 template <initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 struct allocator {
@@ -1900,7 +2168,7 @@ inline region_t allocate(
 } // namespace detail_
 
 /**
- * @brief Allocate a a region of managed memory, accessible with the same
+ * Allocate a a region of managed memory, accessible with the same
  * address on the host and on CUDA devices.
  *
  * @param context the initial context which is likely to access the managed
@@ -1918,7 +2186,7 @@ inline region_t allocate(
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
- * @brief Allocate a a region of managed memory, accessible with the same
+ * Allocate a a region of managed memory, accessible with the same
  * address on the host and on CUDA devices
  *
  * @param device the initial device which is likely to access the managed
@@ -1936,7 +2204,7 @@ inline region_t allocate(
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
- * @brief Allocate a a region of managed memory, accessible with the same
+ * Allocate a a region of managed memory, accessible with the same
  * address on the host and on all CUDA devices.
  *
  * @note While the allocated memory should be available universally, the
@@ -1959,17 +2227,24 @@ inline void free(void* managed_ptr)
 		+ cuda::detail_::ptr_as_hex(managed_ptr));
 }
 
+/// @copydoc free(void*)
 inline void free(region_t region)
 {
 	free(region.start());
 }
 
 namespace advice {
-
+/// Kinds of advice-type attributes for memory regions, w.r.t. devices
 enum kind_t {
+	/// The device will mostly read, and only occasionally, write, to the memory region
 	read_mostly = CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY,
+
+	/// The device is the preferred location of the range
 	preferred_location = CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION,
+
+	/// Data in the memory range will be accessed by the device, so prevent page faults as much as possible
 	accessor = CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY,
+
 	// Note: CU_MEM_RANGE_ATTRIBUTE_LAST_PREFETCH_LOCATION is never set
 };
 
@@ -1985,6 +2260,7 @@ inline void set(const_region_t region, kind_t advice, cuda::device::id_t device_
 
 } // namespace detail_
 
+/// Advise the CUDA driver about aspects of the use of a region of memory w.r.t. a particular device
 void set(const_region_t region, kind_t advice, const device_t& device);
 
 } // namespace advice
@@ -2008,7 +2284,7 @@ inline void prefetch(
 } // namespace detail_
 
 /**
- * @brief Prefetches a region of managed memory to a specific device, so
+ * Prefetches a region of managed memory to a specific device, so
  * it can later be used there without waiting for I/O from the host or other
  * devices.
  */
@@ -2018,7 +2294,7 @@ void prefetch(
 	const stream_t&        stream);
 
 /**
- * @brief Prefetches a region of managed memory into host memory. It can
+ * Prefetches a region of managed memory into host memory. It can
  * later be used there without waiting for I/O from any of the CUDA devices.
  */
 void prefetch_to_host(
@@ -2054,16 +2330,21 @@ inline T* device_side_pointer_for(T* host_memory_ptr)
 	return as_pointer(device_side_ptr);
 }
 
+/**
+ * Get the memory region mapped to a given host-side region
+ *
+ * @note if the input is already a device-side region, this function is idempotent
+ */
 inline region_t device_side_region_for(region_t region)
 {
 	return { device_side_pointer_for(region.start()), region.size() };
 }
 
+/// @copydoc device_side_region_for(region_t)
 inline const_region_t device_side_region_for(const_region_t region)
 {
 	return { device_side_pointer_for(region.start()), region.size() };
 }
-
 
 namespace detail_ {
 
@@ -2195,6 +2476,7 @@ inline bool is_part_of_a_region_pair(const void* ptr)
 
 namespace device {
 
+/// A unique span of device-global memory
 template <typename T>
 using unique_span = cuda::unique_span<T, detail_::deleter>;
 
@@ -2213,49 +2495,83 @@ unique_span<T> make_unique_span(const context::handle_t context_handle, size_t s
 } // namespace detail_
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
- * device-global memory.
+ * Allocate memory for a consecutive sequence of typed elements in device-global memory.
  *
- * @note CUDA's runtime API always has a current device; but -
- * there is not necessary a current context; so a primary context
- * for a device may be created through this call.
+ * @tparam T  type of the individual elements in the allocated sequence
  *
- * @tparam T  an array type; _not_ the type of individual elements
+ * @param context The CUDA device context in which to make the allocation.
+ * @param size the number of elements to allocate
+ * @return A @ref unique_span which owns the allocated memory (and will release said
  *
- * @param context       The CUDA device context in which to make the
- *                      allocation.
- * @param num_elements  the number of elements to allocate
+ * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * that the returned value is not "just" a unique pointer, but also has a size. It is also
+ * similar to {@ref cuda::device::make_unique_region}, except that the allocation is
+ * conceived as typed elements.
  *
- * @return an ::std::unique_ptr pointing to the constructed T array
-*/
+ * @note Typically, this is used for trivially-constructible elements, for which reason the
+ * non-construction of individual elements should not pose a problem. But - let the user beware.
+ */
 template <typename T>
 unique_span<T> make_unique_span(const context_t& context, size_t size);
+
+/**
+ * @copydoc make_unique_span(const context_t&, size_t)
+ *
+ * @param device The CUDA device in whose primary context to make the allocation.
+ */
 template <typename T>
 unique_span<T> make_unique_span(const device_t& device, size_t size);
+
+/**
+ * @copydoc make_unique_span(const context_t&, size_t)
+ *
+ * @note The current device's primary context will be used (_not_ the
+ * current context).
+ */
 template <typename T>
 unique_span<T> make_unique_span(size_t size);
 
 } // namespace device
 
-/// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
+/// See @ref `device::make_unique_span(const context_t& context, size_t size)`
 template <typename T>
-inline device::unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
+inline device::unique_span<T> make_unique_span(const context_t& context, size_t size)
 {
-	return device::make_unique_span<T>(context, num_elements);
+	return device::make_unique_span<T>(context, size);
 }
 
-/// See @ref `device::make_unique_span(const device_t& device, size_t num_elements)`
+/// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
 template <typename T>
-inline device::unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
+inline device::unique_span<T> make_unique_span(const device_t& device, size_t size)
 {
-	return device::make_unique_span<T>(device, num_elements);
+	return device::make_unique_span<T>(device, size);
 }
 
 namespace host {
 
+/// A unique span of CUDA-driver-allocated, pinned host (=system) memory
 template <typename T>
 using unique_span = cuda::unique_span<T, detail_::deleter>;
 
+/**
+ * Allocate memory for a consecutive sequence of typed elements in system
+ * (host-side) memory.
+ *
+ * @tparam T  type of the individual elements in the allocated sequence
+ *
+ * @param size the number of elements to allocate
+ * @return A @ref unique_span which owns the allocated memory (and will release said
+ * memory upon destruction)
+ *
+ * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * that the returned value is not "just" a unique pointer, but also has a size. It is also
+ * similar to {@ref cuda::device::make_unique_region}, except that the allocation is
+ * conceived as typed elements.
+ *
+ * @note Typically, this is used for trivially-constructible elements, for which reason the
+ * non-construction of individual elements should not pose a problem. But - let the user
+ * beware, especially since this is host-side memory.
+ */
 template <typename T>
 unique_span<T> make_unique_span(size_t size)
 {
@@ -2266,6 +2582,7 @@ unique_span<T> make_unique_span(size_t size)
 
 namespace managed {
 
+/// A unique span of CUDA-driver-allocated managed memory
 template <typename T>
 using unique_span = cuda::unique_span<T, detail_::deleter>;
 
@@ -2283,16 +2600,51 @@ unique_span<T> make_unique_span(
 
 } // namespace detail_
 
+/**
+ * Allocate memory for a consecutive sequence of typed elements in system
+ * (host-side) memory.
+ *
+ * @tparam T  type of the individual elements in the allocated sequence
+ *
+ * @param context The CUDA device context in which to register the allocation
+ * @param size the number of elements to allocate
+ * @param initial_visibility Choices of which category of CUDA devices must the managed
+ *     region be guaranteed to be visible to
+ * @return A @ref unique_span which owns the allocated memory (and will release said
+ * memory upon destruction)
+ *
+ * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * that the returned value is not "just" a unique pointer, but also has a size. It is also
+ * similar to {@ref cuda::device::make_unique_region}, except that the allocation is
+ * conceived as typed elements.
+ *
+ * @note Typically, this is used for trivially-constructible elements, for which reason the
+ * non-construction of individual elements should not pose a problem. But - let the user
+ * beware, especially since this is accessible in host-side code.
+ */
 template <typename T>
 unique_span<T> make_unique_span(
 	const context_t&      context,
 	size_t                size,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @copydoc make_unique_span(const context_t&, size_t)
+ *
+ * @param device The CUDA device in whose primary context to make the allocation.
+ */
 template <typename T>
 unique_span<T> make_unique_span(
 	const device_t&       device,
 	size_t                size,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+
+/**
+ * @copydoc make_unique_span(const context_t&, size_t)
+ *
+ * @note The current device's primary context will be used (_not_ the
+ * current context).
+ */
 template <typename T>
 unique_span<T> make_unique_span(
 	size_t                size,
@@ -2303,6 +2655,7 @@ unique_span<T> make_unique_span(
 } // namespace memory
 
 namespace symbol {
+
 /**
  * Locates a CUDA symbol in global or constant device memory
  *
@@ -2311,7 +2664,7 @@ namespace symbol {
  * @return The region of memory CUDA associates with the symbol
  */
 template <typename T>
-inline memory::region_t locate(T&& symbol)
+memory::region_t locate(T&& symbol)
 {
 	void *start;
 	size_t symbol_size;

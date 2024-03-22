@@ -30,10 +30,13 @@ class kernel_t;
 
 namespace module {
 
+// The CUDA driver's raw handle for modules
 using handle_t = CUmodule;
 
 namespace detail_ {
 
+/// Construct a module proxy object - for an existing module - from the class'
+/// constituent fields
 inline module_t wrap(
 	device::id_t            device_id,
 	context::handle_t       context_handle,
@@ -70,6 +73,8 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
  *     be loaded (and in which the module contents may be used)
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
  *     such as a span, a cuda::unique_span etc..
+ * @param link_options Potential options for the PTX compilation and linking of the compiled
+ *     device-side code.
  */
 ///@{
 template <typename Locus, typename ContiguousContainer,
@@ -97,17 +102,21 @@ module_t create(
 class module_t {
 
 public: // getters
-
+	/// Getters for the module object's raw constituent fields
+	///@{
 	module::handle_t handle() const { return handle_; }
 	context::handle_t context_handle() const { return context_handle_; }
 	device::id_t device_id() const { return device_id_; }
+	///@}
 
+	/// @returns the context in which this module exists
 	context_t context() const;
+
+	/// @returns the device with which this module is associated
 	device_t device() const;
 
 	/**
-	 * Obtains an already-compiled kernel previously associated with
-	 * this module.
+	 * Obtains a kernel constituting part of this module
 	 *
 	 * @param name The function name, in case of a C-style function,
 	 * or the mangled function signature, in case of a C++-style
@@ -117,11 +126,13 @@ public: // getters
 	 */
 	cuda::kernel_t get_kernel(const char* name) const;
 
+	/// @copydoc get_kernel(const char*) const
 	cuda::kernel_t get_kernel(const ::std::string& name) const
 	{
 		return get_kernel(name.c_str());
 	}
 
+	/// Get the mapping of a named memory region in this module to actual memory
 	memory::region_t get_global_region(const char* name) const
 	{
 		CUdeviceptr dptr;
@@ -134,7 +145,14 @@ public: // getters
 	// TODO: Implement a surface reference and texture reference class rather than these raw pointers.
 
 #if CUDA_VERSION < 12000
+	/// A "plug" of a method regarding surfaces, which modules support but our wrappers don't
+	/// really cater to the use of
 	CUsurfref get_surface(const char* name) const;
+
+	/// A "plug" of a method regarding texture references
+	///
+	/// TODO: Beef this up into a proper method and consider relations between texture references,
+	/// texture objects and texture views
 	CUtexref get_texture_reference(const char* name) const;
 #endif
 
@@ -247,15 +265,15 @@ inline module_t load_from_file_in_current_context(
  * relevant resources for it.
  *
  * @param path of a cubin, PTX, or fatbin file constituting the module to be loaded.
+ * @param context The context in which to create a module containing the loaded data
  * @return the loaded module
  *
  * @note this covers cuModuleLoadFatBinary() even though that's not directly used
  *
- * @todo: consider adding load_module methods to context_t
- * @todo: When switching to the C++17 standard, use string_view's instead of the const char*
+ * @todo consider adding load_module methods to context_t
+ * @todo When switching to the C++17 standard, use string_view's instead of the const char*
  * and ::std::string reference
  */
-///@{
 inline module_t load_from_file(
 	const context_t&        context,
 	const char*             path)
@@ -264,6 +282,7 @@ inline module_t load_from_file(
 	return detail_::load_from_file_in_current_context(context.device_id(), context.handle(), path);
 }
 
+/// @copydoc load_from_file(const context_t&, const char*)
 inline module_t load_from_file(
 	const context_t&        context,
 	const ::std::string&    path)
@@ -271,10 +290,22 @@ inline module_t load_from_file(
 	return load_from_file(context, path.c_str());
 }
 
+/**
+ * @copydoc load_from_file(const context_t&, const char*)
+ *
+ * @param device The device in whose primary context to create a module containing
+ * the loaded data
+ */
 module_t load_from_file(
 	const device_t&         device,
 	const char*             path);
 
+/**
+ * @copydoc load_from_file(const context_t&, const char*)
+ *
+ * @param device The device in whose primary context to create a module containing
+ * the loaded data
+ */
 inline module_t load_from_file(
 	const device_t&         device,
 	const ::std::string&    path)
@@ -282,15 +313,22 @@ inline module_t load_from_file(
 	return load_from_file(device, path.c_str());
 }
 
+/**
+ * @copydoc load_from_file(const context_t&, const char*)
+ *
+ * @note loads the module into the primary context of the device of the current context
+ * (although not necessarily in the current context!)
+ */
 module_t load_from_file(const char* path);
 
+/// @copydoc load_from_file(const char*)
 inline module_t load_from_file(const ::std::string& path)
 {
 	return load_from_file(path.c_str());
 }
 
 #if __cplusplus >= 201703L
-
+/// @copydoc load_from_file(device_t, const char*)
 inline module_t load_from_file(
 	const device_t&                 device,
 	const ::std::filesystem::path&  path)
@@ -298,14 +336,13 @@ inline module_t load_from_file(
 	return load_from_file(device, path.c_str());
 }
 
+/// @copydoc load_from_file(const char*)
 inline module_t load_from_file(
 	const ::std::filesystem::path&  path)
 {
 	return load_from_file(device::current::get(), path);
 }
-
 #endif
-///@}
 
 namespace detail_ {
 
@@ -320,23 +357,19 @@ inline module_t wrap(
 	return module_t{device_id, context_handle, module_handle, take_ownership, hold_pc_refcount_unit};
 }
 
-/*
-template <typename Creator>
-module_t create(const context_t& context, const void* module_data, Creator creator_function);
-*/
-
 /**
  * Creates a new module in a context using raw compiled code
  *
  * @param context The module will exist within this GPU context, i.e. the globals (functions,
  * variable) of the module would be usable within that constant.
  * @param module_data The raw compiled code for the module.
- * @param link_options Potential options for the PTX compilation and device linking of the code.
+ * @param link_options Potential options for the PTX compilation and linking of the compiled
+ *     device-side code.
  */
-///@{
 module_t create(const context_t& context, const void* module_data, const link::options_t& link_options);
+
+/// @copydoc create(const context_t&, const void*, const link::options_t&)
 module_t create(const context_t& context, const void* module_data);
-///@}
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
@@ -362,7 +395,17 @@ inline device::primary_context_t get_context_for(device_t& locus);
 
 } // namespace detail_
 
-// Note: The following may create the primary context of a device!
+/**
+ * Create a new module - in a specified context or in a device's primary context,
+ * using raw module data in memory.
+ *
+ * @tparam Locus Either a @ref cuda::device_t or a {@ref cuda::context_t}.
+ * @tparam ContiguousContainer A span, a vector, a unique_span, or similar type
+ * @param locus Where the new module should be created
+ * @param module_data The raw data for the module in locus-accessible memory.
+ *
+ * @note This function may create/allocate resources for the primary context of a device!
+ */
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
@@ -373,6 +416,14 @@ module_t create(
 	return detail_::create(context, module_data.data());
 }
 
+/**
+ * @copydoc create(Locus&&,	ContiguousContainer)
+ *
+ * @param link_options Options for PTX compilation and for linking the module data,
+ * eventually.
+ *
+ * @return
+ */
 // Note: The following may create the primary context of a device!
 template <typename Locus, typename ContiguousContainer,
 	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>

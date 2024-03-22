@@ -53,6 +53,8 @@ struct pci_location_t {
 	 * and any of them can be used.
 	 */
 	static pci_location_t parse(const ::std::string& id_str);
+
+	/// @copydoc parse(const ::std::string& id_str)
 	static pci_location_t parse(const char* id_str);
 };
 

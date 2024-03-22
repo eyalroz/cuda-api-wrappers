@@ -14,17 +14,29 @@ namespace cuda {
 
 namespace device {
 
+/**
+ * API functions and definitions relating to communications among peer CUDA GPU devices
+ * on the same system.
+ */
 namespace peer_to_peer {
 
-// Aliases for all CUDA device attributes
+/// Aliases for CUDA driver GPU attribute codes
+///@{
 
-constexpr const attribute_t link_performance_rank = CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK; /// A relative value indicating the performance of the link between two devices
-constexpr const attribute_t	access_support = CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED; /// 1 if access is supported, 0 otherwise
-constexpr const attribute_t	native_atomics_support = CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED; /// 1 if the first device can perform native atomic operations on the second device, 0 otherwise
+/// A relative value indicating the performance of the link between two devices
+constexpr const attribute_t link_performance_rank = CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK;
+
+/// 1 if access is supported, 0 otherwise
+constexpr const attribute_t	access_support = CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED;
+
+/// 1 if the first device can perform native atomic operations on the second device, 0 otherwise
+constexpr const attribute_t	native_atomics_support = CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED;
+
 #if CUDA_VERSION >= 10000
-constexpr const attribute_t	array_access_support = CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED; /// 1 if special array iterpolatory access operations are supported across the link, 0 otherwise
+/// 1 if special array interpolatory access operations are supported across the link, 0 otherwise
+constexpr const attribute_t	array_access_support = CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED;
 #endif
-
+///@}
 
 namespace detail_ {
 /**
@@ -94,6 +106,10 @@ void disable_access_to(const context_t &peer_context);
 
 } // namespace current
 
+/**
+ * API functions and definitions relating to communications among "peer" contexts on
+ * the same system, which may possibly regard different CUDA devices.
+ */
 namespace peer_to_peer {
 
 namespace detail_ {

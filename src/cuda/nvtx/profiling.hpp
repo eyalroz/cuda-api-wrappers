@@ -40,7 +40,6 @@
 #endif
 #endif
 
-
 #include <mutex>
 #include <cstdint>
 #include <string>
@@ -51,10 +50,14 @@
 namespace cuda {
 
 // Note: No implementation for now for nvtxStringHandle_t's
-
+/**
+ * Interaction with NVIDIA's profiler, particularly tagging, marking and
+ * indications of entities it will pick up and register/display.
+ */
 namespace profiling {
 
 namespace detail_ {
+
 inline void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_ASCII;
@@ -75,16 +78,19 @@ inline void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) no
 
 } // namespace detail_
 
+/// definitions related to profiled ranges and the @ref range_t class
 namespace range {
 
-enum class type_t { unspecified, kernel, pci_express_transfer	};
-
 /**
- * The range handle is actually `nvtxRangeId_t`; but - other than this typedef,
- * we don't need to include the nVIDIA Toolkit Extensions headers at all here,
- * and can leave them within the implementation only.
+ * Types of profiled ranges we recognize
+ *
+ * @note The profiler itself does not distinguish between these types of ranges;
+ * we use them for different styling
  */
-using handle_t = ::std::uint64_t;
+enum class type_t { unspecified, kernel, pci_express_transfer };
+
+/// The raw handle of a CUDA profiling range
+using handle_t = nvtxRangeId_t;
 
 } // namespace range
 
@@ -94,10 +100,18 @@ using handle_t = ::std::uint64_t;
  * profiling information.
  */
 struct color_t {
+	/// A profiler color corresponds to a 32-bit value
 	using underlying_type = ::std::uint32_t;
+
+	/// Each color channel is an 8-bit value
 	using channel_value = ::std::uint8_t;
+
+	/// A profiler color is made up of three color channels and a transparency
+	/// or "alpha" channel
 	channel_value alpha, red, green, blue;
 
+	/// Construct a profiler color value from a numeric value (typically,
+	/// an 8-hex-digit literal)
 	static constexpr color_t from_hex(underlying_type raw_argb) noexcept {
 		return {
 			static_cast<channel_value> ((raw_argb >> 24) & 0xFF),
@@ -106,7 +120,8 @@ struct color_t {
 			static_cast<channel_value> ((raw_argb >>  0) & 0xFF),
 		};
 	}
-	operator underlying_type() const noexcept { return as_hex(); }
+
+	/// @return the numeric value corresponding to this profiler color
 	underlying_type as_hex() const noexcept
 	{
 		return
@@ -115,6 +130,12 @@ struct color_t {
 		static_cast<underlying_type>(green)  <<  8 |
 		static_cast<underlying_type>(blue)   <<  0;
 	}
+
+	/// @copydoc as_hex()
+	operator underlying_type() const noexcept { return as_hex(); }
+
+	/// Some basic colors, for convenience
+	///@{
 	static constexpr color_t Black()       noexcept { return from_hex(0x00000000); }
 	static constexpr color_t White()       noexcept { return from_hex(0x00FFFFFF); }
 	static constexpr color_t FullRed()     noexcept { return from_hex(0x00FF0000); }
@@ -129,8 +150,10 @@ struct color_t {
 	static constexpr color_t DarkGreen()   noexcept { return from_hex(0x00008800); }
 	static constexpr color_t DarkBlue()    noexcept { return from_hex(0x00000088); }
 	static constexpr color_t DarkYellow()  noexcept { return from_hex(0x00888800); }
+	///@}
 };
 
+/// definitions related to marking individual time points in the profiler timeline
 namespace mark {
 
 namespace detail_ {
@@ -156,6 +179,8 @@ nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
 
 } // namespace detail_
 
+/// Mark a single point on the profiler timeline, giving
+/// it also a color and some descriptive text
 template <typename CharT>
 void point(const CharT* description, color_t color = color_t::Black())
 {
@@ -165,6 +190,15 @@ void point(const CharT* description, color_t color = color_t::Black())
 	nvtxMarkEx(&attrs);
 }
 
+/**
+ * Mark the beginning of a range on the profiler timeline, giving
+ * it also a color and some descriptive text
+ *
+ * @param type the range type - an unused parameter
+ *
+ * @return a handle representing the range, which can be used to mark its
+ * endpoint
+ */
 template <typename CharT>
 range::handle_t range_start(
 	const CharT*   description,
@@ -180,6 +214,8 @@ range::handle_t range_start(
 	return range_handle;
 }
 
+/// Mark the end of a range, using the handle obtained when previously
+/// marking its beginning.
 inline void range_end(range::handle_t range_handle)
 {
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
@@ -189,18 +225,14 @@ inline void range_end(range::handle_t range_handle)
 
 } // namespace mark
 
-/**
- * Start CUDA profiling for the current process
- */
+/// Start CUDA profiling for the current process
 inline void start()
 {
 	auto status = cuProfilerStart();
 	throw_if_error_lazy(status, "Starting CUDA profiling");
 }
 
-/**
- * Stop CUDA profiling for the current process
- */
+/// Stop CUDA profiling for the current process
 inline void stop()
 {
 	auto status = cuProfilerStop();
@@ -215,7 +247,9 @@ namespace cuda {
 namespace profiling {
 
 /**
- * A RAII class whose scope of existence is reflected as a range in the profiler.
+ * A RAII/CADRe class whose scope of existence is reflected as a range in the
+ * profiler.
+ *
  * Use it in the scope in which you perform some interesting operation, e.g.
  * perform a synchronous I/O operation (and have it conclude of course), or
  * launch and synch several related kernels.
@@ -333,23 +367,29 @@ inline void name(::std::thread::id host_thread_id, const char* name)
 } // namespace detail_
 
 /**
- * @brief Have the profiler refer to the current thread, or another host
- * thread, using a specified string identifier (rather than its numeric ID).
+ * @brief Have the profiler refer to a given host thread, using a specified string
+ * identifier (rather than its numeric ID).
  *
  * @param[in] host_thread  A C++-recognized thread to name in profiling results
  * @param[in] name The name to use for the specified thread
  */
-///@{
 template <typename CharT>
 void name(const ::std::thread& host_thread, const CharT* name);
 
+/**
+ * @brief Have the profiler refer to the current thread using a specified string
+ * identifier (rather than its numeric ID).
+ *
+ * @param[in] host_thread  A C++-recognized thread to name in profiling results
+ * @param[in] name The name to use for the specified thread
+ */
 template <typename CharT>
 void name_this_thread(const CharT* name)
 {
 	detail_::name(::std::this_thread::get_id(), name);
 }
-///@}
 
+/// Have the profile assign a name to a certain stream
 template <typename CharT>
 void name(const stream_t& stream, const CharT* name)
 {
@@ -357,6 +397,7 @@ void name(const stream_t& stream, const CharT* name)
 	detail_::name_stream(stream.handle(), name);
 }
 
+/// Have the profile assign a name to a certain event
 template <typename CharT>
 void name(const event_t& event, const CharT* name)
 {
@@ -364,6 +405,7 @@ void name(const event_t& event, const CharT* name)
 	detail_::name_stream(event.handle(), name);
 }
 
+/// Have the profile assign a name to a certain CUDA device
 template <typename CharT>
 void name(const device_t& device, const CharT* name)
 {

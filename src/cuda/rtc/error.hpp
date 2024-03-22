@@ -121,7 +121,6 @@ namespace rtc {
 template <source_kind_t Kind>
 class runtime_error : public ::std::runtime_error {
 public:
-	///@cond
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(status_t<Kind> error_code) :
 		::std::runtime_error(describe(error_code)),
@@ -132,7 +131,6 @@ public:
 		::std::runtime_error(::std::move(what_arg) + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
-	///@endcond
 	runtime_error(status::named_t<Kind> error_code) :
 		runtime_error(static_cast<status_t<Kind>>(error_code)) { }
 	runtime_error(status::named_t<Kind> error_code, const ::std::string& what_arg) :
@@ -190,6 +188,15 @@ inline void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
 	if (is_failure(status)) { throw rtc::runtime_error<Kind>(status); }
 }
 
+/**
+ * Throws a @ref ::cuda::rtc::runtime_error exception if the status is not success
+ *
+ * @note The rationale for this macro is that neither the exception, nor its constructor
+ * arguments, are evaluated on the "happy path"; and that cannot be achieved with a
+ * function - which genertally/typically evaluates its arguments. To guarantee this
+ * lazy evaluation with a function, we would need exception-construction-argument-producing
+ * lambdas, which we would obviously rather avoid.
+ */
 #define throw_if_rtc_error_lazy(Kind, status__, ... ) \
 do { \
 	::cuda::rtc::status_t<Kind> tie_status__ = static_cast<::cuda::rtc::status_t<Kind>>(status__); \

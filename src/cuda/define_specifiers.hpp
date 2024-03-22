@@ -6,6 +6,9 @@
  * we introduce shorthands for these, to be defined when opening the library's namespace.
  */
 
+/// Shorthands for CUDA-specific function declaration decorations
+///@{
+
 #ifdef __CUDACC__
 
 #ifndef CUDA_FD
@@ -57,5 +60,6 @@
 #ifndef CUDA_H
 #define CUDA_H
 #endif
+///@}
 
 #endif // __CUDACC__
