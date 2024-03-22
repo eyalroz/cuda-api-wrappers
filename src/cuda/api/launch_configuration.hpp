@@ -182,9 +182,8 @@ public: // non-mutators
 		dynamic_shared_mem)
 	{ }
 
-   // These can be made constexpr in C++14
-   launch_configuration_t& operator=(const launch_configuration_t& other) = default;
-   launch_configuration_t& operator=(launch_configuration_t&&) = default;
+	CPP14_CONSTEXPR launch_configuration_t& operator=(const launch_configuration_t& other) = default;
+	CPP14_CONSTEXPR launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
 constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
