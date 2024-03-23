@@ -264,7 +264,7 @@ library_t create(
 	bool                    code_is_preserved = false)
 {
 	handle_t new_lib_handle;
-	auto raw_link_opts = marshal(link_options);
+	auto raw_link_opts = link::detail_::marshal(link_options);
 	struct {
 		detail_::option_t options[1];
 		void* values[1];
@@ -272,7 +272,7 @@ library_t create(
 	} raw_opts = { { CU_LIBRARY_BINARY_IS_PRESERVED }, { &code_is_preserved }, 1 };
 	auto status = creator(
 		&new_lib_handle, data_source,
-		const_cast<link::option_t*>(raw_link_opts.options()),
+		const_cast<link::detail_::option_t*>(raw_link_opts.options()),
 		const_cast<void**>(raw_link_opts.values()), raw_link_opts.count(),
 		raw_opts.options, raw_opts.values, raw_opts.count
 	);
