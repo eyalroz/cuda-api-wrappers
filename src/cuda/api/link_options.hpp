@@ -21,9 +21,9 @@ class module_t;
 
 namespace link {
 
-enum fallback_strategy_t {
-	prefer_ptx     = 0,
-	prefer_binary  = 1,
+enum fallback_strategy_for_binary_code_t {
+	prefer_compiling_ptx            = 0,
+	prefer_using_compatible_binary  = 1,
 };
 
 using option_t = CUjit_option;
@@ -98,7 +98,7 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 	bool obtain_target_from_cuda_context { true };
 
 	/// fallback behavior if a (matching cubin???) is not found
-	optional<fallback_strategy_t> fallback_strategy;
+	optional<fallback_strategy_for_binary_code_t> fallback_strategy_for_binary_code;
 
 	// It _seems_ that the verbosity is a boolean setting - but this is not clear
 	bool verbose_log;
@@ -150,8 +150,8 @@ inline marshalled_options_t marshal(const options_t& link_options)
 		marshalled.push_back(CU_JIT_TARGET, lo.specific_target.value().as_combined_number());
 	}
 
-	if (lo.fallback_strategy) {
-		marshalled.push_back(CU_JIT_FALLBACK_STRATEGY, lo.fallback_strategy.value());
+	if (lo.fallback_strategy_for_binary_code) {
+		marshalled.push_back(CU_JIT_FALLBACK_STRATEGY, lo.fallback_strategy_for_binary_code.value());
 	}
 
 	if (lo.generate_debug_info) {
