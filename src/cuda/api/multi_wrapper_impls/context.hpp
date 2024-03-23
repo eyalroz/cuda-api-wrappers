@@ -168,31 +168,10 @@ public:
 
 } // namespace detail_
 
-/**
- * A RAII-based mechanism for pushing a context onto the context stack
- * for what remains of the current (C++ language) scope - making it the
- * current context - then popping it back when exiting the scope -
- * restoring the stack and the current context to what they had been
- * previously.
- *
- * @note if some other code pushes/pops from the context stack during
- * the lifetime of this class, the pop-on-destruction may fail, or
- * succeed but pop some other context handle than the one originally.
- * pushed.
- *
- */
-class scoped_override_t : private detail_::scoped_override_t {
-protected:
-	using parent = detail_::scoped_override_t;
-public:
-
-	explicit scoped_override_t(device::primary_context_t&& primary_context)
+inline scoped_override_t::scoped_override_t(device::primary_context_t&& primary_context)
 		: parent(primary_context.is_owning(), primary_context.device_id(), primary_context.handle()) {}
-	explicit scoped_override_t(const context_t& context) : parent(context.handle()) {}
-	explicit scoped_override_t(context_t&& context) : parent(context.handle()) {}
-	~scoped_override_t() = default;
-};
-
+inline scoped_override_t::scoped_override_t(const context_t& context) : parent(context.handle()) {}
+inline scoped_override_t::scoped_override_t(context_t&& context) : parent(context.handle()) {}
 
 } // namespace current
 
