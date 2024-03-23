@@ -75,12 +75,12 @@ inline module_t create(const context_t& context, const void* module_data, const 
 {
 	auto creator_function =
 		[&link_options](handle_t& new_module_handle, const void* module_data_) {
-			auto marshalled_options = marshal(link_options);
+			auto marshalled_options = link::detail_::marshal(link_options);
 			return cuModuleLoadDataEx(
 				&new_module_handle,
 				module_data_,
 				marshalled_options.count(),
-				const_cast<link::option_t *>(marshalled_options.options()),
+				const_cast<link::detail_::option_t *>(marshalled_options.options()),
 				const_cast<void **>(marshalled_options.values())
 			);
 		};

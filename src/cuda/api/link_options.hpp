@@ -26,6 +26,8 @@ enum fallback_strategy_for_binary_code_t {
 	prefer_using_compatible_binary  = 1,
 };
 
+namespace detail_ {
+
 using option_t = CUjit_option;
 
 struct marshalled_options_t {
@@ -87,6 +89,8 @@ public:
 	const void * const * values() const { return value_buffer.data(); }
 };
 
+} // namespace detail_
+
 struct options_t final : public rtc::common_ptx_compilation_options_t {
 
 	// Note: The sizes are used as parameters too.
@@ -115,6 +119,8 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 	//
 
 };
+
+namespace detail_ {
 
 inline marshalled_options_t marshal(const options_t& link_options)
 {
@@ -176,6 +182,8 @@ inline marshalled_options_t marshal(const options_t& link_options)
 
 	return marshalled;
 }
+
+} // namespace detail_
 
 // TODO: Compiler "output options":
 //

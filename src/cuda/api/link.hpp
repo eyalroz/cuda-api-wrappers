@@ -118,7 +118,7 @@ public:
 	// TODO: Replace this with methods which take wrapper classes.
 	void add(link::input::image_t image, const link::options_t &ptx_compilation_options = {}) const
 	{
-		auto marshalled_options = marshal(ptx_compilation_options);
+		auto marshalled_options = link::detail_::marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
 			handle_,
 			static_cast<CUjitInputType>(image.type),
@@ -126,7 +126,7 @@ public:
 			image.size(),
 			image.name,
 			marshalled_options.count(),
-			const_cast<link::option_t *>(marshalled_options.options()),
+			const_cast<link::detail_::option_t *>(marshalled_options.options()),
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
@@ -136,13 +136,13 @@ public:
 
 	void add_file(link::input::file_t file_input, const link::options_t &options) const
 	{
-		auto marshalled_options = marshal(options);
+		auto marshalled_options = link::detail_::marshal(options);
 		auto status = cuLinkAddFile(
 			handle_,
 			static_cast<CUjitInputType_enum>(file_input.type),
 			file_input.path,
 			marshalled_options.count(),
-			const_cast<link::option_t *>(marshalled_options.options()),
+			const_cast<link::detail_::option_t *>(marshalled_options.options()),
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
@@ -222,10 +222,10 @@ namespace link {
 inline link_t create(const link::options_t &options = link::options_t{})
 {
 	handle_t new_link_handle;
-	auto marshalled_options = marshal(options);
+	auto marshalled_options = link::detail_::marshal(options);
 	auto status = cuLinkCreate(
 		marshalled_options.count(),
-		const_cast<link::option_t *>(marshalled_options.options()),
+		const_cast<link::detail_::option_t *>(marshalled_options.options()),
 		const_cast<void **>(marshalled_options.values()),
 		&new_link_handle
 	);
