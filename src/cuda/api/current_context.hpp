@@ -14,6 +14,9 @@ namespace cuda {
 ///@cond
 class device_t;
 class context_t;
+namespace device {
+class primary_context_t;
+} // namespace device
 ///@endcond
 
 namespace context {
@@ -188,6 +191,7 @@ public:
 };
 
 ///@cond
+
 /*
  * This macro is intended for use inside the cuda-api-wrappers implementation, to 
  * save us some typing; it's quite usable on the outside, but you probably want to
@@ -227,6 +231,32 @@ public:
 };
 
 } // namespace detail_
+
+/**
+ * A RAII-based mechanism for pushing a context onto the context stack
+ * for what remains of the current (C++ language) scope - making it the
+ * current context - then popping it back when exiting the scope -
+ * restoring the stack and the current context to what they had been
+ * previously.
+ *
+ * @note if some other code pushes/pops from the context stack during
+ * the lifetime of this class, the pop-on-destruction may fail, or
+ * succeed but pop some other context handle than the one originally.
+ * pushed.
+ *
+ */
+class scoped_override_t : private detail_::scoped_override_t {
+protected:
+	using parent = detail_::scoped_override_t;
+public:
+
+	explicit scoped_override_t(device::primary_context_t&& primary_context);
+	explicit scoped_override_t(const context_t& context);
+	explicit scoped_override_t(context_t&& context);
+	~scoped_override_t() = default;
+};
+
+
 
 /**
  * This macro will set the current device for the remainder of the scope in which it is
