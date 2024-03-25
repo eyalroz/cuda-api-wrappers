@@ -106,8 +106,6 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 	/// fallback behavior if a (matching cubin???) is not found
 	optional<fallback_strategy_for_binary_code_t> fallback_strategy_for_binary_code;
 
-	bool specify_default_load_caching_mode { false };
-
 	// Ignoring the "internal purposes only" options;
 	//
 	//   CU_JIT_NEW_SM3X_OPT
@@ -116,7 +114,6 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 	//   CU_JIT_GLOBAL_SYMBOL_ADDRESSES
 	//   CU_JIT_GLOBAL_SYMBOL_COUNT
 	//
-
 };
 
 namespace detail_ {
