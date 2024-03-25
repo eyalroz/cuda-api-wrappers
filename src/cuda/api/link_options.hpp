@@ -93,9 +93,11 @@ public:
 
 struct options_t final : public rtc::common_ptx_compilation_options_t {
 
-	// Note: The sizes are used as parameters too.
-	optional<span<char>> info_log;
-	optional<span<char>> error_log;
+	struct {
+		optional<span<char>> info;
+		optional<span<char>> error;
+		bool verbose;
+	} logs;
 
 	// Note: When this is true, the specific_target of the base class
 	// is overridden
@@ -103,9 +105,6 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 
 	/// fallback behavior if a (matching cubin???) is not found
 	optional<fallback_strategy_for_binary_code_t> fallback_strategy_for_binary_code;
-
-	// It _seems_ that the verbosity is a boolean setting - but this is not clear
-	bool verbose_log;
 
 	bool specify_default_load_caching_mode { false };
 
@@ -135,14 +134,14 @@ inline marshalled_options_t marshal(const options_t& link_options)
 		marshalled.push_back(CU_JIT_THREADS_PER_BLOCK, lo.min_num_threads_per_block.value());
 	}
 
-	if (lo.info_log) {
-		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER, lo.info_log.value().data());
-		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, lo.info_log.value().size());
+	if (lo.logs.info) {
+		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER, lo.logs.info.value().data());
+		marshalled.push_back(CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, lo.logs.info.value().size());
 	}
 
-	if (lo.error_log) {
-		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER, lo.error_log.value().data());
-		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES, lo.error_log.value().size());
+	if (lo.logs.error) {
+		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER, lo.logs.error.value().data());
+		marshalled.push_back(CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES, lo.logs.error.value().size());
 	}
 
 	if (lo.optimization_level) {
@@ -172,7 +171,7 @@ inline marshalled_options_t marshal(const options_t& link_options)
 		marshalled.push_back(CU_JIT_GENERATE_LINE_INFO);
 	}
 
-	if (lo.verbose_log) {
+	if (lo.logs.verbose) {
 		marshalled.push_back(CU_JIT_LOG_VERBOSE);
 	}
 
