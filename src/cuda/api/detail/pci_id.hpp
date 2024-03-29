@@ -20,7 +20,6 @@
 #include <ostream>
 #include <sstream>
 
-
 namespace cuda {
 namespace device {
 
@@ -43,7 +42,6 @@ inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location
 	is >> first_field;
 	auto get_colon = [&]() {
 		auto c = is.get();
-	//	if (c == istream::traits_type::eof() or  ) {
 		if (c != ':') {
 			throw ::std::invalid_argument("Invalid format of a PCI location for a CUDA device 1");
 		}
@@ -51,17 +49,19 @@ inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location
 	get_colon();
 
 	int second_field;
+	int function;
 	is >> second_field;
 	switch(is.get()) {
 	case '.':
 		// It's the third format
-		pci_id.domain = pci_location_t::unused; // Is this a reasonable choice?
+		pci_id.domain = {};
 		pci_id.bus = first_field;
 		pci_id.device = second_field;
-		is >> pci_id.function;
+		is >> function;
 		if (not is.good()) {
 			throw ::std::invalid_argument("Failed parsing PCI location ID for a CUDA device 2");
 		}
+		pci_id.function = function;
 		break;
 	case ':': {
 		pci_id.domain = first_field;
@@ -69,14 +69,15 @@ inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location
 		is >> pci_id.device;
 		if (is.peek() != '.') {
 			// It's the second format.
-			pci_id.function = pci_location_t::unused; // Is this a reasonable choice? I woudld  have liked that...
+			pci_id.function = {};
 			is.flags(format_flags);
 			return is;
 		}
 		else {
 			// It's the first format.
 			is.get();
-			is >> pci_id.function;
+			is >> function;
+			pci_id.function = function;
 			is.flags(format_flags);
 			return is;
 		}
@@ -90,9 +91,9 @@ inline ::std::ostream& operator<<(::std::ostream& os, const cuda::device::pci_lo
 {
 	auto format_flags(os.flags());
 	os << ::std::hex;
-	if (pci_id.domain != pci_location_t::unused) { os  << pci_id.domain << ':'; }
+	if (pci_id.domain) { os  << pci_id.domain.value() << ':'; }
 	os << pci_id.bus << ':' << pci_id.device;
-	if (pci_id.function != pci_location_t::unused) { os << '.' << pci_id.function; }
+	if (pci_id.function) { os << '.' << pci_id.function.value(); }
 	os.flags(format_flags);
 	return os;
 }
