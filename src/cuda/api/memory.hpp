@@ -2260,11 +2260,10 @@ template <typename T>
 using unique_span = cuda::unique_span<T, detail_::deleter>;
 
 template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t size, allocation_options options = {});
-template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t size);
-template <typename T>
-unique_span<T> make_unique_span(size_t size);
+unique_span<T> make_unique_span(size_t size)
+{
+	return unique_span<T>{ allocate(size * sizeof(T)) };
+}
 
 } // namespace host
 

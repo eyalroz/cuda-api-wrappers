@@ -63,21 +63,6 @@ inline unique_region make_unique_region(size_t num_elements)
 
 namespace host {
 
-inline unique_region make_unique_region(
-	const context_t&    context,
-	size_t              num_bytes,
-	allocation_options  options)
-{
-	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return unique_region{ allocate(num_bytes, options) };
-}
-
-inline unique_region make_unique_region(const device_t& device, size_t num_bytes)
-{
-	auto pc = device.primary_context();
-	return make_unique_region(pc, num_bytes);
-}
-
 inline unique_region make_unique_region(size_t num_bytes)
 {
 	return unique_region { allocate(num_bytes) };
