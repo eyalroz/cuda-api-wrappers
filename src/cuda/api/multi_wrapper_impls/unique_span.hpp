@@ -68,31 +68,6 @@ unique_span<T> make_unique_span(size_t num_elements)
 
 } // namespace device
 
-namespace host {
-
-template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t size, allocation_options options)
-{
-	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return unique_span<T>{ allocate(size * sizeof(T), options) };
-}
-
-template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t size)
-{
-	auto pc = device.primary_context();
-	return make_unique_span<T>(pc, size);
-}
-
-template <typename T>
-unique_span<T> make_unique_span(size_t size)
-{
-	return unique_span<T>{ allocate(size * sizeof(T)) };
-}
-
-} // namespace host
-
-
 namespace managed {
 
 template <typename T>

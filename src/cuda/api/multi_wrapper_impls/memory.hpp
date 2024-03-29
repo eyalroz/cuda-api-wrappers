@@ -370,15 +370,6 @@ inline region_t allocate(
 	return detail_::allocate_in_current_context(size_in_bytes, options);
 }
 
-inline region_t allocate(
-	const context_t&    context,
-	size_t              size_in_bytes,
-	allocation_options  options)
-{
-	return detail_::allocate(context.handle(), size_in_bytes, options);
-}
-
-
 } // namespace host
 
 namespace pointer {
