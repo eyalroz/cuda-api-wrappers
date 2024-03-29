@@ -19,22 +19,41 @@ namespace device {
  * Location "coordinates" for a CUDA device on a PCIe bus
  *
  * @note can be compiled from individual values from a device's properties;
- * see @ref properties_t
+ * see {@ref properties_t}.
  */
 struct pci_location_t {
-	// These are the values CUDA's API provides us with directly
-	int domain;
+	/**
+	 * The four fields of the PCI configuration space.
+	 *
+	 * @note Only the first three are actually used/recognized by the CUDA driver, and
+	 * when querying a CUDA device for its PCI ID, function will be unused. However - we
+	 * have it be able to parse the different common string notations of PCI IDs; see
+	 * @url https://wiki.xenproject.org/wiki/Bus:Device.Function_(BDF)_Notation .
+	 */
+	///@{
+	optional<int> domain;
 	int bus;
 	int device;
-	int function;
+	optional<int> function;
+	///@}
 
 	operator ::std::string() const;
-	// This is not a ctor so as to maintain the PODness
+
+	/**
+	 * Parse a string representation of a device's PCI location.
+	 *
+	 * @note This is not a ctor so as to maintain the PODness.
+	 *
+	 * @note There are multiple notations for PCI IDs:
+	 *
+	 * 	   domain::bus::device.function
+	 *	   domain::bus::device
+	 *     bus::device.function
+	 *
+	 * and any of them can be used.
+	 */
 	static pci_location_t parse(const ::std::string& id_str);
 	static pci_location_t parse(const char* id_str);
-public:
-	static constexpr const int unused { -1 };
-		// In lieu of making this class a variant with 3 type combinations.
 };
 
 namespace detail_ {
