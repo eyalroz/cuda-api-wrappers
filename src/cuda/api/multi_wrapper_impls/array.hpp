@@ -46,14 +46,14 @@ array_t<T,NumDimensions> create(
 
 } // namespace array
 
-inline device_t texture_view::device() const
-{
-	return device::get(context::detail_::get_device_id(context_handle_));
-}
-
 inline context_t texture_view::context() const
 {
-	return context::detail_::from_handle(context_handle_);
+	return context::wrap(device_id_, context_handle_);
+}
+
+inline device_t texture_view::device() const
+{
+	return device::get(device_id_);
 }
 
 template <typename T, dimensionality_t NumDimensions>
@@ -66,7 +66,7 @@ template <typename T, dimensionality_t NumDimensions>
 context_t array_t<T, NumDimensions>::context() const
 {
 	// TODO: Save the device id in the array_t as well.
-	return context::detail_::from_handle(context_handle_);
+	return context::wrap(device_id_, context_handle_);
 }
 
 } // namespace cuda
