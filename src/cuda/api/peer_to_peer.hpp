@@ -76,9 +76,19 @@ namespace current {
 
 namespace peer_to_peer {
 
-void enable_access_to(const context_t &context, const context_t &peer_context);
+/**
+ * Allows subsequently-executed memory operations and kernels to access the memory
+ * associated with the specified peer context - if peer-to-peer access is supported
+ * between the two devices.
+ */
+void enable_access_to(const context_t &peer_context);
 
-void disable_access_to(const context_t &context, const context_t &peer_context);
+/**
+ * Prevents subsequently-executed memory operations and kernels from accessing the
+ * memory associated with the specified peer context - if peer-to-peer access is
+ * supported between the two devices.
+ */
+void disable_access_to(const context_t &peer_context);
 
 } // namespace peer_to_peer
 
