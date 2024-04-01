@@ -5,8 +5,8 @@
  * a version number for the NVRTC library
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_NVRTC_VERSIONS_HPP_
-#define CUDA_API_WRAPPERS_NVRTC_VERSIONS_HPP_
+#ifndef CUDA_API_WRAPPERS_RTC_VERSIONS_HPP_
+#define CUDA_API_WRAPPERS_RTC_VERSIONS_HPP_
 
 #include <cuda/rtc/error.hpp>
 #include "../api/versions.hpp"
@@ -28,4 +28,4 @@ inline version_t nvrtc() {
 } // namespace version_numbers
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_NVRTC_VERSIONS_HPP_
+#endif // CUDA_API_WRAPPERS_RTC_VERSIONS_HPP_

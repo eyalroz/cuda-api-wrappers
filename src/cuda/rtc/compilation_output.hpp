@@ -4,8 +4,8 @@
  * @brief Contains the @ref cuda::rtc::compilation_output_t class and related code.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_NVRTC_OUTPUT_HPP_
-#define CUDA_API_WRAPPERS_NVRTC_OUTPUT_HPP_
+#ifndef CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_
+#define CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_
 
 #include "compilation_options.hpp"
 #include "error.hpp"
@@ -719,4 +719,4 @@ inline module_t create(
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_NVRTC_OUTPUT_HPP_
+#endif // CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_

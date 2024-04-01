@@ -5,8 +5,8 @@
  * of CUDA code using the NVRTC library
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
-#define CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
+#ifndef CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_
+#define CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_
 
 #include "detail/marshalled_options.hpp"
 
@@ -706,4 +706,4 @@ inline ::std::string render(const compilation_options_t<Kind>& opts)
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_NVRTC_COMPILATION_OPTIONS_HPP_
+#endif // CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_
