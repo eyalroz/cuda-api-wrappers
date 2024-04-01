@@ -199,15 +199,15 @@ public:
 	struct {
 		caching_mode_spec_t default_ {};
 		caching_mode_spec_t forced {};
-	} caching_mode;
+	} caching_modes;
 
 	optional<caching_mode_t<memory_operation_t::load>>& default_load_caching_mode() override
 	{
-		return caching_mode.default_.load;
+		return caching_modes.default_.load;
 	}
 	optional<caching_mode_t<memory_operation_t::load>> default_load_caching_mode() const override
 	{
-		return caching_mode.default_.load;
+		return caching_modes.default_.load;
 	}
 
 
@@ -327,13 +327,11 @@ public:
 	 */
 	bool extra_device_vectorization { false };
 
-	// TODO: switch to optional<cpp_dialect_t> when the library starts depending on C++14
-	bool specify_language_dialect { false };
 	/**
 	 * Set language dialect to C++03, C++11, C++14 or C++17.
 	 *
 	 */
-	cpp_dialect_t language_dialect { cpp_dialect_t::cpp03 };
+	optional<cpp_dialect_t> language_dialect { };
 
 	::std::unordered_set<::std::string> no_value_defines;
 	::std::unordered_set<::std::string> undefines;
@@ -421,22 +419,17 @@ public:
 
 	::std::unordered_map<error::number_t, error::handling_method_t> error_handling_overrides;
 
-protected:
-	template <typename T>
-	void process(T& opts) const;
-
 public: // "shorthands" for more complex option setting
 
 	compilation_options_t& set_language_dialect(cpp_dialect_t dialect)
 	{
-		specify_language_dialect = true;
 		language_dialect = dialect;
 		return *this;
 	}
 
 	compilation_options_t& clear_language_dialect()
 	{
-		specify_language_dialect = false;
+		language_dialect = {};
 		return *this;
 	}
 
@@ -557,7 +550,7 @@ void process(
 	}
 
 	{
-		const auto& ocm = opts.caching_mode;
+		const auto& ocm = opts.caching_modes;
 		if (ocm.default_.load)  { marshalled << opt_start << "--def-load-cache "    << ocm.default_.load.value();  }
 		if (ocm.default_.store) { marshalled << opt_start << "--def-store-cache "   << ocm.default_.store.value(); }
 		if (ocm.forced.load)    { marshalled << opt_start << "--force-load-cache "  << ocm.forced.load.value();    }
@@ -624,8 +617,8 @@ void process(
 
 	}
 
-	if (opts.specify_language_dialect) {
-		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect)];
+	if (opts.language_dialect) {
+		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect.value())];
 	}
 
 	if (opts.maximum_register_count) {

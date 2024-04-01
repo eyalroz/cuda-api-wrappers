@@ -332,39 +332,6 @@ constexpr inline bool operator!=(const dimensions_t& lhs, const dimensions_t& rh
  */
 using block_dimensions_t = dimensions_t;
 
-struct overall_dimensions_t;
-/**
- * Composite dimensions for a grid - in terms of blocks, then also down
- * into the block dimensions completing the information to the thread level.
- */
-struct composite_dimensions_t {
-	grid::dimensions_t       grid;
-	grid::block_dimensions_t block;
-
-	/**
-	 * @brief The overall dimensions, in thread, of the launch grid
-	 */
-	constexpr overall_dimensions_t flatten() const;
-	constexpr size_t volume() const;
-	constexpr size_t dimensionality() const;
-
-	static constexpr composite_dimensions_t point()
-	{
-		return { dimensions_t::point(), block_dimensions_t::point() };
-	}
-};
-
-constexpr bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
-{
-	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
-}
-
-constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
-{
-	return not (lhs == rhs);
-}
-
-
 /**
  * Dimension of a grid in threads along one axis, i.e. a multiplication
  * of a grid's block dimension and the grid's dimension in blocks, on
@@ -382,23 +349,23 @@ struct overall_dimensions_t
 	dimension_type x, y, z;
 
 	constexpr __host__ __device__ overall_dimensions_t(
-	dimension_type width_, dimension_type height_, dimension_type depth_) noexcept
-	: x(width_), y(height_), z(depth_) { }
+		dimension_type width_, dimension_type height_, dimension_type depth_) noexcept
+		: x(width_), y(height_), z(depth_) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(const dim3& dims) noexcept
-	: x(dims.x), y(dims.y), z(dims.z) { }
+		: x(dims.x), y(dims.y), z(dims.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(dim3&& dims) noexcept
-	: x(dims.x), y(dims.y), z(dims.z) { }
+		: x(dims.x), y(dims.y), z(dims.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(const overall_dimensions_t& other) noexcept
-	: overall_dimensions_t(other.x, other.y, other.z) { }
+		: overall_dimensions_t(other.x, other.y, other.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(overall_dimensions_t&& other) noexcept
-	: overall_dimensions_t(other.x, other.y, other.z) { }
+		: overall_dimensions_t(other.x, other.y, other.z) { }
 
 	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t dims) noexcept
-	: overall_dimensions_t(dims.x, dims.y, dims.z) { }
+		: overall_dimensions_t(dims.x, dims.y, dims.z) { }
 
 	CPP14_CONSTEXPR overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
 	CPP14_CONSTEXPR overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept = default;
@@ -430,9 +397,35 @@ constexpr overall_dimensions_t operator*(dimensions_t grid_dims, block_dimension
 	};
 }
 
-constexpr overall_dimensions_t composite_dimensions_t::flatten() const { return grid * block; }
-constexpr size_t composite_dimensions_t::volume() const { return flatten().volume(); }
-constexpr size_t composite_dimensions_t::dimensionality() const { return flatten().dimensionality(); }
+/**
+ * Composite dimensions for a grid - in terms of blocks, then also down
+ * into the block dimensions completing the information to the thread level.
+ */
+struct composite_dimensions_t {
+	grid::dimensions_t       grid;
+	grid::block_dimensions_t block;
+
+	constexpr overall_dimensions_t flatten() const { return grid * block; }
+
+	constexpr size_t volume() const { return flatten().volume(); }
+
+	constexpr size_t dimensionality() const { return flatten().dimensionality(); }
+
+	static constexpr composite_dimensions_t point()
+	{
+		return { dimensions_t::point(), block_dimensions_t::point() };
+	}
+};
+
+constexpr bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
+{
+	return (lhs.grid == rhs.grid) and (lhs.block == rhs.block);
+}
+
+constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
+{
+	return not (lhs == rhs);
+}
 
 } // namespace grid
 
@@ -814,12 +807,5 @@ using handle_t = CUfunction;
 } // namespace kernel
 
 } // namespace cuda
-
-#ifndef __CUDACC__
-#ifndef __device__
-#define __device__
-#define __host__
-#endif
-#endif
 
 #endif // CUDA_API_WRAPPERS_COMMON_TYPES_HPP_

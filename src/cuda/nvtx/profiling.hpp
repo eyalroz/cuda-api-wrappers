@@ -157,7 +157,7 @@ nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
 } // namespace detail_
 
 template <typename CharT>
-void point(const CharT* description, color_t color)
+void point(const CharT* description, color_t color = color_t::Black())
 {
 	auto attrs = detail_::create_attributes(description, color);
 	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
@@ -168,8 +168,8 @@ void point(const CharT* description, color_t color)
 template <typename CharT>
 range::handle_t range_start(
 	const CharT*   description,
-	range::type_t  type,
-	color_t        color)
+	range::type_t  type = range::type_t::unspecified,
+	color_t        color = color_t::LightRed())
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
 	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
@@ -213,30 +213,6 @@ inline void stop()
 namespace cuda {
 
 namespace profiling {
-
-namespace mark {
-
-template <typename CharT>
-inline void point(const CharT* message)
-{
-	point(message, color_t::Black());
-}
-
-template <typename CharT>
-inline range::handle_t range_start(
-	const CharT*   description,
-	range::type_t  type)
-{
-	return range_start(description, type, color_t::LightRed());
-}
-
-template <typename CharT>
-inline range::handle_t range_start(const CharT* description)
-{
-	return range_start(description, range::type_t::unspecified);
-}
-
-} // namespace mark
 
 /**
  * A RAII class whose scope of existence is reflected as a range in the profiler.
