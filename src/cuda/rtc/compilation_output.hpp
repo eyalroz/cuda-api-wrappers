@@ -44,13 +44,7 @@ namespace module {
 template <source_kind_t Kind>
 inline module_t create(
 	const context_t&                        context,
-	const rtc::compilation_output_t<Kind>&  compiled_program,
-	const link::options_t&                  options = {});
-
-template <source_kind_t Kind>
-inline module_t create(
-	device_t&                               device,
-	const rtc::compilation_output_t<Kind>&  compiled_program,
+	const rtc::compilation_output_t<Kind>&  compilation_output,
 	const link::options_t&                  options = {});
 
 } // namespace module
@@ -327,6 +321,7 @@ public: // non-mutators
 
 #if CUDA_VERSION >= 11010
 	virtual unique_span<char> cubin() const = 0;
+	virtual span<char> cubin(span<char> buffer) const = 0;
 	virtual bool has_cubin() const = 0;
 #endif
 
@@ -441,7 +436,7 @@ public: // non-mutators
 	 * @note This will fail if the program has never been compiled.
 	 */
 	///@{
-	span<char> cubin(span<char> buffer) const
+	span<char> cubin(span<char> buffer) const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
@@ -586,7 +581,7 @@ public: // non-mutators
 	 * @note This will fail if the program has never been compiled.
 	 */
 	///@{
-	span<char> cubin(span<char> buffer) const
+	span<char> cubin(span<char> buffer) const override
 	{
 		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
@@ -631,11 +626,11 @@ namespace compilation_output {
 namespace detail_ {
 
 template <source_kind_t Kind>
-inline ::std::string identify(const compilation_output_t<Kind> &compilation_result)
+inline ::std::string identify(const compilation_output_t<Kind> &compilation_output)
 {
 	return "Compilation output of " + program::detail_::identify<Kind>(
-		compilation_result.program_handle(),
-		compilation_result.program_name().c_str());
+		compilation_output.program_handle(),
+		compilation_output.program_name().c_str());
 }
 
 template <source_kind_t Kind>
@@ -656,24 +651,18 @@ inline compilation_output_t<Kind> wrap(
 
 namespace module {
 
-template <source_kind_t Kind>
-module_t create(
-	const context_t&                        context,
-	const rtc::compilation_output_t<Kind>&  compiled_program,
-	const link::options_t&                  options);
-
 template<> inline module_t create<cuda_cpp>(
 	const context_t&                            context,
-	const rtc::compilation_output_t<cuda_cpp>&  compiled_program,
+	const rtc::compilation_output_t<cuda_cpp>&  compilation_output,
 	const link::options_t&                      options)
 {
-	if (not compiled_program.succeeded()) {
+	if (not compilation_output.succeeded()) {
 		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda::rtc::program::detail_::identify<cuda_cpp>(compiled_program.program_handle()));
+			+ cuda::rtc::program::detail_::identify<cuda_cpp>(compilation_output.program_handle()));
 	}
 #if CUDA_VERSION >= 11010
-	auto program_handle = compiled_program.program_handle();
-	auto program_name = compiled_program.program_name().c_str();
+	auto program_handle = compilation_output.program_handle();
+	auto program_name = compilation_output.program_name().c_str();
 	static const bool dont_fail_on_missing_cubin { false };
 	auto cubin_size = rtc::program::detail_::get_cubin_size<cuda_cpp, dont_fail_on_missing_cubin>(program_handle, program_name);
 	// Note: The above won't fail even if no CUBIN was produced
@@ -686,21 +675,21 @@ template<> inline module_t create<cuda_cpp>(
 	// Note: At this point, we must have PTX in the output, as otherwise the compilation could
 	// not have succeeded
 #endif
-	auto ptx = compiled_program.ptx();
+	auto ptx = compilation_output.ptx();
 	return module::create(context, ptx.get(), options);
 }
 
 #if CUDA_VERSION >= 11010
 template<> inline module_t create<source_kind_t::ptx>(
 	const context_t&                                      context,
-	const rtc::compilation_output_t<source_kind_t::ptx>&  compiled_program,
+	const rtc::compilation_output_t<source_kind_t::ptx>&  compilation_output,
 	const link::options_t&                                options)
 {
-	if (not compiled_program.succeeded()) {
+	if (not compilation_output.succeeded()) {
 		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda::rtc::program::detail_::identify<source_kind_t::ptx>(compiled_program.program_handle()));
+			+ cuda::rtc::program::detail_::identify<source_kind_t::ptx>(compilation_output.program_handle()));
 	}
-	auto cubin = compiled_program.cubin();
+	auto cubin = compilation_output.cubin();
 	return module::create(context, cubin.get(), options);
 }
 #endif // CUDA_VERSION >= 11010
@@ -709,10 +698,10 @@ template<> inline module_t create<source_kind_t::ptx>(
 template <source_kind_t Kind>
 inline module_t create(
 	device_t&                               device,
-	const rtc::compilation_output_t<Kind>&  compiled_program,
-	const link::options_t&                  options)
+	const rtc::compilation_output_t<Kind>&  compilation_output,
+	const link::options_t&                  options = {})
 {
-	return create(device.primary_context(), compiled_program, options);
+	return create(device.primary_context(), compilation_output, options);
 }
 
 } // namespace module
