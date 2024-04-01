@@ -4,8 +4,8 @@
  * @brief Contains the @ref cuda::rtc::program_t class and related code.
  */
 #pragma once
-#ifndef CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
-#define CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
+#ifndef CUDA_API_WRAPPERS_RTC_PROGRAM_HPP_
+#define CUDA_API_WRAPPERS_RTC_PROGRAM_HPP_
 
 #include "compilation_options.hpp"
 #include "compilation_output.hpp"
@@ -624,4 +624,4 @@ supported_targets()
 
 } // namespace cuda
 
-#endif // CUDA_API_WRAPPERS_NVRTC_PROGRAM_HPP_
+#endif // CUDA_API_WRAPPERS_RTC_PROGRAM_HPP_
