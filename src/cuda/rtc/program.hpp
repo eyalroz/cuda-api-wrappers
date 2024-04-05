@@ -178,12 +178,8 @@ inline compilation_output_t<ptx> compile_ptx(
 }
 #endif // CUDA_VERSION >= 11010
 
-} // namespace detail_
-
-} // namespace program
-
 template <source_kind_t Kind>
-class program_base_t {
+class base_t {
 public: // types and constants
 	constexpr static const source_kind_t source_kind { Kind };
 	using handle_type = program::handle_t<source_kind>;
@@ -200,21 +196,25 @@ public: // getters
 	compilation_options_t<Kind>& options() { return options_; }
 
 public: // constructors and destructor
-	explicit program_base_t(::std::string name) : name_(::std::move(name)) {};
-	program_base_t(const program_base_t&) = default;
-	program_base_t(program_base_t&&) noexcept = default;
-	~program_base_t() = default;
+	explicit base_t(::std::string name) : name_(::std::move(name)) {};
+	base_t(const base_t&) = default;
+	base_t(base_t&&) noexcept = default;
+	~base_t() = default;
 
 public: // operators
 
-	program_base_t& operator=(const program_base_t& other) noexcept = default;
-	program_base_t& operator=(program_base_t&& other) noexcept = default;
+	base_t& operator=(const base_t& other) noexcept = default;
+	base_t& operator=(base_t&& other) noexcept = default;
 
 protected: // data members
 	const char*           source_ { nullptr };
 	::std::string         name_;
 	compilation_options_t<Kind> options_;
-}; // program_base_t
+}; // base_t
+
+} // namespace detail_
+
+} // namespace program
 
 template <source_kind_t Kind>
 class program_t;
@@ -227,9 +227,9 @@ class program_t;
  *
  */
 template <>
-class program_t<cuda_cpp> : public program_base_t<cuda_cpp> {
+class program_t<cuda_cpp> : public program::detail_::base_t<cuda_cpp> {
 public: // types
-	using parent = program_base_t<source_kind>;
+	using parent = base_t<source_kind>;
 
 public: // getters
 
@@ -494,7 +494,7 @@ public:
 	///@}
 
 public: // constructors and destructor
-	program_t(::std::string name) : program_base_t(::std::move(name)) {}
+	program_t(::std::string name) : base_t(::std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
@@ -515,9 +515,11 @@ protected: // data members
 #if CUDA_VERSION >= 11010
 
 template <>
-class program_t<ptx> : public program_base_t<ptx> {
+class program_t<ptx> : public program::detail_::base_t<ptx> {
 public: // types
-	using parent = program_base_t<source_kind>;
+	///@cond
+	using parent = program::detail_::base_t<source_kind>;
+	///@nocond
 
 public: // setters - duplicated with CUDA-C++/NVRTC programs
 
@@ -574,7 +576,7 @@ public:
 
 
 public: // constructors and destructor
-	program_t(::std::string name) : program_base_t(::std::move(name)) {}
+	program_t(::std::string name) : parent(std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
