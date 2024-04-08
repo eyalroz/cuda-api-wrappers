@@ -25,8 +25,6 @@ template <typename Delimiter> struct opt_start_t;
 template<typename T>
 struct is_marshalling_control : ::std::false_type {};
 
-} // namespace detail_
-
 /**
  * This class is necessary for realizing everything we need from
  * the marshalled options: Easy access using an array of pointers,
@@ -56,8 +54,8 @@ protected:
 	mutable ::std::ostringstream oss;
 	mutable ::std::string finalized {};
 	::std::vector<size_type> option_positions;
-		// Offsets into the eventually-created options string.
-		// Note that the last offset is to a not-yet-existing option
+	// Offsets into the eventually-created options string.
+	// Note that the last offset is to a not-yet-existing option
 public:
 
 	bool empty() const {
@@ -95,14 +93,12 @@ inline marshalled_options_t& operator<< (marshalled_options_t& mo, marshalled_op
 	return mo;
 }
 
-namespace detail_ {
-
 template<> struct is_marshalling_control<marshalled_options_t::advance_gadget> : ::std::true_type {};
 
 template<typename Delimiter>
 struct is_marshalling_control<opt_start_t<Delimiter>> : ::std::true_type {};
 
-}
+} // namespace detail_
 
 } // namespace rtc
 

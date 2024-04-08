@@ -476,8 +476,6 @@ struct opt_start_t {
 	opt_start_t(Delimiter delimiter) : ever_used(false), delimiter_(delimiter){ }
 };
 
-} // namespace detail_
-
 template <typename MarshalTarget, typename Delimiter>
 MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& opt_start)
 {
@@ -679,15 +677,17 @@ inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
 	marshalled_options_t mo;
 	// TODO: Can we easily determine the max number of options here?
 	constexpr bool need_delimiter_after_last_option { true };
-	process(opts, mo, marshalled_options_t::advance_gadget{}, need_delimiter_after_last_option);
+	detail_::process(opts, mo, marshalled_options_t::advance_gadget{}, need_delimiter_after_last_option);
 	return mo;
 }
+
+} // namespace detail_
 
 template <source_kind_t Kind>
 inline ::std::string render(const compilation_options_t<Kind>& opts)
 {
 	::std::ostringstream oss;
-	process(opts, oss, ' ');
+	detail_::process(opts, oss, ' ');
 	if (oss.tellp() > 0) {
 		// Remove the last, excessive, delimiter
 		oss.seekp(-1,oss.cur);
