@@ -23,8 +23,6 @@
 #include <memory>
 #include <utility>
 
-#include "../../rtc_common.hpp"
-
 #include <cuda/api.hpp>
 #include <cuda/rtc.hpp>
 

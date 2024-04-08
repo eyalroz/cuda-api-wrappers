@@ -35,8 +35,6 @@
  */
 
 #include "../../common.hpp"
-#include "../../rtc_common.hpp"
-
 
 #include <cuda/api.hpp>
 #include <cuda/rtc.hpp>
@@ -116,7 +114,7 @@ void handle_compilation_failure(
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
-	std::cerr << "Compilation options were: " << compilation_options << '\n';
+	std::cerr << "Compilation options were: " << cuda::rtc::render(compilation_options) << '\n';
 	if (not compilation_log.empty()) {
 		std::cerr
 			<< "Compilation log:\n"
