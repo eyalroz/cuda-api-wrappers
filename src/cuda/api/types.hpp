@@ -770,8 +770,6 @@ using host_thread_sync_scheduling_policy_t = context::host_thread_sync_schedulin
 
 } // namespace device
 
-using native_word_t = unsigned;
-
 namespace detail_ {
 
 template <typename T, typename U>
