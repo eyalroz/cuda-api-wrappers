@@ -26,7 +26,7 @@ namespace cuda {
 *
 * If nVIDIA comes out with 64-lanes-per-warp GPUs - we'll refactor this.
 */
-enum : native_word_t { warp_size          = 32 };
+enum { warp_size = 32 };
 
 namespace stream {
 
