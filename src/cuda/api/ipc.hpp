@@ -206,12 +206,6 @@ pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
 template <shared_handle_kind_t Kind>
 pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle);
 
-/**
- * The concrete value passed between processes, used to tell
- * the CUDA Runtime API which pool-allocated memory area is desired.
- */
-using ptr_handle_t = CUmemPoolPtrExportData;
-
 inline ptr_handle_t export_ptr(void* pool_allocated) {
 	ptr_handle_t handle;
 	auto status = cuMemPoolExportPointer(&handle, device::address(pool_allocated));
