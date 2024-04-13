@@ -509,6 +509,14 @@ using handle_t = CUmemoryPool;
 using shared_handle_kind_t = physical_allocation::shared_handle_kind_t;
 using physical_allocation::shared_handle_t;
 
+namespace ipc {
+
+/// The concrete value passed between processes, used to tell the CUDA Runtime API which
+/// pool-allocated memory area is desired.
+using ptr_handle_t = CUmemPoolPtrExportData;
+
+} // namespace ipc
+
 } // namespace pool
 #endif // CUDA_VERSION >= 11020
 
