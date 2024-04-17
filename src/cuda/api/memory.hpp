@@ -121,6 +121,7 @@ struct span_pair_t {
 	span<T> host_side, device_side;
 
 	constexpr operator ::std::pair<span<T>, span<T>>() const { return { host_side, device_side }; }
+	constexpr operator ::std::pair<region_t, region_t>() const { return { host_side, device_side }; }
 };
 
 /**
