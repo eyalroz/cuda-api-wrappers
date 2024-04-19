@@ -678,9 +678,6 @@ enum class initial_visibility_t {
 	to_supporters_of_concurrent_managed_access,
 };
 
-/// A specifier of one of the attributes of managed memory regions
-using range_attribute_t = CUmem_range_attribute;
-
 } // namespace managed
 
 #if CUDA_VERSION >= 11070

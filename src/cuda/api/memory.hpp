@@ -1988,15 +1988,73 @@ inline void zero(T* ptr)
 
 namespace managed {
 
+namespace range {
+
 namespace detail_ {
 
+using attribute_t = CUmem_range_attribute;
 using advice_t = CUmem_advise;
 
 template <typename T>
-inline T get_scalar_range_attribute(const_region_t region, range_attribute_t attribute);
+inline T get_scalar_attribute(const_region_t region, attribute_t attribute)
+{
+	uint32_t attribute_value { 0 };
+	auto result = cuMemRangeGetAttribute(
+		&attribute_value, sizeof(attribute_value), attribute, device::address(region.start()), region.size());
+	throw_if_error_lazy(result,
+		"Obtaining an attribute for a managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
+	return static_cast<T>(attribute_value);
+}
 
-inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id);
-// inline void advise(const_region_t region, advice_t attribute);
+// CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
+// not called cuMemRangeSetAttribute, and uses a different enum.
+inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
+{
+	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
+	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
+		+ cuda::detail_::ptr_as_hex(region.start()));
+}
+
+inline advice_t as_advice(attribute_t attribute, bool set)
+{
+	switch (attribute) {
+	case CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY:
+		return set ? CU_MEM_ADVISE_SET_READ_MOSTLY : CU_MEM_ADVISE_UNSET_READ_MOSTLY;
+	case CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION:
+		return set ? CU_MEM_ADVISE_SET_PREFERRED_LOCATION : CU_MEM_ADVISE_UNSET_PREFERRED_LOCATION;
+	case CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY:
+		return set ? CU_MEM_ADVISE_SET_ACCESSED_BY : CU_MEM_ADVISE_UNSET_ACCESSED_BY;
+	default:
+		throw ::std::invalid_argument(
+			"CUDA memory range attribute does not correspond to any range advice value");
+	}
+}
+
+inline void set_attribute(const_region_t region, attribute_t settable_attribute, cuda::device::id_t device_id)
+{
+	static constexpr const bool set { true };
+	advise(region, as_advice(settable_attribute, set), device_id);
+}
+
+inline void set_attribute(const_region_t region, attribute_t settable_attribute)
+{
+	static constexpr const bool set { true };
+	static constexpr const cuda::device::id_t dummy_device_id { 0 };
+	advise(region, as_advice(settable_attribute, set), dummy_device_id);
+}
+
+inline void unset_attribute(const_region_t region, attribute_t settable_attribute)
+{
+	static constexpr const bool unset { false };
+	static constexpr const cuda::device::id_t dummy_device_id { 0 };
+	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
+}
+
+} // namespace detail_
+
+} // namespace range
+
+namespace detail_ {
 
 template <typename GenericRegion>
 struct region_helper : public GenericRegion {
@@ -2004,23 +2062,21 @@ struct region_helper : public GenericRegion {
 
 	bool is_read_mostly() const
 	{
-		return get_scalar_range_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
+		return range::detail_::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	void designate_read_mostly() const
 	{
-		set_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
+		range::detail_::set_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	void undesignate_read_mostly() const
 	{
-		unset_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
+		range::detail_::unset_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY);
 	}
 
 	device_t preferred_location() const;
-
-	void set_preferred_location(device_t &device) const;
-
+	void set_preferred_location(device_t& device) const;
 	void clear_preferred_location() const;
 };
 
@@ -2039,59 +2095,7 @@ void advise_no_access_expected_by(const_region_t region, device_t& device);
 
 /// @return the devices which are marked by attribute as being the accessors of a specified memory region
 template <typename Allocator = ::std::allocator<cuda::device_t> >
-typename ::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator = Allocator() );
-
-namespace detail_ {
-
-template <typename T>
-inline T get_scalar_range_attribute(const_region_t region, range_attribute_t attribute)
-{
-	uint32_t attribute_value { 0 };
-	auto result = cuMemRangeGetAttribute(
-		&attribute_value, sizeof(attribute_value), attribute, device::address(region.start()), region.size());
-	throw_if_error_lazy(result,
-		"Obtaining an attribute for a managed memory range at " + cuda::detail_::ptr_as_hex(region.start()));
-	return static_cast<T>(attribute_value);
-}
-
-// CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
-// not called cuMemRangeSetAttribute, and uses a different enum.
-inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
-{
-	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
-	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
-	+ cuda::detail_::ptr_as_hex(region.start()));
-}
-
-inline advice_t as_advice(range_attribute_t attribute, bool set)
-{
-	switch (attribute) {
-	case CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY:
-		return set ? CU_MEM_ADVISE_SET_READ_MOSTLY : CU_MEM_ADVISE_UNSET_READ_MOSTLY;
-	case CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION:
-		return set ? CU_MEM_ADVISE_SET_PREFERRED_LOCATION : CU_MEM_ADVISE_UNSET_PREFERRED_LOCATION;
-	case CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY:
-		return set ? CU_MEM_ADVISE_SET_ACCESSED_BY : CU_MEM_ADVISE_UNSET_ACCESSED_BY;
-	default:
-		throw ::std::invalid_argument(
-			"CUDA memory range attribute does not correspond to any range advice value");
-	}
-}
-
-inline void set_range_attribute(const_region_t region, range_attribute_t settable_attribute, cuda::device::id_t device_id)
-{
-	static constexpr const bool set { true };
-	advise(region, as_advice(settable_attribute, set), device_id);
-}
-
-inline void unset_range_attribute(const_region_t region, range_attribute_t settable_attribute)
-{
-	static constexpr const bool unset { false };
-	static constexpr const cuda::device::id_t dummy_device_id { 0 };
-	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
-}
-
-} // namespace detail_
+typename ::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
 
 /// Kinds of managed memory region attachments
 enum class attachment_t : unsigned {
@@ -2100,10 +2104,9 @@ enum class attachment_t : unsigned {
 	single_stream = CU_MEM_ATTACH_SINGLE,
 	};
 
-
 namespace detail_ {
 
-inline region_t allocate_in_current_context(
+inline managed::region_t allocate_in_current_context(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
 {
@@ -2142,7 +2145,7 @@ inline void free(void* ptr)
 }
 
 /// @copydoc free(void*)
-inline void free(region_t region)
+inline void free(managed::region_t region)
 {
 	free(region.start());
 }
@@ -2160,7 +2163,7 @@ struct deleter {
 	void operator()(void* ptr) const { detail_::free(ptr); }
 };
 
-inline region_t allocate(
+inline managed::region_t allocate(
 	context::handle_t     context_handle,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices)
@@ -2236,38 +2239,6 @@ inline void free(region_t region)
 {
 	free(region.start());
 }
-
-namespace advice {
-/// Kinds of advice-type attributes for memory regions, w.r.t. devices
-enum kind_t {
-	/// The device will mostly read, and only occasionally, write, to the memory region
-	read_mostly = CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY,
-
-	/// The device is the preferred location of the range
-	preferred_location = CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION,
-
-	/// Data in the memory range will be accessed by the device, so prevent page faults as much as possible
-	accessor = CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY,
-
-	// Note: CU_MEM_RANGE_ATTRIBUTE_LAST_PREFETCH_LOCATION is never set
-};
-
-namespace detail_ {
-
-inline void set(const_region_t region, kind_t advice, cuda::device::id_t device_id)
-{
-	auto result = cuMemAdvise(device::address(region.start()), region.size(),
-		static_cast<managed::detail_::advice_t>(advice), device_id);
-	throw_if_error_lazy(result, "Setting advice on a (managed) memory region at"
-		+ cuda::detail_::ptr_as_hex(region.start()) + " w.r.t. " + cuda::device::detail_::identify(device_id));
-}
-
-} // namespace detail_
-
-/// Advise the CUDA driver about aspects of the use of a region of memory w.r.t. a particular device
-void set(const_region_t region, kind_t advice, const device_t& device);
-
-} // namespace advice
 
 namespace async {
 

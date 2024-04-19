@@ -198,36 +198,36 @@ namespace detail_ {
 template <typename GenericRegion>
 inline device_t region_helper<GenericRegion>::preferred_location() const
 {
-	auto device_id = get_scalar_range_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	auto device_id = range::detail_::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 	return cuda::device::get(device_id);
 }
 
 template <typename GenericRegion>
 inline void region_helper<GenericRegion>::set_preferred_location(device_t& device) const
 {
-	set_range_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
+	range::detail_::set_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
 }
 
 template <typename GenericRange>
 inline void region_helper<GenericRange>::clear_preferred_location() const
 {
-	unset_range_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	range::detail_::unset_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 }
 
 } // namespace detail_
 
 inline void advise_expected_access_by(const_region_t region, device_t& device)
 {
-	detail_::advise(region, CU_MEM_ADVISE_SET_ACCESSED_BY, device.id());
+	range::detail_::advise(region, CU_MEM_ADVISE_SET_ACCESSED_BY, device.id());
 }
 
 inline void advise_no_access_expected_by(const_region_t region, device_t& device)
 {
-	detail_::advise(region, CU_MEM_ADVISE_UNSET_ACCESSED_BY, device.id());
+	range::detail_::advise(region, CU_MEM_ADVISE_UNSET_ACCESSED_BY, device.id());
 }
 
 template <typename Allocator>
-::std::vector<device_t, Allocator> accessors(const_region_t region, const Allocator& allocator)
+::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator)
 {
 	auto num_devices = cuda::device::count();
 	::std::vector<device_t, Allocator> devices(num_devices, allocator);
