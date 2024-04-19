@@ -1889,7 +1889,7 @@ struct allocator {
 };
 
 struct deleter {
-	void operator()(void* ptr) const { memory::device::free(ptr); }
+	void operator()(void* ptr) const { detail_::free(ptr); }
 };
 
 inline region_t allocate(
