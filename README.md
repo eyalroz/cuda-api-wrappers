@@ -32,15 +32,15 @@ In contrast to the above, this library provides:
 - Methods and **functions return what they produce**, since they don't need to return a status code. No more having to pre-allocate result variables and pass pointers to them as out-parameters. Better compositionality!
 - Judicious **namespacing** (and some internal namespace-like classes) for clarity and for semantic grouping of related functionality.
 - There are **proxy/wrapper objects** for devices, streams, events, kernels, contexts, modules, link processes, timed intervals and so on - all using the [CADRe/RAII](http://en.cppreference.com/w/cpp/language/raii) convention; you don't have to remember to free or release your resources yourself.
-- You can  **forget about numeric IDs andhandles**; the proxy classes will fit everywhere. Of course, you can still get those numeric values for cooperation with other CUDA-related software.
+- You can **forget about numeric IDs and handles**; the proxy classes will fit everywhere. Of course, you can still get those numeric values for cooperation with other CUDA-related software.
 - Various [Plain Old Data](http://en.cppreference.com/w/cpp/concept/PODType) structs adorned with **convenience methods and operators** (e.g. device properties, block and grid dimensions).
 - Aims for **clarity and straightforwardness** in naming and semantics, so that you don't need to refer to the official documentation to understand what each class and function do.
 - Aims for conformance with the [C++ core guidelines](https://github.com/isocpp/CppCoreGuidelines).
+- **Header-only**: No need to compile anything special to use the library.
 - Thin and **lightweight**:
-    - No work done behind your back, no caches or indices or any such thing - except in corner cases for ensuring Runtime-API and Driver-API compatibility. The sole exception is lazy creation of devices' primary context.
+    - No work done behind your back, no caches or indices or any such thing - with almost no exceptions. (Some do exist, though: Ensuring Runtime-API and Driver-API compatibility sometimes requires it; and there is also the matter of creating devices' primary context).
     - No costly inheritance structure, vtables, virtual methods and so on, for almost all wrappers; they vanishes almost entirely on compilation.
     - All "Runtime-API level" actions are implemented so as not to disrupt "Driver-API-level" work.
-- **Header-only**: No need to compile anything.
 - Permissive free software license: [3-BSD](https://github.com/eyalroz/cuda-api-wrappers/blob/master/LICENSE).
 
 There is one noteworthy caveat: The wrapper API calls cannot make assumptions about previous or later code of yours, which means some of them require more calls to obtain the current context handle or push a(n existing) context, then pop it. While these calls are cheap, they are still non-trivial and can't be optimized away.
