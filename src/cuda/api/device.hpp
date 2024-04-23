@@ -133,10 +133,12 @@ inline ::std::string get_name(id_t id)
  * to properties of the device is a const-respecting operation on this class.
  */
 class device_t {
+protected: // types
+	using flags_type = device::flags_t;
+
 public: // types
 	using properties_t = device::properties_t;
 	using attribute_value_t = device::attribute_value_t;
-	using flags_type = device::flags_t;
 
 	/**
 	 *
@@ -213,18 +215,6 @@ protected:
 		return primary_context_handle_;
 	}
 
-
-public:
-	/**
-	 * Produce a proxy for the device's primary context - the one used by runtime API calls.
-	 *
-	 * @param scoped When true, the primary proxy object returned will not perform its
-	 * own reference accounting, and will assume the primary context is active while
-	 * this device object exists. When false, the returned primary context proxy object
-	 * _will_ take care of its own reference count unit, and can outlive this object.
-	 */
-	device::primary_context_t primary_context(bool hold_pc_refcount_unit = false) const;
-
 	void set_flags(flags_type new_flags) const
 	{
 		new_flags &= ~CU_CTX_MAP_HOST;
@@ -236,6 +226,22 @@ public:
 		auto status = cuDevicePrimaryCtxSetFlags(id(), new_flags);
 		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
 	}
+
+	context::flags_t flags() const
+	{
+		return device::primary_context::detail_::flags(id_);
+	}
+
+public:
+	/**
+	 * Produce a proxy for the device's primary context - the one used by runtime API calls.
+	 *
+	 * @param scoped When true, the primary proxy object returned will not perform its
+	 * own reference accounting, and will assume the primary context is active while
+	 * this device object exists. When false, the returned primary context proxy object
+	 * _will_ take care of its own reference count unit, and can outlive this object.
+	 */
+	device::primary_context_t primary_context(bool hold_pc_refcount_unit = false) const;
 
 #if CUDA_VERSION >= 11020
 	memory::pool_t default_memory_pool() const;
@@ -588,11 +594,6 @@ public:
 	}
 
 public:
-	context::flags_t flags() const
-	{
-		return device::primary_context::detail_::flags(id_);
-	}
-
 	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
 	{
 		return context::host_thread_sync_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);

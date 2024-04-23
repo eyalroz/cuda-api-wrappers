@@ -237,9 +237,11 @@ inline void synchronize(const context_t& context);
  * to properties of the context is a const-respecting operation on this class.
  */
 class context_t {
-public: // types
+protected: // types
 	/// A container type for the features of a context configurable at creation time
 	using flags_type = context::flags_t;
+
+public: // types
 
 	static_assert(
 		::std::is_same<::std::underlying_type<CUsharedconfig>::type, ::std::underlying_type<cudaSharedMemConfig>::type>::value,
