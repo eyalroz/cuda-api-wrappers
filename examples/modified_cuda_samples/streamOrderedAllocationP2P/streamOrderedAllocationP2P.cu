@@ -171,8 +171,7 @@ int memPoolP2PCopy()
 
 	auto stream2 = p2pDevices.second.create_stream(cuda::stream::async);
 	auto output_on_device = cuda::span<int>(stream2.enqueue.allocate(nelem * sizeof(int)));
-	memPool.set_access_permissions(p2pDevices.second,
-		cuda::memory::read_enabled, cuda::memory::write_enabled);
+	memPool.set_permissions(p2pDevices.second, cuda::memory::permissions::read_and_write());
 
 	std::cout << "> copyP2PAndScale kernel running ...\n";
 	auto launch_config = cuda::launch_config_builder()

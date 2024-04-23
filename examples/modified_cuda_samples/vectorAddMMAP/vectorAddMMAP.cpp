@@ -167,14 +167,13 @@ setup_virtual_memory(
 	);
 
 #ifndef _MSC_VER
-	virtual_mem::set_access_mode(reserved_range.region(), mapping_devices,
-		cuda::memory::access_permissions_t::read_and_write());
+	virtual_mem::set_permissions(reserved_range.region(), mapping_devices, cuda::memory::permissions::read_and_write());
 #else
 	// MSVC, at least as of 2019, can't handle template-template parameters with variadcs properly;
 	// so let's go manual:
 	for(const auto& mapping_device : mapping_devices) {
-		virtual_mem::set_access_mode(reserved_range.region(), mapping_device,
-			cuda::memory::access_permissions_t::read_and_write());
+		virtual_mem::set_permissions(reserved_range.region(), mapping_device,
+			cuda::memory::permissions::read_and_write());
 	}
 #endif
 

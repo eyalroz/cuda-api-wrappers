@@ -57,8 +57,7 @@ std::vector<memory_mapping_t> import_and_map_allocations(
 		});
 
 	// Retain peer access and map all chunks to mapDevice
-	virtual_mem::set_access_mode(mappings_region, device,
-		cuda::memory::access_permissions_t::read_and_write());
+	virtual_mem::set_permissions(mappings_region, device, cuda::memory::permissions::read_and_write());
 	return mappings;
 }
 

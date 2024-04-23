@@ -146,9 +146,9 @@ static void childProcess(int index_in_shared_devices)
 		auto shared_pool_handle = shared_pool_handles[i];
 		auto pool_device = cuda::device::get(shm->devices[i]);
 		auto pool = cuda::memory::pool::ipc::import<shared_handle_kind>(pool_device, shared_pool_handle);
-		auto permissions = pool.access_permissions(device);
+		auto permissions = pool.permissions(device);
 		if (not (permissions.read and permissions.write)) {
-			pool.set_access_permissions(device, cuda::memory::read_enabled, cuda::memory::write_enabled);
+			pool.set_permissions(device, cuda::memory::permissions::read_and_write());
 		}
 
 		// Import the allocations from each memory pool

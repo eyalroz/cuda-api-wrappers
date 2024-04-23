@@ -477,13 +477,6 @@ constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs
 namespace memory {
 
 #if CUDA_VERSION >= 10020
-/// Named boolean constants used in memory read and write access control
-enum : bool {
-	read_enabled = true,
-	read_disabled = false,
-	write_enabled = true,
-	write_disabled = false
-};
 
 /**
  * An access permission specification structure for physical allocations
@@ -492,11 +485,11 @@ enum : bool {
  * @note defined for each of use instead of the raw CUDA driver's @ref CUmemAccess_flags
  * type.
  */
-struct access_permissions_t {
-	bool read : 1;
-	bool write : 1;
+struct permissions_t {
+	bool read;
+	bool write;
 
-	/// This allows passing this access permissions structure to CUDA driver memory
+	/// This allows passing this access get_permissions structure to CUDA driver memory
 	/// access control API functions
 	operator CUmemAccess_flags() const noexcept
 	{
@@ -505,21 +498,29 @@ struct access_permissions_t {
 			   CU_MEM_ACCESS_FLAGS_PROT_NONE;
 	}
 
-	/// A named constructor idiom for access permissions
-	static access_permissions_t from_access_flags(CUmemAccess_flags access_flags)
-	{
-		access_permissions_t result;
-		result.read = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READ);
-		result.write = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
-		return result;
-	}
-
-	/// A named constructor idiom for allowing both reading and writing
-	static constexpr access_permissions_t read_and_write()
-	{
-		return access_permissions_t{ read_enabled, write_enabled };
-	}
 };
+
+namespace permissions {
+
+constexpr inline permissions_t none()           { return permissions_t{ false, false }; }
+constexpr inline permissions_t read_only()      { return permissions_t{ true,  false }; }
+constexpr inline permissions_t write_only()     { return permissions_t{ false, true  }; }
+constexpr inline permissions_t read_and_write() { return permissions_t{ true,  true  }; }
+
+namespace detail_ {
+
+/// A named constructor idiom for access get_permissions
+inline permissions_t from_flags(CUmemAccess_flags access_flags)
+{
+	bool read = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READ);
+	bool write = (access_flags & CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+	return permissions_t{read, write};
+}
+
+} // namespace detail_
+
+} // namespace permissions
+
 
 namespace physical_allocation {
 

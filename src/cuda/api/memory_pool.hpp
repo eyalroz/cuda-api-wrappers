@@ -159,7 +159,7 @@ pool_t wrap(cuda::device::id_t device_id, pool::handle_t handle, bool owning) no
 
 namespace detail_ {
 
-inline access_permissions_t access_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle)
+inline permissions_t get_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle)
 {
 	CUmemAccess_flags access_flags;
 	auto mem_location = pool::detail_::create_mem_location(device_id);
@@ -167,13 +167,13 @@ inline access_permissions_t access_permissions(cuda::device::id_t device_id, poo
 	throw_if_error_lazy(status,
 		"Determining access information for " + cuda::device::detail_::identify(device_id)
 		+ " to " + pool::detail_::identify(pool_handle));
-	return access_permissions_t::from_access_flags(access_flags);
+	return permissions::detail_::from_flags(access_flags);
 }
 
-inline void set_access_permissions(span<cuda::device::id_t> device_ids, pool::handle_t pool_handle, access_permissions_t permissions)
+inline void set_permissions(span<cuda::device::id_t> device_ids, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
-		throw ::std::invalid_argument("Memory pool access permissions cannot be write-only");
+		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
 	}
 
 	CUmemAccess_flags flags = permissions.read ?
@@ -192,14 +192,14 @@ inline void set_access_permissions(span<cuda::device::id_t> device_ids, pool::ha
 
 	auto status = cuMemPoolSetAccess(pool_handle, descriptors.data(), descriptors.size());
 	throw_if_error_lazy(status,
-		"Setting access permissions for " + ::std::to_string(descriptors.size())
+		"Setting access get_permissions for " + ::std::to_string(descriptors.size())
 		+ " devices to " + pool::detail_::identify(pool_handle));
 }
 
-inline void set_access_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle, access_permissions_t permissions)
+inline void set_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
-		throw ::std::invalid_argument("Memory pool access permissions cannot be write-only");
+		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
 	}
 
 	CUmemAccessDesc desc;
@@ -212,16 +212,16 @@ inline void set_access_permissions(cuda::device::id_t device_id, pool::handle_t 
 	desc.location = pool::detail_::create_mem_location(device_id);
 	auto status = cuMemPoolSetAccess(pool_handle, &desc, 1);
 	throw_if_error_lazy(status,
-		"Setting access permissions for " + cuda::device::detail_::identify(device_id)
+		"Setting access get_permissions for " + cuda::device::detail_::identify(device_id)
 		+ " to " + pool::detail_::identify(pool_handle));
 }
 
 } // namespace detail_
 
-access_permissions_t access_permissions(const cuda::device_t& device, const pool_t& pool);
-void set_access_permissions(const cuda::device_t& device, const pool_t& pool, access_permissions_t permissions);
+permissions_t get_permissions(const cuda::device_t& device, const pool_t& pool);
+void set_permissions(const cuda::device_t& device, const pool_t& pool, permissions_t permissions);
 template <typename DeviceRange>
-void set_access_permissions(DeviceRange devices, const pool_t& pool_handle, access_permissions_t permissions);
+void get_permissions(DeviceRange devices, const pool_t& pool_handle, permissions_t permissions);
 
 namespace pool {
 
@@ -302,48 +302,38 @@ public:
 		set_attribute<CU_MEMPOOL_ATTR_RELEASE_THRESHOLD>(threshold);
 	}
 
-	access_permissions_t access_permissions(const cuda::device_t& device)
+	permissions_t permissions(const cuda::device_t& device)
 	{
-		return memory::access_permissions(device, *this);
+		return memory::get_permissions(device, *this);
 	}
 
 	/**
-	 * Set read and write permissions from a device to the allocations from
+	 * Set read and write get_permissions from a device to the allocations from
 	 * this pool
 	 *
-	 * @param device the device the kernels running on which are governed by these permissions
-	 * @param permissions new read and write permissions to use
+	 * @param device the device the kernels running on which are governed by these get_permissions
+	 * @param permissions new read and write get_permissions to use
 	 *
 	 * @note This affects both future _and past_ allocations from this pool.
 	 */
 	///@{
 	/**
 	 * @param device the device the kernels running on which are governed by this new setting
-	 * @param permissions new read and write permissions to use
+	 * @param permissions new read and write get_permissions to use
 	 */
-	void set_access_permissions(const cuda::device_t& device, access_permissions_t permissions)
+	void set_permissions(const cuda::device_t& device, permissions_t permissions)
 	{
-		return memory::set_access_permissions(device, *this, permissions);
-	}
-
-	/**
-	 * @param device the device the kernels running on which are governed by this new setting
-	 * @param read_permission true if kernels are allowed to read from memory allocated by this pool
-	 * @param write_permission true if kernels are allowed to write to memory allocated by this pool
-	 */
-	void set_access_permissions(const cuda::device_t& device, bool read_permission, bool write_permission)
-	{
-		set_access_permissions(device, access_permissions_t{read_permission, write_permission});
+		return memory::set_permissions(device, *this, permissions);
 	}
 
 	/**
 	 * @param device the devices the kernels running on which are governed by this new setting
-	 * @param permissions new read and write permissions to use
+	 * @param permissions new read and write get_permissions to use
 	 */
 	template <typename DeviceRange>
-	void set_access_permissions(DeviceRange devices, access_permissions_t permissions)
+	void set_permissions(DeviceRange devices, permissions_t permissions)
 	{
-		return memory::set_access_permissions(devices, *this, permissions);
+		return memory::set_permissions(devices, *this, permissions);
 	}
 	///@}
 

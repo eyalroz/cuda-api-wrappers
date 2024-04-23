@@ -130,21 +130,21 @@ void copy_through_pool_allocation(
 	}
 }
 
-cuda::memory::access_permissions_t
+cuda::memory::permissions_t
 try_forbidding_same_device_access(int device_id, cuda::memory::pool_t &pool)
 {
-	cuda::memory::access_permissions_t permissions;
+	cuda::memory::permissions_t permissions;
 	permissions.read = true;
 	permissions.write = false;
 	bool got_expected_exception = false;
 	try {
-		pool.set_access_permissions(cuda::device::get(device_id), permissions);
+		pool.set_permissions(cuda::device::get(device_id), permissions);
 	}
 	catch(std::invalid_argument&) {
 		got_expected_exception = true;
 	}
 	if (not got_expected_exception) {
-		die_("Unexpected success in setting a device's access permissions to a pool using"
+		die_("Unexpected success in setting a device's access get_permissions to a pool using"
 		"that device; it should have failed");
 	}
 	return permissions;
@@ -155,12 +155,12 @@ void try_writing_to_pool_allocation_without_permission(
 	const cuda::stream_t&                stream,
 	cuda::memory::pool_t&                pool,
 	cuda::memory::region_t&              pool_allocated_region,
-	cuda::memory::access_permissions_t&  permissions,
+	cuda::memory::permissions_t&  permissions,
 	cuda::device_t&                      peer)
 {
 	permissions.read = false;
 	permissions.write = false;
-	pool.set_access_permissions(peer, permissions);
+	pool.set_permissions(peer, permissions);
 	std::string str{"hello world"};
 	stream.synchronize();
 	auto stream_on_peer = peer.create_stream(cuda::stream::async);
@@ -184,12 +184,12 @@ void try_writing_to_pool_allocation_without_permission(
 void try_reading_from_pool_allocation_without_permission(
 	cuda::memory::pool_t&                pool,
 	cuda::memory::region_t&              pool_allocated_region,
-	cuda::memory::access_permissions_t&  permissions,
+	cuda::memory::permissions_t&  permissions,
 	cuda::device_t&                      peer)
 {
 	permissions.read = false;
 	permissions.write = false;
-	pool.set_access_permissions(peer, permissions);
+	pool.set_permissions(peer, permissions);
 	auto host_buffer_uptr = std::unique_ptr<char[]>(new char[region_size]); // replace this with make_unique in C++14
 	auto host_buffer = cuda::span<char>{host_buffer_uptr.get(), region_size};
 	std::fill_n(host_buffer.begin(), host_buffer.size()-1, 'a');
@@ -223,7 +223,7 @@ int main(int argc, char** argv)
 	play_with_attributes(pool, stream);
 	copy_through_pool_allocation(stream, pool_allocated_region);
 
-	cuda::memory::access_permissions_t permissions = try_forbidding_same_device_access(device_id, pool);
+	cuda::memory::permissions_t permissions = try_forbidding_same_device_access(device_id, pool);
 
 	auto maybe_peer_id = maybe_get_p2p_peer_id(device_id);
 	if (maybe_peer_id) {

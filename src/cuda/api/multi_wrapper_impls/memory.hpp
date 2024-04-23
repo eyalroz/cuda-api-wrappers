@@ -512,29 +512,28 @@ inline pool::ipc::imported_ptr_t pool_t::import(const memory::pool::ipc::ptr_han
 	return pool::ipc::import_ptr(*this, exported_handle);
 }
 
-inline access_permissions_t access_permissions(const cuda::device_t& device, const pool_t& pool)
+inline permissions_t get_permissions(const cuda::device_t& device, const pool_t& pool)
 {
-	return cuda::memory::detail_::access_permissions(device.id(), pool.handle());
+	return cuda::memory::detail_::get_permissions(device.id(), pool.handle());
 }
 
-inline void set_access_permissions(const cuda::device_t& device, const pool_t& pool, access_permissions_t permissions)
+inline void set_permissions(const cuda::device_t& device, const pool_t& pool, permissions_t permissions)
 {
 	if (pool.device_id() == device.id()) {
-		throw ::std::invalid_argument("Cannot change the access permissions to a pool of the device "
+		throw ::std::invalid_argument("Cannot change the access get_permissions to a pool of the device "
 			"on which the pool's memory is allocated (" + cuda::device::detail_::identify(device.id()) + ')');
 	}
-	cuda::memory::detail_::set_access_permissions(device.id(), pool.handle(), permissions);
+	cuda::memory::detail_::set_permissions(device.id(), pool.handle(), permissions);
 }
 
 template <typename DeviceRange>
-void set_access_permissions(DeviceRange devices, const pool_t& pool, access_permissions_t permissions)
+void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t permissions)
 {
 	// Not depending on unique_span here :-(
 	auto device_ids = ::std::unique_ptr<cuda::device::id_t[]>(new cuda::device::id_t[devices.size()]);
 	auto device_to_id = [](device_t const& device){ return device.id(); };
 	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.get(), device_to_id);
-	cuda::memory::detail_::set_access_permissions(
-		{ device_ids.get(), devices.size() }, pool.handle(), permissions);
+	cuda::memory::detail_::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
 }
 #endif // #if CUDA_VERSION >= 11020
 

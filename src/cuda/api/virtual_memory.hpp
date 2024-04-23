@@ -335,7 +335,7 @@ inline ::std::string identify(region_t address_range) {
 
 namespace detail_ {
 
-inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::device::id_t device_id)
+inline permissions_t get_permissions(region_t fully_mapped_region, cuda::device::id_t device_id)
 {
 	CUmemLocation_st location { CU_MEM_LOCATION_TYPE_DEVICE, device_id };
 	unsigned long long flags;
@@ -344,7 +344,7 @@ inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::
 		+ cuda::device::detail_::identify(device_id)
 		+ " to the virtual memory mapping to the range of size "
 		+ ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
-	return access_permissions_t::from_access_flags(static_cast<CUmemAccess_flags>(flags)); // Does this actually work?
+	return permissions::detail_::from_flags(static_cast<CUmemAccess_flags>(flags)); // Does this actually work?
 }
 
 } // namespace detail_
@@ -355,13 +355,13 @@ inline access_permissions_t get_access_mode(region_t fully_mapped_region, cuda::
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-access_permissions_t get_access_mode(region_t fully_mapped_region, const device_t& device);
+permissions_t get_access_mode(region_t fully_mapped_region, const device_t& device);
 
 /**
  * Determines what kind of access a device has to a the region of memory mapped to a single
  * physical allocation.
  */
-access_permissions_t get_access_mode(mapping_t mapping, const device_t& device);
+permissions_t get_access_mode(mapping_t mapping, const device_t& device);
 
 /**
  * Set the access mode from a single device to a mapped region in the (universal) address space
@@ -369,13 +369,13 @@ access_permissions_t get_access_mode(mapping_t mapping, const device_t& device);
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-void set_access_mode(region_t fully_mapped_region, const device_t& device, access_permissions_t access_mode);
+void set_permissions(region_t fully_mapped_region, const device_t& device, permissions_t access_mode);
 
 /**
  * Set the access mode from a single device to the region of memory mapped to a single
  * physical allocation.
  */
-void set_access_mode(mapping_t mapping, const device_t& device, access_permissions_t access_mode);
+void set_permissions(mapping_t mapping, const device_t& device, permissions_t access_mode);
 ///@}
 
 /**
@@ -386,16 +386,16 @@ void set_access_mode(mapping_t mapping, const device_t& device, access_permissio
  */
 ///@{
 template <template <typename...> class ContiguousContainer>
-void set_access_mode(
+void set_permissions(
 	region_t fully_mapped_region,
 	const ContiguousContainer<device_t>& devices,
-	access_permissions_t access_mode);
+	permissions_t access_mode);
 
 template <template <typename...> class ContiguousContainer>
-void set_access_mode(
+void set_permissions(
 	region_t fully_mapped_region,
 	ContiguousContainer<device_t>&& devices,
-	access_permissions_t access_mode);
+	permissions_t access_mode);
 ///@}
 
 /**
@@ -404,16 +404,16 @@ void set_access_mode(
  */
 ///@{
 template <template <typename...> class ContiguousContainer>
-inline void set_access_mode(
+inline void set_permissions(
 	mapping_t mapping,
 	const ContiguousContainer<device_t>& devices,
-	access_permissions_t access_mode);
+	permissions_t access_mode);
 
 template <template <typename...> class ContiguousContainer>
-inline void set_access_mode(
+inline void set_permissions(
 	mapping_t mapping,
 	ContiguousContainer<device_t>&& devices,
-	access_permissions_t access_mode);
+	permissions_t access_mode);
 ///@}
 
 
@@ -437,18 +437,18 @@ public: // constructors & destructors
 	region_t address_range() const noexcept { return address_range_; }
 	bool is_owning() const noexcept { return owning_; }
 
-	access_permissions_t get_access_mode(const device_t& device) const;
-	void set_access_mode(const device_t& device, access_permissions_t access_mode) const;
+	permissions_t get_permissions(const device_t& device) const;
+	void set_permissions(const device_t& device, permissions_t access_mode) const;
 
 	template <template <typename...> class ContiguousContainer>
-	inline void set_access_mode(
+	inline void set_permissions(
 		const ContiguousContainer<device_t>& devices,
-		access_permissions_t access_mode) const;
+		permissions_t access_mode) const;
 
 	template <template <typename...> class ContiguousContainer>
-	inline void set_access_mode(
+	inline void set_permissions(
 		ContiguousContainer<device_t>&& devices,
-		access_permissions_t access_mode) const;
+		permissions_t access_mode) const;
 
 	~mapping_t() noexcept(false)
 	{
