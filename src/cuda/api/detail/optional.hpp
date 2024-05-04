@@ -14,6 +14,7 @@
 #include <any>
 namespace cuda {
 using ::std::optional;
+using ::std::nullopt_t;
 using ::std::nullopt;
 } // namespace cuda
 #elif __cplusplus >= 201402L
@@ -22,6 +23,7 @@ using ::std::nullopt;
 namespace cuda {
 using ::std::experimental::optional;
 using ::std::experimental::nullopt;
+using ::std::experimental::nullopt_t;
 } // namespace cuda
 #else
 
@@ -101,6 +103,12 @@ struct poor_mans_optional {
 
 	T value() const
 	{ return maybe_value.value; }
+
+	template<typename U>
+	T value_or(U&& fallback_value)
+	{
+		has_value_ ? maybe_value.value : static_cast<T>(::std::forward<U>(fallback_value));
+	}
 
 	T& operator*() noexcept { return maybe_value.value; }
 	const T& operator*() const noexcept { return maybe_value.value; }
