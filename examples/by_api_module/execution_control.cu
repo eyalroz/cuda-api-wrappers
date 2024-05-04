@@ -70,9 +70,10 @@ int main(int argc, char **argv)
 	kernel.set_cache_preference(
 		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory);
 
+#if CUDA_VERSION < 12030
 	kernel.set_shared_memory_bank_size(
 		cuda::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
-
+#endif // CUDA_VERSION < 12030
 
 	// ------------------
 	//  Kernel launching

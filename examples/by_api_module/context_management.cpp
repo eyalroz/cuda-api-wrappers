@@ -47,11 +47,13 @@ void test_context(
 	assert_(cache_preference == new_cache_preference);
 	std::cout << "The cache preference for context " << context << " has now been set to: " << new_cache_preference << ".\n";
 
+#if CUDA_VERSION < 12030
 	auto shared_mem_bank_size = context.shared_memory_bank_size();
 	shared_mem_bank_size =
 		(shared_mem_bank_size == CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE) ?
 			CU_SHARED_MEM_CONFIG_EIGHT_BYTE_BANK_SIZE : CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE;
 	context.set_shared_memory_bank_size(shared_mem_bank_size);
+#endif // CUDA_VERSION < 12030
 	auto stream_priority_range = context.stream_priority_range();
 	if (stream_priority_range.is_trivial()) {
 		std::cout << "Context " << context <<  " does not support stream priorities. "

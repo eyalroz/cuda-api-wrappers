@@ -489,6 +489,7 @@ public:
 		return primary_context().cache_preference();
 	}
 
+#if CUDA_VERSION < 12030
 	/**
 	 * @brief Sets the shared memory bank size, described in
 	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
@@ -510,6 +511,7 @@ public:
 	{
 		return primary_context().shared_memory_bank_size();
 	}
+#endif // CUDA_VERSION < 12030
 
 	// For some reason, there is no cudaFuncGetCacheConfig. Weird.
 	//

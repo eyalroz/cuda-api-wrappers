@@ -162,6 +162,7 @@ inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
 	return static_cast<multiprocessor_cache_preference_t>(preference);
 }
 
+#if CUDA_VERSION < 12030
 inline shared_memory_bank_size_t shared_memory_bank_size(handle_t handle)
 {
 	CUsharedconfig bank_size;
@@ -169,12 +170,16 @@ inline shared_memory_bank_size_t shared_memory_bank_size(handle_t handle)
 	throw_if_error_lazy(status, "Obtaining the multiprocessor shared memory bank size for " + identify(handle));
 	return static_cast<shared_memory_bank_size_t>(bank_size);
 }
+#endif // CUDA_VERSION < 12030
 
+#if CUDA_VERSION < 12030
 inline void set_shared_memory_bank_size(handle_t handle, shared_memory_bank_size_t bank_size)
 {
 	auto status = cuCtxSetSharedMemConfig(static_cast<CUsharedconfig>(bank_size));
 	throw_if_error_lazy(status, "Setting the multiprocessor shared memory bank size for " + identify(handle));
 }
+#endif // CUDA_VERSION < 12030
+
 
 inline void synchronize(context::handle_t handle)
 {
@@ -435,6 +440,7 @@ public: // other non-mutator methods
 	}
 #endif
 
+#if CUDA_VERSION < 12030
 	/**
 	 * @brief Returns the shared memory bank size, as described in
 	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
@@ -446,6 +452,7 @@ public: // other non-mutator methods
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		return context::detail_::shared_memory_bank_size(handle_);
 	}
+#endif // CUDA_VERSION < 12030
 
 	/// @return True if this context is the current CUDA context for this thread (i.e. the
 	/// top item in the context stack)
@@ -565,6 +572,7 @@ public: // Methods which don't mutate the context, but affect the device itself
 
 public: // other methods which don't mutate this class as a reference, but do mutate the context
 
+#if CUDA_VERSION < 12030
 	/**
 	 * @brief Sets the shared memory bank size, described in
  	 * <a href="https://devblogs.nvidia.com/parallelforall/using-shared-memory-cuda-cc/">this Parallel-for-all blog entry</a>
@@ -576,6 +584,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 		CAW_SET_SCOPE_CONTEXT(handle_);
 		context::detail_::set_shared_memory_bank_size(handle_, bank_size);
 	}
+#endif // CUDA_VERSION < 12030
 
 	/**
 	 * Controls the balance between L1 space and shared memory space for

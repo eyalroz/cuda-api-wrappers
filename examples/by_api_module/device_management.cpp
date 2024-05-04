@@ -122,7 +122,7 @@ void shared_memory()
 		"default", "4 bytes", "8 bytes"
 	};
 
-
+#if CUDA_VERSION < 12030
 	auto reported_shared_mem_bank_size = device.shared_memory_bank_size();
 	std::cout << "The reported shared memory bank size for device " << device.id() << " is: "
 			  << bank_size_names[reported_shared_mem_bank_size] << '.' << std::endl;
@@ -140,6 +140,8 @@ void shared_memory()
 //				  << ", the reported shared memory bank size for device " << device.id() << " is: "
 //				  << reported_shared_mem_bank_size << '.' << std::endl;
 //	}
+
+#endif // CUDA_VERSION < 12030
 }
 
 void stream_priority_range()

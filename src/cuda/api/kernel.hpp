@@ -335,6 +335,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 			"CUDA device function");
 	}
 
+#if CUDA_VERSION < 12030
 	/**
 	 * @brief Sets a device function's preference of shared memory bank size
 	 *
@@ -348,6 +349,8 @@ public: // methods mutating the kernel-in-context, but not this reference object
 		auto result = cuFuncSetSharedMemConfig(handle(), static_cast<CUsharedconfig>(config) );
 		throw_if_error_lazy(result, "Failed setting the shared memory bank size");
 	}
+#endif // CUDA_VERSION < 12030
+
 
 protected: // ctors & dtor
 	kernel_t(
