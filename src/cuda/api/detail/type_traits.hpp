@@ -27,6 +27,18 @@
 #endif
 #endif
 
+#ifndef CAW_MAYBE_UNUSED
+#if __cplusplus >= 201703L
+#define CAW_MAYBE_UNUSED [[maybe_unused]]
+#else
+#if __GNUC__
+#define CAW_MAYBE_UNUSED __attribute__((unused))
+#else
+#define CAW_MAYBE_UNUSED
+#endif // __GNUC__
+#endif // __cplusplus >= 201703L
+#endif // ifndef CAW_MAYBE_UNUSED
+
 #ifndef NOEXCEPT_IF_NDEBUG
 #ifdef NDEBUG
 #define NOEXCEPT_IF_NDEBUG noexcept(true)
