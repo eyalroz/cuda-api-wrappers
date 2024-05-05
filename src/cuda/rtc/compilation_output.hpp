@@ -154,7 +154,8 @@ template <source_kind_t Kind, bool FailOnMissingCubin = true>
 inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
 {
 	auto size = get_cubin_size_or_zero<Kind>(program_handle, program_name);
-	if (FailOnMissingCubin and size == 0) {
+	const bool have_failed = (FailOnMissingCubin and size == 0);
+	if (have_failed) {
 		throw  (Kind == cuda_cpp) ?
 			::std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
 				+ identify<Kind>(program_handle, program_name)):

@@ -54,7 +54,7 @@ int main(int, char **)
 		.overall_size(N)
 		.block_size(256)
 		.build();
-	device.launch(sequence_gpu, launch_config, d_span.data(), d_span.size());
+	device.launch(sequence_gpu, launch_config, d_span.data(), (int) d_span.size());
 
 	cuda::outstanding_error::ensure_none();
 	device.synchronize();
