@@ -2292,7 +2292,7 @@ namespace mapped {
 template <typename T>
 inline T* device_side_pointer_for(T* host_memory_ptr)
 {
-	auto unconsted_host_mem_ptr = const_cast<typename std::remove_const<T>::type *>(host_memory_ptr);
+	auto unconsted_host_mem_ptr = const_cast<typename ::std::remove_const<T>::type *>(host_memory_ptr);
 	device::address_t device_side_ptr;
 	auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
 	auto status = cuMemHostGetDevicePointer(

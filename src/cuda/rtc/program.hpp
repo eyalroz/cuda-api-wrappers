@@ -732,7 +732,7 @@ public:
 	}
 
 public: // constructors and destructor
-	program_t(::std::string name) : parent(std::move(name)) {}
+	program_t(::std::string name) : parent(::std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
