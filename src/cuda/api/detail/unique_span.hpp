@@ -55,7 +55,7 @@ public: // exposing span data members
 
 public: // constructors and destructor
 
-	constexpr unique_span() noexcept = delete;
+	constexpr unique_span() noexcept = default;
 
 	/// Take ownership of an existing region or span
 	///
