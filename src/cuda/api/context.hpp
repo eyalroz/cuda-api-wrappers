@@ -404,6 +404,14 @@ public: // data member non-mutator getters
 
 public: // other non-mutator methods
 
+	stream_t default_stream() const;
+
+	template <typename Kernel, typename ... KernelParameters>
+	void launch(
+		Kernel                  kernel,
+		launch_configuration_t  launch_configuration,
+		KernelParameters...     parameters) const;
+
 	/**
 	 * Determines the balance between L1 space and shared memory space set
 	 * for kernels executing within this context.
