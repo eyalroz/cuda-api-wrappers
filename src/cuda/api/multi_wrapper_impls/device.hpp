@@ -177,7 +177,7 @@ void device_t::launch(
 	KernelParameters...     parameters) const
 {
 	auto pc = primary_context();
-	pc.default_stream().enqueue.kernel_launch(kernel, launch_configuration, parameters...);
+	pc.launch(kernel, launch_configuration, parameters...);
 }
 
 inline context_t device_t::create_context(

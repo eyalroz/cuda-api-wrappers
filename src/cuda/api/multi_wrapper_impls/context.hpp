@@ -313,6 +313,20 @@ inline event_t context_t::create_event(
 		uses_blocking_sync, records_timing, interprocess);
 }
 
+inline stream_t context_t::default_stream() const
+{
+	return stream::wrap(device_id_, handle_, stream::default_stream_handle, do_not_take_ownership);
+}
+
+template <typename Kernel, typename ... KernelParameters>
+void context_t::launch(
+	Kernel                  kernel,
+	launch_configuration_t  launch_configuration,
+	KernelParameters...     parameters) const
+{
+	default_stream().enqueue.kernel_launch(kernel, launch_configuration, parameters...);
+}
+
 } // namespace cuda
 
 #endif // MULTI_WRAPPER_IMPLS_CONTEXT_HPP_
