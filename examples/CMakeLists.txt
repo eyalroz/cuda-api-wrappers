@@ -137,6 +137,29 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 	add_custom_target(do_build_vectorAddMMAP_kernel ALL DEPENDS vectorAddMMAP_kernel.fatbin)
 	add_dependencies(vectorAddMMAP do_build_vectorAddMMAP_kernel)
 endif()
+
+add_executable(simpleTextureDrv modified_cuda_samples/simpleTextureDrv/simpleTextureDrv.cpp)
+add_custom_command(
+		OUTPUT simpleTexture_kernel.fatbin
+		COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
+		${CCBIN_ARGUMENT}
+		--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
+		-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/simpleTexture_kernel.fatbin
+		${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
+		MAIN_DEPENDENCY modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
+)
+add_custom_target(do_build_simpleTexture_kernel ALL DEPENDS simpleTexture_kernel.fatbin)
+add_dependencies(simpleTextureDrv do_build_simpleTexture_kernel)
+foreach(img "ref_rotated" "teapot512")
+	add_custom_command(
+			TARGET simpleTextureDrv POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+			${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/simpleTextureDrv/data/${img}.pgm
+			${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/${img}.pgm)
+endforeach()
+
+add_dependencies(simpleTextureDrv do_build_simpleTexture_kernel)
+
 add_executable(p2pBandwidthLatencyTest modified_cuda_samples/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu)
 add_executable(asyncAPI modified_cuda_samples/asyncAPI/asyncAPI.cu)
 if(USE_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
