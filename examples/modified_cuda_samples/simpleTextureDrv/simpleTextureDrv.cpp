@@ -111,7 +111,7 @@ bool runTest(int device_id) {
   auto context = device.create_context();
   auto stream = context.create_stream(cuda::stream::async);
   auto fatbin = get_file_contents(kernel::fatbin_filename);
-  auto module = cuda::module::create(context, fatbin);
+  auto module = context.create_module(fatbin);
   auto kernel = module.get_kernel(kernel::name);
 
   auto image = sdkLoadPGM_<float>(image_filename);
