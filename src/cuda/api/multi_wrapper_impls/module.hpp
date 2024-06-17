@@ -23,16 +23,15 @@ template <typename ContiguousContainer,
 cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data) const
 {
-	return module::create<ContiguousContainer>(*this, module_data);
+	return module::create<context_t const &>(*this, module_data);
 }
 
 template <typename ContiguousContainer,
 cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data, const link::options_t& link_options) const
 {
-	return module::create<ContiguousContainer>(*this, module_data, link_options);
+	return module::create<context_t const &>(*this, module_data, link_options);
 }
-
 
 // These API calls are not really the way you want to work.
 inline cuda::kernel_t module_t::get_kernel(const char* name) const
