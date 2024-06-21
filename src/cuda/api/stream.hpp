@@ -214,6 +214,15 @@ namespace capture {
 
 inline state_t state(const stream_t& stream);
 
+/**
+ * @brief Have a stream capture operations enqueued from now on, for later generation
+ * of an execution graph.
+ *
+ * @note See also @ref graph::template_t
+ */
+void begin(const cuda::stream_t& stream, stream::capture::mode_t mode = cuda::stream::capture::mode_t::global);
+graph::template_t end(const cuda::stream_t& stream);
+
 } // namespace capture
 
 inline bool is_capturing(const stream_t& stream)
@@ -855,10 +864,9 @@ public: // mutators
 	 *
 	 * @note See also @ref graph::template_t
 	 */
-	void begin_capture(stream::capture::mode_t mode) const {
-		context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle_);
-		auto status = cuStreamBeginCapture(handle_, static_cast<CUstreamCaptureMode>(mode));
-		throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail_::identify(*this));
+	void begin_capture(stream::capture::mode_t mode = cuda::stream::capture::mode_t::global) const
+	{
+		stream::capture::begin(*this, mode);
 	}
 
 	/**
@@ -872,7 +880,10 @@ public: // mutators
 	 * @return A CUDA execution graph template, comprising of all operations enqueued on this stream
 	 * between the last invocation of @ref begin_capture and the invocation of this one.
 	 */
-	graph::template_t end_capture() const;
+	graph::template_t end_capture() const
+	{
+		return stream::capture::end(*this);
+	}
 #endif // CUDA_VERSION >= 10000
 
 protected: // constructor
@@ -1121,13 +1132,20 @@ stream_t create(
 #if CUDA_VERSION >= 10000
 namespace capture {
 
-state_t state(const stream_t& stream)
+inline state_t state(const stream_t& stream)
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	CUstreamCaptureStatus capture_status;
 	auto op_status = cuStreamIsCapturing(stream.handle(), &capture_status);
 	throw_if_error_lazy(op_status, "Failed beginning to capture on " + stream::detail_::identify(stream));
 	return static_cast<state_t>(capture_status);
+}
+
+inline void begin(const cuda::stream_t& stream, stream::capture::mode_t mode)
+{
+	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	auto status = cuStreamBeginCapture(stream.handle(), static_cast<CUstreamCaptureMode>(mode));
+	throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail_::identify(stream));
 }
 
 } // namespace capture

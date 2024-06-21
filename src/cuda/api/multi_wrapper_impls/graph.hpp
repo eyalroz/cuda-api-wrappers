@@ -209,13 +209,20 @@ inline ::std::string describe(graph::instance::update_status_t update_status, op
 		   graph::instance::detail_::describe(update_status, node.value().handle(), node.value().containing_graph_handle());
 }
 
-inline graph::template_t stream_t::end_capture() const
+namespace stream {
+namespace capture {
+
+inline graph::template_t end(const cuda::stream_t& stream)
 {
 	graph::template_::handle_t new_graph;
-	auto status = cuStreamEndCapture(handle_, &new_graph);
-	throw_if_error_lazy(status, "Completing the capture of operations into a graph on " + stream::detail_::identify(*this));
+	auto status = cuStreamEndCapture(stream.handle(), &new_graph);
+	throw_if_error_lazy(status,
+		"Completing the capture of operations into a graph on " + stream::detail_::identify(stream));
 	return graph::template_::wrap(new_graph, do_take_ownership);
 }
+
+} // namespace capture
+} // namespace stream
 
 inline void stream_t::enqueue_t::graph_launch(const graph::instance_t& graph_instance) const
 {

@@ -278,6 +278,12 @@ void cudaGraphsManual(
 
 	graph.insert.edge(memcpy_result_node, host_function_node);
 
+	auto instance = graph.instantiate();
+	cuda::graph::node::parameters_t<node_kind_t::kernel_launch>* params_ptr = nullptr;
+	cuda::graph::instance::set_node_parameters<node_kind_t::kernel_launch>(instance, reduce_final_node, *params_ptr);
+
+
+
 	use(device, graph, graph_construction_mode);
 }
 
@@ -410,7 +416,7 @@ void cudaGraphsUsingStreamCapture(
 	auto reduce_output_memset_event = cuda::event::create(device);
 	auto final_result_memset_event = cuda::event::create(device);
 
-	stream_1.begin_capture(cuda::stream::capture::mode_t::global);
+	stream_1.begin_capture();
 
 	stream_1.enqueue.event(fork_stream_event);
 	stream_2.enqueue.wait(fork_stream_event);
@@ -419,15 +425,15 @@ void cudaGraphsUsingStreamCapture(
 	stream_1.enqueue.copy(inputVec_d, inputVec_h);
 	stream_2.enqueue.memzero(outputVec_d);
 
-	stream_2.enqueue.event(reduce_output_memset_event);
+	stream_2.enqueue.event();
 	stream_3.enqueue.memzero(result_d);
 	stream_3.enqueue.event(final_result_memset_event);
 
 	stream_1.enqueue.wait(reduce_output_memset_event);
 
 	auto launch_config = cuda::launch_config_builder()
-		.grid_dimensions(outputVec_d.size())
-		.block_dimensions(THREADS_PER_BLOCK)
+		.grid_size(outputVec_d.size())
+		.block_size(THREADS_PER_BLOCK)
 		.build();
 
 	stream_1.enqueue.kernel_launch(reduce, launch_config,
