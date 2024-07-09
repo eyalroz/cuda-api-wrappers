@@ -577,14 +577,14 @@ public: // methods which mutate the context, but not its wrapper
 	/// regarding the parameters
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
-		stream::priority_t  priority = cuda::stream::default_priority);
+		stream::priority_t  priority = cuda::stream::default_priority) const;
 
 	/// Create a new event within this context; see @ref cuda::event::create() for details
 	/// regarding the parameters
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
-		bool interprocess       = event::not_interprocess);
+		bool interprocess       = event::not_interprocess) const;
 
 	/// Create a new module of kernels and global memory regions within this context;
 	/// see also @ref cuda::module::create()

@@ -297,8 +297,8 @@ inline device_t context_t::device() const
 }
 
 inline stream_t context_t::create_stream(
-bool                will_synchronize_with_default_stream,
-stream::priority_t  priority)
+	bool                will_synchronize_with_default_stream,
+	stream::priority_t  priority) const
 {
 	return stream::detail_::create(device_id_, handle_, will_synchronize_with_default_stream, priority);
 }
@@ -306,7 +306,7 @@ stream::priority_t  priority)
 inline event_t context_t::create_event(
 	bool uses_blocking_sync,
 	bool records_timing,
-	bool interprocess)
+	bool interprocess) const
 {
 	return cuda::event::detail_::create(
 		device_id_, handle_, do_not_hold_primary_context_refcount_unit,
