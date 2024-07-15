@@ -23,6 +23,14 @@ cuda::device::id_t get_current_device_id()
     return device.id();
 }
 
+void unique_spans()
+{
+	cuda::memory::host::unique_span<float> data1(nullptr, 0);
+	cuda::memory::host::unique_span<float> data2(nullptr, 0);
+
+	data1 = std::move(data2);
+}
+
 int main() 
 {
 	auto count = cuda::device::count();
@@ -38,5 +46,6 @@ int main()
 	auto nvtx_color_yellow = cuda::profiling::color_t::from_hex(0x0FFFF00);
 	(void) nvtx_color_yellow;
 #endif
+
 	std::cout << "SUCCESS\n";
 }

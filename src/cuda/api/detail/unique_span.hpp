@@ -106,8 +106,8 @@ public: // operators
 		if (data() != nullptr) {
 			deleter_type{}(data());
 		}
-		data() = released.data();
-		size() = released.size();
+		static_cast<span_type&>(*this) = released;
+		return *this;
 	}
 
 	/// No plain dereferencing - as there is no guarantee that any object has been
