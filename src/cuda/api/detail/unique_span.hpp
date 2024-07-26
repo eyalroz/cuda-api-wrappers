@@ -57,6 +57,14 @@ public: // constructors and destructor
 
 	constexpr unique_span() noexcept = default;
 
+	// Disable copy construction - as this class never allocates;
+	unique_span(const unique_span&) = delete;
+	// ... and also match other kinds of unique_span's, which may get converted into
+	// a span and thus leak memory on construction!
+	template<typename U, typename OtherDeleter>
+	unique_span(const unique_span<U, OtherDeleter>&) = delete;
+
+
 	/// Take ownership of an existing region or span
 	///
 	/// These ctors are all explicit to prevent accidentally relinquishing ownership
@@ -64,7 +72,6 @@ public: // constructors and destructor
 	///@{
 	explicit unique_span(span_type span) noexcept : span_type{span} { }
 	explicit unique_span(pointer data, size_type size) noexcept : unique_span{span_type{data, size}} { }
-	explicit unique_span(memory::region_t region) noexcept : span_type{region.as_span<T>()} { }
 	///@}
 
 	// Note: No constructor which also takes a deleter. We do not hold a deleter
@@ -77,8 +84,10 @@ public: // constructors and destructor
 	 * the user is strongly assumed not to use the unique_span after moving from it.
 	 */
 	unique_span(unique_span&& other) noexcept : unique_span{ other.release() } { }
-	// Disable copy construction - we do not allocate
-	unique_span(const unique_span&) = delete;
+
+	// Disable move construction from other kinds of unique_spans
+	template<typename U, typename OtherDeleter>
+	unique_span(unique_span<U, OtherDeleter>&&) = delete;
 
 	// Note: No conversion from "another type" like with ::std::unique_pointer, since
 	// this class is not variant with the element type; and there's not much sense in
@@ -127,7 +136,13 @@ public: // operators
 	}
 
 protected: // mutators
-	/// Release ownership of any stored pointer.
+	/**
+	 * Release ownership of the stored span
+	 *
+	 * @note This is not marked nodiscard by the same argument as for std::unique_ptr;
+	 * see also @url https://stackoverflow.com/q/60535399/1593077 and
+	 * @url http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0600r1.pdf
+	 */
 	span_type release() noexcept
 	{
 		span_type released { data(), size() };
