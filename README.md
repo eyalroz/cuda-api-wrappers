@@ -52,7 +52,7 @@ Driver API. These suffer from several deficiencies:
 
 * They are both C-style APIs, targeting the lowest common denominator of language facilities for abstraction, safety and ease of use.
 * ... although the Runtime API has a few [exceptions](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__HIGHLEVEL.html), so you actually need to write C++ to use it.
-* The runtime API is supposedly the higher-level, more convenient version of the Driver API; in fact, it's missing a lot of important functionality, and doesn't can't be used in conjuction with other CUDA facilities, like the NVRTC dynamic compilation library. Consequently, you're forced to use _both_ the runtime and the driver API.
+* The runtime API is supposedly the higher-level, more convenient version of the Driver API; in fact, it's missing a lot of important functionality, and can't be used in conjuction with other CUDA facilities, like the NVRTC dynamic compilation library. Consequently, you're forced to use _both_ the runtime and the driver API.
 * It is difficult to use both the runtime and driver API in conjuction; if you're not careful, you'll mess up things like the context stack.
 * The runtime API makes multiple assumptions which you might not want it to make.
 * You have to manually check every call to every API function, everywhere.
