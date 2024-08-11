@@ -66,7 +66,7 @@ You may have noticed this list reads like the opposite of the [key features](#ke
 
 ## Detailed documentation
 
-Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/). It is mostly complete for the Runtime API wrappers, less so for the rest of the wrappers.
+Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/). It is mostly complete; please file a bug if an API function is missing or under-documented.
 
 ## Requirements
 
