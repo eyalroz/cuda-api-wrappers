@@ -61,37 +61,40 @@ public: // constructors and destructor
 	unique_span(const unique_span&) = delete;
 	// ... and also match other kinds of unique_span's, which may get converted into
 	// a span and thus leak memory on construction!
-	template<typename U, typename OtherDeleter>
-	unique_span(const unique_span<U, OtherDeleter>&) = delete;
+	template<typename U, typename UDeleter>
+	unique_span(const unique_span<U, UDeleter>&) = delete;
 
+	// Note: This template provides constructibility of unique_span<const T> from unique_span<const T>
+	template<typename U, typename UDeleter>
+	unique_span(unique_span<U,UDeleter>&& other)
+		: unique_span{ other.release() }
+	{
+		static_assert(
+			::std::is_assignable<span_type, span<U>>::value and
+			::std::is_assignable<Deleter, UDeleter>::value,
+			"Invalid unique_span initializer");
+	}
 
-	/// Take ownership of an existing region or span
+	/// Take ownership of an existing span
 	///
-	/// These ctors are all explicit to prevent accidentally relinquishing ownership
-	/// when passing to a function.
+	/// @note These ctors are all explicit to prevent accidentally assuming ownership
+	/// of a non-owned span when passing to a function, then trying to release that
+	/// memory returning from it.
 	///@{
 	explicit unique_span(span_type span) noexcept : span_type{span} { }
 	explicit unique_span(pointer data, size_type size) noexcept : unique_span{span_type{data, size}} { }
 	///@}
 
 	// Note: No constructor which also takes a deleter. We do not hold a deleter
-	// member - unlike unique_ptr's. If we wanted a general-purpose unique region
-	// that's not just GPU allocation-oriented, we might have had one of those.
+	// member - unlike unique_ptr's. Perhaps we should?
 
 	/** A move constructor.
 	 *
-	 * @note Moving is the only way a unique_span may have its data_ field become null;
-	 * the user is strongly assumed not to use the unique_span after moving from it.
+	 * @note Moving is the only way a unique_span may have its @ref data_ field become
+	 * null; the user is strongly assumed not to use the `unique_span` after moving from
+	 * it.
 	 */
 	unique_span(unique_span&& other) noexcept : unique_span{ other.release() } { }
-
-	// Disable move construction from other kinds of unique_spans
-	template<typename U, typename OtherDeleter>
-	unique_span(unique_span<U, OtherDeleter>&&) = delete;
-
-	// Note: No conversion from "another type" like with ::std::unique_pointer, since
-	// this class is not variant with the element type; and there's not much sense in
-	// supporting conversion of memory between different deleters (/ allocators).
 
 	~unique_span() noexcept
 	{
@@ -99,7 +102,7 @@ public: // constructors and destructor
 			deleter_type{}(data());
 		}
 #ifndef NDEBUG
-		static_cast<span_type&>(*this) = span_type{static_cast<T*>(nullptr), 0};
+		span_type::operator=(span_type{static_cast<T*>(nullptr), 0});
 #endif
 	}
 
@@ -111,12 +114,9 @@ public: // operators
 	/// A Move-assignment operator, which takes ownership of the other region
 	unique_span& operator=(unique_span&& other) noexcept
 	{
-		span_type released = other.release();
-		if (data() != nullptr) {
-			deleter_type{}(data());
-		}
-		static_cast<span_type&>(*this) = released;
+		swap(other);
 		return *this;
+		// other will be destructed, and our previous pointer - released if necessary
 	}
 
 	/// No plain dereferencing - as there is no guarantee that any object has been
@@ -127,15 +127,15 @@ public: // operators
 	template<typename = typename ::std::enable_if<! ::std::is_const<T>::value>::type>
 	constexpr operator memory::region_t() const noexcept { return { data(), size() * sizeof(T) }; }
 
+public: // non-mutators
 	constexpr span_type get() const noexcept { return { data(), size() }; }
 
+protected: // mutators
 	/// Exchange the pointer and deleter with another object.
 	void swap(unique_span& other) noexcept
 	{
-		::std::swap<span_type >(*this, other);
+		::std::swap<span_type>(*this, other);
 	}
-
-protected: // mutators
 	/**
 	 * Release ownership of the stored span
 	 *
@@ -146,7 +146,7 @@ protected: // mutators
 	span_type release() noexcept
 	{
 		span_type released { data(), size() };
-		static_cast<span_type &>(*this) = span_type{static_cast<T*>(nullptr), 0};
+		span_type::operator=(span_type{ static_cast<T*>(nullptr), 0 });
 		return released;
 	}
 }; // class unique_span
