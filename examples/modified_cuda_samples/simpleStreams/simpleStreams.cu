@@ -142,10 +142,10 @@ void run_simple_streams_example(
 	auto stop_event = cuda::event::create(device, use_blocking_sync);
 
 	// time memcpy from device
-	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed
+    cuda::record(start_event); // record on the default stream, to ensure that all previous CUDA calls have completed
 	cuda::memory::async::copy(h_a.get(), d_a, streams[0]);
-	stop_event.record();
-	stop_event.synchronize(); // block until the event is actually recorded
+    cuda::record(stop_event);
+	cuda::wait(stop_event); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
 
@@ -154,10 +154,10 @@ void run_simple_streams_example(
 		.overall_size(params.n)
 		.block_size(512)
 		.build();
-	start_event.record();
+    cuda::record(start_event);
 	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
-	stop_event.record();
-	stop_event.synchronize();
+    cuda::record(stop_event);
+    cuda::wait(stop_event);
 	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
 
@@ -167,7 +167,7 @@ void run_simple_streams_example(
 		.overall_size(params.n)
 		.block_size(512)
 		.build();
-	start_event.record();
+	cuda::record(start_event);
 
 	for (int k = 0; k < nreps; k++)
 	{
@@ -175,8 +175,8 @@ void run_simple_streams_example(
 		cuda::memory::copy(h_a.get(), d_a);
 	}
 
-	stop_event.record();
-	stop_event.synchronize();
+	cuda::record(stop_event);
+	cuda::wait(stop_event);
 	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
 
@@ -192,7 +192,7 @@ void run_simple_streams_example(
 	// for which the device.make_current() command was necessary.
 	// TODO: Avoid having to do that altogether...
 	cuda::memory::device::zero(d_a); // set device memory to all 0s, for testing correctness
-	start_event.record();
+	cuda::record(start_event);
 
 	for (int k = 0; k < nreps; k++)
 	{
@@ -214,8 +214,8 @@ void run_simple_streams_example(
 		}
 	}
 
-	stop_event.record();
-	stop_event.synchronize();
+	cuda::record(stop_event);
+	cuda::wait(stop_event);
 	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
 	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / (float) nreps << "\n";
 

@@ -88,7 +88,7 @@ int main(int, char **)
 	// have CPU do some work while waiting for stage 1 to finish
 	unsigned long int counter=0;
 
-	while (not end_event.has_occurred())
+	while (not cuda::has_occurred(end_event))
 	{
 		counter++;
 	}

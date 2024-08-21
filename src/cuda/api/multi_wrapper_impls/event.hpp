@@ -100,31 +100,31 @@ inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
 
 } // namespace event
 
-inline device_t event_t::device() const
+inline device_t device_of(const event_t& event)
 {
-	return cuda::device::get(device_id());
+	return cuda::device::get(event.device_id());
 }
 
-inline context_t event_t::context() const
+inline context_t context_of(const event_t& event)
 {
 	static constexpr const bool dont_take_ownership { false };
-	return context::wrap(device_id(), context_handle_, dont_take_ownership);
+	return context::wrap(event.device_id(), event.context_handle(), dont_take_ownership);
 }
 
-inline void event_t::record(const stream_t& stream) const
+void record(const event_t& event, const stream_t& stream)
 {
 #ifndef NDEBUG
-	if (stream.context_handle() != context_handle_) {
-		throw ::std::invalid_argument("Attempt to record an event on a stream in a different context");
-	}
+    if (stream.context_handle() != event.context_handle()) {
+        throw ::std::invalid_argument("Attempt to record an event on a stream in a different context");
+    }
 #endif
-	event::detail_::enqueue(context_handle_, stream.handle(), handle_);
+    event::detail_::enqueue(event.context_handle(), stream.handle(), event.handle());
 }
 
-inline void event_t::fire(const stream_t& stream) const
+inline void fire(const event_t& event, const stream_t& stream)
 {
-	record(stream);
-	stream.synchronize();
+	record(event, stream);
+    wait(event);
 }
 
 } // namespace cuda

@@ -53,8 +53,8 @@ inline void report_occurrence(
 {
 	std::cout
 		<< prefix_message << ": "
-		<< "Event 1 has " << (e1.has_occurred() ? "" : "not ") << "occurred; "
-		<< "event 2 has " << (e2.has_occurred() ? "" : "not ") << "occurred.\n";
+		<< "Event 1 has " << (cuda::has_occurred(e1) ? "" : "not ") << "occurred; "
+		<< "event 2 has " << (cuda::has_occurred(e2) ? "" : "not ") << "occurred.\n";
 
 }
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 		(void) e; // This avoids a spurious warning in MSVC 16.11
 		assert(e.code() == cuda::status::async_operations_not_yet_completed);
 	}
-	event_2.synchronize();
+	cuda::wait(event_2);
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
 	std::cout
 		<< cuda::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "

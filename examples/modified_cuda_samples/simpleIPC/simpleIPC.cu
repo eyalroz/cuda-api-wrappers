@@ -268,7 +268,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 				{ blocks, threads },
 				d_ptr + index *data_buffer_size, d_ptr, index + 1
 			);
-			event.record();
+			cuda::record(event);
 
 			// b.2
 			procBarrier();

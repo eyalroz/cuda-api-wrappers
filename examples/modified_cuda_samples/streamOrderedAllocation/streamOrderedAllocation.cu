@@ -169,7 +169,7 @@ int streamOrderedAllocationPostSync(
 		stream.synchronize();
 	}
 	auto end_event = stream.enqueue.event();
-	end_event.synchronize();
+    cuda::wait(end_event);
 
 	auto elapsed_time_msec = cuda::event::time_elapsed_between(start_event, end_event);
 	std::cout

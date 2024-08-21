@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 	// so that the attachment has some observable effect
 	stream_1.enqueue.attach_managed_region(buffer.get());
 	stream_1.enqueue.kernel_launch(increment, launch_config, buffer.data(), buffer_size);
-	event_1.record(stream_1);
+	cuda::record(event_1, stream_1);
 	stream_1.enqueue.kernel_launch(print_message<N,4>, single_thread_config, message<N>("I'm on stream 1"));
 	stream_2.enqueue.wait(event_1);
 	stream_2.enqueue.kernel_launch(print_first_char_kernel, launch_config , buffer.data());

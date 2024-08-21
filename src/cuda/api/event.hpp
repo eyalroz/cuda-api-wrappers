@@ -148,80 +148,6 @@ public: // data member non-mutator getters
 	/// True if this wrapper has been associated with an increase of the device's primary context's reference count
 	bool              holds_primary_context_reference() const noexcept { return holds_pc_refcount_unit_; }
 
-	/// The device w.r.t. which the event is defined
-	device_t          device()          const;
-
-	/// The context in which this stream was defined.
-	context_t         context()         const;
-
-
-
-public: // other non-mutator methods
-
-	/**
-	 * Has this event already occurred, or is it still pending on a stream?
-	 *
-	 * @note an event can occur multiple times, but in the context of this
-	 * method, it only has two states: pending (on a stream) and has_occured.
-	 *
-	 * @return if all work on the stream with which the event was recorded
-	 * has been completed, returns true; if there is pending work on that stream
-	 * before the point of recording, returns false; if the event has not
-	 * been recorded at all, returns true.
-	 */
-	bool has_occurred() const
-	{
-		auto status = cuEventQuery(handle_);
-		if (status == cuda::status::success) return true;
-		if (status == cuda::status::async_operations_not_yet_completed) return false;
-		throw cuda::runtime_error(status,
-			"Could not determine whether " + event::detail_::identify(handle_)
-			+ "has already occurred or not");
-	}
-
-	/**
-	 * An alias for {@ref event_t::has_occurred()} - to conform to how the CUDA runtime
-	 * API names this functionality
-	 */
-	bool query() const { return has_occurred(); }
-
-public: // other mutator methods
-
-	/**
-	 * Schedule a specified event to occur (= to fire) when all activities
-	 * already scheduled on the event's device's default stream have concluded.
-	 *
-	 * @note No protection against repeated calls.
-	 */
-	void record() const
-	{
-		event::detail_::enqueue(context_handle_, stream::default_stream_handle, handle_);
-	}
-
-	/**
-	 * Schedule a specified event to occur (= to fire) when all activities
-	 * already scheduled on the stream have concluded.
-	 *
-	 * @note No protection against repeated calls.
-	 */
-	void record(const stream_t& stream) const;
-
-	/**
-	 * Records the event and ensures it has occurred before returning
-	 * (by synchronizing the stream).
-	 *
-	 * @note No protection against repeated calls.
-	 */
-	void fire(const stream_t& stream) const;
-
-	/**
-	 * See @see cuda::wait() .
-	 */
-	void synchronize() const
-	{
-		return cuda::wait(*this);
-	}
-
 protected: // constructors
 
 	event_t(
@@ -312,7 +238,43 @@ protected: // data members
 		// it must release its refcount unit on destruction
 };
 
+/**
+ * Schedule a specified event to occur (= to fire) when all activities
+ * already scheduled on the event's device's default stream have concluded.
+ *
+ * @note No protection against repeated calls.
+ */
+inline void record(const event_t& event)
+{
+    event::detail_::enqueue(event.context_handle(), stream::default_stream_handle, event.handle());
+}
+
+/**
+ * Schedule a specified event to occur (= to fire) when all activities
+ * already scheduled on the stream have concluded.
+ *
+ * @note No protection against repeated calls.
+ */
+inline void record(const event_t& event, const stream_t& stream);
+
+/**
+ * Records the event and ensures it has occurred before returning
+ * (by synchronizing the stream).
+ *
+ * @note No protection against repeated calls.
+ */
+inline void fire(const event_t& event, const stream_t& stream);
+
+/**
+ * See @see cuda::wait() .
+ */
+inline void synchronize(const event_t& event)
+{
+    return cuda::wait(event);
+}
+
 namespace event {
+
 
 /**
  * @brief The type used by the CUDA Runtime API to represent the time difference
@@ -473,10 +435,39 @@ inline void wait(const event_t& event)
 	throw_if_error_lazy(status, "Failed synchronizing " + event::detail_::identify(event));
 }
 
-inline void synchronize(const event_t& event)
+
+/**
+ * Has this event already occurred, or is it still pending on a stream?
+ *
+ * @note an event can occur multiple times, but in the context of this
+ * method, it only has two states: pending (on a stream) and has_occured.
+ *
+ * @return if all work on the stream with which the event was recorded
+ * has been completed, returns true; if there is pending work on that stream
+ * before the point of recording, returns false; if the event has not
+ * been recorded at all, returns true.
+ */
+inline bool has_occurred(const event_t& event)
 {
-	return wait(event);
+    auto status = cuEventQuery(event.handle());
+    if (status == cuda::status::success) return true;
+    if (status == cuda::status::async_operations_not_yet_completed) return false;
+    throw cuda::runtime_error(status,
+        "Could not determine whether " + event::detail_::identify(event.handle())
+            + "has already occurred or not");
 }
+
+/**
+ * An alias for {@ref event_t::has_occurred()} - to conform to how the CUDA runtime
+ * API names this functionality
+ */
+inline bool query(const event_t& event) { return has_occurred(event); }
+
+/// The device w.r.t. which the event is defined
+device_t device_of(const event_t& event);
+
+/// The context in which this stream was defined.
+context_t context_of(const event_t& event);
 
 } // namespace cuda
 
