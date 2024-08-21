@@ -63,13 +63,6 @@ struct poor_mans_optional {
 		return *this;
 	}
 
-	poor_mans_optional &operator=(const T &&value) noexcept(::std::is_nothrow_move_assignable<T>::value)
-	{
-		has_value_ = true;
-		maybe_value.value = ::std::move(value);
-		return *this;
-	}
-
 	poor_mans_optional &operator=(no_value_t)
 	{
 		has_value_ = false;
