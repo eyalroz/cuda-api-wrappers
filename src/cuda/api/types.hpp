@@ -359,6 +359,22 @@ struct dimensions_t // this almost-inherits dim3
 			(rhs.y % lhs.y == 0) and
 			(rhs.z % lhs.z == 0);
 	}
+
+    /// Provides array-like access to the dimensions in different axes.
+    ///
+    /// @note Behavior only defined for i between 0 and 2
+    ///@{
+    constexpr dimension_t operator[](int i) const noexcept {
+        return (i == 0) ? x :
+               (i == 1) ? y :
+               z;
+    }
+    CPP14_CONSTEXPR dimension_t& operator[](int i) noexcept {
+        return (i == 0) ? x :
+               (i == 1) ? y :
+               z;
+    }
+    ///@}
 };
 
 ///@cond
@@ -434,6 +450,22 @@ struct overall_dimensions_t
 	{
 		return ((x > 1) + (y > 1) + (z > 1));
 	}
+
+    /// Provides array-like access to the dimensions in different axes.
+    ///
+    /// @note Behavior only defined for i between 0 and 2
+    ///@{
+    constexpr dimension_type operator[](int i) const noexcept {
+        return (i == 0) ? x :
+               (i == 1) ? y :
+               z;
+    }
+    CPP14_CONSTEXPR dimension_type& operator[](int i) noexcept {
+        return (i == 0) ? x :
+               (i == 1) ? y :
+               z;
+    }
+    ///@}
 };
 
 ///@cond
