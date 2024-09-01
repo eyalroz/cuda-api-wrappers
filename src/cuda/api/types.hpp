@@ -305,35 +305,33 @@ using block_dimension_t  = dimension_t;
  * to specify dimensions for blocks (in terms of threads) and of
  * grids(in terms of blocks, or overall).
  *
- * @note Unfortunately, `dim3` does not have constexpr methods -
- * preventing us from having constexpr methods here.
- *
  * @note Unlike 3D dimensions in general, grid dimensions cannot actually
  * be empty: A grid must have some threads. Thus, the value in each
- * axis must be positive.
+ * axis must be positive when an instance of this class is used in a
+ * kernel launch configuration.
  */
 struct dimensions_t // this almost-inherits dim3
 {
 	dimension_t x, y, z;
-	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1)
-	: x(x_), y(y_), z(z_) { }
+	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1) noexcept
+        : x(x_), y(y_), z(z_) { }
 
-	constexpr __host__ __device__ dimensions_t(const uint3& v) : dimensions_t(v.x, v.y, v.z) { }
-	constexpr __host__ __device__ dimensions_t(const dim3& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
-	constexpr __host__ __device__ dimensions_t(dim3&& dims) : dimensions_t(dims.x, dims.y, dims.z) { }
+	constexpr __host__ __device__ dimensions_t(const uint3& v) noexcept : dimensions_t(v.x, v.y, v.z) { }
+	constexpr __host__ __device__ dimensions_t(const dim3& dims) noexcept : dimensions_t(dims.x, dims.y, dims.z) { }
+	constexpr __host__ __device__ dimensions_t(dim3&& dims) noexcept : dimensions_t(dims.x, dims.y, dims.z) { }
 
 	constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
 
 	// This _should_ have been constexpr, but nVIDIA have not marked the dim3 constructors
 	// as constexpr, so it isn't
-	__host__ __device__ operator dim3(void) const { return { x, y, z }; }
+	__host__ __device__ operator dim3(void) const noexcept { return { x, y, z }; }
 
 	/// The number of total elements in a 3D object with these dimensions
-	constexpr __host__ __device__ size_t volume() const { return static_cast<size_t>(x) * y * z; }
+	constexpr __host__ __device__ size_t volume() const noexcept { return static_cast<size_t>(x) * y * z; }
 
 	/// Number of dimensions in which this dimension structure is non-trivial, i.e. coordinates can
 	/// have more than a single value
-	constexpr __host__ __device__ dimensionality_t dimensionality() const
+	constexpr __host__ __device__ dimensionality_t dimensionality() const noexcept
 	{
 		return ((z > 1) + (y > 1) + (x > 1));
 	}
@@ -341,20 +339,20 @@ struct dimensions_t // this almost-inherits dim3
 	// Named constructor idioms
 
 	/// Dimensions of an equi-lateral 3D cube
-	static constexpr __host__ __device__ dimensions_t cube(dimension_t x)   { return dimensions_t{ x, x, x }; }
+	static constexpr __host__ __device__ dimensions_t cube(dimension_t x) noexcept   { return dimensions_t{ x, x, x }; }
 
 	/// Dimensions of an equi-lateral 2D square, with a trivial third dimension
-	static constexpr __host__ __device__ dimensions_t square(dimension_t x) { return dimensions_t{ x, x, 1 }; }
+	static constexpr __host__ __device__ dimensions_t square(dimension_t x) noexcept { return dimensions_t{ x, x, 1 }; }
 
 	/// Dimensions of a 1D line, with the last two dimensions trivial
-	static constexpr __host__ __device__ dimensions_t line(dimension_t x)   { return dimensions_t{ x, 1, 1 }; }
+	static constexpr __host__ __device__ dimensions_t line(dimension_t x) noexcept   { return dimensions_t{ x, 1, 1 }; }
 
 	/// Dimensions of a single point - trivial in in all axes
-	static constexpr __host__ __device__ dimensions_t point()               { return dimensions_t{ 1, 1, 1 }; }
+	static constexpr __host__ __device__ dimensions_t point() noexcept               { return dimensions_t{ 1, 1, 1 }; }
 
 	/// @returns true if the dimensions on the left-hand side divide, elementwise, those
 	/// on the right-hand side
-	static bool divides(dimensions_t lhs, dimensions_t rhs)
+	static constexpr bool divides(dimensions_t lhs, dimensions_t rhs)
 	{
 		return
 			(rhs.x % lhs.x == 0) and
@@ -468,17 +466,17 @@ struct composite_dimensions_t {
 	grid::block_dimensions_t block;
 
 	/// @returns The overall dimensions of the entire grid as a single 3D entity
-	constexpr overall_dimensions_t flatten() const { return grid * block; }
+	constexpr overall_dimensions_t flatten() const noexcept { return grid * block; }
 
 	/// @returns The total number of threads over all blocks of the grid
-	constexpr size_t volume() const { return flatten().volume(); }
+	constexpr size_t volume() const noexcept { return flatten().volume(); }
 
 	/// @returns the number of axes in which the grid overall has non-trivial dimension
-	constexpr size_t dimensionality() const { return flatten().dimensionality(); }
+	constexpr size_t dimensionality() const noexcept { return flatten().dimensionality(); }
 
 	/// A named constructor idiom for the composite dimensions of a single-block grid
 	/// with a single-thread block
-	static constexpr composite_dimensions_t point()
+	static constexpr composite_dimensions_t point() noexcept
 	{
 		return { dimensions_t::point(), block_dimensions_t::point() };
 	}
