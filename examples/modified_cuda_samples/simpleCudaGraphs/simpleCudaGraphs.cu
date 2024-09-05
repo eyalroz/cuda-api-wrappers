@@ -279,10 +279,6 @@ void cudaGraphsManual(
 	graph.insert.edge(memcpy_result_node, host_function_node);
 
 	auto instance = graph.instantiate();
-	cuda::graph::node::parameters_t<node_kind_t::kernel_launch>* params_ptr = nullptr;
-	cuda::graph::instance::set_node_parameters<node_kind_t::kernel_launch>(instance, reduce_final_node, *params_ptr);
-
-
 
 	use(device, graph, graph_construction_mode);
 }
