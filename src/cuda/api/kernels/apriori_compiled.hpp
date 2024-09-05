@@ -57,7 +57,7 @@ apriori_compiled_t wrap(
 } // namespace detail_
 
 
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 /**
  * @brief a wrapper around `cudaFuncAttributes`, offering
  * a few convenience member functions.
@@ -74,7 +74,7 @@ struct attributes_t : cudaFuncAttributes {
 	}
 };
 
-#endif // CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 namespace occupancy {
 
@@ -325,7 +325,7 @@ public: // type_conversions
 
 public: // non-mutators
 
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 	/// Obtain the set of all attributes one can obtain individually with @ref get_attribute
 	apriori_compiled::attributes_t attributes() const;
@@ -419,7 +419,7 @@ public: // non-mutators
 			dynamic_shared_memory_per_block,
 			disable_caching_override);
 	}
-#endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 protected: // ctors & dtor
 	apriori_compiled_t(device::id_t device_id, context::handle_t primary_context_handle,
@@ -468,17 +468,17 @@ inline apriori_compiled_t wrap(
 	return { device_id, primary_context_handle, f, ptr, hold_primary_context_refcount_unit };
 }
 
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 inline ::std::string identify(const apriori_compiled_t& kernel)
 {
 	return "apriori-compiled kernel " + cuda::detail_::ptr_as_hex(kernel.ptr())
 		+ " in " + context::detail_::identify(kernel.context());
 }
-#endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 } // namespace detail
 
-#if CAN_GET_APRIORI_KERNEL_HANDLE
+#if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 inline attribute_value_t get_attribute(const void* function_ptr, attribute_t attribute)
 {
 	auto handle = detail_::get_handle(function_ptr);
@@ -509,7 +509,7 @@ inline void set_attribute(
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	return set_attribute(function_ptr, attribute, value);
 }
-#endif // CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 } // namespace apriori_compiled
 

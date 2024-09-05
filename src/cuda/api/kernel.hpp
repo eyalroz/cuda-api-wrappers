@@ -18,10 +18,10 @@
 
 ///@cond
 #if CUDA_VERSION < 11000
-#define CAN_GET_APRIORI_KERNEL_HANDLE 0
+#define CAW_CAN_GET_APRIORI_KERNEL_HANDLE 0
 #define VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE virtual
 #else
-#define CAN_GET_APRIORI_KERNEL_HANDLE 1
+#define CAW_CAN_GET_APRIORI_KERNEL_HANDLE 1
 #define VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 #endif
 ///@endcond
@@ -144,7 +144,7 @@ public: // getters
 	 * @note for earlier versions of CUDA, and for apriori-compiled kernels, this
 	 * handle may be unavailable.
 	 */
-#if CAN_GET_APRIORI_KERNEL_HANDLE
+#if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 	kernel::handle_t handle() const noexcept { return handle_; }
 #else
 	kernel::handle_t handle() const

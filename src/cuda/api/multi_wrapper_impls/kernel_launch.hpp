@@ -439,7 +439,7 @@ void launch_type_erased(
 }
 #endif // CUDA_VERSION >= 12000
 
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 #if defined(__CUDACC__)
 
@@ -512,7 +512,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 #endif // CUDA_VERSION >= 10000
 
 #endif // defined(__CUDACC__)
-#endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 } // namespace cuda
 

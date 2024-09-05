@@ -19,7 +19,7 @@ namespace cuda {
 
 namespace kernel {
 
-#if ! CAN_GET_APRIORI_KERNEL_HANDLE
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 #if defined(__CUDACC__)
 
 // Unfortunately, the CUDA runtime API does not allow for computation of the grid parameters for maximum occupancy
@@ -112,7 +112,7 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 }
 
 #endif // defined(__CUDACC__)
-#endif // ! CAN_GET_APRIORI_KERNEL_HANDLE
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
 namespace apriori_compiled {
 
@@ -130,7 +130,7 @@ apriori_compiled_t get(
 		"function must be a bona fide pointer to a kernel (__global__) function");
 
 	auto ptr_ = reinterpret_cast<const void *>(function_ptr);
-#if CAN_GET_APRIORI_KERNEL_HANDLE
+#if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 	auto handle = detail_::get_handle(ptr_);
 #else
 	auto handle = nullptr;
