@@ -128,13 +128,13 @@ void getDeviceCount(ipcDevices_t *devices)
 			}
 		}
 
-		devices->ordinals[0] = uvaOrdinals[0];
-
 		if (uvaCount < 2)
 		{
 			devices->count = uvaCount;
 			exit(EXIT_SUCCESS);
 		}
+
+		devices->ordinals[0] = uvaOrdinals[0];
 
 		// Check possibility for peer accesses, relevant to our tests
 		printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
