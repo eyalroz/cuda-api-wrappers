@@ -106,6 +106,22 @@ inline void set_attribute_in_current_context(handle_t handle, attribute_t attrib
 #endif
 }
 
+#if CUDA_VERSION >= 12030
+inline const char * get_name_in_current_context(handle_t handle)
+{
+	const char* result;
+	auto status = cuFuncGetName(&result, handle);
+	throw_if_error_lazy(status, "Failed obtaining the name for " + identify(handle));
+	return result;
+}
+
+inline const char * get_name(context::handle_t context_handle, handle_t kernel_handle)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return get_name_in_current_context(kernel_handle);
+}
+#endif // CUDA_VERSION >= 12300
+
 } // namespace detail_
 
 inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute);
@@ -157,6 +173,10 @@ public: // getters
 #endif
 		return handle_;
 	}
+#endif
+
+#if CUDA_VERSION >= 12030
+	const char *name() const { return cuda::kernel::detail_::get_name(context_handle_, handle_); }
 #endif
 
 public: // operators

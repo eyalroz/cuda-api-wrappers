@@ -54,6 +54,17 @@ int main(int argc, char **argv)
 
 	auto kernel = cuda::kernel::get(device, kernel_function);
 
+#if CUDA_VERSION >= 12030
+	cuda::kernel_t const& base_ref = kernel;
+	auto name_from_kernel = base_ref.name();
+	if (strcmp(name_from_kernel, kernel_name) != 0) {
+		std::cout
+			<< "CUDA reports a different name for kernel \"" << kernel_name
+			<< "\" via its handle: \"" << name_from_kernel << "\"" << std::endl;
+		return EXIT_FAILURE;
+	}
+#endif
+
 	// ------------------------------------------
 	//  Attributes without a specific API call
 	// ------------------------------------------
