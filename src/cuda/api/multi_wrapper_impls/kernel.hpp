@@ -15,6 +15,7 @@
 #include "../pointer.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
+#include "../module.hpp"
 
 namespace cuda {
 
@@ -33,6 +34,14 @@ inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attri
 {
 	kernel::detail_::set_attribute_in_current_context(handle_, attribute, value);
 }
+
+#if CUDA_VERSION >= 12030
+inline module_t kernel_t::module() const
+{
+	auto module_handle = kernel::detail_::get_module(context_handle_, handle_);
+	return module::detail_::wrap(device_id_, context_handle_, module_handle, do_not_take_ownership);
+}
+#endif
 
 namespace detail_ {
 
