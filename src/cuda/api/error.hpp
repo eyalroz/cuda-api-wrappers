@@ -605,7 +605,7 @@ inline ::std::string identify(handle_t handle, context::handle_t context_handle,
 	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
 }
 
-} // namespace detail
+} // namespace detail_
 } // namespace kernel
 
 namespace memory {
