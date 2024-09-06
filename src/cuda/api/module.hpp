@@ -91,6 +91,17 @@ module_t create(
 	ContiguousContainer  module_data);
 ///@}
 
+#if CUDA_VERSION >= 12030
+using loading_mode_t = CUmoduleLoadingMode;
+
+inline loading_mode_t loading_mode() {
+	loading_mode_t result;
+	auto status = cuModuleGetLoadingMode(&result);
+	throw_if_error_lazy(status, "Failed obtaining CUDA module loading mode");
+	return result;
+}
+#endif
+
 } // namespace module
 
 /**
