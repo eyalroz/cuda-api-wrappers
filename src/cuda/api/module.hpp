@@ -63,6 +63,16 @@ inline ::std::string identify(const module::handle_t &handle, context::handle_t 
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id);
 
+#if CUDA_VERSION >= 12040
+inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, size_t num_kernels)
+{
+	auto result = make_unique_span<kernel::handle_t>(num_kernels);
+	auto status = cuModuleEnumerateFunctions(result.data(), num_kernels, module_handle);
+	throw_if_error_lazy(status, "Failed enumerating the kernels in " + module::detail_::identify(module_handle));
+	return result;
+}
+#endif
+
 } // namespace detail_
 
 /**
@@ -152,6 +162,25 @@ public: // getters
 		throw_if_error_lazy(result, "Obtaining the address and size of a named global object");
 		return { memory::as_pointer(dptr), size };
 	}
+
+#if CUDA_VERSION >= 12040
+	size_t get_num_kernels() const
+	{
+		unsigned result;
+		auto status = cuModuleGetFunctionCount(&result, handle_);
+		throw_if_error_lazy(status, "Failed determining function count for " + module::detail_::identify(*this));
+		return result;
+	}
+
+	unique_span<kernel_t> get_kernels() const
+	{
+		auto num_kernels = get_num_kernels();
+		// It's ok if the number is 0!
+		auto handles = module::detail_::get_kernel_handles(handle_, num_kernels);
+		auto gen = [&](size_t i) { return kernel::wrap(device_id_, context_handle_, handles[i]); };
+		return generate_unique_span<kernel_t>(handles.size(), gen);
+	}
+#endif // CUDA_VERSION >= 12040
 
 	// TODO: Implement a surface reference and texture reference class rather than these raw pointers.
 
