@@ -100,7 +100,7 @@ struct poor_mans_optional {
 	template<typename U>
 	T value_or(U&& fallback_value)
 	{
-		has_value_ ? maybe_value.value : static_cast<T>(::std::forward<U>(fallback_value));
+		return has_value_ ? maybe_value.value : static_cast<T>(::std::forward<U>(fallback_value));
 	}
 
 	T& operator*() noexcept { return maybe_value.value; }
