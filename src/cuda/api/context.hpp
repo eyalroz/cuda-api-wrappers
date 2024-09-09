@@ -759,14 +759,16 @@ protected: // data members
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{
-inline bool operator==(const context_t& lhs, const context_t& rhs)
+inline bool operator==(const context_t& lhs, const context_t& rhs) noexcept
 {
-	return lhs.handle() == rhs.handle();
+	// Note: Contexts on different devices cannot have the same context handle,
+	// so this is redundant, but let's be extra safe:
+	return lhs.device_id() == rhs.device_id() and lhs.handle() == rhs.handle();
 }
 
-inline bool operator!=(const context_t& lhs, const context_t& rhs)
+inline bool operator!=(const context_t& lhs, const context_t& rhs) noexcept
 {
-	return lhs.handle() != rhs.handle();
+	return not (lhs == rhs);
 }
 ///@}
 

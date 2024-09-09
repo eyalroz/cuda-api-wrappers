@@ -587,6 +587,19 @@ inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
 		dynamic_shared_memory_per_block, disable_caching_override);
 }
 
+inline bool operator==(const kernel_t& lhs, const kernel_t& rhs) noexcept
+{
+	return
+		    lhs.device_id()      == rhs.device_id()
+		and lhs.context_handle() == rhs.context_handle()
+		and lhs.handle()         == rhs.handle();
+}
+
+inline bool operator!=(const kernel_t& lhs, const kernel_t& rhs) noexcept
+{
+	return not (lhs == rhs);
+}
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_KERNEL_HPP_
