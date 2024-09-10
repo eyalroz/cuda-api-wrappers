@@ -39,7 +39,7 @@
 #include <cuda/api.hpp>
 #include <cuda/rtc.hpp>
 
-#include "type_name.hpp"
+#include "../../type_name.hpp"
 
 #include <cassert>
 #include <cmath>
