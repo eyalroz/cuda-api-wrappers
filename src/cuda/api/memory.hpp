@@ -98,6 +98,18 @@ struct allocation_options {
 
 namespace detail_ {
 
+template <typename T, bool CheckConstructibility = false>
+inline void check_allocation_type() noexcept
+{
+	static_assert(::std::is_trivially_constructible<T>::value,
+		"Attempt to create a typed buffer of a non-trivially-constructive type");
+	static_assert(not CheckConstructibility or ::std::is_trivially_destructible<T>::value,
+		"Attempt to create a typed buffer of a non-trivially-destructible type "
+		"without allowing for its destruction");
+	static_assert(::std::is_trivially_copyable<T>::value,
+		"Attempt to create a typed buffer of a non-trivially-copyable type");
+}
+
 inline unsigned make_cuda_host_alloc_flags(allocation_options options)
 {
 	return
@@ -325,6 +337,7 @@ namespace detail_ {
 struct allocator {
 	void* operator()(size_t num_bytes) const { return detail_::allocate_in_current_context(num_bytes).start(); }
 };
+
 struct deleter {
 	void operator()(void* ptr) const { cuda::memory::device::free(ptr); }
 };
@@ -2446,25 +2459,48 @@ inline bool is_part_of_a_region_pair(const void* ptr)
 
 } // namespace mapped
 
+namespace detail_ {
+/**
+ * Create a unique_span without default construction, using raw-memory allocator
+ * and deleter gadgets.
+ *
+ * @note We allow this only for "convenient" types; see @ref detail_check_allocation_type
+ *
+ * @tparam T Element of the created unique_span
+ * @tparam UntypedAllocator can allocate untyped memory given a size
+ * @tparam UntypedDeleter can delete memory given a pointer (disregarding the type)
+ *
+ * @param size number of elements in the unique_span to be created
+ * @param raw_allocator a gadget for allocating untyped memory
+ * @param raw_deleter a gadget which can de-allocate/delete allocations by @p raw_allocator
+ * @return the newly-created unique_span
+ */
+template <typename T, typename RawDeleter, typename RegionAllocator>
+unique_span<T> make_convenient_type_unique_span(size_t size, RegionAllocator allocator)
+{
+	memory::detail_::check_allocation_type<T>();
+	auto deleter = [](span<T> sp) {
+		return RawDeleter{}(sp.data());
+	};
+	region_t allocated_region = allocator(size * sizeof(T));
+	return unique_span<T>(
+		allocated_region.as_span<T>(), // no constructor calls - trivial construction
+		deleter // no destructor calls - trivial destruction
+	);
+}
 
+} // namespace detail_
 
 
 namespace device {
-
-/// A unique span of device-global memory
-template <typename T>
-using unique_span = cuda::unique_span<T, detail_::deleter>;
 
 namespace detail_ {
 
 template <typename T>
 unique_span<T> make_unique_span(const context::handle_t context_handle, size_t size)
 {
-	// Note: _Not_ asserting trivial-copy-constructibility here; so if you want to copy data
-	// to/from the device using this object - it's your own repsonsibility to ensure that's
-	// a valid thing to do.
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return unique_span<T>{ allocate_in_current_context(size * sizeof(T)) };
+	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocate_in_current_context);
 }
 
 } // namespace detail_
@@ -2510,23 +2546,19 @@ unique_span<T> make_unique_span(size_t size);
 
 /// See @ref `device::make_unique_span(const context_t& context, size_t size)`
 template <typename T>
-inline device::unique_span<T> make_unique_span(const context_t& context, size_t size)
+inline unique_span<T> make_unique_span(const context_t& context, size_t size)
 {
 	return device::make_unique_span<T>(context, size);
 }
 
 /// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
 template <typename T>
-inline device::unique_span<T> make_unique_span(const device_t& device, size_t size)
+inline unique_span<T> make_unique_span(const device_t& device, size_t size)
 {
 	return device::make_unique_span<T>(device, size);
 }
 
 namespace host {
-
-/// A unique span of CUDA-driver-allocated, pinned host (=system) memory
-template <typename T>
-using unique_span = cuda::unique_span<T, detail_::deleter>;
 
 /**
  * Allocate memory for a consecutive sequence of typed elements in system
@@ -2543,34 +2575,35 @@ using unique_span = cuda::unique_span<T, detail_::deleter>;
  * similar to {@ref cuda::device::make_unique_region}, except that the allocation is
  * conceived as typed elements.
  *
- * @note Typically, this is used for trivially-constructible elements, for which reason the
- * non-construction of individual elements should not pose a problem. But - let the user
- * beware, especially since this is host-side memory.
+ * @note We assume this memory is used for copying to or from device-side memory; hence,
+ * we constrain the type to be trivially constructible, destructible and copyable
+ *
+ * @note ignoring alignment
  */
 template <typename T>
 unique_span<T> make_unique_span(size_t size)
 {
-	return unique_span<T>{ allocate(size * sizeof(T)) };
+	// Need this because of allocate takes more arguments and has default ones
+	auto allocator = [](size_t size) { return allocate(size); };
+	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocator);
 }
 
 } // namespace host
 
 namespace managed {
 
-/// A unique span of CUDA-driver-allocated managed memory
-template <typename T>
-using unique_span = cuda::unique_span<T, detail_::deleter>;
-
 namespace detail_ {
 
-template <typename T>
+template <typename T, initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 unique_span<T> make_unique_span(
 	const context::handle_t  context_handle,
-	size_t                   size,
-	initial_visibility_t     initial_visibility = initial_visibility_t::to_all_devices)
+	size_t                   size)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return unique_span<T>{ allocate_in_current_context(size * sizeof(T), initial_visibility) };
+	auto allocator = [](size_t size) {
+		return allocate_in_current_context(size, InitialVisibility);
+	};
+	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocator);
 }
 
 } // namespace detail_
@@ -2601,7 +2634,7 @@ template <typename T>
 unique_span<T> make_unique_span(
 	const context_t&      context,
 	size_t                size,
-	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
  * @copydoc make_unique_span(const context_t&, size_t)
@@ -2612,7 +2645,7 @@ template <typename T>
 unique_span<T> make_unique_span(
 	const device_t&       device,
 	size_t                size,
-	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
  * @copydoc make_unique_span(const context_t&, size_t)
@@ -2622,8 +2655,8 @@ unique_span<T> make_unique_span(
  */
 template <typename T>
 unique_span<T> make_unique_span(
-	size_t                size,
-	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
+    size_t size,
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 } // namespace managed
 

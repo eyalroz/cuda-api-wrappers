@@ -74,17 +74,24 @@ template <typename T>
 unique_span<T> make_unique_span(
 	const context_t&      context,
 	size_t                size,
-	initial_visibility_t  initial_visibility)
+    initial_visibility_t  initial_visibility)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return unique_span<T>{ detail_::allocate_in_current_context(size * sizeof(T), initial_visibility) };
+    switch (initial_visibility) {
+    case initial_visibility_t::to_all_devices:
+        return detail_::make_unique_span<T, initial_visibility_t::to_all_devices>(context.handle(), size);
+    case initial_visibility_t::to_supporters_of_concurrent_managed_access:
+        return detail_::make_unique_span<T, initial_visibility_t::to_supporters_of_concurrent_managed_access>(context.handle(), size);
+    default:
+        throw ::std::logic_error("Library not yet updated to support additional initial visibility values");
+    }
 }
 
 template <typename T>
 unique_span<T> make_unique_span(
 	const device_t&       device,
 	size_t                size,
-	initial_visibility_t  initial_visibility)
+    initial_visibility_t  initial_visibility)
 {
 	auto pc = device.primary_context();
 	return make_unique_span<T>(pc, size, initial_visibility);
