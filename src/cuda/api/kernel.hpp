@@ -191,7 +191,9 @@ public: // getters
 #endif
 
 #if CUDA_VERSION >= 12030
-	const char *name() const { return cuda::kernel::detail_::get_name(context_handle_, handle_); }
+	/// Return the mangled name of the kernel (representing the original name, and,
+	/// possibly, the parameter types)
+	const char *mangled_name() const { return cuda::kernel::detail_::get_name(context_handle_, handle_); }
 	module_t module() const;
 #endif
 
