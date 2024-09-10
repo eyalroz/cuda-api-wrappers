@@ -9,6 +9,9 @@
 
 #include <string>
 #include <iostream>
+#ifdef __GNUC__
+#include <cxxabi.h>
+#endif
 
 void report_current_context(const std::string& prefix);
 void report_context_stack(const std::string& prefix);
@@ -256,6 +259,22 @@ cuda::device::id_t choose_device(int argc, char ** argv)
 {
 	return choose_device(argc, const_cast<char const**>(argv));
 }
+
+#ifdef __GNUC__
+// Inefficient, but simple
+inline std::string demangle(const char *mangled_name)
+{
+	if (mangled_name == nullptr) { return nullptr; }
+	int status;
+	char *raw_demangled = abi::__cxa_demangle(mangled_name, 0 /* output buffer */, 0 /* length */, &status);
+	if (raw_demangled == nullptr) {
+		throw std::runtime_error(std::string("Failed demangling \"") + mangled_name + '\"');
+	}
+	std::string result { raw_demangled };
+	free(raw_demangled);
+	return result;
+}
+#endif
 
 
 #endif // EXAMPLES_COMMON_HPP_
