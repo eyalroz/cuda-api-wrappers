@@ -239,6 +239,9 @@ target_link_libraries(jitify cuda-api-wrappers::rtc)
 if(NOT MSVC)
 	target_link_libraries(jitify stdc++fs)
 endif()
+add_executable(module_management by_api_module/module_management.cpp)
+target_link_libraries(module_management cuda-api-wrappers::rtc)
+
 
 if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
 
