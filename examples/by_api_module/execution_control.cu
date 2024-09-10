@@ -56,13 +56,16 @@ int main(int argc, char **argv)
 
 #if CUDA_VERSION >= 12030
 	cuda::kernel_t const& base_ref = kernel;
-	auto name_from_kernel = base_ref.name();
-	if (strcmp(name_from_kernel, kernel_name) != 0) {
+	auto mangled_name_from_kernel = base_ref.mangled_name();
+#ifdef __GNUC__
+	auto demangled_name = demangle(mangled_name_from_kernel);
+	if (strcmp(demangled_name.c_str(), kernel_name) != 0) {
 		std::cout
 			<< "CUDA reports a different name for kernel \"" << kernel_name
-			<< "\" via its handle: \"" << name_from_kernel << "\"" << std::endl;
+			<< "\" via its handle: \"" << demangled_name << "\"" << std::endl;
 		return EXIT_FAILURE;
 	}
+#endif
 #endif
 
 	// ------------------------------------------
