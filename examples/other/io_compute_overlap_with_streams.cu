@@ -46,12 +46,12 @@ constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
 }
 
 struct buffer_set_t {
-    cuda::memory::host::unique_span<element_t> host_lhs;
-    cuda::memory::host::unique_span<element_t> host_rhs;
-    cuda::memory::host::unique_span<element_t> host_result;
-    cuda::memory::device::unique_span<element_t> device_lhs;
-    cuda::memory::device::unique_span<element_t> device_rhs;
-    cuda::memory::device::unique_span<element_t> device_result;
+    cuda::unique_span<element_t> host_lhs;
+    cuda::unique_span<element_t> host_rhs;
+    cuda::unique_span<element_t> host_result;
+    cuda::unique_span<element_t> device_lhs;
+    cuda::unique_span<element_t> device_rhs;
+    cuda::unique_span<element_t> device_result;
 };
 
 std::vector<buffer_set_t> generate_buffers(

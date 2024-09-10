@@ -25,8 +25,8 @@ cuda::device::id_t get_current_device_id()
 
 void unique_spans()
 {
-	cuda::memory::host::unique_span<float> data1(nullptr, 0);
-	cuda::memory::host::unique_span<float> data2(nullptr, 0);
+	cuda::unique_span<float> data1(nullptr, 0, cuda::detail_::default_span_deleter<float>);
+	cuda::unique_span<float> data2(nullptr, 0, cuda::detail_::default_span_deleter<float>);
 
 	data1 = std::move(data2);
 }

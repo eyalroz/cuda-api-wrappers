@@ -164,8 +164,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
     int numElems = 10000000;
     int repeat = 5;
 	vector<cuda::stream_t> streams;
-    vector<cuda::memory::device::unique_span<int>> buffers;
-    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::unique_span<int>> buffers;
+    vector<cuda::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
@@ -294,8 +294,8 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
 
 	vector<cuda::stream_t> streams_0;
 	vector<cuda::stream_t> streams_1;
-    vector<cuda::memory::device::unique_span<int>> buffers;
-    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::unique_span<int>> buffers;
+    vector<cuda::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
@@ -405,8 +405,8 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 	//
 
 	vector<cuda::stream_t> streams;
-    vector<cuda::memory::device::unique_span<int>> buffers;
-    vector<cuda::memory::device::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
+    vector<cuda::unique_span<int>> buffers;
+    vector<cuda::unique_span<int>> buffersD2D; // buffer for D2D, that is, intra-GPU copy
     vector<cuda::event_t> start;
     vector<cuda::event_t> stop;
 
