@@ -19,6 +19,11 @@
 #ifndef CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 #define CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
 
+#ifdef _MSC_VER
+// See @url https://stackoverflow.com/q/4913922/1593077
+#define NOMINMAX
+#endif
+
 #if (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
 #error "The CUDA API headers can only be compiled with C++11 or a later version of the C++ language standard"
 #endif

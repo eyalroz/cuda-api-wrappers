@@ -13,6 +13,7 @@
 #include <cuda/nvtx.hpp>
 #endif
 #include <cuda/rtc.hpp>
+#include <cuda/fatbin.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -41,6 +42,11 @@ int main()
 
 	auto nvrtc_version = cuda::version_numbers::nvrtc();
 	(void) nvrtc_version;
+
+#if CUDA_VERSION >= 12040
+	auto fatbin_version = cuda::version_numbers::fatbin();
+	(void) fatbin_version;
+#endif
 
 #ifndef _MSC_VER
 	auto nvtx_color_yellow = cuda::profiling::color_t::from_hex(0x0FFFF00);
