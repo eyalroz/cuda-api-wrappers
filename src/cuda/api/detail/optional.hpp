@@ -98,7 +98,7 @@ struct poor_mans_optional {
 	{ return maybe_value.value; }
 
 	template<typename U>
-	T value_or(U&& fallback_value)
+	T value_or(U&& fallback_value) const
 	{
 		return has_value_ ? maybe_value.value : static_cast<T>(::std::forward<U>(fallback_value));
 	}
