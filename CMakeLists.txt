@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 PROJECT(cuda-api-wrappers
-	VERSION 0.7.2
+	VERSION 0.8.0
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 )
@@ -25,8 +25,8 @@ if(libm_exists)
 	set(c_math_lib m)
 endif()
 
-if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
-	foreach(tgt in nvptxcompiler nvptxcompiler_static)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
+	foreach(tgt in nvfatbin nvfatbin_static)
 		if (NOT TARGET ${tgt})
 			_CUDAToolkit_find_and_add_import_lib(${tgt})
 		endif()
@@ -35,7 +35,7 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
 
-set(targets runtime-and-driver nvtx rtc)
+set(targets runtime-and-driver nvtx rtc fatbin)
 set(prefixed-targets "")
 set(caw_namespace "cuda-api-wrappers")
 
@@ -79,13 +79,29 @@ add_library("${caw_namespace}::driver-and-runtime" ALIAS caw_runtime-and-driver)
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	if (TARGET CUDA::nvptxcompiler)
+		target_link_libraries(caw_rtc INTERFACE CUDA::nvptxcompiler)
 		set(ptx_compiler_target nvptxcompiler)
+	elseif (TARGET CUDA::nvptxcompiler_static)
+		target_link_libraries(caw_rtc INTERFACE CUDA::nvptxcompiler_static)
 	else()
-		set(ptx_compiler_target nvptxcompiler_static)
+		message(WARNING "No valid NVIDIA PTX Compiler target is available")
 	endif()
-	target_link_libraries(caw_rtc INTERFACE CUDA::${ptx_compiler_target})
+endif()
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
+	if (TARGET CUDA::nvfatbin)
+		target_link_libraries(caw_fatbin INTERFACE CUDA::nvfatbin)
+	elseif (TARGET CUDA::nvfatbin)
+		target_link_libraries(caw_fatbin INTERFACE CUDA::nvfatbin_static)
+	elseif(EXISTS "${CUDA_nvfatbin_LIBRARY}") 
+		target_link_libraries(caw_fatbin INTERFACE "${CUDA_nvfatbin_LIBRARY}")
+	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}") 
+		target_link_libraries(caw_fatbin INTERFACE "${CUDA_nvfatbin_static_LIBRARY}")
+	else()
+		message(WARNING "Could not locate a valid NVIDIA fatbin creator target or library file")
+	endif()
 endif()
 
+target_link_libraries(caw_fatbin INTERFACE cuda-api-wrappers::runtime-and-driver)
 target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver)
 
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 10.0)
@@ -99,8 +115,10 @@ endif()
 # but for two settings I won't bother creating one of those
 if(DEFINED CMAKE_USE_PTHREADS_INIT)
 	target_compile_definitions(caw_nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
+	target_compile_definitions(caw_fatbin INTERFACE "" "CUDA_API_WRAPPERS_USE_PTHREADS")
 elseif(DEFINED CMAKE_USE_WIN32_THREADS_INIT)
 	target_compile_definitions(caw_nvtx INTERFACE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
+	target_compile_definitions(caw_fatbin INTERFACE "" "CUDA_API_WRAPPERS_USE_WIN32_THREADS")
 endif()
 
 # --------

@@ -1,4 +1,4 @@
-# Thin C++-flavored wrappers for the CUDA APIs:<br> Runtime, Driver, NVRTC, PTX compiler and NVTX
+# Thin C++-flavored wrappers for the CUDA APIs:<br> Runtime, Driver, NVRTC and more
 
 <!--Branch Build Status: Master [![Master Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=master)](https://travis-ci.com/eyalroz/cuda-api-wrappers) | Development: [![Development Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=development)](https://travis-ci.com/eyalroz/cuda-api-wrappers) -->
 
@@ -16,6 +16,7 @@ This is a header-only library of integrated wrappers around the core parts of NV
 * The slightly higher-level CUDA [Runtime API](http://docs.nvidia.com/cuda/cuda-runtime-api/index.html)
 * NVIDIA's dynamic CUDA code compilation library, [NVRTC](http://docs.nvidia.com/cuda/nvrtc/index.html)
 * NVIDIA's out-of-driver, full-featured [PTX compiler library](https://docs.nvidia.com/cuda/ptx-compiler-api/index.html) (available since CUDA 11.1)
+* NVIDIA's fat binary creation library [nvFatbin](https://docs.nvidia.com/cuda/nvfatbin/index.html) (available since CUDA 12.4)
 * The NVIDIA profiler in-program API, also known as [NVTX](https://docs.nvidia.com/cuda/profiler-users-guide/index.html#nvtx) (the NVIDIA Toolkit Extensions library).
 
 It is intended for those who would otherwise use these APIs directly, to make working with them be more intuitive and consistent, making use of modern C++ language capabilities, programming idioms and best practices. In a nutshell - making CUDA API work more fun :-)

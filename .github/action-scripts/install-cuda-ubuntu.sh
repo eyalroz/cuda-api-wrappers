@@ -11,26 +11,9 @@
 #
 
 
-## -------------------
-## Constants
-## -------------------
-
 # @todo - apt repos/known supported versions?
 
 # @todo - GCC support matrix?
-
-# List of sub-packages to install.
-# @todo - pass this in from outside the script? 
-# @todo - check the specified subpackages exist via apt pre-install?  apt-rdepends cuda-9-0 | grep "^cuda-"?
-
-# Ideally choose from the list of meta-packages to minimise variance between cuda versions (although it does change too)
-CUDA_PACKAGES_IN=(
-	"command-line-tools"
-	"nvrtc-dev"
-	"cudart-dev"
-	"nvcc"
-	"profiler-api"
-)
 
 ## -------------------
 ## Bash functions
@@ -55,6 +38,7 @@ function version_lt() {
 	[ "$#" != "2" ] && echo "${FUNCNAME[0]} requires exactly 2 arguments." && exit 1
 	[ "$1" = "$2" ] && return 1 || version_le $1 $2
 }
+
 
 ## -------------------
 ## Select CUDA version
@@ -93,6 +77,27 @@ if [ -z ${UBUNTU_VERSION} ]; then
 	exit 1
 fi
 
+## -------------------
+## List of sub-packages to install
+## -------------------
+
+# @todo: Use pairs of package name and minimum version (or version range)
+
+# Ideally choose from the list of meta-packages to minimise variance between cuda versions (although it does change too)
+CUDA_PACKAGES_IN=(
+	"command-line-tools"
+	"nvrtc-dev"
+	"cudart-dev"
+	"nvcc"
+	"profiler-api"
+)
+
+if version_ge "$CUDA_VERSION_MAJOR_MINOR" "12.4"; then
+	CUDA_PACKAGES_IN+=(
+		"libnvfatbin"
+		"libnvfatbin-dev"
+	)
+fi
 
 ## ---------------------------
 ## GCC studio support check?
@@ -105,6 +110,7 @@ fi
 ## -------------------------------
 
 CUDA_PACKAGES=""
+
 for package in "${CUDA_PACKAGES_IN[@]}"
 do : 
 	if [[ "${package}" == "profiler-api" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "11.8" ; then
