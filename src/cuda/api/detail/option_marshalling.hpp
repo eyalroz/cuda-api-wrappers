@@ -1,5 +1,5 @@
-#ifndef SRC_CUDA_API_DETAIL_MARSHALLED_OPTIONS_HPP_
-#define SRC_CUDA_API_DETAIL_MARSHALLED_OPTIONS_HPP_
+#ifndef SRC_CUDA_API_DETAIL_OPTION_MARSHALLING_HPP_
+#define SRC_CUDA_API_DETAIL_OPTION_MARSHALLING_HPP_
 
 #include "../types.hpp"
 
@@ -12,7 +12,7 @@
 
 namespace cuda {
 
-namespace rtc {
+namespace marshalling {
 
 namespace detail_ {
 
@@ -117,10 +117,82 @@ MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& op
 	}
 	return mt;
 }
+
+
+// A partial specialization gadget
+template<typename CompilationOptions, typename MarshalTarget, typename Delimiter>
+struct gadget {
+	/**
+	 * Uses the streaming/left-shift operator (<<) to render a delimited sequence of
+	 * command-line-argument-like options (with or without a value as relevant)
+	 * into some target entity - which could be a buffer of chars or a more complex
+	 * structure like @ref marshalled_options_t.
+	 */
+	static void process(
+		const CompilationOptions &opts, MarshalTarget &marshalled, Delimiter delimiter,
+		bool need_delimiter_after_last_option);
+};
+
+
+template <typename CompilationOptions, typename MarshalTarget, typename Delimiter>
+void process(
+	const CompilationOptions& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	bool need_delimiter_after_last_option = false)
+{
+	return detail_::gadget<CompilationOptions, MarshalTarget, Delimiter>::process(
+		opts, marshalled, delimiter, need_delimiter_after_last_option);
+}
+
 } // namespace detail_
 
-} // namespace rtc
+/**
+ * Finalize a compilation options "building" object into a structure passable to some of the
+ * CUDA JIT compilation APIs
+ *
+ * @tparam Kind The kind of JITable program options to render
+ *
+ * @return A structure of multiple strings, passable to various CUDA APIs, but no longer
+ * easy to modify and manipulate.
+ */
+template <typename CompilationOptions>
+inline detail_::marshalled_options_t marshal(const CompilationOptions& opts)
+{
+	using detail_::marshalled_options_t;
+	marshalled_options_t marshalled;
+	// TODO: Can we easily determine the max number of options here?
+	enum : bool { need_delimiter_after_last_option = true };
+	marshalling::detail_::process(opts, marshalled, marshalled_options_t::advance_gadget{},
+		need_delimiter_after_last_option);
+	return marshalled;
+}
+
+/**
+ * Finalize a set of options into the form of a string appendable to a command-line
+ *
+ * @tparam Kind The kind of options to render
+ *
+ * @return a string made up of command-line options - switches and options with arguments,
+ * designated by single or double dashes.
+ *
+ * @note An implementation of a processor/renderer of individual options must be
+ * provided via detail_::process() for this function to be usable with any particular
+ * type of options.
+ *
+ */
+template <typename CompilationOptions>
+inline ::std::string render(const CompilationOptions& opts)
+{
+	::std::ostringstream oss;
+	detail_::process(opts, oss, ' ');
+	if (oss.tellp() > 0) {
+		// Remove the last, excessive, delimiter
+		oss.seekp(-1,oss.cur);
+	}
+	return oss.str();
+}
+
+} // namespace marshalling
 
 } // namespace cuda
 
-#endif /* SRC_CUDA_API_DETAIL_MARSHALLED_OPTIONS_HPP_ */
+#endif /* SRC_CUDA_API_DETAIL_OPTION_MARSHALLING_HPP_ */

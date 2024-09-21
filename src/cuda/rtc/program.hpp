@@ -552,7 +552,7 @@ public:
 		if ((source_ == nullptr or *source_ == '\0') and options_.preinclude_files.empty()) {
 			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
 		}
-		auto marshalled_options = detail_::marshal(options_);
+		auto marshalled_options = cuda::marshalling::marshal(options_);
 		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
 		return program::detail_::compile(
 			name_.c_str(),
@@ -723,7 +723,7 @@ public:
 		if (source_ == nullptr or *source_ == '\0') {
 			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
 		}
-		auto marshalled_options = detail_::marshal(options_);
+		auto marshalled_options = cuda::marshalling::marshal(options_);
 		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
 		return program::detail_::compile_ptx(
 			name_.c_str(),
