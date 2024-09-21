@@ -1,8 +1,7 @@
 /**
  * @file
  *
- * @brief Definitions and utility functions relating to just-in-time compilation, assembly
- * and linking of CUDA code.
+ * @brief Contains @ref cuda::link::options_t class and related definitions
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_

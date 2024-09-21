@@ -82,7 +82,7 @@ struct file_t {
 class link_t {
 
 public: // getters
-	/// The raw CUDA ID for the device w.r.t. which the event is defined
+	/// The raw CUDA ID for the device w.r.t. which the link is defined
 	device::id_t device_id() const noexcept
 	{ return device_id_; };
 
@@ -90,11 +90,11 @@ public: // getters
 	context::handle_t context_handle() const noexcept
 	{ return context_handle_; }
 
-	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
+	/// True if this wrapper is responsible for telling CUDA to destroy the link upon the wrapper's own destruction
 	bool is_owning() const noexcept
 	{ return owning; }
 
-	/// The device w.r.t. which the event is defined
+	/// The device w.r.t. which the link is defined
 	device_t device() const;
 
 	/// The context in which this stream was defined.
