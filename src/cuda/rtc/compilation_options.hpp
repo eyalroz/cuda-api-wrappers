@@ -8,7 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_
 #define CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_
 
-#include "detail/marshalled_options.hpp"
+#include "cuda/api/detail/option_marshalling.hpp"
 
 #include "../api/device_properties.hpp"
 #include "../api/device.hpp"
@@ -167,8 +167,7 @@ class compilation_options_t;
 template <>
 class compilation_options_t<ptx> final :
 	public compilation_options_base_t<ptx>,
-	public common_ptx_compilation_options_t
-{
+	public common_ptx_compilation_options_t {
 public:
 	///@cond
 	using parent = compilation_options_base_t<ptx>;
@@ -532,251 +531,201 @@ public: // "shorthands" for more complex option setting
 	}
 }; // compilation_options_t<cuda_cpp>
 
-namespace detail_ {
-
-template <typename Delimiter>
-struct opt_start_t {
-	bool      ever_used;
-	Delimiter delimiter_;
-
-	opt_start_t(Delimiter delimiter) : ever_used(false), delimiter_(delimiter){ }
-};
-
-template <typename MarshalTarget, typename Delimiter>
-MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& opt_start)
+template <typename CompilationOptions>
+inline ::std::string render(const CompilationOptions& opts)
 {
-	if (not opt_start.ever_used) {
-		opt_start.ever_used = true;
-	}
-	else {
-		mt << opt_start.delimiter_;
-	}
-	return mt;
-}
-
-/**
- * Uses the streaming/left-shift operator (<<) to render a delimited sequence of
- * command-line-argument-like options (with or without a value as relevant)
- * into some target entity - which could be a buffer of chars or a more complex
- * structure like @ref marshalled_options_t.
- */
-template <typename MarshalTarget, typename Delimiter>
-void process(
-	const compilation_options_t<ptx>& opts, MarshalTarget& marshalled, Delimiter delimiter,
-	bool need_delimiter_after_last_option = false)
-{
-	detail_::opt_start_t<Delimiter> opt_start { delimiter };
-	// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
-	//  even when they are the compiler defaults.
-
-	// flags
-	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--compile-only";                  }
-	if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
-	if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                  }
-	if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";            }
-	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
-	if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
-	if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
-	if (opts.dont_merge_basicblocks)            { marshalled << opt_start << "--dont-merge-basicblocks";        }
-	{
-		const auto& osw = opts.situation_warnings;
-		if (osw.double_precision_ops)            { marshalled << opt_start << "--warn-on-double-precision-use";   }
-		if (osw.local_memory_use)                { marshalled << opt_start << "--warn-on-local-memory-usage";     }
-		if (osw.registers_spill_to_local_memory) { marshalled << opt_start << "--warn-on-spills";                 }
-		if (not osw.indeterminable_stack_size)   { marshalled << opt_start << "--suppress-stack-size-warning";    }
-		if (osw.double_demotion)                 { marshalled << opt_start << "--suppress-double-demote-warning"; }
-	}
-	if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";              }
-	if (opts.disable_optimizer_constants)       { marshalled << opt_start << "--disable-optimizer-constants";   }
-
-
-	if (opts.return_at_end_of_kernel)           { marshalled << opt_start << "--return-at-end";                 }
-	if (opts.preserve_variable_relocations)     { marshalled << opt_start << "--preserve-relocs";               }
-
-	// Non-flag single-value options
-
-	if (opts.optimization_level) {
-		marshalled << opt_start << "--opt-level" << opts.optimization_level.value();
-		if (opts.optimization_level.value() < O2
-		    and opts.allow_expensive_optimizations_below_O2)
-		{
-			marshalled << opt_start << "--allow-expensive-optimizations";
-		}
-	}
-
-	if (opts.maximum_register_counts.kernel) {
-		marshalled << opt_start << "--maxrregcount " << opts.maximum_register_counts.kernel.value();
-	}
-	if (opts.maximum_register_counts.device_function) {
-		marshalled << opt_start << "--device-function-maxrregcount " << opts.maximum_register_counts.device_function.value();
-	}
-
-	{
-		const auto& ocm = opts.caching_modes;
-		if (ocm.default_.load)  { marshalled << opt_start << "--def-load-cache "    << ocm.default_.load.value();  }
-		if (ocm.default_.store) { marshalled << opt_start << "--def-store-cache "   << ocm.default_.store.value(); }
-		if (ocm.forced.load)    { marshalled << opt_start << "--force-load-cache "  << ocm.forced.load.value();    }
-		if (ocm.forced.store)   { marshalled << opt_start << "--force-store-cache " << ocm.forced.store.value();   }
-	}
-
-	// Multi-value options
-
-	for(const auto& target : opts.targets_) {
-		auto prefix = opts.parse_without_code_generation ? "compute" : "sm";
-		marshalled << opt_start << "--gpu-name=" << prefix << '_'  << target.as_combined_number();
-	}
-
-	if (not opts.mangled_entry_function_names.empty()) {
-		marshalled << opt_start << "--entry";
-		bool first = true;
-		for (const auto &entry: opts.mangled_entry_function_names) {
-			if (first) { first = false; }
-			else { marshalled << ','; }
-			marshalled << entry;
-		}
-	}
-
-	if (need_delimiter_after_last_option) {
-		marshalled << opt_start; // If no options were marshalled, this does nothing
-	}
-}
-
-template <typename MarshalTarget, typename Delimiter>
-void process(
-	const compilation_options_t<cuda_cpp>& opts, MarshalTarget& marshalled, Delimiter delimiter,
-	bool need_delimiter_after_last_option = false)
-{
-	detail_::opt_start_t<Delimiter> opt_start { delimiter };
-	if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--relocatable-device-code=true";      }
-	if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program=true";     }
-	if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                      }
-	if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";                }
-	if (opts.support_128bit_integers)           { marshalled << opt_start << "--device-int128";                     }
-	if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
-	if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }
-	if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
-	if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include ";                }
-	if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
-	if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";                  }
-	if (opts.assume_restrict)                   { marshalled << opt_start << "--restrict";                          }
-	if (opts.default_execution_space_is_device) { marshalled << opt_start << "--device-as-default-execution-space"; }
-	if (not opts.display_error_numbers)         { marshalled << opt_start << "--no-display-error-number";           }
-	if (not opts.builtin_move_and_forward)      { marshalled << opt_start << "--builtin-move-forward=false";        }
-	if (not opts.increase_stack_limit_to_max)   { marshalled << opt_start << "--modify-stack-limit=false";          }
-	if (opts.link_time_optimization)            { marshalled << opt_start << "--dlink-time-opt";                    }
-	if (opts.use_fast_math)                     { marshalled << opt_start << "--use_fast_math";                     }
-	else {
-		if (opts.flush_denormal_floats_to_zero) { marshalled << opt_start << "--ftz";                               }
-		if (not opts.use_precise_square_root)   { marshalled << opt_start << "--prec-sqrt=false";                   }
-		if (not opts.use_precise_division)      { marshalled << opt_start << "--prec-div=false";                    }
-		if (not opts.use_fused_multiply_add)    { marshalled << opt_start << "--fmad=false";                        }
-	}
-	if (opts.optimize_device_code_in_debug_mode) {
-		marshalled << opt_start << "--dopt=on";
-	}
-	if (not opts.ptxas.empty()) {
-		marshalled << opt_start << "--ptxas-options=" << opts.ptxas;
-
-	}
-
-	if (opts.language_dialect) {
-		marshalled << opt_start << "--std=" << detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect.value())];
-	}
-
-	if (opts.maximum_register_count) {
-		marshalled << opt_start << "--maxrregcount=" << opts.maximum_register_count.value();
-	}
-
-	// Multi-value options
-
-	for(const auto& target : opts.targets_) {
-#if CUDA_VERSION < 11000
-		marshalled << opt_start << "--gpu-architecture=compute_" << target.as_combined_number();
-#else
-		marshalled << opt_start << "--gpu-architecture=sm_" << target.as_combined_number();
-#endif
-	}
-
-	for(const auto& def : opts.undefines) {
-		marshalled << opt_start << "-U" << def;
-		// Note: Could alternatively use "--undefine-macro=" instead of "-D"
-	}
-
-
-	for(const auto& def : opts.no_value_defines) {
-		marshalled << opt_start << "-D" << def;
-		// Note: Could alternatively use "--define-macro=" instead of "-D"
-	}
-
-	for(const auto& def : opts.valued_defines) {
-		marshalled << opt_start << "-D" << def.first << '=' << def.second;
-	}
-
-	for(const auto& path : opts.additional_include_paths) {
-		marshalled << opt_start << "--include-path=" << path;
-	}
-
-	for(const auto& preinclude_file : opts.preinclude_files) {
-		marshalled << opt_start << "--pre-include=" << preinclude_file;
-	}
-
-	for(const auto& override : opts.error_handling_overrides) {
-		marshalled
-			<< opt_start << "--diag-" << error::detail_::option_name_part(override.second)
-			<< '=' << override.first ;
-	}
-
-	for(const auto& extra_opt : opts.extra_options) {
-		marshalled << opt_start << extra_opt;
-	}
-
-	if (need_delimiter_after_last_option) {
-		marshalled << opt_start; // If no options were marshalled, this does nothing
-	}
-}
-
-/**
- * Finalize a compilation options "building" object into a structure passable to some of the
- * CUDA JIT compilation APIs
- *
- * @tparam Kind The kind of JITable program options to render
- *
- * @return A structure of multiple strings, passable to various CUDA APIs, but no longer
- * easy to modify and manipulate.
- */
-template <source_kind_t Kind>
-inline marshalled_options_t marshal(const compilation_options_t<Kind>& opts)
-{
-	marshalled_options_t mo;
-	// TODO: Can we easily determine the max number of options here?
-	constexpr bool need_delimiter_after_last_option { true };
-	detail_::process(opts, mo, marshalled_options_t::advance_gadget{}, need_delimiter_after_last_option);
-	return mo;
-}
-
-} // namespace detail_
-
-/**
- * Finalize a set of compilation options into the form of a string appendable to a command-line
- *
- * @tparam Kind The kind of JITable program options to render
- *
- * @return a string made up of command-line options - switches and options with arguments,
- * designated by single or double dashes.
- */
-template <source_kind_t Kind>
-inline ::std::string render(const compilation_options_t<Kind>& opts)
-{
-	::std::ostringstream oss;
-	detail_::process(opts, oss, ' ');
-	if (oss.tellp() > 0) {
-		// Remove the last, excessive, delimiter
-		oss.seekp(-1,oss.cur);
-	}
-	return oss.str();
+	return marshalling::render(opts);
 }
 
 } // namespace rtc
+
+namespace marshalling {
+
+namespace detail_ {
+
+template <typename MarshalTarget, typename Delimiter>
+struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
+	static void process(
+		const rtc::compilation_options_t<ptx> &opts,
+		MarshalTarget &marshalled, Delimiter delimiter,
+		bool need_delimiter_after_last_option)
+	{
+		opt_start_t<Delimiter> opt_start { delimiter };
+		// TODO: Consider taking an option to be verbose in specifying compilation flags, and setting option values
+		//  even when they are the compiler defaults.
+
+		// flags
+		if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--compile-only";                  }
+		if (opts.compile_as_tools_patch)            { marshalled << opt_start << "--compile-as-tools-patch";        }
+		if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                  }
+		if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";            }
+		if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program";      }
+		if (not opts.use_fused_multiply_add)        { marshalled << opt_start << "--fmad false";                    }
+		if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
+		if (opts.dont_merge_basicblocks)            { marshalled << opt_start << "--dont-merge-basicblocks";        }
+		{
+			const auto& osw = opts.situation_warnings;
+			if (osw.double_precision_ops)            { marshalled << opt_start << "--warn-on-double-precision-use";   }
+			if (osw.local_memory_use)                { marshalled << opt_start << "--warn-on-local-memory-usage";     }
+			if (osw.registers_spill_to_local_memory) { marshalled << opt_start << "--warn-on-spills";                 }
+			if (not osw.indeterminable_stack_size)   { marshalled << opt_start << "--suppress-stack-size-warning";    }
+			if (osw.double_demotion)                 { marshalled << opt_start << "--suppress-double-demote-warning"; }
+		}
+		if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";              }
+		if (opts.disable_optimizer_constants)       { marshalled << opt_start << "--disable-optimizer-constants";   }
+
+
+		if (opts.return_at_end_of_kernel)           { marshalled << opt_start << "--return-at-end";                 }
+		if (opts.preserve_variable_relocations)     { marshalled << opt_start << "--preserve-relocs";               }
+
+		// Non-flag single-value options
+
+		if (opts.optimization_level) {
+			marshalled << opt_start << "--opt-level" << opts.optimization_level.value();
+			if (opts.optimization_level.value() < rtc::O2
+				and opts.allow_expensive_optimizations_below_O2)
+			{
+				marshalled << opt_start << "--allow-expensive-optimizations";
+			}
+		}
+
+		if (opts.maximum_register_counts.kernel) {
+			marshalled << opt_start << "--maxrregcount " << opts.maximum_register_counts.kernel.value();
+		}
+		if (opts.maximum_register_counts.device_function) {
+			marshalled << opt_start << "--device-function-maxrregcount " << opts.maximum_register_counts.device_function.value();
+		}
+
+		{
+			const auto& ocm = opts.caching_modes;
+			if (ocm.default_.load)  { marshalled << opt_start << "--def-load-cache "    << ocm.default_.load.value();  }
+			if (ocm.default_.store) { marshalled << opt_start << "--def-store-cache "   << ocm.default_.store.value(); }
+			if (ocm.forced.load)    { marshalled << opt_start << "--force-load-cache "  << ocm.forced.load.value();    }
+			if (ocm.forced.store)   { marshalled << opt_start << "--force-store-cache " << ocm.forced.store.value();   }
+		}
+
+		// Multi-value options
+
+		for(const auto& target : opts.targets_) {
+			auto prefix = opts.parse_without_code_generation ? "compute" : "sm";
+			marshalled << opt_start << "--gpu-name=" << prefix << '_'  << target.as_combined_number();
+		}
+
+		if (not opts.mangled_entry_function_names.empty()) {
+			marshalled << opt_start << "--entry";
+			bool first = true;
+			for (const auto &entry: opts.mangled_entry_function_names) {
+				if (first) { first = false; }
+				else { marshalled << ','; }
+				marshalled << entry;
+			}
+		}
+
+		if (need_delimiter_after_last_option) {
+			marshalled << opt_start; // If no options were marshalled, this does nothing
+		}
+	}
+};
+
+template <typename MarshalTarget, typename Delimiter>
+struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
+	static void process(
+		const rtc::compilation_options_t<cuda_cpp>& opts, MarshalTarget& marshalled, Delimiter delimiter,
+		bool need_delimiter_after_last_option)
+	{
+		opt_start_t<Delimiter> opt_start { delimiter };
+		if (opts.generate_relocatable_device_code)  { marshalled << opt_start << "--relocatable-device-code=true";      }
+		if (opts.compile_extensible_whole_program)  { marshalled << opt_start << "--extensible-whole-program=true";     }
+		if (opts.generate_debug_info)               { marshalled << opt_start << "--device-debug";                      }
+		if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";                }
+		if (opts.support_128bit_integers)           { marshalled << opt_start << "--device-int128";                     }
+		if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
+		if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }
+		if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
+		if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include ";                }
+		if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
+		if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";                  }
+		if (opts.assume_restrict)                   { marshalled << opt_start << "--restrict";                          }
+		if (opts.default_execution_space_is_device) { marshalled << opt_start << "--device-as-default-execution-space"; }
+		if (not opts.display_error_numbers)         { marshalled << opt_start << "--no-display-error-number";           }
+		if (not opts.builtin_move_and_forward)      { marshalled << opt_start << "--builtin-move-forward=false";        }
+		if (not opts.increase_stack_limit_to_max)   { marshalled << opt_start << "--modify-stack-limit=false";          }
+		if (opts.link_time_optimization)            { marshalled << opt_start << "--dlink-time-opt";                    }
+		if (opts.use_fast_math)                     { marshalled << opt_start << "--use_fast_math";                     }
+		else {
+			if (opts.flush_denormal_floats_to_zero) { marshalled << opt_start << "--ftz";                               }
+			if (not opts.use_precise_square_root)   { marshalled << opt_start << "--prec-sqrt=false";                   }
+			if (not opts.use_precise_division)      { marshalled << opt_start << "--prec-div=false";                    }
+			if (not opts.use_fused_multiply_add)    { marshalled << opt_start << "--fmad=false";                        }
+		}
+		if (opts.optimize_device_code_in_debug_mode) {
+			marshalled << opt_start << "--dopt=on";
+		}
+		if (not opts.ptxas.empty()) {
+			marshalled << opt_start << "--ptxas-options=" << opts.ptxas;
+
+		}
+
+		if (opts.language_dialect) {
+			marshalled << opt_start << "--std=" << rtc::detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect.value())];
+		}
+
+		if (opts.maximum_register_count) {
+			marshalled << opt_start << "--maxrregcount=" << opts.maximum_register_count.value();
+		}
+
+		// Multi-value options
+
+		for(const auto& target : opts.targets_) {
+	#if CUDA_VERSION < 11000
+			marshalled << opt_start << "--gpu-architecture=compute_" << target.as_combined_number();
+	#else
+			marshalled << opt_start << "--gpu-architecture=sm_" << target.as_combined_number();
+	#endif
+		}
+
+		for(const auto& def : opts.undefines) {
+			marshalled << opt_start << "-U" << def;
+			// Note: Could alternatively use "--undefine-macro=" instead of "-D"
+		}
+
+
+		for(const auto& def : opts.no_value_defines) {
+			marshalled << opt_start << "-D" << def;
+			// Note: Could alternatively use "--define-macro=" instead of "-D"
+		}
+
+		for(const auto& def : opts.valued_defines) {
+			marshalled << opt_start << "-D" << def.first << '=' << def.second;
+		}
+
+		for(const auto& path : opts.additional_include_paths) {
+			marshalled << opt_start << "--include-path=" << path;
+		}
+
+		for(const auto& preinclude_file : opts.preinclude_files) {
+			marshalled << opt_start << "--pre-include=" << preinclude_file;
+		}
+
+		for(const auto& override : opts.error_handling_overrides) {
+			marshalled
+				<< opt_start << "--diag-" << rtc::error::detail_::option_name_part(override.second)
+				<< '=' << override.first ;
+		}
+
+		for(const auto& extra_opt : opts.extra_options) {
+			marshalled << opt_start << extra_opt;
+		}
+
+		if (need_delimiter_after_last_option) {
+			marshalled << opt_start; // If no options were marshalled, this does nothing
+		}
+	}
+};
+
+} // namespace detail_
+
+} // namespace marshalling
 
 } // namespace cuda
 
