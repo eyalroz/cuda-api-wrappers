@@ -17,6 +17,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <random>
 
 __global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)
 {
@@ -38,7 +39,13 @@ int main()
 	auto h_B = std::vector<float>(numElements);
 	auto h_C = std::vector<float>(numElements);
 
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() {
+		static std::random_device random_device;
+		static std::mt19937 randomness_generator { random_device() };
+		static std::uniform_real_distribution<float> distribution { 0.0, 1.0 };
+		return distribution(randomness_generator);
+	};
+
 	std::generate(h_A.begin(), h_A.end(), generator);
 	std::generate(h_B.begin(), h_B.end(), generator);
 

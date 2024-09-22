@@ -18,6 +18,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 __global__ void vectorAdd(const float *A, const float *B, float *C, int numElements)
 {
@@ -39,7 +40,12 @@ int main()
 	auto buffer_B = cuda::memory::managed::make_unique_span<float>(numElements);
 	auto buffer_C = cuda::memory::managed::make_unique_span<float>(numElements);
 
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() {
+		static std::random_device random_device;
+		static std::mt19937 randomness_generator { random_device() };
+		static std::uniform_real_distribution<float> distribution { 0.0, 1.0 };
+		return distribution(randomness_generator);
+	};
 	std::generate(buffer_A.begin(), buffer_A.end(), generator);
 	std::generate(buffer_B.begin(), buffer_B.end(), generator);
 
