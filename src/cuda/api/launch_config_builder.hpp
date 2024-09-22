@@ -11,10 +11,19 @@
 #ifndef CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_
 
+// This definition in types.hpp is usually sufficient, but let's be on the safe side
+#ifdef _MSC_VER
+// See @url https://stackoverflow.com/q/4913922/1593077
+#define NOMINMAX
+#endif
+
 #include "launch_configuration.hpp"
 #include "kernel_launch.hpp"
 #include "device.hpp"
 #include "types.hpp"
+
+#include <limits>
+#include <string>
 
 namespace cuda {
 
@@ -409,7 +418,38 @@ public:
 
 	/// Set the block in the intended kernel launch grid to be uni-dimensional
 	/// with a specified size
-	launch_config_builder_t& block_size(grid::block_dimension_t size) { return block_dimensions(size, 1, 1); }
+	launch_config_builder_t& block_size(size_t size)
+	{
+		static constexpr const auto max_representable_block_dim = ::std:: numeric_limits<grid::block_dimension_t> ::max();
+		if (size > (size_t) max_representable_block_dim) {
+			throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
+				  + " exceeds " + ::std::to_string(max_representable_block_dim)
+				  + " , the maximum representable size of a block");
+			// and note this is a super-lenient check, since in practice, device properties
+			// limit block sizes at much lower values; but NVIDIA doesn't "let us know that" via
+			// any global definitions.
+
+		}
+		if (kernel_) {
+			auto max_threads_per_block = kernel_->maximum_threads_per_block();
+			if (size > max_threads_per_block) {
+				throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
+					+ " exceeds " + ::std::to_string(max_threads_per_block)
+					+ " , the maximum number of threads per block supported by "
+					+ kernel::detail_::identify(*kernel_));
+			}
+		}
+		if (device_) {
+			auto max_threads_per_block = device().maximum_threads_per_block();
+			if (size > max_threads_per_block) {
+				throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
+					+ " exceeds " + ::std::to_string(max_threads_per_block)
+			 		+ " , the maximum number of threads per block supported by "
+					+ device::detail_::identify(device_.value()));
+			}
+		}
+		return block_dimensions(static_cast<grid::block_dimension_t>(size), 1, 1);
+	}
 
 	/**
 	 * Set the intended kernel launch grid to have 1D blocks, of the maximum
@@ -488,8 +528,17 @@ public:
 	/// Set the grid for the intended launch to be one-dimensional, with a specified number
 	/// of blocks
 	///@{
-	launch_config_builder_t& grid_size(grid::dimension_t size) {return grid_dimensions(size, 1, 1); }
-	launch_config_builder_t& num_blocks(grid::dimension_t size) {return grid_size(size); }
+	launch_config_builder_t& grid_size(size_t size) {
+#ifndef NDEBUG
+		if (size > static_cast<size_t>(::std::numeric_limits<int>::max())) {
+			throw ::std::invalid_argument("Specified (1-dimensional) grid size " + ::std::to_string(size)
+				+ "in blocks exceeds " + ::std::to_string(::std::numeric_limits<int>::max())
+				+ " , the maximum supported number of blocks");
+		}
+#endif
+		return grid_dimensions(static_cast<grid::dimension_t>(size), 1, 1);
+	}
+	launch_config_builder_t& num_blocks(size_t size) {return grid_size(size); }
 	///@}
 
 
@@ -516,7 +565,11 @@ public:
 
 	/// Set the intended launch grid to be linear, with a specified overall number of _threads_
 	/// over all (1D) blocks in the grid
-	launch_config_builder_t& overall_size(grid::overall_dimension_t size) { return overall_dimensions(size, 1, 1); }
+	launch_config_builder_t& overall_size(size_t size)
+	{
+		static_assert(std::is_same<grid::overall_dimension_t, size_t>::value, "Unexpected type difference");
+		return overall_dimensions(size, 1, 1);
+	}
 
 	/**
 	 * Set whether or blocks may synchronize with each other or not
