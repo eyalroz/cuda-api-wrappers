@@ -67,7 +67,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, size_t num_kernels)
 {
 	auto result = make_unique_span<kernel::handle_t>(num_kernels);
-	auto status = cuModuleEnumerateFunctions(result.data(), num_kernels, module_handle);
+	auto status = cuModuleEnumerateFunctions(result.data(), (unsigned int) num_kernels, module_handle);
 	throw_if_error_lazy(status, "Failed enumerating the kernels in " + module::detail_::identify(module_handle));
 	return result;
 }

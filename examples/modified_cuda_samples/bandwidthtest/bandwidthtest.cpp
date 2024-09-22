@@ -105,8 +105,8 @@ int main()
 	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
 	// Note: the following two instructions can be replaced with CUDA API wrappers
 	// calls - cuda::memory::host::zero(), but that won't improve anything
-	std::fill_n(h_bPageable, nElements, 0.0);
-	std::fill_n(h_bPinned, nElements, 0.0);
+	std::fill_n(h_bPageable, nElements, 0.0f);
+	std::fill_n(h_bPinned, nElements, 0.0f);
 
 	std::cout << "\nDevice: " << cuda::device::current::get().name() << "\n";
 	std::cout << "\nTransfer size (MB): " << (bytes / Mi) << "\n";

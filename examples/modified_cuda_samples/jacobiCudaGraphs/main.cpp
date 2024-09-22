@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 
 	createLinearSystem(A, b);
 
-	float convergence_threshold = 1.0e-2;
+	float convergence_threshold = 1.0e-2f;
 	int max_num_iterations = 4 * N_ROWS * N_ROWS;
 
 	// create timer

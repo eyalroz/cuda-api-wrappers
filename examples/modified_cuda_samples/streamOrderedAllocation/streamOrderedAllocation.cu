@@ -115,7 +115,7 @@ int basicStreamOrderedAllocation(
 	auto d_c = span<float>(stream.enqueue.allocate(c.size() * sizeof(float)));
 	stream.enqueue.copy(d_a, a);
 	stream.enqueue.copy(d_b, b);
-	stream.enqueue.kernel_launch(vectorAddGPU, launch_config, d_a.data(), d_b.data(), d_c.data(), c.size());
+	stream.enqueue.kernel_launch(vectorAddGPU, launch_config, d_a.data(), d_b.data(), d_c.data(), (int) c.size());
 	stream.enqueue.free(d_a);
 	stream.enqueue.free(d_b);
 	stream.enqueue.copy(c, d_c);
