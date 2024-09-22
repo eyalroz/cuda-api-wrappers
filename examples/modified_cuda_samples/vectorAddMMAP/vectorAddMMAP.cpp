@@ -255,7 +255,7 @@ int main()
 	auto generator = []() {
 		static std::random_device random_device;
 		static std::mt19937 randomness_generator { random_device() };
-		static std::uniform_real_distribution<> distribution { 0.0, 1.0 };
+		static std::uniform_real_distribution<float> distribution { 0.0, 1.0 };
 		return distribution(randomness_generator);
 	};
 	std::generate(h_A.begin(), h_A.end(), generator);
