@@ -446,7 +446,7 @@ void set_node_parameters(
 
 inline instance_t instantiate(
 	const template_t& template_
-#if CUDA_VERSION >= 11000
+#if CUDA_VERSION >= 11040
 	, bool free_previous_allocations_before_relaunch = false
 #endif
 #if CUDA_VERSION >= 12000

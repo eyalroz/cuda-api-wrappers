@@ -98,7 +98,7 @@ inline void instance_t::upload(const stream_t& stream) const
 #endif // CUDA_VERSION >= 11010
 
 inline instance_t template_t::instantiate(
-#if CUDA_VERSION >= 11000
+#if CUDA_VERSION >= 11040
 	bool free_previous_allocations_before_relaunch
 #endif
 #if CUDA_VERSION >= 11700
@@ -112,7 +112,7 @@ inline instance_t template_t::instantiate(
 {
 	return graph::instantiate(
 		*this
-#if CUDA_VERSION >= 11000
+#if CUDA_VERSION >= 11040
 		, free_previous_allocations_before_relaunch
 #endif
 #if CUDA_VERSION >= 11700

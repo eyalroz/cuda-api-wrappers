@@ -34,7 +34,7 @@ bool correct_output(cuda::span<const int> data, const int x)
 	for (size_t i = 0; i < data.size(); i++)
 		if (data[i] != x)
 		{
-			printf("Error! data[%lu] = %d, ref = %d\n", i, data[i], x);
+			std::cout << "Error! data" << i << " = " << data[i] << " ref = " << x << '\n';
 			return false;
 		}
 	return true;

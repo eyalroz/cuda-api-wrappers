@@ -731,7 +731,7 @@ public: // operators
 
 public: // non-mutators
 	instance_t instantiate(
-#if CUDA_VERSION >= 11000
+#if CUDA_VERSION >= 11040
 		bool free_previous_allocations_before_relaunch = false
 #endif
 #if CUDA_VERSION >= 11700
