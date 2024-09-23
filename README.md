@@ -90,11 +90,11 @@ For CMake, you have three alternatives for obtaining the library to use in your 
 1. (apriori) Manually download a release tarball from the [Releases](https://github.com/eyalroz/cuda-api-wrappers/releases) page. Then, configure it with CMake, build it, and install it - to a place visible to cmake when it searches for packages (see [CMAKE_PREFIX_PATH](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)).
 3. (apriori) Use the [conan](https://conan.io) package management tool: Follow the instructions in the Conan tutorial on [Building a simple CMake project using Conan](https://docs.conan.io/2/tutorial/consuming_packages/build_simple_cmake_project.html), but instead of `zlib`, use `cuda-api-wrappers` with the version you're interested in. Briefly, you will need to create an appropriate `conanfile.txt` file; make sure you have a Conan profile; and use `conan install` to target your project's build directory. This will create a [CMake toolchain file](https://cmake.org/cmake/help/latest/variable/CMAKE_TOOLCHAIN_FILE.html) with which you actually build your project.
 2. (apriori) Use the [vcpkg](https://github.com/microsoft/vcpkg) package management tool:
-   ```
+   ```bash
    vcpkg install cuda-api-wrappers
    ```
 3. (at config time) use CMake's `FetchContent` module to have CMake itself obtain the project source code and make it part of your own project's build, e.g.:
-   ```
+   ```cmake
    include(FetchContent)
    FetchContent_Declare(cuda-api-wrappers_library
        GIT_REPOSITORY https://github.com/eyalroz/cuda-api-wrappers.git
@@ -103,11 +103,11 @@ For CMake, you have three alternatives for obtaining the library to use in your 
    )
    ```
 Now that you have the package, in your project's `CMakeLists.txt`, you write:
-```
+```cmake
 find_package(cuda-api-wrappers CONFIG REQUIRED)
 ```
 This will let you use three targets within the `cuda-api-wrappers::` namespace: `runtime-and-driver`, `nvrtc` and `nvtx`. For example:
-```
+```cmake
 target_link_library(my_app cuda-api-wrappers::runtime-and-driver)
 ```
 **Use not involving CMake:**
@@ -123,10 +123,10 @@ The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indica
 ## A taste of some features in play
 
 Don't you wish you were able to type in, say:
-
-	auto callback =	[&foo] { std::cout << "Hello " << foo << " world!\n"; }
-	my_stream.enqueue.host_invokable(callback);
-
+```cpp
+auto callback =	[&foo] { std::cout << "Hello " << foo << " world!\n"; }
+my_stream.enqueue.host_invokable(callback);
+```
 ... and have that just work? Well, now it does!
 
 To be a little more thorough than just an anecdote, let's relate back to some of the design principles listed above:
@@ -143,13 +143,13 @@ is a valid comparison, true for all devices with a Pascal-or-later micro-archite
 
 #### Meaningful naming
 Instead of using
-```
+```cpp
 cudaError_t cudaEventCreateWithFlags(
     cudaEvent_t* event,
     unsigned int flags)
 ```
 which requires you remember what you need to specify as flags and how, you create a `cuda::event_t` proxy object, using the function:
-```
+```cpp
 cuda::event_t cuda::event::create(
     cuda::device_t  device,
     bool            uses_blocking_sync,
@@ -162,9 +162,11 @@ The default values here are `enum : bool`'s, which you can use yourself when cre
 
 In lieu of a full-fledged user's guide, I'm providing several kinds of example programs; browsing their source you'll know most of what there is to know about the API wrappers. To build and run the examples (just as a sanity check), execute the following (in a Unix-style command shell):
 
-    cmake -S . -B build -DCAW_BUILD_EXAMPLES=ON .
-    cmake --build build/
-    find build/examples/bin -type f -executable -exec "{}" ";"
+```bash
+cmake -S . -B build -DCAW_BUILD_EXAMPLES=ON .
+cmake --build build/
+find build/examples/bin -type f -executable -exec "{}" ";"
+```
 
 The two main kinds of example programs are:
 
