@@ -128,7 +128,18 @@ Don't you wish you were able to type in, say:
 auto callback =	[&foo] { std::cout << "Hello " << foo << " world!\n"; }
 my_stream.enqueue.host_invokable(callback);
 ```
-... and have that just work? Well, now it does!
+... and have that just work? And don't you wish CUDA API invocations could be plain and straightforward one-liners? Like this sequence?
+```cpp
+auto compilation_output = my_program.compile();
+auto module = cuda::module::create(context, compilation_output);
+auto my_kernel = module.get_kernel(mangled_kernel_name);
+auto gpu_side_buffer = cuda::memory::make_unique_span<float>(device, n);
+cuda::memory::copy(gpu_side_buffer, host_side_buffer);
+auto launch_config = cuda::launch_config_builder().overall_size(n).block_size(256).build();
+cuda::launch(my_kernel, launch_config, gpu_side_buffer.data());
+cuda::memory::copy(host_side_buffer, gpu_side_buffer);
+```
+Well, now all of the above is valid code! :-)
 
 To be a little more thorough than just an anecdote, let's relate back to some of the design principles listed above:
 
