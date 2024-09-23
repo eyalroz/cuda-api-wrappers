@@ -2,10 +2,15 @@
 
 <!--Branch Build Status: Master [![Master Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=master)](https://travis-ci.com/eyalroz/cuda-api-wrappers) | Development: [![Development Build Status](https://api.travis-ci.com/eyalroz/cuda-api-wrappers.svg?branch=development)](https://travis-ci.com/eyalroz/cuda-api-wrappers) -->
 
+[![Repository license](https://img.shields.io/badge/License-3BSD-blue.svg)](https://raw.githubusercontent.com/eyalroz/cuda-api-wrappers/master/LICENSE) 
+[![Repository documentation](https://img.shields.io/badge/Documentation-CodeDocs-blue.svg)](https://codedocs.xyz/eyalroz/cuda-api-wrappers/) 
+[![Linux build passing](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-linux.yml/badge.svg)](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-linux.yml) 
+[![Windows build passing](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-windows.yml/badge.svg)](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-windows.yml)
+
 
 | Table of contents |
 |:------------------|
-|<sub>[General description](#general-description)<br>  - [Key features](#key-features)<br>[Motivation](#motivation)<br>[Detailed documentation](#detailed-documentation)<br>[Requirements](#requirements)<br>[Using the library in your project](#using-the-library-in-your-project)<br>[Coverage of the APIs](#coverage-of-the-apis)<br>[A taste of some features in play](#a-taste-of-some-features-in-play)<br>[Example programs](#example-programs)<br>  - [Modified CUDA samples](#modified-cuda-samples)<br>  - ['Coverage' programs - by API module](#coverage-programs---by-api-module)<br>[Want to help? Report a bug? Give feedback?](#want-to-help-report-a-bug-give-feedback)</sub>|
+|<sub>[General description](#general-description)<br>  - [Key features](#key-features)<br>[Motivation](#motivation)<br>[Requirements](#requirements)<br>[Using the library in your project](#using-the-library-in-your-project)<br>[Coverage of the APIs](#coverage-of-the-apis)<br>[A taste of some features in play](#a-taste-of-some-features-in-play)<br>[Example programs](#example-programs)<br>  - [Modified CUDA samples](#modified-cuda-samples)<br>  - ['Coverage' programs - by API module](#coverage-programs---by-api-module)<br>[Want to help? Report a bug? Give feedback?](#want-to-help-report-a-bug-give-feedback)</sub>|
 
 
 ## General description
@@ -64,10 +69,6 @@ Driver API. These suffer from several deficiencies:
 
 You may have noticed this list reads like the opposite of the [key features](#key-features), listed above: The idea is to make this library overcome and rectify all of these deficiencies as much as possible.
 
-
-## Detailed documentation
-
-Detailed Doxygen-genereated documentation is [available](https://codedocs.xyz/eyalroz/cuda-api-wrappers/). It is mostly complete; please file a bug if an API function is missing or under-documented.
 
 ## Requirements
 
