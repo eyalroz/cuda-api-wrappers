@@ -1,4 +1,4 @@
-name: CMake-based build on (Ubuntu) Linux
+name: Builds on (Ubuntu) Linux
 
 on:
   workflow_dispatch:
