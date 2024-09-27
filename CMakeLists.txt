@@ -32,7 +32,12 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
 		endif()
 	endforeach()
 endif()
+if (NOT TARGET CUDA::cufilt)
+	_CUDAToolkit_find_and_add_import_lib(cufilt)
+endif()
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+
 
 
 set(targets runtime-and-driver nvtx rtc fatbin)
@@ -75,7 +80,7 @@ foreach(wrapper_lib ${targets})
 		WINDOWS_EXPORT_ALL_SYMBOLS ON
 	)
 endforeach()
-add_library("${caw_namespace}::driver-and-runtime" ALIAS caw_runtime-and-driver)
+add_library("cuda-api-wrappers::driver-and-runtime" ALIAS caw_runtime-and-driver)
 target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	if (TARGET CUDA::nvptxcompiler)
@@ -99,6 +104,15 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
 	else()
 		message(WARNING "Could not locate a valid NVIDIA fatbin creator target or library file")
 	endif()
+
+	if (TARGET CUDA::cufilt)
+		target_link_libraries(caw_runtime-and-driver INTERFACE CUDA::cufilt)
+	elseif(EXISTS "${CUDA_cufilt_LIBRARY}")
+		target_link_libraries(caw_runtime-and-driver INTERFACE "${CUDA_cufilt_LIBRARY}")
+	else()
+		message(WARNING "Could not locate the cufilt demangling library")
+	endif()
+
 endif()
 
 target_link_libraries(caw_fatbin INTERFACE cuda-api-wrappers::runtime-and-driver)

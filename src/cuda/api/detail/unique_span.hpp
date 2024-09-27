@@ -177,6 +177,13 @@ inline void default_span_deleter(span<T> sp)
 	delete[] sp.data();
 }
 
+template <typename T>
+inline void c_free_deleter(span<T> sp)
+{
+	::std::free(sp.data());
+}
+
+
 } // namespace detail_
 
 

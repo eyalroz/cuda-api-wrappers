@@ -36,6 +36,11 @@
 #include "api/event.hpp"
 #include "api/kernel.hpp"
 #include "api/module.hpp"
+#if CUDA_VERSION >= 11040
+#if !defined(_WIN32) && !defined(WIN32)
+#include "api/demangle.hpp"
+#endif
+#endif
 #if CUDA_VERSION >= 12000
 #include "api/library.hpp"
 #include "api/kernels/in_library.hpp"
