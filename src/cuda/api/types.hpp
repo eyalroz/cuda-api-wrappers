@@ -29,6 +29,7 @@
 #endif
 
 #include "detail/optional.hpp"
+#include "detail/optional_ref.hpp"
 #include "detail/span.hpp"
 #include "detail/region.hpp"
 #include "detail/type_traits.hpp"
@@ -58,6 +59,12 @@
 
 /// @brief Definitions and functionality wrapping CUDA APIs.
 namespace cuda {
+
+// This alias for plain C arrays is required due to an MSVC bug, making it fail to
+// accept straight up C array reference parameters to functions under some circumstances;
+// see: https://developercommunity.visualstudio.com/t/MSVC-rejects-syntax-of-reference-to-C-ar/10792039
+template <typename T, size_t N>
+using c_array = T[N];
 
 /**
  * Indicates either the result (success or error index) of a CUDA Runtime or Driver API call,

@@ -97,8 +97,8 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 
 	// also asynchronously
 	auto stream = device.create_stream(cuda::stream::async);
-	cuda::memory::async::copy(other_arr, span_out, stream);
-	cuda::memory::async::copy(span_in, other_arr, stream);
+	cuda::memory::copy(other_arr, span_out, stream);
+	cuda::memory::copy(span_in, other_arr, stream);
 	device.synchronize();
 	check_output_is_iota("copy from (managed) global memory into a 3D array, asynchronously", span_in);
 }
@@ -162,8 +162,8 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
 	// also asynchronously
 	auto stream = cuda::stream::create(device, cuda::stream::async);
-	cuda::memory::async::copy(other_arr, span_out, stream);
-	cuda::memory::async::copy(span_in, other_arr, stream);
+	cuda::memory::copy(other_arr, span_out, stream);
+	cuda::memory::copy(span_in, other_arr, stream);
 	device.synchronize();
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array, asynchronously", span_in);
