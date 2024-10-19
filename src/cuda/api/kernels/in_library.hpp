@@ -191,7 +191,7 @@ inline ::std::string identify(const kernel_t& library_kernel)
 
 inline kernel_t get(const library_t& library, const char* name)
 {
-	auto kernel_handle = library::detail_::get_kernel(library.handle(), name);
+	auto kernel_handle = cuda::library::detail_::get_kernel_in_current_context(library.handle(), name);
 	return kernel::detail_::wrap(library.handle(), kernel_handle);
 }
 
@@ -207,6 +207,17 @@ inline library::kernel_t library_t::get_kernel(const char* name) const
 inline library::kernel_t library_t::get_kernel(const ::std::string& name) const
 {
 	return get_kernel(name.c_str());
+}
+
+inline library::kernel_t library_t::get_kernel(const context_t& context, const char* name) const
+{
+	CUDA_CONTEXT_FOR_THIS_SCOPE(context);
+	return library::kernel::get(*this, name);
+}
+
+inline library::kernel_t library_t::get_kernel(const context_t& context, const ::std::string& name) const
+{
+	return get_kernel(context, name.c_str());
 }
 
 } // namespace cuda

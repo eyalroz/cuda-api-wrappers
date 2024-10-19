@@ -77,18 +77,25 @@ library_t create(
 
 namespace detail_ {
 
-inline kernel::handle_t get_kernel(handle_t library_handle, const char* name)
+inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, const char* name)
 {
 	library::kernel::handle_t kernel_handle;
 	auto status = cuLibraryGetKernel(&kernel_handle, library_handle, name);
-	throw_if_error_lazy(status, ::std::string{"Failed obtaining kernel "} + name
-		+ "' from " + library::detail_::identify(library_handle));
+	throw_if_error_lazy(status, ::std::string{"Failed obtaining kernel "}
+		 + name + "' from " + library::detail_::identify(library_handle));
 	return kernel_handle;
+}
+
+inline kernel::handle_t get_kernel(context::handle_t context_handle, handle_t library_handle, const char* name)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return get_kernel_in_current_context(library_handle, name);
 }
 
 } // namespace detail_
 
 inline kernel_t get_kernel(const library_t& library, const char* name);
+inline kernel_t get_kernel(context_t& context, const library_t& library, const char* name);
 
 } // namespace library
 
@@ -125,6 +132,8 @@ public: // getters
 	 * @return An enqueable kernel proxy object for the requested kernel,
 	 * in the current context.
 	 */
+	library::kernel_t get_kernel(const context_t& context, const char* name) const;
+	library::kernel_t get_kernel(const context_t& context, const ::std::string& name) const;
 	library::kernel_t get_kernel(const char* name) const;
 	library::kernel_t get_kernel(const ::std::string& name) const;
 
