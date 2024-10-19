@@ -424,6 +424,171 @@ inline void zero(T* ptr)
 
 } // namespace device
 
+/// Asynchronous memory operations
+namespace detail_ {
+
+/**
+ * Asynchronous versions of @ref memory::copy functions.
+ *
+ *
+ * @note Since we assume Compute Capability >= 2.0, all devices support the
+ * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
+ * where the data is located, and one does not have to specify this.
+ */
+
+///@{
+
+/**
+ * Asynchronously copies data between memory spaces or within a memory space, but
+ * within a single CUDA context.
+ *
+ * @param destination A pointer to a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source A pointer to a memory region of size at least @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param num_bytes number of bytes to copy from @p source
+ * @param stream_handle The handle of a stream on which to schedule the copy operation
+*/
+inline void copy(void* destination, const void* source, size_t num_bytes, stream::handle_t stream_handle)
+{
+	auto result = cuMemcpyAsync(device::address(destination), device::address(source), num_bytes, stream_handle);
+
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error_lazy(result, "Scheduling a memory copy on " + stream::detail_::identify(stream_handle));
+}
+
+/**
+ * @param destination a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param source a memory region of size @p num_bytes, either in
+ * host memory or on any CUDA device's global memory
+ * @param stream_handle The handle of a stream on which to schedule the copy operation
+ */
+inline void copy(region_t destination, const_region_t source, stream::handle_t stream_handle)
+{
+#ifndef NDEBUG
+	if (destination.size() < source.size()) {
+		throw ::std::logic_error("Source size exceeds destination size");
+	}
+#endif
+	copy(destination.start(), source.start(), source.size(), stream_handle);
+}
+///@}
+
+using memory::copy_parameters_t;
+
+inline status_t multidim_copy_in_current_context(
+	::std::integral_constant<dimensionality_t, 2>,
+	copy_parameters_t<2> params,
+	optional<stream::handle_t> stream_handle)
+{
+	// Must be an intra-context copy, because CUDA does not support 2D inter-context copies and the copy parameters
+	// structure holds no information about contexts.
+	//
+	// Note: The stream handle, even if present, might be the null handle; for now
+	// we distinguish between using the null stream handle - the default stream's -
+	// and using the synchronous API
+	return stream_handle ?
+		   cuMemcpy2DAsync(&params, *stream_handle) :
+		   cuMemcpy2D(&params);
+}
+
+inline status_t multidim_copy_in_current_context(
+	::std::integral_constant<dimensionality_t, 3>,
+	copy_parameters_t<3> params,
+	optional<stream::handle_t> stream_handle)
+{
+	if (params.srcContext == params.dstContext) {
+		// TODO: Should we check it's also the current context?
+		using intra_context_type = memory::detail_::base_copy_params<3>::intra_context_type;
+		auto* intra_context_params = reinterpret_cast<intra_context_type *>(&params);
+		return stream_handle ?
+			   cuMemcpy3DAsync(intra_context_params, *stream_handle) :
+			   cuMemcpy3D(intra_context_params);
+	}
+	return stream_handle ?
+		cuMemcpy3DPeerAsync(&params, *stream_handle) :
+		cuMemcpy3DPeer(&params);
+}
+
+template<dimensionality_t NumDimensions>
+status_t multidim_copy_in_current_context(copy_parameters_t<NumDimensions> params, optional<stream::handle_t> stream_handle) {
+	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+}
+
+// Note: Assumes the stream handle is for a stream in the current context
+template<dimensionality_t NumDimensions>
+status_t multidim_copy(
+	context::handle_t                 context_handle,
+	copy_parameters_t<NumDimensions>  params,
+    optional<stream::handle_t>        stream_handle)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+}
+
+// Assumes the array and the stream share the same context, and that the destination is
+// accessible from that context (e.g. allocated within it, or being managed memory, etc.)
+template <typename T, dimensionality_t NumDimensions>
+void copy(T *destination, const array_t<T, NumDimensions>& source, optional<stream::handle_t> stream_handle)
+{
+	using  memory::endpoint_t;
+	auto dims = source.dimensions();
+	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
+	auto params = copy_parameters_t<NumDimensions> {};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.set_endpoint(endpoint_t::source, source);
+	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
+	params.set_default_pitches();
+	params.clear_rest();
+	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
+	throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
+}
+
+
+template <typename T, dimensionality_t NumDimensions>
+void copy(const array_t<T, NumDimensions>&  destination, const T* source, optional<stream::handle_t> stream_handle)
+{
+	using memory::endpoint_t;
+	auto dims = destination.dimensions();
+	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
+	auto params = copy_parameters_t<NumDimensions>{};
+	params.clear_offset(endpoint_t::source);
+	params.clear_offset(endpoint_t::destination);
+	params.template set_extent<T>(dims);
+	params.set_endpoint(endpoint_t::source, const_cast<T*>(source), dims);
+	params.set_endpoint(endpoint_t::destination, destination);
+	params.set_default_pitches();
+	params.clear_rest();
+	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
+	throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
+}
+
+/**
+ * Synchronously copies a single (typed) value between memory spaces or within a memory space.
+ *
+ * @note asynchronous version of @ref memory::copy_single
+ *
+ * @note assumes the source and destination are all valid in the same context as that of the
+ * context handle
+ *
+ * @param destination a value residing either in host memory or on any CUDA device's
+ *     global memory
+ * @param source a value residing either in host memory or on any CUDA device's global
+ *     memory
+ * @param stream_handle A stream on which to enqueue the copy operation
+ */
+template <typename T>
+void copy_single(T* destination, const T* source, optional<stream::handle_t> stream_handle)
+{
+	copy(destination, source, sizeof(T), stream_handle);
+}
+
+} // namespace detail_
+
 /**
  * @note Since we assume Compute Capability >= 2.0, all devices support the
  * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
@@ -437,56 +602,6 @@ inline void zero(T* ptr)
 ///@{
 
 /**
- * Synchronously copy data between different locations in memory
- *
- * @param source A pointer to a a memory region of size @p num_bytes.
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- */
-void copy(void *destination, const void *source, size_t num_bytes);
-
-/**
- * @param destination A memory region of the same size as @p source.
- * @param source A region whose contents is to be copied.
- */
-inline void copy(void* destination, const_region_t source)
-{
-	return copy(destination, source.start(), source.size());
-}
-
-/**
- * @param destination A region of memory to which to copy the data in @p source, of
- *     size at least that of @p source , either in host memory or on any CUDA
- *     device's global memory.
- * @param source A region whose contents is to be copied, either in host memory
- *     or on any CUDA device's global memory
- */
-inline void copy(region_t destination, const_region_t source)
-{
-#ifndef NDEBUG
-	if (destination.size() < source.size()) {
-		throw ::std::logic_error("Can't copy a large region into a smaller one");
-	}
-#endif
-	return copy(destination.start(), source);
-}
-
-/**
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source A plain array whose contents is to be copied.
- */
-template <typename T, size_t N>
-inline void copy(region_t destination, const T(&source)[N])
-{
-#ifndef NDEBUG
-	if (destination.size() < N * sizeof(T)) {
-		throw ::std::logic_error("Source size exceeds destination size");
-	}
-#endif
-	return copy(destination.start(), source, sizeof(T) * N);
-}
-
-/**
  * Copy the contents of a C-style array into a span of same-type elements
  *
  * @param destination A span of elements to overwrite with the array contents.
@@ -495,7 +610,7 @@ inline void copy(region_t destination, const T(&source)[N])
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-inline void copy(span<T> destination, const T(&source)[N])
+inline void copy(span<T> destination, const T(&source)[N], optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
@@ -503,29 +618,6 @@ inline void copy(span<T> destination, const T(&source)[N])
 	}
 #endif
 	return copy(destination.data(), source, sizeof(T) * N);
-}
-
-/**
- * Copy the contents of memory region into a C-style array, interpreting the memory
- * as a sequence of elements of the array's element type
- *
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
- *     the @p destination array.
- */
-template <typename T, size_t N>
-inline void copy(T(&destination)[N], const_region_t source)
-{
-#ifndef NDEBUG
-	size_t required_size = N * sizeof(T);
-	if (source.size() != required_size) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-				" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
-	}
-#endif
-	return copy(destination, source.start(), sizeof(T) * N);
 }
 
 /**
@@ -538,7 +630,7 @@ inline void copy(T(&destination)[N], const_region_t source)
  *     containing the data to be copied
  */
 template <typename T, size_t N>
-inline void copy(T(&destination)[N], span<T const> source)
+inline void copy(T(&destination)[N], span<T const> source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (source.size() > N) {
@@ -547,7 +639,7 @@ inline void copy(T(&destination)[N], span<T const> source)
 			" elements into an array of " + ::std::to_string(N) + " elements");
 	}
 #endif
-	return copy(destination, source.start(), sizeof(T) * N);
+	return copy(destination, source.start(), sizeof(T) * N, stream);
 }
 
 /**
@@ -560,9 +652,9 @@ inline void copy(T(&destination)[N], span<T const> source)
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-inline void copy(void* destination, T (&source)[N])
+inline void copy(void* destination, T (&source)[N], optional_ref<const stream_t> stream = {})
 {
-	return copy(destination, source, sizeof(T) * N);
+	return copy(destination, source, sizeof(T) * N, stream);
 }
 
 /**
@@ -572,60 +664,23 @@ inline void copy(void* destination, T (&source)[N])
  *     @p source,of size at least that of @p source.; as it is taken by reference
  *     rather than by address of the first element, there is no array-decay.
  * @param source The starting address of a sequence of @tparam N elements to copy
+ *
+**
+ * Asynchronously copies data from a memory region into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source The starting address of a sequence of @tparam N elements to copy
+ * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
-inline void copy(T(&destination)[N], T* source)
+inline void copy(T(&destination)[N], T* source, optional_ref<const stream_t> stream = {})
 {
-	return copy(destination, source, sizeof(T) * N);
+	return copy(destination, source, sizeof(T) * N, stream);
 }
 
-/**
- * Copy one region of memory into another
- *
- * @param destination A region of memory to which to copy the data in @p source,
- *     of size at least that of @p source.
- * @param source A pointer to a a memory region of size @p num_bytes.
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- */
-inline void copy(region_t destination, void* source, size_t num_bytes)
-{
-#ifndef NDEBUG
-	if (destination.size() < num_bytes) {
-		throw ::std::logic_error("Number of bytes to copy exceeds destination size");
-	}
-#endif
-	return copy(destination.start(), source, num_bytes);
-}
 
-/**
- * Copy one region of memory to another location
- *
- * @param destination The beginning of a target region of memory (of size at least
- *     @p num_bytes) into which to copy
- * @param source A region of memory from which to copy, of size at least @p num_bytes
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- */
-inline void copy(void* destination, const_region_t source, size_t num_bytes)
-{
-#ifndef NDEBUG
-	if (source.size() < num_bytes) {
-		throw ::std::logic_error("Number of bytes to copy exceeds source size");
-	}
-#endif
-	return copy(destination, source.start(), num_bytes);
-}
-
-/**
- * Copy memory between memory regions
- *
- * @param destination A target region of memory into which to copy; enough memory will
- *     be copied to fill this region
- * @param source The beginning of a region of memory from which to copy
- */
-inline void copy(region_t destination, void* source)
-{
-	return copy(destination, source, destination.size());
-}
 ///@}
 
 /**
@@ -694,38 +749,45 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params)
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2> two, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
 {
 	// TODO: Move this logic into the scoped ensurer class
 	auto context_handle = context::current::detail_::get_handle();
 	if  (context_handle != context::detail_::none) {
-		return cuMemcpy2D(&params);
+		return detail_::multidim_copy_in_current_context(two, params, stream_handle);
 	}
 	auto current_device_id = cuda::device::current::detail_::get_id();
 	context_handle = cuda::device::primary_context::detail_::obtain_and_increase_refcount(current_device_id);
 	context::current::detail_::push(context_handle);
 	// Note this _must_ be an intra-context copy, as inter-context is not supported
 	// and there's no indication of context in the relevant data structures
-	auto status = cuMemcpy2D(&params);
+	auto status = detail_::multidim_copy_in_current_context(two, params, stream_handle);
 	context::current::detail_::pop();
 	cuda::device::primary_context::detail_::decrease_refcount(current_device_id);
 	return status;
 }
 
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params)
+inline status_t multidim_copy(context::handle_t context_handle, ::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
+{
+	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
+	return multidim_copy(::std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
+}
+
+inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, optional<stream::handle_t> stream_handle)
 {
 	if (params.srcContext == params.dstContext) {
 		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{params.srcContext};
-		auto *intra_context_params = reinterpret_cast<base_copy_params<3>::intra_context_type *>(&params);
-		return cuMemcpy3D(intra_context_params);
+		return detail_::multidim_copy_in_current_context(params, stream_handle);
 	}
-	return cuMemcpy3DPeer(&params);
+	return stream_handle ?
+		cuMemcpy3DPeerAsync(&params, *stream_handle) :
+		cuMemcpy3DPeer(&params);
 }
 
 template<dimensionality_t NumDimensions>
-status_t multidim_copy(copy_parameters_t<NumDimensions> params)
+status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t stream_handle)
 {
-	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params);
+	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
 
@@ -742,11 +804,7 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params)
  * merely pass it on to the CUDA driver
  */
 template<dimensionality_t NumDimensions>
-void copy(copy_parameters_t<NumDimensions> params)
-{
-	status_t status = detail_::multidim_copy(params);
-	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
-}
+void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream = {});
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
@@ -762,7 +820,7 @@ void copy(copy_parameters_t<NumDimensions> params)
  *     the target array context
  */
 template<typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source)
+void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source, optional_ref<const stream_t> stream = {})
 {
 	auto dims = destination.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -771,7 +829,7 @@ void copy(const array_t<T, NumDimensions>& destination, const context_t& source_
 	params.set_endpoint(endpoint_t::source, source_context.handle(), const_cast<T*>(source), dims);
 	params.set_endpoint(endpoint_t::destination, destination);
 	params.clear_rest();
-	copy(params);
+	copy(params, stream);
 }
 
 /**
@@ -783,12 +841,17 @@ void copy(const array_t<T, NumDimensions>& destination, const context_t& source_
  * @param destination A {@tparam NumDimensions}-dimensional CUDA array
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ *
+ * Asynchronously copies data into a CUDA array.
+ *
+ * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
+ *
+ * @param destination A CUDA array to copy data into
+ * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ * @param stream schedule the copy operation into this CUDA stream
  */
-template<typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const T *source)
-{
-	copy(destination, context_of(source), source);
-}
+template <typename T, dimensionality_t NumDimensions>
+void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream = {});
 
 /**
  * Copies a contiguous sequence of elements in memory into a CUDA array
@@ -799,7 +862,7 @@ void copy(const array_t<T, NumDimensions>& destination, const T *source)
  * in the source span are ignored
  */
 template<typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, span<T const> source)
+void copy(const array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
@@ -808,7 +871,7 @@ void copy(const array_t<T, NumDimensions>& destination, span<T const> source)
 			" elements into a CUDA array of " + ::std::to_string(destination.size()) + " elements");
 	}
 #endif
-	copy(destination, source.data());
+	copy(destination, source.data(), stream);
 }
 
 /**
@@ -822,7 +885,7 @@ void copy(const array_t<T, NumDimensions>& destination, span<T const> source)
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(const context_t& context, T *destination, const array_t<T, NumDimensions>& source)
+void copy(const context_t& context, T *destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {})
 {
 	auto dims = source.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -833,7 +896,7 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
 	params.template set_endpoint<T>(endpoint_t::destination, context.handle(), destination, dims);
 	params.set_default_pitches();
 	params.clear_rest();
-	copy(params);
+	copy(params, stream);
 }
 
 /**
@@ -845,12 +908,18 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
  * @param destination A pointer to a region of contiguous memory holding `destination.size()` values
  * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
+ *
+ * Asynchronously copies data from a CUDA array elsewhere
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array_t
+ * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(T *destination, const array_t<T, NumDimensions>& source)
-{
-	copy(context_of(destination), destination, source);
-}
+void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {});
+
 
 /**
  * Copies the contents of a CUDA array into a sequence of contiguous elements in memory
@@ -860,7 +929,7 @@ void copy(T *destination, const array_t<T, NumDimensions>& source)
  * @note The @p destination span must be at least as larger as the volume of the array.
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(span<T> destination, const array_t<T, NumDimensions>& source)
+void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional_ref <const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
@@ -869,7 +938,7 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source)
 			" elements into a span of " + ::std::to_string(destination.size()) + " elements");
 	}
 #endif
-	copy(destination.data(), source);
+	copy(destination.data(), source, stream);
 }
 
 /**
@@ -880,7 +949,7 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source)
  * @note The destination array must be at least as large in each dimension as the source array.
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source)
+void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
 {
 	auto dims = source.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -890,9 +959,9 @@ void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDime
 	params.set_endpoint(endpoint_t::source, source);
 	params.set_endpoint(endpoint_t::destination, destination);
 	params.set_default_pitches();
-	params.clear_rest();;
+	params.clear_rest();
 	auto status = //(source.context() == destination.context()) ?
-		detail_::multidim_copy<NumDimensions>(source.context_handle(), params);
+		detail_::multidim_copy<NumDimensions>(source.context_handle(), params, stream);
 	throw_if_error_lazy(status, "Copying from a CUDA array into a regular memory region");
 }
 
@@ -903,14 +972,27 @@ void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDime
  *
  * @note the @p destination region must be large enough to hold all elements of the array,
  * and may also be larger.
+ *
+**
+ * Asynchronously copies data from a CUDA array elsewhere
+ *
+ * @note asynchronous version of @ref memory::copy
+ *
+ * @param destination A memory region of size `source.size() * sizeof(T)`
+ * @param source A CUDA array @ref cuda::array_t
+ * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(region_t destination, const array_t<T, NumDimensions>& source)
+void copy(region_t destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {})
 {
+#ifndef NDEBUG
 	if (destination.size() < source.size_bytes()) {
-		throw ::std::logic_error("Attempt to copy an array into a memory region too small to hold the copy");
+		throw ::std::invalid_argument(
+			"Attempt to copy " + ::std::to_string(source.size_bytes()) + " bytes from an array into a "
+				"region of smaller size (" + ::std::to_string(destination.size()) + " bytes)");
 	}
-	copy(destination.start(), source);
+#endif
+	copy(destination.start(), source, stream);
 }
 
 /**
@@ -920,14 +1002,23 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source)
  *
  * @note only as many elements as fit in the array are copied, while the source region may
  * be larger than what they take up.
+ *
+ * @param destination A CUDA array to copy data into
+ * @param source A memory region of size `destination.size() * sizeof(T)`
+ * @param stream schedule the copy operation into this CUDA stream (or leave empty for a
+ * synchronous copy)
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const_region_t source)
+void copy(array_t<T, NumDimensions>& destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
+#ifndef NDEBUG
 	if (destination.size_bytes() < source.size()) {
-		throw ::std::logic_error("Attempt to copy into an array from a source region larger than the array's size");
+		throw ::std::invalid_argument(
+			"Attempt to copy a region of " + ::std::to_string(source.size()) +
+			" bytes into an array of size " + ::std::to_string(destination.size_bytes()) + " bytes");
 	}
-	copy(destination, static_cast<T const*>(source.start()));
+#endif
+	copy(destination, static_cast<T const*>(source.start()), stream);
 }
 
 /**
@@ -937,169 +1028,17 @@ void copy(const array_t<T, NumDimensions>& destination, const_region_t source)
  * device's global memory
  * @param source a value residing either in host memory or on any CUDA
  * device's global memory
+ *
+ * Copy a single (typed) value between memory locations
+ *
+ * @note asynchronous version of @ref memory::copy_single<T>(T&, const T&)
+ *
+ * @param destination a value residing either in host memory or on any CUDA device's global memory
+ * @param source a value residing either in host memory or on any CUDA device's global memory
+ * @param stream The CUDA command queue on which this copying will be enqueued
  */
 template <typename T>
-void copy_single(T* destination, const T* source)
-{
-	copy(destination, source, sizeof(T));
-}
-
-/// Asynchronous memory operations
-namespace async {
-
-namespace detail_ {
-
-/**
- * Asynchronous versions of @ref memory::copy functions.
- *
- *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
- */
-
-///@{
-
-/**
- * Asynchronously copies data between memory spaces or within a memory space, but
- * within a single CUDA context.
- *
- * @param destination A pointer to a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source A pointer to a memory region of size at least @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param num_bytes number of bytes to copy from @p source
- * @param stream_handle The handle of a stream on which to schedule the copy operation
-*/
-inline void copy(void* destination, const void* source, size_t num_bytes, stream::handle_t stream_handle)
-{
-	auto result = cuMemcpyAsync(device::address(destination), device::address(source), num_bytes, stream_handle);
-
-	// TODO: Determine whether it was from host to device, device to host etc and
-	// add this information to the error string
-	throw_if_error_lazy(result, "Scheduling a memory copy on " + stream::detail_::identify(stream_handle));
-}
-
-/**
- * @param destination a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param stream_handle The handle of a stream on which to schedule the copy operation
- */
-inline void copy(region_t destination, const_region_t source, stream::handle_t stream_handle)
-{
-#ifndef NDEBUG
-	if (destination.size() < source.size()) {
-		throw ::std::logic_error("Source size exceeds destination size");
-	}
-#endif
-	copy(destination.start(), source.start(), source.size(), stream_handle);
-}
-///@}
-
-using memory::copy_parameters_t;
-
-inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 2>,
-	copy_parameters_t<2> params,
-	stream::handle_t stream_handle)
-{
-	// Must be an intra-context copy, because CUDA does not support 2D inter-context copies and the copy parameters
-	// structure holds no information about contexts.
-	return cuMemcpy2DAsync(&params, stream_handle);
-}
-
-inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 3>,
-	copy_parameters_t<3> params,
-	stream::handle_t stream_handle)
-{
-	if (params.srcContext == params.dstContext) {
-		using intra_context_type = memory::detail_::base_copy_params<3>::intra_context_type;
-		auto* intra_context_params = reinterpret_cast<intra_context_type *>(&params);
-		return cuMemcpy3DAsync(intra_context_params, stream_handle);
-	}
-	return cuMemcpy3DPeerAsync(&params, stream_handle);
-
-}
-
-template<dimensionality_t NumDimensions>
-status_t multidim_copy_in_current_context(copy_parameters_t<NumDimensions> params, stream::handle_t stream_handle) {
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
-}
-
-// Note: Assumes the stream handle is for a stream in the current context
-template<dimensionality_t NumDimensions>
-status_t multidim_copy(
-	context::handle_t                 context_handle,
-	copy_parameters_t<NumDimensions>  params,
-	stream::handle_t                  stream_handle)
-{
-	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
-}
-
-// Assumes the array and the stream share the same context, and that the destination is
-// accessible from that context (e.g. allocated within it, or being managed memory, etc.)
-template <typename T, dimensionality_t NumDimensions>
-void copy(T *destination, const array_t<T, NumDimensions>& source, stream::handle_t stream_handle)
-{
-	using  memory::endpoint_t;
-	auto dims = source.dimensions();
-	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	auto params = copy_parameters_t<NumDimensions> {};
-	params.clear_offset(endpoint_t::source);
-	params.clear_offset(endpoint_t::destination);
-	params.template set_extent<T>(dims);
-	params.set_endpoint(endpoint_t::source, source);
-	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
-	params.set_default_pitches();
-	params.clear_rest();
-	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-	throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
-}
-
-
-template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream::handle_t stream_handle)
-{
-	using memory::endpoint_t;
-	auto dims = destination.dimensions();
-	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	auto params = copy_parameters_t<NumDimensions>{};
-	params.clear_offset(endpoint_t::source);
-	params.clear_offset(endpoint_t::destination);
-	params.template set_extent<T>(dims);
-	params.set_endpoint(endpoint_t::source, const_cast<T*>(source), dims);
-	params.set_endpoint(endpoint_t::destination, destination);
-	params.set_default_pitches();
-	params.clear_rest();
-	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-	throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
-}
-
-/**
- * Synchronously copies a single (typed) value between memory spaces or within a memory space.
- *
- * @note asynchronous version of @ref memory::copy_single
- *
- * @note assumes the source and destination are all valid in the same context as that of the
- * context handle
- *
- * @param destination a value residing either in host memory or on any CUDA device's
- *     global memory
- * @param source a value residing either in host memory or on any CUDA device's global
- *     memory
- * @param stream_handle A stream on which to enqueue the copy operation
- */
-template <typename T>
-void copy_single(T* destination, const T* source, stream::handle_t stream_handle)
-{
-	copy(destination, source, sizeof(T), stream_handle);
-}
-
-} // namespace detail_
+void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream = {});
 
 /**
  * Asynchronously copies data between memory spaces or within a memory space.
@@ -1119,28 +1058,76 @@ void copy_single(T* destination, const T* source, stream::handle_t stream_handle
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(void* destination, void const* source, size_t num_bytes, const stream_t& stream);
+void copy(void* destination, void const* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
+
 
 /**
- * Asynchronously copies data between memory regions
+ * Copy the contents of memory region into a C-style array, interpreting the memory
+ * as a sequence of elements of the array's element type
  *
- * @param destination The beginning of a memory region of size @p num_bytes, either in host
- *     memory or on any CUDA device's global memory. Must be registered with, or visible in,
- *     in the same context as @p stream.
- * @param source A memory region of size @p num_bytes, either in host memory or on any
- *     CUDA device's global memory. Must be defined in the same context as the stream.
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- * @param stream A stream on which to enqueue the copy operation
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
+ *     the @p destination array.
+ *
+**
+ * Asynchronously copies data from a memory region into a C-style array
+ *
+ * @param destination A fixed-size C-style array, to which to copy the data in
+ *     @p source,of size at least that of @p source.; as it is taken by reference
+ *     rather than by address of the first element, there is no array-decay.
+ * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
+ *     the @p destination array.
+ * @param stream schedule the copy operation in this CUDA stream
  */
-inline void copy(void* destination, const_region_t source, size_t num_bytes, const stream_t& stream)
+template <typename T, size_t N>
+inline void copy(T(&destination)[N], const_region_t source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
-	if (source.size() < num_bytes) {
-		throw ::std::logic_error("Attempt to copy more than the source region's size");
+	size_t required_size = N * sizeof(T);
+	if (source.size() != required_size) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a region of " + ::std::to_string(source.size()) +
+			" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
 	}
 #endif
-	copy(destination, source.start(), num_bytes, stream);
+	return copy(&(destination[0]), source.start(), sizeof(T) * N, stream);
 }
+
+/**
+ * @note Since we assume Compute Capability >= 2.0, all devices support the
+ * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
+ * used in a copy function, where the data is located, and one does not have to specify this.
+ *
+ * @note the sources and destinations may all be in any memory space addressable
+ * in the the unified virtual address space, which could be host-side memory,
+ * device global memory, device constant memory etc.
+ *
+ *
+**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A plain array whose contents is to be copied.
+ *
+ * **
+ * Asynchronously copies data from an array into a memory region
+ *
+ * @param destination A region of memory, either in host memory or on any CUDA device's
+ *     global memory. Must be defined in the same context as the stream.
+ * @param source An array, either in host memory or on any CUDA device's global memory.
+ * @param stream A stream on which to enqueue the copy operation
+ */
+template <typename T, size_t N>
+inline void copy(region_t destination, const T(&source)[N], optional_ref<const stream_t> stream = {})
+{
+#ifndef NDEBUG
+	if (destination.size() < N) {
+		throw ::std::logic_error("Source size exceeds destination size");
+	}
+#endif
+	return copy(destination.start(), source, sizeof(T) * N, stream);
+}
+
 
 /**
  * Asynchronously copies data between memory spaces or within a memory space.
@@ -1153,7 +1140,7 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, con
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, size_t num_bytes, const stream_t& stream)
+inline void copy(region_t destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1163,22 +1150,15 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
 	copy(destination.start(), source.start(), num_bytes, stream);
 }
 
-/**
- * Asynchronously copies data between memory regions
- *
- * @param destination Beginning of a memory region into which to copy data, either in host
- *      memory or on any CUDA device's global memory. The memory must be registered in,
- *      or visible within, the same context as {@p stream}.
- * @param source A memory region of size @p num_bytes, either in host memory or on any CUDA
- *     device's global memory. Must be defined in the same context as the stream.
- * @param stream A stream on which to enqueue the copy operation
- */
-inline void copy(void* destination, const_region_t source, const stream_t& stream)
-{
-	copy(destination, source, source.size(), stream);
-}
 
 /**
+ * @param destination A region of memory to which to copy the data in @p source, of
+ *     size at least that of @p source , either in host memory or on any CUDA
+ *     device's global memory.
+ * @param source A region whose contents is to be copied, either in host memory
+ *     or on any CUDA device's global memory
+ *
+**
  * Asynchronously copies data between memory regions
  *
  * @param destination A region of memory, either in host memory or on any CUDA device's
@@ -1187,12 +1167,20 @@ inline void copy(void* destination, const_region_t source, const stream_t& strea
  *     global memory. Must be defined in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, const stream_t& stream)
+inline void copy(region_t destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
 	copy(destination, source, source.size(), stream);
 }
 
+
 /**
+ * Copy memory between memory regions
+ *
+ * @param destination A target region of memory into which to copy; enough memory will
+ *     be copied to fill this region
+ * @param source The beginning of a region of memory from which to copy
+ *
+**
  * Asynchronously copies data between memory regions
  *
  * @param destination A region of memory, either in host memory or on any CUDA device's
@@ -1202,31 +1190,20 @@ inline void copy(region_t destination, const_region_t source, const stream_t& st
  *     in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, const stream_t& stream)
+inline void copy(region_t destination, void* source, optional_ref<const stream_t> stream = {})
 {
 	return copy(destination.start(), source, destination.size(), stream);
 }
 
 /**
- * Asynchronously copies data from an array into a memory region
+ * Copy one region of memory into another
  *
- * @param destination A region of memory, either in host memory or on any CUDA device's
- *     global memory. Must be defined in the same context as the stream.
- * @param source An array, either in host memory or on any CUDA device's global memory.
- * @param stream A stream on which to enqueue the copy operation
- */
-template <typename T, size_t N>
-inline void copy(region_t destination, const T(&source)[N], const stream_t& stream)
-{
-#ifndef NDEBUG
-	if (destination.size() < N) {
-		throw ::std::logic_error("Source size exceeds destination size");
-	}
-#endif
-	return copy(destination.start(), source, sizeof(T) * N, stream);
-}
-
-/**
+ * @param destination A region of memory to which to copy the data in @p source,
+ *     of size at least that of @p source.
+ * @param source A pointer to a a memory region of size @p num_bytes.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ *
+**
  * Asynchronously copies data from one region of memory to another
  *
  * @param destination A region of memory, either in host memory or on any CUDA device's
@@ -1235,7 +1212,7 @@ inline void copy(region_t destination, const T(&source)[N], const stream_t& stre
  * @param num_bytes Amount of memory to copy
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, size_t num_bytes, const stream_t& stream)
+inline void copy(region_t destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1246,127 +1223,53 @@ inline void copy(region_t destination, void* source, size_t num_bytes, const str
 }
 
 /**
- * Asynchronously copies data into a CUDA array.
+ * Copy one region of memory to another location
  *
- * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
+ * @param destination The beginning of a target region of memory (of size at least
+ *     @p num_bytes) into which to copy
+ * @param source A region of memory from which to copy, of size at least @p num_bytes
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
  *
- * @param destination A CUDA array to copy data into
- * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
- * @param stream schedule the copy operation into this CUDA stream
+**
+ * Asynchronously copies data between memory regions
+ *
+ * @param destination The beginning of a memory region of size @p num_bytes, either in host
+ *     memory or on any CUDA device's global memory. Must be registered with, or visible in,
+ *     in the same context as @p stream.
+ * @param source A memory region of size @p num_bytes, either in host memory or on any
+ *     CUDA device's global memory. Must be defined in the same context as the stream.
+ * @param num_bytes The number of bytes to copy from @p source to @p destination
+ * @param stream A stream on which to enqueue the copy operation
  */
-template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream);
-
-/**
- * Asynchronously copies data into a CUDA array.
- *
- * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
- *
- * @param destination A CUDA array to copy data into
- * @param source A memory region of size `destination.size() * sizeof(T)`
- * @param stream schedule the copy operation into this CUDA stream
- */
-template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const_region_t source, const stream_t& stream)
+inline void copy(void* destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
-	size_t required_size = destination.size() * sizeof(T);
-	if (source.size() != required_size) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-			" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
+	if (source.size() < num_bytes) {
+		throw ::std::logic_error("Attempt to copy more than the source region's size");
 	}
 #endif
-	copy(destination, static_cast<T const*>(source.start()), stream);
+	copy(destination, source.start(), num_bytes, stream);
 }
 
 /**
- * Asynchronously copies data from a CUDA array elsewhere
+ * @param destination A memory region of the same size as @p source.
+ * @param source A region whose contents is to be copied.
  *
- * @note asynchronous version of @ref memory::copy
+**
+ * Asynchronously copies data between memory regions
  *
- * @param destination A pointer to a a memory region of size `source.size() * sizeof(T)`
- * @param source A CUDA array @ref cuda::array_t
- * @param stream schedule the copy operation into this CUDA stream
+ * @param destination Beginning of a memory region into which to copy data, either in host
+ *      memory or on any CUDA device's global memory. The memory must be registered in,
+ *      or visible within, the same context as {@p stream}.
+ * @param source A memory region of size @p num_bytes, either in host memory or on any CUDA
+ *     device's global memory. Must be defined in the same context as the stream.
+ * @param stream A stream on which to enqueue the copy operation
  */
-template <typename T, dimensionality_t NumDimensions>
-void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream);
-
-/**
- * Asynchronously copies data from a CUDA array elsewhere
- *
- * @note asynchronous version of @ref memory::copy
- *
- * @param destination A memory region of size `source.size() * sizeof(T)`
- * @param source A CUDA array @ref cuda::array_t
- * @param stream schedule the copy operation in this CUDA stream
- */
-template <typename T, dimensionality_t NumDimensions>
-void copy(region_t destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
+inline void copy(void* destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
-#ifndef NDEBUG
-	size_t required_size = source.size() * sizeof(T);
-	if (destination.size() < required_size) {
-		throw ::std::invalid_argument(
-			"Attempt to copy " + ::std::to_string(required_size) + " bytes from an array into a "
-			"region of smaller size (" + ::std::to_string(destination.size()) + " bytes)");
-	}
-#endif
-	copy(destination.start(), source, stream);
+	copy(destination, source, source.size(), stream);
 }
 
-/**
- * Asynchronously copies data from a memory region into a C-style array
- *
- * @param destination A fixed-size C-style array, to which to copy the data in
- *     @p source,of size at least that of @p source.; as it is taken by reference
- *     rather than by address of the first element, there is no array-decay.
- * @param source The starting address of a sequence of @tparam N elements to copy
- * @param stream schedule the copy operation in this CUDA stream
- */
-template <typename T, size_t N>
-inline void copy(T(&destination)[N], T* source, const stream_t& stream)
-{
-	return copy(destination, source, sizeof(T) * N, stream);
-}
-
-/**
- * Asynchronously copies data from a memory region into a C-style array
- *
- * @param destination A fixed-size C-style array, to which to copy the data in
- *     @p source,of size at least that of @p source.; as it is taken by reference
- *     rather than by address of the first element, there is no array-decay.
- * @param source A region of at least `sizeof(T)*N` bytes with whose data to fill
- *     the @p destination array.
- * @param stream schedule the copy operation in this CUDA stream
- */
-template <typename T, size_t N>
-inline void copy(T(&destination)[N], const_region_t source, const stream_t& stream)
-{
-#ifndef NDEBUG
-	size_t required_size = N * sizeof(T);
-	if (source.size() != required_size) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-				" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
-	}
-#endif
-	return copy(destination, source.start(), sizeof(T) * N, stream);
-}
-
-/**
- * Copy a single (typed) value between memory locations
- *
- * @note asynchronous version of @ref memory::copy_single<T>(T&, const T&)
- *
- * @param destination a value residing either in host memory or on any CUDA device's global memory
- * @param source a value residing either in host memory or on any CUDA device's global memory
- * @param stream The CUDA command queue on which this copying will be enqueued
- */
-template <typename T>
-void copy_single(T* destination, const T* source, const stream_t& stream);
-
-} // namespace async
 
 namespace device {
 
@@ -1430,7 +1333,7 @@ inline void typed_set(T* start, const T& value, size_t num_elements, stream::han
  * @param stream The stream on which to enqueue the operation.
  */
 template <typename T>
-void typed_set(T* start, const T& value, size_t num_elements, const stream_t& stream);
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream);
 
 /**
  * Asynchronously sets all bytes in a stretch of memory to a single value
@@ -1443,7 +1346,7 @@ void typed_set(T* start, const T& value, size_t num_elements, const stream_t& st
  * @param num_bytes size of the memory region in bytes
  * @param stream stream on which to schedule this action
  */
-inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& stream)
+inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	return typed_set<unsigned char>(
 		static_cast<unsigned char*>(start),
@@ -1462,7 +1365,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, const stream_t& s
  * @param num_bytes size of the memory region in bytes
  * @param stream stream on which to schedule this action
  */
-void zero(void* start, size_t num_bytes, const stream_t& stream);
+void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream);
 
 /**
  * Asynchronously sets all bytes of a single pointed-to value
@@ -1475,7 +1378,7 @@ void zero(void* start, size_t num_bytes, const stream_t& stream);
  * @param stream stream on which to schedule this action
  */
 template <typename T>
-inline void zero(T* ptr, const stream_t& stream)
+inline void zero(T* ptr, optional_ref<const stream_t> stream)
 {
 	zero(ptr, sizeof(T), stream);
 }
@@ -1486,51 +1389,21 @@ inline void zero(T* ptr, const stream_t& stream)
 
 namespace inter_context {
 
-namespace detail_ {
-
-inline void copy(
-	void *             destination_address,
-	context::handle_t  destination_context,
-	const void *       source_address,
-	context::handle_t  source_context,
-	size_t             num_bytes)
-{
-	auto status = cuMemcpyPeer(
-		reinterpret_cast<device::address_t>(destination_address),
-		destination_context,
-		reinterpret_cast<device::address_t>(source_address),
-		source_context, num_bytes);
-	throw_if_error_lazy(status,
-		::std::string("Failed copying data between devices: From address ")
-			+ cuda::detail_::ptr_as_hex(source_address) + " in "
-			+ context::detail_::identify(source_context) + " to address "
-			+ cuda::detail_::ptr_as_hex(destination_address) + " in "
-			+ context::detail_::identify(destination_context) );
-}
-
-} // namespace detail_
-
 void copy(
-	void *             destination,
-	const context_t&   destination_context,
-	const void *       source_address,
-	const context_t&   source_context,
-	size_t             num_bytes);
+	void *                        destination,
+	const context_t&              destination_context,
+	const void *                  source_address,
+	const context_t&              source_context,
+	size_t                        num_bytes,
+	optional_ref<const stream_t>  stream);
 
-inline void copy(
-	void *             destination,
-	const context_t&   destination_context,
-	const_region_t     source,
-	const context_t&   source_context)
-{
-	copy(destination, destination_context, source.start(), source_context, source.size());
-}
-
+/*
 inline void copy(
 	region_t           destination,
 	const context_t&   destination_context,
 	const_region_t     source,
-	const context_t&   source_context)
+	const context_t&   source_context,
+	optional_ref<const stream_t> stream)
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
@@ -1539,44 +1412,25 @@ inline void copy(
 				" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
 	}
 #endif
-	copy(destination.start(), destination_context, source, source_context);
+	copy(destination.start(), destination_context, source, source_context, stream);
 }
+*/
+
+
+/*
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(
 	array_t<T, NumDimensions>  destination,
-	array_t<T, NumDimensions>  source)
+	array_t<T, NumDimensions>  source,
+	optional_ref<const stream_t> stream)
 {
 	// for arrays, a single mechanism handles both intra- and inter-context copying
-	return memory::copy(destination, source);
+	return memory::copy(destination, source, stream);
 }
-
-namespace async {
+*/
 
 namespace detail_ {
-
-inline void copy(
-	void *destination,
-	context::handle_t destination_context_handle,
-	const void *source,
-	context::handle_t source_context_handle,
-	size_t num_bytes,
-	stream::handle_t stream_handle)
-{
-	auto result = cuMemcpyPeerAsync(
-		device::address(destination),
-		destination_context_handle,
-		device::address(source),
-		source_context_handle,
-		num_bytes, stream_handle);
-
-	// TODO: Determine whether it was from host to device, device to host etc and
-	// add this information to the error string
-	throw_if_error_lazy(result, "Scheduling an inter-context memory copy from "
-		+ context::detail_::identify(source_context_handle) + " to "
-		+ context::detail_::identify(destination_context_handle) + " on "
-		+ stream::detail_::identify(stream_handle));
-}
 
 /**
  * @param destination a memory region of size @p num_bytes, either in
@@ -1584,62 +1438,84 @@ inline void copy(
  * @param source a memory region of size @p num_bytes, either in
  * host memory or on any CUDA device's global memory
  * @param stream_handle The handle of a stream on which to schedule the copy operation
- */
+ *
 inline void copy(
 	region_t destination,
 	context::handle_t destination_context_handle,
 	const_region_t source,
 	context::handle_t source_context_handle,
-	stream::handle_t stream_handle)
+	optional<stream::handle_t> stream_handle)
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
 		throw ::std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
-	copy(destination.start(), destination_context_handle, source.start(), source_context_handle, source.size(),
-		stream_handle);
+	copy(destination.start(), destination_context_handle, source.start(), source_context_handle, source.size(), stream_handle);
 }
+ */
 
 } // namespace detail_
 
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 void copy(
-	void *           destination_address,
-	context_t        destination_context,
-	const void *     source_address,
-	context_t        source_context,
-	size_t           num_bytes,
-	const stream_t&  stream);
-
-/// Asynchronously copy a region of memory defined in one context into a region defined in another
-void copy(
-	void *           destination,
-	context_t        destination_context,
-	const_region_t   source,
-	context_t        source_context,
-	const stream_t&  stream);
+	void *                        destination_address,
+	const context_t&              destination_context,
+	const void *                  source_address,
+	const context_t&              source_context,
+	size_t                        num_bytes,
+	optional_ref<const stream_t> stream);
 
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 inline void copy(
-	region_t        destination,
-	context_t        destination_context,
-	const_region_t   source,
-	context_t        source_context,
-	const stream_t&  stream);
+	void *                        destination,
+	const context_t&              destination_context,
+	const_region_t                source,
+	const context_t&              source_context,
+	optional_ref<const stream_t>  stream)
+{
+	copy(destination, destination_context, source.start(), source_context, source.size(), stream);
+}
+
+/// Asynchronously copy a region of memory defined in one context into a region defined in another
+inline void copy(
+	region_t                      destination,
+	const context_t&              destination_context,
+	const void*                   source,
+	const context_t&              source_context,
+	optional_ref<const stream_t>  stream)
+{
+	copy(destination.start(), destination_context, source, source_context, destination.size(), stream);
+}
+
+/// Asynchronously copy a region of memory defined in one context into a region defined in another
+inline void copy(
+	region_t                      destination,
+	const context_t&              destination_context,
+	const_region_t                source,
+	const context_t&              source_context,
+	optional_ref<const stream_t>  stream)
+{
+#ifndef NDEBUG
+	if (destination.size() < destination.size()) {
+		throw ::std::invalid_argument(
+			"Attempt to copy a region of " + ::std::to_string(source.size()) +
+			" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
+	}
+#endif
+	copy(destination.start(), destination_context, source, source_context, stream);
+}
 
 /// Asynchronously copy a CUDA array defined in one context into a CUDA array defined in another
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(
-	array_t<T, NumDimensions>  destination,
-	array_t<T, NumDimensions>  source,
-	const stream_t&            stream)
+	array_t<T, NumDimensions>     destination,
+	array_t<T, NumDimensions>     source,
+	optional_ref<const stream_t>  stream)
 {
 	// for arrays, a single mechanism handles both intra- and inter-context copying
-	return memory::async::copy(destination, source, stream);
+	return memory::copy(destination, source, stream);
 }
-
-} // namespace async
 
 } // namespace inter_context
 

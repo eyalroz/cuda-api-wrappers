@@ -28,23 +28,13 @@ namespace cuda {
 
 namespace memory {
 
-namespace async {
-
-inline void copy(void *destination, const void *source, size_t num_bytes, const stream_t& stream)
-{
-	detail_::copy(destination, source, num_bytes, stream.handle());
-}
-
-// Note: Assumes the source pointer is valid in the stream's context
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, const stream_t& stream)
+inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream)
 {
-	detail_::copy<T, NumDimensions>(destination, source, stream.handle());
-}
-
-template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, const stream_t& stream)
-{
+	if (not stream) {
+		memory::copy<T, NumDimensions>(destination, source);
+		return;
+	}
 #ifndef NDEBUG
 	if (source.size() != destination.size()) {
 		throw ::std::invalid_argument(
@@ -52,41 +42,63 @@ inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, c
 			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
 	}
 #endif
-	detail_::copy<T, NumDimensions>(destination, source.data(), stream.handle());
+	detail_::copy<T, NumDimensions>(destination, source.data(), stream->handle());
 }
 
 // Note: Assumes the destination, source and stream are all usable on the same content
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
+inline void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
 {
-	if (stream.context_handle() != source.context_handle()) {
-		throw ::std::invalid_argument("Attempt to copy an array in"
-									+ context::detail_::identify(source.context_handle()) + " via "
-									+ stream::detail_::identify(stream));
+	if (not stream) {
+		memory::copy(context_of(destination), destination, source);
+		return;
 	}
-	detail_::copy<T, NumDimensions>(destination, source, stream.handle());
+	if (stream->context_handle() != source.context_handle()) {
+		throw ::std::invalid_argument("Attempt to copy an array in"
+									  + context::detail_::identify(source.context_handle()) + " via "
+									  + stream::detail_::identify(*stream));
+	}
+	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
 }
 
-template <typename T, dimensionality_t NumDimensions>
-inline void copy(span<T> destination, const array_t<T, NumDimensions>& source, const stream_t& stream)
+template<dimensionality_t NumDimensions>
+void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream)
 {
-#ifndef NDEBUG
-	if (destination.size() != source.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy " + ::std::to_string(source.size()) +
-			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
-	}
-#endif
-	copy(destination.data(), source, stream);
+	stream::handle_t stream_handle = stream ? stream->handle() : nullptr;
+	status_t status = detail_::multidim_copy(params, stream_handle);
+	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
 }
+
 
 template <typename T>
-inline void copy_single(T* destination, const T* source, const stream_t& stream)
+void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream)
 {
-	detail_::copy_single(destination, source, sizeof(T), stream.handle());
+	memory::copy(destination, source, sizeof(T), stream);
 }
 
-} // namespace async
+// Note: Assumes the source pointer is valid in the stream's context
+template <typename T, dimensionality_t NumDimensions>
+inline void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream)
+{
+	if (not stream) {
+		memory::copy(destination, context_of(source), source);
+		return;
+	}
+	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
+}
+
+inline void copy(void *destination, const void *source, size_t num_bytes, optional_ref<const stream_t> stream)
+{
+	if (not stream) {
+		context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
+		auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
+		// TODO: Determine whether it was from host to device, device to host etc and
+		// add this information to the error string
+		throw_if_error_lazy(result, "Synchronously copying data");
+		return;
+	}
+	detail_::copy(destination, source, num_bytes, stream->handle());
+}
 
 namespace device {
 
@@ -94,7 +106,6 @@ inline region_t allocate(const context_t& context, size_t size_in_bytes)
 {
 	return detail_::allocate(context.handle(), size_in_bytes);
 }
-
 
 inline region_t allocate(const device_t& device, size_t size_in_bytes)
 {
@@ -133,61 +144,38 @@ inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 namespace inter_context {
 
 inline void copy(
-	void *        destination_address,
-	context_t     destination_context,
-	const void *  source_address,
-	context_t     source_context,
-	size_t        num_bytes)
-{
-	return detail_::copy(
-	destination_address, destination_context.handle(),
-	source_address, source_context.handle(), num_bytes);
-}
-
-namespace async {
-
-inline void copy(
-	void *           destination_address,
-	context_t        destination_context,
-	const void *     source_address,
-	context_t        source_context,
-	size_t           num_bytes,
-	const stream_t&  stream)
-{
-	return detail_::copy(
-	destination_address, destination_context.handle(), source_address,
-	source_context.handle(), num_bytes, stream.handle());
-}
-
-inline void copy(
-	region_t         destination,
-	context_t        destination_context,
-	const_region_t   source,
-	context_t        source_context,
-	const stream_t&  stream)
-{
-#ifndef NDEBUG
-	if (destination.size() < destination.size()) {
-		throw ::std::invalid_argument(
-		"Attempt to copy a region of " + ::std::to_string(source.size()) +
-		" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
-	}
-#endif
-	copy(destination.start(), destination_context, source, source_context, stream);
-}
-
-
-inline void copy(
 	void *           destination,
-	context_t        destination_context,
-	const_region_t   source,
-	context_t        source_context,
-	const stream_t&  stream)
+	const context_t& destination_context,
+	const void *     source,
+	const context_t& source_context,
+	size_t           num_bytes,
+	optional_ref<const stream_t> stream = {})
 {
-	copy(destination, destination_context, source.start(), source_context, source.size(), stream);
-}
+	auto status = stream ?
+		cuMemcpyPeer(
+		  device::address(destination),
+		  destination_context.handle(),
+		  device::address(source),
+		  source_context.handle(),
+		  num_bytes) :
+		cuMemcpyPeerAsync(
+		  device::address(destination),
+		  destination_context.handle(),
+		  device::address(source),
+		  source_context.handle(),
+		  num_bytes,
+		  stream->handle());
 
-} // namespace async
+	// TODO: Determine whether it was from host to device, device to host etc and
+	// add this information to the error string
+	throw_if_error_lazy(status,
+		::std::string("Failed copying data between devices: From address ")
+		+ cuda::detail_::ptr_as_hex(source) + " in "
+		+ context::detail_::identify(source_context.handle()) + " to address "
+		+ cuda::detail_::ptr_as_hex(destination) + " in "
+		+ context::detail_::identify(destination_context.handle()) +
+		(stream ? " on " + stream::detail_::identify(*stream) : ""));
+}
 
 } // namespace inter_context
 
@@ -258,9 +246,7 @@ inline void prefetch(
 	detail_::prefetch(region, destination.id(), stream.handle());
 }
 
-inline void prefetch_to_host(
-	const_region_t   region,
-	const stream_t&  stream)
+inline void prefetch_to_host(const_region_t region, const stream_t& stream)
 {
 	detail_::prefetch(region, CU_DEVICE_CPU, stream.handle());
 }
@@ -405,15 +391,6 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 
 } // namespace detail_
 } // namespace pointer
-
-inline void copy(void *destination, const void *source, size_t num_bytes)
-{
-	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
-	auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
-	// TODO: Determine whether it was from host to device, device to host etc and
-	// add this information to the error string
-	throw_if_error_lazy(result, "Synchronously copying data");
-}
 
 namespace device {
 

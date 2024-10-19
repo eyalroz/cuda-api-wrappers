@@ -431,7 +431,7 @@ public: // mutators
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
 			// however, unfortunately, it does require us to be in _some_ context.
 			context::current::detail_::scoped_ensurer_t ensure_we_have_a_current_scope{associated_stream.context_handle_};
-			memory::async::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
+			memory::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
 		/// @copybrief copy(void *, const void *, size_t) const
@@ -1053,19 +1053,6 @@ inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr addres
 	return cuStreamWriteValue64(stream_handle, address, value, flags);
 }
 
-/**
- * A function used internally by this class as the host function to call directly; see
- * @ref enqueue_t::host_function_call - but only with CUDA version 10.0 and later.
- *
- * @param stream_handle the ID of the stream for which a host function call was triggered - this
- * will be passed by the CUDA runtime
- * @param stream_wrapper_members_and_invokable a tuple, containing the information necessary to
- * recreate the wrapper with which the callback is associated, without any additional CUDA API calls -
- * plus the invokable which was passed to @ref enqueue_t::host_function_call, and which the programmer
- * actually wants to be called.
- *
- * @note instances of this template are of type {@ref callback_t}.
- */
 template <typename Function>
 void enqueue_function_call(const stream_t& stream, Function function, void* argument)
 {
