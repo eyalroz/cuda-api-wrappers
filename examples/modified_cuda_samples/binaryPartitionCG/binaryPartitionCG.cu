@@ -124,8 +124,8 @@ int main(int argc, const char **argv)
 
 	stream.enqueue.kernel_launch(kernel, launch_config, d_inputArr.data(), d_numOfOdds.data(), d_sumOfOddEvenElems.data(), arrSize);
 
-	cuda::memory::async::copy(h_numOfOdds, d_numOfOdds, stream);
-	cuda::memory::async::copy(h_sumOfOddEvenElems, d_sumOfOddEvenElems, stream);
+	cuda::memory::copy(h_numOfOdds, d_numOfOdds, stream);
+	cuda::memory::copy(h_sumOfOddEvenElems, d_sumOfOddEvenElems, stream);
 
 	stream.synchronize();
 

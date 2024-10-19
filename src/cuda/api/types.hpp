@@ -29,6 +29,7 @@
 #endif
 
 #include "detail/optional.hpp"
+#include "detail/optional_ref.hpp"
 #include "detail/span.hpp"
 #include "detail/region.hpp"
 #include "detail/type_traits.hpp"
