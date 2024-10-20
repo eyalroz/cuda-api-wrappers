@@ -481,7 +481,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::async::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
+			memory::device::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
 		}
 
 		/// @copydoc memset(void *, int, size_t) const
@@ -504,7 +504,7 @@ public: // mutators
 		void memzero(void *start, size_t num_bytes) const
 		{
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::async::detail_::zero(start, num_bytes, associated_stream.handle_);
+			memory::device::detail_::zero(start, num_bytes, associated_stream.handle_);
 		}
 
 		/**

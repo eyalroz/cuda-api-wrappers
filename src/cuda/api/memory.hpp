@@ -373,9 +373,10 @@ struct deleter {
  * @param start The first location to set to @p value ; must be properly aligned.
  * @param value A (properly aligned) value to set T-elements to.
  * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
-void typed_set(T* start, const T& value, size_t num_elements);
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream = {});
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -386,10 +387,26 @@ void typed_set(T* start, const T& value, size_t num_elements);
  * @param start starting address of the memory region to set, in a CUDA
  * device's global memory
  * @param num_bytes size of the memory region in bytes
+ * @param stream an stream on which to schedule the operation; may be omitted
+ *
+**
+ * Asynchronously sets all bytes in a stretch of memory to a single value
+ *
+ * @note asynchronous version of @ref memory::set(void*, int, size_t)
+ *
+ * @param start starting address of the memory region to set,
+ * in a CUDA device's global memory
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(void* start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), static_cast<unsigned char>(byte_value), num_bytes);
+	return typed_set<unsigned char>(
+		static_cast<unsigned char*>(start),
+		static_cast<unsigned char>(byte_value),
+		num_bytes,
+		stream);
 }
 
 /**
@@ -399,10 +416,11 @@ inline void set(void* start, int byte_value, size_t num_bytes)
  *
  * @param byte_value value to set the memory region to
  * @param region a region to zero-out, in a CUDA device's global memory
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value)
+inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream = {})
 {
-	set(region.start(), byte_value, region.size());
+	set(region.start(), byte_value, region.size(), stream);
 }
 
 /**
@@ -411,10 +429,11 @@ inline void set(region_t region, int byte_value)
  * @param start the beginning of a region of memory to zero-out, accessible
  *     within a CUDA device's global memory
  * @param num_bytes the size in bytes of the region of memory to zero-out
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
-	set(start, 0, num_bytes);
+	set(start, 0, num_bytes, stream);
 }
 
 /**
@@ -422,38 +441,30 @@ inline void zero(void* start, size_t num_bytes)
  *
  * @param region the memory region to zero-out, accessible as a part of a
  * CUDA device's global memory
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region)
+inline void zero(region_t region, optional_ref<const stream_t> stream = {})
 {
-	zero(region.start(), region.size());
+	zero(region.start(), region.size(), stream);
 }
-
 
 /**
  * Sets all bytes of a single pointed-to value to 0
  *
  * @param ptr pointer to a value of a certain type, accessible within
  *     in a CUDA device's global memory
+ * @param stream an existing stream on which to schedule this action; may be omitted
  */
 template <typename T>
-inline void zero(T* ptr)
+inline void zero(T* ptr, optional_ref<const stream_t> stream = {})
 {
-	zero(ptr, sizeof(T));
+	zero(ptr, sizeof(T), stream);
 }
 
 } // namespace device
 
 /// Asynchronous memory operations
 namespace detail_ {
-
-/**
- * Asynchronous versions of @ref memory::copy functions.
- *
- *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
- */
 
 ///@{
 
@@ -712,8 +723,9 @@ inline void copy(T(&destination)[N], T* source, optional_ref<const stream_t> str
  *     memory, global CUDA-device-side memory or CUDA-managed memory.
  * @param byte_value value to set the memory region to
  * @param num_bytes The amount of memory to set to @p byte_value
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-void set(void* ptr, int byte_value, size_t num_bytes);
+void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream);
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -724,10 +736,11 @@ void set(void* ptr, int byte_value, size_t num_bytes);
  * @param region the memory region to set; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
  * @param byte_value value to set the memory region to
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value)
+inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream)
 {
-	return set(region.start(), byte_value, region.size());
+	return set(region.start(), byte_value, region.size(), stream);
 }
 
 /**
@@ -735,10 +748,11 @@ inline void set(region_t region, int byte_value)
  *
  * @param region the memory region to zero-out; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region)
+inline void zero(region_t region, optional_ref<const stream_t> stream)
 {
-	return set(region, 0);
+	return set(region, 0, stream);
 }
 
 /**
@@ -747,10 +761,11 @@ inline void zero(region_t region)
  * @param ptr the beginning of a region of memory to zero-out; may be in host-side
  *     memory, global CUDA-device-side memory or CUDA-managed memory.
  * @param num_bytes the size in bytes of the region of memory to zero-out
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* ptr, size_t num_bytes)
+inline void zero(void* ptr, size_t num_bytes, optional_ref<const stream_t> stream)
 {
-	return set(ptr, 0, num_bytes);
+	return set(ptr, 0, num_bytes, stream);
 }
 
 /**
@@ -758,7 +773,8 @@ inline void zero(void* ptr, size_t num_bytes)
  *
  * @param ptr pointer to a single element of a certain type, which may
  * be in host-side memory, global CUDA-device-side memory or CUDA-managed
- * memory
+ * memory.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
 inline void zero(T* ptr)
@@ -1289,10 +1305,7 @@ inline void copy(void* destination, const_region_t source, optional_ref<const st
 	copy(destination, source, source.size(), stream);
 }
 
-
 namespace device {
-
-namespace async {
 
 namespace detail_ {
 
@@ -1343,66 +1356,26 @@ inline void typed_set(T* start, const T& value, size_t num_elements, stream::han
 /**
  * Sets consecutive elements of a region of memory to a fixed value of some width
  *
- * @note A generalization of `async::set()`, for different-size units.
+ * @note A generalization of `set()`, for different-size units.
  *
  * @tparam T An unsigned integer type of size 1, 2, 4 or 8
  * @param start The first location to set to @p value ; must be properly aligned.
  * @param value A (properly aligned) value to set T-elements to.
  * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
- * @param stream The stream on which to enqueue the operation.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
 void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream);
 
 /**
- * Asynchronously sets all bytes in a stretch of memory to a single value
- *
- * @note asynchronous version of @ref memory::set(void*, int, size_t)
- *
- * @param start starting address of the memory region to set,
- * in a CUDA device's global memory
- * @param byte_value value to set the memory region to
- * @param num_bytes size of the memory region in bytes
- * @param stream stream on which to schedule this action
- */
-inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	return typed_set<unsigned char>(
-		static_cast<unsigned char*>(start),
-		static_cast<unsigned char>(byte_value),
-		num_bytes,
-		stream);
-}
-
-/**
  * Asynchronously sets all bytes in a stretch of memory to 0.
  *
- * @note asynchronous version of @ref memory::zero(void*, size_t)
- *
- * @param start starting address of the memory region to set,
- * in a CUDA device's global memory
- * @param num_bytes size of the memory region in bytes
- * @param stream stream on which to schedule this action
+ * @param start      starting address of the memory region to set, in a CUDA device's global memory
+ * @param num_bytes  size of the memory region in bytes
+ * @param stream     stream on which to schedule this action
+ * @param stream     A stream on which to enqueue the operation; may be omitted.
  */
 void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream);
-
-/**
- * Asynchronously sets all bytes of a single pointed-to value
- * to 0 (zero).
- *
- * @note asynchronous version of @ref memory::zero(T*)
- *
- * @param ptr a pointer to the value to be to zero; must be valid in the
- * CUDA context of @p stream
- * @param stream stream on which to schedule this action
- */
-template <typename T>
-inline void zero(T* ptr, optional_ref<const stream_t> stream)
-{
-	zero(ptr, sizeof(T), stream);
-}
-
-} // namespace async
 
 } // namespace device
 
@@ -1846,16 +1819,27 @@ inline void deregister(const_region_t region)
  * Sets all bytes in a stretch of host-side memory to a single value
  *
  * @note a wrapper for @ref ::std::memset
- *
+ * @param byte_value The value to set each byte in the memory region to.
+ */
+///@{
+
+/**
  * @param start starting address of the memory region to set,
  * in host memory; can be either CUDA-allocated or otherwise.
- * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
 	::std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
+}
+
+/**
+ * @param region The region of memory to set to the fixed value
+ */
+inline void set(region_t region, int byte_value)
+{
+	set(region.start(), byte_value, region.size());
 }
 
 /**

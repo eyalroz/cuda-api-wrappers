@@ -140,11 +140,6 @@ inline void free(void* ptr)
 
 namespace async {
 
-template <typename T>
-inline void typed_set(T* start, const T& value, size_t num_elements, const stream_t& stream)
-{
-	detail_::set(start, value, num_elements, stream.handle());
-}
 
 inline void zero(void* start, size_t num_bytes, const stream_t& stream)
 {
@@ -409,8 +404,11 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 namespace device {
 
 template <typename T>
-inline void typed_set(T* start, const T& value, size_t num_elements)
+inline void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream)
 {
+	if (stream) {
+		detail_::set(start, value, num_elements, stream->handle());
+	}
 	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
 	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(sizeof(T) == 1 or sizeof(T) == 2 or sizeof(T) == 4,
@@ -418,25 +416,34 @@ inline void typed_set(T* start, const T& value, size_t num_elements)
 	// TODO: Consider checking for alignment when compiling without NDEBUG
 	status_t result {CUDA_SUCCESS};
 	switch(sizeof(T)) {
-	case 1: result = cuMemsetD8 (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements); break;
-	case 2: result = cuMemsetD16(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
-	case 4: result = cuMemsetD32(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
+	case 1: result = stream ?
+		cuMemsetD8Async (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements, stream->handle()) :
+		cuMemsetD8      (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements); break;
+	case 2: result = stream ?
+		cuMemsetD16Async(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements, stream->handle()) :
+		cuMemsetD16     (address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
+	case 4: result = stream ?
+		cuMemsetD32Async(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements, stream->handle()) :
+		cuMemsetD32     (address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
 	}
 	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
 
 } // namespace device
 
-inline void set(void* ptr, int byte_value, size_t num_bytes)
+inline void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	switch ( type_of(ptr) ) {
 	case device_:
 //		case managed_:
 	case unified_:
-		memory::device::set(ptr, byte_value, num_bytes); break;
+		memory::device::set(ptr, byte_value, num_bytes, stream); break;
 //		case unregistered_:
 	case host_:
-		::std::memset(ptr, byte_value, num_bytes); break;
+		if (stream) {
+			throw ::std::invalid_argument("Asynchronous host-memory set's not currently supported");
+		} else { ::std::memset(ptr, byte_value, num_bytes); }
+		break;
 	default:
 		throw runtime_error(
 			cuda::status::invalid_value,
