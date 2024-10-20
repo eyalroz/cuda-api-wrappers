@@ -590,7 +590,7 @@ public: // mutators
 		 */
 		memory::region_t allocate(size_t num_bytes) const
 		{
-			return memory::device::async::allocate(associated_stream, num_bytes);
+			return memory::device::allocate(num_bytes, associated_stream);
 		}
 
 		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes);

@@ -113,12 +113,15 @@ inline region_t allocate(const device_t& device, size_t size_in_bytes)
 	return allocate(pc, size_in_bytes);
 }
 
-namespace async {
 #if CUDA_VERSION >= 11020
-inline region_t allocate(const stream_t& stream, size_t size_in_bytes)
+inline region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream = {})
 {
-	return detail_::allocate(stream.context().handle(), stream.handle(), size_in_bytes);
+	return stream ?
+		detail_::allocate(stream->context().handle(), size_in_bytes, stream->handle()) :
+		detail_::allocate_in_current_context(size_in_bytes);
 }
+
+namespace async {
 
 inline void free(const stream_t& stream, void* region_start)
 {
