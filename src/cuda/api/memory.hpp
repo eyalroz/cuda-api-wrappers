@@ -1094,9 +1094,9 @@ void copy(const array_t<T, NumDimensions>&  destination, const T* source, stream
  * @param stream_handle A stream on which to enqueue the copy operation
  */
 template <typename T>
-void copy_single(T& destination, const T& source, stream::handle_t stream_handle)
+void copy_single(T* destination, const T* source, stream::handle_t stream_handle)
 {
-	copy(&destination, &source, sizeof(T), stream_handle);
+	copy(destination, source, sizeof(T), stream_handle);
 }
 
 } // namespace detail_
@@ -1364,7 +1364,7 @@ inline void copy(T(&destination)[N], const_region_t source, const stream_t& stre
  * @param stream The CUDA command queue on which this copying will be enqueued
  */
 template <typename T>
-void copy_single(T& destination, const T& source, const stream_t& stream);
+void copy_single(T* destination, const T* source, const stream_t& stream);
 
 } // namespace async
 
