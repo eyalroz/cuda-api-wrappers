@@ -229,41 +229,58 @@ inline region_t allocate(
 	return allocate_in_current_context(size_in_bytes, stream_handle);
 }
 
-} // namespace detail_
-
-/// Free a region of device-side memory (regardless of how it was allocated)
-inline void free(void* ptr)
+#if CUDA_VERSION >= 11020
+inline void free(
+	context::handle_t          context_handle,
+	void*                      allocated_region_start,
+	optional<stream::handle_t> stream_handle = {})
+#else
+inline void free(
+	context::handle_t          context_handle,
+	void*                      allocated_region_start)
+#endif
 {
-	auto result = cuMemFree(address(ptr));
+#if CUDA_VERSION >= 11020
+	if (stream_handle) {
+		auto status = cuMemFreeAsync(device::address(allocated_region_start), *stream_handle);
+		throw_if_error_lazy(status,
+			"Failed scheduling an asynchronous freeing of the global memory region starting at "
+			+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
+			+ stream::detail_::identify(*stream_handle, context_handle));
+		return;
+	}
+#endif
+	auto result = cuMemFree(address(allocated_region_start));
 #ifdef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
 	if (result == status::success) { return; }
 #else
 	if (result == status::success or result == status::context_is_destroyed) { return; }
 #endif
-	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(ptr));
-}
-
-/// @copydoc free(void*)
-inline void free(region_t region) { free(region.start()); }
-
-#if CUDA_VERSION >= 11020
-namespace async {
-
-namespace detail_ {
-
-inline void free(
-	context::handle_t  context_handle,
-	stream::handle_t   stream_handle,
-	void*              allocated_region_start)
-{
-	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
-	throw_if_error_lazy(status,
-		"Failed scheduling an asynchronous freeing of the global memory region starting at "
-		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
-		+ stream::detail_::identify(stream_handle, context_handle) );
+	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(allocated_region_start));
 }
 
 } // namespace detail_
+
+/// Free a region of device-side memory (regardless of how it was allocated)
+#if CUDA_VERSION >= 11020
+inline void free(void* region_start, optional_ref<const stream_t> stream = {});
+#else
+inline void free(void* ptr);
+#endif
+
+/// @copydoc free(void*, optional_ref<const stream_t>)
+#if CUDA_VERSION >= 11020
+inline void free(region_t region, optional_ref<const stream_t> stream = {})
+#else
+inline void free(region_t region)
+#endif
+{
+	free(region.start(), stream);
+}
+
+#if CUDA_VERSION >= 11020
+
+namespace async {
 
 /**
  * Schedule a de-allocation of device-side memory on a CUDA stream.
