@@ -180,11 +180,30 @@ namespace detail_ {
  *
  * @param num_bytes amount of memory to allocate in bytes
  */
+#if CUDA_VERSION >= 11020
+inline cuda::memory::region_t allocate_in_current_context(
+	size_t num_bytes, optional<stream::handle_t> stream_handle = {})
+#else
 inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
+#endif
 {
+#if CUDA_VERSION >= 11020
+	if (stream_handle) {
+		device::address_t allocated = 0;
+		// Note: the typed cudaMalloc also takes its size in bytes, apparently,
+		// not in number of elements
+		auto status = cuMemAllocAsync(&allocated, num_bytes, *stream_handle);
+		if (is_success(status) && allocated == 0) {
+			// Can this even happen? hopefully not
+			status = static_cast<decltype(status)>(status::unknown);
+		}
+		throw_if_error_lazy(status,
+			"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
+			" bytes of global memory on " + stream::detail_::identify(*stream_handle, context::current::detail_::get_handle()) );
+		return {as_pointer(allocated), num_bytes};
+	}
+#endif
 	device::address_t allocated = 0;
-	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
-	// not in number of elements
 	auto status = cuMemAlloc(&allocated, num_bytes);
 	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
@@ -195,41 +214,76 @@ inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 	return {as_pointer(allocated), num_bytes};
 }
 
-inline region_t allocate(context::handle_t context_handle, size_t size_in_bytes)
+#if CUDA_VERSION >= 11020
+inline region_t allocate(
+	context::handle_t           context_handle,
+	size_t                      size_in_bytes,
+	optional<stream::handle_t>  stream_handle = {})
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return allocate_in_current_context(size_in_bytes, stream_handle);
+}
+#else
+inline region_t allocate(
+	context::handle_t           context_handle,
+	size_t                      size_in_bytes)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return allocate_in_current_context(size_in_bytes);
 }
-
-} // namespace detail_
+#endif
 
 #if CUDA_VERSION >= 11020
-namespace async {
-
-namespace detail_ {
-
-/// Allocate memory asynchronously on a specified stream.
-inline region_t allocate(
-	context::handle_t  context_handle,
-	stream::handle_t   stream_handle,
-	size_t             num_bytes)
+inline void free_on_stream(
+	void*              allocated_region_start,
+	stream::handle_t   stream_handle)
 {
-	device::address_t allocated = 0;
-	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
-	// not in number of elements
-	auto status = cuMemAllocAsync(&allocated, num_bytes, stream_handle);
-	if (is_success(status) && allocated == 0) {
-		// Can this even happen? hopefully not
-		status = static_cast<decltype(status)>(status::unknown);
-	}
+	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
 	throw_if_error_lazy(status,
-		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
-		" bytes of global memory on " + stream::detail_::identify(stream_handle, context_handle) );
-	return {as_pointer(allocated), num_bytes};
+		"Failed scheduling an asynchronous freeing of the global memory region starting at "
+		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
+		+ stream::detail_::identify(stream_handle));
+}
+#endif // CUDA_VERSION >= 11020
+
+inline void free_in_current_context(
+	context::handle_t          current_context_handle,
+	void*                      allocated_region_start)
+{
+	auto result = cuMemFree(address(allocated_region_start));
+	if (result == status::success) { return; }
+#ifndef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+	if (result == status::context_is_destroyed) { return; }
+#endif
+	throw runtime_error(result, "Freeing device memory at "
+		+ cuda::detail_::ptr_as_hex(allocated_region_start)
+		+ " in " + context::detail_::identify(current_context_handle));
 }
 
 } // namespace detail_
 
+/// Free a region of device-side memory (regardless of how it was allocated)
+#if CUDA_VERSION >= 11020
+inline void free(void* region_start, optional_ref<const stream_t> stream = {});
+#else
+inline void free(void* ptr);
+#endif
+
+#if CUDA_VERSION >= 11020
+/// @copydoc free(void*, optional_ref<const stream_t>)
+inline void free(region_t region, optional_ref<const stream_t> stream = {})
+{
+	free(region.start(), stream);
+}
+#else
+/// @copydoc free(void*)
+inline void free(region_t region)
+{
+	free(region.start());
+}
+#endif
+
+#if CUDA_VERSION >= 11020
 /**
  * Schedule an allocation of device-side memory on a CUDA stream.
  *
@@ -243,62 +297,7 @@ inline region_t allocate(
  * @return a pointer to the region of memory which will become allocated once the stream
  * completes all previous tasks and proceeds to also complete the allocation.
  */
-region_t allocate(const stream_t& stream, size_t size_in_bytes);
-
-} // namespace async
-#endif
-
-/// Free a region of device-side memory (regardless of how it was allocated)
-inline void free(void* ptr)
-{
-	auto result = cuMemFree(address(ptr));
-#ifdef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
-	if (result == status::success) { return; }
-#else
-	if (result == status::success or result == status::context_is_destroyed) { return; }
-#endif
-	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(ptr));
-}
-
-/// @copydoc free(void*)
-inline void free(region_t region) { free(region.start()); }
-
-#if CUDA_VERSION >= 11020
-namespace async {
-
-namespace detail_ {
-
-inline void free(
-	context::handle_t  context_handle,
-	stream::handle_t   stream_handle,
-	void*              allocated_region_start)
-{
-	auto status = cuMemFreeAsync(device::address(allocated_region_start), stream_handle);
-	throw_if_error_lazy(status,
-		"Failed scheduling an asynchronous freeing of the global memory region starting at "
-		+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
-		+ stream::detail_::identify(stream_handle, context_handle) );
-}
-
-} // namespace detail_
-
-/**
- * Schedule a de-allocation of device-side memory on a CUDA stream.
- *
- * @throws cuda::runtime_error if freeing fails
- *
- * @param stream the stream on which to register the allocation
- */
- ///@{
-void free(const stream_t& stream, void* region_start);
-
-inline void free(const stream_t& stream, region_t region)
-{
-	free(stream, region.data());
-}
-///@}
-
-} // namespace async
+region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream);
 #endif
 
 /**
@@ -335,7 +334,9 @@ namespace detail_ {
 
 // Note: Allocates _in the current context_! No current context => failure!
 struct allocator {
-	void* operator()(size_t num_bytes) const { return detail_::allocate_in_current_context(num_bytes).start(); }
+	void* operator()(size_t num_bytes) const {
+		return detail_::allocate_in_current_context(num_bytes).start();
+	}
 };
 
 struct deleter {
@@ -354,9 +355,10 @@ struct deleter {
  * @param start The first location to set to @p value ; must be properly aligned.
  * @param value A (properly aligned) value to set T-elements to.
  * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
-void typed_set(T* start, const T& value, size_t num_elements);
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream = {});
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -367,10 +369,26 @@ void typed_set(T* start, const T& value, size_t num_elements);
  * @param start starting address of the memory region to set, in a CUDA
  * device's global memory
  * @param num_bytes size of the memory region in bytes
+ * @param stream an stream on which to schedule the operation; may be omitted
+ *
+**
+ * Asynchronously sets all bytes in a stretch of memory to a single value
+ *
+ * @note asynchronous version of @ref memory::set(void*, int, size_t)
+ *
+ * @param start starting address of the memory region to set,
+ * in a CUDA device's global memory
+ * @param byte_value value to set the memory region to
+ * @param num_bytes size of the memory region in bytes
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(void* start, int byte_value, size_t num_bytes)
+inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
-	return typed_set<unsigned char>(static_cast<unsigned char*>(start), static_cast<unsigned char>(byte_value), num_bytes);
+	return typed_set<unsigned char>(
+		static_cast<unsigned char*>(start),
+		static_cast<unsigned char>(byte_value),
+		num_bytes,
+		stream);
 }
 
 /**
@@ -380,10 +398,11 @@ inline void set(void* start, int byte_value, size_t num_bytes)
  *
  * @param byte_value value to set the memory region to
  * @param region a region to zero-out, in a CUDA device's global memory
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value)
+inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream = {})
 {
-	set(region.start(), byte_value, region.size());
+	set(region.start(), byte_value, region.size(), stream);
 }
 
 /**
@@ -392,10 +411,11 @@ inline void set(region_t region, int byte_value)
  * @param start the beginning of a region of memory to zero-out, accessible
  *     within a CUDA device's global memory
  * @param num_bytes the size in bytes of the region of memory to zero-out
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* start, size_t num_bytes)
+inline void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
-	set(start, 0, num_bytes);
+	set(start, 0, num_bytes, stream);
 }
 
 /**
@@ -403,38 +423,30 @@ inline void zero(void* start, size_t num_bytes)
  *
  * @param region the memory region to zero-out, accessible as a part of a
  * CUDA device's global memory
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region)
+inline void zero(region_t region, optional_ref<const stream_t> stream = {})
 {
-	zero(region.start(), region.size());
+	zero(region.start(), region.size(), stream);
 }
-
 
 /**
  * Sets all bytes of a single pointed-to value to 0
  *
  * @param ptr pointer to a value of a certain type, accessible within
  *     in a CUDA device's global memory
+ * @param stream an existing stream on which to schedule this action; may be omitted
  */
 template <typename T>
-inline void zero(T* ptr)
+inline void zero(T* ptr, optional_ref<const stream_t> stream = {})
 {
-	zero(ptr, sizeof(T));
+	zero(ptr, sizeof(T), stream);
 }
 
 } // namespace device
 
 /// Asynchronous memory operations
 namespace detail_ {
-
-/**
- * Asynchronous versions of @ref memory::copy functions.
- *
- *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
- */
 
 ///@{
 
@@ -692,8 +704,9 @@ inline void copy(c_array<T,N>& destination, T* source, optional_ref<const stream
  *     memory, global CUDA-device-side memory or CUDA-managed memory.
  * @param byte_value value to set the memory region to
  * @param num_bytes The amount of memory to set to @p byte_value
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-void set(void* ptr, int byte_value, size_t num_bytes);
+void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream = {});
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -704,10 +717,11 @@ void set(void* ptr, int byte_value, size_t num_bytes);
  * @param region the memory region to set; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
  * @param byte_value value to set the memory region to
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value)
+inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream = {})
 {
-	return set(region.start(), byte_value, region.size());
+	return set(region.start(), byte_value, region.size(), stream);
 }
 
 /**
@@ -715,10 +729,11 @@ inline void set(region_t region, int byte_value)
  *
  * @param region the memory region to zero-out; may be in host-side memory,
  * global CUDA-device-side memory or CUDA-managed memory.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region)
+inline void zero(region_t region, optional_ref<const stream_t> stream = {})
 {
-	return set(region, 0);
+	return set(region, 0, stream);
 }
 
 /**
@@ -727,10 +742,11 @@ inline void zero(region_t region)
  * @param ptr the beginning of a region of memory to zero-out; may be in host-side
  *     memory, global CUDA-device-side memory or CUDA-managed memory.
  * @param num_bytes the size in bytes of the region of memory to zero-out
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* ptr, size_t num_bytes)
+inline void zero(void* ptr, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
-	return set(ptr, 0, num_bytes);
+	return set(ptr, 0, num_bytes, stream);
 }
 
 /**
@@ -738,7 +754,8 @@ inline void zero(void* ptr, size_t num_bytes)
  *
  * @param ptr pointer to a single element of a certain type, which may
  * be in host-side memory, global CUDA-device-side memory or CUDA-managed
- * memory
+ * memory.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
 inline void zero(T* ptr)
@@ -1269,10 +1286,7 @@ inline void copy(void* destination, const_region_t source, optional_ref<const st
 	copy(destination, source, source.size(), stream);
 }
 
-
 namespace device {
-
-namespace async {
 
 namespace detail_ {
 
@@ -1282,6 +1296,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, stream::handle_t 
 	auto result = cuMemsetD8Async(address(start), static_cast<unsigned char>(byte_value), num_bytes, stream_handle);
 	throw_if_error_lazy(result, "asynchronously memsetting an on-device buffer");
 }
+
 
 inline void set(region_t region, int byte_value, stream::handle_t stream_handle)
 {
@@ -1323,66 +1338,26 @@ inline void typed_set(T* start, const T& value, size_t num_elements, stream::han
 /**
  * Sets consecutive elements of a region of memory to a fixed value of some width
  *
- * @note A generalization of `async::set()`, for different-size units.
+ * @note A generalization of `set()`, for different-size units.
  *
  * @tparam T An unsigned integer type of size 1, 2, 4 or 8
  * @param start The first location to set to @p value ; must be properly aligned.
  * @param value A (properly aligned) value to set T-elements to.
  * @param num_elements The number of type-T elements (i.e. _not_ necessarily the number of bytes).
- * @param stream The stream on which to enqueue the operation.
+ * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
 void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream);
 
 /**
- * Asynchronously sets all bytes in a stretch of memory to a single value
- *
- * @note asynchronous version of @ref memory::set(void*, int, size_t)
- *
- * @param start starting address of the memory region to set,
- * in a CUDA device's global memory
- * @param byte_value value to set the memory region to
- * @param num_bytes size of the memory region in bytes
- * @param stream stream on which to schedule this action
- */
-inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	return typed_set<unsigned char>(
-		static_cast<unsigned char*>(start),
-		static_cast<unsigned char>(byte_value),
-		num_bytes,
-		stream);
-}
-
-/**
  * Asynchronously sets all bytes in a stretch of memory to 0.
  *
- * @note asynchronous version of @ref memory::zero(void*, size_t)
- *
- * @param start starting address of the memory region to set,
- * in a CUDA device's global memory
- * @param num_bytes size of the memory region in bytes
- * @param stream stream on which to schedule this action
+ * @param start      starting address of the memory region to set, in a CUDA device's global memory
+ * @param num_bytes  size of the memory region in bytes
+ * @param stream     stream on which to schedule this action
+ * @param stream     A stream on which to enqueue the operation; may be omitted.
  */
 void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream);
-
-/**
- * Asynchronously sets all bytes of a single pointed-to value
- * to 0 (zero).
- *
- * @note asynchronous version of @ref memory::zero(T*)
- *
- * @param ptr a pointer to the value to be to zero; must be valid in the
- * CUDA context of @p stream
- * @param stream stream on which to schedule this action
- */
-template <typename T>
-inline void zero(T* ptr, optional_ref<const stream_t> stream)
-{
-	zero(ptr, sizeof(T), stream);
-}
-
-} // namespace async
 
 } // namespace device
 
@@ -1826,16 +1801,27 @@ inline void deregister(const_region_t region)
  * Sets all bytes in a stretch of host-side memory to a single value
  *
  * @note a wrapper for @ref ::std::memset
- *
+ * @param byte_value The value to set each byte in the memory region to.
+ */
+///@{
+
+/**
  * @param start starting address of the memory region to set,
  * in host memory; can be either CUDA-allocated or otherwise.
- * @param byte_value value to set the memory region to
  * @param num_bytes size of the memory region in bytes
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
 	::std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
+}
+
+/**
+ * @param region The region of memory to set to the fixed value
+ */
+inline void set(region_t region, int byte_value)
+{
+	memory::set(region.start(), byte_value, region.size(), nullopt);
 }
 
 /**
@@ -1856,7 +1842,7 @@ inline void zero(void* start, size_t num_bytes)
  */
 inline void zero(region_t region)
 {
-	set(region, 0);
+	host::set(region, 0);
 }
 
 /**
@@ -2128,8 +2114,6 @@ inline void free(region_t region)
 	free(region.start());
 }
 
-namespace async {
-
 namespace detail_ {
 
 inline void prefetch(
@@ -2163,8 +2147,6 @@ void prefetch(
 void prefetch_to_host(
 	const_region_t   region,
 	const stream_t&  stream);
-
-} // namespace async
 
 } // namespace managed
 
@@ -2374,8 +2356,9 @@ namespace detail_ {
 template <typename T>
 unique_span<T> make_unique_span(const context::handle_t context_handle, size_t size)
 {
+	auto allocate_in_current_context_ = [](size_t size) { return allocate_in_current_context(size); };
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocate_in_current_context);
+	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocate_in_current_context_);
 }
 
 } // namespace detail_

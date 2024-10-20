@@ -481,7 +481,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::async::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
+			memory::device::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
 		}
 
 		/// @copydoc memset(void *, int, size_t) const
@@ -504,7 +504,7 @@ public: // mutators
 		void memzero(void *start, size_t num_bytes) const
 		{
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::async::detail_::zero(start, num_bytes, associated_stream.handle_);
+			memory::device::detail_::zero(start, num_bytes, associated_stream.handle_);
 		}
 
 		/**
@@ -590,7 +590,7 @@ public: // mutators
 		 */
 		memory::region_t allocate(size_t num_bytes) const
 		{
-			return memory::device::async::allocate(associated_stream, num_bytes);
+			return memory::device::allocate(num_bytes, associated_stream);
 		}
 
 		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes);
@@ -601,14 +601,14 @@ public: // mutators
 		///@{
 		void free(void* region_start) const
 		{
-			memory::device::async::free(associated_stream, region_start);
+			memory::device::free(region_start, associated_stream);
 		}
 
 		void free(memory::region_t region) const
 		{
-			memory::device::async::free(associated_stream, region);
+			memory::device::free(region, associated_stream);
 		}
-#endif
+#endif // CUDA_VERSION >= 11020
 
 		/**
 		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
