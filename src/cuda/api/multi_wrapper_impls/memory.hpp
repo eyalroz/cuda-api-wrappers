@@ -121,13 +121,24 @@ inline region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stre
 		detail_::allocate_in_current_context(size_in_bytes);
 }
 
-namespace async {
-
-inline void free(const stream_t& stream, void* region_start)
-{
-	return detail_::free(stream.context().handle(), stream.handle(), region_start);
-}
 #endif // CUDA_VERSION >= 11020
+
+#if CUDA_VERSION >= 11020
+inline void free(void* region_start, optional_ref<const stream_t> stream)
+#else
+inline void free(void* ptr)
+#endif // CUDA_VERSION >= 11020
+{
+	auto cch = context::current::detail_::get_handle();
+#if CUDA_VERSION >= 11020
+	if (stream) {
+		detail_::free(cch, region_start, stream->handle());
+	}
+#endif
+	detail_::free(cch,region_start);
+}
+
+namespace async {
 
 template <typename T>
 inline void typed_set(T* start, const T& value, size_t num_elements, const stream_t& stream)

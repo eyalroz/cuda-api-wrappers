@@ -601,14 +601,14 @@ public: // mutators
 		///@{
 		void free(void* region_start) const
 		{
-			memory::device::async::free(associated_stream, region_start);
+			memory::device::free(region_start, associated_stream);
 		}
 
 		void free(memory::region_t region) const
 		{
-			memory::device::async::free(associated_stream, region);
+			memory::device::free(region, associated_stream);
 		}
-#endif
+#endif // CUDA_VERSION >= 11020
 
 		/**
 		 * Sets the attachment of a region of managed memory (i.e. in the address space visible
