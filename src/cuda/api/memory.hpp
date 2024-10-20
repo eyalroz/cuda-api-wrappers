@@ -180,11 +180,30 @@ namespace detail_ {
  *
  * @param num_bytes amount of memory to allocate in bytes
  */
+#if CUDA_VERSION >= 11020
+inline cuda::memory::region_t allocate_in_current_context(
+	size_t num_bytes, optional<stream::handle_t> stream_handle = {})
+#else
 inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
+#endif
 {
+#if CUDA_VERSION >= 11020
+	if (stream_handle) {
+		device::address_t allocated = 0;
+		// Note: the typed cudaMalloc also takes its size in bytes, apparently,
+		// not in number of elements
+		auto status = cuMemAllocAsync(&allocated, num_bytes, *stream_handle);
+		if (is_success(status) && allocated == 0) {
+			// Can this even happen? hopefully not
+			status = static_cast<decltype(status)>(status::unknown);
+		}
+		throw_if_error_lazy(status,
+			"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
+			" bytes of global memory on " + stream::detail_::identify(*stream_handle, context::current::detail_::get_handle()) );
+		return {as_pointer(allocated), num_bytes};
+	}
+#endif
 	device::address_t allocated = 0;
-	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
-	// not in number of elements
 	auto status = cuMemAlloc(&allocated, num_bytes);
 	if (is_success(status) && allocated == 0) {
 		// Can this even happen? hopefully not
@@ -195,58 +214,22 @@ inline cuda::memory::region_t allocate_in_current_context(size_t num_bytes)
 	return {as_pointer(allocated), num_bytes};
 }
 
-inline region_t allocate(context::handle_t context_handle, size_t size_in_bytes)
+#if CUDA_VERSION >= 11020
+inline region_t allocate(
+	context::handle_t           context_handle,
+	size_t                      size_in_bytes,
+	optional<stream::handle_t>  stream_handle = {})
+#else
+	inline region_t allocate(
+	context::handle_t           context_handle,
+	size_t                      size_in_bytes)
+#endif
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return allocate_in_current_context(size_in_bytes);
+	return allocate_in_current_context(size_in_bytes, stream_handle);
 }
 
 } // namespace detail_
-
-#if CUDA_VERSION >= 11020
-namespace async {
-
-namespace detail_ {
-
-/// Allocate memory asynchronously on a specified stream.
-inline region_t allocate(
-	context::handle_t  context_handle,
-	stream::handle_t   stream_handle,
-	size_t             num_bytes)
-{
-	device::address_t allocated = 0;
-	// Note: the typed cudaMalloc also takes its size in bytes, apparently,
-	// not in number of elements
-	auto status = cuMemAllocAsync(&allocated, num_bytes, stream_handle);
-	if (is_success(status) && allocated == 0) {
-		// Can this even happen? hopefully not
-		status = static_cast<decltype(status)>(status::unknown);
-	}
-	throw_if_error_lazy(status,
-		"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
-		" bytes of global memory on " + stream::detail_::identify(stream_handle, context_handle) );
-	return {as_pointer(allocated), num_bytes};
-}
-
-} // namespace detail_
-
-/**
- * Schedule an allocation of device-side memory on a CUDA stream.
- *
- * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
- * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
- *
- * @throws cuda::runtime_error if scheduling fails for any reason
- *
- * @param stream the stream on which to register the allocation
- * @param size_in_bytes the amount of memory to allocate
- * @return a pointer to the region of memory which will become allocated once the stream
- * completes all previous tasks and proceeds to also complete the allocation.
- */
-region_t allocate(const stream_t& stream, size_t size_in_bytes);
-
-} // namespace async
-#endif
 
 /// Free a region of device-side memory (regardless of how it was allocated)
 inline void free(void* ptr)
@@ -301,6 +284,23 @@ inline void free(const stream_t& stream, region_t region)
 } // namespace async
 #endif
 
+#if CUDA_VERSION >= 11020
+/**
+ * Schedule an allocation of device-side memory on a CUDA stream.
+ *
+ * @note The CUDA memory allocator guarantees alignment "suitabl[e] for any kind of variable"
+ * (CUDA 9.0 Runtime API documentation), so probably at least 128 bytes.
+ *
+ * @throws cuda::runtime_error if scheduling fails for any reason
+ *
+ * @param stream the stream on which to register the allocation
+ * @param size_in_bytes the amount of memory to allocate
+ * @return a pointer to the region of memory which will become allocated once the stream
+ * completes all previous tasks and proceeds to also complete the allocation.
+ */
+region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream);
+#endif
+
 /**
  * Allocate device-side memory on a CUDA device context.
  *
@@ -335,7 +335,9 @@ namespace detail_ {
 
 // Note: Allocates _in the current context_! No current context => failure!
 struct allocator {
-	void* operator()(size_t num_bytes) const { return detail_::allocate_in_current_context(num_bytes).start(); }
+	void* operator()(size_t num_bytes) const {
+		return detail_::allocate_in_current_context(num_bytes).start();
+	}
 };
 
 struct deleter {
@@ -2375,8 +2377,9 @@ namespace detail_ {
 template <typename T>
 unique_span<T> make_unique_span(const context::handle_t context_handle, size_t size)
 {
+	auto allocate_in_current_context_ = [](size_t size) { return allocate_in_current_context(size); };
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocate_in_current_context);
+	return memory::detail_::make_convenient_type_unique_span<T, detail_::deleter>(size, allocate_in_current_context_);
 }
 
 } // namespace detail_
