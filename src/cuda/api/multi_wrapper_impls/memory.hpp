@@ -81,9 +81,9 @@ inline void copy(span<T> destination, const array_t<T, NumDimensions>& source, c
 }
 
 template <typename T>
-inline void copy_single(T& destination, const T& source, const stream_t& stream)
+inline void copy_single(T* destination, const T* source, const stream_t& stream)
 {
-	detail_::copy_single(&destination, &source, sizeof(T), stream.handle());
+	detail_::copy_single(destination, source, sizeof(T), stream.handle());
 }
 
 } // namespace async
