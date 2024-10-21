@@ -156,7 +156,7 @@ int main()
 		auto d_output = cuda::memory::make_unique_span<float>(device, num_blocks);
 			// Note: We won't actually be checking the output...
 		auto d_timers = cuda::memory::make_unique_span<clock_t>(device, num_timers);
-		cuda::memory::copy(d_input, input.get());
+		cuda::memory::copy_(d_input, input.get());
 
 		auto launch_config = cuda::launch_config_builder()
 			.num_blocks(num_blocks)
@@ -165,7 +165,7 @@ int main()
 			.build();
 		cuda::launch(kernel_in_module, launch_config, d_input.data(), d_output.data(), d_timers.data());
 		device.synchronize();
-		cuda::memory::copy(timers.get(), d_timers);
+		cuda::memory::copy_(timers.get(), d_timers);
 	} // The allocated device buffers are released here
 	long double average_elapsed_clock_ticks_per_block = compute_average_elapsed_clocks(timers.get(), num_blocks);
 

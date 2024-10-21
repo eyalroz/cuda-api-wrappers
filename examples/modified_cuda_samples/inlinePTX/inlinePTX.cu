@@ -60,7 +60,7 @@ int main(int, char **)
 	device.synchronize();
 
 	auto h_d_span = cuda::memory::host::make_unique_span<int>(N);
-	cuda::memory::copy(h_d_span, d_span);
+	cuda::memory::copy_(h_d_span, d_span);
 
 	auto results_are_correct =	std::equal(h_span.begin(), h_span.end(), h_d_span.begin());
 	if (not results_are_correct) {

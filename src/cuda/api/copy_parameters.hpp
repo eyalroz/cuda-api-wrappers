@@ -113,6 +113,24 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		dimensions_type dimensions);
 
 	/**
+	 * Set one of the copy endpoints to a multi-dimensional elements, starting at the beginning
+	 * of a region of memory (in any CUDA memory space)
+	 *
+	 * @note: This assumes default pitch.
+	 */
+	///@{
+	this_type& set_endpoint(endpoint_t endpoint, context::handle_t context_handle, region_t region) noexcept
+	{
+		return set_endpoint_untyped(endpoint, context_handle, region.data(), region.size());
+	}
+	this_type& set_endpoint(endpoint_t endpoint, region_t region)
+	{
+		auto context_handle = cuda::context::current::detail_::get_handle();
+		return set_endpoint(endpoint, context_handle, region);
+	}
+	///@}
+
+	/**
 	 * Set one of the copy endpoints to a multi-dimensional elements, starting somewhere in
 	 * memory (in any CUDA memory space)
 	 *
@@ -613,7 +631,6 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 
 	return *this;
 }
-
 
 template<>
 template<typename T>

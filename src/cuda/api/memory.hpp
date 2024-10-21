@@ -829,7 +829,7 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t
 } // namespace detail_
 
 /**
- * An almost-generalized-case memory copy, taking a rather complex structure of
+ * An almost-general-case memory copy, taking a rather complex structure of
  * copy parameters - wrapping the CUDA driver's own most-generalized-case copy
  *
  * @tparam NumDimensions The number of dimensions of the parameter structure.
@@ -840,6 +840,11 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t
  */
 template<dimensionality_t NumDimensions>
 void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream = {});
+
+// TODO: Add a "contextualized" version of this, i.e. context+copyable for each endpoint; perhaps have it in inter_context?
+// TODO: Add a "sized" version of this, i.e. copyables + copy size
+template<typename CUDACopyable1, typename CUDACopyable2>
+void copy_(CUDACopyable1&& destination, CUDACopyable2&& source, unsigned long stream = {});
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
