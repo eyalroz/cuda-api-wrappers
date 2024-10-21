@@ -69,6 +69,94 @@ void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> 
 	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
 }
 
+namespace detail_ {
+
+template <typename CUDACopyable>
+void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoint, CUDACopyable&& copyable);
+
+
+template <typename T>
+void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoint, const unique_span<T>& copyable)
+{
+	params.set_endpoint(endpoint, span<T>(copyable));
+}
+
+template <typename CUDACopyable>
+void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoint, CUDACopyable&& copyable)
+{
+	params.set_endpoint(endpoint, std::forward<CUDACopyable>(copyable));
+}
+
+template<typename CUDACopyable>
+optional<size_t> copyable_size(CUDACopyable&&)
+{
+	return 123;
+}
+
+template<typename CUDACopyable1, typename CUDACopyable2>
+void check_copy_sizes(CUDACopyable1&& destination, CUDACopyable2&& source, optional<size_t> copy_size = {})
+{
+	struct { optional<size_t> dest, src; } sizes;
+	sizes.dest = copyable_size(std::forward<CUDACopyable1>(destination));
+	sizes.src = copyable_size(std::forward<CUDACopyable2>(source));
+
+	if (not sizes.src and not sizes.dest and not copy_size) {
+		// TODO: Make this into a static assertion
+		throw std::invalid_argument("Cannot copy an unknown amount between two entities without known sizes");
+	}
+
+	if (sizes.src and copy_size and (*copy_size > *(sizes.src))) {
+		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes from "
+			+ "a source of size only " + std::to_string(*sizes.src) + " bytes");
+		// TODO: Generic string-identification
+	}
+
+	if (sizes.dest and copy_size and (*copy_size > *(sizes.dest))) {
+		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes into "
+			+ "a destination of size only " + std::to_string(*sizes.dest) + " bytes");
+		// TODO: Generic string-identification
+	}
+
+	if (sizes.src and sizes.dest and not copy_size and (*sizes.dest < *sizes.src)) {
+		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes into "
+			+ "a smaller destination, of size only " + std::to_string(*sizes.dest) + " bytes");
+
+	}
+}
+
+} // namespace detail_
+
+template<typename CUDACopyable1, typename CUDACopyable2>
+void copy_(CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream)
+{
+	copy_parameters_t<3> params;
+	detail_::check_copy_sizes(std::forward<CUDACopyable1>(destination), std::forward<CUDACopyable2>(source));
+	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable1>(destination));
+	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable1>(source));
+	copy(params, stream);
+}
+
+template<typename CUDACopyable>
+void copy_(void* destination, CUDACopyable&& source, size_t num_bytes, optional_ref<const stream_t> stream)
+{
+	// TODO: Consider just forwarding with a constructed region; but the size check...
+	copy_parameters_t<3> params;
+	detail_::check_copy_sizes(destination, std::forward<CUDACopyable>(source), num_bytes);
+	params.set_endpoint(cuda::memory::endpoint_t::destination, region_t{ destination, num_bytes } );
+	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable>(source));
+	copy(params, stream);
+}
+
+template<typename CUDACopyable>
+void copy_(CUDACopyable&& destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
+{
+	// TODO: Consider just forwarding with a constructed region; but the size check...
+	copy_parameters_t<3> params;
+	detail_::check_copy_sizes(std::forward<CUDACopyable>(destination), source, num_bytes);
+	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable>(destination));
+	params.set_endpoint(cuda::memory::endpoint_t::source, region_t{ source, num_bytes } );
+	copy(params, stream);
+}
 
 template <typename T>
 void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream)

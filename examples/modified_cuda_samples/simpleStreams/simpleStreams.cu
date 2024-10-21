@@ -143,7 +143,7 @@ void run_simple_streams_example(
 
 	// time memcpy from device
 	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed
-	cuda::memory::copy(h_a.get(), d_a, streams[0]);
+	cuda::memory::copy_(h_a.get(), d_a, streams[0]);
 	stop_event.record();
 	stop_event.synchronize(); // block until the event is actually recorded
 	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
@@ -172,7 +172,7 @@ void run_simple_streams_example(
 	for (int k = 0; k < nreps; k++)
 	{
 		device.launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
-		cuda::memory::copy(h_a.get(), d_a);
+		cuda::memory::copy_(h_a.get(), d_a);
 	}
 
 	stop_event.record();
@@ -207,7 +207,7 @@ void run_simple_streams_example(
 		//   commence executing when all previous CUDA calls in stream x have completed
 		for (int i = 0; i < nstreams; i++)
 		{
-			cuda::memory::copy(
+			cuda::memory::copy_(
 				h_a.data() + i * params.n / nstreams,
 				d_a.data() + i * params.n / nstreams, nbytes / nstreams,
 				streams[i]);

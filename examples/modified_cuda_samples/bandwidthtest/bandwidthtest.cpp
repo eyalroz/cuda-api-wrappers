@@ -102,7 +102,7 @@ int main()
 	auto h_bPinned = pinned_host_buffers.second.data();
 
 	std::iota(h_aPageable, h_aPageable + nElements, 0.0);
-	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
+	cuda::memory::copy_(h_aPinned, h_aPageable, bytes);
 	// Note: the following two instructions can be replaced with CUDA API wrappers
 	// calls - cuda::memory::host::zero(), but that won't improve anything
 	std::fill_n(h_bPageable, nElements, 0.0f);
