@@ -70,8 +70,18 @@ using void_t = void;
 template<bool B, typename T = void>
 using enable_if_t = typename ::std::enable_if<B, T>::type;
 
+// This is available in C++14
+template<typename T = void>
+using decay_t = typename ::std::decay<T>::type;
+
 template<typename T>
 using remove_reference_t = typename ::std::remove_reference<T>::type;
+
+template<typename T>
+using is_ptrish = ::std::is_pointer<typename ::std::remove_reference<T>::type>;
+
+template<typename T>
+using enable_if_nonptrish = enable_if_t<is_ptrish<T>::value, T>;
 
 // primary template handles types that have no nested ::type member:
 template <typename, typename = void>

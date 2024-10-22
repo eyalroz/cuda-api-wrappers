@@ -119,7 +119,7 @@ bool runTest(int device_id) {
   std::cout << "Loaded '" << image_filename << "', " << image.width << " x " << image.height << " pixels\n";
 
   auto arr = cuda::array::create<float, 2>(context, { image.width, image.height });
-  cuda::memory::copy(arr, image_data);
+  cuda::memory::copy_(arr, image_data);
 
   auto texture_descriptor = cuda::texture::descriptor_t{};
   texture_descriptor.filterMode = CU_TR_FILTER_MODE_LINEAR;
@@ -144,7 +144,7 @@ bool runTest(int device_id) {
   // allocate mem for the result on host side
   auto output_image = cuda::memory::host::make_unique_span<float>(image.size());
   // copy result from device to host
-  cuda::memory::copy(output_image, d_output_image);
+  cuda::memory::copy_(output_image, d_output_image);
 
   auto output_filename = output_filename_for(image_filename);
   sdkSavePGM(output_filename.c_str(), output_image.data(), image.width, image.height);

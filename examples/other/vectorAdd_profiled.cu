@@ -48,8 +48,8 @@ int main()
 	auto d_B = cuda::memory::make_unique_span<float>(device, numElements);
 	auto d_C = cuda::memory::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A, h_A.get());
-	cuda::memory::copy(d_B, h_B.get());
+	cuda::memory::copy_(d_A, h_A.get());
+	cuda::memory::copy_(d_B, h_B.get());
 
 	// Launch the Vector Add CUDA Kernel
 
@@ -67,7 +67,7 @@ int main()
 		d_A.data(), d_B.data(), d_C.data(), numElements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C);
+	cuda::memory::copy_(h_C.get(), d_C);
 
 	cuda::profiling::mark::range_end(profiling_range_handle);
 

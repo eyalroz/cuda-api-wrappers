@@ -303,14 +303,14 @@ __global__ void constant_test(int *x) {
 	auto a = module.get_global_region(compilation_result.get_mangling_of(names.a));
 	auto b_a = module.get_global_region(compilation_result.get_mangling_of(names.b_a));
 	auto c_b_a = module.get_global_region(compilation_result.get_mangling_of(names.c_b_a));
-	cuda::memory::copy(a, &inval[0]);
-	cuda::memory::copy(b_a, &inval[1]);
-	cuda::memory::copy(c_b_a, &inval[2]);
+	cuda::memory::copy_(a, &inval[0]);
+	cuda::memory::copy_(b_a, &inval[1]);
+	cuda::memory::copy_(c_b_a, &inval[2]);
 	auto outdata = cuda::memory::make_unique_span<int>(device, n_const);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	cuda::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
-	cuda::memory::copy(outval, outdata.get(), sizeof(outval));
+	cuda::memory::copy_(outval, outdata.get(), sizeof(outval));
 
 	return std::equal(inval, inval + n_const, outval);
 }
@@ -338,13 +338,13 @@ bool test_constant_2()
 	auto anon_b_a = module.get_global_region(compilation_result.get_mangling_of(name_of_anon_b_a));
 	auto kernel = module.get_kernel(compilation_result.get_mangling_of(second_kernel_name));
 	int inval[] = {3, 5, 9};
-	cuda::memory::copy(anon_b_a, inval);
+	cuda::memory::copy_(anon_b_a, inval);
 	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
 	auto outdata = cuda::memory::make_unique_span<int>(device, n_const);
 	cuda::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
 	auto ptr = outdata.get();
-	cuda::memory::copy(outval, ptr);
+	cuda::memory::copy_(outval, ptr);
 	return std::equal(inval, inval + n_const, outval);
 }
 

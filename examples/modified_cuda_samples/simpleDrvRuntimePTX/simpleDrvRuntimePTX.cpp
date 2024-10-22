@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 
     stream.enqueue.kernel_launch(vecAdd_kernel, launch_config, d_A.data(), d_B.data(), d_C.data(), N);
 
-	cuda::memory::copy(h_C.get(), d_C, size, stream);
+	cuda::memory::copy_(h_C.get(), d_C, size, stream);
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {

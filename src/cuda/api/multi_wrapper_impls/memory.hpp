@@ -27,6 +27,7 @@
 namespace cuda {
 
 namespace memory {
+/*
 
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream)
@@ -44,9 +45,10 @@ inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, o
 #endif
 	detail_::copy<T, NumDimensions>(destination, source.data(), stream->handle());
 }
+*/
 
 // Note: Assumes the destination, source and stream are all usable on the same content
-template <typename T, dimensionality_t NumDimensions>
+/*template <typename T, dimensionality_t NumDimensions>
 inline void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
@@ -59,10 +61,10 @@ inline void copy(T* destination, const array_t<T, NumDimensions>& source, option
 									  + stream::detail_::identify(*stream));
 	}
 	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
-}
+}*/
 
 template<dimensionality_t NumDimensions>
-void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream)
+void copy_(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream)
 {
 	stream::handle_t stream_handle = stream ? stream->handle() : nullptr;
 	status_t status = detail_::multidim_copy(params, stream_handle);
@@ -97,46 +99,76 @@ template<typename CUDACopyable1, typename CUDACopyable2>
 void check_copy_sizes(CUDACopyable1&& destination, CUDACopyable2&& source, optional<size_t> copy_size = {})
 {
 	struct { optional<size_t> dest, src; } sizes;
-	sizes.dest = copyable_size(std::forward<CUDACopyable1>(destination));
-	sizes.src = copyable_size(std::forward<CUDACopyable2>(source));
+	sizes.dest = copyable_size(::std::forward<CUDACopyable1>(destination));
+	sizes.src = copyable_size(::std::forward<CUDACopyable2>(source));
 
 	if (not sizes.src and not sizes.dest and not copy_size) {
 		// TODO: Make this into a static assertion
-		throw std::invalid_argument("Cannot copy an unknown amount between two entities without known sizes");
+		throw ::std::invalid_argument("Cannot copy an unknown amount between two entities without known sizes");
 	}
 
 	if (sizes.src and copy_size and (*copy_size > *(sizes.src))) {
-		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes from "
-			+ "a source of size only " + std::to_string(*sizes.src) + " bytes");
+		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes from "
+			+ "a source of size only " + ::std::to_string(*sizes.src) + " bytes");
 		// TODO: Generic string-identification
 	}
 
 	if (sizes.dest and copy_size and (*copy_size > *(sizes.dest))) {
-		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes into "
-			+ "a destination of size only " + std::to_string(*sizes.dest) + " bytes");
+		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes into "
+			+ "a destination of size only " + ::std::to_string(*sizes.dest) + " bytes");
 		// TODO: Generic string-identification
 	}
 
 	if (sizes.src and sizes.dest and not copy_size and (*sizes.dest < *sizes.src)) {
-		throw std::invalid_argument("Attempt to copy " + std::to_string(*copy_size) + " bytes into "
-			+ "a smaller destination, of size only " + std::to_string(*sizes.dest) + " bytes");
+		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes into "
+			+ "a smaller destination, of size only " + ::std::to_string(*sizes.dest) + " bytes");
 
 	}
 }
 
+template <typename T>
+using enable_if_copyable_non_pointer = cuda::detail_::enable_if_t<not ::std::is_pointer<typename ::std::decay<T>::type>::value>;
+
+/*
+template<typename CUDACopyable1, typename CUDACopyable2>
+void copy_(cuda::detail_::true_type got_pointer_endpoint, CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream) = delete;
+
+template<typename CUDACopyable1, typename CUDACopyable2>
+void copy_(cuda::detail_::false_type, CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream)
+{
+}
+*/
+
+template<typename T>
+using is_ptrish = ::std::is_pointer<typename ::std::remove_reference<T>::type>;
+
+template<typename T>
+using enable_if_nonptrish = cuda::detail_::enable_if_t<not is_ptrish<T>::value, T>;
+
 } // namespace detail_
 
 template<typename CUDACopyable1, typename CUDACopyable2>
-void copy_(CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream)
+void copy_(CUDACopyable1&& destination, CUDACopyable2&& source,	optional_ref<const stream_t> stream)
 {
+//	using detail_::is_ptrish;
+//	static constexpr const bool got_ptrish_params =
+//		is_ptrish<CUDACopyable1>::value or is_ptrish<CUDACopyable1>::value;
+
+	// No pointers...
 	copy_parameters_t<3> params;
 	detail_::check_copy_sizes(std::forward<CUDACopyable1>(destination), std::forward<CUDACopyable2>(source));
 	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable1>(destination));
-	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable1>(source));
-	copy(params, stream);
+	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable2>(source));
+	copy_(params, stream);
+//
+//	detail_::copy_<CUDACopyable1, CUDACopyable2>(
+//		cuda::detail_::bool_constant<got_ptrish_params>{},
+//		std::forward<CUDACopyable1>(destination),
+//		std::forward<CUDACopyable2>(source),
+//		stream);
 }
 
-template<typename CUDACopyable>
+template<typename CUDACopyable, typename = detail_::enable_if_copyable_non_pointer<CUDACopyable>>
 void copy_(void* destination, CUDACopyable&& source, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	// TODO: Consider just forwarding with a constructed region; but the size check...
@@ -144,10 +176,10 @@ void copy_(void* destination, CUDACopyable&& source, size_t num_bytes, optional_
 	detail_::check_copy_sizes(destination, std::forward<CUDACopyable>(source), num_bytes);
 	params.set_endpoint(cuda::memory::endpoint_t::destination, region_t{ destination, num_bytes } );
 	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable>(source));
-	copy(params, stream);
+	copy_(params, stream);
 }
 
-template<typename CUDACopyable>
+template<typename CUDACopyable, typename = detail_::enable_if_copyable_non_pointer<CUDACopyable> >
 void copy_(CUDACopyable&& destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	// TODO: Consider just forwarding with a constructed region; but the size check...
@@ -155,7 +187,12 @@ void copy_(CUDACopyable&& destination, void* source, size_t num_bytes, optional_
 	detail_::check_copy_sizes(std::forward<CUDACopyable>(destination), source, num_bytes);
 	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable>(destination));
 	params.set_endpoint(cuda::memory::endpoint_t::source, region_t{ source, num_bytes } );
-	copy(params, stream);
+	copy_(params, stream);
+}
+
+inline void copy_(void* destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
+{
+	return detail_::copy(destination, source, num_bytes, stream ? stream->handle() : optional<stream::handle_t>{});
 }
 
 template <typename T>
@@ -163,7 +200,7 @@ void copy_single(T* destination, const T* source, optional_ref<const stream_t> s
 {
 	memory::copy(destination, source, sizeof(T), stream);
 }
-
+/*
 // Note: Assumes the source pointer is valid in the stream's context
 template <typename T, dimensionality_t NumDimensions>
 inline void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream)
@@ -173,8 +210,9 @@ inline void copy(array_t<T, NumDimensions>& destination, const T* source, option
 		return;
 	}
 	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
-}
+}*/
 
+/*
 inline void copy(void *destination, const void *source, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
@@ -187,6 +225,7 @@ inline void copy(void *destination, const void *source, size_t num_bytes, option
 	}
 	detail_::copy(destination, source, num_bytes, stream->handle());
 }
+*/
 
 namespace device {
 
