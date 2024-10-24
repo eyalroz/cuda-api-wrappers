@@ -95,105 +95,105 @@ optional<size_t> copyable_size(CUDACopyable&&)
 	return 123;
 }
 
-template<typename CUDACopyable1, typename CUDACopyable2>
-void check_copy_sizes(CUDACopyable1&& destination, CUDACopyable2&& source, optional<size_t> copy_size = {})
+void check_copy_sizes(
+	optional<size_t> dest_capacity, 
+	optional<size_t> source_size,
+	optional<size_t> amount_to_copy = {})
 {
-	struct { optional<size_t> dest, src; } sizes;
-	sizes.dest = copyable_size(::std::forward<CUDACopyable1>(destination));
-	sizes.src = copyable_size(::std::forward<CUDACopyable2>(source));
-
-	if (not sizes.src and not sizes.dest and not copy_size) {
-		// TODO: Make this into a static assertion
+	// This should not even happen; functions calling check_copy_sizes can avoid it
+	// at compile-time
+	if (not dest_capacity and not source_size and not amount_to_copy) {
 		throw ::std::invalid_argument("Cannot copy an unknown amount between two entities without known sizes");
 	}
 
-	if (sizes.src and copy_size and (*copy_size > *(sizes.src))) {
-		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes from "
-			+ "a source of size only " + ::std::to_string(*sizes.src) + " bytes");
-		// TODO: Generic string-identification
+	if (dest_capacity and amount_to_copy and (*amount_to_copy > *dest_capacity)) {
+		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*amount_to_copy) + " bytes from "
+			+ "a source with a smaller size of only " + ::std::to_string(*source_size) + " bytes");
 	}
 
-	if (sizes.dest and copy_size and (*copy_size > *(sizes.dest))) {
-		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes into "
-			+ "a destination of size only " + ::std::to_string(*sizes.dest) + " bytes");
-		// TODO: Generic string-identification
+	if (dest_capacity and amount_to_copy and (*amount_to_copy > *(dest_capacity))) {
+		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*amount_to_copy) + " bytes into "
+			+ "a destination with a smaller capacity of only " + ::std::to_string(*dest_capacity) + " bytes");
 	}
 
-	if (sizes.src and sizes.dest and not copy_size and (*sizes.dest < *sizes.src)) {
-		throw ::std::invalid_argument("Attempt to copy " + ::std::to_string(*copy_size) + " bytes into "
-			+ "a smaller destination, of size only " + ::std::to_string(*sizes.dest) + " bytes");
-
+	if (source_size and dest_capacity and not amount_to_copy and (*dest_capacity < *source_size)) {
+		throw ::std::invalid_argument("Attempt to copy from a source of size "
+			+ ::std::to_string(*amount_to_copy) + " bytes into a destination with smaller capacity, "
+			+ "of only " + ::std::to_string(*dest_capacity) + " bytes");
 	}
 }
 
-template <typename T>
-using enable_if_copyable_non_pointer = cuda::detail_::enable_if_t<not ::std::is_pointer<typename ::std::decay<T>::type>::value>;
-
-/*
 template<typename CUDACopyable1, typename CUDACopyable2>
-void copy_(cuda::detail_::true_type got_pointer_endpoint, CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream) = delete;
-
-template<typename CUDACopyable1, typename CUDACopyable2>
-void copy_(cuda::detail_::false_type, CUDACopyable1&& destination, CUDACopyable2&& source, optional_ref<const stream_t> stream)
+void check_copy_sizes(CUDACopyable1&& destination, CUDACopyable2&& source, optional<size_t> num_bytes = {})
 {
+	return check_copy_sizes(
+		copyable_size(::std::forward<CUDACopyable2>(source)),
+		copyable_size(::std::forward<CUDACopyable1>(destination)),
+		num_bytes);
 }
-*/
 
-template<typename T>
-using is_ptrish = ::std::is_pointer<typename ::std::remove_reference<T>::type>;
+enum : bool { source_is_ptrish = true, dest_is_ptrish = true};
 
-template<typename T>
-using enable_if_nonptrish = cuda::detail_::enable_if_t<not is_ptrish<T>::value, T>;
+
+template<typename Destination, typename Source>
+void copy_unchecked_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+{
+	enum {
+		dest_type = detail_::copy_endpoint_type<Destination>::value,
+		src_type = detail_::copy_endpoint_type<Source>::value,
+		ptrish = detail_::copy_endpoint_kind_t::ptr,
+		arrayish = detail_::copy_endpoint_kind_t::array
+	};
+	using detail_::copy_endpoint_kind_t;
+
+	optional<stream::handle_t> stream_handle{};
+	if (stream) { stream_handle = stream->handle(); }
+
+	if (dest_type == ptrish and src_type == ptrish) {
+		detail_::copy_plain(destination, source, *num_bytes, stream);
+	}
+	if (dest_type != arrayish and src_type != arrayish) {
+		region_t destination_ = get_ptr(source);
+		region_t source_ = get_region(source);
+		auto num_bytes_ = num_bytes.value_or(source_.size());
+		detail_::copy_plain(destination_.data(), source_.data(), num_bytes_, stream_handle);
+	}
+	if (num_bytes) {
+		throw ::std::invalid_argument(
+			"Specifying a number of bytes for copying involving multi-dimensional arrays is unsupported;"
+			"a copy-parameters structure should be built with multi-dimensional extents specified, instead");
+	}
+	// We want to support both 2D and 3D copying here
+	auto copy_params = make_copy_params(std::forward<Destination>(destination), std::forward<Source>(source));
+	memory::copy_(copy_params, stream);
+}
+
 
 } // namespace detail_
 
-template<typename CUDACopyable1, typename CUDACopyable2>
-void copy_(CUDACopyable1&& destination, CUDACopyable2&& source,	optional_ref<const stream_t> stream)
-{
-//	using detail_::is_ptrish;
-//	static constexpr const bool got_ptrish_params =
-//		is_ptrish<CUDACopyable1>::value or is_ptrish<CUDACopyable1>::value;
 
-	// No pointers...
-	copy_parameters_t<3> params;
-	detail_::check_copy_sizes(std::forward<CUDACopyable1>(destination), std::forward<CUDACopyable2>(source));
-	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable1>(destination));
-	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable2>(source));
-	copy_(params, stream);
-//
-//	detail_::copy_<CUDACopyable1, CUDACopyable2>(
-//		cuda::detail_::bool_constant<got_ptrish_params>{},
-//		std::forward<CUDACopyable1>(destination),
-//		std::forward<CUDACopyable2>(source),
-//		stream);
+template<typename Destination, typename Source>
+void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+{
+	enum {
+		dest_type = detail_::copy_endpoint_type<Destination>::value,
+		src_type = detail_::copy_endpoint_type<Source>::value,
+		ptrish = detail_::copy_endpoint_kind_t::ptr
+	};
+	using detail_::copy_endpoint_kind_t;
+
+	static_assert(dest_type != ptrish or src_type != ptrish or num_bytes,
+		"Attempt to copy between pointers without specifying the amount of memory to copy");
+	check_copy_sizes(destination, source, num_bytes);
+	copy_unchecked_2<Destination, Source>(destination, source, num_bytes, stream);
 }
 
-template<typename CUDACopyable, typename = detail_::enable_if_copyable_non_pointer<CUDACopyable>>
-void copy_(void* destination, CUDACopyable&& source, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	// TODO: Consider just forwarding with a constructed region; but the size check...
-	copy_parameters_t<3> params;
-	detail_::check_copy_sizes(destination, std::forward<CUDACopyable>(source), num_bytes);
-	params.set_endpoint(cuda::memory::endpoint_t::destination, region_t{ destination, num_bytes } );
-	detail_::set_endpoint(params, cuda::memory::endpoint_t::source, std::forward<CUDACopyable>(source));
-	copy_(params, stream);
-}
 
-template<typename CUDACopyable, typename = detail_::enable_if_copyable_non_pointer<CUDACopyable> >
-void copy_(CUDACopyable&& destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	// TODO: Consider just forwarding with a constructed region; but the size check...
-	copy_parameters_t<3> params;
-	detail_::check_copy_sizes(std::forward<CUDACopyable>(destination), source, num_bytes);
-	detail_::set_endpoint(params, cuda::memory::endpoint_t::destination, std::forward<CUDACopyable>(destination));
-	params.set_endpoint(cuda::memory::endpoint_t::source, region_t{ source, num_bytes } );
-	copy_(params, stream);
-}
-
+/*
 inline void copy_(void* destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	return detail_::copy(destination, source, num_bytes, stream ? stream->handle() : optional<stream::handle_t>{});
-}
+}*/
 
 template <typename T>
 void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream)

@@ -73,6 +73,7 @@
 #include "api/multi_wrapper_impls/context.hpp"
 #include "api/multi_wrapper_impls/stream.hpp"
 #include "api/multi_wrapper_impls/memory.hpp"
+#include "api/multi_wrapper_impls/copy_parameters.hpp"
 #include "api/multi_wrapper_impls/unique_region.hpp"
 #include "api/multi_wrapper_impls/unique_span.hpp"
 #include "api/multi_wrapper_impls/virtual_memory.hpp"

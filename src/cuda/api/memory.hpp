@@ -480,7 +480,8 @@ namespace detail_ {
  * @param num_bytes number of bytes to copy from @p source
  * @param stream_handle The handle of a stream on which to schedule the copy operation
  */
-inline void copy(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
+// TODO: perhaps renamed this copy_unchecked as well?
+inline void copy_plain(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
 {
 	auto dst_ = device::address(destination);
 	auto src_ = device::address(source);
@@ -833,7 +834,62 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t
 	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
+template<typename Destination, typename Source>
+void copy_(
+	cuda::detail_::false_type, // non-ptrish destination
+	cuda::detail_::false_type, // non-ptrish source
+	Destination&& destination,
+	Source&& source,
+	optional<size_t> num_bytes,
+	optional_ref<const stream_t> stream);
+
+template<typename Source>
+void copy_(
+	cuda::detail_::true_type, // ptrish destination
+	cuda::detail_::false_type, // non-ptrish source
+	void* destination,
+	Source&& source,
+	optional<size_t> num_bytes,
+	optional_ref<const stream_t> stream)
+{
+	auto destination_ = region_t { destination, num_bytes };
+	// TODO: Check size compatibility of source and num_bytes
+	copy_unchecked(destination_, std::forward<Source>(source), num_bytes, stream);
+}
+
+template<typename Destination>
+void copy_(
+	cuda::detail_::false_type, // non-ptrish destination
+	cuda::detail_::true_type, // ptrish source
+	Destination&& destination,
+	void* source,
+	optional<size_t> num_bytes,
+	optional_ref<const stream_t> stream)
+{
+	auto source_ = region_t { source, num_bytes };
+	// TODO: Check size compatibility of dest and num_bytes
+	copy_unchecked(std::forward<Destination>(destination), source_, num_bytes, stream);
+}
+
+void copy_(
+	cuda::detail_::true_type, // ptrish destination
+	cuda::detail_::true_type, // ptrish source
+	void* destination,
+	void* source,
+	size_t num_bytes,
+	optional_ref<const stream_t> stream);
+
+template<typename CUDACopyable>
+optional<size_t> copyable_size(CUDACopyable&&);
+
+template <typename T>
+struct copy_endpoint_type;
+
+enum class copy_endpoint_kind_t { ptr, region, array };
+
 } // namespace detail_
+
+
 
 /**
  * An almost-general-case memory copy, taking a rather complex structure of
@@ -845,24 +901,43 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t
  * set in advance. This function will _not_ verify its validity, but rather
  * merely pass it on to the CUDA driver
  */
-
-// TODO: Add a "contextualized" version of this, i.e. context+copyable for each endpoint; perhaps have it in inter_context?
-// TODO: Add a "sized" version of this, i.e. copyables + copy size
-// TODO: Combine all copy functions when we switch to C++17, and handle the different cases with if constexpr
-template<typename CUDACopyable1, typename CUDACopyable2>
-void copy_(CUDACopyable1&& destination, CUDACopyable2&& source,	optional_ref<const stream_t> stream = {});
-
-template<typename CUDACopyable, typename>
-void copy_(void* destination, CUDACopyable&& source, size_t num_bytes, optional_ref<const stream_t> stream = {});
-
-template<typename CUDACopyable, typename>
-void copy_(CUDACopyable&& destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
-
-void copy_(void* destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
-
+///@{
 template<dimensionality_t NumDimensions>
 void copy_(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream = {});
 
+
+// TODO: Add a "contextualized" version of this, i.e. context+copyable for each endpoint; perhaps have it in inter_context?
+// TODO: Combine all copy functions when we switch to C++17, and handle the different cases with if constexpr
+template<typename Destination, typename Source>
+void copy_(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+{
+	static constexpr const auto dst_is_ptrish = cuda::detail_::is_ptrish<Destination>::value;
+	static constexpr const auto src_is_ptrish = cuda::detail_::is_ptrish<Source>::value;
+	static_assert(not dst_is_ptrish or not src_is_ptrish or num_bytes,
+		"Attempt to copy between pointers without specifying the amount of memory to copy");
+	check_copy_sizes(destination, source, num_bytes);
+	num_bytes = num_bytes.value_or(dst_is_ptrish ?
+		detail_::copyable_size(destination) :
+		detail_::copyable_size(source));
+	detail_::copy_helper<
+	    dst_is_ptrish, src_is_ptrish,
+		Destination, Source>::copy_unchecked(
+		std::forward<Destination>(destination),
+		std::forward<Source>(source),
+		num_bytes,
+		stream);
+}
+
+template<typename Destination, typename Source>
+void copy_(Destination&& destination, Source&& source, const stream_t& stream)
+{
+	copy_(std::forward<Destination>(destination), std::forward<Source>(source), {}, stream);
+}
+
+template<typename Destination, typename Source>
+void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {});
+
+///@}
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
@@ -981,8 +1056,10 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
  * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation into this CUDA stream
  */
+/*
 template <typename T, dimensionality_t NumDimensions>
 void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {});
+*/
 
 
 /**
@@ -992,7 +1069,7 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<
  *
  * @note The @p destination span must be at least as larger as the volume of the array.
  */
-template <typename T, dimensionality_t NumDimensions>
+/*template <typename T, dimensionality_t NumDimensions>
 void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional_ref <const stream_t> stream = {})
 {
 #ifndef NDEBUG
@@ -1003,7 +1080,7 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional
 	}
 #endif
 	copy(destination.data(), source, stream);
-}
+}*/
 
 /**
  * Copies the contents of one CUDA array to another
@@ -1046,6 +1123,7 @@ void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDime
  * @param source A CUDA array @ref cuda::array_t
  * @param stream schedule the copy operation in this CUDA stream
  */
+/*
 template <typename T, dimensionality_t NumDimensions>
 void copy(region_t destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {})
 {
@@ -1058,6 +1136,7 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, optiona
 #endif
 	copy(destination.start(), source, stream);
 }
+*/
 
 /**
  * Copies the contents of a region of memory into a CUDA array
@@ -1122,7 +1201,7 @@ void copy_single(T* destination, const T* source, optional_ref<const stream_t> s
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(void* destination, void const* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
+//void copy(void* destination, void const* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
 
 
 /**
@@ -1144,7 +1223,7 @@ void copy(void* destination, void const* source, size_t num_bytes, optional_ref<
  *     the @p destination array.
  * @param stream schedule the copy operation in this CUDA stream
  */
-template <typename T, size_t N>
+/*template <typename T, size_t N>
 inline void copy(T(&destination)[N], const_region_t source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
@@ -1156,7 +1235,7 @@ inline void copy(T(&destination)[N], const_region_t source, optional_ref<const s
 	}
 #endif
 	return copy(&(destination[0]), source.start(), sizeof(T) * N, stream);
-}
+}*/
 
 /**
  * @note Since we assume Compute Capability >= 2.0, all devices support the
@@ -1181,7 +1260,7 @@ inline void copy(T(&destination)[N], const_region_t source, optional_ref<const s
  * @param source An array, either in host memory or on any CUDA device's global memory.
  * @param stream A stream on which to enqueue the copy operation
  */
-template <typename T, size_t N>
+/*template <typename T, size_t N>
 inline void copy(region_t destination, const T(&source)[N], optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
@@ -1190,7 +1269,7 @@ inline void copy(region_t destination, const T(&source)[N], optional_ref<const s
 	}
 #endif
 	return copy(destination.start(), source, sizeof(T) * N, stream);
-}
+}*/
 
 
 /**
@@ -1204,7 +1283,7 @@ inline void copy(region_t destination, const T(&source)[N], optional_ref<const s
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+/*inline void copy(region_t destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1212,7 +1291,7 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
 	}
 #endif
 	copy(destination.start(), source.start(), num_bytes, stream);
-}
+}*/
 
 
 /**
@@ -1231,10 +1310,10 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
  *     global memory. Must be defined in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, optional_ref<const stream_t> stream = {})
+/*inline void copy(region_t destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
 	copy(destination, source, source.size(), stream);
-}
+}*/
 
 
 /**
@@ -1254,10 +1333,10 @@ inline void copy(region_t destination, const_region_t source, optional_ref<const
  *     in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, optional_ref<const stream_t> stream = {})
+/*inline void copy(region_t destination, void* source, optional_ref<const stream_t> stream = {})
 {
 	return copy(destination.start(), source, destination.size(), stream);
-}
+}*/
 
 /**
  * Copy one region of memory into another
@@ -1276,7 +1355,7 @@ inline void copy(region_t destination, void* source, optional_ref<const stream_t
  * @param num_bytes Amount of memory to copy
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+/*inline void copy(region_t destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1284,7 +1363,7 @@ inline void copy(region_t destination, void* source, size_t num_bytes, optional_
 	}
 #endif
 	return copy(destination.start(), source, num_bytes, stream);
-}
+}*/
 
 /**
  * Copy one region of memory to another location
@@ -1305,7 +1384,7 @@ inline void copy(region_t destination, void* source, size_t num_bytes, optional_
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(void* destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+/*inline void copy(void* destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (source.size() < num_bytes) {
@@ -1313,7 +1392,7 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, opt
 	}
 #endif
 	copy(destination, source.start(), num_bytes, stream);
-}
+}*/
 
 /**
  * @param destination A memory region of the same size as @p source.
@@ -1329,10 +1408,10 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, opt
  *     device's global memory. Must be defined in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(void* destination, const_region_t source, optional_ref<const stream_t> stream = {})
+/*inline void copy(void* destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
 	copy(destination, source, source.size(), stream);
-}
+}*/
 
 namespace device {
 

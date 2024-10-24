@@ -198,6 +198,7 @@ class array_t {
 	static_assert(NumDimensions == 2 or NumDimensions == 3, "CUDA only supports 2D and 3D arrays");
 
 public:
+	static constexpr const dimensionality_t dimensionality = NumDimensions;
 	/// See @ref array::handle_t
 	using handle_type = array::handle_t;
 	/// See @ref array::descriptor_t

@@ -81,6 +81,19 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	/// between endpoints in the same CUDA context
 	bool is_intra_context() const noexcept { return parent::srcContext == parent::dstContext; }
 
+	memory::type_t endpoint_type(endpoint_t endpoint) const noexcept
+	{
+		return (endpoint == endpoint_t::destination) ?
+			   parent::dstMemoryType : parent::srcMemoryType;
+	}
+
+	void set_endpoint_type(endpoint_t endpoint, memory::type_t type) noexcept
+	{
+		((endpoint == endpoint_t::destination) ?
+			parent::dstMemoryType :
+			parent::srcMemoryType) = type;
+	}
+
 	/// Set the context for one end of the copy operation
 	this_type& set_context(endpoint_t endpoint, const context_t& context) noexcept;
 
@@ -258,8 +271,10 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	this_type& set_destination(context::handle_t context_handle, T *ptr, dimensions_type dimensions) noexcept
 	{
 		return set_endpoint(endpoint_t::destination, context_handle, ptr, dimensions);
+
 	}
 	///@}
+
 
 	/**
 	 * Set the desintation of the copy operation to a range of multi-dimensional elements, starting
@@ -722,7 +737,11 @@ inline as_intra_context_parameters(const copy_parameters_t<3>& params)
 	return result;
 }
 
-} //namespace memory
+} // namespace memory
+
+template <typename Destination, typename Source>
+memory::copy_parameters_t<detail_::array_dimensionality_for_pair_t<Destination,Source>::value>
+make_copy_parameters(Destination&& destination, Source&& source);
 
 } // namespace cuda
 
