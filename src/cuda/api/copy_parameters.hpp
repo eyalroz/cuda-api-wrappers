@@ -739,8 +739,26 @@ inline as_intra_context_parameters(const copy_parameters_t<3>& params)
 
 } // namespace memory
 
+namespace detail_ {
+
+// Note: Handling of mixed-dimensionality arrays is kind of dodgy for now:
+// 2-dim and 3-dim arrays will yield 3-dim dimensionality for copy params,
+// but it's not clear we can actually effect such copies. Caveat emptor
+template <typename D, typename S>
+struct copy_params_dimensionality {
+protected:
+	enum {
+		d_dim = array::dimensionality<typename ::std::remove_reference<D>::type>::value,
+		s_dim = array::dimensionality<typename ::std::remove_reference<S>::type>::value
+	};
+public:
+	static constexpr const dimensionality_t value = (d_dim > s_dim) ? d_dim : s_dim;
+};
+
+} // namespace detail_
+
 template <typename Destination, typename Source>
-memory::copy_parameters_t<detail_::array_dimensionality_for_pair_t<Destination,Source>::value>
+memory::copy_parameters_t<detail_::copy_params_dimensionality<Destination, Source>::value>
 make_copy_parameters(Destination&& destination, Source&& source);
 
 } // namespace cuda

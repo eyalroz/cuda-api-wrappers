@@ -423,51 +423,14 @@ public: // mutators
 		 * The source and destination memory regions may be anywhere the CUDA driver can
 		 * map  (e.g. the device's global memory, host/system memory, the global memory of
 		 * another device, constant memory etc.)
-		 */
-		///@{
-		/// Schedule a copy of one region of memory to another
-		void copy(void *destination, const void *source, size_t num_bytes) const
-		{
-			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
-			// however, unfortunately, it does require us to be in _some_ context.
-			context::current::detail_::scoped_ensurer_t ensure_we_have_a_current_scope{associated_stream.context_handle_};
-			memory::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
-		}
-
-		/// @copybrief copy(void *, const void *, size_t) const
-		void copy(void* destination, memory::const_region_t source, size_t num_bytes) const
-		{
-#ifndef NDEBUG
-			if (source.size() < num_bytes) {
-				throw ::std::logic_error("Attempt to copy more than the source region's size");
-			}
-#endif
-			copy(destination, source.start(), num_bytes);
-		}
-
-		/**
-		 * @copybrief copy(void *, const void *, size_t) const
 		 *
-		 * @note @p num_bytes may be smaller than the sizes of any of the regions
+		 * TODO: Update this. Also see about ensuring context in copy_plain
 		 */
-		void copy(memory::region_t destination, memory::const_region_t source, size_t num_bytes) const
+		template <typename Destination, typename Source>
+		void copy(Destination&& destination, Source&& source, optional<size_t> num_bytes)
 		{
-			copy(destination.start(), source, num_bytes);
+			memory::copy_2(std::forward<Destination>(destination), std::forward<Source>(source), num_bytes, *this);
 		}
-
-		/// @copybrief copy(void *, const void *, size_t) const
-		void copy(memory::region_t destination, memory::const_region_t source) const
-		{
-			copy(destination, source, source.size());
-		}
-
-		/// @copybrief copy(void *, const void *, size_t) const
-		void copy(void* destination, memory::const_region_t source) const
-		{
-			copy(destination, source, source.size());
-		}
-
-		///@}
 
 		/**
 		 * Set all bytes of a certain region in device memory (or unified memory,

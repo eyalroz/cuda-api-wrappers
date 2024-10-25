@@ -30,6 +30,12 @@ class array_t;
 
 namespace array {
 
+template <typename T>
+struct dimensionality{ };
+
+template <typename T, dimensionality_t Dimensionality>
+struct dimensionality<array_t<T, Dimensionality>>{ enum { value = Dimensionality }; };
+
 /// Raw CUDA driver handle for arrays (of any dimension)
 using handle_t = CUarray;
 

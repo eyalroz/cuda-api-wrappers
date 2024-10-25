@@ -23,8 +23,21 @@
 #include "../virtual_memory.hpp"
 #include "../memory_pool.hpp"
 #include "../current_device.hpp"
+#include "../copy_parameters.hpp"
 
 namespace cuda {
+
+namespace detail_ {
+
+optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream)
+{
+	optional<stream::handle_t> stream_handle{};
+	if (stream) { stream_handle = stream->handle(); }
+	return stream_handle;
+}
+
+} // namespace detail_
+
 
 namespace memory {
 /*
@@ -63,14 +76,6 @@ inline void copy(T* destination, const array_t<T, NumDimensions>& source, option
 	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
 }*/
 
-template<dimensionality_t NumDimensions>
-void copy_(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream)
-{
-	stream::handle_t stream_handle = stream ? stream->handle() : nullptr;
-	status_t status = detail_::multidim_copy(params, stream_handle);
-	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
-}
-
 namespace detail_ {
 
 template <typename CUDACopyable>
@@ -95,6 +100,7 @@ optional<size_t> copyable_size(CUDACopyable&&)
 	return 123;
 }
 
+// This can be constexpr in C++14
 void check_copy_sizes(
 	optional<size_t> dest_capacity, 
 	optional<size_t> source_size,
@@ -123,70 +129,90 @@ void check_copy_sizes(
 	}
 }
 
-template<typename CUDACopyable1, typename CUDACopyable2>
-void check_copy_sizes(CUDACopyable1&& destination, CUDACopyable2&& source, optional<size_t> num_bytes = {})
-{
-	return check_copy_sizes(
-		copyable_size(::std::forward<CUDACopyable2>(source)),
-		copyable_size(::std::forward<CUDACopyable1>(destination)),
-		num_bytes);
-}
+struct region_aspects_t {
+	optional<void*> ptr;
+	optional<size_t> size;
+};
 
-enum : bool { source_is_ptrish = true, dest_is_ptrish = true};
+template <typename T, typename U = void>
+struct get_ptr_and_size_helper;
+
+template <typename T>
+struct get_ptr_and_size_helper<T, cuda::detail_::enable_if_t<cuda::detail_::is_ptrish<T>::value> > {
+	region_aspects_t operator()(T && t) { return { t, nullopt }; }
+};
+
+template <typename T>
+struct get_ptr_and_size_helper<T, cuda::detail_::enable_if_t<::std::is_constructible<region_t, T&&>::value> > {
+	region_aspects_t operator()(T && t)
+	{
+		auto region = region_t(std::forward<T>(t));
+		return {region.data(), region.size()};
+	}
+};
+
+template <typename T, typename U>
+struct get_ptr_and_size_helper {
+	region_aspects_t operator()(T&& t) { return { nullopt, nullopt }; }
+};
 
 
+template<>
 template<typename Destination, typename Source>
-void copy_unchecked_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+void copy_helper<false>::copy(
+	Destination&& destination, Source&& source,
+	optional<size_t> num_bytes,
+	optional<stream::handle_t> stream_handle)
 {
 	enum {
-		dest_type = detail_::copy_endpoint_type<Destination>::value,
-		src_type = detail_::copy_endpoint_type<Source>::value,
+		dest_type = copy_endpoint_kind<typename ::std::remove_reference<Destination>::type>::value,
+		src_type = copy_endpoint_kind<typename ::std::remove_reference<Source>::type>::value,
 		ptrish = detail_::copy_endpoint_kind_t::ptr,
-		arrayish = detail_::copy_endpoint_kind_t::array
+		regionish = detail_::copy_endpoint_kind_t::region,
 	};
-	using detail_::copy_endpoint_kind_t;
-
-	optional<stream::handle_t> stream_handle{};
-	if (stream) { stream_handle = stream->handle(); }
-
-	if (dest_type == ptrish and src_type == ptrish) {
-		detail_::copy_plain(destination, source, *num_bytes, stream);
-	}
-	if (dest_type != arrayish and src_type != arrayish) {
-		region_t destination_ = get_ptr(source);
-		region_t source_ = get_region(source);
-		auto num_bytes_ = num_bytes.value_or(source_.size());
-		detail_::copy_plain(destination_.data(), source_.data(), num_bytes_, stream_handle);
-	}
-	if (num_bytes) {
-		throw ::std::invalid_argument(
-			"Specifying a number of bytes for copying involving multi-dimensional arrays is unsupported;"
-			"a copy-parameters structure should be built with multi-dimensional extents specified, instead");
-	}
-	// We want to support both 2D and 3D copying here
-	auto copy_params = make_copy_params(std::forward<Destination>(destination), std::forward<Source>(source));
-	memory::copy_(copy_params, stream);
+	auto destination_ = detail_::get_ptr_and_size_helper<Destination>{}(destination);
+	auto source_ = get_ptr_and_size_helper<Source>{}(source);
+	check_copy_sizes(destination_.size, source_.size, num_bytes);
+	size_t final_num_bytes = num_bytes ? *num_bytes : (source_.size ? *(source_.size) : *(destination_.size));
+	// TODO: We could have copy_plain return the status only, then do some fancy error construction
+	// in this function, taking the actual type into account
+	detail_::copy_plain(*(destination_.ptr), *(source_.ptr), final_num_bytes, stream_handle);
 }
 
+template<>
+template<typename Destination, typename Source>
+void copy_helper<true>::copy(
+	Destination&& destination, Source&& source,
+	optional<size_t>,
+	optional<stream::handle_t> stream_handle)
+{
+	// TODO: Should we do any size checking here? Perhaps even just check
+	// that the optional num_bytes is empty?
+	auto copy_params = make_copy_params(std::forward<Destination>(destination), std::forward<Source>(source));
+	status_t status = detail_::multidim_copy(copy_params, stream_handle);
+	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
+}
 
 } // namespace detail_
 
+/*
 
 template<typename Destination, typename Source>
-void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes, optional_ref<const stream_t> stream)
 {
+	static_assert(cuda::detail_::has_contiguous_memory<std::vector<float>>::value, "It should have contig memory");
 	enum {
-		dest_type = detail_::copy_endpoint_type<Destination>::value,
-		src_type = detail_::copy_endpoint_type<Source>::value,
+		dest_type = detail_::copy_endpoint_type<typename ::std::remove_reference<Destination>::type>::value,
+		src_type = detail_::copy_endpoint_type<typename ::std::remove_reference<Source>::type>::value,
 		ptrish = detail_::copy_endpoint_kind_t::ptr
 	};
 	using detail_::copy_endpoint_kind_t;
 
 	static_assert(dest_type != ptrish or src_type != ptrish or num_bytes,
 		"Attempt to copy between pointers without specifying the amount of memory to copy");
-	check_copy_sizes(destination, source, num_bytes);
-	copy_unchecked_2<Destination, Source>(destination, source, num_bytes, stream);
+	detail_::copy_3<Destination, Source>(destination, source, num_bytes, stream);
 }
+*/
 
 
 /*
@@ -198,7 +224,8 @@ inline void copy_(void* destination, void* source, size_t num_bytes, optional_re
 template <typename T>
 void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream)
 {
-	memory::copy(destination, source, sizeof(T), stream);
+	auto stream_handle = stream ? stream->handle() : optional<stream::handle_t>{};
+	memory::detail_::copy_plain(destination, source, sizeof(T), stream_handle);
 }
 /*
 // Note: Assumes the source pointer is valid in the stream's context

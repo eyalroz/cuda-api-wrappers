@@ -34,7 +34,6 @@ inline cuda::device::id_t device_id_of(const void *ptr)
 
 } // namespace pointer
 
-
 template <typename T>
 inline device_t pointer_t<T>::device() const
 {

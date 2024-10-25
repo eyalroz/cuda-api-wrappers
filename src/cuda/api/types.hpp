@@ -98,6 +98,14 @@ using dimension_t = size_t;
 template<dimensionality_t NumDimensions>
 struct dimensions_t;
 
+// See array.hpp for specializations
+template <typename T>
+struct dimensionality;
+
+//template <typename T, typename cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<T>::value, void>>
+//struct dimensionality<T>{ static enum { value = 1 }; };
+
+
 /// Dimensions for 3D CUDA arrays
 template<>
 struct dimensions_t<3> // this almost-inherits cudaExtent

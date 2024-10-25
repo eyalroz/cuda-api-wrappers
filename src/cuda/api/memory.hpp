@@ -52,6 +52,31 @@ class stream_t;
 class module_t;
 ///@endcond
 
+namespace detail_ {
+
+// Lame implementation :-( Do better!
+
+template <typename T, typename>
+struct has_contiguous_memory : false_type { };
+
+// Lame implementation :-( Do better!
+
+template <typename T, typename Allocator>
+struct has_contiguous_memory<::std::vector<T, Allocator>, void> : ::std::true_type { };
+
+template <typename T>
+struct has_contiguous_memory<T,
+	cuda::detail_::enable_if_t<
+		::std::is_pointer<decltype(std::declval<T>().end())>::value and
+		::std::is_pointer<decltype(std::declval<T>().end())>::value
+	>
+> : ::std::true_type { };
+
+optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream);
+
+} // namespace detail_
+
+
 namespace memory {
 
 /**
@@ -480,9 +505,16 @@ namespace detail_ {
  * @param num_bytes number of bytes to copy from @p source
  * @param stream_handle The handle of a stream on which to schedule the copy operation
  */
-// TODO: perhaps renamed this copy_unchecked as well?
 inline void copy_plain(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
 {
+	// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
+	// however, unfortunately, it does require us to be in _some_ context.
+	//
+	// TODO: do we need this?
+	context::current::detail_::scoped_ensurer_t ensure_we_have_a_current_context{stream_handle};
+	memory::context_of(destination);
+
+
 	auto dst_ = device::address(destination);
 	auto src_ = device::address(source);
 	auto result = stream_handle ?
@@ -882,10 +914,36 @@ void copy_(
 template<typename CUDACopyable>
 optional<size_t> copyable_size(CUDACopyable&&);
 
-template <typename T>
-struct copy_endpoint_type;
+enum copy_endpoint_kind_t { ptr, region, array };
 
-enum class copy_endpoint_kind_t { ptr, region, array };
+template <typename T, typename U = void>
+struct copy_endpoint_kind;
+
+template <typename T, dimensionality_t NumDimensions>
+struct copy_endpoint_kind<array_t<T,NumDimensions>, void> {
+	static constexpr const copy_endpoint_kind_t value = copy_endpoint_kind_t::array;
+};
+
+
+template <typename T>
+struct copy_endpoint_kind<T, cuda::detail_::enable_if_ptrish<T>> {
+	static constexpr const copy_endpoint_kind_t value = copy_endpoint_kind_t::ptr;
+};
+
+template <typename T>
+struct copy_endpoint_kind<T, cuda::detail_::enable_if_t<cuda::detail_::has_contiguous_memory<T>::value>> {
+	static constexpr const copy_endpoint_kind_t value = copy_endpoint_kind_t::region;
+};
+
+
+template <bool ArrayishCopy>
+struct copy_helper {
+	template<typename Destination, typename Source>
+	static void copy(
+		Destination &&destination, Source &&source,
+		optional<size_t> num_bytes,
+		optional<stream::handle_t> stream_handle);
+};
 
 } // namespace detail_
 
@@ -902,40 +960,30 @@ enum class copy_endpoint_kind_t { ptr, region, array };
  * merely pass it on to the CUDA driver
  */
 ///@{
-template<dimensionality_t NumDimensions>
-void copy_(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream = {});
-
-
 // TODO: Add a "contextualized" version of this, i.e. context+copyable for each endpoint; perhaps have it in inter_context?
 // TODO: Combine all copy functions when we switch to C++17, and handle the different cases with if constexpr
 template<typename Destination, typename Source>
-void copy_(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
 {
-	static constexpr const auto dst_is_ptrish = cuda::detail_::is_ptrish<Destination>::value;
-	static constexpr const auto src_is_ptrish = cuda::detail_::is_ptrish<Source>::value;
-	static_assert(not dst_is_ptrish or not src_is_ptrish or num_bytes,
-		"Attempt to copy between pointers without specifying the amount of memory to copy");
-	check_copy_sizes(destination, source, num_bytes);
-	num_bytes = num_bytes.value_or(dst_is_ptrish ?
-		detail_::copyable_size(destination) :
-		detail_::copyable_size(source));
-	detail_::copy_helper<
-	    dst_is_ptrish, src_is_ptrish,
-		Destination, Source>::copy_unchecked(
+	enum {
+		dest_type = detail_::copy_endpoint_kind<typename ::std::remove_reference<Destination>::type>::value,
+		src_type = detail_::copy_endpoint_kind<typename ::std::remove_reference<Source>::type>::value,
+		arrayish = detail_::copy_endpoint_kind_t::array,
+		arrayish_copy = (dest_type == arrayish) or (src_type == arrayish)
+	};
+	auto opt_stream_handle = cuda::detail_::get_stream_handle(stream);
+
+	detail_::copy_helper<arrayish_copy>::copy(
 		std::forward<Destination>(destination),
 		std::forward<Source>(source),
-		num_bytes,
-		stream);
+		num_bytes, opt_stream_handle);
 }
 
 template<typename Destination, typename Source>
-void copy_(Destination&& destination, Source&& source, const stream_t& stream)
+void copy_2(Destination&& destination, Source&& source, optional_ref<const stream_t> stream)
 {
-	copy_(std::forward<Destination>(destination), std::forward<Source>(source), {}, stream);
+	copy_2(std::forward<Destination>(destination), std::forward<Source>(source), {}, stream);
 }
-
-template<typename Destination, typename Source>
-void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {});
 
 ///@}
 
@@ -1613,8 +1661,9 @@ inline void copy(
 	array_t<T, NumDimensions>     source,
 	optional_ref<const stream_t>  stream)
 {
-	// for arrays, a single mechanism handles both intra- and inter-context copying
-	return memory::copy(destination, source, stream);
+	auto copy_params = make_copy_parameters(source, destination);
+	// TODO: What about extents?
+	return memory::copy_2(copy_params, stream);
 }
 
 } // namespace inter_context

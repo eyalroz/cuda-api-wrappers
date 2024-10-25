@@ -81,7 +81,10 @@ template<typename T>
 using is_ptrish = ::std::is_pointer<typename ::std::remove_reference<T>::type>;
 
 template<typename T>
-using enable_if_nonptrish = enable_if_t<is_ptrish<T>::value, T>;
+using enable_if_nonptrish = enable_if_t<not is_ptrish<T>::value, T>;
+
+template<typename T>
+using enable_if_ptrish = enable_if_t<is_ptrish<T>::value, T>;
 
 // primary template handles types that have no nested ::type member:
 template <typename, typename = void>
@@ -90,6 +93,13 @@ struct has_data_method : ::std::false_type { };
 // specialization recognizes types that do have a nested ::type member:
 template <typename T>
 struct has_data_method<T, cuda::detail_::void_t<decltype(::std::declval<T>().data())>> : ::std::true_type { };
+
+template <typename, typename = void>
+struct has_size_method : ::std::false_type { };
+
+// specialization recognizes types that do have a nested ::type member:
+template <typename T>
+struct has_size_method<T, cuda::detail_::void_t<decltype(::std::declval<T>().size())>> : ::std::true_type { };
 
 template <typename, typename = void>
 struct has_value_type_member : ::std::false_type { };
@@ -105,6 +115,9 @@ struct is_kinda_like_contiguous_container :
 		has_data_method<typename ::std::remove_reference<T>::type>::value
 		and has_value_type_member<typename ::std::remove_reference<T>::type>::value
 	> {};
+
+template <typename T, typename = void>
+struct has_contiguous_memory;
 
 } // namespace detail_
 

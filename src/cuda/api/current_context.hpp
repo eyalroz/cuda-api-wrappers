@@ -221,6 +221,19 @@ public:
 		: scoped_ensurer_t(not exists(), fallback_context_handle)
 	{}
 
+	// For poor souls who only have a pointer :-(
+	explicit scoped_ensurer_t(void* ptr) : context_was_pushed_on_construction(not exists())
+	{
+		if (context_was_pushed_on_construction) {
+			auto handle = memory::pointer::detail_::context_handle_of(ptr);
+			if (handle == context::detail_::none) {
+				throw ::std::invalid_argument("Attempt to obtain a CUDA context from context-less pointer "
+					+ cuda::detail_::ptr_as_hex(ptr));
+			}
+			push(handle);
+		}
+	}
+
 	scoped_ensurer_t(const scoped_ensurer_t&) = delete;
 	scoped_ensurer_t(scoped_ensurer_t&&) = delete;
 
