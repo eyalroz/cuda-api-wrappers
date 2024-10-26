@@ -54,29 +54,9 @@ class module_t;
 
 namespace detail_ {
 
-// Lame implementation :-( Do better!
-
-template <typename T, typename>
-struct has_contiguous_memory : false_type { };
-
-// Lame implementation :-( Do better!
-
-template <typename T, typename Allocator>
-struct has_contiguous_memory<::std::vector<T, Allocator>, void> : ::std::true_type { };
-
-// If the iterators are plain pointers, them mem must be contiguous I suppose.
-template <typename T>
-struct has_contiguous_memory<T,
-	cuda::detail_::enable_if_t<
-		::std::is_pointer<decltype(::std::begin(::std::declval<T>()))>::value and
-		::std::is_pointer<decltype(::std::end(::std::declval<T>()))>::value
-	>
-> : ::std::true_type { };
-
-optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream);
+optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream) noexcept;
 
 } // namespace detail_
-
 
 namespace memory {
 
@@ -645,34 +625,16 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2> two, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
-{
-	// TODO: Move this logic into the scoped ensurer class
-	auto context_handle = context::current::detail_::get_handle();
-	if  (context_handle != context::detail_::none) {
-		return detail_::multidim_copy_in_current_context(two, params, stream_handle);
-	}
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	context_handle = cuda::device::primary_context::detail_::obtain_and_increase_refcount(current_device_id);
-	context::current::detail_::push(context_handle);
-	// Note this _must_ be an intra-context copy, as inter-context is not supported
-	// and there's no indication of context in the relevant data structures
-	auto status = detail_::multidim_copy_in_current_context(two, params, stream_handle);
-	context::current::detail_::pop();
-	cuda::device::primary_context::detail_::decrease_refcount(current_device_id);
-	return status;
-}
-
 inline status_t multidim_copy(context::handle_t context_handle, ::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
 {
-	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
-	return multidim_copy(::std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
 }
 
 inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, optional<stream::handle_t> stream_handle)
 {
 	if (params.srcContext == params.dstContext) {
-		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{params.srcContext};
+		CAW_SET_SCOPE_CONTEXT(params.srcContext);
 		return detail_::multidim_copy_in_current_context(params, stream_handle);
 	}
 	return stream_handle ?
@@ -755,8 +717,7 @@ template <typename T>
 struct copy_endpoint_kind<T,
 	cuda::detail_::enable_if_t<
 		::std::is_constructible<const_region_t, T&&>::value or
-		::std::is_array<T>::value or
-		cuda::detail_::has_contiguous_memory<typename ::std::remove_reference<T>::type>::value> >
+		::std::is_array<T>::value > >
 {
 	static constexpr const copy_endpoint_kind_t value = copy_endpoint_kind_t::region;
 };

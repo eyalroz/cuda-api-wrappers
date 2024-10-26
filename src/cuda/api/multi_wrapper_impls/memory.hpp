@@ -29,11 +29,9 @@ namespace cuda {
 
 namespace detail_ {
 
-inline optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream)
+inline optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream) noexcept
 {
-	optional<stream::handle_t> stream_handle{};
-	if (stream) { stream_handle = stream->handle(); }
-	return stream_handle;
+	return (stream) ? stream->handle() : optional<stream::handle_t>{};
 }
 
 } // namespace detail_
@@ -48,15 +46,15 @@ inline void copy_plain_in_current_context(void* destination, const void* source,
 	auto dst_ = device::address(destination);
 	auto src_ = device::address(source);
 	auto result = stream_handle ?
-				  cuMemcpyAsync(dst_, src_, num_bytes, *stream_handle) :
-				  cuMemcpy     (dst_, src_, num_bytes);
+		cuMemcpyAsync(dst_, src_, num_bytes, *stream_handle) :
+		cuMemcpy     (dst_, src_, num_bytes);
 
 	// TODO: Try determining which end of the copy was where (host/device, which GPU etc.), and incorporate
 	// this into the error message
 	throw_if_error_lazy(result, "Scheduling a memory copy of "
-								+ ::std::to_string(num_bytes) + " from " + cuda::detail_::ptr_as_hex(source)
-								+ " to " + cuda::detail_::ptr_as_hex(destination)
-								+ (stream_handle ? " on " + stream::detail_::identify(*stream_handle) : ""));
+		+ ::std::to_string(num_bytes) + " from " + cuda::detail_::ptr_as_hex(source)
+		+ " to " + cuda::detail_::ptr_as_hex(destination)
+		+ (stream_handle ? " on " + stream::detail_::identify(*stream_handle) : ""));
 }
 
 inline void copy_plain(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
@@ -96,7 +94,7 @@ void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoin
 
 // This can be constexpr in C++14
 inline void check_copy_sizes(
-	optional<size_t> dest_capacity, 
+	optional<size_t> dest_capacity,
 	optional<size_t> source_size,
 	optional<size_t> amount_to_copy = {})
 {
@@ -384,7 +382,7 @@ template <typename Allocator>
 	device_ids, sizeof(device_t) * devices.size(),
 	CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY, device::address(region.start()), region.size());
 	throw_if_error_lazy(status, "Obtaining the IDs of devices with access to the managed memory range at "
-						   + cuda::detail_::ptr_as_hex(region.start()));
+		+ cuda::detail_::ptr_as_hex(region.start()));
 	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
