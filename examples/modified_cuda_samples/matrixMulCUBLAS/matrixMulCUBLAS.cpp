@@ -228,7 +228,7 @@ void multiply_and_time_with_cublas(
 	printf("Performance= %.2f GFlop/s, Time= %.3f msec, Size= %.0f Ops\n",
 		giga_ops_per_second, msec_per_iteration, ops_per_multiplication);
 
-	cuda::memory::copy_2(h_CUBLAS, d_C);
+	cuda::memory::copy(h_CUBLAS, d_C);
 
 	// Destroy the handle
 	cublasDestroy(handle);
@@ -271,8 +271,8 @@ int main(int argc, char **argv)
 	auto d_B = cuda::memory::make_unique_span<float>(device, size_B);
 	auto d_C = cuda::memory::make_unique_span<float>(device, size_C);
 
-	cuda::memory::copy_2(d_A, h_A);
-	cuda::memory::copy_2(d_B, h_B);
+	cuda::memory::copy(d_A, h_A);
+	cuda::memory::copy(d_B, h_B);
 
 	multiply_and_time_with_cublas(device, d_A, d_B, d_C, h_CUBLAS_result, matrix_dims, num_iterations);
 

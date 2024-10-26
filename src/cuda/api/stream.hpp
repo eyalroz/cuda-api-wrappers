@@ -429,7 +429,7 @@ public: // mutators
 		template <typename Destination, typename Source>
 		void copy(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}) const
 		{
-			memory::copy_2<Destination, Source>(
+			memory::copy<Destination, Source>(
 				std::forward<Destination>(destination), std::forward<Source>(source), num_bytes, associated_stream);
 		}
 

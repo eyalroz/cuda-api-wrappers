@@ -492,22 +492,6 @@ inline void copy_plain(
 	const void*                source,
 	size_t                     num_bytes,
 	optional<stream::handle_t> stream_handle);
-/**
- * @param destination a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param source a memory region of size @p num_bytes, either in
- * host memory or on any CUDA device's global memory
- * @param stream_handle The handle of a stream on which to schedule the copy operation
- */
-/*inline void copy(region_t destination, const_region_t source, stream::handle_t stream_handle)
-{
-#ifndef NDEBUG
-	if (destination.size() < source.size()) {
-		throw ::std::logic_error("Source size exceeds destination size");
-	}
-#endif
-	copy(destination.start(), source.start(), source.size(), stream_handle);
-}*/
 ///@}
 
 using memory::copy_parameters_t;
@@ -547,8 +531,12 @@ inline status_t multidim_copy_in_current_context(
 }
 
 template<dimensionality_t NumDimensions>
-status_t multidim_copy_in_current_context(copy_parameters_t<NumDimensions> params, optional<stream::handle_t> stream_handle) {
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+status_t multidim_copy_in_current_context(
+	copy_parameters_t<NumDimensions> params,
+	optional<stream::handle_t> stream_handle) {
+	return multidim_copy_in_current_context(
+		::std::integral_constant<dimensionality_t, NumDimensions>{},
+		params, stream_handle);
 }
 
 // Note: Assumes the stream handle is for a stream in the current context
@@ -559,46 +547,10 @@ status_t multidim_copy(
     optional<stream::handle_t>        stream_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+	return multidim_copy_in_current_context(
+		::std::integral_constant<dimensionality_t, NumDimensions>{},
+		params, stream_handle);
 }
-
-/*// Assumes the array and the stream share the same context, and that the destination is
-// accessible from that context (e.g. allocated within it, or being managed memory, etc.)
-template <typename T, dimensionality_t NumDimensions>
-void copy(T *destination, const array_t<T, NumDimensions>& source, optional<stream::handle_t> stream_handle)
-{
-	using  memory::endpoint_t;
-	auto dims = source.dimensions();
-	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	auto params = copy_parameters_t<NumDimensions> {};
-	params.clear_offset(endpoint_t::source);
-	params.clear_offset(endpoint_t::destination);
-	params.template set_extent<T>(dims);
-	params.set_endpoint(endpoint_t::source, source);
-	params.set_endpoint(endpoint_t::destination, const_cast<T*>(destination), dims);
-	params.set_default_pitches();
-	params.clear_rest();
-	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-	throw_if_error(status, "Scheduling an asynchronous copy from an array into a regular memory region");
-}*/
-
-/*template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>&  destination, const T* source, optional<stream::handle_t> stream_handle)
-{
-	using memory::endpoint_t;
-	auto dims = destination.dimensions();
-	//auto params = make_multidim_copy_params(destination, const_cast<T*>(source), destination.dimensions());
-	auto params = copy_parameters_t<NumDimensions>{};
-	params.clear_offset(endpoint_t::source);
-	params.clear_offset(endpoint_t::destination);
-	params.template set_extent<T>(dims);
-	params.set_endpoint(endpoint_t::source, const_cast<T*>(source), dims);
-	params.set_endpoint(endpoint_t::destination, destination);
-	params.set_default_pitches();
-	params.clear_rest();
-	auto status = multidim_copy_in_current_context<NumDimensions>(params, stream_handle);
-	throw_if_error(status, "Scheduling an asynchronous copy from regular memory into an array");
-}*/
 
 /**
  * Synchronously copies a single (typed) value between memory spaces or within a memory space.
@@ -836,7 +788,7 @@ struct copy_helper {
 // TODO: Add a "contextualized" version of this, i.e. context+copyable for each endpoint; perhaps have it in inter_context?
 // TODO: Combine all copy functions when we switch to C++17, and handle the different cases with if constexpr
 template<typename Destination, typename Source>
-void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
+void copy(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}, optional_ref<const stream_t> stream = {})
 {
 	enum {
 		dest_type = detail_::copy_endpoint_kind<typename std::remove_reference<Destination>::type>::value,
@@ -856,9 +808,9 @@ void copy_2(Destination&& destination, Source&& source, optional<size_t> num_byt
 }
 
 template<typename Destination, typename Source>
-void copy_2(Destination&& destination, Source&& source, optional_ref<const stream_t> stream)
+void copy(Destination&& destination, Source&& source, optional_ref<const stream_t> stream)
 {
-	copy_2(std::forward<Destination>(destination), std::forward<Source>(source), {}, stream);
+	copy(std::forward<Destination>(destination), std::forward<Source>(source), {}, stream);
 }
 
 ///@}
@@ -881,27 +833,6 @@ void copy_2(Destination&& destination, Source&& source, optional_ref<const strea
  */
 template <typename T>
 void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream = {});
-
-/**
- * Asynchronously copies data between memory spaces or within a memory space.
- *
- * @note Since we assume Compute Capability >= 2.0, all devices support the
- * Unified Virtual Address Space, so the CUDA driver can determine, for each pointer,
- * where the data is located, and one does not have to specify this.
- *
- * @note asynchronous version of {@ref memory::copy(void*, void const*, size_t)}
- *
- * @param destination A pointer to a memory region of size @p num_bytes, either in host
- *     memory or on any CUDA device's global memory. Must be defined in the same context
- *     as the stream.
- * @param source A pointer to a memory region of size @p num_bytes, either in host
- *     memory or on any CUDA device's global memory. Must be defined in the same context
- *     as the stream.
- * @param num_bytes The number of bytes to copy from @p source to @p destination
- * @param stream A stream on which to enqueue the copy operation
- */
-//void copy(void* destination, void const* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
-
 
 /**
  * Copy the contents of memory region into a C-style array, interpreting the memory
@@ -1254,7 +1185,7 @@ inline void copy(
 {
 	auto copy_params = make_copy_parameters(source, destination);
 	// TODO: What about extents?
-	return memory::copy_2(copy_params, stream);
+	return memory::copy(copy_params, stream);
 }
 
 } // namespace inter_context

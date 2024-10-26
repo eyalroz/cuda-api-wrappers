@@ -33,6 +33,8 @@ make_copy_parameters(Destination&& destination, Source&& source)
 	params.clear_offset(endpoint_t::destination);
 	// TODO: What about contexts?
 	// TODO: What about extents? Is setting the endpoints sufficient?
+	params.set_default_pitches();
+	params.clear_rest();
 	return params;
 }
 
