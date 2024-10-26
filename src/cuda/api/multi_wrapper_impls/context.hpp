@@ -22,7 +22,6 @@
 #include "../memory.hpp"
 #include "../context.hpp"
 
-
 namespace cuda {
 
 namespace context {

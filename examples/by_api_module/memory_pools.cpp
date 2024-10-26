@@ -166,7 +166,7 @@ void try_writing_to_pool_allocation_without_permission(
 	auto stream_on_peer = peer.create_stream(cuda::stream::async);
 	bool got_expected_exception = false;
 	try {
-		stream_on_peer.enqueue.copy(pool_allocated_region, {str.data(), str.size()});
+		stream_on_peer.enqueue.copy(pool_allocated_region, str);
 		stream_on_peer.synchronize();
 	}
 	catch (cuda::runtime_error &ex) {

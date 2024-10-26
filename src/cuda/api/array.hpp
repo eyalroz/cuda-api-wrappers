@@ -28,10 +28,27 @@ class device_t;
 template <typename T, dimensionality_t NumDimensions>
 class array_t;
 
+namespace detail_ {
+
+template<typename T>
+struct is_array : bool_constant<false> {};
+
+template<typename T, dimensionality_t Dimensionality>
+struct is_array<array_t<T, Dimensionality>> : bool_constant<true> {};
+
+template<typename T>
+using is_arrayish = is_array<typename ::std::remove_reference<T>::type>;
+
+} // namespace detail_
+
 namespace array {
 
 template <typename T>
-struct dimensionality{ };
+struct dimensionality{ enum { value = 0 }; };
+
+// TODO: Should we have dimensionality-1 for "region-ish" types? On the one hand,
+// we only care about CUDA arrays; on the other, who knows how someone would use this
+// class?
 
 template <typename T, dimensionality_t Dimensionality>
 struct dimensionality<array_t<T, Dimensionality>>{ enum { value = Dimensionality }; };

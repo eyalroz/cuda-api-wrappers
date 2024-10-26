@@ -154,7 +154,7 @@ void enqueue_p2p_copy(
         // Since we assume Compute Capability >= 2.0, all devices support the
         // Unified Virtual Address Space, so we don't need to use
         // cudaMemcpyPeerAsync - cudaMemcpyAsync is enough.
-            cuda::memory::copy_(dest, src, stream);
+            cuda::memory::copy_2(dest, src, stream);
         }
     }
 }

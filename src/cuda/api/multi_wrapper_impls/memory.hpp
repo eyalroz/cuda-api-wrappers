@@ -29,7 +29,7 @@ namespace cuda {
 
 namespace detail_ {
 
-optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream)
+inline optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream)
 {
 	optional<stream::handle_t> stream_handle{};
 	if (stream) { stream_handle = stream->handle(); }
@@ -40,43 +40,37 @@ optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> 
 
 
 namespace memory {
-/*
-
-template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream)
-{
-	if (not stream) {
-		memory::copy<T, NumDimensions>(destination, source);
-		return;
-	}
-#ifndef NDEBUG
-	if (source.size() != destination.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy " + ::std::to_string(source.size()) +
-			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
-	}
-#endif
-	detail_::copy<T, NumDimensions>(destination, source.data(), stream->handle());
-}
-*/
-
-// Note: Assumes the destination, source and stream are all usable on the same content
-/*template <typename T, dimensionality_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
-{
-	if (not stream) {
-		memory::copy(context_of(destination), destination, source);
-		return;
-	}
-	if (stream->context_handle() != source.context_handle()) {
-		throw ::std::invalid_argument("Attempt to copy an array in"
-									  + context::detail_::identify(source.context_handle()) + " via "
-									  + stream::detail_::identify(*stream));
-	}
-	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
-}*/
 
 namespace detail_ {
+
+inline void copy_plain_in_current_context(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
+{
+	auto dst_ = device::address(destination);
+	auto src_ = device::address(source);
+	auto result = stream_handle ?
+				  cuMemcpyAsync(dst_, src_, num_bytes, *stream_handle) :
+				  cuMemcpy     (dst_, src_, num_bytes);
+
+	// TODO: Try determining which end of the copy was where (host/device, which GPU etc.), and incorporate
+	// this into the error message
+	throw_if_error_lazy(result, "Scheduling a memory copy of "
+								+ ::std::to_string(num_bytes) + " from " + cuda::detail_::ptr_as_hex(source)
+								+ " to " + cuda::detail_::ptr_as_hex(destination)
+								+ (stream_handle ? " on " + stream::detail_::identify(*stream_handle) : ""));
+}
+
+inline void copy_plain(void* destination, const void* source, size_t num_bytes, optional<stream::handle_t> stream_handle)
+{
+	if (stream_handle) {
+		auto stream_context_handle = stream::detail_::context_handle_of(*stream_handle);
+		context::current::detail_::scoped_ensurer_t ensurer{stream_context_handle};
+		copy_plain_in_current_context(destination, source, num_bytes, stream_handle);
+	}
+	else {
+		context::current::detail_::scoped_existence_ensurer_t ensurer{};
+		copy_plain_in_current_context(destination, source, num_bytes, stream_handle);
+	}
+}
 
 template <typename CUDACopyable>
 void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoint, CUDACopyable&& copyable);
@@ -93,15 +87,15 @@ void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoin
 {
 	params.set_endpoint(endpoint, std::forward<CUDACopyable>(copyable));
 }
-
-template<typename CUDACopyable>
-optional<size_t> copyable_size(CUDACopyable&&)
-{
-	return 123;
-}
+//
+//template<typename CUDACopyable>
+//optional<size_t> copyable_size(CUDACopyable&&)
+//{
+//	return 123;
+//}
 
 // This can be constexpr in C++14
-void check_copy_sizes(
+inline void check_copy_sizes(
 	optional<size_t> dest_capacity, 
 	optional<size_t> source_size,
 	optional<size_t> amount_to_copy = {})
@@ -129,37 +123,38 @@ void check_copy_sizes(
 	}
 }
 
+template <bool IsConst = false>
 struct region_aspects_t {
-	optional<void*> ptr;
+	optional<typename ::std::conditional<IsConst, const void*, void*>::type> ptr;
 	optional<size_t> size;
 };
 
-template <typename T, typename U = void>
+template <bool IsConst, typename T, typename U = void>
 struct get_ptr_and_size_helper;
 
-template <typename T>
-struct get_ptr_and_size_helper<T, cuda::detail_::enable_if_t<cuda::detail_::is_ptrish<T>::value> > {
-	region_aspects_t operator()(T && t) { return { t, nullopt }; }
+template <bool IsConst, typename T>
+struct get_ptr_and_size_helper<IsConst, T, cuda::detail_::enable_if_t<cuda::detail_::is_ptrish<T>::value> > {
+	region_aspects_t<IsConst> operator()(T && t) { return { t, nullopt }; }
 };
 
-template <typename T>
-struct get_ptr_and_size_helper<T, cuda::detail_::enable_if_t<::std::is_constructible<region_t, T&&>::value> > {
-	region_aspects_t operator()(T && t)
+template <bool IsConst, typename T>
+struct get_ptr_and_size_helper<IsConst, T, cuda::detail_::enable_if_t<::std::is_constructible<const region_t, T&&>::value> > {
+	region_aspects_t<IsConst> operator()(T && t)
 	{
-		auto region = region_t(std::forward<T>(t));
+		auto region = detail_::base_region_t<typename ::std::conditional<IsConst, void const, void>::type>(std::forward<T>(t));
 		return {region.data(), region.size()};
 	}
 };
 
-template <typename T, typename U>
+template <bool IsConst, typename T, typename U>
 struct get_ptr_and_size_helper {
-	region_aspects_t operator()(T&& t) { return { nullopt, nullopt }; }
+	region_aspects_t<IsConst> operator()(T&& t) { return { nullopt, nullopt }; }
 };
 
 
 template<>
 template<typename Destination, typename Source>
-void copy_helper<false>::copy(
+void copy_helper<false>::copy( // non-arrayish
 	Destination&& destination, Source&& source,
 	optional<size_t> num_bytes,
 	optional<stream::handle_t> stream_handle)
@@ -169,9 +164,11 @@ void copy_helper<false>::copy(
 		src_type = copy_endpoint_kind<typename ::std::remove_reference<Source>::type>::value,
 		ptrish = detail_::copy_endpoint_kind_t::ptr,
 		regionish = detail_::copy_endpoint_kind_t::region,
+		not_const = false,
+		is_const = true
 	};
-	auto destination_ = detail_::get_ptr_and_size_helper<Destination>{}(destination);
-	auto source_ = get_ptr_and_size_helper<Source>{}(source);
+	auto destination_ = get_ptr_and_size_helper<not_const, Destination>{}(std::forward<Destination>(destination));
+	auto source_ = get_ptr_and_size_helper<is_const, Source>{}(std::forward<Source>(source));
 	check_copy_sizes(destination_.size, source_.size, num_bytes);
 	size_t final_num_bytes = num_bytes ? *num_bytes : (source_.size ? *(source_.size) : *(destination_.size));
 	// TODO: We could have copy_plain return the status only, then do some fancy error construction
@@ -181,45 +178,34 @@ void copy_helper<false>::copy(
 
 template<>
 template<typename Destination, typename Source>
-void copy_helper<true>::copy(
+void copy_helper<true>::copy( // arrayish
 	Destination&& destination, Source&& source,
 	optional<size_t>,
 	optional<stream::handle_t> stream_handle)
 {
-	// TODO: Should we do any size checking here? Perhaps even just check
-	// that the optional num_bytes is empty?
-	auto copy_params = make_copy_params(std::forward<Destination>(destination), std::forward<Source>(source));
-	status_t status = detail_::multidim_copy(copy_params, stream_handle);
-	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
+	// TODO: Should we do any size checking here? Perhaps even just check that the optional num_bytes is empty?
+	// TODO: Do we actually need to ensure a context for copying with copy parameters? The structure has its
+	// own contexts after all
+	auto copy_params = cuda::make_copy_parameters(std::forward<Destination>(destination), std::forward<Source>(source));
+	status_t status;
+	context::handle_t context_handle;
+	if (stream_handle) {
+		context_handle = stream::detail_::context_handle_of(*stream_handle);
+		status = detail_::multidim_copy(context_handle, copy_params, stream_handle);
+	}
+	else {
+		context::current::detail_::scoped_existence_ensurer_t ensurer{};
+		context_handle = ensurer.context_handle;
+		status = detail_::multidim_copy_in_current_context(copy_params, stream_handle);
+	}
+	throw_if_error_lazy(status,
+		"Copying using a general copy parameters structure of dimensionality "
+			+ ::std::to_string(decltype(copy_params)::dimensionality) + " in "
+			+ context::detail_::identify(context_handle));
 }
 
 } // namespace detail_
 
-/*
-
-template<typename Destination, typename Source>
-void copy_2(Destination&& destination, Source&& source, optional<size_t> num_bytes, optional_ref<const stream_t> stream)
-{
-	static_assert(cuda::detail_::has_contiguous_memory<std::vector<float>>::value, "It should have contig memory");
-	enum {
-		dest_type = detail_::copy_endpoint_type<typename ::std::remove_reference<Destination>::type>::value,
-		src_type = detail_::copy_endpoint_type<typename ::std::remove_reference<Source>::type>::value,
-		ptrish = detail_::copy_endpoint_kind_t::ptr
-	};
-	using detail_::copy_endpoint_kind_t;
-
-	static_assert(dest_type != ptrish or src_type != ptrish or num_bytes,
-		"Attempt to copy between pointers without specifying the amount of memory to copy");
-	detail_::copy_3<Destination, Source>(destination, source, num_bytes, stream);
-}
-*/
-
-
-/*
-inline void copy_(void* destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	return detail_::copy(destination, source, num_bytes, stream ? stream->handle() : optional<stream::handle_t>{});
-}*/
 
 template <typename T>
 void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream)
@@ -227,34 +213,44 @@ void copy_single(T* destination, const T* source, optional_ref<const stream_t> s
 	auto stream_handle = stream ? stream->handle() : optional<stream::handle_t>{};
 	memory::detail_::copy_plain(destination, source, sizeof(T), stream_handle);
 }
-/*
-// Note: Assumes the source pointer is valid in the stream's context
-template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream)
-{
-	if (not stream) {
-		memory::copy(destination, context_of(source), source);
-		return;
-	}
-	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
-}*/
-
-/*
-inline void copy(void *destination, const void *source, size_t num_bytes, optional_ref<const stream_t> stream)
-{
-	if (not stream) {
-		context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
-		auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
-		// TODO: Determine whether it was from host to device, device to host etc and
-		// add this information to the error string
-		throw_if_error_lazy(result, "Synchronously copying data");
-		return;
-	}
-	detail_::copy(destination, source, num_bytes, stream->handle());
-}
-*/
 
 namespace device {
+
+namespace detail_ {
+
+#if CUDA_VERSION >= 11020
+inline void free(
+	context::handle_t          context_handle,
+	void*                      allocated_region_start,
+	optional<stream::handle_t> stream_handle)
+#else
+inline void free(
+	context::handle_t          context_handle,
+	void*                      allocated_region_start)
+#endif
+{
+#if CUDA_VERSION >= 11020
+	if (stream_handle) {
+		auto status = cuMemFreeAsync(device::address(allocated_region_start), *stream_handle);
+		throw_if_error_lazy(status,
+			"Failed scheduling an asynchronous freeing of the global memory region starting at "
+			+ cuda::detail_::ptr_as_hex(allocated_region_start) + " on "
+			+ stream::detail_::identify(*stream_handle, context_handle));
+		return;
+	}
+#endif
+	context::current::detail_::scoped_existence_ensurer_t ensurer{};
+	auto result = cuMemFree(address(allocated_region_start));
+#ifdef CAW_THROW_ON_FREE_IN_DESTROYED_CONTEXT
+	if (result == status::success) { return; }
+#else
+	if (result == status::success or result == status::context_is_destroyed) { return; }
+#endif
+	throw runtime_error(result, "Freeing device memory at " + cuda::detail_::ptr_as_hex(allocated_region_start));
+}
+
+} // namespace detail_
+
 
 inline region_t allocate(const context_t& context, size_t size_in_bytes)
 {

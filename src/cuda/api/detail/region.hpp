@@ -59,6 +59,9 @@ public:
 	constexpr base_region_t() noexcept = default;
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
+	template <typename U>
+	constexpr base_region_t(base_region_t<U> region) noexcept
+		: base_region_t(region.start(), region.size()) {}
 
 	/**
 	 * A constructor from types such as `::std::span`'s or `::std::vector`'s, whose data is in
@@ -70,6 +73,13 @@ public:
 	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
 		static_assert(::std::is_const<T>::value or not ::std::is_const<decltype(*(contiguous_container.data()))>::value,
+			"Attempt to construct a non-const memory region from a container of const data");
+	}
+
+	template <typename U, size_t N>
+	constexpr base_region_t(U(&array)[N]) noexcept : start_(&array[0]), size_in_bytes_(sizeof(U)*N)
+	{
+		static_assert(::std::is_const<T>::value or not ::std::is_const<U>::value,
 			"Attempt to construct a non-const memory region from a container of const data");
 	}
 

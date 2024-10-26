@@ -66,7 +66,7 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	auto span_in = cuda::memory::managed::make_unique_span<float>(arr.size());
 	std::iota(span_in.begin(), span_in.end(), (float) 0.0);
 	auto span_out = cuda::memory::managed::make_unique_span<float>(arr.size());
-	cuda::memory::copy_(arr, span_in.get());
+	cuda::memory::copy_2(arr, span_in.get());
 	cuda::texture_view tv(arr);
     assert_(tv.device() == device);
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
@@ -90,15 +90,15 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 
 	// copy between arrays and memory spaces
 	auto other_arr = cuda::array::create<float>(device, dims);
-	cuda::memory::copy_(other_arr, span_out.get());
-	cuda::memory::copy_(span_in, other_arr);
+	cuda::memory::copy_2(other_arr, span_out.get());
+	cuda::memory::copy_2(span_in, other_arr);
 
 	check_output_is_iota("copy from (managed) global memory into a 3D array", span_in.get());
 
 	// also asynchronously
 	auto stream = device.create_stream(cuda::stream::async);
-	cuda::memory::copy_(other_arr, span_out, stream);
-	cuda::memory::copy_(span_in, other_arr, stream);
+	cuda::memory::copy_2(other_arr, span_out, stream);
+	cuda::memory::copy_2(span_in, other_arr, stream);
 	device.synchronize();
 	check_output_is_iota("copy from (managed) global memory into a 3D array, asynchronously", span_in);
 }
@@ -126,7 +126,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
     print_2d_array("Data in span_in after initialization", span_in, w, h);
 
-	cuda::memory::copy_(arr, span_in);
+	cuda::memory::copy_2(arr, span_in);
 	cuda::texture_view tv(arr);
 
 	constexpr cuda::grid::block_dimension_t block_dim = 10;
@@ -147,7 +147,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 		kernels::from_2D_texture_to_memory_space,
 		launch_config,
 		tv.raw_handle(), span_out.data(), w, h);
-	cuda::memory::copy_(span_out, arr);
+	cuda::memory::copy_2(span_out, arr);
 	device.synchronize();
 	print_2d_array("Data at span_out after execution of 'from_2D_texture_to_memory_space'", span_out, w, h);
 
@@ -155,15 +155,15 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
 	// copy between arrays and memory spaces
 	auto other_arr = cuda::array::create<float>(device, dims);
-	cuda::memory::copy_(other_arr, span_out);
-	cuda::memory::copy_(span_in, other_arr);
+	cuda::memory::copy_2(other_arr, span_out);
+	cuda::memory::copy_2(span_in, other_arr);
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array", span_in);
 
 	// also asynchronously
 	auto stream = cuda::stream::create(device, cuda::stream::async);
-	cuda::memory::copy_(other_arr, span_out, stream);
-	cuda::memory::copy_(span_in, other_arr, stream);
+	cuda::memory::copy_2(other_arr, span_out, stream);
+	cuda::memory::copy_2(span_in, other_arr, stream);
 	device.synchronize();
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array, asynchronously", span_in);

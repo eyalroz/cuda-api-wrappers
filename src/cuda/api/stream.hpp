@@ -427,10 +427,12 @@ public: // mutators
 		 * TODO: Update this. Also see about ensuring context in copy_plain
 		 */
 		template <typename Destination, typename Source>
-		void copy(Destination&& destination, Source&& source, optional<size_t> num_bytes)
+		void copy(Destination&& destination, Source&& source, optional<size_t> num_bytes = {}) const
 		{
-			memory::copy_2(std::forward<Destination>(destination), std::forward<Source>(source), num_bytes, *this);
+			memory::copy_2<Destination, Source>(
+				std::forward<Destination>(destination), std::forward<Source>(source), num_bytes, associated_stream);
 		}
+
 
 		/**
 		 * Set all bytes of a certain region in device memory (or unified memory,

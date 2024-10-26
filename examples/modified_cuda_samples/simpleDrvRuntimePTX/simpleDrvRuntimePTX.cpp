@@ -152,8 +152,8 @@ int main(int argc, char** argv)
 	auto d_C = cuda::memory::make_unique_span<float>(device, N);
 
 
-	cuda::memory::copy_(d_A, h_A.get(), size, stream);
-	cuda::memory::copy_(d_B, h_B.get(), size, stream);
+	cuda::memory::copy_2(d_A, h_A.get(), size, stream);
+	cuda::memory::copy_2(d_B, h_B.get(), size, stream);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(N)
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 
     stream.enqueue.kernel_launch(vecAdd_kernel, launch_config, d_A.data(), d_B.data(), d_C.data(), N);
 
-	cuda::memory::copy_(h_C.get(), d_C, size, stream);
+	cuda::memory::copy_2(h_C.get(), d_C, size, stream);
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {

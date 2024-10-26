@@ -277,8 +277,8 @@ int main()
 	auto d_B_sp = d_B.as_requested().as_span<float>();
 	auto d_C_sp = d_C.as_requested().as_span<float>();
 
-	cuda::memory::copy_(d_A_sp, h_A);
-	cuda::memory::copy_(d_B_sp, h_B);
+	cuda::memory::copy_2(d_A_sp, h_A);
+	cuda::memory::copy_2(d_B_sp, h_B);
 
 	// Launch the Vector Add CUDA Kernel
 	auto launch_config = cuda::launch_config_builder()
@@ -294,7 +294,7 @@ int main()
 		d_A_sp.data(), d_B_sp.data(), d_C_sp.data(), num_elements
 	);
 
-	cuda::memory::copy_(h_C, d_C_sp);
+	cuda::memory::copy_2(h_C, d_C_sp);
 
 //	std::cout << "Checking results...\n\n";
 

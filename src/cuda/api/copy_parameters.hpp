@@ -76,6 +76,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 
 	using dimensions_type = array::dimensions_t<NumDimensions>;
 	using dimension_type = array::dimension_t;
+	enum { dimensionality = NumDimensions };
 
 	/// @return true if this structure indicates that the copy operation is to occur
 	/// between endpoints in the same CUDA context
@@ -608,6 +609,8 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
 	// Can't set the endpoint context - the basic data structure doesn't support that!
 	// (endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
 
+	// TODO: What if the other endpoint has set the bytes_extent, and the extents
+	// by each endpoint differ? :-(
 	if (bytes_extent().area() == 0) {
 		set_bytes_extent(dimensions);
 	}
@@ -743,7 +746,7 @@ namespace detail_ {
 
 // Note: Handling of mixed-dimensionality arrays is kind of dodgy for now:
 // 2-dim and 3-dim arrays will yield 3-dim dimensionality for copy params,
-// but it's not clear we can actually effect such copies. Caveat emptor
+// but it's not clear we can actually effect such copies. Caveat emptor!
 template <typename D, typename S>
 struct copy_params_dimensionality {
 protected:

@@ -43,7 +43,7 @@
 #include <iostream>
 
 #include <cuda/api.hpp>
-
+#include "../../common.hpp"
 #define MAX_ITER 20
 
 #if __cplusplus >= 201712L

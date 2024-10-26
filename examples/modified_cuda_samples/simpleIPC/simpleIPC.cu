@@ -200,7 +200,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 			device.memory().allocate(data_buffer_size * g_processCount * sizeof(int)).start()
 		);
 		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
-		cuda::memory::copy_((void *) d_ptr, (void *) h_refData, data_buffer_size * sizeof(int));
+		cuda::memory::copy_2((void *) d_ptr, (void *) h_refData, data_buffer_size * sizeof(int));
 
 		// b.1: wait until all event handles are created in other processes
 		procBarrier();
@@ -223,7 +223,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// b.3
 		procBarrier();
 
-		cuda::memory::copy_(h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
+		cuda::memory::copy_2(h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
 		cuda::memory::device::free(d_ptr);
 		printf("Checking test results...\n");
 
