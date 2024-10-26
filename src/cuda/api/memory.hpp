@@ -477,7 +477,6 @@ inline void copy_plain(
 using memory::copy_parameters_t;
 
 inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 2>,
 	copy_parameters_t<2> params,
 	optional<stream::handle_t> stream_handle)
 {
@@ -493,7 +492,6 @@ inline status_t multidim_copy_in_current_context(
 }
 
 inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 3>,
 	copy_parameters_t<3> params,
 	optional<stream::handle_t> stream_handle)
 {
@@ -625,77 +623,6 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-inline status_t multidim_copy(context::handle_t context_handle, ::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
-{
-	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
-}
-
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, optional<stream::handle_t> stream_handle)
-{
-	if (params.srcContext == params.dstContext) {
-		CAW_SET_SCOPE_CONTEXT(params.srcContext);
-		return detail_::multidim_copy_in_current_context(params, stream_handle);
-	}
-	return stream_handle ?
-		cuMemcpy3DPeerAsync(&params, *stream_handle) :
-		cuMemcpy3DPeer(&params);
-}
-
-template<dimensionality_t NumDimensions>
-status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t stream_handle)
-{
-	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
-}
-
-template<typename Destination, typename Source>
-void copy_(
-	cuda::detail_::false_type, // non-ptrish destination
-	cuda::detail_::false_type, // non-ptrish source
-	Destination&& destination,
-	Source&& source,
-	optional<size_t> num_bytes,
-	optional_ref<const stream_t> stream);
-
-template<typename Source>
-void copy_(
-	cuda::detail_::true_type, // ptrish destination
-	cuda::detail_::false_type, // non-ptrish source
-	void* destination,
-	Source&& source,
-	optional<size_t> num_bytes,
-	optional_ref<const stream_t> stream)
-{
-	auto destination_ = region_t { destination, num_bytes };
-	// TODO: Check size compatibility of source and num_bytes
-	copy_unchecked(destination_, std::forward<Source>(source), num_bytes, stream);
-}
-
-template<typename Destination>
-void copy_(
-	cuda::detail_::false_type, // non-ptrish destination
-	cuda::detail_::true_type, // ptrish source
-	Destination&& destination,
-	void* source,
-	optional<size_t> num_bytes,
-	optional_ref<const stream_t> stream)
-{
-	auto source_ = region_t { source, num_bytes };
-	// TODO: Check size compatibility of dest and num_bytes
-	copy_unchecked(std::forward<Destination>(destination), source_, num_bytes, stream);
-}
-
-void copy_(
-	cuda::detail_::true_type, // ptrish destination
-	cuda::detail_::true_type, // ptrish source
-	void* destination,
-	void* source,
-	size_t num_bytes,
-	optional_ref<const stream_t> stream);
-
-template<typename CUDACopyable>
-optional<size_t> copyable_size(CUDACopyable&&);
-
 enum copy_endpoint_kind_t { ptr, region, array, invalid };
 
 template <typename T, typename U = void>
@@ -732,8 +659,6 @@ struct copy_helper {
 };
 
 } // namespace detail_
-
-
 
 /**
  * An almost-general-case memory copy, taking a rather complex structure of

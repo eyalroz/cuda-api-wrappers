@@ -189,7 +189,8 @@ void copy_helper<true>::copy( // arrayish
 	context::handle_t context_handle;
 	if (stream_handle) {
 		context_handle = stream::detail_::context_handle_of(*stream_handle);
-		status = detail_::multidim_copy(context_handle, copy_params, stream_handle);
+		CAW_SET_SCOPE_CONTEXT(context_handle);
+		status = detail_::multidim_copy_in_current_context(copy_params, stream_handle);
 	}
 	else {
 		context::current::detail_::scoped_existence_ensurer_t ensurer{};
