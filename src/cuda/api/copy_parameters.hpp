@@ -528,7 +528,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
 	T *ptr,
 	array::dimensions_t<3> dimensions)
 {
-	return set_endpoint<T>(endpoint, context::current::detail_::get_handle(), ptr, dimensions);
+	return set_endpoint<T>(endpoint, pointer::detail_::context_handle_of(ptr), ptr, dimensions);
 }
 
 template<>
