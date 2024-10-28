@@ -217,6 +217,99 @@ void report_context_stack(const std::string& prefix = "")
 	std::cout << "-----------------------------------------------------\n" << std::flush;
 }
 
+template <cuda::dimensionality_t Dimensionality>
+std::ostream& operator<<(std::ostream& os, cuda::memory::copy_parameters_t<Dimensionality>& params);
+
+std::ostream &stream_endpoint(
+	std::ostream &os,
+	const char* name,
+	cuda::optional<cuda::context::handle_t > context,
+	size_t xInBytes, size_t y, cuda::optional<size_t> z,
+	CUmemorytype memoryType,
+	CUarray array,
+	const void* host,
+	cuda::memory::device::address_t device,
+	size_t pitch,
+	cuda::optional<size_t> height)
+{
+	os << name << ": [ ";
+	if (context) {
+		os << "context: " << *context << " ";
+	}
+	os << "offset: ";
+	if  (xInBytes == 0 and y == 0 and (not z or *z == 0)) { os << "(none)"; }
+	else {
+		os << '(' << xInBytes << " x " << y;
+		if (z) { os << " x " << *z; }
+		os << ")";
+	}
+	os << "; ";
+
+	static const char* memory_type_names[] = { "(invalid type)", "host", "device", "array", "unified or host" };
+
+	if (memoryType < (sizeof(memory_type_names) / sizeof(memory_type_names[0]))) {
+		os << memory_type_names[memoryType] << " memory: ";
+	}
+	switch(memoryType) {
+	case CU_MEMORYTYPE_ARRAY:
+		os << "handle " << array;
+		break;
+	case CU_MEMORYTYPE_UNIFIED:
+	case CU_MEMORYTYPE_HOST:
+		os << host;
+		break;
+	case CU_MEMORYTYPE_DEVICE:
+		os << device;
+		break;
+	default:
+		os << "UNKNOWN TYPE!";
+	}
+	switch(memoryType) {
+	case CU_MEMORYTYPE_UNIFIED:
+	case CU_MEMORYTYPE_HOST:
+	case CU_MEMORYTYPE_DEVICE:
+		os << " with pitch " << pitch;
+		if (height) { os << " and height " << *height; }
+	default:
+		break;
+	}
+
+	os << " ]";
+	return os;
+}
+
+template <>
+std::ostream& operator<< <2>(std::ostream& os, cuda::memory::copy_parameters_t<2>& params)
+{
+	auto flags = os.flags();
+	os << "[ ";
+	auto& p = params;
+	stream_endpoint(os, "source", {}, p.srcXInBytes, p.srcY, {}, p.srcMemoryType, p.srcArray, p.srcHost, p.srcDevice, p.srcPitch, {});
+	os << " ";
+	stream_endpoint(os, "dest", {}, p.dstXInBytes, p.dstY, {}, p.dstMemoryType, p.dstArray, p.dstHost, p.dstDevice, p.dstPitch, {});
+
+	os << " byte extents: " << p.WidthInBytes << " x " << p.Height << " ]";
+
+	os.flags(flags);
+	return os;
+}
+
+template <>
+std::ostream& operator<< <3>(std::ostream& os, cuda::memory::copy_parameters_t<3>& params)
+{
+	auto flags = os.flags();
+	os << "[ ";
+	auto& p = params;
+	stream_endpoint(os, "source", p.srcContext, p.srcXInBytes, p.srcY, p.srcZ, p.srcMemoryType, p.srcArray, p.srcHost, p.srcDevice, p.srcPitch, p.srcHeight);
+	os << " ";
+	stream_endpoint(os, "dest", p.dstContext, p.dstXInBytes, p.dstY, p.dstZ, p.dstMemoryType, p.dstArray, p.dstHost, p.dstDevice, p.dstPitch, p.srcHeight);
+
+	os << " byte extents: " << p.WidthInBytes << " x " << p.Height << " x " << p.Depth << " ]";
+
+	os.flags(flags);
+	return os;
+}
+
 
 // Note: This will only work correctly for positive values
 template <typename U1, typename U2>
