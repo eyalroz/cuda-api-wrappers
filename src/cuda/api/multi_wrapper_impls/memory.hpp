@@ -189,6 +189,7 @@ void copy_helper<true>::copy( // arrayish
 	else {
 		context::current::detail_::scoped_existence_ensurer_t ensurer{};
 		context_handle = ensurer.context_handle;
+		std::cout << copy_params << '\n';
 		status = detail_::multidim_copy_in_current_context(copy_params, stream_handle);
 	}
 	throw_if_error_lazy(status,
