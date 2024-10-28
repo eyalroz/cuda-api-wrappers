@@ -54,6 +54,10 @@ class module_t;
 
 namespace detail_ {
 
+template <typename T>
+struct is_regionish : bool_constant<::std::is_constructible<memory::const_region_t, T&&>::value> {};
+
+
 optional<stream::handle_t> get_stream_handle(const optional_ref<const stream_t> stream) noexcept;
 
 } // namespace detail_
@@ -623,7 +627,7 @@ inline void zero(T* ptr)
 
 namespace detail_ {
 
-enum copy_endpoint_kind_t { ptr, region, array, invalid };
+enum copy_endpoint_kind_t { invalid = 0, ptr = 1, region = 2, array = 3};
 
 template <typename T, typename U = void>
 struct copy_endpoint_kind {
