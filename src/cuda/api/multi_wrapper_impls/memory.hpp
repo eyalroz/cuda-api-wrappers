@@ -85,12 +85,6 @@ void set_endpoint(copy_parameters_t<3>& params, cuda::memory::endpoint_t endpoin
 {
 	params.set_endpoint(endpoint, std::forward<CUDACopyable>(copyable));
 }
-//
-//template<typename CUDACopyable>
-//optional<size_t> copyable_size(CUDACopyable&&)
-//{
-//	return 123;
-//}
 
 // This can be constexpr in C++14
 inline void check_copy_sizes(
