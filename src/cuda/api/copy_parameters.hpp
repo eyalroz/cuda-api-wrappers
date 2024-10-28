@@ -139,8 +139,8 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	}
 	this_type& set_endpoint(endpoint_t endpoint, region_t region)
 	{
-		auto context_handle = cuda::context::current::detail_::get_handle();
-		return set_endpoint(endpoint, context_handle, region);
+		auto context_handle = pointer::detail_::context_handle_of(region.data());
+		return set_endpoint_untyped(endpoint, context_handle, region);
 	}
 	///@}
 

@@ -18,7 +18,9 @@ namespace detail_ {
 template <typename T, dimensionality_t Dimensionality>
 array::dimensions_t<Dimensionality> get_byte_dimensions(const array_t<T, Dimensionality>& arr)
 {
-	return arr.dimensions();
+	auto dims = arr.dimensions();
+	dims.width *= sizeof(T);
+	return dims;
 }
 
 template <typename T, typename = cuda::detail_::enable_if_t<is_regionish<T>::value> >
@@ -38,11 +40,6 @@ memory::copy_parameters_t<detail_::copy_params_dimensionality<Destination, Sourc
 make_copy_parameters(Destination&& destination, Source&& source)
 {
 	enum {
-		//dest_type = cuda::memory::detail_::copy_endpoint_kind<Destination>::value,
-		//src_type = cuda::memory::detail_::copy_endpoint_kind<Source>::value,
-
-		//arrayish = cuda::memory::detail_::copy_endpoint_kind_t::array,
-
 		dimensionality = detail_::copy_params_dimensionality<Destination, Source>::value
 	};
 	using cuda::memory::endpoint_t;
@@ -50,14 +47,15 @@ make_copy_parameters(Destination&& destination, Source&& source)
 	params.set_endpoint(endpoint_t::destination, ::std::forward<Destination>(destination));
 	params.set_endpoint(endpoint_t::source, ::std::forward<Source>(source));
 	if (cuda::detail_::is_array<typename ::std::remove_reference<Source>::type>::value) {
-		std::cout << "src is array" << std::endl;
 		auto byte_dims = detail_::get_byte_dimensions(source);
 		params.set_bytes_extent(byte_dims);
 	}
 	else if (cuda::detail_::is_array<typename ::std::remove_reference<Destination>::type>::value) {
-		std::cout << "dest is array" << std::endl;
 		auto byte_dims = detail_::get_byte_dimensions(destination);
 		params.set_bytes_extent(byte_dims);
+		// The source is _not_ an array, and there's nothing else which sets the pitch properly for us;
+		// but - TODO: Do we even need this?
+		params.set_bytes_pitch(endpoint_t::source, params.bytes_extent().width);
 	}
 	else {
 		throw ::std::invalid_argument("Cannot determine the copy extent using two pointer-like endpoints");
@@ -65,8 +63,6 @@ make_copy_parameters(Destination&& destination, Source&& source)
 	params.clear_offset(endpoint_t::source);
 	params.clear_offset(endpoint_t::destination);
 	// TODO: What about contexts?
-	// TODO: What about extents? Is setting the endpoints sufficient?
-	params.set_default_pitches();
 	params.clear_rest();
 	return params;
 }
