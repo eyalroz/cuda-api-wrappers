@@ -13,8 +13,8 @@ if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 		cmake_policy(SET CMP0104 OLD)
 	endif()
 	if((NOT DEFINED CUDA_ARCH_FLAGS) OR ("${CUDA_ARCH_FLAGS}" STREQUAL ""))
-		cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_1 Auto)
-		set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA -gencode parameters")
+		cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS_ Auto)
+		set(CUDA_ARCH_FLAGS ${CUDA_ARCH_FLAGS_} CACHE STRING "CUDA -gencode parameters")
 		string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR_ "${CUDA_ARCH_FLAGS}")
 		set(CUDA_ARCH_FLAGS_STR ${CUDA_ARCH_FLAGS_STR_} CACHE INTERNAL "CUDA Architecture flags")
 	else()
@@ -121,7 +121,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			OUTPUT memMapIPC_kernel.fatbin
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
-				--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
+				${CUDA_ARCH_FLAGS}
 				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/memMapIPC_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
@@ -133,7 +133,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			OUTPUT vectorAddMMAP_kernel.fatbin
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
-				--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
+				${CUDA_ARCH_FLAGS}
 				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vectorAddMMAP_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
@@ -147,7 +147,7 @@ add_custom_command(
 		OUTPUT simpleTexture_kernel.fatbin
 		COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 		${CCBIN_ARGUMENT}
-		--generate-code arch=compute_${CMAKE_CUDA_ARCHITECTURES},code=sm_${CMAKE_CUDA_ARCHITECTURES}
+		${CUDA_ARCH_FLAGS}
 		-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/simpleTexture_kernel.fatbin
 		${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
 		MAIN_DEPENDENCY modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
