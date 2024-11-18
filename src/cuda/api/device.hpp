@@ -846,6 +846,14 @@ inline device_t get(id_t id)
 }
 
 /**
+ * Obtains (a proxy for) the default CUDA device, being the device with the default CUDA device id.
+ */
+inline device_t default_()
+{
+	return get(cuda::device::default_device_id);
+}
+
+/**
  * A named constructor idiom for a "dummy" CUDA device representing the CPU.
  *
  * @note Only use this idiom when comparing the results of functions returning

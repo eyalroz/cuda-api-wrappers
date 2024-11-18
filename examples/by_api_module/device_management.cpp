@@ -40,6 +40,13 @@ void basics(cuda::device::id_t device_id)
 		die_("The device's reported ID and the ID for which we created the device differ: "
 		+ std::to_string(device.id()) + " !=" +  std::to_string(device_id));
 	}
+
+	if (device.id() == cuda::device::default_device_id) {
+		auto default_device = cuda::device::default_();
+		if (device != default_device) {
+			die_("A device with the default device ID was not equal to the default CUDA device");
+		}
+	}
 }
 
 void attributes_and_properties()
