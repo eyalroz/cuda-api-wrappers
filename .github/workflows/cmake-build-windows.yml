@@ -29,7 +29,13 @@ jobs:
       # explicit include-based build matrix, of known valid options
       matrix:
         include:
-          # Windows2019 & VS 2019 supports 10.1+
+          - os: windows-2022
+            cuda: "12.6.2"
+            visual-studio: "Visual Studio 17 2022"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
+          # Windows2019 & VS 2019 supports CUDA 10.1+
           - os: windows-2019
             cuda: "12.6.2"
             visual-studio: "Visual Studio 16 2019"
