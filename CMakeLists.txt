@@ -26,7 +26,7 @@ if(libm_exists)
 endif()
 
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
-	foreach(tgt in nvfatbin nvfatbin_static)
+	foreach(tgt nvfatbin nvfatbin_static)
 		if (NOT TARGET ${tgt})
 			_CUDAToolkit_find_and_add_import_lib(${tgt})
 		endif()
@@ -39,8 +39,13 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
 
+set(targets_base runtime-and-driver nvtx rtc fatbin)
+set(targets "")
 
-set(targets runtime-and-driver nvtx rtc fatbin)
+foreach(tgt ${targets_base})
+	list(APPEND targets ${tgt} ${tgt}_static)
+endforeach()
+
 set(prefixed-targets "")
 set(caw_namespace "cuda-api-wrappers")
 
@@ -56,7 +61,10 @@ foreach(wrapper_lib ${targets})
 		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 	)
-	target_link_libraries(${caw_lib} INTERFACE CUDA::cudart CUDA::cuda_driver)
+	target_link_libraries(${caw_lib} INTERFACE CUDA::cuda_driver)
+	string(REGEX MATCH "_static\$" static_suffix ${wrapper_lib})
+	target_link_libraries(${caw_lib} INTERFACE CUDA::cudart${static_suffix})
+
 
 	# These next three dependencies should be carried by the CUDA libraries themselves...
 	# but they aren't - this is CMake bug 25665
@@ -80,8 +88,12 @@ foreach(wrapper_lib ${targets})
 		WINDOWS_EXPORT_ALL_SYMBOLS ON
 	)
 endforeach()
-add_library("cuda-api-wrappers::driver-and-runtime" ALIAS caw_runtime-and-driver)
-target_link_libraries(caw_rtc INTERFACE cuda-api-wrappers::runtime-and-driver CUDA::nvrtc)
+
+foreach(static_suffix "" "_static")
+	add_library(${caw_namespace}::driver-and-runtime${static_suffix} ALIAS caw_runtime-and-driver${static_suffix})
+	target_link_libraries(caw_rtc${static_suffix} INTERFACE cuda-api-wrappers::runtime-and-driver${static_suffix} CUDA::nvrtc${static_suffix})
+endforeach()
+
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	if (TARGET CUDA::nvptxcompiler)
 		target_link_libraries(caw_rtc INTERFACE CUDA::nvptxcompiler)
@@ -91,18 +103,33 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 11.1)
 	else()
 		message(WARNING "No valid NVIDIA PTX Compiler target is available")
 	endif()
+
+	if (TARGET CUDA::nvptxcompiler_static)
+		target_link_libraries(caw_rtc_static INTERFACE CUDA::nvptxcompiler_static)
+	else()
+		message(WARNING "No static PTX Compiler target is available")
+	endif()
 endif()
+
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
 	if (TARGET CUDA::nvfatbin)
 		target_link_libraries(caw_fatbin INTERFACE CUDA::nvfatbin)
 	elseif (TARGET CUDA::nvfatbin)
 		target_link_libraries(caw_fatbin INTERFACE CUDA::nvfatbin_static)
-	elseif(EXISTS "${CUDA_nvfatbin_LIBRARY}") 
+	elseif(EXISTS "${CUDA_nvfatbin_LIBRARY}")
 		target_link_libraries(caw_fatbin INTERFACE "${CUDA_nvfatbin_LIBRARY}")
-	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}") 
+	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}")
 		target_link_libraries(caw_fatbin INTERFACE "${CUDA_nvfatbin_static_LIBRARY}")
 	else()
 		message(WARNING "Could not locate a valid NVIDIA fatbin creator target or library file")
+	endif()
+
+	if (TARGET CUDA::nvfatbin_static)
+		target_link_libraries(caw_fatbin_static INTERFACE CUDA::nvfatbin_static)
+	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}") 
+		target_link_libraries(caw_fatbin_static INTERFACE "${CUDA_nvfatbin_static_LIBRARY}")
+	else()
+		message(WARNING "Could not locate a valid NVIDIA non-fatbin creator target or library file")
 	endif()
 
 	if (TARGET CUDA::cufilt)
@@ -112,16 +139,20 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
 	else()
 		message(WARNING "Could not locate the cufilt demangling library")
 	endif()
-
 endif()
 
-target_link_libraries(caw_fatbin INTERFACE cuda-api-wrappers::runtime-and-driver)
-target_link_libraries(caw_nvtx INTERFACE cuda-api-wrappers::runtime-and-driver)
+foreach(tgt_base caw_fatbin caw_nvtx)
+	foreach(static_suffix "" "_static")
+		target_link_libraries(${tgt_base}${static_suffix} INTERFACE cuda-api-wrappers::runtime-and-driver${static_suffix})
+	endforeach()
+endforeach()
 
 if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 10.0)
 	target_link_libraries(caw_nvtx INTERFACE CUDA::nvtx3)
+	target_link_libraries(caw_nvtx_static INTERFACE CUDA::nvtx3)
 else()
 	target_link_libraries(caw_nvtx INTERFACE CUDA::nvToolsExt)
+	target_link_libraries(caw_nvtx_static INTERFACE CUDA::nvToolsExt)
 endif()
 
 
@@ -194,7 +225,6 @@ write_basic_package_version_file(
 	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY ${COMPAT_SETTING}
 )
-
 
 install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/cuda-api-wrappers-config-version.cmake"
