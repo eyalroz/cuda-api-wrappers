@@ -322,11 +322,31 @@ public:
 	 */
 	bool indicate_function_inlining { false };
 
+#if CUDA_VERSION >= 11200 && CUDA_VERSION <= 12200
 	/**
 	 *  Print a self-identification string indicating which
 	 *  compiler produced the code, in the compilation result
 	 */
 	bool compiler_self_identification { false };
+#endif // #if CUDA_VERSION >= 11200 && CUDA_VERSION <= 12200
+
+	/**
+	 * Stop compilation after the front-end has verified the program's
+	 * syntax.
+	 *
+	 * @note When this is set to `true`, the compilation output must not be used.
+     */
+	bool syntax_check_only { false };
+
+	/**
+	 * Have the compiler _not_ provide support for various builtins:
+	 *
+	 *   - Texture and surface functions & associated types
+     *   - "CUDA runtime" device-side functions, e.g.  `cudaMalloc`.
+     *   - Kernel launches from with device code.
+     *   - Other CUDA types & macros defined in @ref driver_types.h, e.g. `cudaError_t`.
+	 */
+	bool less_builtins { false };
 
 	/**
 	 * Specify the maximum amount of registers that GPU functions can use. Until a function-specific limit, a
@@ -640,7 +660,11 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 		if (opts.generate_source_line_info)         { marshalled << opt_start << "--generate-line-info";                }
 		if (opts.support_128bit_integers)           { marshalled << opt_start << "--device-int128";                     }
 		if (opts.indicate_function_inlining)        { marshalled << opt_start << "--optimization-info=inline";          }
+#if CUDA_VERSION >= 11200 && CUDA_VERSION <= 12200
 		if (opts.compiler_self_identification)      { marshalled << opt_start << "--version-ident=true";                }
+#endif // CUDA_VERSION >= 11200 && CUDA_VERSION <= 12200
+		if (opts.syntax_check_only)                 { marshalled << opt_start << "--fdevice-syntax-only";               }
+		if (opts.less_builtins)                     { marshalled << opt_start << "--minimal";                           }
 		if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
 		if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include ";                }
 		if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
