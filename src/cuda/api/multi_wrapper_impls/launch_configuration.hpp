@@ -23,6 +23,7 @@ inline void validate_compatibility(
 {
 	validate(launch_config);
 	validate_block_dimension_compatibility(kernel, launch_config.dimensions.block);
+	validate_dyanmic_shared_memory_size(kernel, launch_config.dynamic_shared_memory_size);
 	//  Uncomment if we actually get such checks
 	//	validate_grid_dimension_compatibility(kernel, launch_config.dimensions.grid);
 	validate_compatibility(kernel.device(), launch_config);
