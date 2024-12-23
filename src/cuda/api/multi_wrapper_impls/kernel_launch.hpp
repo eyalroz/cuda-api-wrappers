@@ -191,6 +191,21 @@ inline void validate_block_dimension_compatibility(
 	}
 }
 
+inline void validate_dyanmic_shared_memory_size(
+	const kernel_t&          kernel,
+	memory::shared::size_t   dynamic_shared_memory_size)
+{
+	memory::shared::size_t max_dyn_shmem = kernel.get_attribute(
+		kernel::attribute_t::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES);
+	if (dynamic_shared_memory_size > max_dyn_shmem) {
+		throw ::std::invalid_argument(
+			"specified size of dynamic shared memory, " + ::std::to_string(dynamic_shared_memory_size)
+			+ "bytes, exceeds the maximum supported by  " + kernel::detail_::identify(kernel)
+			+ ", " + ::std::to_string(max_dyn_shmem) + " bytes");
+	}
+}
+
+
 template<typename... KernelParameters>
 void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::operator()(
 	const kernel::apriori_compiled_t&  wrapped_kernel,

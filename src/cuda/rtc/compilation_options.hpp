@@ -666,7 +666,7 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 		if (opts.syntax_check_only)                 { marshalled << opt_start << "--fdevice-syntax-only";               }
 		if (opts.less_builtins)                     { marshalled << opt_start << "--minimal";                           }
 		if (not opts.builtin_initializer_list)      { marshalled << opt_start << "--builtin-initializer-list=false";    }
-		if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include ";                }
+		if (not opts.source_dirs_in_include_path)   { marshalled << opt_start << "--no-source-include";                 }
 		if (opts.extra_device_vectorization)        { marshalled << opt_start << "--extra-device-vectorization";        }
 		if (opts.disable_warnings)                  { marshalled << opt_start << "--disable-warnings";                  }
 		if (opts.assume_restrict)                   { marshalled << opt_start << "--restrict";                          }
