@@ -1,4 +1,4 @@
-name: Builds on (Ubuntu) Linux
+name: Linux Build
 
 on:
   workflow_dispatch:
