@@ -6,6 +6,9 @@
 [![Repository documentation](https://img.shields.io/badge/Documentation-CodeDocs-blue.svg)](https://codedocs.xyz/eyalroz/cuda-api-wrappers/) 
 [![Linux build passing](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-linux.yml/badge.svg)](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-linux.yml) 
 [![Windows build passing](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-windows.yml/badge.svg)](https://github.com/eyalroz/cuda-api-wrappers/actions/workflows/cmake-build-windows.yml)
+![Conan Center](https://img.shields.io/conan/v/cuda-api-wrappers)
+![Vcpkg Version](https://img.shields.io/vcpkg/v/cuda-api-wrappers)
+
 
 
 | Table of contents |
