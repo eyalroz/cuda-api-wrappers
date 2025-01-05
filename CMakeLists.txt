@@ -73,9 +73,6 @@ foreach(wrapper_lib ${targets})
 		target_link_libraries(${caw_lib} INTERFACE rt)
 	endif()
 
-	# Targets using these libraries should be compiled with C++11 _at least_,
-	# but it doesn't seem there's a way to express that at the CMake level
-
 	# Additional hacks for facilitating FetchContent use,
 	# which in particular will let you use the same target names as if you had
 	# imported them with find_package
