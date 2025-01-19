@@ -143,7 +143,9 @@ protected: // mutators
 	/// Exchange the pointer and deleter with another object.
 	void swap(unique_span& other) noexcept
 	{
-		::std::swap<span_type>(*this, other);
+		using ::std::swap;
+		swap<span_type>(*this, other);
+		swap(deleter_, other.deleter_);
 	}
 	/**
 	 * Release ownership of the stored span
