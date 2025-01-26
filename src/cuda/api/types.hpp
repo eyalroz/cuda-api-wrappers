@@ -524,8 +524,16 @@ struct composite_dimensions_t {
 	{
 		return { dimensions_t::point(), block_dimensions_t::point() };
 	}
+
+///@cond
+#if __cplusplus >= 202002L
+	constexpr bool operator==(const composite_dimensions_t&) const noexcept = default;
+	constexpr bool operator!=(const composite_dimensions_t&) const noexcept = default;
+#endif
+///@endcond
 };
 
+#if __cplusplus < 202002L
 ///@cond
 constexpr bool operator==(composite_dimensions_t lhs, composite_dimensions_t rhs) noexcept
 {
@@ -537,6 +545,7 @@ constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs
 	return not (lhs == rhs);
 }
 ///@endcond
+#endif // __cplusplus < 202002L
 
 } // namespace grid
 
