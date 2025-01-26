@@ -75,7 +75,7 @@ inline CUlaunchConfig marshal(
 		attr_value.value.memSyncDomain = CU_LAUNCH_MEM_SYNC_DOMAIN_REMOTE;
 	}
 	// What about CU_LAUNCH_ATTRIBUTE_MEM_SYNC_DOMAIN_MAP ?
-	attribute_storage[num_attributes] = {CU_LAUNCH_ATTRIBUTE_IGNORE, {}};
+	attribute_storage[num_attributes] = {CU_LAUNCH_ATTRIBUTE_IGNORE, {}, {}};
 
 	return {
 		config.dimensions.grid.x,

@@ -1,5 +1,5 @@
 /* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
- * Modifications (c) 2024, Eyal Rozenberg <eyalroz1@gmx.com>
+ * Modifications (c) 2024-2025, Eyal Rozenberg <eyalroz1@gmx.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -351,68 +351,6 @@ inline bool sdkSavePPM4ub(const char *file, unsigned char *data, unsigned int w,
 //! @param len  number of data elements in data, -1 on error
 //////////////////////////////////////////////////////////////////////////////
 template <class T>
-inline bool sdkReadFile(const char *filename, T **data, unsigned int *len,
-                        bool verbose) {
-  // check input arguments
-  assert(NULL != filename);
-  assert(NULL != len);
-
-  // intermediate storage for the data read
-  std::vector<T> data_read;
-
-  // open file for reading
-  FILE *fh = NULL;
-
-  // check if filestream is valid
-  if (FOPEN_FAIL(FOPEN(fh, filename, "r"))) {
-    printf("Unable to open input file: %s\n", filename);
-    return false;
-  }
-
-  // read all data elements
-  T token;
-
-  while (!feof(fh)) {
-    fscanf(fh, "%f", &token);
-    data_read.push_back(token);
-  }
-
-  // the last element is read twice
-  data_read.pop_back();
-  fclose(fh);
-
-  // check if the given handle is already initialized
-  if (NULL != *data) {
-    if (*len != data_read.size()) {
-      std::cerr << "sdkReadFile() : Initialized memory given but "
-                << "size  mismatch with signal read "
-                << "(data read / data init = " << (unsigned int)data_read.size()
-                << " / " << *len << ")" << std::endl;
-
-      return false;
-    }
-  } else {
-    // allocate storage for the data read
-    *data = reinterpret_cast<T *>(malloc(sizeof(T) * data_read.size()));
-    // store signal size
-    *len = static_cast<unsigned int>(data_read.size());
-  }
-
-  // copy data
-  memcpy(*data, &data_read.front(), sizeof(T) * data_read.size());
-
-  return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//! Read file \filename and return the data
-//! @return bool if reading the file succeeded, otherwise false
-//! @param filename name of the source file
-//! @param data  uninitialized pointer, returned initialized and pointing to
-//!        the data read
-//! @param len  number of data elements in data, -1 on error
-//////////////////////////////////////////////////////////////////////////////
-template <class T>
 inline bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
                               unsigned int block_num, unsigned int block_size,
                               bool verbose) {
@@ -437,70 +375,6 @@ inline bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
   *len = fread(data[block_num], sizeof(T), block_size / sizeof(T), fh);
 
   fclose(fh);
-
-  return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//! Write a data file \filename
-//! @return true if writing the file succeeded, otherwise false
-//! @param filename name of the source file
-//! @param data  data to write
-//! @param len  number of data elements in data, -1 on error
-//! @param epsilon  epsilon for comparison
-//////////////////////////////////////////////////////////////////////////////
-template <class T, class S>
-inline bool sdkWriteFile(const char *filename, const T *data, unsigned int len,
-                         const S epsilon, bool verbose, bool append = false) {
-  assert(NULL != filename);
-  assert(NULL != data);
-
-  // open file for writing
-  //    if (append) {
-  std::fstream fh(filename, std::fstream::out | std::fstream::ate);
-
-  if (verbose) {
-    std::cerr << "sdkWriteFile() : Open file " << filename
-              << " for write/append." << std::endl;
-  }
-
-  /*    } else {
-          std::fstream fh(filename, std::fstream::out);
-          if (verbose) {
-              std::cerr << "sdkWriteFile() : Open file " << filename << " for
-     write." << std::endl;
-          }
-      }
-  */
-
-  // check if filestream is valid
-  if (!fh.good()) {
-    if (verbose) {
-      std::cerr << "sdkWriteFile() : Opening file failed." << std::endl;
-    }
-
-    return false;
-  }
-
-  // first write epsilon
-  fh << "# " << epsilon << "\n";
-
-  // write data
-  for (unsigned int i = 0; (i < len) && (fh.good()); ++i) {
-    fh << data[i] << ' ';
-  }
-
-  // Check if writing succeeded
-  if (!fh.good()) {
-    if (verbose) {
-      std::cerr << "sdkWriteFile() : Writing file failed." << std::endl;
-    }
-
-    return false;
-  }
-
-  // file ends with nl
-  fh << std::endl;
 
   return true;
 }
@@ -557,55 +431,6 @@ inline bool compareData(const T *reference, const T *data,
 #ifndef __MIN_EPSILON_ERROR
 #define __MIN_EPSILON_ERROR 1e-3f
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-//! Compare two arrays of arbitrary type
-//! @return  true if \a reference and \a data are identical, otherwise false
-//! @param reference  handle to the reference data / gold image
-//! @param data       handle to the computed data
-//! @param len        number of elements in reference and data
-//! @param epsilon    epsilon to use for the comparison
-//! @param epsilon    threshold % of (# of bytes) for pass/fail
-//////////////////////////////////////////////////////////////////////////////
-template <class T, class S>
-inline bool compareDataAsFloatThreshold(const T *reference, const T *data,
-                                        const unsigned int len, const S epsilon,
-                                        const float threshold) {
-  assert(epsilon >= 0);
-
-  // If we set epsilon to be 0, let's set a minimum threshold
-  float max_error = MAX((float)epsilon, __MIN_EPSILON_ERROR);
-  int error_count = 0;
-  bool result = true;
-
-  for (unsigned int i = 0; i < len; ++i) {
-    float diff =
-        fabs(static_cast<float>(reference[i]) - static_cast<float>(data[i]));
-    bool comp = (diff < max_error);
-    result &= comp;
-
-    if (!comp) {
-      error_count++;
-    }
-  }
-
-  if (threshold == 0.0f) {
-    if (error_count) {
-      printf("total # of errors = %d\n", error_count);
-    }
-
-    return (error_count == 0) ? true : false;
-  } else {
-    if (error_count) {
-      printf("%4.2f(%%) of bytes mismatched (count=%d)\n",
-             static_cast<float>(error_count) * 100 / static_cast<float>(len),
-             error_count);
-    }
-
-    return ((len * threshold > error_count) ? true : false);
-  }
-}
-
 inline void sdkDumpBin(void *data, unsigned int bytes, const char *filename) {
   printf("sdkDumpBin: <%s>\n", filename);
   FILE *fp;
@@ -675,90 +500,6 @@ inline bool sdkCompareBin2BinUint(const char *src_file, const char *ref_file,
 
       if (!compareData<unsigned int, float>(ref_buffer, src_buffer, nelements,
                                             epsilon, threshold)) {
-        error_count++;
-      }
-
-      fclose(src_fp);
-      fclose(ref_fp);
-
-      free(src_buffer);
-      free(ref_buffer);
-    } else {
-      if (src_fp) {
-        fclose(src_fp);
-      }
-
-      if (ref_fp) {
-        fclose(ref_fp);
-      }
-    }
-  }
-
-  if (error_count == 0) {
-    printf("  OK\n");
-  } else {
-    printf("  FAILURE: %d errors...\n", (unsigned int)error_count);
-  }
-
-  return (error_count == 0);  // returns true if all pixels pass
-}
-
-inline bool sdkCompareBin2BinFloat(const char *src_file, const char *ref_file,
-                                   unsigned int nelements, const float epsilon,
-                                   const float threshold, char *exec_path) {
-  float *src_buffer = NULL, *ref_buffer = NULL;
-  FILE *src_fp = NULL, *ref_fp = NULL;
-  size_t fsize = 0;
-
-  uint64_t error_count = 0;
-
-  if (FOPEN_FAIL(FOPEN(src_fp, src_file, "rb"))) {
-    printf("compareBin2Bin <float> unable to open src_file: %s\n", src_file);
-    error_count = 1;
-  }
-
-  char *ref_file_path = sdkFindFilePath(ref_file, exec_path);
-
-  if (ref_file_path == NULL) {
-    printf("compareBin2Bin <float> unable to find <%s> in <%s>\n", ref_file,
-           exec_path);
-    printf(">>> Check info.xml and [project//data] folder <%s> <<<\n",
-           exec_path);
-    printf("Aborting comparison!\n");
-    printf("  FAILED\n");
-    error_count++;
-
-    if (src_fp) {
-      fclose(src_fp);
-    }
-
-    if (ref_fp) {
-      fclose(ref_fp);
-    }
-  } else {
-    if (FOPEN_FAIL(FOPEN(ref_fp, ref_file_path, "rb"))) {
-      printf("compareBin2Bin <float> unable to open ref_file: %s\n",
-             ref_file_path);
-      error_count = 1;
-    }
-
-    if (src_fp && ref_fp) {
-      src_buffer = reinterpret_cast<float *>(malloc(nelements * sizeof(float)));
-      ref_buffer = reinterpret_cast<float *>(malloc(nelements * sizeof(float)));
-
-      printf(
-          "> compareBin2Bin <float> nelements=%d, epsilon=%4.2f,"
-          " threshold=%4.2f\n",
-          nelements, epsilon, threshold);
-      fsize = fread(src_buffer, sizeof(float), nelements, src_fp);
-      printf("   src_file <%s>, size=%d bytes\n", src_file,
-             static_cast<int>(fsize * sizeof(float)));
-      fsize = fread(ref_buffer, sizeof(float), nelements, ref_fp);
-      printf("   ref_file <%s>, size=%d bytes\n", ref_file_path,
-             static_cast<int>(fsize * sizeof(float)));
-
-      if (!compareDataAsFloatThreshold<float, float>(
-              ref_buffer, src_buffer, nelements, epsilon, threshold)) {
         error_count++;
       }
 
