@@ -82,7 +82,7 @@ std::string append_kernel_instantiation(string_view program_source, string_view 
 
 template<class F, class...Args>
 F for_each_arg(F f, Args&&...args) {
-	std::initializer_list<int>{((void)f(std::forward<Args>(args)), 0)...};
+	(void) std::initializer_list<int>{((void)f(std::forward<Args>(args)), 0)...};
 	return f;
 }
 

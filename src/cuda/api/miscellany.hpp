@@ -68,9 +68,9 @@ inline device::id_t count()
 	int device_count = 0; // Initializing, just to be on the safe side
 	status_t result = cuDeviceGetCount(&device_count);
 	switch (result) {
-	case status::no_device:
+	case (status_t) status::no_device:
 		return 0;
-	case status::success:
+	case (status_t) status::success:
 		break;
 	default:
 		throw runtime_error(result, "Failed obtaining the number of CUDA devices on the system");

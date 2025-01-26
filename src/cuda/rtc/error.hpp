@@ -91,18 +91,19 @@ inline ::std::string describe(rtc::status_t<cuda_cpp> status)
 inline ::std::string describe(rtc::status_t<ptx> status)
 {
 	using named = rtc::status::named_t<ptx>;
-	switch(status) {
-	case named::success: break;
-	case named::invalid_program_handle: return "Invalid PTX compilation handle";
-	case named::out_of_memory: return "out of memory";
-	case named::invalid_input: return "Invalid input for PTX compilation";
-	case named::compilation_invocation_incomplete: return "PTX compilation invocation incomplete";
-	case named::compilation_failure: return "PTX compilation failure";
-	case named::unsupported_ptx_version: return "Unsupported PTX version";
-	case named::internal_error: return "Unknown PTX compilation error";
+	switch((status_t) status) {
+	case (status_t) named::success: break;
+	case (status_t) named::invalid_program_handle: return "Invalid PTX compilation handle";
+	case (status_t) named::out_of_memory: return "out of memory";
+	case (status_t) named::invalid_input: return "Invalid input for PTX compilation";
+	case (status_t) named::compilation_invocation_incomplete: return "PTX compilation invocation incomplete";
+	case (status_t) named::compilation_failure: return "PTX compilation failure";
+	case (status_t) named::unsupported_ptx_version: return "Unsupported PTX version";
+	case (status_t) named::internal_error: return "Unknown PTX compilation error";
 #if CUDA_VERSION >= 12010
-	case named::unsupported_device_side_sync: return "Unsupported device-side synchronization";
+	case (status_t) named::unsupported_device_side_sync: return "Unsupported device-side synchronization";
 #endif
+	default: break;
 	}
 	return "unknown error";
 }

@@ -375,7 +375,7 @@ public:
 		auto pci_domain_id = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID);
 		auto pci_bus_id    = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID);
 		auto pci_device_id = get_attribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID);
-		return {pci_domain_id, pci_bus_id, pci_device_id};
+		return {pci_domain_id, pci_bus_id, pci_device_id, {}};
 	}
 
 	device::multiprocessor_count_t multiprocessor_count() const

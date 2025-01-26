@@ -141,8 +141,8 @@ inline compilation_output_t<Kind> compile(
 	auto status = compile_and_return_status<Kind>(program_handle, raw_options);
 	bool succeeded = is_success<Kind>(status);
 	switch(status) {
-	case status::named_t<Kind>::success:
-	case status::named_t<Kind>::compilation_failure:
+	case (rtc::status_t<Kind>) status::named_t<Kind>::success:
+	case (rtc::status_t<Kind>) status::named_t<Kind>::compilation_failure:
 		return compilation_output::detail_::wrap<Kind>(program_handle, program_name, succeeded, do_take_ownership);
 	default:
 		maybe_handle_invalid_option<Kind>(status, program_name, raw_options, program_handle);
