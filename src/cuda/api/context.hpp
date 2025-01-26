@@ -549,7 +549,7 @@ public: // other non-mutator methods
 
 protected:
 	///@cond
-	virtual context::flags_t flags() const
+	context::flags_t flags() const
 	{
 		return context::detail_::get_flags(handle_);
 	}
