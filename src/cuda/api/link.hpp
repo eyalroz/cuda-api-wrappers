@@ -157,7 +157,7 @@ public:
 	 * by the driver with the specified @p options.
 	 */
 	///@{
-	void add_file(link::input::file_t file_input, const link::options_t &options) const
+	void add_file(link::input::file_t file_input, const link::options_t &options = {}) const
 	{
 		auto marshalled_options = link::detail_::marshal(options);
 		auto status = cuLinkAddFile(
@@ -173,10 +173,22 @@ public:
 			+ " from file " + file_input.path);
 	}
 
+    void add_file(
+        const char* path,
+        link::input_kind_t file_contents_type,
+        const link::options_t &options = {}) const
+    {
+        auto link_file_spec = link::input::file_t { path, file_contents_type };
+        return add_file(link_file_spec, options);
+    }
+
 #if __cplusplus >= 201703L
-	void add_file(const ::std::filesystem::path& path, link::input_kind_t file_contents_type) const
+	void add_file(
+        const ::std::filesystem::path& path,
+        link::input_kind_t file_contents_type,
+        const link::options_t &options = {}) const
 	{
-		return add_file(path.c_str(), file_contents_type);
+        return add_file(path.c_str(), file_contents_type, options);
 	}
 #endif
 	///@}
