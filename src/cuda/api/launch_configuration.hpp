@@ -111,10 +111,13 @@ struct launch_configuration_t {
 	 * on it, rather than the beginning of scheduling of the launched kernel and its
 	 * dependence on antecedents.
 	 */
-	struct {
+	struct programmatic_completion_t {
 		event_t* event { nullptr };
 		// unsigned flags; WHAT ABOUT THE FLAGS?
 		bool trigger_event_at_block_start { true };
+#if __cplusplus >= 202002L
+        constexpr bool operator==(const programmatic_completion_t&) const noexcept = default;
+#endif
 	} programmatic_completion;
 
 	/**
@@ -129,14 +132,17 @@ struct launch_configuration_t {
 	 * Dimensions of each part in the partition of the grid blocks into clusters, which
 	 * can pool their shared memory together.
 	 */
-	struct {
+	struct clustering_t {
 		grid::dimensions_t cluster_dimensions { 1, 1, 1 };
 		cluster_scheduling_policy_t scheduling_policy { cluster_scheduling_policy_t::default_ };
+#if __cplusplus >= 202002L
+        constexpr bool operator==(const clustering_t &) const noexcept = default;
+#endif
 	} clustering;
 #endif // CUDA_VERSION >= 12000
 
 #if __cplusplus >= 202002L
-	constexpr auto operator<=>(const launch_configuration_t&) const noexcept = default;
+	constexpr bool operator==(const launch_configuration_t&) const noexcept = default;
 #endif
 public: // non-mutators
 
@@ -223,8 +229,9 @@ constexpr bool operator==(const launch_configuration_t lhs, const launch_configu
 		and lhs.block_cooperation == rhs.block_cooperation
 #if CUDA_VERSION >= 12000
 		and lhs.programmatically_dependent_launch == rhs.programmatically_dependent_launch
-		and lhs.programmatic_completion.event == rhs.programmatic_completion.event
-		and lhs.in_remote_memory_synchronization_domain == rhs.in_remote_memory_synchronization_domain
+        and lhs.programmatic_completion.event == rhs.programmatic_completion.event
+        and lhs.programmatic_completion.trigger_event_at_block_start == rhs.programmatic_completion.trigger_event_at_block_start
+        and lhs.in_remote_memory_synchronization_domain == rhs.in_remote_memory_synchronization_domain
 		and lhs.clustering.cluster_dimensions == rhs.clustering.cluster_dimensions
 		and lhs.clustering.scheduling_policy == rhs.clustering.scheduling_policy
 #endif // CUDA_VERSION >= 12000
