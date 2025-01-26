@@ -147,12 +147,12 @@ public: // getters
 		return get_global(name.c_str());
 	}
 
-	memory::region_t get_managed_region(const char* name)
+	memory::region_t get_managed(const char* name) const
 	{
 		return cuda::get_managed_region(*this, name);
 	}
 
-	memory::region_t get_managed(const ::std::string& name)
+	memory::region_t get_managed(const ::std::string& name) const
 	{
 		return get_managed(name.c_str());
 	}
