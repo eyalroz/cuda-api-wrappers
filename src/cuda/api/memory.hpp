@@ -629,7 +629,7 @@ inline void copy(span<T> destination, c_array<const T,N> const& source, optional
 		throw ::std::logic_error("Source size exceeds destination size");
 	}
 #endif
-	return copy(destination.data(), source, sizeof(T) * N);
+	return copy(destination.data(), source, sizeof(T) * N, stream);
 }
 
 /**
