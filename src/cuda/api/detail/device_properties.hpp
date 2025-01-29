@@ -73,17 +73,22 @@ inline const char* ensure_cc_attribute_validity<const char*>(const char* v, cons
 inline constexpr const char* architecture_name(const compute_architecture_t& arch)
 {
 	return
-		(arch.major == 1) ? "Tesla" :
-		(arch.major == 2) ? "Fermi" :
-		(arch.major == 3) ? "Kepler" :
+		(arch.major ==  1) ? "Tesla" :
+		(arch.major ==  2) ? "Fermi" :
+		(arch.major ==  3) ? "Kepler" :
 			// Note: No architecture number 4!
-		(arch.major == 5) ? "Maxwell" :
-		(arch.major == 6) ? "Pascal" :
-		(arch.major == 7) ? "Volta/Turing" :
+		(arch.major ==  5) ? "Maxwell" :
+		(arch.major ==  6) ? "Pascal" :
+		(arch.major ==  7) ? "Volta/Turing" :
 			// Unfortunately, nVIDIA broke with the custom of having the numeric prefix
 			// designate the architecture name, with Turing (Compute Capability 7.5 _only_).
-		(arch.major == 8) ? "Ampere/Lovelace" :
-		(arch.major == 9) ? "Hopper" :
+		(arch.major ==  8) ? "Ampere/Lovelace" :
+        (arch.major ==  9) ? "Hopper" :
+        (arch.major == 10) ? "Blackwell" :
+            // Note: No architecture number 11!
+        (arch.major == 12) ? "Blackwell" :
+            // Note: As of 2025-01-28, NVIDIA claims both architectures 10 and 12 would
+            // be named "Blackwell".
 		nullptr;
 }
 
@@ -127,7 +132,7 @@ inline constexpr bool operator >=(const compute_capability_t& lhs, const compute
 inline constexpr bool compute_capability_t::is_valid() const noexcept
 {
 	return architecture.is_valid() and (minor_ > 0) and (minor_ < 9999);
-		// Picked this up from the CUDA code somwhere
+		// Picked this up from the CUDA code somewhere
 }
 
 inline constexpr compute_capability_t compute_capability_t::from_combined_number(unsigned combined) noexcept
@@ -201,21 +206,23 @@ inline constexpr unsigned max_warp_schedulings_per_processor_cycle(const compute
 inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t& cc)
 {
 	return
-		(cc.architecture.major == 1)    ?  16 * KiB :
-		(cc.architecture.major == 2)    ?  48 * KiB :
-		(cc.architecture.major == 3)    ?  48 * KiB :
+		(cc.architecture.major ==  1)    ?  16 * KiB :
+		(cc.architecture.major ==  2)    ?  48 * KiB :
+		(cc.architecture.major ==  3)    ?  48 * KiB :
 		// Note: No architecture number 4!
-		(cc.architecture.major == 5)    ?  48 * KiB :
-		(cc.architecture.major == 6)    ?  48 * KiB :
-		(cc.as_combined_number() == 7)  ?  64 * KiB : // of 128
-		(cc.as_combined_number() == 72) ?  48 * KiB : // of 128
-		(cc.as_combined_number() == 75) ?  64 * KiB : // of  96
-		(cc.architecture.major == 7)    ?  96 * KiB : // of 128
-		(cc.as_combined_number() == 80) ? 163 * KiB : // of 192
-		(cc.as_combined_number() == 86) ?  99 * KiB : // of 128
-		(cc.as_combined_number() == 87) ? 163 * KiB : // of 192
-		(cc.as_combined_number() == 89) ?  99 * KiB : // of 100
-		(cc.as_combined_number() == 90) ? 227 * KiB : // of 256
+		(cc.architecture.major ==  5)    ?  48 * KiB :
+		(cc.architecture.major ==  6)    ?  48 * KiB :
+		(cc.as_combined_number() ==   7)  ?  64 * KiB : // of 128
+		(cc.as_combined_number() ==  72) ?  48 * KiB : // of 128
+		(cc.as_combined_number() ==  75) ?  64 * KiB : // of  96
+		(cc.architecture.major ==  7)    ?  96 * KiB : // of 128
+		(cc.as_combined_number() ==  80) ? 163 * KiB : // of 192
+		(cc.as_combined_number() ==  86) ?  99 * KiB : // of 128
+		(cc.as_combined_number() ==  87) ? 163 * KiB : // of 192
+		(cc.as_combined_number() ==  89) ?  99 * KiB : // of 100
+        (cc.as_combined_number() ==  90) ? 227 * KiB : // of 256
+        (cc.architecture.major == 10) ? 99 * KiB : // of 256
+        (cc.architecture.major == 12) ? 99 * KiB : // of 256
 		invalid_compute_capability_return;
 }
 
