@@ -138,7 +138,7 @@ public:
     {
         ::std::swap<region_t>(*this, region);
         if (region.start() != nullptr) {
-            get_deleter()(region);
+            get_deleter()(region.start());
         }
     }
 

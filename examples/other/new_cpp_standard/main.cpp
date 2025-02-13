@@ -8,6 +8,7 @@
  * standard version.
  */
 #include <cuda/api.hpp>
+#include <type_traits>
 #ifndef _MSC_VER
 // MSVC on Windows has trouble locating cudaProfiler.h somehow
 #include <cuda/nvtx.hpp>
@@ -32,6 +33,42 @@ void unique_spans()
 	data1 = std::move(data2);
 }
 
+struct NonTrivialStruct
+{
+	NonTrivialStruct() = default;
+	NonTrivialStruct(float x, float y, float z) : x(x), y(y), z(z) {}
+	~NonTrivialStruct() = default;
+
+	float x, y, z;
+};
+
+static_assert(
+	!std::is_trivially_constructible<NonTrivialStruct>::value, "PointXYZ is trivially constructible");
+
+class RegionHolder
+{
+public:
+	RegionHolder()
+		: cuda_device_{cuda::device::current::get()},
+		  mem_(cuda::memory::device::make_unique_region(cuda_device_, 10 * sizeof(NonTrivialStruct)))
+	{
+	}
+	RegionHolder(const RegionHolder& other) = delete;
+	RegionHolder& operator=(const RegionHolder& other) = delete;
+
+	RegionHolder& operator=(RegionHolder&& other) noexcept = default;
+	RegionHolder(RegionHolder&& other) noexcept = default;
+
+private:
+	cuda::device_t cuda_device_;
+	cuda::memory::device::unique_region mem_;
+};
+
+RegionHolder make_region()
+{
+	return RegionHolder{};
+}
+
 int main() 
 {
 	auto count = cuda::device::count();
@@ -39,6 +76,11 @@ int main()
 	if (count > 0) { 
 		get_current_device_id();
 	}
+
+
+	auto r1 = make_region();
+	auto r2= make_region();
+	std::swap(r1, r2);
 
 	auto nvrtc_version = cuda::version_numbers::nvrtc();
 	(void) nvrtc_version;
