@@ -37,7 +37,7 @@ struct NonTrivialStruct
 {
 	NonTrivialStruct() = default;
 	NonTrivialStruct(float x, float y, float z) : x(x), y(y), z(z) {}
-	~NonTrivialStruct() = default;
+	~NonTrivialStruct() {};
 
 	float x, y, z;
 };
