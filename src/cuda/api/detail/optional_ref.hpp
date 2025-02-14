@@ -70,6 +70,4 @@ using optional_ref = cuda::detail_::optional_ref<T>;
 
 } // namespace cuda
 
-//#endif // __cplusplus >= 201402L
-
 #endif //CUDA_API_WRAPPERS_OPTIONAL_REF_HPP_

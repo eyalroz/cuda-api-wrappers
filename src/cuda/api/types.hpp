@@ -359,7 +359,7 @@ struct dimensions_t // this almost-inherits dim3
 	/// Dimensions of a 1D line, with the last two dimensions trivial
 	static constexpr __host__ __device__ dimensions_t line(dimension_t x) noexcept   { return dimensions_t{ x, 1, 1 }; }
 
-	/// Dimensions of a single point - trivial in in all axes
+	/// Dimensions of a single point - trivial in all axes
 	static constexpr __host__ __device__ dimensions_t point() noexcept               { return dimensions_t{ 1, 1, 1 }; }
 
 	/// @returns true if the dimensions on the left-hand side divide, elementwise, those
