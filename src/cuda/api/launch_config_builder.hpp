@@ -245,7 +245,7 @@ protected:
 
 	cuda::device_t device() const { return device(device_.value()); }
 
-	launch_config_builder_t& operator=(launch_configuration_t config)
+	launch_config_builder_t& configure_for(launch_configuration_t config)
 	{
 #ifndef NDEBUG
 		detail_::validate(config);
