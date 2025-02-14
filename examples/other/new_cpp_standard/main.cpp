@@ -26,10 +26,20 @@ cuda::device::id_t get_current_device_id()
 
 void unique_spans()
 {
-	cuda::unique_span<float> data1(nullptr, 0, cuda::detail_::default_span_deleter<float>);
-	cuda::unique_span<float> data2(nullptr, 0, cuda::detail_::default_span_deleter<float>);
+	auto device = cuda::device::current::get();
+	auto us1 = cuda::make_unique_span<float>(10);
+	auto us2 = cuda::unique_span<float>(nullptr, 0, cuda::detail_::default_span_deleter<float>);
+	auto us3 = cuda::unique_span<float>(nullptr, 0, cuda::detail_::default_span_deleter<float>);
+	us2 = std::move(us3);
+}
 
-	data1 = std::move(data2);
+void unique_regions()
+{
+	auto device = cuda::device::current::get();
+	auto ur1 = cuda::memory::device::make_unique_region(device, 10);
+	auto ur2 = cuda::memory::device::make_unique_region(device, 10);
+	using std::swap;
+	swap(ur1, ur2);
 }
 
 int main() 

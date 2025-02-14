@@ -60,7 +60,7 @@ public:
 
     // Note: No constructor which also takes a deleter. We do not hold a deleter
     // member - unlike unique_ptr's. If we wanted a general-purpose unique region
-    // that's not just GPU allcoation-oriented, we might have had one of those.
+    // that's not just GPU allocation-oriented, we might have had one of those.
 
     /// Move constructor.
     unique_region(unique_region&& other) noexcept : unique_region(other.release()) { }
@@ -74,7 +74,7 @@ public:
     ~unique_region() noexcept
     {
         if (data() != nullptr) {
-            deleter_type{}(data());
+            get_deleter()(data());
         }
 		static_cast<region_t&>(*this) = region_t{ nullptr, 0 };
     }
@@ -88,8 +88,6 @@ public:
         reset(other.release());
         return *this;
     }
-
-    // No "assignment from anoterh type", a s
 
     /// Reset the %unique_region to empty, invoking the deleter if necessary.
     unique_region&
@@ -111,7 +109,7 @@ public:
 
     /// Return a deleter of the fixed type (it can't be a reference -
     /// we don't keep a deleter object)
-    deleter_type get_deleter() const noexcept { return Deleter{}; }
+    deleter_type get_deleter() const noexcept { return deleter_type{}; }
 
     /// Return @c true if the stored pointer is not null.
     explicit operator bool() const noexcept { return data() != nullptr; }
@@ -138,7 +136,7 @@ public:
     {
         ::std::swap<region_t>(*this, region);
         if (region.start() != nullptr) {
-            get_deleter()(region);
+            get_deleter()(region.data());
         }
     }
 
