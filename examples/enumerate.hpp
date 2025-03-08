@@ -69,7 +69,7 @@ public:
 
 		bool operator!=(iterator other) { return inner_iter != other.inner_iter; }
 
-		typename Container::iterator::value_type item() { return *inner_iter; }
+		typename std::iterator_traits<typename Container::iterator>::value_type const& item() { return *inner_iter; }
 
 		value_type operator*() { return value_type{counter_, *inner_iter}; }
 
@@ -95,7 +95,7 @@ public:
 
 		bool operator!=(const_iterator other) { return inner_iter != other.inner_iter; }
 
-		typename Container::const_iterator::value_type item() { return *inner_iter; }
+		typename std::iterator_traits<typename Container::const_iterator>::value_type const& item() { return *inner_iter; }
 
 		const_value_type operator*() { return const_value_type{counter_, *inner_iter}; }
 
