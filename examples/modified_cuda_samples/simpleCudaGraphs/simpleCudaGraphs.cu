@@ -132,7 +132,7 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 }
 
 void init_input(cuda::span<float> a) {
-	auto generator = []() {  return(rand() & 0xFF) / (float)RAND_MAX; };
+	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / (float)RAND_MAX; };
 	::std::generate_n(a.data(), a.size(), generator);
 }
 

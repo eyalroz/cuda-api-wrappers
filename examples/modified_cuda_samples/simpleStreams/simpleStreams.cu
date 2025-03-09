@@ -178,7 +178,7 @@ void run_simple_streams_example(
 	stop_event.record();
 	stop_event.synchronize();
 	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
-	std::cout << "non-streamed:\t" << elapsed_time.count() / nreps << "\n";
+	std::cout << "non-streamed:\t" << elapsed_time.count() / static_cast<float>(nreps) << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time execution with nstreams streams
@@ -256,7 +256,7 @@ simple_streams_params_t determine_params(const cuda::device_t& device)
 	// Anything that is less than 32 Cores will have scaled down workload
 	result.faux_cores_per_sm = compute_capability.max_in_flight_threads_per_processor();
 	result.faux_cores_overall = properties.max_in_flight_threads_on_device();
-	result.scale_factor = std::max((32.0f / result.faux_cores_overall), 1.0f);
+	result.scale_factor = std::max((32.0f / (float) result.faux_cores_overall), 1.0f);
 	result.n = (int)rint((float)result.n / result.scale_factor);
 
 	std::cout << "> CUDA Capable: SM " << compute_capability.major() << "." << compute_capability.minor() << " hardware\n";

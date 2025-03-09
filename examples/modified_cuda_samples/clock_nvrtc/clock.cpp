@@ -150,7 +150,8 @@ int main()
 	std::generate_n(input.get(), input_size, generator);
 	// TODO: Too bad we don't have a generator variant which passes the element index
 	{
-		const auto dynamic_shared_mem_size = sizeof(float) * 2 * num_threads_per_block;
+		const auto dynamic_shared_mem_size = (cuda::memory::shared::size_t)
+            (sizeof(float) * 2 * num_threads_per_block);
 
 		auto d_input = cuda::memory::make_unique_span<float>(device, input_size);
 		auto d_output = cuda::memory::make_unique_span<float>(device, num_blocks);

@@ -14,7 +14,8 @@ static void finalize_error(
 	auto final_error_launch_config = launch_config;
 	final_error_launch_config.dimensions.grid.x = (N_ROWS / final_error_launch_config.dimensions.block.x) + 1;
 	auto warps_per_block = final_error_launch_config.dimensions.block.x / cuda::warp_size;
-	final_error_launch_config.dynamic_shared_memory_size = (warps_per_block + 1) * sizeof(double);
+	final_error_launch_config.dynamic_shared_memory_size =
+        static_cast<cuda::memory::shared::size_t>((warps_per_block + 1) * sizeof(double));
 	// TODO: Double-check the original source to ensure we're using the right x here
 	stream.enqueue.kernel_launch(finalError, final_error_launch_config, x_to_overwrite.data(), d_sum.data());
 	stream.enqueue.copy(&sum, d_sum);

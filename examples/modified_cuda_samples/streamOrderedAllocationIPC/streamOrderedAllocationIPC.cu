@@ -47,7 +47,7 @@ static const char ipcName[] = "streamOrderedAllocationIPC_pipe";
 // in the same way.
 
 #define MAX_DEVICES (32)
-#define DATA_SIZE (64ULL << 20ULL)  // 64MB
+#define DATA_SIZE (((size_t) 64) << 20)  // 64 MB
 
 #if defined(__linux__)
 #define cpu_atomic_add32(a, x) __sync_add_and_fetch(a, x)
@@ -65,9 +65,9 @@ typedef struct shmStruct_st {
 	cuda::memory::pool::ipc::ptr_handle_t exportPtrData[MAX_DEVICES];
 } shmStruct;
 
-__global__ void simpleKernel(char *ptr, int sz, char val)
+__global__ void simpleKernel(char *ptr, size_t sz, char val)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = (size_t) blockIdx.x * blockDim.x + threadIdx.x;
 	for (; idx < sz; idx += (gridDim.x * blockDim.x)) {
 		ptr[idx] = val;
 	}
@@ -176,7 +176,9 @@ static void childProcess(int index_in_shared_devices)
 
 		// Push a simple kernel on it
 		stream.enqueue.kernel_launch(simpleKernel, launch_config,
-			static_cast<char *>(imported_ptrs[bufferId].get()), DATA_SIZE, index_in_shared_devices);
+			static_cast<char *>(imported_ptrs[bufferId].get()),
+            DATA_SIZE,
+            static_cast<char>(index_in_shared_devices));
 		cuda::outstanding_error::ensure_none();
 		stream.synchronize();
 
@@ -293,7 +295,7 @@ static void parentProcess(char *app)
 	// Now allocate memory for each process and fill the shared
 	// memory buffer with the export data and get memPool handles to communicate
 	for (size_t i = 0; i < shm->nprocesses; i++) {
-		auto device = cuda::device::get(i);
+		auto device = cuda::device::get(static_cast<cuda::device::id_t>(i));
 		// Note that creating this stream keeps the device's primary context alive, even if the
 		// device wrapper gets discarded
 		streams.emplace_back(device.create_stream(cuda::stream::async));

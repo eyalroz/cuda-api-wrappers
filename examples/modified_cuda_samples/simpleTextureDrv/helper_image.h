@@ -389,14 +389,14 @@ inline bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
 //////////////////////////////////////////////////////////////////////////////
 template <class T, class S>
 inline bool compareData(const T *reference, const T *data,
-                        const unsigned int len, const S epsilon,
+                        size_t len, const S epsilon,
                         const float threshold) {
   assert(epsilon >= 0);
 
   bool result = true;
   unsigned int error_count = 0;
 
-  for (unsigned int i = 0; i < len; ++i) {
+  for (size_t i = 0; i < len; ++i) {
     float diff = static_cast<float>(reference[i]) - static_cast<float>(data[i]);
     bool comp = (diff <= epsilon) && (diff >= -epsilon);
     result &= comp;
@@ -424,7 +424,7 @@ inline bool compareData(const T *reference, const T *data,
              error_count);
     }
 
-    return (len * threshold > error_count) ? true : false;
+    return ( static_cast<unsigned>(static_cast<float>(len) * threshold) > error_count) ? true : false;
   }
 }
 

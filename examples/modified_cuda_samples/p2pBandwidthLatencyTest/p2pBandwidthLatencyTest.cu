@@ -234,7 +234,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
             using usec_duration_t = std::chrono::duration<double, std::micro>;
             usec_duration_t duration ( cuda::event::time_elapsed_between(start[i], stop[i]) );
 
-            double gb = numElems * sizeof(int) * repeat / (double)1e9;
+            auto gb = static_cast<double>(numElems * sizeof(int) * repeat) / 1e9;
             if (i == j) {
                 gb *= 2;    //must count both the read and the write here
             }

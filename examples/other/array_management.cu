@@ -46,7 +46,7 @@ void check_output_is_iota(std::string name, cuda::span<T> actual) noexcept
 {
 	bool failed { false };
 	for (size_t i = 0; i < actual.size(); ++i) {
-		if (actual[i] != i) {
+		if (actual[i] != static_cast<T>(i)) {
 			if (not failed) {
 				std::cerr << name << ": Output does not matched expected values:\n";
 				failed = true;

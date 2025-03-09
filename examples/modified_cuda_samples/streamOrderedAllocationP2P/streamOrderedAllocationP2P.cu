@@ -180,7 +180,7 @@ int memPoolP2PCopy()
 		.build();
 	stream2.enqueue.wait(waitOnStream1);
 	stream2.enqueue.kernel_launch(copyP2PAndScale, launch_config,
-		input_on_device.data(), output_on_device.data(), nelem);
+		input_on_device.data(), output_on_device.data(), static_cast<int>(nelem));
 
 	stream2.enqueue.copy(output, output_on_device);
 	stream2.enqueue.free(input_on_device);

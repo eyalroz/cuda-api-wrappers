@@ -24,9 +24,9 @@ __global__ void sequence_gpu(int *d_ptr, int length)
 	}
 }
 
-void sequence_cpu(int *h_ptr, int length)
+void sequence_cpu(int *h_ptr, size_t length)
 {
-	for (int elemID=0; elemID<length; elemID++)
+	for (size_t elemID=0; elemID<length; elemID++)
 	{
 		h_ptr[elemID] = elemID % cuda::warp_size;
 	}
@@ -48,13 +48,13 @@ int main(int, char **)
 
 	std::cout << "Generating data on CPU\n";
 
-	sequence_cpu(h_span.data(), h_span.size());
+	sequence_cpu(h_span.data(), static_cast<int>(h_span.size()));
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(N)
 		.block_size(256)
 		.build();
-	device.launch(sequence_gpu, launch_config, d_span.data(), (int) d_span.size());
+	device.launch(sequence_gpu, launch_config, d_span.data(), static_cast<int>(d_span.size()));
 
 	cuda::outstanding_error::ensure_none();
 	device.synchronize();

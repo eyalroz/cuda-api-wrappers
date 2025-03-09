@@ -219,7 +219,7 @@ void multiply_and_time_with_cublas(
 	auto total = cuda::event::time_elapsed_between(start, end);
 
 	// Compute and print the performance
-	auto msec_per_iteration = total.count() / num_iterations;
+	auto msec_per_iteration = total.count() / (float) num_iterations;
 	double ops_per_multiplication = 2.0 * (double) matrix_dims.uiHC *
 									(double) matrix_dims.uiWC *
 									(double) matrix_dims.uiHB;
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 	srand(2006);
 
 	// initialize host memory
-	auto generator = []() { return rand() / (float) RAND_MAX; };
+	auto generator = []() { return static_cast<float>(rand()) / static_cast<float>(RAND_MAX); };
 	std::generate(h_A.begin(), h_A.end(), generator);
 	std::generate(h_B.begin(), h_B.end(), generator);
 

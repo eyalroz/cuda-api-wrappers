@@ -54,9 +54,9 @@ using cuda::span;
 
 /* Add two vectors on the GPU */
 
-__global__ void vectorAddGPU(const float *a, const float *b, float *c, int N)
+__global__ void vectorAddGPU(const float *a, const float *b, float *c, size_t N)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = (size_t) blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (idx < N) {
 		c[idx] = a[idx] + b[idx];
@@ -193,8 +193,8 @@ int main(int argc, char **argv)
 	auto a = std::unique_ptr<float[]>(new float[nelem]);
 	auto b = std::unique_ptr<float[]>(new float[nelem]);
 	auto c = std::unique_ptr<float[]>(new float[nelem]);
-	std::generate_n(a.get(), nelem, [&] { return rand() / (float) RAND_MAX; });
-	std::generate_n(b.get(), nelem, [&] { return rand() / (float) RAND_MAX; });
+	std::generate_n(a.get(), nelem, [&] { return (float) rand() / (float) RAND_MAX; });
+	std::generate_n(b.get(), nelem, [&] { return (float) rand() / (float) RAND_MAX; });
 
 	auto a_sp = span<const float>{a.get(), nelem};
 	auto b_sp = span<const float>{b.get(), nelem};
