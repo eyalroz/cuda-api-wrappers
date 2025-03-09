@@ -419,9 +419,10 @@ void cudaGraphsUsingStreamCapture(
 	stream_3.enqueue.wait(fork_stream_event);
 
 	stream_1.enqueue.copy(inputVec_d, inputVec_h);
-	stream_2.enqueue.memzero(outputVec_d);
 
-	stream_2.enqueue.event();
+	stream_2.enqueue.memzero(outputVec_d);
+	stream_2.enqueue.event(reduce_output_memset_event);
+
 	stream_3.enqueue.memzero(result_d);
 	stream_3.enqueue.event(final_result_memset_event);
 
