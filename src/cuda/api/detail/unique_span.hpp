@@ -131,10 +131,9 @@ public: // operators
 	/// No plain dereferencing - as there is no guarantee that any object has been
 	/// initialized at those locations, nor do we know its type
 
-	constexpr operator memory::const_region_t() const noexcept { return { data(), size() * sizeof(T) }; }
-
-	template<typename = typename ::std::enable_if<! ::std::is_const<T>::value>::type>
-	constexpr operator memory::region_t() const noexcept { return { data(), size() * sizeof(T) }; }
+    // Note: No need for a conversion operator into region_t and const_region_t, as such
+    // conversions are taken care of by the constructors of region_t and const_region_t
+    // from arbitrary contiguous containers
 
 public: // non-mutators
 	constexpr span_type get() const noexcept { return { data(), size() }; }
