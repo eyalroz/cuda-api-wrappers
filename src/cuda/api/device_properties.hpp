@@ -163,7 +163,7 @@ struct properties_t : public cudaDeviceProp {
 	compute_architecture_t compute_architecture() const noexcept { return { static_cast<unsigned>(major) }; };
 	pci_location_t pci_id() const noexcept { return { pciDomainID, pciBusID, pciDeviceID, {} }; }
 
-	unsigned long long max_in_flight_threads_on_device() const
+	unsigned max_in_flight_threads_on_device() const
 	{
 		return compute_capability().max_in_flight_threads_per_processor() * multiProcessorCount;
 	}
