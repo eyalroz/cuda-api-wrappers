@@ -159,33 +159,38 @@ namespace detail_ {
 inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
 {
 	return
-		(cc.architecture.major == 1)    ?   8 :
-		(cc.architecture.major == 2)    ?  32 :
-		(cc.architecture.major == 3)    ? 192 :
+		(cc.architecture.major == 1)     ?   8 :
+		(cc.architecture.major == 2)     ?  32 :
+		(cc.architecture.major == 3)     ? 192 :
 		// Note: No architecture number 4!
-		(cc.architecture.major == 5)    ? 128 :
-		(cc.as_combined_number() == 60) ?  64 :
-		(cc.architecture.major == 6)    ? 128 :
-		(cc.architecture.major == 7)    ?  64 :
-		(cc.as_combined_number() == 80) ?  64 :
-		(cc.architecture.major == 8)    ? 128 :
-		(cc.architecture.major == 9)    ? 128 :
+		(cc.architecture.major == 5)     ? 128 :
+		(cc.as_combined_number() == 60)  ?  64 :
+		(cc.architecture.major == 6)     ? 128 :
+		(cc.architecture.major == 7)     ?  64 :
+		(cc.as_combined_number() == 80)  ?  64 :
+		(cc.architecture.major == 8)     ? 128 :
+		(cc.architecture.major == 9)     ? 128 :
+		(cc.architecture.major == 10)    ? 128 :
+		(cc.as_combined_number() == 120) ? 128 :
 		invalid_compute_capability_return;
 }
 
 inline constexpr unsigned max_warp_schedulings_per_processor_cycle(const compute_capability_t& cc)
 {
 	return
-		(cc.architecture.major == 1)    ?  1 :
-		(cc.architecture.major == 2)    ?  2 :
-		(cc.architecture.major == 3)    ?  4 :
+		(cc.architecture.major ==  1)    ?  1 :
+		(cc.architecture.major ==  2)    ?  2 :
+		(cc.architecture.major ==  3)    ?  4 :
 		// Note: No architecture number 4!
-		(cc.architecture.major == 5)    ?  4 :
-		(cc.as_combined_number() == 60) ?  2 :
-		(cc.architecture.major == 6)    ?  4 :
-		(cc.architecture.major == 7)    ?  4 :
-		(cc.architecture.major == 8)    ?  4 :
-		(cc.architecture.major == 9)    ?  4 :
+		(cc.architecture.major ==  5)    ?  4 :
+		(cc.as_combined_number() ==  60) ?  2 :
+		(cc.architecture.major ==  6)    ?  4 :
+		(cc.architecture.major ==  7)    ?  4 :
+		(cc.architecture.major ==  8)    ?  4 :
+		(cc.architecture.major ==  9)    ?  4 :
+		(cc.architecture.major == 10)    ?  4 :
+		// Note: No architecture number 11!
+		(cc.as_combined_number() == 120) ?  4 :
 		invalid_compute_capability_return;
 }
 
@@ -201,46 +206,49 @@ inline constexpr unsigned max_warp_schedulings_per_processor_cycle(const compute
  *	     cudaSharedmemCarveoutMaxShared
  *	 );
  *
- * for details, see the CUDA Programming Guide, section K.7.3
+ * for details, see the CUDA C++ Programming Guide v12.8, section 16.6.4
  */
 inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t& cc)
 {
+	// Based on table 24 in the CUDA C++ Programming Guide
 	return
-		(cc.architecture.major ==  1)    ?  16 * KiB :
-		(cc.architecture.major ==  2)    ?  48 * KiB :
-		(cc.architecture.major ==  3)    ?  48 * KiB :
+		(cc.architecture.major ==  1)     ?  16 * KiB :
+		(cc.architecture.major ==  2)     ?  48 * KiB :
+		(cc.architecture.major ==  3)     ?  48 * KiB :
 		// Note: No architecture number 4!
-		(cc.architecture.major ==  5)    ?  48 * KiB :
-		(cc.architecture.major ==  6)    ?  48 * KiB :
-		(cc.as_combined_number() ==   7)  ?  64 * KiB : // of 128
-		(cc.as_combined_number() ==  72) ?  48 * KiB : // of 128
-		(cc.as_combined_number() ==  75) ?  64 * KiB : // of  96
-		(cc.architecture.major ==  7)    ?  96 * KiB : // of 128
-		(cc.as_combined_number() ==  80) ? 163 * KiB : // of 192
-		(cc.as_combined_number() ==  86) ?  99 * KiB : // of 128
-		(cc.as_combined_number() ==  87) ? 163 * KiB : // of 192
-		(cc.as_combined_number() ==  89) ?  99 * KiB : // of 100
-        (cc.as_combined_number() ==  90) ? 227 * KiB : // of 256
-        (cc.architecture.major == 10) ? 99 * KiB : // of 256
-        (cc.architecture.major == 12) ? 99 * KiB : // of 256
+		(cc.architecture.major ==  5)     ?  48 * KiB :
+		(cc.architecture.major ==  6)     ?  48 * KiB :
+		(cc.as_combined_number() ==  70)  ?  96 * KiB : // of  96
+		(cc.as_combined_number() ==  72)  ?  96 * KiB : // of  96
+		(cc.as_combined_number() ==  75)  ?  64 * KiB : // of  64
+		(cc.as_combined_number() ==  80)  ? 163 * KiB : // of 164
+		(cc.as_combined_number() ==  86)  ?  99 * KiB : // of 100
+		(cc.as_combined_number() ==  87)  ? 163 * KiB : // of 164
+		(cc.as_combined_number() ==  89)  ?  99 * KiB : // of 100
+        (cc.as_combined_number() ==  90)  ? 227 * KiB : // of 228
+        (cc.architecture.major == 10)     ?  99 * KiB : // of 256
+        (cc.as_combined_number() == 120)  ?  99 * KiB : // of 128
 		invalid_compute_capability_return;
 }
 
 
 inline constexpr unsigned max_resident_warps_per_processor(const compute_capability_t& cc) noexcept
 {
+	// Based on table 24 in the CUDA C++ Programming Guide
 	return
-		(cc.architecture.major == 1)    ?  24 :
-		(cc.architecture.major == 2)    ?  48 :
-		(cc.architecture.major == 3)    ?  64 :
+		(cc.architecture.major == 1)     ?  24 :
+		(cc.architecture.major == 2)     ?  48 :
+		(cc.architecture.major == 3)     ?  64 :
 		// Note: No architecture number 4!
-		(cc.architecture.major == 5)    ?  64 :
-		(cc.architecture.major == 6)    ?  64 :
-		(cc.as_combined_number() == 75) ?  32 :
-		(cc.architecture.major == 7)    ?  64 :
-		(cc.as_combined_number() == 80) ?  64 :
-		(cc.architecture.major == 8)    ?  48 :
-		(cc.as_combined_number() == 90) ?  64 :
+		(cc.architecture.major == 5)     ?  64 :
+		(cc.architecture.major == 6)     ?  64 :
+		(cc.as_combined_number() == 75)  ?  32 :
+		(cc.architecture.major == 7)     ?  64 :
+		(cc.as_combined_number() == 80)  ?  64 :
+		(cc.architecture.major == 8)     ?  48 :
+		(cc.as_combined_number() == 90)  ?  64 :
+		(cc.architecture.major == 10)    ?  64 :
+		(cc.as_combined_number() == 120) ?  48 :
 		invalid_compute_capability_return;
 }
 
