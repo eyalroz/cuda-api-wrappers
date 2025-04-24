@@ -34,7 +34,12 @@ jobs:
       matrix:
         include:
         - os: ubuntu-24.04
-          cuda: "12.6.2"
+          cuda: "12.8.1"
+          gcc: 13
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-24.04
+          cuda: "12.6.3"
           gcc: 13
           shell: "bash"
           cmake-generator: "Unix Makefiles"
@@ -44,22 +49,12 @@ jobs:
           shell: "bash"
           cmake-generator: "Unix Makefiles"
         - os: ubuntu-20.04
-          cuda: "12.6.0"
-          gcc: 10
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-20.04
-          cuda: "12.5.1"
-          gcc: 10
-          shell: "bash"
-          cmake-generator: "Unix Makefiles"
-        - os: ubuntu-20.04
           cuda: "12.4.1"
           gcc: 10
           shell: "bash"
           cmake-generator: "Unix Makefiles"
         - os: ubuntu-20.04
-          cuda: "12.3.1"
+          cuda: "12.3.2"
           gcc: 10
           shell: "bash"
           cmake-generator: "Unix Makefiles"

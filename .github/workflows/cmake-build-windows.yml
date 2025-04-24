@@ -30,12 +30,17 @@ jobs:
       matrix:
         include:
           - os: windows-2022
-            cuda: "12.6.2"
+            cuda: "12.8.1"
             visual-studio: "Visual Studio 17 2022"
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
-          # Windows2019 & VS 2019 supports CUDA 10.1+
+          - os: windows-2022
+            cuda: "12.6.3"
+            visual-studio: "Visual Studio 17 2022"
+            shell: "powershell"
+            os-type: "windows"
+            cmake-platform-flag: "-A x64"
           - os: windows-2019
             cuda: "12.6.2"
             visual-studio: "Visual Studio 16 2019"
@@ -55,7 +60,7 @@ jobs:
             os-type: "windows"
             cmake-platform-flag: "-A x64"
           - os: windows-2019
-            cuda: "12.3.1"
+            cuda: "12.3.2"
             visual-studio: "Visual Studio 16 2019"
             shell: "powershell"
             os-type: "windows"
@@ -144,6 +149,7 @@ jobs:
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
+# Upper Windows2019 & VS 2019 support CUDA 10.1+
 #          - os: windows-2019
 #            cuda: "10.2.89"
 #            visual-studio: "Visual Studio 16 2019"
