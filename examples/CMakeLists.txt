@@ -205,6 +205,7 @@ add_executable(execution_control by_api_module/execution_control.cu)
 set_property(TARGET execution_control  PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(stream_management by_api_module/stream_management.cu)
+add_executable(kernel_argument by_api_module/kernel_argument.cu)
 add_executable(event_management by_api_module/event_management.cu)
 add_executable(unified_addressing by_api_module/unified_addressing.cpp)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
