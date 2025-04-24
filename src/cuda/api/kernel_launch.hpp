@@ -53,6 +53,34 @@
 
 namespace cuda {
 
+/**
+ * @brief A trait characterizing those types which can be used as kernel parameters
+ *
+ * When passing arguments to a kernel function, their representation is copied from the host
+ * to the GPU device; so their type must allow for a construction by means of such copying;
+ * this is essentially the @ref std::is_trivially_copy_constructible trait.
+ * which serves to identify types that can be safely passed to CUDA kernels.
+ *
+ * @tparam T The prospective kernel parameter type
+ * @note This trait is used internally in the CUDA API wrappers to enforce
+ *        the constraints on kernel arguments at compile time.
+ * @note The trait is based on the CUDA C++ Programming Guide's requirements from
+ *       kernel parameter types, mostly (see
+ *       @url https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-function-argument-processing );
+ *       There is also a requirement for supporting destructor calls before the kernel
+ *       execution is actually concluded - which is all but impossible to check via a trait;
+ *       so it is up to users of the library to either exercise care, or otherwise specialize
+ *       the trait for known-to-be-problematic types, precluding their use.
+ */
+template <typename T>
+struct is_valid_kernel_argument : ::std::is_trivially_copyable<T> { };
+
+/**
+ * @brief A convenience type using the @ref is_valid_kernel_argument trait struct
+ */
+template <typename T>
+using is_valid_kernel_argument_t = typename is_valid_kernel_argument<T>::type;
+
 ///@cond
 class stream_t;
 ///@endcond
