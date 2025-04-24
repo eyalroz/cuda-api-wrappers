@@ -117,8 +117,8 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
    AND (CUDAToolkit_VERSION VERSION_GREATER_EQUAL "10.2"))
 	# compile the kernel into a fatbin : modified_cuda_samples/memMapIPCDrv/memMapIpc_kernel.cu
 	add_executable(memMapIPCDrv
-		modified_cuda_samples/memMapIPCDrv/memMapIPC.cpp 
-		modified_cuda_samples/memMapIPCDrv/child.cpp 
+		modified_cuda_samples/memMapIPCDrv/memMapIPC.cpp
+		modified_cuda_samples/memMapIPCDrv/child.cpp
 		modified_cuda_samples/memMapIPCDrv/parent.cpp
 		modified_cuda_samples/memMapIPCDrv/helper_multiprocess.cpp
 	)
@@ -208,6 +208,7 @@ set_property(TARGET execution_control  PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_executable(stream_management by_api_module/stream_management.cu)
 add_executable(event_management by_api_module/event_management.cu)
 add_executable(unified_addressing by_api_module/unified_addressing.cpp)
+add_executable(kernel_argument other/kernel_argument_validity.cu)
 add_executable(io_compute_overlap_with_streams other/io_compute_overlap_with_streams.cu)
 if( WIN32 AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.0")
 	add_executable(vectorAdd_profiled other/vectorAdd_profiled.cu)
