@@ -32,7 +32,8 @@ void enqueue_launch(
 	static_assert(
 		detail_::all_true<traits::is_valid_kernel_argument<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"All kernel parameter types must fulfill the CUDA kernel argument requirements. "
-		"https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-function-argument-processing");
+		"Refer to the documentation of 'cuda::traits::is_valid_kernel_argument' for more details."
+	);
 	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
 #if CUDA_VERSION >= 12000
 	static constexpr const bool library_kernel = cuda::detail_::is_library_kernel<Kernel>::value;

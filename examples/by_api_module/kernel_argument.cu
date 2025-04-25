@@ -6,7 +6,7 @@
  *
  */
 #include "../common.hpp"
-#include "cuda/api/traits.hpp"
+#include <cuda/api/traits.hpp>
 
 using std::printf;
 
