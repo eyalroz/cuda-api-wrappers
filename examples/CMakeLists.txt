@@ -23,6 +23,7 @@ if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 	endif()
 endif()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
+separate_arguments(CMAKE_CUDA_FLAGS_AS_LIST NATIVE_COMMAND ${CMAKE_CUDA_FLAGS})
 
 include(CompileWithWarnings)
 
@@ -128,7 +129,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			OUTPUT memMapIPC_kernel.fatbin
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
-				${CUDA_ARCH_FLAGS}
+				${CMAKE_CUDA_FLAGS_AS_LIST}
 				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/memMapIPC_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/memMapIPCDrv/memMapIPC_kernel.cu
@@ -140,7 +141,7 @@ IF((NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 			OUTPUT vectorAddMMAP_kernel.fatbin
 			COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 				${CCBIN_ARGUMENT}
-				${CUDA_ARCH_FLAGS}
+				${CMAKE_CUDA_FLAGS_AS_LIST}
 				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/vectorAddMMAP_kernel.fatbin
 				${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
 			MAIN_DEPENDENCY modified_cuda_samples/vectorAddMMAP/vectorAdd_kernel.cu
@@ -154,7 +155,7 @@ add_custom_command(
 		OUTPUT simpleTexture_kernel.fatbin
 		COMMAND ${CMAKE_CUDA_COMPILER} -fatbin
 		${CCBIN_ARGUMENT}
-		${CUDA_ARCH_FLAGS}
+		${CMAKE_CUDA_FLAGS_AS_LIST}
 		-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/simpleTexture_kernel.fatbin
 		${CMAKE_CURRENT_SOURCE_DIR}/modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
 		MAIN_DEPENDENCY modified_cuda_samples/simpleTextureDrv/simpleTexture_kernel.cu
