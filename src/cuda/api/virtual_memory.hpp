@@ -111,9 +111,14 @@ class mapping_t;
 
 namespace detail_ {
 
+inline status_t cancel_reservation_nothrow(memory::region_t reserved) noexcept
+{
+	return cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
+}
+
 inline void cancel_reservation(memory::region_t reserved)
 {
-	auto status = cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
+	auto status = cancel_reservation_nothrow(reserved);
 	throw_if_error_lazy(status, "Failed freeing a reservation of " + memory::detail_::identify(reserved));
 }
 
@@ -148,10 +153,14 @@ public:
 		other.owning_ = false;
 	}
 
-	~reserved_address_range_t() noexcept(false)
+	~reserved_address_range_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
+#if THROW_IN_DESTRUCTORS
 		detail_::cancel_reservation(region_);
+#else
+		detail_::cancel_reservation_nothrow(region_);
+#endif
 	}
 
 public: // getters
@@ -206,11 +215,15 @@ public: // constructors & destructor
 		other.holds_refcount_unit_ = false;
 	}
 
-	~physical_allocation_t() noexcept(false)
+	~physical_allocation_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not holds_refcount_unit_) { return; }
-		auto result = cuMemRelease(handle_);
-		throw_if_error_lazy(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
+		auto status = cuMemRelease(handle_);
+#ifdef THROW_IN_DESTRUCTORS
+		throw_if_error_lazy(status, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
+#else
+		(void) status;
+#endif
 	}
 
 public: // non-mutators

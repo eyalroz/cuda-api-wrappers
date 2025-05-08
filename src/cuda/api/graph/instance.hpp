@@ -259,9 +259,16 @@ public: // constructors & destructor
 	{
 		other.owning_ = false;
 	}
-	~instance_t()
+	~instance_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) cuGraphExecDestroy(handle_);
+		if (owning_) {
+			auto status = cuGraphExecDestroy(handle_);
+#if THROW_IN_DESTRUCTORS
+			throw_if_error_lazy(status, "Destroying " + instance::detail_::identify(*this));
+#else
+			(void) status;
+#endif
+		}
 	}
 
 public: // operators

@@ -48,14 +48,24 @@ inline bool is_active(device::id_t device_id)
 // We used this wrapper for a one-linear to track PC releases
 inline status_t decrease_refcount_nothrow(device::id_t device_id) noexcept
 {
-	auto result = cuDevicePrimaryCtxRelease(device_id);
-	return result;
+	return cuDevicePrimaryCtxRelease(device_id);
 }
 
 inline void decrease_refcount(device::id_t device_id)
 {
 	auto status = decrease_refcount_nothrow(device_id);
 	throw_if_error_lazy(status, "Failed releasing the reference to the primary context for " + device::detail_::identify(device_id));
+}
+
+// Use this in destructors whose throwing behavior is controlled by the
+// preprocessor definition THROW_IN_DESTRUCTORS
+inline void decrease_refcount_in_dtor(device::id_t device_id) noexcept
+{
+#if THROW_IN_DESTRUCTORS
+	decrease_refcount(device_id);
+#else
+	decrease_refcount_nothrow(device_id);
+#endif
 }
 
 inline handle_t obtain_and_increase_refcount(device::id_t device_id)
@@ -168,15 +178,10 @@ public: // constructors and destructor
 
 	primary_context_t(primary_context_t&& other) noexcept = default;
 
-	~primary_context_t() NOEXCEPT_IF_NDEBUG
+	~primary_context_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owns_refcount_unit_) {
-#ifndef NDEBUG
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-			// Swallow any error to avoid termination on throwing from a dtor
-#else
-			primary_context::detail_::decrease_refcount(device_id_);
-#endif
+			primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 

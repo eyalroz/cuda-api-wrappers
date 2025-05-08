@@ -100,8 +100,12 @@ handle_t create(context::handle_t context_handle, dimensions_t<NumDimensions> di
 	return create_in_current_context<T>(dimensions);
 }
 
-template <typename T, dimensionality_t NumDimensions>
-handle_t create(const context_t& context, dimensions_t<NumDimensions> dimensions);
+inline void destroy(handle_t handle, context::handle_t context_handle)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	auto status = cuArrayDestroy(handle);
+	throw_if_error_lazy(status, "Failed destroying the array at " + cuda::detail_::ptr_as_hex(handle));
+}
 
 template <dimensionality_t NumDimensions>
 descriptor_t<NumDimensions> get_descriptor_in_current_context(handle_t handle);
@@ -221,15 +225,18 @@ public:
 		other.handle_ = nullptr;
 	}
 
-	~array_t() noexcept(false)
+	~array_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		CAW_SET_SCOPE_CONTEXT(context_handle_);
-		if (handle_) {
-			auto status = cuArrayDestroy(handle_);
-			// Note: Throwing in a noexcept destructor; if the free'ing fails, the program
-			// will likely terminate
-			throw_if_error_lazy(status, "Failed destroying CUDA array " + cuda::detail_::ptr_as_hex(handle_));
+		if (not handle_) { return; }
+#ifndef THROW_IN_DESTRUCTORS
+		try
+#endif
+		{
+			array::detail_::destroy(handle_, context_handle_);
 		}
+#ifndef THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
 	}
 
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, context::handle_t, handle_type, dimensions_type) noexcept;

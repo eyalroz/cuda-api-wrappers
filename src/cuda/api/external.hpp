@@ -39,9 +39,16 @@ using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
 
 namespace detail_ {
 
+// TODO: Isn't this contextualized? I wonder
+inline status_t destroy_nowthrow(handle_t handle)
+{
+	return cuDestroyExternalMemory(handle);
+}
+
+
 inline void destroy(handle_t handle, const descriptor_t &)
 {
-	auto status = cuDestroyExternalMemory(handle);
+	auto status = destroy_nowthrow(handle);
 	throw_if_error_lazy(status, ::std::string("Destroying a memory resource"));
 }
 
@@ -112,16 +119,14 @@ public:
 		other.owning_ = false;
 	};
 
-	~resource_t()
+	~resource_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-#ifdef NDEBUG
-			cuDestroyExternalMemory(handle_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate()
+		if (not owning_) { return; }
+#if THROW_IN_DESTRUCTORS
+		detail_::destroy(handle_, descriptor_);
 #else
-			detail_::destroy(handle_, descriptor_);
+		detail_::destroy(handle_, descriptor_);
 #endif
-		}
 	}
 
 protected: // data members

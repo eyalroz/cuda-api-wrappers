@@ -24,6 +24,16 @@ namespace texture {
 /// The CUDA driver's raw, opaque handle for texture objects
 using raw_handle_t = CUtexObject;
 
+namespace detail_ {
+
+inline void destroy_view(raw_handle_t handle, context::handle_t context_handle) noexcept(false)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	auto status = cuTexObjectDestroy(handle);
+	throw_if_error_lazy(status, "Failed destroying texture object ");
+}
+
+}
 /**
  * A simplifying rudimentary wrapper wrapper for the CUDA runtime API's internal
  * "texture descriptor" object, allowing the creating of such descriptors without
@@ -132,12 +142,18 @@ public: // constructors and destructors
 
 public: // operators
 
-	~texture_view() noexcept(false)
+	~texture_view() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
-			scoped_context_setter set_context(context_handle_);
-			auto status = cuTexObjectDestroy(raw_view_handle);
-			throw_if_error_lazy(status, "failed destroying texture object");
+#ifdef THROW_IN_DESTRUCTORS
+			try
+#endif
+			{
+				texture::detail_::destroy_view(raw_view_handle, context_handle_);
+			}
+#ifdef THROW_IN_DESTRUCTORS
+			catch (...) {}
+#endif
 		}
 	}
 

@@ -134,6 +134,18 @@ inline handle_t create_raw_in_current_context(
 	return new_stream_handle;
 }
 
+inline status_t destroy_nothrow(handle_t handle, context::handle_t context_handle)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return cuStreamDestroy(handle);
+}
+
+inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	auto status = destroy_nothrow(handle, context_handle);
+	throw_if_error_lazy(status, "Failed destroying " + identify(handle, context_handle, device_id));
+}
+
 #if CUDA_VERSION >= 9020
 inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
@@ -919,21 +931,17 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit_ = false;
 	}
 
-	~stream_t() noexcept(false)
+	~stream_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
-			CAW_SET_SCOPE_CONTEXT(context_handle_);
-			cuStreamDestroy(handle_);
-		}
-		// TODO: DRY
-		if (holds_pc_refcount_unit_) {
-#ifdef NDEBUG
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-				// because a failure probably means the primary context is inactive already
+#if THROW_IN_DESTRUCTORS
+			stream::detail_::destroy(handle_, context_handle_, device_id_);
 #else
-			device::primary_context::detail_::decrease_refcount(device_id_);
+			stream::detail_::destroy_nothrow(handle_, context_handle_);
 #endif
+		}
+		if (holds_pc_refcount_unit_) {
+			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 

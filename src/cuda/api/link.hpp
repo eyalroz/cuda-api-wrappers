@@ -70,6 +70,20 @@ struct file_t {
 
 } // namespace input
 
+namespace detail_ {
+
+inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	auto status = cuLinkDestroy(handle);
+	throw_if_error_lazy(status,
+		::std::string("Failed destroying the link ") + cuda::detail_::ptr_as_hex(handle)
+		+ " in " + context::detail_::identify(context_handle)
+		+ " on " + device::detail_::identify(device_id));
+}
+
+} // namespace detail_
+
 } // namespace link
 
 /**
@@ -218,15 +232,18 @@ public: // constructors and destructor
 		other.owning = false;
 	};
 
-	~link_t() noexcept(false)
+	~link_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning) {
-			CAW_SET_SCOPE_CONTEXT(context_handle_);
-			auto status = cuLinkDestroy(handle_);
-			throw_if_error_lazy(status,
-				::std::string("Failed destroying the link ") + detail_::ptr_as_hex(handle_) +
-				" in " + context::detail_::identify(context_handle_, device_id_));
+		if (not owning) { return; }
+#ifndef THROW_IN_DESTRUCTORS
+		try
+#endif
+		{
+			link::detail_::destroy(handle_, context_handle_, device_id_);
 		}
+#ifndef THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
 	}
 
 public: // operators

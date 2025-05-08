@@ -417,17 +417,11 @@ public: // ctors & dtor
 
 public: // ctors & dtor
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	~kernel_t() NOEXCEPT_IF_NDEBUG
+	~kernel_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {
-#ifdef NDEBUG
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-				// because a failure probably means the primary context is inactive already
-#else
-			device::primary_context::detail_::decrease_refcount(device_id_);
-#endif
+			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 

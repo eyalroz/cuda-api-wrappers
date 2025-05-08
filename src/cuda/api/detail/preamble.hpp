@@ -48,4 +48,10 @@
 #endif
 #endif // NOEXCEPT_IF_NDEBUG
 
+#ifdef THROW_IN_DESTRUCTORS
+#define DESTRUCTOR_EXCEPTION_SPEC noexcept(false)
+#else
+#define DESTRUCTOR_EXCEPTION_SPEC noexcept
+#endif
+
 #endif //CUDA_API_WRAPPERS_PREAMBLE_HPP_

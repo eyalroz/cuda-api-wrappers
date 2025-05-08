@@ -72,6 +72,16 @@ inline ::std::string identify(pool::handle_t handle, cuda::device::id_t device_i
 
 ::std::string identify(const pool_t &pool);
 
+inline status_t destroy_nothrow(handle_t handle) noexcept
+{
+	return cuMemPoolDestroy(handle);
+}
+
+inline void destroy(handle_t handle)
+{
+	auto status = destroy_nothrow(handle);
+	throw_if_error_lazy(status, "Failed destroying " + identify(handle));
+}
 
 
 } // namespace detail_
@@ -407,11 +417,14 @@ public: // construction & destruction
 		other.owning_ = false;
 	}
 
-	~pool_t()
+	~pool_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-			cuMemPoolDestroy(handle_); // Note: Ignoring any potential exception
-		}
+		if (not owning_) { return; }
+#ifdef THROW_IN_DESTRUCTORS
+		pool::detail_::destroy(handle_);
+#else
+		memory::pool::detail_::destroy_nothrow(handle_);
+#endif
 	}
 
 protected: // constructors
