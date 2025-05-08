@@ -73,13 +73,24 @@ inline void* import(const ptr_handle_t& handle)
 }
 
 /**
+ * @brief Unmap CUDA host-side memory shared by another process, without
+ * throwing an exception
+ *
+ * @param ipc_mapped_ptr pointer to the memory region to unmap
+ */
+inline status_t unmap_nothrow(void* ipc_mapped_ptr) noexcept
+{
+	return cuIpcCloseMemHandle(device::address(ipc_mapped_ptr));
+}
+
+/**
  * @brief Unmap CUDA host-side memory shared by another process
  *
  * @param ipc_mapped_ptr pointer to the memory region to unmap
  */
 inline void unmap(void* ipc_mapped_ptr)
 {
-	auto status = cuIpcCloseMemHandle(device::address(ipc_mapped_ptr));
+	auto status = unmap_nothrow(ipc_mapped_ptr);
 	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
 }
 
@@ -126,9 +137,14 @@ protected: // constructors & destructor
 public: // constructors & destructors
 	friend imported_ptr_t wrap(void * ptr, bool owning) noexcept;
 
-	~imported_ptr_t() noexcept(false)
+	~imported_ptr_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) { detail_::unmap(ptr_); }
+		if (not owning_) { return; }
+#if THROW_IN_DESTRUCTORS
+		detail_::unmap(ptr_);
+#else
+		detail_::unmap_nothrow(ptr_);
+#endif
 	}
 
 public: // operators

@@ -150,6 +150,13 @@ inline bool push_if_not_on_top(handle_t context_handle)
 	return true;
 }
 
+inline status_t pop_and_discard_nothrow()
+{
+	handle_t popped_context_handle;
+	auto status = cuCtxPopCurrent(&popped_context_handle);
+	return status;
+}
+
 inline context::handle_t pop()
 {
 	handle_t popped_context_handle;
@@ -187,7 +194,7 @@ public:
 	scoped_override_t(scoped_override_t&&) = delete;
 	scoped_override_t& operator=(const scoped_override_t&) = delete;
 	scoped_override_t& operator=(scoped_override_t&&) = delete;
-	~scoped_override_t() noexcept(false);
+	~scoped_override_t() DESTRUCTOR_EXCEPTION_SPEC;
 };
 
 ///@cond

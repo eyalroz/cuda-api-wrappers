@@ -193,15 +193,20 @@ inline void synchronize(device::id_t device_id, context::handle_t handle)
 	context::current::detail_::synchronize(device_id, handle);
 }
 
+inline status_t destroy_nothrow(handle_t handle) noexcept
+{
+	return cuCtxDestroy(handle);
+}
+
 inline void destroy(handle_t handle)
 {
-	auto status = cuCtxDestroy(handle);
+	auto status = destroy_nothrow(handle);
 	throw_if_error_lazy(status, "Failed destroying " + identify(handle));
 }
 
 inline void destroy(handle_t handle, device::id_t device_index)
 {
-	auto status = cuCtxDestroy(handle);
+	auto status = destroy_nothrow(handle);
 	throw_if_error_lazy(status, "Failed destroying " + identify(handle, device_index));
 }
 
@@ -725,13 +730,14 @@ public: // constructors and destructor
 		other.owning_ = false;
 	};
 
-	~context_t()
+	~context_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-			cuCtxDestroy(handle_);
-			// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-			// because the context cannot possibly exist after this call.
-		}
+		if (not owning_) { return; }
+#if THROW_IN_DESTRUCTORS
+		context::detail_::destroy(handle_, device_id_);
+#else
+		context::detail_::destroy_nothrow(handle_);
+#endif
 	}
 
 public: // operators

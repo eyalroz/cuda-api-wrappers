@@ -61,7 +61,12 @@ inline ::std::string identify(const module::handle_t &handle, context::handle_t 
 
 ::std::string identify(const module_t &module);
 
-inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id);
+inline void unload(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	auto status = cuModuleUnload(handle);
+	throw_if_error_lazy(status, "Failed unloading " + identify(handle, context_handle, device_id));
+}
 
 #if CUDA_VERSION >= 12040
 inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, size_t num_kernels)
@@ -229,23 +234,24 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit_ = false;
 	};
 
-	// Note: It is up to the user of this class to ensure that it is destroyed _before_ the context
+	// Note: It is up to the user of this class to ensure that it is unloaded _before_ the context
 	// in which it was created; and one needs to be particularly careful about this point w.r.t.
 	// primary contexts
-	~module_t() noexcept(false)
+	~module_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
-			module::detail_::destroy(handle_, context_handle_, device_id_);
-		}
-		// TODO: DRY
-		if (holds_pc_refcount_unit_) {
-#ifdef NDEBUG
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-				// because a failure probably means the primary context is inactive already
-#else
-			device::primary_context::detail_::decrease_refcount(device_id_);
+#ifdef THROW_IN_DESTRUCTORS
+			try
 #endif
+			{
+				module::detail_::unload(handle_, context_handle_, device_id_);
+			}
+#ifdef THROW_IN_DESTRUCTORS
+			catch (...) {}
+#endif
+		}
+		if (holds_pc_refcount_unit_) {
+			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -410,13 +416,6 @@ module_t create(const context_t& context, const void* module_data, const link::o
 
 /// @copydoc create(const context_t&, const void*, const link::options_t&)
 module_t create(const context_t& context, const void* module_data);
-
-inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
-{
-	CAW_SET_SCOPE_CONTEXT(context_handle);
-	auto status = cuModuleUnload(handle);
-	throw_if_error_lazy(status, "Failed unloading " + identify(handle, context_handle, device_id));
-}
 
 } // namespace detail_
 

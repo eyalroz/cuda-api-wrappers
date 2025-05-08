@@ -65,12 +65,20 @@ public: // constructors & destructor
 	~imported_ptr_t() noexcept(false)
 	{
 		if (not owning_) { return; }
-		if (free_using_stream_) {
-			stream().enqueue.free(ptr_);
+#ifdef THROW_IN_DESTRUCTORS
+		try
+#endif
+		{
+			if (free_using_stream_) {
+				stream().enqueue.free(ptr_);
+			}
+			else {
+				device::free(ptr_);
+			}
 		}
-		else {
-			device::free(ptr_);
-		}
+#ifdef THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
 	}
 
 public: // operators

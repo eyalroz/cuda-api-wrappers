@@ -712,11 +712,15 @@ public: // ctors & dtor
 		other.owning_ = false;
 	}
 
-	~template_t() noexcept(false)
+	~template_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
 			auto status = cuGraphDestroy(handle_);
+#ifdef THROW_IN_DESTRUCTORS
 			throw_if_error_lazy(status, "Destroying " + template_::detail_::identify(*this));
+#else
+			(void) status;
+#endif
 		}
 	}
 

@@ -281,7 +281,18 @@ protected:
 class scope {
 public:
 	scope() { start(); }
-	~scope() { stop(); }
+	~scope()
+	{
+#ifndef THROW_IN_DESTRUCTORS
+		try
+#endif
+		{
+			stop();
+		}
+#ifndef THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
+	}
 protected:
 	context::current::detail_::scoped_existence_ensurer_t context_existence_ensurer;
 };

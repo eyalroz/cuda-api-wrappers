@@ -57,6 +57,18 @@ inline ::std::string identify(const library::handle_t &handle)
 
 ::std::string identify(const library_t &library);
 
+inline status_t unload_nothrow(handle_t handle) noexcept
+{
+	return cuLibraryUnload(handle);
+}
+
+inline void unload(handle_t handle)
+{
+	auto status = unload_nothrow(handle);
+	throw_if_error_lazy(status, ::std::string{"Failed unloading "}
+		+ library::detail_::identify(handle));
+}
+
 } // namespace detail_
 
 /**
@@ -176,12 +188,14 @@ public: // constructors and destructor
 		other.owning_ = false;
 	};
 
-	~library_t() noexcept(false)
+	~library_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-			auto status = cuLibraryUnload(handle_);
-			throw_if_error_lazy(status, "Failed unloading " + library::detail_::identify(handle_));
-		}
+		if (not owning_) { return; }
+#ifdef THROW_IN_DESTRUCTORS
+		library::detail_::unload(handle_);
+#else
+		library::detail_::unload_nothrow(handle_);
+#endif
 	}
 
 public: // operators

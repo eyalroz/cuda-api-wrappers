@@ -718,16 +718,11 @@ public: 	// constructors and destructor
 		::std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
 	}
 
-	~device_t() NOEXCEPT_IF_NDEBUG
+	~device_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-#ifndef NDEBUG
-		maybe_decrease_primary_context_refcount();
-#else
-		if (holds_pc_refcount_unit_)  {
-			device::primary_context::detail_::decrease_refcount_nothrow(id_);
-				// Swallow any error to avoid termination on throwing from a dtor
+		if (holds_pc_refcount_unit_) {
+			device::primary_context::detail_::decrease_refcount_in_dtor(id_);
 		}
-#endif
 	}
 
 	device_t(device_t&& other) noexcept : id_(other.id_)

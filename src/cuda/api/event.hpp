@@ -28,10 +28,24 @@ namespace event {
 
 namespace detail_ {
 
+inline void destroy_in_current_context(
+	handle_t           handle,
+	context::handle_t  current_context_handle,
+	device::id_t       current_device_id) noexcept(false)
+{
+	auto status = cuEventDestroy(handle);
+	throw_if_error_lazy(status, "Failed destroying " +
+		identify(handle, current_context_handle, current_device_id));
+}
+
 inline void destroy(
 	handle_t           handle,
-	device::id_t       device_id,
-	context::handle_t  context_handle);
+	context::handle_t  context_handle,
+	device::id_t       device_id) noexcept(false)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	destroy_in_current_context(handle, context_handle, device_id);
+}
 
 inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t event_handle)
 {
@@ -263,26 +277,21 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit_ = false;
 	};
 
-	~event_t() noexcept(false)
+	~event_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
-#ifdef NDEBUG
-			cuEventDestroy(handle_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-				// because the event cannot possibly exist after this call.
-#else
-			event::detail_::destroy(handle_, device_id_, context_handle_);
+#ifndef THROW_IN_DESTRUCTORS
+			try
+#endif
+			{
+				event::detail_::destroy(handle_, context_handle_, device_id_);
+			}
+#ifndef THROW_IN_DESTRUCTORS
+			catch (...) {}
 #endif
 		}
-		// TODO: DRY
 		if (holds_pc_refcount_unit_) {
-#ifdef NDEBUG
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
-				// Note: "Swallowing" any potential error to avoid ::std::terminate(); also,
-				// because a failure probably means the primary context is inactive already
-#else
-			device::primary_context::detail_::decrease_refcount(device_id_);
-#endif
+			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -387,16 +396,6 @@ inline event_t create_in_current_context(
 	return wrap(current_device_id, current_context_handle, new_event_handle, do_take_ownership, hold_pc_refcount_unit);
 }
 
-inline void destroy_in_current_context(
-	handle_t           handle,
-	device::id_t       current_device_id,
-	context::handle_t  current_context_handle)
-{
-	auto status = cuEventDestroy(handle);
-	throw_if_error_lazy(status, "Failed destroying " +
-		identify(handle, current_context_handle, current_device_id));
-}
-
 /**
  * @note see @ref cuda::event::create()
  */
@@ -415,15 +414,6 @@ inline event_t create(
 		device_id, context_handle,
 		hold_pc_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
-}
-
-inline void destroy(
-	handle_t           handle,
-	device::id_t       device_id,
-	context::handle_t  context_handle)
-{
-	CAW_SET_SCOPE_CONTEXT(context_handle);
-	destroy_in_current_context(handle, device_id, context_handle);
 }
 
 } // namespace detail_

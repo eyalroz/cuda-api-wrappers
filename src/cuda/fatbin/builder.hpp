@@ -196,14 +196,19 @@ public: // constructors and destructor
 		other.owning = false;
 	};
 
-	~fatbin_builder_t() noexcept(false)
+	~fatbin_builder_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning) {
-			auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
-			throw_if_error_lazy(status,
-				::std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
-				" in " + fatbin_builder::detail_::identify(handle_));
-		}
+		if (not owning) { return; }
+
+		auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
+#ifdef THROW_IN_DESTRUCTORS
+		throw_if_error_lazy(status,
+			::std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
+			" in " + fatbin_builder::detail_::identify(handle_));
+#else
+		(void) status;
+#endif
+
 	}
 
 public: // operators
