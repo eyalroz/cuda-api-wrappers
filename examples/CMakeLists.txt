@@ -22,10 +22,14 @@ if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 		set(CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS}" CACHE INTERNAL "CUDA Architecture flags")
 	endif()
 endif()
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR} -Wno-deprecated-gpu-targets")
 separate_arguments(CMAKE_CUDA_FLAGS_AS_LIST NATIVE_COMMAND ${CMAKE_CUDA_FLAGS})
 
 include(CompileWithWarnings)
+
+#if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-gpu-targets")
+#endif()
 
 if(MSVC)
 	# MSVC is very problematic! ... lets go easy on it
