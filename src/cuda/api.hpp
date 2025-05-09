@@ -8,6 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_HPP_
 #define CUDA_API_WRAPPERS_HPP_
 
+#include "api/detail/preamble.hpp"
 #include "api/types.hpp"
 #include "api/pci_id.hpp"
 #include "api/constants.hpp"
