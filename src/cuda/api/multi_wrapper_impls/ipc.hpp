@@ -64,7 +64,8 @@ public: // constructors & destructor
 
 	~imported_ptr_t() noexcept(false)
 	{
-		if (owning_ and free_using_stream_) {
+		if (not owning_) { return; }
+		if (free_using_stream_) {
 			stream().enqueue.free(ptr_);
 		}
 		else {
