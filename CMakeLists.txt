@@ -4,7 +4,7 @@
 # your platform. They are not finicky with library dependencies, so
 # compatability is very likely. Also, the package's CMake binary will
 # not mistake any other local CMake-related files for its own.
-cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
 PROJECT(cuda-api-wrappers
 	VERSION 0.8.2
