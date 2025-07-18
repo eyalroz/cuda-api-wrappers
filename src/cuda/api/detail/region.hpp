@@ -60,6 +60,10 @@ public:
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
 
+	template <typename E, size_t N>
+	constexpr base_region_t(E (&arr)[N]) noexcept
+		: start_(arr), size_in_bytes_(N * sizeof(E)) {}
+
 	/**
 	 * A constructor from types such as `::std::span`'s or `::std::vector`'s, whose data is in
 	 * a contiguous region of memory
