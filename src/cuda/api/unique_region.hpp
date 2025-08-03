@@ -193,16 +193,16 @@ unique_region make_unique_region(size_t num_bytes);
 } // namespace device
 
 
-/// See @ref device::make_unique_region(const context_t& context, size_t num_elements)
-inline device::unique_region make_unique_region(const context_t& context, size_t num_elements)
+/// See @ref device::make_unique_region(const context_t& context, size_t num_bytes)
+inline device::unique_region make_unique_region(const context_t& context, size_t num_bytes)
 {
-	return device::make_unique_region(context, num_elements);
+	return device::make_unique_region(context, num_bytes);
 }
 
-/// See @ref device::make_unique_region(const device_t& device, size_t num_elements)
-inline device::unique_region make_unique_region(const device_t& device, size_t num_elements)
+/// See @ref device::make_unique_region(const device_t& device, size_t num_bytes)
+inline device::unique_region make_unique_region(const device_t& device, size_t num_bytes)
 {
-	return device::make_unique_region(device, num_elements);
+	return device::make_unique_region(device, num_bytes);
 }
 
 namespace host {

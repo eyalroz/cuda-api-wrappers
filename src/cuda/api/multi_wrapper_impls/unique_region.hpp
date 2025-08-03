@@ -18,9 +18,9 @@ namespace memory {
 
 namespace device {
 
-inline unique_region make_unique_region(const context_t& context, cuda::size_t num_elements)
+inline unique_region make_unique_region(const context_t& context, cuda::size_t num_bytes)
 {
-	return detail_::make_unique_region(context.handle(), num_elements);
+	return detail_::make_unique_region(context.handle(), num_bytes);
 }
 
 /**
@@ -30,13 +30,13 @@ inline unique_region make_unique_region(const context_t& context, cuda::size_t n
  * @tparam T  an array type; _not_ the type of individual elements
  *
  * @param device        on which to construct the array of elements
- * @param num_elements  the number of elements to allocate
+ * @param num_bytes  the number of elements to allocate
  * @return an ::std::unique_ptr pointing to the constructed T array
  */
-inline unique_region make_unique_region(const device_t& device, size_t num_elements)
+inline unique_region make_unique_region(const device_t& device, size_t num_bytes)
 {
 	auto pc = device.primary_context();
-	return make_unique_region(pc, num_elements);
+	return make_unique_region(pc, num_bytes);
 }
 
 /**
@@ -48,15 +48,15 @@ inline unique_region make_unique_region(const device_t& device, size_t num_eleme
  *
  * @tparam T  an array type; _not_ the type of individual elements
  *
- * @param num_elements  the number of elements to allocate
+ * @param num_bytes  the number of elements to allocate
  *
  * @return an ::std::unique_ptr pointing to the constructed T array
  */
-inline unique_region make_unique_region(size_t num_elements)
+inline unique_region make_unique_region(size_t num_bytes)
 {
 	auto current_device_id = cuda::device::current::detail_::get_id();
 	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique_region(pc, num_elements);
+	return make_unique_region(pc, num_bytes);
 }
 
 } // namespace device
