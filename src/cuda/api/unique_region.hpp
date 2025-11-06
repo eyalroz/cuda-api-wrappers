@@ -141,9 +141,9 @@ public:
     }
 
     /// Exchange the pointer and deleter with another object.
-    void swap(unique_region& other) noexcept
+    friend void swap(unique_region& a, unique_region& b) noexcept
     {
-        ::std::swap<region_t>(*this, other);
+        ::std::swap<region_t>(a, b);
     }
 }; // class unique_region
 

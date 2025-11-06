@@ -123,7 +123,7 @@ public: // operators
 	/// A Move-assignment operator, which takes ownership of the other region
 	unique_span& operator=(unique_span&& other) noexcept
 	{
-		swap(other);
+		swap(*this, other);
 		return *this;
 		// other will be destructed, and our previous pointer - released if necessary
 	}
@@ -138,14 +138,15 @@ public: // operators
 public: // non-mutators
 	constexpr span_type get() const noexcept { return { data(), size() }; }
 
-protected: // mutators
-	/// Exchange the pointer and deleter with another object.
-	void swap(unique_span& other) noexcept
+public:
+	/// Exchange the members of two unique_span's
+	friend void swap(unique_span& a, unique_span& b) noexcept
 	{
-		using ::std::swap;
-		swap<span_type>(*this, other);
-		swap(deleter_, other.deleter_);
+		::std::swap<span_type>(a, b);
+		::std::swap<deleter_type>(a.deleter_, b.deleter_);
 	}
+
+protected: // mutators
 	/**
 	 * Release ownership of the stored span
 	 *
