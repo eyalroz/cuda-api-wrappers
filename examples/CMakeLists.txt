@@ -55,7 +55,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
 if(CAW_WITH_COOPERATIVE_GROUPS AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "9.0")
-	add_compile_definitions(USE_COOPERATIVE_GROUPS)
+	add_compile_definitions(USE_COOPERATIVE_GROUPS _CG_LIMIT_INCLUDED_DEPENDENCIES)
 	message(STATUS "Using cooperative groups in example programs")
 endif()
 
