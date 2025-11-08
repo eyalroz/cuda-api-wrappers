@@ -549,6 +549,11 @@ constexpr bool operator!=(composite_dimensions_t lhs, composite_dimensions_t rhs
 /// Representation, allocation and manipulation of CUDA-related memory, of different
 namespace memory {
 
+/// Used in a limited number of API functions which can relate both to CUDA device
+/// memory and system memory generically, but while still distinguishing between
+/// these different "locations". NVIDIA chose this term, it's a bit confusing.
+using location_t = CUmemLocation;
+
 #if CUDA_VERSION >= 10020
 
 /**
