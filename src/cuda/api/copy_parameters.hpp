@@ -540,13 +540,13 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_bytes_extent(dimensions_t
 template<>
 inline copy_parameters_t<2>::dimensions_type copy_parameters_t<2>::bytes_extent() const noexcept
 {
-	return copy_parameters_t<2>::dimensions_type { WidthInBytes, Height };
+	return { WidthInBytes, Height };
 }
 
 template<>
 inline copy_parameters_t<3>::dimensions_type copy_parameters_t<3>::bytes_extent() const noexcept
 {
-	return copy_parameters_t<3>::dimensions_type { WidthInBytes, Height, Depth };
+	return { WidthInBytes, Height, Depth };
 }
 
 template<>
@@ -557,21 +557,21 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
 	array::dimensions_t<2>  dimensions)
 {
 	auto memory_type = memory::type_of(ptr);
-	if (memory_type == memory::type_t::array) {
+	if (memory_type == array) {
 		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
 	}
-	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_)
+	if (memory_type == unified_ or memory_type == device_)
 	{
 		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
 	}
 	else {
-		// Either memory::type_t::host or memory::type_t::non_cuda
+		// Either host or non_cuda memory
 		if (endpoint == endpoint_t::source) { srcHost = ptr; }
 		else { dstHost = ptr; }
 	}
 	set_bytes_pitch(endpoint, dimensions.width);
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
-	(memory_type == memory::type_t::non_cuda ? memory::type_t::host_ : memory_type);
+	(memory_type == non_cuda ? host_ : memory_type);
 	// Can't set the endpoint context - the basic data structure doesn't support that!
 	// (endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
 
@@ -589,22 +589,22 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 	array::dimensions_t<3>  dimensions)
 {
 	auto memory_type = memory::type_of(ptr);
-	if (memory_type == memory::type_t::array) {
+	if (memory_type == array) {
 		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
 	}
-	if (memory_type == memory::type_t::unified_ or memory_type == type_t::device_)
+	if (memory_type == unified_ or memory_type == device_)
 	{
 		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
 	}
 	else {
-		// Either memory::type_t::host or memory::type_t::non_cuda
+		// Either host or non_cuda memory
 		if (endpoint == endpoint_t::source) { srcHost = ptr; }
 		else { dstHost = ptr; }
 	}
 	set_bytes_pitch(endpoint, dimensions.width);
 	(endpoint == endpoint_t::source ? srcHeight : dstHeight) = dimensions.height;
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
-	(memory_type == memory::type_t::non_cuda ? memory::type_t::host_ : memory_type);
+	(memory_type == non_cuda ? host_ : memory_type);
 	(endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
 
 	if (bytes_extent().volume() == 0) {
