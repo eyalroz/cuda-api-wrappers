@@ -115,6 +115,20 @@ namespace detail_ {
 
 ::std::string identify(const template_t& template_);
 
+inline CUresult delete_edges(
+	handle_t               template_handle,
+	node::handle_t const*  source_handles,
+	node::handle_t const*  destination_handles,
+	size_t                 num_edges)
+{
+#if CUDA_VERSION >= 13000
+	static constexpr const auto no_edge_data = nullptr;
+	return cuGraphRemoveDependencies(template_handle, source_handles, destination_handles, no_edge_data, num_edges);
+#else
+	return cuGraphRemoveDependencies(template_handle, source_handles, destination_handles, num_edges);
+#endif
+}
+
 inline status_t delete_edges(
 	template_::handle_t         template_handle,
 	span<const node::handle_t>  edge_source_handles,
@@ -122,10 +136,8 @@ inline status_t delete_edges(
 {
 	auto num_edges = edge_source_handles.size();
 	assert(edge_source_handles.size() == num_edges && "Mismatched sizes of sources and destinations");
-
-	auto result = cuGraphRemoveDependencies(
+	return delete_edges(
 		template_handle,edge_source_handles.data(), edge_destination_handles.data(), num_edges);
-	return result;
 }
 
 inline status_t delete_edges(
@@ -150,6 +162,20 @@ inline status_t delete_edges(
 	return delete_edges(template_handle, edge_source_handles, edge_destination_handles);
 }
 
+inline status_t insert_edges(
+	handle_t                template_handle,
+	node::handle_t const *  source_handles,
+	node::handle_t const *  destination_handles,
+	size_t                  num_edges)
+{
+#if CUDA_VERSION >= 13000
+	static constexpr const auto no_edge_data = nullptr;
+	return cuGraphAddDependencies(template_handle, source_handles, destination_handles, no_edge_data, num_edges);
+#else
+	return cuGraphAddDependencies(template_handle, source_handles, destination_handles, num_edges);
+#endif
+}
+
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t  template_handle,
@@ -170,7 +196,7 @@ inline status_t insert_edges(
 	}
 	const node::handle_t* sources_handles = handles_buffer.data();
 	const node::handle_t* destinations_handles = handles_buffer.data() + num_edges;
-	auto result = cuGraphAddDependencies(
+	auto result = insert_edges(
 		template_handle,sources_handles, destinations_handles, edge_sources.size());
 	return result;
 }
@@ -189,7 +215,7 @@ inline status_t delete_edges(
 	}
 	const node::handle_t* sources_handles = handles_buffer.data();
 	const node::handle_t* destinations_handles = handles_buffer.data() + edges.size();
-	auto result = cuGraphRemoveDependencies(
+	auto result = delete_edges(
 		template_handle,sources_handles, destinations_handles, edges.size());
 	return result;
 }
@@ -209,7 +235,7 @@ inline status_t insert_edges(
 	}
 	const node::handle_t* sources_handles = handles_buffer.data();
 	const node::handle_t* destinations_handles = handles_buffer.data() + edges.size();
-	auto result = cuGraphAddDependencies(
+	auto result = insert_edges(
 		template_handle,sources_handles, destinations_handles, edges.size());
 	return result;
 }
@@ -355,6 +381,20 @@ node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
 		graph_template_handle, ::std::forward<T>(first_arg), ::std::forward<Ts>(params_ctor_args)...);
 }
 
+inline status_t get_edges(
+	handle_t                      template_handle,
+	node::handle_t * __restrict__ source_handles,
+	node::handle_t * __restrict__ destination_handles,
+	::std::size_t *  __restrict__ num_nodes)
+{
+#if CUDA_VERSION >= 13000
+	static constexpr auto no_edge_data { nullptr };
+	return cuGraphGetEdges(template_handle, source_handles, destination_handles, no_edge_data, num_nodes);
+#else
+	return cuGraphGetEdges(template_handle, source_handles, destination_handles, num_nodes);
+#endif
+}
+
 } // namespace detail_
 
 } // namespace template_
@@ -492,7 +532,7 @@ public: // non-mutators
 	node_ref_container_type nodes() const
 	{
 		size_type num_nodes_ { num_nodes() } ;
-		::std::vector<node::handle_t> node_handles {num_nodes_ };
+		::std::vector<node::handle_t> node_handles { num_nodes_ };
 		auto status = cuGraphGetNodes(handle_, node_handles.data(), &num_nodes_);
 		throw_if_error_lazy(status, "Obtaining the set of nodes of " + template_::detail_::identify(*this));
 		node_ref_container_type node_refs;
@@ -536,8 +576,8 @@ public: // non-mutators
 	/// Get the number (directed) edges, i.e. dependencies between nodes, in the execution graph.
 	size_type num_edges() const
 	{
-		size_type num_edges;
-		auto status = cuGraphGetEdges(handle_, nullptr, nullptr, &num_edges);
+		::std::size_t num_edges;
+		auto status = template_::detail_::get_edges(handle_, nullptr, nullptr, &num_edges);
 		throw_if_error_lazy(status, "Obtaining the number of edges in " + template_::detail_::identify(*this));
 		return num_edges;
 	}
@@ -547,7 +587,8 @@ public: // non-mutators
 		size_type num_edges_ { num_edges() } ;
 		::std::vector<node::handle_t> from_node_handles { num_edges_ };
 		::std::vector<node::handle_t> to_node_handles { num_edges_ };
-		auto status = cuGraphGetEdges(handle_, from_node_handles.data(), to_node_handles.data(), &num_edges_);
+		auto status = template_::detail_::get_edges(
+			handle_, from_node_handles.data(), to_node_handles.data(), &num_edges_);
 		throw_if_error_lazy(status, "Obtaining the set of edges in " + template_::detail_::identify(*this));
 		edge_container_type edges;
 		// TODO: Use container/range zipping, and a ranged-for loop
@@ -590,9 +631,8 @@ public: // non-mutators
 				const node::handle_t dest;
 			} handles { source.handle(), dest.handle() };
 			static constexpr const size_t remove_just_one = 1;
-			auto status = cuGraphAddDependencies(
+			auto status = template_::detail_::insert_edges(
 				handle(), &handles.source, &handles.dest, remove_just_one);
-
 			throw_if_error_lazy(status, "Inserting " + node::detail_::identify(edge_type{source, dest})
 				+ " into " + template_::detail_::identify(associated_template));
 		}
@@ -661,16 +701,17 @@ public: // non-mutators
 
 		void edge(edge_type const& edge_) const
 		{
+			// TODO: Perhaps factor this out into an independent function under template_::detail?
 			struct {
 				const node::handle_t source;
 				const node::handle_t dest;
 			} handles { edge_.first.handle(), edge_.second.handle() };
-			static constexpr const size_t remove_just_one = 1;
-			auto status = cuGraphRemoveDependencies(
-				handle(), &handles.source, &handles.dest, remove_just_one);
+			static constexpr size_t remove_single_edge { 1 };
+			auto status = template_::detail_::delete_edges(
+				handle(), &handles.source, &handles.dest, remove_single_edge);
 
 			throw_if_error_lazy(status, "Destroying " + node::detail_::identify(edge_)
-										+ " in " + template_::detail_::identify(associated_template));
+				+ " in " + template_::detail_::identify(associated_template));
 		}
 
 		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
