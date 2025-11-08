@@ -812,7 +812,13 @@ inline handle_t create_and_push(
 		sync_scheduling_policy,
 		keep_larger_local_mem_after_resize);
 	handle_t handle;
+#if CUDA_VERSION >= 13000
+	// TODO: Introduce support for setting meaningful values for these parameters
+	CUctxCreateParams creation_params = {};
+	auto status = cuCtxCreate(&handle, &creation_params, flags, device_id);
+#else
 	auto status = cuCtxCreate(&handle, flags, device_id);
+#endif
 	throw_if_error_lazy(status, "failed creating a CUDA context associated with "
 		+ device::detail_::identify(device_id));
 	return handle;
