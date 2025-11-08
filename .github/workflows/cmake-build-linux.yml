@@ -34,6 +34,11 @@ jobs:
       matrix:
         include:
         - os: ubuntu-24.04
+          cuda: "13.0"
+          gcc: 13
+          shell: "bash"
+          cmake-generator: "Unix Makefiles"
+        - os: ubuntu-24.04
           cuda: "12.8.1"
           gcc: 13
           shell: "bash"
