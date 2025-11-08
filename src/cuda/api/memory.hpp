@@ -43,6 +43,8 @@
 #include <vector>
 #include <utility>
 
+#include "memory_pool.hpp"
+
 namespace cuda {
 
 ///@cond
@@ -1882,11 +1884,25 @@ inline T get_scalar_attribute(const_region_t region, attribute_t attribute)
 
 // CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
 // not called cuMemRangeSetAttribute, and uses a different enum.
+inline void advise(const_region_t region, advice_t advice, location_t location)
+{
+	auto address = device::address(region.start());
+#if CUDA_VERSION >= 13000
+	auto result = cuMemAdvise(address, region.size(), advice, location);
+#else
+	if (location.type != CU_MEM_LOCATION_TYPE_DEVICE) {
+		throw runtime_error(status::named_t::not_supported,
+			"Advising on memory other than on CUDA devices is not supported before CUDA 13.0");
+	}
+	auto result = cuMemAdvise(address, region.size(), advice, location.id);
+#endif
+	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
+		+ cuda::detail_::ptr_as_hex(region.start()) + " in " + cuda::memory::detail_::identify(location));
+}
+
 inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
 {
-	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
-	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
-		+ cuda::detail_::ptr_as_hex(region.start()));
+	advise(region, advice, pool::detail_::create_mem_location(device_id));
 }
 
 inline advice_t as_advice(attribute_t attribute, bool set)
@@ -2117,15 +2133,36 @@ inline void free(region_t region)
 namespace detail_ {
 
 inline void prefetch(
+	const_region_t           region,
+	cuda::memory::location_t destination,
+	stream::handle_t         source_stream_handle)
+{
+	auto address = device::address(region.start());
+#if CUDA_VERSION >= 13000
+	static constexpr unsigned flags { 0 };
+	auto result = cuMemPrefetchAsync(address, region.size(), destination, flags, source_stream_handle);
+#else
+	if (destination.type == CU_MEM_LOCATION_TYPE_HOST) {
+		destination = { CU_MEM_LOCATION_TYPE_DEVICE, CU_DEVICE_CPU };
+	}
+	if (destination.type != CU_MEM_LOCATION_TYPE_DEVICE) {
+		throw runtime_error(status::named_t::not_supported,
+			"Prefetching to destination types other than CUDA devices is not supported before CUDA 13.0");
+	}
+	auto result = cuMemPrefetchAsync(address, region.size(), destination.id, source_stream_handle);
+#endif
+	throw_if_error_lazy(result,
+		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
+		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + cuda::memory::detail_::identify(destination));
+}
+
+
+inline void prefetch(
 	const_region_t      region,
 	cuda::device::id_t  destination,
 	stream::handle_t    source_stream_handle)
 {
-	auto result = cuMemPrefetchAsync(device::address(region.start()), region.size(), destination, source_stream_handle);
-	throw_if_error_lazy(result,
-		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
-		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + (
-		 	(destination == CU_DEVICE_CPU) ? "the host" : cuda::device::detail_::identify(destination))  );
+	prefetch(region, pool::detail_::create_mem_location(destination), source_stream_handle);
 }
 
 } // namespace detail_
