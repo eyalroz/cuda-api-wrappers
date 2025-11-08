@@ -278,7 +278,11 @@ inline unsigned compute_capability_t::max_resident_warps_per_processor() const
 
 inline bool properties_t::usable_for_compute() const noexcept
 {
+#if CUDA_VERSION >= 13000
+	return true;
+#else
 	return computeMode != cudaComputeModeProhibited;
+#endif
 }
 
 } // namespace device

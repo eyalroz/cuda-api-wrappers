@@ -119,13 +119,14 @@ void getDeviceCount(ipcDevices_t *devices)
 				printf("> GPU%d = \"%15s\" IS capable of UVA\n", i, prop.name);
 				uvaCount += 1;
 			}
-
+#if CUDA_VERSION < 13000
 			if (prop.computeMode != cudaComputeModeDefault)
 			{
 				printf("> GPU device must be in Compute Mode Default to run\n");
 				printf("> Please use nvidia-smi to change the Compute Mode to Default\n");
 				exit(EXIT_SUCCESS);
 			}
+#endif // CUDA_VERSION < 13000
 		}
 
 		if (uvaCount < 2)
@@ -223,7 +224,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// b.3
 		procBarrier();
 
-		cuda::memory::copy(h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
+		cuda::memory::copy(&h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
 		cuda::memory::device::free(d_ptr);
 		printf("Checking test results...\n");
 
