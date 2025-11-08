@@ -29,6 +29,32 @@ namespace detail_ {
 
 ::std::string identify(const node_t &node);
 
+inline status_t get_dependencies(
+	handle_t                     handle,
+	handle_t      * __restrict__ dependency_handles,
+	::std::size_t * __restrict__ num_dependencies)
+{
+#if CUDA_VERSION >= 13000
+	static constexpr auto no_edge_data { nullptr };
+	return cuGraphNodeGetDependencies(handle, dependency_handles, no_edge_data, num_dependencies);
+#else
+	return cuGraphNodeGetDependencies(handle, dependency_handles, num_dependencies);
+#endif
+}
+
+inline status_t get_dependents(
+	handle_t                     handle,
+	handle_t      * __restrict__ dependent_handles,
+	::std::size_t * __restrict__ num_dependencies)
+{
+#if CUDA_VERSION >= 13000
+	static constexpr auto no_edge_data { nullptr };
+	return cuGraphNodeGetDependentNodes(handle, dependent_handles, no_edge_data, num_dependencies);
+#else
+	return cuGraphNodeGetDependentNodes(handle, dependent_handles, num_dependencies);
+#endif
+}
+
 } // namespace detail_
 
 using type_t = CUgraphNodeType;
@@ -72,7 +98,8 @@ public:
 	size_t num_dependencies() const
 	{
 		size_t num_dependencies_;
-		auto status = cuGraphNodeGetDependencies(handle_, nullptr, &num_dependencies_);
+		static constexpr auto no_returned_handles = nullptr;
+		auto status = node::detail_::get_dependencies(handle_, no_returned_handles, &num_dependencies_);
 		throw_if_error_lazy(status, "Obtaining the number of nodes on which " + node::detail_::identify(*this) + " is dependent");
 		return num_dependencies_;
 	}
@@ -80,16 +107,17 @@ public:
 	size_t num_dependents() const
 	{
 		size_t num_dependents_;
-		auto status = cuGraphNodeGetDependentNodes(handle_, nullptr, &num_dependents_);
+		static constexpr auto no_returned_handles = nullptr;
+		auto status = node::detail_::get_dependents(handle_, no_returned_handles, &num_dependents_);
 		throw_if_error_lazy(status, "Obtaining the number of nodes dependent on " + node::detail_::identify(*this));
 		return num_dependents_;
 	}
 
 	dependencies_type dependencies() const
 	{
-		size_type num_dependencies_ {num_dependencies() } ;
+		size_type num_dependencies_ { num_dependencies() } ;
 		::std::vector<node::handle_t> node_handles {num_dependencies_ };
-		auto status = cuGraphNodeGetDependencies(handle_, node_handles.data(), &num_dependencies_);
+		auto status = node::detail_::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
 		throw_if_error_lazy(status, "Obtaining the set nodes on which " + node::detail_::identify(*this) + " is dependent");
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
@@ -102,7 +130,7 @@ public:
 	{
 		size_type num_dependents_ { num_dependents() } ;
 		::std::vector<node::handle_t> node_handles {num_dependents_ };
-		auto status = cuGraphNodeGetDependentNodes(handle_, node_handles.data(), &num_dependents_);
+		auto status = node::detail_::get_dependents(handle_, node_handles.data(), &num_dependents_);
 		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + node::detail_::identify(*this));
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
