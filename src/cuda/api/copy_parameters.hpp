@@ -100,6 +100,8 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	template<typename T>
 	this_type& set_endpoint(endpoint_t endpoint, const cuda::array_t<T, NumDimensions> &array) noexcept;
 
+	this_type& set_endpoint_ptr(endpoint_t endpoint, context::handle_t context_handle, void *ptr);
+
 	/**
 	 * Set one of the copy endpoints to a multi-dimensional elements, with dimensions specified in
 	 * bytes rather than actual elements, starting somewhere in memory (in any CUDA memory space)
@@ -165,6 +167,11 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		return set_endpoint_untyped(endpoint_t::source, context_handle, ptr, dimensions);
 	}
 
+	this_type& set_source_ptr(context::handle_t context_handle, void *ptr)
+	{
+		return set_endpoint_ptr(endpoint_t::source, context_handle, ptr);
+	}
+
 	/**
 	 * Set one of the copy endpoints to a multi-dimensional elements,  starting somewhere in
 	 * memory (in any CUDA memory space)
@@ -215,12 +222,14 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	 *
 	 * @note: This assumes default pitch.
 	 */
-	void set_destination_untyped(
-		context::handle_t context_handle,
-		void *ptr,
-		dimensions_type dimensions) noexcept
+	void set_destination_untyped(context::handle_t context_handle, void *ptr, dimensions_type dimensions) noexcept
 	{
 		set_endpoint_untyped(endpoint_t::destination, context_handle, ptr, dimensions);
+	}
+
+	void set_destination_ptr(context::handle_t context_handle, void *ptr) noexcept
+	{
+		set_endpoint_untyped(endpoint_t::destination, context_handle, ptr);
 	}
 
 	/**
@@ -381,26 +390,38 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 };
 
 template<>
+inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_ptr(
+	endpoint_t              endpoint,
+	context::handle_t       context_handle,
+	void *                  ptr);
+
+template<>
+inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_ptr(
+	endpoint_t              endpoint,
+	context::handle_t       context_handle,
+	void *                  ptr);
+
+template<>
 inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
 	endpoint_t              endpoint,
-	context::handle_t,
+	context::handle_t       context_handle,
 	void *                  ptr,
 	array::dimensions_t<2>  dimensions);
 
 template<>
 inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 	endpoint_t              endpoint,
-	context::handle_t,
+	context::handle_t       context_handle,
 	void *                  ptr,
 	array::dimensions_t<3>  dimensions);
 
 template<>
 template<typename T>
 inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
-	endpoint_t endpoint,
-	context::handle_t context_handle,
-	T *ptr,
-	array::dimensions_t<2> dimensions) noexcept
+	endpoint_t              endpoint,
+	context::handle_t       context_handle,
+	T *                     ptr,
+	array::dimensions_t<2>  dimensions) noexcept
 {
 	array::dimensions_t<2> untyped_dims = {dimensions.width * sizeof(T), dimensions.height};
 	return set_endpoint_untyped(endpoint, context_handle, ptr, untyped_dims);
@@ -409,9 +430,9 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 template<>
 template<typename T>
 inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
-	endpoint_t endpoint,
-	T *ptr,
-	array::dimensions_t<2> dimensions)
+	endpoint_t              endpoint,
+	T *                     ptr,
+	array::dimensions_t<2>  dimensions)
 {
 	// We would have _liked_ to say:
 	// auto context_handle = context::current::detail_::get_handle();
@@ -550,13 +571,12 @@ inline copy_parameters_t<3>::dimensions_type copy_parameters_t<3>::bytes_extent(
 }
 
 template<>
-inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
+inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_ptr(
 	endpoint_t              endpoint,
 	context::handle_t,
-	void *                  ptr,
-	array::dimensions_t<2>  dimensions)
+	void *                  ptr)
 {
-	auto memory_type = memory::type_of(ptr);
+	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
 		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
 	}
@@ -569,15 +589,48 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
 		if (endpoint == endpoint_t::source) { srcHost = ptr; }
 		else { dstHost = ptr; }
 	}
-	set_bytes_pitch(endpoint, dimensions.width);
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
-	(memory_type == non_cuda ? host_ : memory_type);
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) =
+		static_cast<CUmemorytype>(memory_type == non_cuda ? host_ : memory_type);
 	// Can't set the endpoint context - the basic data structure doesn't support that!
 	// (endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
+	return *this;
+}
 
-	if (bytes_extent().area() == 0) {
-		set_bytes_extent(dimensions);
+template<>
+inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_untyped(
+	endpoint_t              endpoint,
+	context::handle_t       context_handle,
+	void *                  ptr,
+	array::dimensions_t<2>  dimensions)
+{
+	set_endpoint_ptr(endpoint, context_handle, ptr);
+	set_bytes_pitch(endpoint, dimensions.width);
+	set_bytes_extent(dimensions);
+	return *this;
+}
+
+template<>
+inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_ptr(
+	endpoint_t              endpoint,
+	context::handle_t       context_handle,
+	void *                  ptr)
+{
+	auto memory_type = type_of(ptr);
+	if (memory_type == array) {
+		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
 	}
+	if (memory_type == unified_ or memory_type == device_)
+	{
+		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
+	}
+	else {
+		// Either host or non_cuda memory
+		if (endpoint == endpoint_t::source) { srcHost = ptr; }
+		else { dstHost = ptr; }
+	}
+	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) =
+		static_cast<CUmemorytype> (memory_type == non_cuda ? host_ : memory_type);
+	(endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
 	return *this;
 }
 
@@ -588,32 +641,12 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 	void *                  ptr,
 	array::dimensions_t<3>  dimensions)
 {
-	auto memory_type = memory::type_of(ptr);
-	if (memory_type == array) {
-		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
-	}
-	if (memory_type == unified_ or memory_type == device_)
-	{
-		(endpoint == endpoint_t::source ? srcDevice : dstDevice) = device::address(ptr);
-	}
-	else {
-		// Either host or non_cuda memory
-		if (endpoint == endpoint_t::source) { srcHost = ptr; }
-		else { dstHost = ptr; }
-	}
-	set_bytes_pitch(endpoint, dimensions.width);
+	set_endpoint_ptr(endpoint, context_handle, ptr);
 	(endpoint == endpoint_t::source ? srcHeight : dstHeight) = dimensions.height;
-	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = static_cast<CUmemorytype>
-	(memory_type == non_cuda ? host_ : memory_type);
-	(endpoint == endpoint_t::source ? srcContext : dstContext) = context_handle;
-
-	if (bytes_extent().volume() == 0) {
-		set_bytes_extent(dimensions);
-	}
-
+	set_bytes_pitch(endpoint, dimensions.width);
+	set_bytes_extent(dimensions);
 	return *this;
 }
-
 
 template<>
 template<typename T>
