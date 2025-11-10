@@ -23,7 +23,15 @@ if(NOT DEFINED CUDA_ARCH_FLAGS_STR)
 		set(CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS_STR_}" CACHE INTERNAL "CUDA Architecture flags")
 	endif()
 endif()
-string(APPEND CMAKE_CUDA_FLAGS " ${CUDA_ARCH_FLAGS_STR} -Wno-deprecated-gpu-targets")
+# NVCC is unfriendly if you specify multiple architectures, only some of which are supported; and
+# many versions of CMake will indeed tend to include older architectures in the auto-detection 
+# fallback, so - we must do a bit of purging.
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "13.0")
+	string(REGEX REPLACE " ?-gencode arch=compute_(([1-6][0-9])|(7[0-2])),code=sm_(([1-6][0-9])|(7[0-2]))" "" CUDA_ARCH_FLAGS_STR_NO_UNSUPPORTED "${CUDA_ARCH_FLAGS_STR}")
+else()
+	string(CONCAT CUDA_ARCH_FLAGS_STR_NO_UNSUPPORTED "${CUDA_ARCH_FLAGS_STR}")
+endif()
+string(APPEND CMAKE_CUDA_FLAGS " ${CUDA_ARCH_FLAGS_STR_NO_UNSUPPORTED} -Wno-deprecated-gpu-targets")
 separate_arguments(CMAKE_CUDA_FLAGS_AS_LIST NATIVE_COMMAND ${CMAKE_CUDA_FLAGS})
 
 include(CompileWithWarnings)
