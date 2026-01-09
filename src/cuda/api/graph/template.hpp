@@ -102,7 +102,6 @@ as_handles(Container<NodeOrHandle>&& nodes_or_handles)
 		::std::forward<Container<NodeOrHandle>>(nodes_or_handles));
 }
 
-
 } // namespace detail_
 
 } // namespace node
@@ -114,6 +113,16 @@ template_t wrap(handle_t handle, bool take_ownership = false) noexcept;
 namespace detail_ {
 
 ::std::string identify(const template_t& template_);
+
+#if CUDA_VERSION >= 13010
+inline id_t get_id(handle_t handle)
+{
+	id_t id;
+	auto status = cuGraphGetId(handle, &id);
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	return id;
+}
+#endif // CUDA_VERSION >= 13010
 
 inline CUresult delete_edges(
 	handle_t               template_handle,
@@ -787,6 +796,15 @@ public: // non-mutators
 		, bool make_device_launchable = false
 #endif
 	);
+
+#if CUDA_VERSION >= 13010
+	/// Get the 'local' ID of this graph template, corresponding to the
+	/// ID one would find in the output of DOT printing the template.
+	id_t get_id() const
+	{
+		return template_::detail_::get_id(handle_);
+	}
+#endif // CUDA_VERSION >= 13010
 
 public: // data members
 	const insert_t insert { *this };

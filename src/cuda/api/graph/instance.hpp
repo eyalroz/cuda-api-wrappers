@@ -94,6 +94,16 @@ inline ::std::string describe(
 	node::handle_t             node_handle,
 	template_::handle_t        graph_template_handle);
 
+#if CUDA_VERSION >= 13010
+inline id_t get_id(handle_t handle)
+{
+	id_t id;
+	auto status = cuGraphExecGetId(handle, &id);
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	return id;
+}
+#endif // CUDA_VERSION >= 13010
+
 } // namespace detail_
 
 } // namespace instance
@@ -317,6 +327,15 @@ public: // non-mutators
 	}
 
 #endif
+
+#if CUDA_VERSION >= 13010
+	/// Get the 'local' ID of this graph instance, corresponding to the
+	/// ID one would find in the output of DOT printing the instance.
+	id_t get_id() const
+	{
+		return instance::detail_::get_id(handle_);
+	}
+#endif // CUDA_VERSION >= 13010
 
 	template <node::kind_t Kind>
 	void set_node_parameters(const node_t& node, node::parameters_t<Kind> new_parameters)

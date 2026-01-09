@@ -64,6 +64,14 @@ inline template_::handle_t graph_handle_of(handle_t handle)
 	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + graph::node::detail_::identify(handle));
 	return graph_template_handle;
 }
+
+inline id_t get_id(handle_t handle)
+{
+	id_t id;
+	auto status = cuGraphNodeGetLocalId(handle, &id);
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	return id;
+}
 #endif // CUDA_VERSION >= 13010
 
 } // namespace detail_
@@ -149,6 +157,15 @@ public:
 		}
 		return result;
 	}
+
+#if CUDA_VERSION >= 13010
+	/// Get the 'local' ID of this node, corresponding to the ID one would find
+	/// in the output of DOT printing the graph.
+	id_t get_id() const { return node::detail_::get_id(handle_); }
+
+	// Note: No method for the GetToolsId() API call - which is weird, and only
+	// exists for nodes, and whose use is unclear to me
+#endif // CUDA_VERSION >= 13010
 
 protected: // constructors and destructors
 	node_t(template_::handle_t graph_template_handle, handle_type handle) noexcept

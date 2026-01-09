@@ -1003,6 +1003,11 @@ using handle_t = CUfunction;
  */
 namespace graph {
 
+#if CUDA_VERSION >= 13010
+/// IDs of graph-related entities corresponding to DOT debug-printing output
+using id_t = unsigned;
+#endif
+
 namespace node {
 
 /// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
