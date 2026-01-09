@@ -10,6 +10,7 @@
 #if CUDA_VERSION >= 10000
 
 #include "../types.hpp"
+#include "identify.hpp"
 
 namespace cuda {
 
@@ -54,6 +55,16 @@ inline status_t get_dependents(
 	return cuGraphNodeGetDependentNodes(handle, dependent_handles, num_dependencies);
 #endif
 }
+
+#if CUDA_VERSION >= 13010
+inline template_::handle_t graph_handle_of(handle_t handle)
+{
+	template_::handle_t graph_template_handle;
+	auto status = cuGraphNodeGetContainingGraph(handle, &graph_template_handle);
+	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + graph::node::detail_::identify(handle));
+	return graph_template_handle;
+}
+#endif // CUDA_VERSION >= 13010
 
 } // namespace detail_
 
@@ -168,6 +179,19 @@ inline node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept
 {
 	return { graph_handle, handle };
 }
+
+#if CUDA_VERSION >= 13010
+namespace detail_ {
+
+/// Returns a node proxy class given only a node handle
+inline node_t from_handle(handle_t handle)
+{
+	auto graph_template_handle = graph_handle_of(handle);
+	return wrap(graph_template_handle, handle);
+}
+
+} // namespace detail_
+#endif // CUDA_VERSION >= 13010
 
 } // namespace node
 
