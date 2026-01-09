@@ -157,12 +157,6 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	api_failure_base                 = cudaErrorApiFailureBase,
 #if CUDA_VERSION >= 10000
 	system_not_ready                 = CUDA_ERROR_SYSTEM_NOT_READY,
-#endif
-#if CUDA_VERSION >= 10100
-	system_driver_mismatch           = CUDA_ERROR_SYSTEM_DRIVER_MISMATCH,
-	not_supported_on_device          = CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE,
-#endif
-#if CUDA_VERSION >= 10000
 	stream_capture_unsupported       = CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED,
 	stream_capture_invalidated       = CUDA_ERROR_STREAM_CAPTURE_INVALIDATED,
 	stream_capture_merge             = CUDA_ERROR_STREAM_CAPTURE_MERGE,
@@ -173,6 +167,8 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	not_permitted_on_captured_event  = CUDA_ERROR_CAPTURED_EVENT,
 #endif
 #if CUDA_VERSION >= 10100
+	system_driver_mismatch           = CUDA_ERROR_SYSTEM_DRIVER_MISMATCH,
+	not_supported_on_device          = CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE,
 	stream_capture_wrong_thread      = CUDA_ERROR_STREAM_CAPTURE_WRONG_THREAD,
 #endif
 #if CUDA_VERSION >= 10200
@@ -186,7 +182,22 @@ enum named_t : ::std::underlying_type<status_t>::type {
 	mps_max_clients_reached          = CUDA_ERROR_MPS_MAX_CLIENTS_REACHED,
 	mps_max_connections_reached      = CUDA_ERROR_MPS_MAX_CONNECTIONS_REACHED,
 	async_error_in_external_device   = CUDA_ERROR_EXTERNAL_DEVICE,
-#endif
+#endif // CUDA_VERSION >= 11400
+#if CUDA_VERSION >= 12000
+	invalid_cluster_size             = CUDA_ERROR_INVALID_CLUSTER_SIZE,
+#endif // CUDA_VERSION >= 12000
+#if CUDA_VERSION >= 12040
+	necessary_function_not_loaded    = CUDA_ERROR_FUNCTION_NOT_LOADED,
+	invalid_resource_type            = CUDA_ERROR_INVALID_RESOURCE_TYPE,
+	resources_insufficient_or_inapplicable
+									 = CUDA_ERROR_INVALID_RESOURCE_CONFIGURATION,
+#endif // CUDA_VERSION >= 12040
+#if CUDA_VERSION >= 12080
+	key_rotation_sequence_failure    = CUDA_ERROR_KEY_ROTATION,
+#endif // CUDA_VERSION >= 12080
+#if CUDA_VERSION >= 13010
+	not_permitted_on_detached_stream = CUDA_ERROR_STREAM_DETACHED,
+#endif // CUDA_VERSION >= 13010
 };
 
 ///@cond
