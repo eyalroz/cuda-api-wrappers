@@ -132,6 +132,11 @@ std::ostream& operator<<(std::ostream& os, const cuda::launch_configuration_t& l
 		<< "]";
 }
 
+std::ostream& operator<<(std::ostream& os, const cuda::grid::block_dimensions_t& dims)
+{
+	// return os << dims.x << "x" << dims.y << "x" << dims.z;
+	return os << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
+}
 
 std::string to_string(const cuda::context_t& context)
 {
