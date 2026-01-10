@@ -210,6 +210,14 @@ public:
 		result.dynamic_shared_memory_size = get_dynamic_shared_memory_size(result.dimensions.block);
 		result.block_cooperation = thread_block_cooperation;
 		// TODO: More fields!
+		detail_::validate(result);
+		if (device_id_) {
+			auto device = device::get(*device_id_);
+			detail_::validate_compatibility(device, result);
+		}
+		if (kernel_) {
+			detail_::validate_compatibility(*kernel_, result);
+		}
 		return result;
 	}
 
@@ -232,7 +240,7 @@ protected:
 	memory::shared::size_t dynamic_shared_memory_size_ { 0 };
 
 	const kernel_t* kernel_ { nullptr };
-	optional<device::id_t> device_;
+	optional<device::id_t> device_id_;
 	bool saturate_with_active_blocks_ { false };
 #if CUDA_VERSION >= 10000
 	bool use_min_params_for_max_occupancy_ { false };
@@ -243,14 +251,14 @@ protected:
 		return cuda::device::get(maybe_id.value());
 	}
 
-	cuda::device_t device() const { return device(device_.value()); }
+	cuda::device_t device() const { return device(device_id_.value()); }
 
 	launch_config_builder_t& configure_for(launch_configuration_t config)
 	{
 #ifndef NDEBUG
 		detail_::validate(config);
 		if (kernel_) { detail_::validate_compatibility(*kernel_, config); }
-		if (device_) { detail_::validate_compatibility(device(), config); }
+		if (device_id_) { detail_::validate_compatibility(device(), config); }
 #endif
 		thread_block_cooperation = config.block_cooperation;
 		dynamic_shared_memory_size_ = config.dynamic_shared_memory_size;
@@ -278,7 +286,7 @@ protected:
 	void validate_dynamic_shared_memory_size(memory::shared::size_t size)
 	{
 		validate_compatibility(kernel_, size);
-		validate_compatibility(device_, size);
+		validate_compatibility(device_id_, size);
 	}
 
 	static void validate_block_dimension_compatibility(
@@ -306,7 +314,7 @@ protected:
 		}
 		// TODO: Check divisibility
 		validate_block_dimension_compatibility(kernel_, block_dims);
-		validate_block_dimension_compatibility(device_, block_dims);
+		validate_block_dimension_compatibility(device_id_, block_dims);
 	}
 
 
@@ -375,10 +383,10 @@ protected:
 	void validate_composite_dimensions(grid::composite_dimensions_t composite_dims) const
 	{
 		validate_block_dimension_compatibility(kernel_, composite_dims.block);
-		validate_block_dimension_compatibility(device_, composite_dims.block);
+		validate_block_dimension_compatibility(device_id_, composite_dims.block);
 
 		// Is there anything to validate regarding the grid dims?
-		validate_grid_dimension_compatibility(device_, composite_dims.grid);
+		validate_grid_dimension_compatibility(device_id_, composite_dims.grid);
 	}
 #endif // ifndef NDEBUG
 
@@ -439,13 +447,13 @@ public:
 					+ kernel::detail_::identify(*kernel_));
 			}
 		}
-		if (device_) {
+		if (device_id_) {
 			auto max_threads_per_block = device().maximum_threads_per_block();
 			if (size > max_threads_per_block) {
 				throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
 					+ " exceeds " + ::std::to_string(max_threads_per_block)
 			 		+ " , the maximum number of threads per block supported by "
-					+ device::detail_::identify(device_.value()));
+					+ device::detail_::identify(device_id_.value()));
 			}
 		}
 		return block_dimensions(static_cast<grid::block_dimension_t>(size), 1, 1);
@@ -464,7 +472,7 @@ public:
 		if (kernel_) {
 			max_size = kernel_->maximum_threads_per_block();
 		}
-		else if (device_) {
+		else if (device_id_) {
 			max_size = device().maximum_threads_per_block();
 		}
 		else {
@@ -652,9 +660,9 @@ public:
 	 */
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
 	{
-		if (device_ and kernel_->device_id() != device_.value()) {
+		if (device_id_ and kernel_->device_id() != device_id_.value()) {
 			throw ::std::invalid_argument("Launch config builder already associated with "
-			+ device::detail_::identify(*device_) + " and cannot further be associated "
+			+ device::detail_::identify(*device_id_) + " and cannot further be associated "
 			"with " +kernel::detail_::identify(*wrapped_kernel_ptr));
 		}
 #ifndef NDEBUG
@@ -680,7 +688,7 @@ public:
 				+ kernel::detail_::identify(*kernel_) + " and cannot further be associated "
 				"another device: " + device::detail_::identify(device_id));
 		}
-		device_ = device_id;
+		device_id_ = device_id;
 		return *this;
 	}
 
