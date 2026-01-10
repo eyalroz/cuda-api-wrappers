@@ -40,7 +40,7 @@ int main(int, char **)
 		cuda::launch_configuration_t lc = cuda::launch_config_builder()
 			.device(device)
 			.overall_size(2048)
-			.block_dimensions(15000) // Note: higher than the possible maximum for know CUDA devices
+			.block_dimensions(15000) // Note: higher than the possible maximum for known CUDA devices
 			.build();
 		(void) lc;
 	} catch (::std::invalid_argument& ex) {
