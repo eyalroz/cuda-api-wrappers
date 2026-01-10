@@ -131,9 +131,9 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 	if (cta.thread_rank() == 0) result[0] = temp_sum;
 }
 
-void init_input(span<float> a) {
+void init_input(cuda::span<float> a) {
 	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / static_cast<float>(RAND_MAX); };
-	std::generate_n(a.data(), a.size(), generator);
+	::std::generate_n(a.data(), a.size(), generator);
 }
 
 void myRealHostNodeCallback(char const *graph_construction_mode, double result)
