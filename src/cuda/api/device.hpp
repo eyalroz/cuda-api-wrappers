@@ -93,7 +93,7 @@ inline ::std::string get_name(id_t id)
 	static constexpr const size_type initial_size_reservation { 100 };
 	static constexpr const size_type larger_size { 1000 }; // Just in case
 	char stack_buffer[initial_size_reservation];
-	auto buffer_size = static_cast<size_type>((sizeof(stack_buffer) / sizeof(char)));
+	auto buffer_size = static_cast<size_type>(sizeof(stack_buffer) / sizeof(char));
 	auto try_getting_name = [&](char* buffer, size_type buffer_size_) -> size_type {
 		auto status = cuDeviceGetName(buffer, buffer_size-1, id);
 		throw_if_error_lazy(status, "Failed obtaining the CUDA device name of device " + ::std::to_string(id));
@@ -666,7 +666,7 @@ public:
 public:
 	context::host_thread_sync_scheduling_policy_t sync_scheduling_policy() const
 	{
-		return context::host_thread_sync_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
+		return static_cast<context::host_thread_sync_scheduling_policy_t>(flags() & CU_CTX_SCHED_MASK);
 	}
 
 	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy) const

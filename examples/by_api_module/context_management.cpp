@@ -72,7 +72,7 @@ void test_context(
 	auto printf_fifo_size = context.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	std::cout << "The printf FIFO size for context " << context << " is " << printf_fifo_size << ".\n";
 	decltype(printf_fifo_size) new_printf_fifo_size =
-		(printf_fifo_size <= 1024) ?  2 * printf_fifo_size : printf_fifo_size - 512;
+		(printf_fifo_size <= 1024) ? 2 * printf_fifo_size : printf_fifo_size - 512;
 	context.set_limit(CU_LIMIT_PRINTF_FIFO_SIZE, new_printf_fifo_size);
 	printf_fifo_size = context.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	assert_(printf_fifo_size == new_printf_fifo_size);
@@ -91,9 +91,9 @@ void test_context(
 }
 
 void current_context_manipulation(
-	cuda::device_t &device,
-	cuda::device::primary_context_t &pc,
-	cuda::context_t &created_context)
+	const cuda::device_t &device,
+	const cuda::device::primary_context_t &pc,
+	const cuda::context_t &created_context)
 {
 	cuda::context_t context_0 = pc;
 	cuda::context_t context_1 = created_context;
@@ -104,13 +104,13 @@ void current_context_manipulation(
 	assert_(cuda::context::current::get() == context_1);
 	assert_(cuda::context::current::detail_::get_handle() == context_1.handle());
 
-
 	auto context_2 = cuda::context::create(device);
 	{
 		cuda::context::current::scoped_override_t context_for_this_block { context_2 };
 		assert_(context_2.handle() == cuda::context::current::get().handle());
 		assert_(context_2 == cuda::context::current::get());
 	}
+	(void) context_2; // We want it in existence outside the inner scope
 	auto gotten = cuda::context::current::get();
 	assert_(gotten == context_1);
 

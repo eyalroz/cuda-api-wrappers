@@ -44,7 +44,7 @@ namespace cg = cooperative_groups;
 #define THREADS_PER_BLOCK 512
 #define GRAPH_LAUNCH_ITERATIONS 3
 
-__global__ void reduce(float *inputVec, double *outputVec, size_t inputSize, size_t outputSize)
+__global__ void reduce(const float *inputVec, double *outputVec, size_t inputSize, size_t outputSize)
 {
 	__shared__ double tmp[THREADS_PER_BLOCK];
 
@@ -53,7 +53,7 @@ __global__ void reduce(float *inputVec, double *outputVec, size_t inputSize, siz
 
 	double temp_sum = 0.0;
 	for (int i = globaltid; i < inputSize; i += gridDim.x * blockDim.x) {
-		temp_sum += (double) inputVec[i];
+		temp_sum += static_cast<double>(inputVec[i]);
 	}
 	tmp[cta.thread_rank()] = temp_sum;
 
@@ -132,7 +132,7 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 }
 
 void init_input(cuda::span<float> a) {
-	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / (float)RAND_MAX; };
+	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / static_cast<float>(RAND_MAX); };
 	::std::generate_n(a.data(), a.size(), generator);
 }
 
@@ -144,7 +144,7 @@ void myRealHostNodeCallback(char const *graph_construction_mode, double result)
 
 void CUDART_CB myHostNodeCallback(void *type_erased_data)
 {
-	auto *data = reinterpret_cast<std::pair<const char*, double*>*>(type_erased_data);
+	auto *data = static_cast<std::pair<const char*, double*>*>(type_erased_data);
 	auto graph_construction_mode = data->first;
 	auto result = data->second;
 	myRealHostNodeCallback(graph_construction_mode, *result);

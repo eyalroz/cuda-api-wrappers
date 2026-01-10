@@ -1503,9 +1503,9 @@ namespace detail_ {
 // practice it needs to be registered somewhere - and that somewhere is a context. Passing a context does not mean
 // the allocation will have special affinity to the device terms of better performance etc.
 inline region_t allocate(
-	const context::handle_t  context_handle,
-	size_t                   size_in_bytes,
-	allocation_options       options);
+	context::handle_t   context_handle,
+	size_t              size_in_bytes,
+	allocation_options  options);
 
 } // namespace detail_
 
@@ -1983,7 +1983,7 @@ void advise_no_access_expected_by(const_region_t region, device_t& device);
 
 /// @return the devices which are marked by attribute as being the accessors of a specified memory region
 template <typename Allocator = ::std::allocator<cuda::device_t> >
-typename ::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
+::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
 
 /// Kinds of managed memory region attachments
 enum class attachment_t : unsigned {
@@ -2287,9 +2287,9 @@ inline void free(void* host_side_pair)
  * @param options see @ref memory::allocation_options
  */
 region_pair_t allocate(
-	cuda::context_t&    context,
-	size_t              size_in_bytes,
-	allocation_options  options);
+	const cuda::context_t&    context,
+	size_t                    size_in_bytes,
+	allocation_options        options);
 
 /**
  * Allocate a memory region on the host, which is also mapped to a memory region in
@@ -2300,9 +2300,9 @@ region_pair_t allocate(
  * @param options see @ref memory::allocation_options
  */
 region_pair_t allocate(
-	cuda::device_t&     device,
-	size_t              size_in_bytes,
-	allocation_options  options = allocation_options{});
+	const cuda::device_t&     device,
+	size_t                    size_in_bytes,
+	allocation_options        options = allocation_options{});
 
 
 /**

@@ -106,7 +106,7 @@ int
 ipcOpenSocket(ipcHandle *&handle);
 
 int
-ipcCloseSocket(ipcHandle *handle);
+ipcCloseSocket(const ipcHandle *handle);
 
 int
 ipcRecvShareableHandles(ipcHandle *handle, std::vector<shared_allocation_handle_t>& shareableHandles);

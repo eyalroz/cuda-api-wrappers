@@ -40,7 +40,7 @@ bool your_type_was_() { return true; }
 
 inline const char* ordinal_suffix(int n)
 {
-	static const char suffixes [4][5] = {"th", "st", "nd", "rd"};
+	static constexpr char suffixes [4][5] = {"th", "st", "nd", "rd"};
 	auto ord = n % 100;
 	if (ord / 10 == 1) { ord = 0; }
 	ord = ord % 10;
@@ -95,12 +95,12 @@ std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc
 
 std::ostream& operator<<(std::ostream& os, cuda::multiprocessor_cache_preference_t pref)
 {
-	return (os << cache_preference_name(pref));
+	return os << cache_preference_name(pref);
 }
 
 std::ostream& operator<<(std::ostream& os, cuda::context::host_thread_sync_scheduling_policy_t pref)
 {
-	return (os << host_thread_sync_scheduling_policy_name(pref));
+	return os << host_thread_sync_scheduling_policy_name(pref);
 }
 
 std::ostream& operator<<(std::ostream& os, cuda::context::handle_t handle)
@@ -195,7 +195,7 @@ void print_context_stack()
 		}
 		std::cout << '\n';
 	}
-	for (auto it = contexts.rbegin(); it != contexts.rend(); it++) {
+	for (auto it = contexts.rbegin(); it != contexts.rend(); ++it) {
 		cuda::context::current::detail_::push(*it);
 	}
 }
@@ -359,14 +359,33 @@ cuda::device::id_t choose_device(int argc, char ** argv)
 }
 
 #ifdef __GNUC__
+
+inline char const* describe_demangling_status(int status)
+{
+	switch (status) {
+	case 0: return "success";
+	case 1: return "A memory allocation failure occurred";
+	case 2: return "mangled_name is not a valid name under the C++ ABI mangling rules";
+	case 3: return "One of the arguments is invalid";
+	default: return "Unknown demangling status";
+	}
+}
+
 // Inefficient, but simple
 inline std::string demangle(const char *mangled_name)
 {
 	if (mangled_name == nullptr) { return nullptr; }
 	int status;
-	char *raw_demangled = abi::__cxa_demangle(mangled_name, 0 /* output buffer */, 0 /* length */, &status);
+	auto no_preallocated_output_buffer = nullptr;
+	auto dont_return_mangled_length = nullptr;
+	char *raw_demangled = abi::__cxa_demangle(
+		mangled_name,
+		no_preallocated_output_buffer,
+		dont_return_mangled_length,
+		&status);
 	if (raw_demangled == nullptr) {
-		throw std::runtime_error(std::string("Failed demangling \"") + mangled_name + '\"');
+		throw std::runtime_error(std::string("Failed demangling \"") + mangled_name + "\": "
+			+ describe_demangling_status(status));
 	}
 	std::string result { raw_demangled };
 	free(raw_demangled);

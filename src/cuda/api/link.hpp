@@ -9,8 +9,6 @@
 
 #include "current_context.hpp"
 #include "link_options.hpp"
-#include "memory.hpp"
-#include "module.hpp"
 
 #if __cplusplus >= 201703L
 #include <filesystem>

@@ -11,19 +11,15 @@
 #include "context.hpp"
 #include "ipc.hpp"
 
-#include <cuda_runtime_api.h>
-
 #include "../memory.hpp"
 #include "../array.hpp"
 #include "../device.hpp"
-#include "../event.hpp"
 #include "../pointer.hpp"
 #include "../stream.hpp"
 #include "../primary_context.hpp"
-#include "../kernel.hpp"
-#include "../virtual_memory.hpp"
 #include "../memory_pool.hpp"
-#include "../current_device.hpp"
+
+#include <driver_types.h>
 
 namespace cuda {
 
@@ -278,9 +274,9 @@ inline region_t allocate(size_t num_bytes)
 namespace mapped {
 
 inline region_pair_t allocate(
-	cuda::device_t&     device,
-	size_t              size_in_bytes,
-	allocation_options  options)
+	const cuda::device_t&  device,
+	size_t                 size_in_bytes,
+	allocation_options     options)
 {
 	auto pc = device.primary_context();
 	return cuda::memory::mapped::detail_::allocate(pc.handle(), size_in_bytes, options);
@@ -288,9 +284,9 @@ inline region_pair_t allocate(
 
 
 inline region_pair_t allocate(
-	cuda::context_t&    context,
-	size_t              size_in_bytes,
-	allocation_options  options)
+	const cuda::context_t&  context,
+	size_t                  size_in_bytes,
+	allocation_options      options)
 {
 	return cuda::memory::mapped::detail_::allocate(context.handle(), size_in_bytes, options);
 }
@@ -323,9 +319,9 @@ inline region_t allocate_in_current_context(
 }
 
 inline region_t allocate(
-	const context::handle_t  context_handle,
-	size_t                   size_in_bytes,
-	allocation_options       options)
+    context::handle_t   context_handle,
+	size_t              size_in_bytes,
+	allocation_options  options)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return allocate_in_current_context(size_in_bytes, options);

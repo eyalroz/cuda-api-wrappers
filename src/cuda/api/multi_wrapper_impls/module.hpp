@@ -12,7 +12,6 @@
 #ifndef MULTI_WRAPPER_IMPLS_MODULE_HPP_
 #define MULTI_WRAPPER_IMPLS_MODULE_HPP_
 
-#include "context.hpp"
 #include "../device.hpp"
 #include "../module.hpp"
 
@@ -95,9 +94,7 @@ inline module_t create(const context_t& context, const void* module_data)
 	return detail_::create(context, module_data, creator_function);
 }
 
-
-
-inline device::primary_context_t get_context_for(device_t& locus) { return locus.primary_context(); }
+inline device::primary_context_t get_context_for(const device_t& locus) { return locus.primary_context(); }
 
 } // namespace detail_
 
