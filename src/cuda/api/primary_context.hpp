@@ -163,7 +163,7 @@ public:
 
 public: // friendship
 
-	friend class device_t;
+	friend class ::cuda::device_t;
 	friend primary_context_t device::primary_context::detail_::wrap(device::id_t, context::handle_t, bool) noexcept;
 
 public: // constructors and destructor
