@@ -266,7 +266,8 @@ inline unique_region make_unique_region(
  * @returns An owning RAII/CADRe object for the allocated managed memory region
  */
 inline unique_region make_unique_region(
-    size_t                num_bytes);
+    size_t                num_bytes,
+    initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 } // namespace managed
 

@@ -51,8 +51,6 @@ inline link_t wrap(
 	const link::options_t &options,
 	bool take_ownership = false) noexcept;
 
-inline link_t create(const void *image, const link::options_t &options);
-
 /// Definitions relating to inputs to CUDA linking-processes
 namespace input {
 

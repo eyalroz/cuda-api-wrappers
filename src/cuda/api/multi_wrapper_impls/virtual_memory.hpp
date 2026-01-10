@@ -85,7 +85,7 @@ inline void set_permissions(
 template <template <typename...> class Container>
 inline void set_permissions(
 	mapping_t                    mapping,
-	const Container<device_t>&&  devices,
+	const Container<device_t>&   devices,
 	permissions_t                permissions)
 {
 	set_permissions(mapping.address_range(), devices, permissions);
