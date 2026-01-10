@@ -600,12 +600,17 @@ public: // mutators
 		 * only become allocated for use once the allocation task is actually reached by
 		 * the stream and completed.
 		 */
+		///@{
 		memory::region_t allocate(size_t num_bytes) const
 		{
 			return memory::device::allocate(num_bytes, associated_stream);
 		}
 
+		/**
+		 * @param pool Memory pool to allocate from
+		 */
 		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes) const;
+		///@}
 
 		/**
 		 * Free memory which, at the time of execution, has been allocated.
@@ -620,6 +625,7 @@ public: // mutators
 		{
 			memory::device::free(region, associated_stream);
 		}
+		///@}
 #endif // CUDA_VERSION >= 11020
 
 		/**

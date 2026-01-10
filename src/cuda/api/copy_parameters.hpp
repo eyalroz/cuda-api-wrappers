@@ -417,7 +417,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_untyped(
 
 template<>
 template<typename T>
-inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
+copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 	endpoint_t              endpoint,
 	context::handle_t       context_handle,
 	T *                     ptr,
@@ -429,7 +429,7 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 
 template<>
 template<typename T>
-inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
+copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 	endpoint_t              endpoint,
 	T *                     ptr,
 	array::dimensions_t<2>  dimensions)
@@ -498,7 +498,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_context(endpoint_t endpoi
 
 template<>
 template<typename T>
-inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
+copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
 	endpoint_t endpoint,
 	context::handle_t context_handle,
 	T *ptr,
@@ -510,7 +510,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
 
 template<>
 template<typename T>
-inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
+copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
 	endpoint_t endpoint,
 	T *ptr,
 	array::dimensions_t<3> dimensions)
@@ -534,7 +534,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::clear_rest() noexcept
 
 template<>
 template<typename T>
-inline copy_parameters_t<2> &copy_parameters_t<2>::set_extent(dimensions_type extent_in_elements) noexcept
+copy_parameters_t<2> &copy_parameters_t<2>::set_extent(dimensions_type extent_in_elements) noexcept
 {
 	WidthInBytes = extent_in_elements.width * sizeof(T);
 	Height = extent_in_elements.height;

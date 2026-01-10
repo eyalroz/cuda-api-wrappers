@@ -103,7 +103,7 @@ int
 ipcOpenSocket(ipcHandle *&handle);
 
 int
-ipcCloseSocket(ipcHandle *handle);
+ipcCloseSocket(const ipcHandle *handle);
 
 int
 ipcRecvShareableHandles(ipcHandle *handle, std::vector<shared_pool_handle_t>& shareable_pool_handles);

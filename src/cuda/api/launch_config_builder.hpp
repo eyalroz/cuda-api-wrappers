@@ -33,7 +33,7 @@ void validate_shared_mem_size_compatibility(const kernel_t& kernel_ptr, memory::
 void validate_shared_mem_compatibility(const device_t &device, memory::shared::size_t shared_mem_size) noexcept(false);
 void validate_grid_dimension_compatibility(const device_t &device, grid::block_dimensions_t block_dims) noexcept(false);
 void validate_compatibility(const kernel_t& kernel, launch_configuration_t launch_config) noexcept(false);
-void validate_compatibility(const device::id_t, memory::shared::size_t, bool, optional<grid::dimensions_t>) noexcept(false);
+void validate_compatibility(device::id_t, memory::shared::size_t, bool, optional<grid::dimensions_t>) noexcept(false);
 
 } // namespace detail_
 

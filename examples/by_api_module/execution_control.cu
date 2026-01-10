@@ -115,6 +115,7 @@ int main(int argc, char **argv)
 		launch_config_4 = std::move(launch_config_3);
 		cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
 		(void) launch_config_4;
+		(void) launch_config_5;
 		// In case the `[[maybe_unused]]` attribute and the void-casting is ignored,
 		// let's try to trick the compiler
     	// into thinking we're actually using launch_config_4.

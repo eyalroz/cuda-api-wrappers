@@ -55,7 +55,7 @@ constexpr inline bool operator!=(const named_t &lhs, const update_status_t &rhs)
 
 namespace detail_ {
 
-const char *const descriptions[] = {
+constexpr const char * const descriptions[] = {
 	"success",
 	"failure for an unexpected reason described in the return value of the function",
 	"topology has changed",
@@ -70,10 +70,10 @@ const char *const descriptions[] = {
 inline bool is_node_specific(update_status_t update_status)
 {
 	return
-		(update_status != success) and
-		(update_status != failure_for_unexpected_reason) and
-		(update_status != topology_has_changed) and
-		(update_status != unsupported_kind_of_parameter_change);
+		update_status != success and
+		update_status != failure_for_unexpected_reason and
+		update_status != topology_has_changed and
+		update_status != unsupported_kind_of_parameter_change;
 }
 
 } // namespace detail_
@@ -497,7 +497,7 @@ inline instance_t instantiate(
 #endif // CUDA_VERSION >= 11040
 	instance::handle_t instance_handle;
 #if CUDA_VERSION >= 11040
-	auto status = cuGraphInstantiateWithFlags(&instance_handle, template_.handle(), static_cast<unsigned long long>(flags));
+	auto status = cuGraphInstantiateWithFlags(&instance_handle, template_.handle(), flags);
 	throw_if_error_lazy(status, "Instantiating " + template_::detail_::identify(template_) );
 #else
 	static constexpr const size_t log_buffer_size { 2048 };

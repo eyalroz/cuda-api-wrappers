@@ -84,8 +84,8 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
 }
 
 void handle_compilation_failure(
-	const cuda::rtc::compilation_output_t<cuda::cuda_cpp>& compilation_output,
-	cuda::rtc::compilation_options_t<cuda::cuda_cpp> compilation_options = {})
+	const cuda::rtc::compilation_output_t<cuda::cuda_cpp> & compilation_output,
+	const cuda::rtc::compilation_options_t<cuda::cuda_cpp> & compilation_options = {})
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
@@ -108,16 +108,16 @@ get_compiled_program(const cuda::device_t &device)
 __constant__ int a;
 
 __global__
-void my_kernel1(float const* indata, float* outdata) {
-    outdata[0] = indata[0] + 1;
-    outdata[0] -= 1;
+void my_kernel1(float const* in_data, float* out_data) {
+    out_data[0] = indata[0] + 1;
+    out_data[0] -= 1;
 }
 
 template<int C, typename T>
 __global__
-void my_kernel2(float const* indata, float* outdata) {
+void my_kernel2(float const* in_data, float* out_data) {
     for( int i=0; i<C; ++i ) {
-        outdata[0] =-indata[0];
+        out_data[0] =-in_data[0];
     }
 };
 
@@ -165,10 +165,10 @@ bool basic_module_tests(
 	module_kernels = std::move(module_kernels_);
 #endif
 
-	test_result = test_result and (module.device_id() == device.id());
-	test_result = test_result and (module.device() == device);
-	test_result = test_result and (module.context() == device.primary_context(cuda::do_not_hold_primary_context_refcount_unit));
-	test_result = test_result and (module.context_handle() == cuda::device::primary_context::detail_::get_handle(device.id()));
+	test_result = test_result and module.device_id() == device.id();
+	test_result = test_result and module.device() == device;
+	test_result = test_result and module.context() == device.primary_context(cuda::do_not_hold_primary_context_refcount_unit);
+	test_result = test_result and module.context_handle() == cuda::device::primary_context::detail_::get_handle(device.id());
 
 	{
 		auto a = module.get_global_region(compilation_result.get_mangling_of(constant_name));
@@ -181,9 +181,9 @@ bool basic_module_tests(
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
 	auto list_kernel =
-		[](const char * title, const char * mangled_name, cuda::optional<const char*> unmangled) {
+		[](const char * title_, const char * mangled_name, cuda::optional<const char*> unmangled) {
 			std::cout
-				<< title << ":\n"
+				<< title_ << ":\n"
 				<< "  unmangled: " << unmangled.value_or("N/A") << '\n'
 				<< "  mangled:   " << mangled_name << "\n"
 #if __GNUC__

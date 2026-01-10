@@ -243,7 +243,7 @@ namespace pointer {
  * to be wrapped.
  */
 template<typename T>
-inline pointer_t<T> wrap(T* ptr) noexcept { return { ptr }; }
+pointer_t<T> wrap(T* ptr) noexcept { return { ptr }; }
 
 } // namespace pointer
 } // namespace memory
