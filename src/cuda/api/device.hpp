@@ -615,7 +615,7 @@ public:
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
-		bool interprocess       = event::not_interprocess);
+		bool interprocess       = event::not_interprocess) const;
 
 	/// See @ref cuda::context::create()
 	context_t create_context(
@@ -669,7 +669,7 @@ public:
 		return context::host_thread_sync_scheduling_policy_t(flags() & CU_CTX_SCHED_MASK);
 	}
 
-	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy)
+	void set_sync_scheduling_policy(context::host_thread_sync_scheduling_policy_t new_policy) const
 	{
 		auto other_flags = flags() & ~CU_CTX_SCHED_MASK;
 		set_flags(other_flags | static_cast<flags_type>(new_policy));
@@ -686,7 +686,7 @@ public:
 	/// @brief Instructs the (primary context of) the device to keep larger amounts of global
 	/// device memory allocated for use as local memory, after a kernel was executed which
 	/// required a larger-than-usual allocation
-	void keep_larger_local_mem_after_resize(bool keep = true)
+	void keep_larger_local_mem_after_resize(bool keep = true) const
 	{
 		auto other_flags = flags() & ~CU_CTX_LMEM_RESIZE_TO_MAX;
 		flags_type new_flags = other_flags | (keep ? CU_CTX_LMEM_RESIZE_TO_MAX : 0);
@@ -696,7 +696,7 @@ public:
 	/// @brief Instructs the (primary context of) the device to discard allocations of larger
 	/// amounts of global device memory which were used by a kernel requiring a larger amount
 	/// of local memory, and has concluded execution.
-	void dont_keep_larger_local_mem_after_resize()
+	void dont_keep_larger_local_mem_after_resize() const
 	{
 		keep_larger_local_mem_after_resize(false);
 	}

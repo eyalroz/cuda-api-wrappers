@@ -46,7 +46,7 @@ public: // type definitions
 	using size_type = ::size_t;
 
 	struct deleter_type {
-		void operator()(void * data) { operator delete(data); }
+		void operator()(void * data) const { operator delete(data); }
 	};
 
 public: // getters

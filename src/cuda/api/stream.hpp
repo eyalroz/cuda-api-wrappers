@@ -605,7 +605,7 @@ public: // mutators
 			return memory::device::allocate(num_bytes, associated_stream);
 		}
 
-		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes);
+		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes) const;
 
 		/**
 		 * Free memory which, at the time of execution, has been allocated.
@@ -846,7 +846,7 @@ public: // mutators
 	}
 
 #if CUDA_VERSION >= 11000
-	stream::synchronization_policy_t synchronization_policy()
+	stream::synchronization_policy_t synchronization_policy() const
 	{
 		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_result{};
@@ -855,7 +855,7 @@ public: // mutators
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
-	void set_synchronization_policy(stream::synchronization_policy_t policy)
+	void set_synchronization_policy(stream::synchronization_policy_t policy) const
 	{
 		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_value{};

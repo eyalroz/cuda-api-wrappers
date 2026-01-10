@@ -190,7 +190,7 @@ inline context_t device_t::create_context(
 inline event_t device_t::create_event(
 	bool          uses_blocking_sync,
 	bool          records_timing,
-	bool          interprocess)
+	bool          interprocess) const
 {
 	// The current implementation of event::create is not super-smart,
 	// but it's probably not worth it trying to improve just this function
