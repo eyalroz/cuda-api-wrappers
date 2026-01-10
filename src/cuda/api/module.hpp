@@ -11,9 +11,7 @@
 #include "primary_context.hpp"
 #include "kernel.hpp"
 #include "memory.hpp"
-#include "array.hpp"
 #include "link_options.hpp"
-#include <array>
 
 #if __cplusplus >= 201703L
 #include <filesystem>
@@ -430,7 +428,7 @@ inline ::std::string identify(const module_t& module)
 }
 
 inline context_t get_context_for(const context_t& locus) { return locus; }
-inline device::primary_context_t get_context_for(device_t& locus);
+inline device::primary_context_t get_context_for(const device_t& locus);
 
 } // namespace detail_
 

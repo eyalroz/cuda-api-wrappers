@@ -140,7 +140,7 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	/// these dimensions is not "flat")
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
-		return ((width > 1) + (height> 1) + (depth > 1));
+		return (width > 1) + (height> 1) + (depth > 1);
 	}
 
 	/// Named constructor idiom: Dimensions for an equi-lateral cube
@@ -189,7 +189,7 @@ struct dimensions_t<2>
 	/// these dimensions is not "flat")
 	constexpr __host__ __device__ dimensionality_t dimensionality() const
 	{
-		return ((width > 1) + (height> 1));
+		return (width > 1) + (height> 1);
 	}
 
 	// Named constructor idioms
@@ -342,7 +342,7 @@ struct dimensions_t // this almost-inherits dim3
 	/// have more than a single value
 	constexpr __host__ __device__ dimensionality_t dimensionality() const noexcept
 	{
-		return ((z > 1) + (y > 1) + (x > 1));
+		return (z > 1) + (y > 1) + (x > 1);
 	}
 
 	// Named constructor idioms
@@ -762,7 +762,7 @@ enum class initial_visibility_t {
 #if CUDA_VERSION >= 11070
 /// Memory barriers can apply to different scops of scheduled work which must reach it before
 /// continuing
-enum class barrier_scope_t : typename ::std::underlying_type<CUstreamMemoryBarrier_flags>::type {
+enum class barrier_scope_t : ::std::underlying_type<CUstreamMemoryBarrier_flags>::type {
 	/// All wortk on
 	device = CU_STREAM_MEMORY_BARRIER_TYPE_GPU,
 	system = CU_STREAM_MEMORY_BARRIER_TYPE_SYS

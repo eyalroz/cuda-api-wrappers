@@ -14,8 +14,6 @@
 #include "../device.hpp"
 #include "../stream.hpp"
 #include "../event.hpp"
-#include "../kernel.hpp"
-#include "../virtual_memory.hpp"
 #include "../current_context.hpp"
 #include "../current_device.hpp"
 #include "../peer_to_peer.hpp"

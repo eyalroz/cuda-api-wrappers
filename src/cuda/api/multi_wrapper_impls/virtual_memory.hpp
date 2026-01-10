@@ -30,7 +30,7 @@ properties_t create_properties_for(const device_t& device)
 }
 
 template<shared_handle_kind_t SharedHandleKind>
-inline physical_allocation_t create(size_t size, device_t device)
+physical_allocation_t create(size_t size, device_t device)
 {
 	auto properties = create_properties_for<SharedHandleKind>(device);
 	return create(size, properties);

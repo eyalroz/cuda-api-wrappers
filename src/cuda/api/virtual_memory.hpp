@@ -10,9 +10,14 @@
 
 #if CUDA_VERSION >= 10020
 #include "types.hpp"
-#include "memory.hpp"
+#include "error.hpp"
 
 namespace cuda {
+
+///@cond
+class device_t;
+///@endcond
+
 // TODO: Perhaps move this down into the device namespace ?
 namespace memory {
 

@@ -13,7 +13,6 @@
 #include <cuda/nvtx.hpp>
 #endif
 #include <cuda/rtc.hpp>
-#include <cuda/fatbin.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -31,6 +30,7 @@ void unique_spans()
 	auto us2 = cuda::unique_span<float>(nullptr, 0, cuda::detail_::default_span_deleter<float>);
 	auto us3 = cuda::unique_span<float>(nullptr, 0, cuda::detail_::default_span_deleter<float>);
 	us2 = std::move(us3);
+	(void) us2;
 }
 
 void unique_regions()

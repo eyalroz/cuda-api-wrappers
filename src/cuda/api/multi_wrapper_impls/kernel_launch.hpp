@@ -75,7 +75,7 @@ inline void validate_shared_mem_compatibility(
 }
 
 inline void validate_compatibility(
-	const device::id_t            device_id,
+	device::id_t                  device_id,
 	memory::shared::size_t        shared_mem_size,
 	bool                          cooperative_launch,
 	optional<grid::dimensions_t>  block_cluster_dimensions) noexcept(false)

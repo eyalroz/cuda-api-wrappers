@@ -217,7 +217,7 @@ int ipcOpenSocket(ipcHandle *&handle) {
   return 0;
 }
 
-int ipcCloseSocket(ipcHandle *handle) {
+int ipcCloseSocket(const ipcHandle *handle) {
   if (!handle) {
     return -1;
   }
@@ -466,7 +466,7 @@ int ipcRecvShareableHandles(ipcHandle *handle,
   return 0;
 }
 
-int ipcCloseSocket(ipcHandle *handle) {
+int ipcCloseSocket(const ipcHandle *handle) {
   for (int i = 0; i < handle->hMailslot.size(); i++) {
     CloseHandle(handle->hMailslot[i]);
   }

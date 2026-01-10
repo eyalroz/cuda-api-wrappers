@@ -58,9 +58,7 @@ void pointer_properties(const cuda::device_t& device)
 			(void) host_ptr; // Some compilers don't respect [[maybe_unused]] :-(
 			die_("Was expecting the host_ptr() method to fail for a device-side pointer");
 		} catch(cuda::runtime_error& e) {
-			if (e.code() != cuda::status::named_t::invalid_value) {
-				throw e;
-			}
+			if (e.code() != cuda::status::named_t::invalid_value) { throw; }
 		}
 		auto ptr_reported_as_managed = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_IS_MANAGED>(raw_pointers[i]);
 		assert_(ptr_reported_as_managed == 0);
@@ -140,7 +138,7 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 				<< ptr.get() << ", " << " host-side pointer: " << host_side_ptr;
 	}
 	catch(cuda::runtime_error& e) {
-		if (e.code() != cuda::status::invalid_value) { throw e; }
+		if (e.code() != cuda::status::invalid_value) { throw; }
 	}
 }
 
