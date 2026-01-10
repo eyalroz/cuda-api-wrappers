@@ -264,13 +264,13 @@ inline void disable_access_to(const context_t &peer_context)
 
 } // namespace context
 
-inline memory::region_t context_t::global_memory_type::allocate(size_t size_in_bytes)
+inline memory::region_t context_t::global_memory_type::allocate(size_t size_in_bytes) const
 {
 	return memory::device::detail_::allocate(context_handle_, size_in_bytes);
 }
 
 inline memory::region_t context_t::global_memory_type::allocate_managed(
-	size_t size_in_bytes, memory::managed::initial_visibility_t initial_visibility)
+	size_t size_in_bytes, memory::managed::initial_visibility_t initial_visibility) const
 {
 	return memory::managed::detail_::allocate(context_handle_, size_in_bytes, initial_visibility);
 }

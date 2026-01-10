@@ -533,7 +533,7 @@ memory::pool_t device_t::create_memory_pool() const
 	return cuda::memory::pool::detail_::create<Kind>(id_);
 }
 
-inline memory::region_t stream_t::enqueue_t::allocate(const memory::pool_t& pool, size_t num_bytes)
+inline memory::region_t stream_t::enqueue_t::allocate(const memory::pool_t& pool, size_t num_bytes) const
 {
 	return memory::pool::allocate(pool, associated_stream, num_bytes);
 }

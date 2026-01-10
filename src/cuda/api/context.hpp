@@ -292,7 +292,7 @@ public: // inner classes
 		 * @param size_in_bytes size in bytes of the region of memory to allocate
 		 * @return a non-null (device-side) pointer to the allocated memory
 		 */
-		memory::region_t allocate(size_t size_in_bytes);
+		memory::region_t allocate(size_t size_in_bytes) const;
 
 		/**
 		 * Allocates memory on the device whose pointer is also visible on the host,
@@ -317,7 +317,7 @@ public: // inner classes
 		memory::region_t allocate_managed(
 			size_t size_in_bytes,
 			cuda::memory::managed::initial_visibility_t initial_visibility =
-			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access);
+			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access) const;
 
 		/**
 		 * Amount of total global memory on the CUDA device's primary context.
