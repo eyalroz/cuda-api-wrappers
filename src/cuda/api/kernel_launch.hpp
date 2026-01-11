@@ -139,7 +139,6 @@ inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Ar
 	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);
 }
 
-// For partial template specialization on WrappedKernel...
 template<typename Kernel, typename... KernelParameters>
 struct enqueue_launch_helper {
 	void operator()(
