@@ -757,7 +757,6 @@ inline void zero(void* ptr, size_t num_bytes, optional_ref<const stream_t> strea
  * @param ptr pointer to a single element of a certain type, which may
  * be in host-side memory, global CUDA-device-side memory or CUDA-managed
  * memory.
- * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
 inline void zero(T* ptr)
@@ -833,9 +832,8 @@ void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> 
  * @param destination A {@tparam NumDimensions}-dimensional CUDA array, including a specification
  *     of the context in which the array is defined.
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
- *     of type @tparam T. The memory may be located either on a CUDA device or in host memory.
- * @param context The context in which the source memory was allocated - possibly different than
- *     the target array context
+ *     of type {@tparam T}. The memory may be located either on a CUDA device or in host memory.
+ * @param stream A stream on which to schedule the copy action
  */
 template<typename T, dimensionality_t NumDimensions>
 void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source, optional_ref<const stream_t> stream = {})
@@ -858,14 +856,14 @@ void copy(const array_t<T, NumDimensions>& destination, const context_t& source_
  *
  * @param destination A {@tparam NumDimensions}-dimensional CUDA array
  * @param source A pointer to a region of contiguous memory holding `destination.size()` values
- * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * of type {@tparam T}. The memory may be located either on a CUDA device or in host memory.
  *
  * Asynchronously copies data into a CUDA array.
  *
  * @note asynchronous version of @ref memory::copy<T>(array_t<T, NumDimensions>&, const T*)
  *
  * @param destination A CUDA array to copy data into
- * @param source A pointer to a a memory region of size `destination.size() * sizeof(T)`
+ * @param source A pointer to a memory region of size `destination.size() * sizeof(T)`
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
@@ -899,7 +897,7 @@ void copy(const array_t<T, NumDimensions>& destination, span<T const> source, op
  * @tparam T array element type
  *
  * @param destination A pointer to a region of contiguous memory holding `destination.size()` values
- * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * of type {@tparam T}. The memory may be located either on a CUDA device or in host memory.
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  */
 template <typename T, dimensionality_t NumDimensions>
@@ -924,7 +922,7 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
  * @tparam T array element type
  *
  * @param destination A pointer to a region of contiguous memory holding `destination.size()` values
- * of type @tparam T. The memory may be located either on a CUDA device or in host memory.
+ * of type {@tparam T}. The memory may be located either on a CUDA device or in host memory.
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  *
  * Asynchronously copies data from a CUDA array elsewhere
@@ -1829,7 +1827,7 @@ inline void set(region_t region, int byte_value)
 /**
  * Zero-out a region of host memory
  *
- * @param ptr the beginning of a region of host memory to zero-out
+ * @param start the beginning of a region of host memory to zero-out
  * @param num_bytes the size in bytes of the region of memory to zero-out
  */
 inline void zero(void* start, size_t num_bytes)
@@ -2361,12 +2359,11 @@ namespace detail_ {
  * @note We allow this only for "convenient" types; see @ref detail_check_allocation_type
  *
  * @tparam T Element of the created unique_span
- * @tparam UntypedAllocator can allocate untyped memory given a size
- * @tparam UntypedDeleter can delete memory given a pointer (disregarding the type)
+ * @tparam RegionAllocator can allocate untyped memory given a size
+ * @tparam RawDeleter can delete memory given a pointer (disregarding the type)
  *
  * @param size number of elements in the unique_span to be created
- * @param raw_allocator a gadget for allocating untyped memory
- * @param raw_deleter a gadget which can de-allocate/delete allocations by @p raw_allocator
+ * @param allocator a gadget for allocating untyped memory
  * @return the newly-created unique_span
  */
 template <typename T, typename RawDeleter, typename RegionAllocator>
