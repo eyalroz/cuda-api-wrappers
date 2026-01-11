@@ -83,11 +83,6 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
 	return sstr.str();
 }
 
-/**
- *
- * @param compilation_output
- * @param fine_day hello world
- */
 void handle_compilation_failure(
 	const cuda::rtc::compilation_output_t<cuda::cuda_cpp>& compilation_output,
 	cuda::rtc::compilation_options_t<cuda::cuda_cpp> compilation_options = {})

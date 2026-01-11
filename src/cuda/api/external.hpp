@@ -1,9 +1,10 @@
 /**
  * @file
  *
- * @brief CUDA wrappers for "CUDA-external resources": memory and semaphores.
+ * @brief Facilities for utilizing process-external resources: memory and semaphores,
+ * in work with CUDA.
  *
- * @note This is a rudiem
+ * @note mapping mipmapped arrays currently not supported.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_EXTERNAL_HPP_
@@ -187,8 +188,6 @@ inline unique_region map(const resource_t& resource)
 	auto subregion_spec = subregion_spec_t { 0u, resource.size() };
 	return map(resource, subregion_spec);
 }
-
-// Note: mapping mipmapped arrays currently not supported
 
 } // namespace external
 } // namespace memory
