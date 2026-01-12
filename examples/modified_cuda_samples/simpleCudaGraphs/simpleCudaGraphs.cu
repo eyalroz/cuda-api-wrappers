@@ -34,7 +34,7 @@
 #include <numeric>
 
 #if __cplusplus >= 202001L
-using span = ::std::span;
+using span = std::span;
 #else
 using cuda::span;
 #endif
@@ -131,14 +131,14 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 	if (cta.thread_rank() == 0) result[0] = temp_sum;
 }
 
-void init_input(cuda::span<float> a) {
+void init_input(span<float> a) {
 	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / static_cast<float>(RAND_MAX); };
-	::std::generate_n(a.data(), a.size(), generator);
+	std::generate_n(a.data(), a.size(), generator);
 }
 
 void myRealHostNodeCallback(char const *graph_construction_mode, double result)
 {
-	::std::cout << "Host callback in graph constructed by " << graph_construction_mode << ": result = " << result << ::std::endl;
+	std::cout << "Host callback in graph constructed by " << graph_construction_mode << ": result = " << result << std::endl;
 	result = 0.0;  // reset the result
 }
 
@@ -152,15 +152,20 @@ void CUDART_CB myHostNodeCallback(void *type_erased_data)
 
 void report_attempt(const char* attempt_kind, const char* how_created)
 {
-	::std::cout << '\n'
-			  << "Attempting " << attempt_kind << " of a CUDA graph, with construction method: " << how_created << '\n'
-			  << "----------------------------------------------------------------\n";
+	std::cout << "Attempting " << attempt_kind << " of a CUDA graph, with construction method: " << how_created << '\n';
+}
+
+void report_mode(const char* mode)
+{
+	std::cout << '\n'
+		<< "Graph construction method: " << mode << '\n'
+		<< "---------------------------" << std::string(std::strlen(mode), '-') << '\n';
 }
 
 void use(const cuda::device_t &device, const cuda::graph::template_t &graph, const char* how_created)
 {
 	report_attempt("use", how_created);
-	::std::cout << "Number of graph nodes = " << graph.num_nodes() << '\n';
+	std::cout << "Number of graph nodes = " << graph.num_nodes() << '\n';
 
 	auto instance = cuda::graph::instantiate(graph);
 
@@ -169,21 +174,24 @@ void use(const cuda::device_t &device, const cuda::graph::template_t &graph, con
 
 	auto stream_for_graph = cuda::stream::create(device, cuda::stream::async);
 
+	std::ostringstream sstr;
 	for (int i = 0; i < GRAPH_LAUNCH_ITERATIONS; i++) {
-		::std::cout
-			<< "Launching an instance of the original graph: launch "
-			<< (i+1) << " of " << GRAPH_LAUNCH_ITERATIONS << ::std::endl;
+		sstr.str("");
+		sstr << "Launching an instance of the original graph: launch "
+			 << (i+1) << " of " << GRAPH_LAUNCH_ITERATIONS << '\n';
+		std::cout << sstr.str() << std::flush;
 		instance.launch(stream_for_graph);
 	}
 
 	for (int i = 0; i < GRAPH_LAUNCH_ITERATIONS; i++) {
-		::std::cout
-			<< "Launching an instance of the cloned graph: launch "
-			<< (i+1) << " of " << GRAPH_LAUNCH_ITERATIONS << ::std::endl;
+		sstr.str("");
+		sstr << "Launching an instance of the cloned graph: launch "
+			 << (i+1) << " of " << GRAPH_LAUNCH_ITERATIONS << std::endl;
+		std::cout << sstr.str() << std::flush;
 		cloned_graph_instance.launch(stream_for_graph);
 	}
-	::std::cout << ::std::endl;
 	stream_for_graph.synchronize();
+	std::cout << std::endl;
 }
 
 void cudaGraphsManual(
@@ -194,6 +202,7 @@ void cudaGraphsManual(
 	span<double> result_d)
 {
 	const char* graph_construction_mode = "explicit node and edge insertion calls";
+	report_mode(graph_construction_mode);
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
 
@@ -273,7 +282,7 @@ void cudaGraphsManual(
 
 	graph.insert.edge(reduce_final_node, memcpy_result_node);
 
-	auto host_function_data = ::std::make_pair(graph_construction_mode, &result_h);
+	auto host_function_data = std::make_pair(graph_construction_mode, &result_h);
 	auto host_function_node = graph.insert.node<node_kind_t::host_function_call>(myHostNodeCallback, &host_function_data);
 
 	graph.insert.edge(memcpy_result_node, host_function_node);
@@ -291,6 +300,7 @@ void cudaGraphsManualWithBuilders(
 	span<double> result_d)
 {
 	const char* graph_construction_mode = "use of node builders and explicit edge insertions";
+	report_mode(graph_construction_mode);
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
 
@@ -300,7 +310,7 @@ void cudaGraphsManualWithBuilders(
 	// what about building via the graph object?
 	cuda::graph::node::builder_t builder;
 
-	::std::cout << "Building a memcpy node" << ::std::endl;
+	std::cout << "Building a memcpy node" << std::endl;
 
 	// TODO: Consider having builder_t::memory_copy , builder_t::memory_set etc.
 	auto memcpy_node = builder.kind<node_kind_t::memory_copy>()
@@ -315,14 +325,14 @@ void cudaGraphsManualWithBuilders(
 		// .context(cuda::context::current::get())
 		.build_within(graph);
 
-	::std::cout << "Building a memset node" << ::std::endl;
+	std::cout << "Building a memset node" << std::endl;
 
 	auto memset_node = builder.kind<node_kind_t::memory_set>()
 		.region(inputVec_d)
 		.value<float>(0)
 		.build_within(graph);
 
-	::std::cout << "Building a kernel launch node" << ::std::endl;
+	std::cout << "Building a kernel launch node" << std::endl;
 
 
 	auto wrapped_reduce_kernel = cuda::kernel::get(device, reduce);
@@ -343,7 +353,7 @@ void cudaGraphsManualWithBuilders(
 	graph.insert.edge(memcpy_node, reduce_node);
 	graph.insert.edge(memset_node, reduce_node);
 
-	::std::cout << "Building a memset node" << ::std::endl;
+	std::cout << "Building a memset node" << std::endl;
 
 	auto memset_result_node = builder.kind<node_kind_t::memory_set>()
 		.region(result_d)
@@ -351,7 +361,7 @@ void cudaGraphsManualWithBuilders(
 		.build_within(graph);
 
 
-	::std::cout << "Building a kernel launch node" << ::std::endl;
+	std::cout << "Building a kernel launch node" << std::endl;
 
 	auto final_reduce_launch_config = cuda::launch_config_builder()
 		.grid_size(1)
@@ -369,18 +379,18 @@ void cudaGraphsManualWithBuilders(
 	graph.insert.edge(reduce_node, reduce_final_node);
 	graph.insert.edge(memset_result_node, reduce_final_node);
 
-	::std::cout << "Building a memcpy node" << ::std::endl;
+	std::cout << "Building a memcpy node" << std::endl;
 
 	auto memcpy_result_node = builder.kind<node_kind_t::memory_copy>()
 		.source(result_d)
-		.destination(cuda::span<double>{&result_h,1})
+		.destination(span<double>{&result_h,1})
 		.build_within(graph);
 
 	graph.insert.edge(reduce_final_node, memcpy_result_node);
 
-	auto host_function_data = ::std::make_pair(graph_construction_mode, &result_h);
+	auto host_function_data = std::make_pair(graph_construction_mode, &result_h);
 
-	::std::cout << "Building a host function node" << ::std::endl;
+	std::cout << "Building a host function node" << std::endl;
 
 	auto host_function_node = builder.kind<node_kind_t::host_function_call>()
 		.argument(&host_function_data)
@@ -400,6 +410,7 @@ void cudaGraphsUsingStreamCapture(
 	span<double> result_d)
 {
 	const char* graph_construction_mode = "stream capture";
+	report_mode(graph_construction_mode);
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
 
@@ -455,9 +466,9 @@ void cudaGraphsUsingStreamCapture(
 	use(device, graph, graph_construction_mode);
 }
 
-[[noreturn]] bool die_(const ::std::string& message)
+[[noreturn]] bool die_(const std::string& message)
 {
-	::std::cerr << message << "\n";
+	std::cerr << message << "\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -472,15 +483,15 @@ int main(int argc, char **argv)
 
 	// Being very cavalier about our command-line arguments here...
 	cuda::device::id_t device_id = (argc > 1) ?
-		::std::stoi(argv[1]) : cuda::device::default_device_id;
+		std::stoi(argv[1]) : cuda::device::default_device_id;
 
 	auto device = cuda::device::get(device_id);
 
-	::std::cout
+	std::cout
 		<< size << " elements\n"
 		<< "threads per block  = " << THREADS_PER_BLOCK << '\n'
 		<< "Graph Launch iterations = " << GRAPH_LAUNCH_ITERATIONS << '\n'
-		<< ::std::flush;
+		<< std::flush;
 
 	auto inputVec_h = cuda::memory::host::make_unique_span<float>(size);
 	auto inputVec_d = cuda::memory::device::make_unique_span<float>(device, size);
@@ -489,23 +500,18 @@ int main(int argc, char **argv)
 
 	init_input(inputVec_h);
 
-	auto result_verification = ::std::accumulate(
+	auto result_verification = std::accumulate(
 #if __cplusplus >= 201712L
-		::std::execution::par_unseq,
+		std::execution::par_unseq,
 #endif
 		inputVec_h.begin(), inputVec_h.end(), 0.0);
-	::std::cout << "Expected result = " << result_verification << '\n';
+	std::cout << "Expected result = " << result_verification << '\n';
 
 	device.synchronize();
-
 	cudaGraphsManual(device, inputVec_h, inputVec_d, outputVec_d, result_d);
-
 	cudaGraphsUsingStreamCapture(device, inputVec_h, inputVec_d, outputVec_d, result_d);
-
 	device.synchronize();
-	::std::flush(std::cout);
-
 	cudaGraphsManualWithBuilders(device, inputVec_h, inputVec_d, outputVec_d, result_d);
 
-	::std::cout << "\n\nSUCCESS\n";
+	std::cout << "\nSUCCESS\n";
 }
