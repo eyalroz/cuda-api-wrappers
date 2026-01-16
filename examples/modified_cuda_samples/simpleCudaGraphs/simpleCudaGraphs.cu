@@ -191,7 +191,6 @@ void use(const cuda::device_t &device, const cuda::graph::template_t &graph, con
 		cloned_graph_instance.launch(stream_for_graph);
 	}
 	stream_for_graph.synchronize();
-	std::cout << std::endl;
 }
 
 void cudaGraphsManual(
@@ -205,6 +204,12 @@ void cudaGraphsManual(
 	report_mode(graph_construction_mode);
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
+	// This ugly hack is due to a problem with the CUDA graph API, and specifically
+	// with kernel launch node insertion: When you insert a node into a template,
+	// the kernel argument values are _not_ copied by the CUDA driver, nor apparently
+	// is the array of pointers to them. So, we need to extend the lifetime of this
+	// information until after the graph template is instantiated. 
+	std::vector<std::vector<void*>> argument_ptr_sequences{};
 
 	using node_kind_t = cuda::graph::node::kind_t;
 	auto graph = cuda::graph::create();
@@ -238,9 +243,9 @@ void cudaGraphsManual(
 			.grid_size(outputVec_d.size())
 			.block_size(THREADS_PER_BLOCK)
 			.build();
-		auto kernel_arg_pointers = cuda::graph::make_kernel_argument_pointers(
-			inputVec_d.data(), outputVec_d.data(), inputVec_d.size(), outputVec_d.size());
-		auto kernel_node_args = cuda::graph::make_launch_primed_kernel(reduce_kernel, launch_config, kernel_arg_pointers);
+		argument_ptr_sequences.emplace_back(cuda::graph::make_kernel_argument_pointers(
+			inputVec_d.data(), outputVec_d.data(), inputVec_d.size(), outputVec_d.size()));
+		auto kernel_node_args = cuda::graph::make_launch_primed_kernel(reduce_kernel, launch_config, argument_ptr_sequences.back());
 		return graph.insert.node<node_kind_t::kernel_launch>(kernel_node_args);
 	}();
 
@@ -261,8 +266,8 @@ void cudaGraphsManual(
 			.grid_size(1)
 			.block_size(THREADS_PER_BLOCK)
 			.build();
-		auto arg_ptrs = cuda::graph::make_kernel_argument_pointers(outputVec_d.data(), result_d.data(), outputVec_d.size());
-		return graph.insert.node<node_kind_t::kernel_launch>(kernel, launch_config, arg_ptrs);
+		argument_ptr_sequences.emplace_back(cuda::graph::make_kernel_argument_pointers(outputVec_d.data(), result_d.data(), outputVec_d.size()));
+		return graph.insert.node<node_kind_t::kernel_launch>(kernel, launch_config, argument_ptr_sequences.back());
 	}();
 
 	graph.insert.edge(reduce_node, reduce_final_node);
