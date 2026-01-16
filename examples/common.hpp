@@ -83,7 +83,9 @@ const char* memory_type_name(cuda::memory::type_t mem_type)
 		"array",
 		"unified"
 	};
-	return memory_type_names[mem_type];
+	return (mem_type <= 0 or mem_type > sizeof(memory_type_names)/sizeof(const char*)) ?
+		 "invalid memory type": // or maybe we should die?
+		 memory_type_names[mem_type];
 }
 
 namespace std {
@@ -136,6 +138,11 @@ std::ostream& operator<<(std::ostream& os, const cuda::grid::block_dimensions_t&
 {
 	// return os << dims.x << "x" << dims.y << "x" << dims.z;
 	return os << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
+}
+
+std::ostream& operator<<(std::ostream& os, const cuda::memory::type_t mem_type)
+{
+	return os << memory_type_name(mem_type);
 }
 
 std::string to_string(const cuda::context_t& context)
