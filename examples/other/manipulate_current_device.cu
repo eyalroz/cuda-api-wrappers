@@ -24,6 +24,11 @@ int main()
 	cuda::context::handle_t pc_handle[2];
 	
 	cuda::initialize_driver();
+	if (cuda::device::count() < 2) {
+		std::cout << "The example program requires at least 2 GPUs, while this system only has "
+			<< cuda::device::count() << '\n';
+		return EXIT_SUCCESS;
+	}
 	dev_idx[0] = cur_dev::get_id();
 	report_current_device();
 	assert_(cur_dev::get_id() == 0);
