@@ -3,14 +3,16 @@
  *
  * @brief Contains an implementation of an std::span-like class, @ref cuda::span
  *
- * @note When compiling with C++20 or later, the actual std::span is used instead
+ * @note When compiling with CUDA 12 or C++20, we alias the standard implementations.
  */
 
 #pragma once
 #ifndef CUDA_API_WRAPPERS_SPAN_HPP_
 #define CUDA_API_WRAPPERS_SPAN_HPP_
 
-#if __cplusplus >= 202002L
+#if defined(__CUDACC__) && defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ >= 12
+#include <cuda/std/span>
+#elif __cplusplus >= 202002L
 #include <span>
 #else
 #include <type_traits>
@@ -22,8 +24,12 @@
  */
 namespace cuda {
 
-#if __cplusplus >= 202002L
-using ::std::span;
+#if defined(__CUDACC__) && defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ >= 12
+template <typename T, std::size_t Extent = ::cuda::std::dynamic_extent>
+using span = ::cuda::std::span<T, Extent>;
+#elif __cplusplus >= 202002L
+template <typename T, std::size_t Extent = ::std::dynamic_extent>
+using span = ::std::span<T, Extent>;
 #else
 /**
  * @brief A "poor man's" span class
