@@ -111,7 +111,7 @@ public: // constructors and destructor
 			deleter_(*this);
 		}
 #ifndef NDEBUG
-		span_type::operator=(span_type{static_cast<T*>(nullptr), 0});
+		span_type::operator=(span_type{static_cast<T*>(nullptr), static_cast<std::size_t>(0)});
 #endif
 	}
 
@@ -160,7 +160,7 @@ protected: // mutators
 	span_type release() noexcept
 	{
 		span_type released { data(), size() };
-		span_type::operator=(span_type{ static_cast<T*>(nullptr), 0 });
+		span_type::operator=(span_type{static_cast<T *>(nullptr), static_cast<std::size_t>(0)});
 		// Note that we are _not_ replacing deleter.
 		return released;
 	}
