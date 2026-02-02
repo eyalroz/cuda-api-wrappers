@@ -76,7 +76,7 @@ public:
 		if (not was_set.template_) {
 			throw detail_::make_unspec_error("child graph", "child graph template");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(::std::move(params_));
 	}
 }; // typed_builder_t<kind_t::child_graph>
 
@@ -117,7 +117,7 @@ public:
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("record event", "event");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(::std::move(params_));
 	}
 }; // typed_builder_t<kind_t::record_event>
 
@@ -156,7 +156,7 @@ public:
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("wait on event", "event");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(::std::move(params_));
 	}
 }; // typed_builder_t<kind_t::wait_event>
 
@@ -403,7 +403,7 @@ public:
 
 	template <typename... Ts>
 	this_type& source(Ts&&... args) {
-		return do_([&]{ params_.set_source(std::forward<Ts>(args)...); });
+		return do_([&]{ params_.set_source(::std::forward<Ts>(args)...); });
 	}
 //
 //	template <typename... Ts>
@@ -413,7 +413,7 @@ public:
 
 	template <typename... Ts>
 	this_type& destination(Ts&&... args) {
-		return do_([&]{ params_.set_destination(std::forward<Ts>(args)...); });
+		return do_([&]{ params_.set_destination(::std::forward<Ts>(args)...); });
 	}
 
 	template <typename... Ts>
@@ -485,7 +485,7 @@ public:
 	{
 		static_assert(sizeof(T) <= 4, "Type of value to set is too wide; maximum size is 4");
 		static_assert(sizeof(T) != 3, "Size of type to set is not a power of 2");
-		static_assert(std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
+		static_assert(::std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
 		return do_([&] {
 			params_.width_in_bytes = sizeof(T);
 			switch(sizeof(T)) {
