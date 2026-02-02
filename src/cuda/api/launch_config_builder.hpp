@@ -575,7 +575,7 @@ public:
 	/// over all (1D) blocks in the grid
 	launch_config_builder_t& overall_size(size_t size)
 	{
-		static_assert(std::is_same<grid::overall_dimension_t, size_t>::value, "Unexpected type difference");
+		static_assert(::std::is_same<grid::overall_dimension_t, size_t>::value, "Unexpected type difference");
 		return overall_dimensions(size, 1, 1);
 	}
 

@@ -47,13 +47,13 @@ public: // types
 	using size_type = size_t;
 	// No pointer difference type, as the pointers here are void-typed and
 	// there's no sense in subtracting them except internally
-	// difference_type = std::ptrdiff_t
+	// difference_type = ::std::ptrdiff_t
 
 private:
 	T* start_ = nullptr;
 	size_type size_in_bytes_ = 0;
 
-	// If we were using C++17 or later, we could forget about this and use `std::byte`
+	// If we were using C++17 or later, we could forget about this and use `::std::byte`
 	using char_type = typename ::std::conditional<::std::is_const<T>::value, const char *, char *>::type;
 public:
 	constexpr base_region_t() noexcept = default;

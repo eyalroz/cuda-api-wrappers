@@ -180,13 +180,13 @@ public:
 		:
 		parent((what_arg.empty() ? "" : what_arg + ": ") + describe(kind, impermissible_node)),
 		kind_(kind),
-		impermissible_node_(std::move(impermissible_node))
+		impermissible_node_(::std::move(impermissible_node))
 	{
 		// TODO: Ensure the kind needs a node handle IFF a node handle has been provided
 	}
 
 	update_failure(update_status_t kind, node_t impermissible_node) noexcept
-		: update_failure(kind, optional<node_t>(std::move(impermissible_node)), "")
+		: update_failure(kind, optional<node_t>(::std::move(impermissible_node)), "")
 	{ }
 
 	update_status_t kind() const noexcept { return kind_; }
