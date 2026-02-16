@@ -1,6 +1,6 @@
 # Does your system only have an older version of CMake? Not to worry!
-# CMake offers download-and-use binary packages, with no installation 
-# necessary...  Visit https://cmake.org/download/ and grab one for 
+# CMake offers download-and-use binary packages, with no installation
+# necessary...  Visit https://cmake.org/download/ and grab one for
 # your platform. They are not finicky with library dependencies, so
 # compatability is very likely. Also, the package's CMake binary will
 # not mistake any other local CMake-related files for its own.
@@ -11,10 +11,6 @@ PROJECT(cuda-api-wrappers
 	DESCRIPTION "Thin C++-flavored wrappers for the CUDA Runtime API"
 	HOMEPAGE_URL https://github.com/eyalroz/cuda-api-wrappers
 )
-
-include(GNUInstallDirs)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib/")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib/")
 
 find_package(CUDAToolkit 9.0 REQUIRED)
 enable_language(CXX) # required for using Threads
@@ -122,7 +118,7 @@ if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 12.4)
 
 	if (TARGET CUDA::nvfatbin_static)
 		target_link_libraries(caw_fatbin_static INTERFACE CUDA::nvfatbin_static)
-	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}") 
+	elseif(EXISTS "${CUDA_nvfatbin_static_LIBRARY}")
 		target_link_libraries(caw_fatbin_static INTERFACE "${CUDA_nvfatbin_static_LIBRARY}")
 	else()
 		message(WARNING "Could not locate a valid NVIDIA non-fatbin creator target or library file")
@@ -176,6 +172,8 @@ endif()
 # Installing the libraries
 # ------------------------
 
+include(GNUInstallDirs)
+
 install(FILES "${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cuda-api-wrappers")
 
@@ -185,6 +183,9 @@ install(
 	FILE_SET HEADERS
 )
 
+# This command is not part of an installation per se, but rather
+# allows adding the built package into a package registry without
+# installation
 export(
 	EXPORT cuda-api-wrappers_export
 	NAMESPACE "${caw_namespace}::"
