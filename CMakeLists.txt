@@ -49,17 +49,16 @@ endforeach()
 set(prefixed-targets "")
 set(caw_namespace "cuda-api-wrappers")
 
+file(GLOB_RECURSE headers CONFIGURE_DEPENDS src/*.hpp src/*.h)
 foreach(wrapper_lib ${targets})
 	# First ugly hack to facilitate FetchContent use:
 	# Prefix target names with something project-specific
 	set(caw_lib "caw_${wrapper_lib}")
 	add_library(${caw_lib} INTERFACE)
 	target_compile_features(${caw_lib} INTERFACE cxx_std_11) # This means _at least_ C++11
-	target_include_directories(
-		${caw_lib}
-		INTERFACE
-		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
-		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+	target_sources(${caw_lib} INTERFACE FILE_SET HEADERS
+		BASE_DIRS src
+		FILES ${headers}
 	)
 	target_link_libraries(${caw_lib} INTERFACE CUDA::cuda_driver)
 	string(REGEX MATCH "_static\$" static_suffix ${wrapper_lib})
@@ -183,18 +182,13 @@ install(FILES "${PROJECT_SOURCE_DIR}/cmake/cuda-api-wrappers-config.cmake"
 install(
 	TARGETS ${prefixed-targets}
 	EXPORT cuda-api-wrappers_export
+	FILE_SET HEADERS
 )
 
 export(
 	EXPORT cuda-api-wrappers_export
 	NAMESPACE "${caw_namespace}::"
 	FILE "${PROJECT_BINARY_DIR}/cuda-api-wrappers-targets.cmake"
-)
-
-install(
-	DIRECTORY src/cuda
-	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-	FILES_MATCHING REGEX "\\.(h|hpp|cuh)$"
 )
 
 install(
