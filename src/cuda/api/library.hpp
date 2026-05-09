@@ -256,7 +256,7 @@ inline module_t create(const context_t& context, const library_t& library)
 		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
 	constexpr const bool is_owning { true };
 	return module::detail_::wrap(context.device_id(), context.handle(), new_handle,
-		is_owning, does_hold_primary_context_refcount_unit);
+		is_owning, does_not_hold_primary_context_refcount_unit);
 	// TODO: We could consider adding a variant of this function taking a context&&, and using that
 	// to decide whether or not to hold a PC refcount unit
 }
