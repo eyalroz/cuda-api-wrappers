@@ -8,11 +8,17 @@
 #define CUDA_API_WRAPPERS_MANGLING_HPP_
 
 #if CUDA_VERSION >= 11040
+
+// For some reason, the Windows distribution of CUDA does not contain the nv_decode.h header
 #if !defined(_WIN32) && !defined(WIN32)
+#include <nv_decode.h>
+#else
+/// @private
+char* __cu_demangle(const char *id, char *output_buffer, size_t *length, int *status);
+#endif
 
 #include "detail/span.hpp"
 #include "detail/unique_span.hpp"
-#include <nv_decode.h>
 
 namespace cuda {
 
@@ -76,6 +82,5 @@ inline ::std::string demangle_as<::std::string>(const char* mangled_identifier)
 
 } // namespace cuda
 
-#endif // !defined(_WIN32) && !defined(WIN32)
 #endif // CUDA_VERSION >= 11040
 #endif // CUDA_API_WRAPPERS_MANGLING_HPP_
