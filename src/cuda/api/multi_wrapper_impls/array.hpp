@@ -37,7 +37,7 @@ array_t<T,NumDimensions> create(
 	const device_t&              device,
 	dimensions_t<NumDimensions>  dimensions)
 {
-	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
 	return create<T, NumDimensions>(pc, dimensions);
 		// Note that we have no guarantee that the device's primary context
 		// will continue to exist/be active when returning from this call;

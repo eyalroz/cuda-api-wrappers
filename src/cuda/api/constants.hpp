@@ -117,8 +117,8 @@ enum : bool {
 };
 
 enum : bool {
-	do_hold_primary_context_refcount_unit = true,
-	do_not_hold_primary_context_refcount_unit = false,
+	does_hold_primary_context_refcount_unit = true,
+	does_not_hold_primary_context_refcount_unit = false,
 };
 
 namespace context {

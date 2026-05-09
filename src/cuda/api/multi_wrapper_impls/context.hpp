@@ -322,7 +322,7 @@ inline event_t context_t::create_event(
 	bool interprocess) const
 {
 	return cuda::event::detail_::create(
-		device_id_, handle_, do_not_hold_primary_context_refcount_unit,
+		device_id_, handle_, does_not_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
 

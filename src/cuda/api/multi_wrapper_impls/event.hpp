@@ -36,7 +36,7 @@ inline event_t create(
 	return event::detail_::create(
 		context.device_id(),
 		context.handle(),
-		do_not_hold_primary_context_refcount_unit,
+		does_not_hold_primary_context_refcount_unit,
 		uses_blocking_sync,
 		records_timing,
 		interprocess);
@@ -56,13 +56,13 @@ inline event_t create(
 	// todo: consider having the event wrapper take care of the primary
 	//  context refcount.
 	//
-	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
 	device::primary_context::detail_::increase_refcount(device.id());
 	return event::detail_::create_in_current_context(
 		device.id(),
 		context::current::detail_::get_handle(),
-		do_hold_primary_context_refcount_unit,
+		does_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
 
@@ -93,7 +93,7 @@ inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
 	auto handle = detail_::import(event_ipc_handle);
 	return event::wrap(
 		device.id(), context::current::detail_::get_handle(), handle,
-		do_not_take_ownership, do_hold_primary_context_refcount_unit);
+		do_not_take_ownership, does_hold_primary_context_refcount_unit);
 }
 
 } // namespace ipc
