@@ -867,7 +867,7 @@ inline device_t get()
 	ensure_driver_is_initialized();
 	auto id = detail_::get_id();
 	auto pc_handle = primary_context::detail_::obtain_and_increase_refcount(id);
-	return device::detail_::wrap(id, pc_handle);
+	return device::detail_::wrap(id, pc_handle, does_hold_primary_context_refcount_unit);
 }
 
 inline void set(const device_t& device)
