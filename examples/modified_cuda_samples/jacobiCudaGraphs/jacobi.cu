@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <iomanip>
-#include <iostream>
 #include <cuda/api.hpp>
 
 static void finalize_error(
@@ -77,9 +76,6 @@ double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
 
 
 	cuda::graph::instance_t instance = graph.instantiate();
-
-// 	::std::cout << "settings node params for the kernel node with k ==  " << k << " and params.marshalled_arguments.size() = "
-//			  << params.marshalled_arguments.size() << std::endl;
 
 	for (int k = 0; k < num_iterations; k++) {
 		instance.launch(stream);
@@ -184,4 +180,3 @@ double do_jacobi_inner<computation_method_t::non_graph_gpu>(
 
 	return sum;
 }
-
