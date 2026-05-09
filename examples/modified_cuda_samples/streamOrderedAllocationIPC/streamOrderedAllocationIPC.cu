@@ -308,7 +308,7 @@ static void parentProcess(char *app)
 	// Launch the child processes!
 	std::stringstream ss;
 	for (size_t i = 0; i < shm->nprocesses; i++) {
-		ss.str();
+		ss.str("");
 		ss << "%d" << i;
 		char formatted_id[std::numeric_limits<int>::digits10 + 1];
 		char *const args[] = {app, formatted_id, NULL};
