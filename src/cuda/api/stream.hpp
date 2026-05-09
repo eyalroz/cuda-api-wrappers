@@ -442,7 +442,7 @@ public: // mutators
 		{
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
 			// however, unfortunately, it does require us to be in _some_ context.
-			context::current::detail_::scoped_ensurer_t ensure_we_have_a_current_scope{associated_stream.context_handle_};
+			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 			memory::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
