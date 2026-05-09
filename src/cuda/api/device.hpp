@@ -762,11 +762,11 @@ protected: // constructors
 	explicit device_t(
 		device::id_t device_id,
 		device::primary_context::handle_t primary_context_handle = context::detail_::none,
-		bool hold_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG
+		bool holds_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG
 	:
 		id_(device_id),
 		primary_context_handle_(primary_context_handle),
-		holds_pc_refcount_unit_(hold_primary_context_refcount_unit)
+		holds_pc_refcount_unit_(holds_primary_context_refcount_unit)
 	{
 #ifndef NDEBUG
 		if (id_ < 0) {
@@ -779,7 +779,7 @@ public: // friends
 	friend device_t device::detail_::wrap(
 		device::id_t,
 		device::primary_context::handle_t handle,
-		bool hold_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG;
+		bool holds_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG;
 
 protected: // data members
 	device::id_t id_; /// Numeric ID of the proxied device.
@@ -810,9 +810,9 @@ namespace detail_ {
 inline device_t wrap(
 	id_t id,
 	primary_context::handle_t primary_context_handle,
-	bool hold_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG
+	bool holds_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG
 {
-	return device_t{ id, primary_context_handle, hold_primary_context_refcount_unit };
+	return device_t{ id, primary_context_handle, holds_primary_context_refcount_unit };
 }
 
 } // namespace detail_

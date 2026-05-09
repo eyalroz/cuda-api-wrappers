@@ -135,7 +135,7 @@ apriori_compiled_t get(
 #else
 	auto handle = nullptr;
 #endif
-	return wrap(device_id, primary_context_handle, handle, ptr_, do_hold_primary_context_refcount_unit);
+	return wrap(device_id, primary_context_handle, handle, ptr_, does_hold_primary_context_refcount_unit);
 }
 
 } // namespace detail_

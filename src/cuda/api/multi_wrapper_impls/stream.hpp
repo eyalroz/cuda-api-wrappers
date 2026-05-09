@@ -59,9 +59,9 @@ inline stream_t create(
 	bool             synchronizes_with_default_stream,
 	priority_t       priority)
 {
-	auto pc = device.primary_context(do_not_hold_primary_context_refcount_unit);
+	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
 	device::primary_context::detail_::increase_refcount(device.id());
-	return create(pc, synchronizes_with_default_stream, priority, do_hold_primary_context_refcount_unit);
+	return create(pc, synchronizes_with_default_stream, priority, does_hold_primary_context_refcount_unit);
 }
 
 inline stream_t create(
@@ -119,7 +119,7 @@ inline event_t stream_t::enqueue_t::event(
 	auto ev = event::detail_::create_in_current_context(
 		associated_stream.device_id_,
 		context_handle,
-		do_not_hold_primary_context_refcount_unit,
+		does_not_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 	// will not extend the context's life. If the user wants that extension, they
 		// should have the _stream_ hold a reference to the primary context.
