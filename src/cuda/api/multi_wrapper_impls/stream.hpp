@@ -101,7 +101,7 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event) const
 			"Attempt to enqueue " + event::detail_::identify(existing_event)
 			+ " on a stream in a different context: " + stream::detail_::identify(associated_stream));
 	}
-	context::current::detail_::scoped_ensurer_t ensure_a_context{context_handle};
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	stream::detail_::record_event_in_current_context(
 		device_id, context_handle, associated_stream.handle_,existing_event.handle());
 	return existing_event;

@@ -63,7 +63,7 @@ inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t 
  * @param event_handle Event to be made to occur on stream @ref stream_handle
  */
 inline void enqueue(context::handle_t context_handle, stream::handle_t stream_handle, handle_t event_handle) {
-	context::current::detail_::scoped_ensurer_t { context_handle };
+	CAW_SET_SCOPE_CONTEXT(context_handle);
 	enqueue_in_current_context(stream_handle, event_handle);
 }
 
