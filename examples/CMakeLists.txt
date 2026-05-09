@@ -274,3 +274,9 @@ if(NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
 	# https://reviews.llvm.org/D76365
 	add_executable(array_management other/array_management.cu)
 endif()
+if(NOT MSVC)
+	# This example program uses half-precision floating-point types,
+	# and we're avoiding those with MSVC
+	add_executable(isfinite_microbenchmark other/isfinite_microbenchmark.cu)
+endif()
+
