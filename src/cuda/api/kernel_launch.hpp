@@ -351,15 +351,30 @@ void enqueue_launch(
 	KernelParameters&&...   parameters);
 
 /**
- * Variant of @ref enqueue_launch for use with the default stream in the current context.
+ * Variants of @ref enqueue_launch for use with the default stream
  *
  * @note This isn't called `enqueue` since the default stream is synchronous.
  */
+///@{
+/**
+ * @param device The device on (the primary stream of) which to launch the kernel
+ *
+ * @note Only use this function for non-wrapped kernel; wrapped kernels
+ * already specify a device implicitly.
+ */
+template<typename Kernel, typename... KernelParameters>
+void launch(
+	Kernel&&                kernel,
+	const device_t&         device,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters);
+
 template<typename Kernel, typename... KernelParameters>
 void launch(
 	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   parameters);
+///@}
 
 /**
  * Launch a kernel with the arguments pre-marshalled into the (main) form

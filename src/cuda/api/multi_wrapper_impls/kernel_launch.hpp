@@ -409,6 +409,21 @@ void launch(
 	enqueue_launch(kernel, stream, launch_configuration, ::std::forward<KernelParameters>(parameters)...);
 }
 
+template<typename Kernel, typename... KernelParameters>
+void launch(
+	Kernel&&                kernel,
+	const device_t&         device,
+	launch_configuration_t  launch_configuration,
+	KernelParameters&&...   parameters)
+{
+	// Argument validation will occur within call to enqueue_launch
+	static_assert(not ::std::is_base_of<kernel_t, Kernel>::value,
+		"A wrapped kernel is already associated with a particular GPU device; drop the gratuitous device parameter");
+	auto primary_context = device.primary_context();
+	auto stream = primary_context.default_stream();
+	enqueue_launch(kernel, stream, launch_configuration, ::std::forward<KernelParameters>(parameters)...);
+}
+
 template <typename SpanOfConstVoidPtrLike>
 inline void launch_type_erased(
 	const kernel_t&         kernel,
