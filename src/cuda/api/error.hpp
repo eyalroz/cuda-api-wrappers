@@ -542,7 +542,8 @@ namespace stream {
 namespace detail_ {
 inline ::std::string identify(handle_t handle)
 {
-	return "stream " + cuda::detail_::ptr_as_hex(handle);
+	return (handle == nullptr) ? "default/null stream" :
+		"stream at" + cuda::detail_::ptr_as_hex(handle);
 }
 inline ::std::string identify(handle_t handle, device::id_t device_id)
 {
