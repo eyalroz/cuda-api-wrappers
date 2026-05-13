@@ -52,15 +52,17 @@ int main(int argc, char **argv)
 	const auto kernel_function = foo;
 	const auto kernel_name = "foo"; // no reflection, sadly...
 #if CUDA_VERSION >= 12030
+#ifdef __GNUC__
 	const auto full_kernel_name = "foo(int)"; // no reflection, sadly...
+#endif
 #endif
 
 	auto kernel = cuda::kernel::get(device, kernel_function);
 
 #if CUDA_VERSION >= 12030
+#ifdef __GNUC__
 	cuda::kernel_t const& base_ref = kernel;
 	auto mangled_name_from_kernel = base_ref.mangled_name();
-#ifdef __GNUC__
 	auto demangled_name = demangle(mangled_name_from_kernel);
 	if (strcmp(demangled_name.c_str(), full_kernel_name) != 0) {
 		std::cerr

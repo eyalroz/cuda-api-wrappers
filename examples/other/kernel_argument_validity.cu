@@ -30,9 +30,8 @@ public:
 		printf("NonTriviallyCopyable destructor called\n");
 	}
 
-	__host__ __device__ NonTriviallyCopyable &
-	operator=(const NonTriviallyCopyable &) = default;
-	NonTriviallyCopyable &operator=(NonTriviallyCopyable &&) = default;
+	NonTriviallyCopyable & operator=(const NonTriviallyCopyable &) = default;
+	NonTriviallyCopyable & operator=(NonTriviallyCopyable &&) = default;
 	// Non-trivial destructor
 
 	__host__ __device__ const char *name() const noexcept { return name_; }

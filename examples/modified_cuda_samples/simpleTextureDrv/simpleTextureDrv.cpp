@@ -49,7 +49,14 @@
 
 char * sdkFindFilePath(char const * ref_file, char const *)
 {
+#ifdef _MSC_VER
+	return _strdup(ref_file);
+	// Technically, there's a conflict betwee the POSIX standard and the C+=
+	// standard in the definition of POSIX functions beginning with `str`.
+	// Only MSVC complains about this and wants to see `_strdup()`.
+#else
 	return strdup(ref_file);
+#endif
 }
 
 #include "helper_image.h"
