@@ -41,6 +41,16 @@ namespace stream {
  */
 const stream::handle_t default_stream_handle = nullptr;
 
+/// Convenience named constants for parameters to stream creation functions
+enum : bool {
+	implicitly_synchronizes_with_default_stream = true,
+	no_implicit_synchronization_with_default_stream = false,
+	sync = implicitly_synchronizes_with_default_stream,
+	async = no_implicit_synchronization_with_default_stream,
+	blocking = sync,
+	nonblocking = async,
+};
+
 } // namespace stream
 
 namespace device {

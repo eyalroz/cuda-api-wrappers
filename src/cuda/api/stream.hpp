@@ -44,16 +44,6 @@ class pool_t;
 
 namespace stream {
 
-// Use this for the second argument to create_on_current_device()
-enum : bool {
-	implicitly_synchronizes_with_default_stream = true,
-	no_implicit_synchronization_with_default_stream = false,
-	sync = implicitly_synchronizes_with_default_stream,
-	async = no_implicit_synchronization_with_default_stream,
-	blocking = sync,
-	nonblocking = async,
-};
-
 /**
  * Kinds of conditions to apply to a value in GPU global memory
  * when waiting on that value, i.e. on what condition to stop
@@ -1032,7 +1022,7 @@ namespace detail_ {
 inline stream_t create(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
-	bool               synchronizes_with_default_stream,
+	bool               synchronizes_with_default_stream = async,
 	priority_t         priority = stream::default_priority,
 	bool               hold_pc_refcount_unit = false)
 {
@@ -1105,7 +1095,7 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
  */
 stream_t create(
 	const device_t&   device,
-	bool              synchronizes_with_default_stream,
+	bool              synchronizes_with_default_stream = async,
 	priority_t        priority = stream::default_priority);
 
 /**
@@ -1125,7 +1115,7 @@ stream_t create(
  */
 stream_t create(
 	const context_t&  context,
-	bool              synchronizes_with_default_stream,
+	bool              synchronizes_with_default_stream = async,
 	priority_t        priority = stream::default_priority,
 	bool              hold_pc_refcount_unit = false);
 ///@}
