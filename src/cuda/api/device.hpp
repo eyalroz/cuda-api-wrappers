@@ -608,7 +608,7 @@ public:
 
 	/// See @ref cuda::stream::create()
 	stream_t create_stream(
-		bool                will_synchronize_with_default_stream,
+		bool                will_synchronize_with_default_stream = stream::async,
 		stream::priority_t  priority = cuda::stream::default_priority) const;
 
 	/// See @ref cuda::event::create()
