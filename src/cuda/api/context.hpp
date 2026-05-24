@@ -921,7 +921,7 @@ inline void push(const context_t& context)
  */
 inline context_t pop()
 {
-	static constexpr const bool do_not_take_ownership { false };
+	static constexpr bool do_not_take_ownership { false };
 	// Unfortunately, since we don't store the device IDs of contexts
 	// on the stack, this incurs an extra API call beyond just the popping...
 	auto handle = context::current::detail_::pop();

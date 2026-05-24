@@ -163,8 +163,8 @@ int main(int argc, char **argv)
 	cuda_::device::primary_context::detail_::increase_refcount(device.id());
 
 	cuda_::context::current::push(pc);
-	constexpr const bool is_primary = true;
-	constexpr const bool isnt_primary = false;
+	constexpr bool is_primary = true;
+	constexpr bool isnt_primary = false;
 	test_context(pc, is_primary, device_id);
 
 	{

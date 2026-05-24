@@ -76,7 +76,7 @@ const char* get_policy_name(cuda_::stream::synchronization_policy_t policy)
 
 int main(int argc, char **argv)
 {
-	constexpr const size_t N = 50;
+	constexpr size_t N = 50;
 	cuda_::launch_configuration_t single_thread_config { 1, 1 };
 
 	// Being very cavalier about our command-line arguments here...

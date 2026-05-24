@@ -39,7 +39,7 @@ inline bool is_primary_for_device(handle_t handle, device::id_t device_id)
 	if (context_device_id != device_id) {
 		return false;
 	}
-	static constexpr const bool dont_increase_refcount { false };
+	static constexpr bool dont_increase_refcount { false };
 	auto pc_handle = device::primary_context::detail_::get_handle(device_id, dont_increase_refcount);
 	return handle == pc_handle;
 }
@@ -281,7 +281,7 @@ inline device_t context_t::global_memory_type::associated_device() const
 
 inline context_t context_t::global_memory_type::associated_context() const
 {
-	static constexpr const bool non_owning { false };
+	static constexpr bool non_owning { false };
 	return cuda_::context::wrap(device_id_, context_handle_, non_owning);
 }
 

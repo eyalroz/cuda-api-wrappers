@@ -220,7 +220,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// but such an array being necessary for collect_argument_addresses with
 		// multiple parameters. Other workarounds are possible, but would be
 		// more cumbersome, except perhaps with C++17 or later.
-		static constexpr const auto non_zero_num_params =
+		static constexpr auto non_zero_num_params =
 			sizeof...(KernelParameters) == 0 ? 1 : sizeof...(KernelParameters);
 		void* argument_ptrs[non_zero_num_params];
 		// fill the argument array with our parameters. Yes, the use

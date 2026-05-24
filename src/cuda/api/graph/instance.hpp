@@ -500,14 +500,14 @@ inline instance_t instantiate(
 	auto status = cuGraphInstantiateWithFlags(&instance_handle, template_.handle(), flags);
 	throw_if_error_lazy(status, "Instantiating " + template_::detail_::identify(template_) );
 #else
-	static constexpr const size_t log_buffer_size { 2048 };
+	static constexpr size_t log_buffer_size { 2048 };
 	auto log_buffer = make_unique_span<char>(log_buffer_size);
 	node::handle_t error_node;
 	auto status = cuGraphInstantiate(&instance_handle, template_.handle(), &error_node, log_buffer.data(), log_buffer_size);
 	throw_if_error_lazy(status, "Instantiating " + template_::detail_::identify(template_) + ": error at "
 		+ node::detail_::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
 #endif // CUDA_VERSION >= 11000
-	static constexpr const bool is_owning { true };
+	static constexpr bool is_owning { true };
 	return instance::wrap(template_.handle(), instance_handle, is_owning);
 }
 

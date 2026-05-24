@@ -49,16 +49,16 @@ namespace detail_ {
 
 template <typename T> struct format_specifier {};
 
-template <> struct format_specifier<uint8_t > { static constexpr const CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT8;  };
-template <> struct format_specifier<uint16_t> { static constexpr const CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT16; };
-template <> struct format_specifier<uint32_t> { static constexpr const CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT32; };
-template <> struct format_specifier<int8_t  > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT8;    };
-template <> struct format_specifier<int16_t > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT16;   };
-template <> struct format_specifier<int32_t > { static constexpr const CUarray_format value = CU_AD_FORMAT_SIGNED_INT32;   };
+template <> struct format_specifier<uint8_t > { static constexpr CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT8;  };
+template <> struct format_specifier<uint16_t> { static constexpr CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT16; };
+template <> struct format_specifier<uint32_t> { static constexpr CUarray_format value = CU_AD_FORMAT_UNSIGNED_INT32; };
+template <> struct format_specifier<int8_t  > { static constexpr CUarray_format value = CU_AD_FORMAT_SIGNED_INT8;    };
+template <> struct format_specifier<int16_t > { static constexpr CUarray_format value = CU_AD_FORMAT_SIGNED_INT16;   };
+template <> struct format_specifier<int32_t > { static constexpr CUarray_format value = CU_AD_FORMAT_SIGNED_INT32;   };
 #ifndef CUDA_NO_HALF
-template <> struct format_specifier<half    > { static constexpr const CUarray_format value = CU_AD_FORMAT_HALF;           };
+template <> struct format_specifier<half    > { static constexpr CUarray_format value = CU_AD_FORMAT_HALF;           };
 #endif
-template <> struct format_specifier<float   > { static constexpr const CUarray_format value = CU_AD_FORMAT_FLOAT;          };
+template <> struct format_specifier<float   > { static constexpr CUarray_format value = CU_AD_FORMAT_FLOAT;          };
 
 template<typename T>
 handle_t create_in_current_context(dimensions_t<3> dimensions)

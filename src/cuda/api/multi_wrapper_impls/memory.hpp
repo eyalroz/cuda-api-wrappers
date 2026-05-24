@@ -341,7 +341,7 @@ inline region_t allocate(
 	size_t              size_in_bytes,
 	allocation_options  options)
 {
-	static constexpr const bool dont_decrease_pc_refcount_on_destruct { false };
+	static constexpr bool dont_decrease_pc_refcount_on_destruct { false };
 	context::current::detail_::scoped_existence_ensurer_t context_ensurer{ dont_decrease_pc_refcount_on_destruct };
 	// Note: We allow a PC to leak here, in case no other context existed, so as not to risk
 	// the allocation being invalidated by the only CUDA context getting destroyed when
@@ -460,7 +460,7 @@ template <shared_handle_kind_t Kind>
 shared_handle_t<Kind> export_(const pool_t& pool)
 {
 	shared_handle_t<Kind> result;
-	static constexpr const unsigned long long flags { 0 };
+	static constexpr unsigned long long flags { 0 };
 	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), static_cast<CUmemAllocationHandleType>(Kind), flags);
 	throw_if_error_lazy(status, "Exporting " + pool::detail_::identify(pool) +" for inter-process use");
 	return result;

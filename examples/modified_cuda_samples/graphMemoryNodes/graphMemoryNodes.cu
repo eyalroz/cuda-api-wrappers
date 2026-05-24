@@ -262,7 +262,7 @@ createNegateSquaresGraphExplicitly(int device, negSquareArrays *hostArrays, bool
 cuda_::graph::instance_t
 createNegateSquaresGraphExplicitly(int device, negSquareArrays *hostArrays)
 {
-	static constexpr const auto do_neg_squares { true };
+	static constexpr auto do_neg_squares { true };
 	return createNegateSquaresGraphExplicitly(device, hostArrays, do_neg_squares).first;
 }
 
@@ -519,7 +519,7 @@ int main(int argc, char **argv)
 
 	{
 		std::cout << "Running negateSquares with d_negSquare freed outside the stream.\n";
-		static constexpr const auto compute_neg_squares { true };
+		static constexpr auto compute_neg_squares { true };
 		auto pair = createNegateSquaresGraphExplicitly(device.id(), &hostArrays, compute_neg_squares);
 		auto executable_graph_instance = std::move(pair.first);
 		auto d_negSquare = std::move(pair.second);

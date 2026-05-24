@@ -1920,21 +1920,21 @@ inline advice_t as_advice(attribute_t attribute, bool set)
 
 inline void set_attribute(const_region_t region, attribute_t settable_attribute, cuda_::device::id_t device_id)
 {
-	static constexpr const bool set { true };
+	static constexpr bool set { true };
 	advise(region, as_advice(settable_attribute, set), device_id);
 }
 
 inline void set_attribute(const_region_t region, attribute_t settable_attribute)
 {
-	static constexpr const bool set { true };
-	static constexpr const cuda_::device::id_t dummy_device_id { 0 };
+	static constexpr bool set { true };
+	static constexpr cuda_::device::id_t dummy_device_id { 0 };
 	advise(region, as_advice(settable_attribute, set), dummy_device_id);
 }
 
 inline void unset_attribute(const_region_t region, attribute_t settable_attribute)
 {
-	static constexpr const bool unset { false };
-	static constexpr const cuda_::device::id_t dummy_device_id { 0 };
+	static constexpr bool unset { false };
+	static constexpr cuda_::device::id_t dummy_device_id { 0 };
 	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
 }
 

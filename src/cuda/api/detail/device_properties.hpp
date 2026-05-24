@@ -49,7 +49,7 @@ inline constexpr bool operator >=(const compute_architecture_t& lhs, const compu
 
 namespace detail_ {
 
-constexpr const int invalid_compute_capability_return { 0 };
+constexpr int invalid_compute_capability_return { 0 };
 enum : memory::shared::size_t { KiB = 1024 };
 
 template <typename T>

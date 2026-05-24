@@ -261,7 +261,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 			printf("> Process %3d: Run kernel on GPU%d, taking source data from and writing results to process %d, GPU%d...\n",
 				   index, s_mem[index].device, 0, s_mem[0].device);
-			constexpr const auto threads = 512;
+			constexpr auto threads = 512;
 			static_assert(data_buffer_size % threads == 0, "data_buffer_size value must be divisible by the kernel block size");
 			auto blocks = data_buffer_size / threads;
 			cuda_::launch(
