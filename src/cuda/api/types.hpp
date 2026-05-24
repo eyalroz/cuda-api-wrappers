@@ -41,7 +41,6 @@
 #include <cassert>
 #include <cstddef> // for ::std::size_t
 #include <cstdint>
-#include <vector>
 #ifndef NDEBUG
 #include <stdexcept>
 #endif

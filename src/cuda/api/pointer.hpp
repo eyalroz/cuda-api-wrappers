@@ -16,7 +16,6 @@
 #ifndef CUDA_API_WRAPPERS_POINTER_HPP_
 #define CUDA_API_WRAPPERS_POINTER_HPP_
 
-#include "constants.hpp"
 #include "error.hpp"
 #include "types.hpp"
 
