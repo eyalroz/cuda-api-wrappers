@@ -48,9 +48,9 @@ int main()
 	std::generate(h_B.begin(), h_B.end(), generator);
 
 	auto device = cuda::device::current::get();
-	auto d_A = cuda::memory::make_unique_span<float>(device, numElements);
-	auto d_B = cuda::memory::make_unique_span<float>(device, numElements);
-	auto d_C = cuda::memory::make_unique_span<float>(device, numElements);
+	auto d_A = cuda::make_unique_span<float>(device, numElements);
+	auto d_B = cuda::make_unique_span<float>(device, numElements);
+	auto d_C = cuda::make_unique_span<float>(device, numElements);
 
 	cuda::memory::copy(d_A, h_A);
 	cuda::memory::copy(d_B, h_B);

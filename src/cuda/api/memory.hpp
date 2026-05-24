@@ -2578,6 +2578,20 @@ memory::region_t locate(T&& symbol)
 
 } // namespace symbol
 
+/// See @ref `memory::device::make_unique_span(const context_t& context, size_t size)`
+template <typename T>
+unique_span<T> make_unique_span(const context_t& context, size_t size)
+{
+	return memory::device::make_unique_span<T>(context, size);
+}
+
+/// See @ref `memory::device::make_unique_span(const context_t& context, size_t num_elements)`
+template <typename T>
+unique_span<T> make_unique_span(const device_t& device, size_t size)
+{
+	return memory::device::make_unique_span<T>(device, size);
+}
+
 } // namespace cuda
 
 #endif // CUDA_API_WRAPPERS_MEMORY_HPP_

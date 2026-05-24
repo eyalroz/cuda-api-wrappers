@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 	auto device = cuda::device::get(device_id);
 	std::cout << "Device: " << device.name() << '\n';
 
-	auto device_data = cuda::memory::make_unique_span<float>(device, overall_elements);
+	auto device_data = cuda::make_unique_span<float>(device, overall_elements);
 
 	auto launch_config = cuda::launch_config_builder()
 		.overall_size(chunk_size)
