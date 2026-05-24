@@ -50,16 +50,16 @@ typedef struct sharedMemoryInfo_st {
 #endif
 } sharedMemoryInfo;
 
-constexpr const auto shared_handle_kind = static_cast<cuda::memory::pool::shared_handle_kind_t>
+constexpr const auto shared_handle_kind = static_cast<cuda_::memory::pool::shared_handle_kind_t>
 #if defined(__linux__)
 	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
 #else
 	(CU_MEM_HANDLE_TYPE_WIN32);
 #endif
 
-//using shared_allocation_handle_t = cuda::memory::pool::ipc::ptr_handle_t;
-using shared_pool_handle_t = cuda::memory::pool::shared_handle_t<shared_handle_kind>;
-using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_handle_kind>;
+//using shared_allocation_handle_t = cuda_::memory::pool::ipc::ptr_handle_t;
+using shared_pool_handle_t = cuda_::memory::pool::shared_handle_t<shared_handle_kind>;
+using shared_allocation_handle_t = cuda_::memory::physical_allocation::shared_handle_t<shared_handle_kind>;
 using ShareableHandle = shared_pool_handle_t;
 
 

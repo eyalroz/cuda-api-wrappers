@@ -24,14 +24,14 @@
 #include <string>
 #include <stdexcept>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace status {
 
 /**
  * Aliases for CUDA status codes
  *
- * @note unfortunately, this enum can't inherit from @ref cuda::status_t
+ * @note unfortunately, this enum can't inherit from @ref cuda_::status_t
  */
 enum named_t : ::std::underlying_type<status_t>::type {
 	success                          = CUDA_SUCCESS, /// Operation was successful; no errors
@@ -326,15 +326,15 @@ private:
 /// is constructed unless we actually need to throw
 #define throw_if_error_lazy(status__, ... ) \
 do { \
-	const ::cuda::status_t tie_status__ = static_cast<::cuda::status_t>(status__); \
-	if (::cuda::is_failure(tie_status__)) { \
-		throw ::cuda::runtime_error(tie_status__, (__VA_ARGS__)); \
+	const ::cuda_::status_t tie_status__ = static_cast<::cuda_::status_t>(status__); \
+	if (::cuda_::is_failure(tie_status__)) { \
+		throw ::cuda_::runtime_error(tie_status__, (__VA_ARGS__)); \
 	} \
 } while(false)
 
 /**
  * Do nothing... unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
  * @note Using these functions means the string will (almost certainly) be constructed,
  * hence you might want to use the @ref throw_if_error_lazy macro instead
@@ -366,12 +366,12 @@ inline void throw_if_error(cudaError_t status, ::std::string&& message) noexcept
 
 /**
  * Does nothing - unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
  * @note Using these functions means the string will (almost certainly) be constructed,
  * hence you might want to use the @ref throw_if_error_lazy macro instead
 *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  */
 inline void throw_if_error(status_t status) noexcept(false)
 {
@@ -443,7 +443,7 @@ inline status_t get(bool try_clearing = false) noexcept(true)
  * of the string message, regardless of whether an error has occurred, so it doesn't
  * quite do "nothing".
  *
- * @note similar to @ref cuda::throw_if_error, but uses the CUDA driver's
+ * @note similar to @ref cuda_::throw_if_error, but uses the CUDA driver's
  * own state regarding whether or not a sticky error has occurred
  */
 inline void ensure_none(const ::std::string &message) noexcept(false)
@@ -469,7 +469,7 @@ inline void ensure_none(const char *message) noexcept(false)
  * @note similar to @ref throw_if_error, but uses the CUDA Runtime API's internal
  * state
  *
- * @throws cuda::runtime_error if the CUDA runtime API has encountered previously
+ * @throws cuda_::runtime_error if the CUDA runtime API has encountered previously
  * encountered an (uncleared) error
  */
 inline void ensure_none() noexcept(false)
@@ -497,7 +497,7 @@ namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
 {
-	return "context " + cuda::detail_::ptr_as_hex(handle);
+	return "context " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(handle_t handle, device::id_t device_id)
@@ -543,7 +543,7 @@ namespace detail_ {
 inline ::std::string identify(handle_t handle)
 {
 	return (handle == nullptr) ? "default/null stream" :
-		"stream at" + cuda::detail_::ptr_as_hex(handle);
+		"stream at" + cuda_::detail_::ptr_as_hex(handle);
 }
 inline ::std::string identify(handle_t handle, device::id_t device_id)
 {
@@ -564,7 +564,7 @@ namespace event {
 namespace detail_ {
 inline ::std::string identify(handle_t handle)
 {
-	return "event " + cuda::detail_::ptr_as_hex(handle);
+	return "event " + cuda_::detail_::ptr_as_hex(handle);
 }
 inline ::std::string identify(handle_t handle, device::id_t device_id)
 {
@@ -586,7 +586,7 @@ namespace detail_ {
 
 inline ::std::string identify(const void* ptr)
 {
-	return "kernel " + cuda::detail_::ptr_as_hex(ptr);
+	return "kernel " + cuda_::detail_::ptr_as_hex(ptr);
 }
 inline ::std::string identify(const void* ptr, device::id_t device_id)
 {
@@ -602,7 +602,7 @@ inline ::std::string identify(const void* ptr, context::handle_t context_handle,
 }
 inline ::std::string identify(handle_t handle)
 {
-	return "kernel at " + cuda::detail_::ptr_as_hex(handle);
+	return "kernel at " + cuda_::detail_::ptr_as_hex(handle);
 }
 inline ::std::string identify(handle_t handle, context::handle_t context_handle)
 {
@@ -625,7 +625,7 @@ namespace detail_ {
 
 inline ::std::string identify(region_t region)
 {
-	return ::std::string("memory region at ") + cuda::detail_::ptr_as_hex(region.data())
+	return ::std::string("memory region at ") + cuda_::detail_::ptr_as_hex(region.data())
 		+ " of size " + ::std::to_string(region.size());
 }
 
@@ -634,7 +634,7 @@ inline ::std::string identify(location_t location)
 	switch (location.type) {
 	case CU_MEM_LOCATION_TYPE_DEVICE:
 		if (location.id != CU_DEVICE_CPU) {
-			return "global memory of " + cuda::device::detail_::identify(location.id);
+			return "global memory of " + cuda_::device::detail_::identify(location.id);
 		}
 		// fallthrough
 	case CU_MEM_LOCATION_TYPE_HOST:
@@ -652,6 +652,6 @@ inline ::std::string identify(location_t location)
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_ERROR_HPP_

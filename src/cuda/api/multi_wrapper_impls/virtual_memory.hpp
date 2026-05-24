@@ -2,7 +2,7 @@
  * @file
  *
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
- * in the `cuda::memory::virtual_` namespace, and additional functionality related to
+ * in the `cuda_::memory::virtual_` namespace, and additional functionality related to
  * virtual memory.
  */
 #ifndef CUDA_API_WRAPPERS_MULTI_WRAPPER_IMPLS_VIRTUAL_MEMORY_HPP_
@@ -11,7 +11,7 @@
 #include "../device.hpp"
 #include "../virtual_memory.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -20,7 +20,7 @@ namespace physical_allocation {
 
 inline device_t properties_t::device() const
 {
-	return cuda::device::wrap(raw.location.id);
+	return cuda_::device::wrap(raw.location.id);
 }
 
 template<shared_handle_kind_t SharedHandleKind>
@@ -49,7 +49,7 @@ inline void set_permissions(
 	static constexpr const size_t count { 1 };
 	auto result = cuMemSetAccess(device::address(fully_mapped_region), fully_mapped_region.size(), &desc, count);
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
 inline void set_permissions(mapping_t mapping, const device_t& device, permissions_t permissions)
@@ -70,7 +70,7 @@ void set_permissions(
 	auto result = cuMemSetAccess(
 		device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
 template <template <typename...> class Container>
@@ -142,6 +142,6 @@ void mapping_t::set_permissions(
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif //CUDA_API_WRAPPERS_MULTI_WRAPPER_IMPLS_VIRTUAL_MEMORY_HPP_

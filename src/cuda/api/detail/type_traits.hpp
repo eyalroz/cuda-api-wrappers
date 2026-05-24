@@ -11,7 +11,7 @@
 #include "preamble.hpp"
 #include <type_traits>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -43,13 +43,13 @@ struct has_data_method : ::std::false_type { };
 
 // specialization recognizes types that do have a nested ::type member:
 template <typename T>
-struct has_data_method<T, cuda::detail_::void_t<decltype(::std::declval<T>().data())>> : ::std::true_type { };
+struct has_data_method<T, cuda_::detail_::void_t<decltype(::std::declval<T>().data())>> : ::std::true_type { };
 
 template <typename, typename = void>
 struct has_value_type_member : ::std::false_type { };
 
 template <typename T>
-struct has_value_type_member<T, cuda::detail_::void_t<typename T::value_type>> : ::std::true_type { };
+struct has_value_type_member<T, cuda_::detail_::void_t<typename T::value_type>> : ::std::true_type { };
 
 // TODO: Consider either beefing up this type trait or ditching it in favor of something simpler, or
 // in the standard library
@@ -62,7 +62,7 @@ struct is_kinda_like_contiguous_container :
 
 } // namespace detail_
 
-} // namespace cuda
+} // namespace cuda_
 
 
 #endif //CUDA_API_WRAPPERS_TYPE_TRAITS_HPP

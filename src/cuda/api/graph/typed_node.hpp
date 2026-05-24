@@ -24,7 +24,7 @@
 #include <type_traits>
 
 
-namespace cuda {
+namespace cuda_ {
 
 namespace graph {
 
@@ -127,7 +127,7 @@ struct kind_traits<kind_t::empty> {
 	using raw_parameters_type = CUgraphNodeParams;
 	static constexpr const bool inserter_takes_context = false; // The context is passed within the parameter struct
 	static constexpr const bool inserter_takes_params_by_ptr = true;
-	using parameters_type = cuda::nullopt_t;
+	using parameters_type = cuda_::nullopt_t;
 
 	static constexpr const auto inserter = cuGraphAddNode;
 	static constexpr const auto setter = cuGraphNodeSetParams;
@@ -357,7 +357,7 @@ struct kind_traits<kind_t::memory_barrier> {
 	using raw_parameters_type = CUDA_BATCH_MEM_OP_NODE_PARAMS;
 	static constexpr const bool inserter_takes_context = false;
 	static constexpr const bool inserter_takes_params_by_ptr = true;
-	using parameters_type = ::std::pair<context_t, cuda::memory::barrier_scope_t>;
+	using parameters_type = ::std::pair<context_t, cuda_::memory::barrier_scope_t>;
 	static constexpr const auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
 	static constexpr const auto setter = cuGraphBatchMemOpNodeSetParams;
 	static constexpr const auto getter = cuGraphBatchMemOpNodeGetParams;
@@ -482,7 +482,7 @@ public:
 	{
 		typename traits::raw_parameters_type raw_params;
 		if (traits::param_getter == nullptr) {
-			throw cuda::runtime_error(status::named_t::not_supported,
+			throw cuda_::runtime_error(status::named_t::not_supported,
 				"Querying parameters is not supported for this kind of node: " + node::detail_::identify(*this));
 		}
 		auto status = traits::param_getter(handle(), &raw_params);
@@ -553,7 +553,7 @@ make_launch_primed_kernel(
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

@@ -104,12 +104,12 @@ long double compute_average_elapsed_clocks(const clock_t* timers, std::size_t nu
 	return offset_sum / num_blocks;
 }
 
-cuda::unique_span<char> compile_to_cubin(
+cuda_::unique_span<char> compile_to_cubin(
 	const char* kernel_source,
 	const char* kernel_name,
-	cuda::device_t target_device)
+	cuda_::device_t target_device)
 {
-	auto program = cuda::rtc::program::create<cuda::cuda_cpp>(kernel_name)
+	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>(kernel_name)
 		.set_source(kernel_source).set_target(target_device);
 		// I wonder if using the same name for the program and the kernel is a good idea
 
@@ -130,13 +130,13 @@ int main()
 	std::cout << "CUDA Clock sample\n";
 
 	auto device_id { 0 }; // Not bothering with supporting a command-line argument here
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 	auto cubin = compile_to_cubin(clock_kernel::source, clock_kernel::name, device);
-	auto module = cuda::module::create(device, cubin.get());
+	auto module = cuda_::module::create(device, cubin.get());
 	auto kernel_in_module = module.get_kernel(clock_kernel::name);
 
-	cuda::grid::dimension_t num_blocks { 64 };
-	cuda::grid::block_dimension_t num_threads_per_block { 256 };
+	cuda_::grid::dimension_t num_blocks { 64 };
+	cuda_::grid::block_dimension_t num_threads_per_block { 256 };
 	std::size_t num_timers { num_blocks * 2 };
 	std::size_t input_size { num_threads_per_block * 2 };
 	std::unique_ptr<clock_t[]> timers(new clock_t[input_size]);
@@ -150,23 +150,23 @@ int main()
 	std::generate_n(input.get(), input_size, generator);
 	// TODO: Too bad we don't have a generator variant which passes the element index
 	{
-		const auto dynamic_shared_mem_size = (cuda::memory::shared::size_t)
+		const auto dynamic_shared_mem_size = (cuda_::memory::shared::size_t)
             (sizeof(float) * 2 * num_threads_per_block);
 
-		auto d_input = cuda::make_unique_span<float>(device, input_size);
-		auto d_output = cuda::make_unique_span<float>(device, num_blocks);
+		auto d_input = cuda_::make_unique_span<float>(device, input_size);
+		auto d_output = cuda_::make_unique_span<float>(device, num_blocks);
 			// Note: We won't actually be checking the output...
-		auto d_timers = cuda::make_unique_span<clock_t>(device, num_timers);
-		cuda::memory::copy(d_input, input.get());
+		auto d_timers = cuda_::make_unique_span<clock_t>(device, num_timers);
+		cuda_::memory::copy(d_input, input.get());
 
-		auto launch_config = cuda::launch_config_builder()
+		auto launch_config = cuda_::launch_config_builder()
 			.num_blocks(num_blocks)
 			.block_size(num_threads_per_block)
 			.dynamic_shared_memory_size(dynamic_shared_mem_size)
 			.build();
-		cuda::launch(kernel_in_module, launch_config, d_input.data(), d_output.data(), d_timers.data());
+		cuda_::launch(kernel_in_module, launch_config, d_input.data(), d_output.data(), d_timers.data());
 		device.synchronize();
-		cuda::memory::copy(timers.get(), d_timers);
+		cuda_::memory::copy(timers.get(), d_timers);
 	} // The allocated device buffers are released here
 	long double average_elapsed_clock_ticks_per_block = compute_average_elapsed_clocks(timers.get(), num_blocks);
 

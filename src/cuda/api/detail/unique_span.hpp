@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains the class @ref cuda::unique_span
+ * @brief Contains the class @ref cuda_::unique_span
  *
  * @note There is no CUDA-specific code in this file; the class is usable entirely independently
  * of the CUDA APIs and GPUs in general
@@ -18,7 +18,7 @@
 #include <type_traits>
 #include <memory>
 
-namespace cuda {
+namespace cuda_ {
 
 /**
  * An `std::dynarry`-inspired class: Contiguous storage; size always equal to the capacity, and both
@@ -267,6 +267,6 @@ unique_span<T> generate_unique_span(size_t size, Generator generator_by_index) n
 	return unique_span<T>(result_data, size, deleter);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_UNIQUE_SPAN_HPP_

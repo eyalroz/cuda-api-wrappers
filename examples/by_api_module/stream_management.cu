@@ -61,13 +61,13 @@ __global__ void increment(char* data, size_t length)
 }
 
 #if CUDA_VERSION >= 11000
-const char* get_policy_name(cuda::stream::synchronization_policy_t policy)
+const char* get_policy_name(cuda_::stream::synchronization_policy_t policy)
 {
 	switch(policy) {
-		case cuda::stream::automatic: return "automatic";
-		case cuda::stream::spin: return "spin";
-		case cuda::stream::yield: return "yield";
-		case cuda::stream::block: return "block";
+		case cuda_::stream::automatic: return "automatic";
+		case cuda_::stream::spin: return "spin";
+		case cuda_::stream::yield: return "yield";
+		case cuda_::stream::block: return "block";
 		default:
 			return "unknown policy";
 	}
@@ -77,24 +77,24 @@ const char* get_policy_name(cuda::stream::synchronization_policy_t policy)
 int main(int argc, char **argv)
 {
 	constexpr const size_t N = 50;
-	cuda::launch_configuration_t single_thread_config { 1, 1 };
+	cuda_::launch_configuration_t single_thread_config { 1, 1 };
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+	cuda_::device::id_t device_id =  (argc > 1) ?
+		std::stoi(argv[1]) : cuda_::device::default_device_id;
 
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		die_("No CUDA devices on this system");
 	}
 
-	auto device = cuda::device::get(device_id).make_current();
+	auto device = cuda_::device::get(device_id).make_current();
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
 	// Stream creation and destruction, stream flags
 	//------------------------------------------------
 	{
-		auto stream = cuda::device::current::get().create_stream(cuda::stream::sync);
+		auto stream = cuda_::device::current::get().create_stream(cuda_::stream::sync);
 		std::cout
 			<< "A new CUDA stream with no priority specified defaults to having priority "
 			<< stream.priority() << ".\n";
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 
 	// Use of the default stream as an rvalue
 	// ---------------------------------------------
-	cuda::enqueue_launch(
+	cuda_::enqueue_launch(
 		print_message<N,2>, device.default_stream(), single_thread_config, 
 		message<N>("I was launched on the default stream.")
 	);
@@ -113,12 +113,12 @@ int main(int argc, char **argv)
 	// and memory attachments, recording and waiting on events
 	//--------------------------------------------------------------
 
-	auto stream_1 = cuda::device::current::get().create_stream(
-		cuda::stream::default_priority + 1,
-		cuda::stream::no_implicit_synchronization_with_default_stream);
-	auto stream_2 = cuda::device::current::get().create_stream(
-		cuda::stream::default_priority + 1,
-		cuda::stream::no_implicit_synchronization_with_default_stream);
+	auto stream_1 = cuda_::device::current::get().create_stream(
+		cuda_::stream::default_priority + 1,
+		cuda_::stream::no_implicit_synchronization_with_default_stream);
+	auto stream_2 = cuda_::device::current::get().create_stream(
+		cuda_::stream::default_priority + 1,
+		cuda_::stream::no_implicit_synchronization_with_default_stream);
 
 #if CUDA_VERSION >= 11000
 	// Stream synchronization policy and attribute copying
@@ -130,8 +130,8 @@ int main(int argc, char **argv)
 	if (initial_policy != stream_2.synchronization_policy()) {
 		throw std::logic_error("Different synchronization policies for streams created the same way");
 	}
-	cuda::stream::synchronization_policy_t alt_policy =
-		(initial_policy == cuda::stream::yield) ? cuda::stream::block : cuda::stream::yield;
+	cuda_::stream::synchronization_policy_t alt_policy =
+		(initial_policy == cuda_::stream::yield) ? cuda_::stream::block : cuda_::stream::yield;
 	stream_2.set_synchronization_policy(alt_policy);
 	auto new_s2_policy = stream_2.synchronization_policy();
 	if (alt_policy != new_s2_policy) {
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 		throw std::logic_error(ss.str());
 	}
 	std::cout << "Overwriting all attributes of stream 1 with those of stream 2.\n";
-	cuda::copy_attributes(stream_1, stream_2);
+	cuda_::copy_attributes(stream_1, stream_2);
 	auto s1_policy_after_copy = stream_1.synchronization_policy();
 	if (alt_policy != s1_policy_after_copy) {
 		std::stringstream ss;
@@ -154,16 +154,16 @@ int main(int argc, char **argv)
 #endif
 
 	constexpr auto buffer_size = 12345678;
-	auto buffer = cuda::memory::managed::make_unique_span<char>(
+	auto buffer = cuda_::memory::managed::make_unique_span<char>(
 		buffer_size,
 		device.supports_concurrent_managed_access() ?
-			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access:
-			cuda::memory::managed::initial_visibility_t::to_all_devices);
+			cuda_::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access:
+			cuda_::memory::managed::initial_visibility_t::to_all_devices);
 	print_first_char(buffer.data());
 	std::fill(buffer.begin(), buffer.end(), 'a');
 	print_first_char(buffer.data());
 
-	auto event_1 = cuda::event::create(device, cuda::event::sync_by_blocking);
+	auto event_1 = cuda_::event::create(device, cuda_::event::sync_by_blocking);
 	stream_1.enqueue.kernel_launch(print_message<N,3>, single_thread_config, message<N>("I'm on stream 1"));
 	stream_1.enqueue.memset(buffer, 'b');
 	auto callback = [&]() {
@@ -171,9 +171,9 @@ int main(int argc, char **argv)
 		print_first_char(buffer.data());
 	};
 	stream_1.enqueue.host_invokable(callback);
-	auto threads_per_block = cuda::kernel::get(device, increment).get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
+	auto threads_per_block = cuda_::kernel::get(device, increment).get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
 	auto num_blocks = div_rounding_up(buffer_size, threads_per_block);
-	auto launch_config = cuda::launch_configuration_t{num_blocks, threads_per_block};
+	auto launch_config = cuda_::launch_configuration_t{num_blocks, threads_per_block};
 	// TODO: The following doesn't have much of a meaningful effect; we should modify this example
 	// so that the attachment has some observable effect
 	stream_1.enqueue.attach_managed_region(buffer.get());
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 	bool idleness_1 = stream_2.has_work_remaining();
 	device.synchronize();
 	print_first_char(buffer.data());
-	// cuda::memory::managed::free(buffer);
+	// cuda_::memory::managed::free(buffer);
 	bool idleness_2 = stream_2.has_work_remaining();
 	std::cout << std::boolalpha
 		<< "Did stream 2 have work before device-level synchronization? " << (idleness_1 ? "yes" : "no") << "\n"

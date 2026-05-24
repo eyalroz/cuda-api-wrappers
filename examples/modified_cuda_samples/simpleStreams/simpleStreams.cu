@@ -49,7 +49,7 @@ const char *sEventSyncMethod[] =
 #include <iostream>
 #include <algorithm>
 
-using sync_policy_type = cuda::context::host_thread_sync_scheduling_policy_t;
+using sync_policy_type = cuda_::context::host_thread_sync_scheduling_policy_t;
 
 
 
@@ -102,9 +102,9 @@ struct simple_streams_params_t
 };
 
 void run_simple_streams_example(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	simple_streams_params_t params,
-	const cuda::context::host_thread_sync_scheduling_policy_t sync_policy)
+	const cuda_::context::host_thread_sync_scheduling_policy_t sync_policy)
 {
 	int nstreams = 4;               // number of streams for CUDA calls
 	int nreps = 10;                // number of times each experiment is repeated; originally 10
@@ -112,25 +112,25 @@ void run_simple_streams_example(
 	int c = 5;                      // value to which the array will be initialized
 
 	// Allocate Host memory
-	auto h_a = cuda::memory::host::make_unique_span<int>(params.n);
+	auto h_a = cuda_::memory::host::make_unique_span<int>(params.n);
 
 	// allocate device memory
 	// pointers to data and init value in the device memory
-	auto d_a = cuda::memory::make_unique_span<int>(device, params.n);
-	auto d_c = cuda::memory::make_unique_span<int>(device, 1);
-	cuda::memory::copy_single(d_c.data(), &c);
+	auto d_a = cuda_::memory::make_unique_span<int>(device, params.n);
+	auto d_c = cuda_::memory::make_unique_span<int>(device, 1);
+	cuda_::memory::copy_single(d_c.data(), &c);
 
 	std::cout << "\nStarting Test\n";
 
 	// allocate and initialize an array of stream handles
-	std::vector<cuda::stream_t> streams;
+	std::vector<cuda_::stream_t> streams;
 	std::generate_n(
 		std::back_inserter(streams), nstreams,
 		[&device]() {
 			// Note: we could omit the specific requirement of synchronization
 			// with the default stream, since that's the CUDA default - but I
 			// think it's important to state that's the case
-			return device.create_stream(cuda::stream::implicitly_synchronizes_with_default_stream);
+			return device.create_stream(cuda_::stream::implicitly_synchronizes_with_default_stream);
 		}
 	);
 
@@ -138,19 +138,19 @@ void run_simple_streams_example(
 	// use blocking sync
 	auto use_blocking_sync = (sync_policy == cudaDeviceBlockingSync);
 
-	auto start_event = cuda::event::create(device, use_blocking_sync);
-	auto stop_event = cuda::event::create(device, use_blocking_sync);
+	auto start_event = cuda_::event::create(device, use_blocking_sync);
+	auto stop_event = cuda_::event::create(device, use_blocking_sync);
 
 	// time memcpy from device
 	start_event.record(); // record on the default stream, to ensure that all previous CUDA calls have completed
-	cuda::memory::copy(h_a.get(), d_a, streams[0]);
+	cuda_::memory::copy(h_a.get(), d_a, streams[0]);
 	stop_event.record();
 	stop_event.synchronize(); // block until the event is actually recorded
-	auto time_memcpy = cuda::event::time_elapsed_between(start_event, stop_event);
+	auto time_memcpy = cuda_::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "memcopy:\t" << time_memcpy.count() << "\n";
 
 	// time kernel
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(params.n)
 		.block_size(512)
 		.build();
@@ -158,12 +158,12 @@ void run_simple_streams_example(
 	streams[0].enqueue.kernel_launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
 	stop_event.record();
 	stop_event.synchronize();
-	auto time_kernel = cuda::event::time_elapsed_between(start_event, stop_event);
+	auto time_kernel = cuda_::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "kernel:\t\t" << time_kernel.count() << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time non-streamed execution for reference
-	launch_config = cuda::launch_config_builder()
+	launch_config = cuda_::launch_config_builder()
 		.overall_size(params.n)
 		.block_size(512)
 		.build();
@@ -172,17 +172,17 @@ void run_simple_streams_example(
 	for (int k = 0; k < nreps; k++)
 	{
 		device.launch(init_array, launch_config, d_a.data(), d_c.data(), params.num_iterations);
-		cuda::memory::copy(h_a.get(), d_a);
+		cuda_::memory::copy(h_a.get(), d_a);
 	}
 
 	stop_event.record();
 	stop_event.synchronize();
-	auto elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
+	auto elapsed_time = cuda_::event::time_elapsed_between(start_event, stop_event);
 	std::cout << "non-streamed:\t" << elapsed_time.count() / static_cast<float>(nreps) << "\n";
 
 	//////////////////////////////////////////////////////////////////////
 	// time execution with nstreams streams
-	launch_config = cuda::launch_config_builder()
+	launch_config = cuda_::launch_config_builder()
 		.overall_size(params.n/nstreams)
 		.block_size(512)
 		.build();
@@ -191,7 +191,7 @@ void run_simple_streams_example(
 	// This instruction is actually the only one in our program
 	// for which the device.make_current() command was necessary.
 	// TODO: Avoid having to do that altogether...
-	cuda::memory::device::zero(d_a); // set device memory to all 0s, for testing correctness
+	cuda_::memory::device::zero(d_a); // set device memory to all 0s, for testing correctness
 	start_event.record();
 
 	for (int k = 0; k < nreps; k++)
@@ -207,7 +207,7 @@ void run_simple_streams_example(
 		//   commence executing when all previous CUDA calls in stream x have completed
 		for (int i = 0; i < nstreams; i++)
 		{
-			cuda::memory::copy(
+			cuda_::memory::copy(
 				h_a.data() + i * params.n / nstreams,
 				d_a.data() + i * params.n / nstreams, nbytes / nstreams,
 				streams[i]);
@@ -216,7 +216,7 @@ void run_simple_streams_example(
 
 	stop_event.record();
 	stop_event.synchronize();
-	elapsed_time = cuda::event::time_elapsed_between(start_event, stop_event);
+	elapsed_time = cuda_::event::time_elapsed_between(start_event, stop_event);
 	std::cout << nstreams <<" streams:\t" << elapsed_time.count() / (float) nreps << "\n";
 
 	// check whether the output is correct
@@ -227,7 +227,7 @@ void run_simple_streams_example(
 }
 
 
-simple_streams_params_t determine_params(const cuda::device_t& device)
+simple_streams_params_t determine_params(const cuda_::device_t& device)
 {
 	simple_streams_params_t result;
 	result.n = 2 * 1024 * 1024;       // number of ints in the data set; originally 2^16
@@ -237,11 +237,11 @@ simple_streams_params_t determine_params(const cuda::device_t& device)
 	auto properties = device.properties();
 	auto compute_capability = properties.compute_capability();
 
-	if (compute_capability < cuda::device::compute_capability_t{1, 1} ) {
+	if (compute_capability < cuda_::device::compute_capability_t{1, 1} ) {
 		std::cout << properties.name << " does not have Compute Capability 1.1 or newer. Reducing workload.\n";
 	}
 	// number of iterations for the loop inside the example kernel
-	result.num_iterations = (compute_capability >= cuda::device::make_compute_capability(1,2)) ? 5 : 1;
+	result.num_iterations = (compute_capability >= cuda_::device::make_compute_capability(1,2)) ? 5 : 1;
 
 	// Check if GPU can map host memory (Generic Method), if not then we override bPinGenericMemory to be false
 	std::cout << "Device: <" << properties.name << "> canMapHostMemory: "
@@ -272,7 +272,7 @@ simple_streams_params_t determine_params(const cuda::device_t& device)
 
 int main(int argc, char **argv)
 {
-	auto device = cuda::device::get(choose_device(argc, argv));
+	auto device = cuda_::device::get(choose_device(argc, argv));
 
 	device.make_current();
 	// This is "necessary", for now, for the memory operations whose API is context-unaware,

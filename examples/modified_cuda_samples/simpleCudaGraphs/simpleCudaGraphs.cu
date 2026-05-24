@@ -36,7 +36,7 @@
 #if __cplusplus >= 202001L
 using span = std::span;
 #else
-using cuda::span;
+using cuda_::span;
 #endif
 
 namespace cg = cooperative_groups;
@@ -131,7 +131,7 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 	if (cta.thread_rank() == 0) result[0] = temp_sum;
 }
 
-void init_input(cuda::span<float> a) {
+void init_input(cuda_::span<float> a) {
 	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / static_cast<float>(RAND_MAX); };
 	::std::generate_n(a.data(), a.size(), generator);
 }
@@ -162,17 +162,17 @@ void report_mode(const char* mode)
 		<< "---------------------------" << std::string(std::strlen(mode), '-') << '\n';
 }
 
-void use(const cuda::device_t &device, const cuda::graph::template_t &graph, const char* how_created)
+void use(const cuda_::device_t &device, const cuda_::graph::template_t &graph, const char* how_created)
 {
 	report_attempt("use", how_created);
 	std::cout << "Number of graph nodes = " << graph.num_nodes() << '\n';
 
-	auto instance = cuda::graph::instantiate(graph);
+	auto instance = cuda_::graph::instantiate(graph);
 
 	auto cloned = graph.clone();
-	auto cloned_graph_instance = cuda::graph::instantiate(graph);
+	auto cloned_graph_instance = cuda_::graph::instantiate(graph);
 
-	auto stream_for_graph = cuda::stream::create(device, cuda::stream::async);
+	auto stream_for_graph = cuda_::stream::create(device, cuda_::stream::async);
 
 	std::ostringstream sstr;
 	for (int i = 0; i < GRAPH_LAUNCH_ITERATIONS; i++) {
@@ -194,7 +194,7 @@ void use(const cuda::device_t &device, const cuda::graph::template_t &graph, con
 }
 
 void cudaGraphsManual(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	span<float>  inputVec_h,
 	span<float>  inputVec_d,
 	span<double> outputVec_d,
@@ -208,14 +208,14 @@ void cudaGraphsManual(
 	// with kernel launch node insertion: When you insert a node into a template,
 	// the kernel argument values are _not_ copied by the CUDA driver, nor apparently
 	// is the array of pointers to them. So, we need to extend the lifetime of this
-	// information until after the graph template is instantiated. 
+	// information until after the graph template is instantiated.
 	std::vector<std::vector<void*>> argument_ptr_sequences{};
 
-	using node_kind_t = cuda::graph::node::kind_t;
-	auto graph = cuda::graph::create();
+	using node_kind_t = cuda_::graph::node::kind_t;
+	auto graph = cuda_::graph::create();
 
 	auto memcpy_node = [&] {
-		cuda::memory::copy_parameters_t<3> copy_params;
+		cuda_::memory::copy_parameters_t<3> copy_params;
 		// TODO: Have the copy_parameters_t class be more like a builder.
 		// And - accept sizes with dimensionality upto the copy params dimensionality
 		copy_params.set_source<float>(inputVec_h);
@@ -225,12 +225,12 @@ void cudaGraphsManual(
 		copy_params.set_extent<float>(inputVec_h.size());
 		copy_params.clear_offsets();
 		copy_params.clear_rest();
-		auto current_context = cuda::context::current::get();
+		auto current_context = cuda_::context::current::get();
 		return graph.insert.node<node_kind_t::memory_copy>(current_context, copy_params);
 	}();
 
 	auto memset_node = [&] {
-		cuda::graph::node::parameters_t<node_kind_t::memory_set> params;
+		cuda_::graph::node::parameters_t<node_kind_t::memory_set> params;
 		params.value = 0;
 		params.width_in_bytes = 4;
 		params.region = outputVec_d;
@@ -238,14 +238,14 @@ void cudaGraphsManual(
 	}();
 
 	auto reduce_node = [&] {
-		auto reduce_kernel = cuda::kernel::get(device, reduce);
-		auto launch_config = cuda::launch_config_builder()
+		auto reduce_kernel = cuda_::kernel::get(device, reduce);
+		auto launch_config = cuda_::launch_config_builder()
 			.grid_size(outputVec_d.size())
 			.block_size(THREADS_PER_BLOCK)
 			.build();
-		argument_ptr_sequences.emplace_back(cuda::graph::make_kernel_argument_pointers(
+		argument_ptr_sequences.emplace_back(cuda_::graph::make_kernel_argument_pointers(
 			inputVec_d.data(), outputVec_d.data(), inputVec_d.size(), outputVec_d.size()));
-		auto kernel_node_args = cuda::graph::make_launch_primed_kernel(reduce_kernel, launch_config, argument_ptr_sequences.back());
+		auto kernel_node_args = cuda_::graph::make_launch_primed_kernel(reduce_kernel, launch_config, argument_ptr_sequences.back());
 		return graph.insert.node<node_kind_t::kernel_launch>(kernel_node_args);
 	}();
 
@@ -253,7 +253,7 @@ void cudaGraphsManual(
 	graph.insert.edge(memset_node, reduce_node);
 
 	auto memset_result_node = [&] {
-		cuda::graph::node::parameters_t<node_kind_t::memory_set> params;
+		cuda_::graph::node::parameters_t<node_kind_t::memory_set> params;
 		params.value = 0;
 		params.width_in_bytes = 4;
 		params.region = result_d;
@@ -261,12 +261,12 @@ void cudaGraphsManual(
 	}();
 
 	auto reduce_final_node = [&] {
-		auto kernel = cuda::kernel::get(device, reduceFinal);
-		auto launch_config = cuda::launch_config_builder()
+		auto kernel = cuda_::kernel::get(device, reduceFinal);
+		auto launch_config = cuda_::launch_config_builder()
 			.grid_size(1)
 			.block_size(THREADS_PER_BLOCK)
 			.build();
-		argument_ptr_sequences.emplace_back(cuda::graph::make_kernel_argument_pointers(outputVec_d.data(), result_d.data(), outputVec_d.size()));
+		argument_ptr_sequences.emplace_back(cuda_::graph::make_kernel_argument_pointers(outputVec_d.data(), result_d.data(), outputVec_d.size()));
 		return graph.insert.node<node_kind_t::kernel_launch>(kernel, launch_config, argument_ptr_sequences.back());
 	}();
 
@@ -274,7 +274,7 @@ void cudaGraphsManual(
 	graph.insert.edge(memset_result_node, reduce_final_node);
 
 	auto memcpy_result_node = [&] {
-		cuda::memory::copy_parameters_t<3> copy_params;
+		cuda_::memory::copy_parameters_t<3> copy_params;
 		// TODO: Have the copy_parameters_t class be more like a builder.
 		// And - accept sizes with dimensionality upto the copy params dimensionality
 		copy_params.set_source<double>(result_d);
@@ -298,7 +298,7 @@ void cudaGraphsManual(
 }
 
 void cudaGraphsManualWithBuilders(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	span<float>  inputVec_h,
 	span<float>  inputVec_d,
 	span<double> outputVec_d,
@@ -309,11 +309,11 @@ void cudaGraphsManualWithBuilders(
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
 
-	using node_kind_t = cuda::graph::node::kind_t;
-	auto graph = cuda::graph::create();
+	using node_kind_t = cuda_::graph::node::kind_t;
+	auto graph = cuda_::graph::create();
 
 	// what about building via the graph object?
-	cuda::graph::node::builder_t builder;
+	cuda_::graph::node::builder_t builder;
 
 	std::cout << "Building a memcpy node" << std::endl;
 
@@ -327,7 +327,7 @@ void cudaGraphsManualWithBuilders(
 		// .copy_params.clear_offsets();
 		// .copy_params.clear_rest();
 		// No need to set the context - we default to the current context!
-		// .context(cuda::context::current::get())
+		// .context(cuda_::context::current::get())
 		.build_within(graph);
 
 	std::cout << "Building a memset node" << std::endl;
@@ -340,9 +340,9 @@ void cudaGraphsManualWithBuilders(
 	std::cout << "Building a kernel launch node" << std::endl;
 
 
-	auto wrapped_reduce_kernel = cuda::kernel::get(device, reduce);
+	auto wrapped_reduce_kernel = cuda_::kernel::get(device, reduce);
 	auto reduce_node = [&]{
-		auto launch_config = cuda::launch_config_builder()
+		auto launch_config = cuda_::launch_config_builder()
 			.grid_size(outputVec_d.size())
 			.block_size(THREADS_PER_BLOCK)
 			.build();
@@ -368,12 +368,12 @@ void cudaGraphsManualWithBuilders(
 
 	std::cout << "Building a kernel launch node" << std::endl;
 
-	auto final_reduce_launch_config = cuda::launch_config_builder()
+	auto final_reduce_launch_config = cuda_::launch_config_builder()
 		.grid_size(1)
 		.block_size(THREADS_PER_BLOCK)
 		.build();
 
-	auto wrapped_reduce_final_kernel = cuda::kernel::get(device, reduceFinal);
+	auto wrapped_reduce_final_kernel = cuda_::kernel::get(device, reduceFinal);
 	auto reduce_final_node = builder.kind<node_kind_t::kernel_launch>()
 		.kernel(wrapped_reduce_final_kernel)
 		.launch_configuration(final_reduce_launch_config)
@@ -408,7 +408,7 @@ void cudaGraphsManualWithBuilders(
 }
 
 void cudaGraphsUsingStreamCapture(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	span<float>  inputVec_h,
 	span<float>  inputVec_d,
 	span<double> outputVec_d,
@@ -419,14 +419,14 @@ void cudaGraphsUsingStreamCapture(
 	report_attempt("construction", graph_construction_mode);
 	double result_h = 0.0;
 
-	using cuda::stream::async;
-	auto stream_1 = cuda::stream::create(device, async);
-	auto stream_2 = cuda::stream::create(device, async);
-	auto stream_3 = cuda::stream::create(device, async);
+	using cuda_::stream::async;
+	auto stream_1 = cuda_::stream::create(device, async);
+	auto stream_2 = cuda_::stream::create(device, async);
+	auto stream_3 = cuda_::stream::create(device, async);
 
-	auto fork_stream_event = cuda::event::create(device);
-	auto reduce_output_memset_event = cuda::event::create(device);
-	auto final_result_memset_event = cuda::event::create(device);
+	auto fork_stream_event = cuda_::event::create(device);
+	auto reduce_output_memset_event = cuda_::event::create(device);
+	auto final_result_memset_event = cuda_::event::create(device);
 
 	stream_1.begin_capture();
 
@@ -444,7 +444,7 @@ void cudaGraphsUsingStreamCapture(
 
 	stream_1.enqueue.wait(reduce_output_memset_event);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.grid_size(outputVec_d.size())
 		.block_size(THREADS_PER_BLOCK)
 		.build();
@@ -454,7 +454,7 @@ void cudaGraphsUsingStreamCapture(
 
 	stream_1.enqueue.wait(final_result_memset_event);
 
-	launch_config =  cuda::launch_config_builder()
+	launch_config =  cuda_::launch_config_builder()
 		.grid_dimensions(1)
 		.block_dimensions(THREADS_PER_BLOCK)
 		.build();
@@ -482,15 +482,15 @@ int main(int argc, char **argv)
 	size_t size { 1 << 24 }; // number of elements to reduce
 	size_t maxBlocks { 512 };
 
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		die_("No CUDA devices on this system");
 	}
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id = (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+	cuda_::device::id_t device_id = (argc > 1) ?
+		std::stoi(argv[1]) : cuda_::device::default_device_id;
 
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 
 	std::cout
 		<< size << " elements\n"
@@ -498,10 +498,10 @@ int main(int argc, char **argv)
 		<< "Graph Launch iterations = " << GRAPH_LAUNCH_ITERATIONS << '\n'
 		<< std::flush;
 
-	auto inputVec_h = cuda::memory::host::make_unique_span<float>(size);
-	auto inputVec_d = cuda::memory::device::make_unique_span<float>(device, size);
-	auto outputVec_d = cuda::memory::device::make_unique_span<double>(device, maxBlocks);
-	auto result_d = cuda::memory::device::make_unique_span<double>(device, 1);
+	auto inputVec_h = cuda_::memory::host::make_unique_span<float>(size);
+	auto inputVec_d = cuda_::memory::device::make_unique_span<float>(device, size);
+	auto outputVec_d = cuda_::memory::device::make_unique_span<double>(device, maxBlocks);
+	auto result_d = cuda_::memory::device::make_unique_span<double>(device, 1);
 
 	init_input(inputVec_h);
 

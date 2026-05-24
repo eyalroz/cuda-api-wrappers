@@ -14,7 +14,7 @@
 #include <filesystem>
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -73,7 +73,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuLinkDestroy(handle);
 	throw_if_error_lazy(status,
-		::std::string("Failed destroying the link ") + cuda::detail_::ptr_as_hex(handle)
+		::std::string("Failed destroying the link ") + cuda_::detail_::ptr_as_hex(handle)
 		+ " in " + context::detail_::identify(context_handle)
 		+ " on " + device::detail_::identify(device_id));
 }
@@ -124,7 +124,7 @@ public:
 		size_t cubin_output_size;
 		auto status = cuLinkComplete(handle_, &cubin_output_start, &cubin_output_size);
 		throw_if_error_lazy(status,
-			"Failed completing the link with state at address " + cuda::detail_::ptr_as_hex(handle_));
+			"Failed completing the link with state at address " + cuda_::detail_::ptr_as_hex(handle_));
 		return memory::region_t{cubin_output_start, cubin_output_size};
 	}
 
@@ -303,6 +303,6 @@ inline link_t wrap(
 
 } // namespace link
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_LINK_HPP_

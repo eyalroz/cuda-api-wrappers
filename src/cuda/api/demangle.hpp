@@ -20,7 +20,7 @@ char* __cu_demangle(const char *id, char *output_buffer, size_t *length, int *st
 #include "detail/span.hpp"
 #include "detail/unique_span.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -80,7 +80,7 @@ inline ::std::string demangle_as<::std::string>(const char* mangled_identifier)
 	return { demangled.data(), demangled.size() };
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 11040
 #endif // CUDA_API_WRAPPERS_MANGLING_HPP_

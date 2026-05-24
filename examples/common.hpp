@@ -50,7 +50,7 @@ inline const char* ordinal_suffix(int n)
 template <typename N = int>
 ::std::string xth(N n) { return ::std::to_string(n) + ordinal_suffix(n); }
 
-const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
+const char* cache_preference_name(cuda_::multiprocessor_cache_preference_t pref)
 {
 	static const char* cache_preference_names[] = {
 		"No preference",
@@ -61,7 +61,7 @@ const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 	return cache_preference_names[static_cast<off_t>(pref)];
 }
 
-const char* host_thread_sync_scheduling_policy_name(cuda::context::host_thread_sync_scheduling_policy_t policy)
+const char* host_thread_sync_scheduling_policy_name(cuda_::context::host_thread_sync_scheduling_policy_t policy)
 {
 	static const char *names[] = {
 		"heuristic",
@@ -74,7 +74,7 @@ const char* host_thread_sync_scheduling_policy_name(cuda::context::host_thread_s
 	return names[static_cast<off_t>(policy)];
 }
 
-const char* memory_type_name(cuda::memory::type_t mem_type)
+const char* memory_type_name(cuda_::memory::type_t mem_type)
 {
 	static const char* memory_type_names[] = {
 		"N/A",
@@ -90,42 +90,42 @@ const char* memory_type_name(cuda::memory::type_t mem_type)
 
 namespace std {
 
-std::ostream& operator<<(std::ostream& os, cuda::device::compute_capability_t cc)
+std::ostream& operator<<(std::ostream& os, cuda_::device::compute_capability_t cc)
 {
     return os << cc.major() << '.' << cc.minor();
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::multiprocessor_cache_preference_t pref)
+std::ostream& operator<<(std::ostream& os, cuda_::multiprocessor_cache_preference_t pref)
 {
 	return os << cache_preference_name(pref);
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::context::host_thread_sync_scheduling_policy_t pref)
+std::ostream& operator<<(std::ostream& os, cuda_::context::host_thread_sync_scheduling_policy_t pref)
 {
 	return os << host_thread_sync_scheduling_policy_name(pref);
 }
 
-std::ostream& operator<<(std::ostream& os, cuda::context::handle_t handle)
+std::ostream& operator<<(std::ostream& os, cuda_::context::handle_t handle)
 {
-	return (os << cuda::detail_::ptr_as_hex(handle));
+	return (os << cuda_::detail_::ptr_as_hex(handle));
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::context_t& context)
+std::ostream& operator<<(std::ostream& os, const cuda_::context_t& context)
 {
 	return os << "[device " << context.device_id() << " handle " << context.handle() << ']';
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::device_t& device)
+std::ostream& operator<<(std::ostream& os, const cuda_::device_t& device)
 {
-	return os << cuda::device::detail_::identify(device.id());
+	return os << cuda_::device::detail_::identify(device.id());
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::stream_t& stream)
+std::ostream& operator<<(std::ostream& os, const cuda_::stream_t& stream)
 {
-	return os << cuda::stream::detail_::identify(stream.handle(), stream.device().id());
+	return os << cuda_::stream::detail_::identify(stream.handle(), stream.device().id());
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::launch_configuration_t& lc)
+std::ostream& operator<<(std::ostream& os, const cuda_::launch_configuration_t& lc)
 {
 	return os << "launch config [ "
 		<< "grid: ("  << lc.dimensions.grid.x << ", " << lc.dimensions.grid.y << ", " << lc.dimensions.grid.z << "), "
@@ -134,18 +134,18 @@ std::ostream& operator<<(std::ostream& os, const cuda::launch_configuration_t& l
 		<< "]";
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::grid::block_dimensions_t& dims)
+std::ostream& operator<<(std::ostream& os, const cuda_::grid::block_dimensions_t& dims)
 {
 	// return os << dims.x << "x" << dims.y << "x" << dims.z;
 	return os << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const cuda::memory::type_t mem_type)
+std::ostream& operator<<(std::ostream& os, const cuda_::memory::type_t mem_type)
 {
 	return os << memory_type_name(mem_type);
 }
 
-std::string to_string(const cuda::context_t& context)
+std::string to_string(const cuda_::context_t& context)
 {
 	std::stringstream ss;
 	ss.clear();
@@ -173,37 +173,37 @@ void report_current_context(const std::string& prefix = "")
 {
 	if (not prefix.empty()) { std::cout << prefix << ", the current context is: "; }
 	else std::cout << "The current context is: ";
-	if (not cuda::context::current::exists()) {
+	if (not cuda_::context::current::exists()) {
 		std::cout << "(None)" << std::endl;
 	}
 	else {
-		auto cc = cuda::context::current::get();
+		auto cc = cuda_::context::current::get();
 		std::cout << cc << std::endl;
 	}
 }
 
 void print_context_stack()
 {
-	if (not cuda::context::current::exists()) {
+	if (not cuda_::context::current::exists()) {
 		std::cout << "(Context stack is empty/uninitialized)" << std::endl;
 		return;
 	}
-	std::vector<cuda::context::handle_t> contexts;
-	while(cuda::context::current::exists()) {
-		contexts.push_back(cuda::context::current::detail_::pop());
+	std::vector<cuda_::context::handle_t> contexts;
+	while(cuda_::context::current::exists()) {
+		contexts.push_back(cuda_::context::current::detail_::pop());
 	}
 	for (auto handle : contexts) {
-		auto device_id = cuda::context::detail_::get_device_id(handle);
+		auto device_id = cuda_::context::detail_::get_device_id(handle);
 		std::cout << handle << " for device " << device_id;
-		if (cuda::context::detail_::is_primary(handle)) {
+		if (cuda_::context::detail_::is_primary(handle)) {
 			std::cout << " (primary, "
-				<< (cuda::device::primary_context::detail_::is_active(device_id) ? "active" : "inactive")
+				<< (cuda_::device::primary_context::detail_::is_active(device_id) ? "active" : "inactive")
 				<< ')';
 		}
 		std::cout << '\n';
 	}
 	for (auto it = contexts.rbegin(); it != contexts.rend(); ++it) {
-		cuda::context::current::detail_::push(*it);
+		cuda_::context::current::detail_::push(*it);
 	}
 }
 
@@ -211,9 +211,9 @@ void report_primary_context_activity(const std::string& prefix = "")
 {
 	if (not prefix.empty()) { std::cout << prefix << ", "; }
 	std::cout << "Device primary contexts activity: ";
-	for(auto device : cuda::devices()) {
+	for(auto device : cuda_::devices()) {
 		std::cout << device.id() << ": "
-				  << (cuda::device::primary_context::detail_::is_active(device.id()) ? "ACTIVE" : "inactive")
+				  << (cuda_::device::primary_context::detail_::is_active(device.id()) ? "ACTIVE" : "inactive")
 				  << "  ";
 	}
 	std::cout << '\n';
@@ -229,20 +229,20 @@ void report_context_stack(const std::string& prefix = "")
 	std::cout << "-----------------------------------------------------\n" << std::flush;
 }
 
-template <cuda::dimensionality_t Dimensionality>
-std::ostream& operator<<(std::ostream& os, cuda::memory::copy_parameters_t<Dimensionality>& params);
+template <cuda_::dimensionality_t Dimensionality>
+std::ostream& operator<<(std::ostream& os, cuda_::memory::copy_parameters_t<Dimensionality>& params);
 
 std::ostream &stream_endpoint(
 	std::ostream &os,
 	const char* name,
-	cuda::optional<cuda::context::handle_t > context,
-	size_t xInBytes, size_t y, cuda::optional<size_t> z,
+	cuda_::optional<cuda_::context::handle_t > context,
+	size_t xInBytes, size_t y, cuda_::optional<size_t> z,
 	CUmemorytype memoryType,
 	CUarray array,
 	const void* host,
-	cuda::memory::device::address_t device,
+	cuda_::memory::device::address_t device,
 	size_t pitch,
-	cuda::optional<size_t> height)
+	cuda_::optional<size_t> height)
 {
 	os << name << ": [ ";
 	if (context) {
@@ -291,7 +291,7 @@ std::ostream &stream_endpoint(
 }
 
 template <>
-std::ostream& operator<< <2>(std::ostream& os, cuda::memory::copy_parameters_t<2>& params)
+std::ostream& operator<< <2>(std::ostream& os, cuda_::memory::copy_parameters_t<2>& params)
 {
 	auto flags = os.flags();
 	os << "[ ";
@@ -307,7 +307,7 @@ std::ostream& operator<< <2>(std::ostream& os, cuda::memory::copy_parameters_t<2
 }
 
 template <>
-std::ostream& operator<< <3>(std::ostream& os, cuda::memory::copy_parameters_t<3>& params)
+std::ostream& operator<< <3>(std::ostream& os, cuda_::memory::copy_parameters_t<3>& params)
 {
 	auto flags = os.flags();
 	os << "[ ";
@@ -330,16 +330,16 @@ typename std::common_type<U1,U2>::type div_rounding_up(U1 dividend, U2 divisor)
 	return dividend / divisor + !!(dividend % divisor);
 }
 
-cuda::device::id_t choose_device(int argc, char const** argv)
+cuda_::device::id_t choose_device(int argc, char const** argv)
 {
-	auto num_devices = cuda::device::count();
+	auto num_devices = cuda_::device::count();
 	if (num_devices == 0) {
 		die_("No CUDA devices on this system");
 	}
 
-	auto device_id = [&]() -> cuda::device::id_t {
+	auto device_id = [&]() -> cuda_::device::id_t {
 		if (argc == 1) {
-			return cuda::device::default_device_id;
+			return cuda_::device::default_device_id;
 		}
 		std::string device_id_arg { argv[1] };
 		std::string prefix { "--device=" };
@@ -356,11 +356,11 @@ cuda::device::id_t choose_device(int argc, char const** argv)
 		die_("CUDA device " +  std::to_string(device_id) + " was requested, but there are only "
 			+ std::to_string(num_devices) + " CUDA devices on this system");
 	}
-	std::cout << "Using CUDA device " << cuda::device::detail_::get_name(device_id) << " (having device ID " << device_id << ")\n";
+	std::cout << "Using CUDA device " << cuda_::device::detail_::get_name(device_id) << " (having device ID " << device_id << ")\n";
 	return device_id;
 }
 
-cuda::device::id_t choose_device(int argc, char ** argv)
+cuda_::device::id_t choose_device(int argc, char ** argv)
 {
 	return choose_device(argc, const_cast<char const**>(argv));
 }

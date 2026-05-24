@@ -17,7 +17,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace rtc {
 
@@ -166,9 +166,9 @@ private:
 
 /**
  * Do nothing... unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
 template <source_kind_t Kind>
@@ -179,9 +179,9 @@ void throw_if_error(rtc::status_t<Kind> status, const ::std::string& message) no
 
 /**
  * Does nothing - unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  */
 template <source_kind_t Kind>
 void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
@@ -190,7 +190,7 @@ void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
 }
 
 /**
- * Throws a @ref ::cuda::rtc::runtime_error exception if the status is not success
+ * Throws a @ref ::cuda_::rtc::runtime_error exception if the status is not success
  *
  * @note The rationale for this macro is that neither the exception, nor its constructor
  * arguments, are evaluated on the "happy path"; and that cannot be achieved with a
@@ -200,12 +200,12 @@ void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
  */
 #define throw_if_rtc_error_lazy(Kind, status__, ... ) \
 do { \
-	::cuda::rtc::status_t<Kind> tie_status__ = static_cast<::cuda::rtc::status_t<Kind>>(status__); \
-	if (::cuda::is_failure<Kind>(tie_status__)) { \
-		throw ::cuda::rtc::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
+	::cuda_::rtc::status_t<Kind> tie_status__ = static_cast<::cuda_::rtc::status_t<Kind>>(status__); \
+	if (::cuda_::is_failure<Kind>(tie_status__)) { \
+		throw ::cuda_::rtc::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
 	} \
 } while(false)
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_RTC_ERROR_HPP_

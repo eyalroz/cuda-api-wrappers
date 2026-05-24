@@ -12,7 +12,7 @@
 #include "types.hpp"
 #include "error.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -51,7 +51,7 @@ struct properties_t {
 	// properties field
 
 public: // getters
-	cuda::device_t device() const;
+	cuda_::device_t device() const;
 
 	// TODO: Is this only relevant to requests?
 	shared_handle_kind_t requested_kind() const
@@ -91,7 +91,7 @@ public:
 namespace detail_ {
 
 template<physical_allocation::shared_handle_kind_t SharedHandleKind>
-properties_t create_properties(cuda::device::id_t device_id)
+properties_t create_properties(cuda_::device::id_t device_id)
 {
 	CUmemAllocationProp_st raw_props{};
 	raw_props.type = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -193,7 +193,7 @@ inline reserved_address_range_t reserve(region_t requested_region, alignment_t a
 	unsigned long flags { 0 };
 	CUdeviceptr ptr;
 	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, device::address(requested_region), flags);
-	throw_if_error_lazy(status, "Failed making a reservation of " + cuda::memory::detail_::identify(requested_region)
+	throw_if_error_lazy(status, "Failed making a reservation of " + cuda_::memory::detail_::identify(requested_region)
 		+ " with alignment value " + ::std::to_string(alignment));
 	bool is_owning { true };
 	return detail_::wrap(memory::region_t {as_pointer(ptr), requested_region.size() }, alignment, is_owning);
@@ -353,15 +353,15 @@ inline ::std::string identify(region_t address_range) {
 
 namespace detail_ {
 
-inline permissions_t get_permissions(region_t fully_mapped_region, cuda::device::id_t device_id)
+inline permissions_t get_permissions(region_t fully_mapped_region, cuda_::device::id_t device_id)
 {
 	CUmemLocation_st location { CU_MEM_LOCATION_TYPE_DEVICE, device_id };
 	unsigned long long flags;
 	auto result = cuMemGetAccess(&flags, &location, device::address(fully_mapped_region) );
 	throw_if_error_lazy(result, "Failed determining the access mode for "
-		+ cuda::device::detail_::identify(device_id)
+		+ cuda_::device::detail_::identify(device_id)
 		+ " to the virtual memory mapping to the range of size "
-		+ ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda::detail_::ptr_as_hex(fully_mapped_region.data()));
+		+ ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 	return permissions::detail_::from_flags(static_cast<CUmemAccess_flags>(flags)); // Does this actually work?
 }
 
@@ -483,7 +483,7 @@ public:
 		CUmemGenericAllocationHandle allocation_handle;
 		auto status = cuMemRetainAllocationHandle(&allocation_handle, address_range_.data());
 		throw_if_error_lazy(status, " Failed obtaining/retaining the physical_allocation handle for the virtual memory "
-			"range mapped to " + cuda::detail_::ptr_as_hex(address_range_.data()) + " of size " +
+			"range mapped to " + cuda_::detail_::ptr_as_hex(address_range_.data()) + " of size " +
 				::std::to_string(address_range_.size()) + " bytes");
 		constexpr const bool increase_refcount{false};
 		return physical_allocation::detail_::wrap(allocation_handle, address_range_.size(), increase_refcount);
@@ -523,14 +523,14 @@ inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 	throw_if_error_lazy(status, "Failed making a virtual memory mapping of "
 		+ physical_allocation::detail_::identify(physical_allocation)
 		+ " to the range of size " + ::std::to_string(region.size()) + " bytes at " +
-		cuda::detail_::ptr_as_hex(region.data()));
+		cuda_::detail_::ptr_as_hex(region.data()));
 	constexpr const bool is_owning { true };
 	return mapping::detail_::wrap(region, is_owning);
 }
 
 } // namespace virtual_
 } // namespace memory
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10020
 #endif // CUDA_API_WRAPPERS_VIRTUAL_MEMORY_HPP_

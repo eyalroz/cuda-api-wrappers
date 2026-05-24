@@ -13,7 +13,7 @@
 
 #include <array>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace rtc {
 
@@ -198,6 +198,6 @@ struct common_ptx_compilation_options_t {
 }; // common_ptx_compilation_options_t
 
 } // namespace rtc
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_COMMON_PTX_COMPILATION_OPTIONS_HPP_

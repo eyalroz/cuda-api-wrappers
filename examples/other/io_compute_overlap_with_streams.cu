@@ -46,16 +46,16 @@ constexpr I div_rounding_up(I dividend, const I2 divisor) noexcept
 }
 
 struct buffer_set_t {
-    cuda::unique_span<element_t> host_lhs;
-    cuda::unique_span<element_t> host_rhs;
-    cuda::unique_span<element_t> host_result;
-    cuda::unique_span<element_t> device_lhs;
-    cuda::unique_span<element_t> device_rhs;
-    cuda::unique_span<element_t> device_result;
+    cuda_::unique_span<element_t> host_lhs;
+    cuda_::unique_span<element_t> host_rhs;
+    cuda_::unique_span<element_t> host_result;
+    cuda_::unique_span<element_t> device_lhs;
+    cuda_::unique_span<element_t> device_rhs;
+    cuda_::unique_span<element_t> device_result;
 };
 
 std::vector<buffer_set_t> generate_buffers(
-    const cuda::device_t&  device,
+    const cuda_::device_t&  device,
     size_t                num_kernels,
     size_t                num_elements)
 {
@@ -68,12 +68,12 @@ std::vector<buffer_set_t> generate_buffers(
         [&]() {
             return buffer_set_t {
                 // Sticking to C++11 here...
-                cuda::memory::host::make_unique_span<element_t>(num_elements),
-                cuda::memory::host::make_unique_span<element_t>(num_elements),
-                cuda::memory::host::make_unique_span<element_t>(num_elements),
-                cuda::memory::make_unique_span<element_t>(device, num_elements),
-                cuda::memory::make_unique_span<element_t>(device, num_elements),
-                cuda::memory::make_unique_span<element_t>(device, num_elements)
+                cuda_::memory::host::make_unique_span<element_t>(num_elements),
+                cuda_::memory::host::make_unique_span<element_t>(num_elements),
+                cuda_::memory::host::make_unique_span<element_t>(num_elements),
+                cuda_::memory::make_unique_span<element_t>(device, num_elements),
+                cuda_::memory::make_unique_span<element_t>(device, num_elements),
+                cuda_::memory::make_unique_span<element_t>(device, num_elements)
             };
         }
     );
@@ -88,19 +88,19 @@ int main(int, char **)
     constexpr size_t num_kernels     = 5;
     constexpr size_t num_elements    = 10 * 1000 * 1000;
 
-    auto device = cuda::device::current::get();
+    auto device = cuda_::device::current::get();
     std::cout << "Using CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
     std::cout << "Generating host buffers... " << std::flush;
     auto buffers = generate_buffers(device, num_kernels, num_elements);
     std::cout << "done.\n" << std::flush;
 
-    std::vector<cuda::stream_t> streams;
+    std::vector<cuda_::stream_t> streams;
     streams.reserve(num_kernels);
     std::generate_n(std::back_inserter(streams), num_kernels,
-        [&]() { return device.create_stream(cuda::stream::async); });
+        [&]() { return device.create_stream(cuda_::stream::async); });
 
-    auto common_launch_config = cuda::launch_config_builder()
+    auto common_launch_config = cuda_::launch_config_builder()
 		.device(device)
 		.overall_size(num_elements)
 		.use_maximum_linear_block()
@@ -133,7 +133,7 @@ int main(int, char **)
     }
     std::this_thread::sleep_for(std::chrono::microseconds(50000));
     for(auto& stream : streams) { stream.synchronize(); }
-    cuda::outstanding_error::ensure_none();
+    cuda_::outstanding_error::ensure_none();
 
     // TODO: Consider checking for correctness here
 

@@ -17,7 +17,7 @@
 #include <filesystem>
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -44,7 +44,7 @@ inline module_t wrap(
 
 inline ::std::string identify(const module::handle_t &handle)
 {
-	return ::std::string("module ") + cuda::detail_::ptr_as_hex(handle);
+	return ::std::string("module ") + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(const module::handle_t &handle, context::handle_t context_handle)
@@ -85,20 +85,20 @@ inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, 
  *     can obtain a CUDA context. This is the context into which the module data is to
  *     be loaded (and in which the module contents may be used)
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
- *     such as a span, a cuda::unique_span etc..
+ *     such as a span, a cuda_::unique_span etc..
  * @param link_options Potential options for the PTX compilation and linking of the compiled
  *     device-side code.
  */
 ///@{
 template <typename Locus, typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
 	const link::options_t&  link_options);
 
 template <typename Locus, typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
 	Locus&&              locus,
 	ContiguousContainer  module_data);
@@ -148,10 +148,10 @@ public: // getters
 	 *
 	 * @return An enqueable kernel proxy object for the requested kernel.
 	 */
-	cuda::kernel_t get_kernel(const char* name) const;
+	cuda_::kernel_t get_kernel(const char* name) const;
 
 	/// @copydoc get_kernel(const char*) const
-	cuda::kernel_t get_kernel(const ::std::string& name) const
+	cuda_::kernel_t get_kernel(const ::std::string& name) const
 	{
 		return get_kernel(name.c_str());
 	}
@@ -436,7 +436,7 @@ inline device::primary_context_t get_context_for(const device_t& locus);
  * Create a new module - in a specified context or in a device's primary context,
  * using raw module data in memory.
  *
- * @tparam Locus Either a @ref cuda::device_t or a {@ref cuda::context_t}.
+ * @tparam Locus Either a @ref cuda_::device_t or a {@ref cuda_::context_t}.
  * @tparam ContiguousContainer A span, a vector, a unique_span, or similar type
  * @param locus Where the new module should be created
  * @param module_data The raw data for the module in locus-accessible memory.
@@ -444,7 +444,7 @@ inline device::primary_context_t get_context_for(const device_t& locus);
  * @note This function may create/allocate resources for the primary context of a device!
  */
 template <typename Locus, typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
 	Locus&&             locus,
 	ContiguousContainer module_data)
@@ -463,7 +463,7 @@ module_t create(
  */
 // Note: The following may create the primary context of a device!
 template <typename Locus, typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
@@ -475,6 +475,6 @@ module_t create(
 
 } // namespace module
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_MODULE_HPP_

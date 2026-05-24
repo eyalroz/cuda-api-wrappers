@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains the class @ref cuda::launch_configuration_t and some supporting code.
+ * @brief Contains the class @ref cuda_::launch_configuration_t and some supporting code.
  *
  * @note Launch configurations are used mostly in `kernel_launch.hpp` , and can be built
  * more easily using @ref launch_config_builer_t from `launch_config_builder.hpp`.
@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -284,6 +284,6 @@ CUlaunchConfig marshal(
 
 } // namespace detail_
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_LAUNCH_CONFIGURATION_CUH_

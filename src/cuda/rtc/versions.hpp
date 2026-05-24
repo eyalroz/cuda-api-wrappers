@@ -11,7 +11,7 @@
 #include <cuda/rtc/error.hpp>
 #include "../api/versions.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace version_numbers {
 
@@ -26,6 +26,6 @@ inline version_t nvrtc() {
 }
 
 } // namespace version_numbers
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_RTC_VERSIONS_HPP_

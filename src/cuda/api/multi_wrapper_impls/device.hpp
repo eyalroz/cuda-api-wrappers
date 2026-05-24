@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard devices, including primary contexts. Specifically:
  *
- * 1. Functions in the cuda::device namespace.
- * 2. Methods of @ref cuda::device_t and possibly some relates classes.
+ * 1. Functions in the cuda_::device namespace.
+ * 2. Methods of @ref cuda_::device_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_DEVICE_HPP_
@@ -25,7 +25,7 @@
 
 #include <string>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace device {
 
@@ -197,7 +197,7 @@ inline event_t device_t::create_event(
 	return event::create(*this, uses_blocking_sync, records_timing, interprocess);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_DEVICE_HPP_
 

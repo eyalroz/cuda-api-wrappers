@@ -2,7 +2,7 @@
  * @file
  *
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
- * in the `cuda::memory` namespace.
+ * in the `cuda_::memory` namespace.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_MEMORY_HPP_
@@ -21,7 +21,7 @@
 
 #include <driver_types.h>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -167,9 +167,9 @@ inline void copy(
 	// add this information to the error string
 	throw_if_error_lazy(status,
 		::std::string("Failed copying data between devices: From address ")
-		+ cuda::detail_::ptr_as_hex(source) + " in "
+		+ cuda_::detail_::ptr_as_hex(source) + " in "
 		+ context::detail_::identify(source_context.handle()) + " to address "
-		+ cuda::detail_::ptr_as_hex(destination) + " in "
+		+ cuda_::detail_::ptr_as_hex(destination) + " in "
 		+ context::detail_::identify(destination_context.handle()) +
 		(stream ? " on " + stream::detail_::identify(*stream) : ""));
 }
@@ -184,7 +184,7 @@ template <typename GenericRegion>
 device_t region_helper<GenericRegion>::preferred_location() const
 {
 	auto device_id = range::detail_::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
-	return cuda::device::get(device_id);
+	return cuda_::device::get(device_id);
 }
 
 template <typename GenericRegion>
@@ -214,15 +214,15 @@ inline void advise_no_access_expected_by(const_region_t region, device_t& device
 template <typename Allocator>
 ::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator)
 {
-	auto num_devices = cuda::device::count();
+	auto num_devices = cuda_::device::count();
 	::std::vector<device_t, Allocator> devices(num_devices, allocator);
-	auto device_ids = reinterpret_cast<cuda::device::id_t *>(devices.data());
+	auto device_ids = reinterpret_cast<cuda_::device::id_t *>(devices.data());
 
 	auto status = cuMemRangeGetAttribute(
 	device_ids, sizeof(device_t) * devices.size(),
 	CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY, device::address(region.start()), region.size());
 	throw_if_error_lazy(status, "Obtaining the IDs of devices with access to the managed memory range at "
-						   + cuda::detail_::ptr_as_hex(region.start()));
+						   + cuda_::detail_::ptr_as_hex(region.start()));
 	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
@@ -235,7 +235,7 @@ template <typename Allocator>
 
 inline void prefetch(
 	const_region_t         region,
-	const cuda::device_t&  destination,
+	const cuda_::device_t&  destination,
 	const stream_t&        stream)
 {
 	detail_::prefetch(region, destination.id(), stream.handle());
@@ -274,21 +274,21 @@ inline region_t allocate(size_t num_bytes)
 namespace mapped {
 
 inline region_pair_t allocate(
-	const cuda::device_t&  device,
+	const cuda_::device_t&  device,
 	size_t                 size_in_bytes,
 	allocation_options     options)
 {
 	auto pc = device.primary_context();
-	return cuda::memory::mapped::detail_::allocate(pc.handle(), size_in_bytes, options);
+	return cuda_::memory::mapped::detail_::allocate(pc.handle(), size_in_bytes, options);
 }
 
 
 inline region_pair_t allocate(
-	const cuda::context_t&  context,
+	const cuda_::context_t&  context,
 	size_t                  size_in_bytes,
 	allocation_options      options)
 {
-	return cuda::memory::mapped::detail_::allocate(context.handle(), size_in_bytes, options);
+	return cuda_::memory::mapped::detail_::allocate(context.handle(), size_in_bytes, options);
 }
 
 } // namespace mapped
@@ -370,7 +370,7 @@ attribute_value_t<attribute> get_attribute(const void *ptr)
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
 	throw_if_error_lazy(status_and_attribute_value.status,
 		"Obtaining attribute " + ::std::to_string(static_cast<int>(attribute))
-		+ " for pointer " + cuda::detail_::ptr_as_hex(ptr) );
+		+ " for pointer " + cuda_::detail_::ptr_as_hex(ptr) );
 	return status_and_attribute_value.value;
 }
 
@@ -379,7 +379,7 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 {
 	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
 	auto status = cuPointerGetAttributes( num_attributes, attributes, value_ptrs, device::address(ptr) );
-	throw_if_error_lazy(status, "Obtaining multiple attributes for pointer " + cuda::detail_::ptr_as_hex(ptr));
+	throw_if_error_lazy(status, "Obtaining multiple attributes for pointer " + cuda_::detail_::ptr_as_hex(ptr));
 }
 
 } // namespace detail_
@@ -430,8 +430,8 @@ inline void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const 
 		break;
 	default:
 		throw runtime_error(
-			cuda::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + cuda::detail_::ptr_as_hex(ptr));
+			cuda_::status::invalid_value,
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda_::detail_::ptr_as_hex(ptr));
 	}
 }
 
@@ -439,7 +439,7 @@ inline void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const 
 namespace pool {
 
 template<shared_handle_kind_t SharedHandleKind>
-pool_t create(const cuda::device_t& device)
+pool_t create(const cuda_::device_t& device)
 {
 	return detail_::create<SharedHandleKind>(device.id());
 }
@@ -484,9 +484,9 @@ inline region_t pool_t::allocate(const stream_t& stream, size_t num_bytes) const
 	return pool::allocate(*this, stream, num_bytes);
 }
 
-inline cuda::device_t pool_t::device() const noexcept
+inline cuda_::device_t pool_t::device() const noexcept
 {
-	return cuda::device::wrap(device_id_);
+	return cuda_::device::wrap(device_id_);
 }
 
 inline pool::ipc::imported_ptr_t pool_t::import(const memory::pool::ipc::ptr_handle_t& exported_handle) const
@@ -494,28 +494,28 @@ inline pool::ipc::imported_ptr_t pool_t::import(const memory::pool::ipc::ptr_han
 	return pool::ipc::import_ptr(*this, exported_handle);
 }
 
-inline permissions_t get_permissions(const cuda::device_t& device, const pool_t& pool)
+inline permissions_t get_permissions(const cuda_::device_t& device, const pool_t& pool)
 {
-	return cuda::memory::detail_::get_permissions(device.id(), pool.handle());
+	return cuda_::memory::detail_::get_permissions(device.id(), pool.handle());
 }
 
-inline void set_permissions(const cuda::device_t& device, const pool_t& pool, permissions_t permissions)
+inline void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions)
 {
 	if (pool.device_id() == device.id()) {
 		throw ::std::invalid_argument("Cannot change the access get_permissions to a pool of the device "
-			"on which the pool's memory is allocated (" + cuda::device::detail_::identify(device.id()) + ')');
+			"on which the pool's memory is allocated (" + cuda_::device::detail_::identify(device.id()) + ')');
 	}
-	cuda::memory::detail_::set_permissions(device.id(), pool.handle(), permissions);
+	cuda_::memory::detail_::set_permissions(device.id(), pool.handle(), permissions);
 }
 
 template <typename DeviceRange>
 void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t permissions)
 {
 	// Not depending on unique_span here :-(
-	auto device_ids = ::std::unique_ptr<cuda::device::id_t[]>(new cuda::device::id_t[devices.size()]);
+	auto device_ids = ::std::unique_ptr<cuda_::device::id_t[]>(new cuda_::device::id_t[devices.size()]);
 	auto device_to_id = [](device_t const& device){ return device.id(); };
 	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.get(), device_to_id);
-	cuda::memory::detail_::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
+	cuda_::memory::detail_::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
 }
 #endif // #if CUDA_VERSION >= 11020
 
@@ -526,7 +526,7 @@ void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t perm
 template <memory::pool::shared_handle_kind_t Kind>
 memory::pool_t device_t::create_memory_pool() const
 {
-	return cuda::memory::pool::detail_::create<Kind>(id_);
+	return cuda_::memory::pool::detail_::create<Kind>(id_);
 }
 
 inline memory::region_t stream_t::enqueue_t::allocate(const memory::pool_t& pool, size_t num_bytes) const
@@ -543,7 +543,7 @@ inline memory::pool_t device_t::default_memory_pool() const
 }
 
 #endif //  CUDA_VERSION >= 11020
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_MEMORY_HPP_
 

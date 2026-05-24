@@ -109,12 +109,12 @@ void prepareHostArrays(negSquareArrays *hostArrays)
 	fillRandomly(hostArrays->negSquare, hostArrays->numElements);
 }
 
-cuda::graph::instance_t createFreeGraph(float *dPtr)
+cuda_::graph::instance_t createFreeGraph(float *dPtr)
 {
 	cudaGraphNode_t freeNode;
 
-	auto graph = cuda::graph::create();
-	auto node = graph.insert.node<cuda::graph::node::kind_t::memory_free>(dPtr);
+	auto graph = cuda_::graph::create();
+	auto node = graph.insert.node<cuda_::graph::node::kind_t::memory_free>(dPtr);
 	return graph.instantiate();
 }
 
@@ -147,7 +147,7 @@ cuda::graph::instance_t createFreeGraph(float *dPtr)
  *       |
  * free d_negSquare
  */
-std::pair<cuda::graph::instance_t, float*>
+std::pair<cuda_::graph::instance_t, float*>
 createNegateSquaresGraphExplicitly(int device, negSquareArrays *hostArrays, bool do_neg_squares)
 {
 	// Array buffers on device
@@ -259,7 +259,7 @@ createNegateSquaresGraphExplicitly(int device, negSquareArrays *hostArrays, bool
 	checkCudaErrors(cudaGraphDestroy(graph));
 }
 
-cuda::graph::instance_t
+cuda_::graph::instance_t
 createNegateSquaresGraphExplicitly(int device, negSquareArrays *hostArrays)
 {
 	static constexpr const auto do_neg_squares { true };
@@ -366,7 +366,7 @@ void doNegateSquaresInStream(cudaStream_t stream1, negSquareArrays *hostArrays,
  * capture. createNegateSquaresGraphExplicitly constructs an equivalent graph
  * without stream capture.
  */
-cuda::graph::instance_t createNegateSquaresGraphWithStreamCapture(negSquareArrays *hostArrays,
+cuda_::graph::instance_t createNegateSquaresGraphWithStreamCapture(negSquareArrays *hostArrays,
 											   float **d_negSquare_out = NULL)
 {
 	cudaGraph_t graph;
@@ -453,7 +453,7 @@ int main(int argc, char **argv)
 {
 	negSquareArrays hostArrays, deviceRefArrays;
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_dimensions(THREADS_PER_BLOCK)
 		.grid_dimensions(hostArrays.numBlocks)
 		.no_dynamic_shared_memory()
@@ -466,10 +466,10 @@ int main(int argc, char **argv)
 	srand(time(0));
 
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id);
+	cuda_::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda_::device::default_device_id;
+	auto device = cuda_::device::get(device_id);
 
-	if (cuda::version_numbers::driver() < cuda::version_numbers::make(11040)) {
+	if (cuda_::version_numbers::driver() < cuda_::version_numbers::make(11040)) {
 		std::cout << "Waiving execution as driver does not support Graph Memory Nodes\n";
 		exit(EXIT_SUCCESS);
 	}
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 
 	prepareHostArrays(&hostArrays);
 	prepareRefArrays(&hostArrays, &deviceRefArrays, &foundValidationFailure);
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = device.create_stream(cuda_::stream::async);
 	std::cout << "Setup complete.\n\n";
 
 	std::cout << "Running negateSquares in a stream.\n";
@@ -495,7 +495,7 @@ int main(int argc, char **argv)
 	{
 		std::cout << "Running negateSquares in a stream-captured graph.\n";
 		auto executable_graph_instance = createNegateSquaresGraphWithStreamCapture(&hostArrays);
-		cuda::graph::launch(executable_graph_instance, stream);
+		cuda_::graph::launch(executable_graph_instance, stream);
 		stream.synchronize();
 		std::cout << "Validating negateSquares in a stream-captured graph...\n";
 		validateHost(&hostArrays, foundValidationFailure);
@@ -506,7 +506,7 @@ int main(int argc, char **argv)
 	{
 		std::cout << "Running negateSquares in an explicitly constructed graph.\n";
 		auto executable_graph_instance = createNegateSquaresGraphExplicitly(device.id(), &hostArrays);
-		cuda::graph::launch(executable_graph_instance, stream);
+		cuda_::graph::launch(executable_graph_instance, stream);
 		stream.synchronize();
 		std::cout << "Validating negateSquares in an explicitly constructed graph...\n";
 		validateHost(&hostArrays, foundValidationFailure);
@@ -524,7 +524,7 @@ int main(int argc, char **argv)
 		auto executable_graph_instance = std::move(pair.first);
 		auto d_negSquare = std::move(pair.second);
 		auto free_graph_instance = createFreeGraph(d_negSquare);
-		cuda::graph::launch(executable_graph_instance, stream);
+		cuda_::graph::launch(executable_graph_instance, stream);
 		stream.enqueue.kernel_launch(validateGPU, launch_config, d_negSquare, deviceRefArrays, foundValidationFailure);
 		stream.synchronize();
 		printf(
@@ -535,7 +535,7 @@ int main(int argc, char **argv)
 		resetOutputArrays(&hostArrays);
 
 		std::cout << "Running negateSquares with d_negSquare freed outside the graph.\n";
-		cuda::graph::launch(executable_graph_instance, stream);
+		cuda_::graph::launch(executable_graph_instance, stream);
 		stream.enqueue.kernel_launch(validateGPU, launch_config, d_negSquare, deviceRefArrays, foundValidationFailure);
 		stream.synchronize();
 		printf(
@@ -545,9 +545,9 @@ int main(int argc, char **argv)
 		// TODO: What about the instance vs the FreeC?
 		printf(
 			"Running negateSquares with d_negSquare freed in a different graph.\n");
-		cuda::graph::launch(executable_graph_instance, stream);
+		cuda_::graph::launch(executable_graph_instance, stream);
 		stream.enqueue.kernel_launch(validateGPU, launch_config, d_negSquare, deviceRefArrays, foundValidationFailure);
-		cuda::graph::launch(free_graph_instance, stream);
+		cuda_::graph::launch(free_graph_instance, stream);
 		stream.synchronize();
 		printf(
 			"Validating negateSquares with d_negSquare freed in a different "

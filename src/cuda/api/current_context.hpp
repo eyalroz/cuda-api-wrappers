@@ -9,7 +9,7 @@
 #include "constants.hpp"
 #include "types.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -31,7 +31,7 @@ inline bool exists()
 {
 	context::handle_t handle;
 	auto status = cuCtxGetCurrent(&handle);
-	if (status == cuda::status::not_yet_initialized) {
+	if (status == cuda_::status::not_yet_initialized) {
 		return false;
 	}
 	throw_if_error_lazy(status, "Failed obtaining the current context's handle");
@@ -57,7 +57,7 @@ inline bool is_(handle_t handle)
 	case CUDA_SUCCESS:
 		return (handle == current_context_handle);
 	default:
-		throw cuda::runtime_error(status,
+		throw cuda_::runtime_error(status,
 			"Failed determining whether there's a current context, or what it is");
 	}
 }
@@ -206,11 +206,11 @@ public:
  * prefer @ref SET_CUDA_CONTEXT_FOR_THIS_SCOPE instead.
  */
 #define CAW_SET_SCOPE_CONTEXT(context_handle_expr_) \
-const ::cuda::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
+const ::cuda_::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
 ///@endcond
 
 /**
- * @note See also the more complex @ref cuda::context::current::scoped_existence_ensurer_t ,
+ * @note See also the more complex @ref cuda_::context::current::scoped_existence_ensurer_t ,
  * which does _not_ take a fallback context handle, and rather obtains a reference to
  * a primary context on its own.
  */
@@ -272,7 +272,7 @@ public:
  * the hood to effect this behavior.
  */
 #define CUDA_CONTEXT_FOR_THIS_SCOPE(_cuda_context) \
-::cuda::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
+::cuda_::context::current::scoped_override_t set_context_for_this_scope{ _cuda_context }
 
 /**
  * Avoid executing any additional instructions on this thread until all work on all streams
@@ -284,7 +284,7 @@ inline void synchronize()
 {
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
-		throw cuda::runtime_error(status, "Failed synchronizing current context");
+		throw cuda_::runtime_error(status, "Failed synchronizing current context");
 	}
 }
 
@@ -296,7 +296,7 @@ inline void synchronize(context::handle_t current_context_handle)
 {
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
-		throw cuda::runtime_error(status,"Failed synchronizing "
+		throw cuda_::runtime_error(status,"Failed synchronizing "
 			+ context::detail_::identify(current_context_handle));
 	}
 }
@@ -309,7 +309,7 @@ inline void synchronize(
 {
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
-		throw cuda::runtime_error(status, "Failed synchronizing "
+		throw cuda_::runtime_error(status, "Failed synchronizing "
 			+ context::detail_::identify(current_context_handle, current_context_device_id));
 	}
 }
@@ -320,6 +320,6 @@ inline void synchronize(
 
 } // namespace context
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_

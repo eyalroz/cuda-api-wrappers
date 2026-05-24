@@ -14,7 +14,7 @@
 #include <array>
 #include <sstream>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class module_t;
@@ -116,6 +116,6 @@ struct gadget<fatbin_builder::options_t, MarshalTarget, Delimiter> {
 
 } // namespace marshalling
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_FATBIN_BUILDER_OPTIONS_HPP_

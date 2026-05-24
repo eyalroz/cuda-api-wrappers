@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard modules. Specifically:
  *
- * 1. Functions in the `cuda::module` namespace.
- * 2. Methods of @ref cuda::module_t and possibly some relates classes.
+ * 1. Functions in the `cuda_::module` namespace.
+ * 2. Methods of @ref cuda_::module_t and possibly some relates classes.
  * 3. The `context_t::create_module()` methods; see issue #320 on the issue tracker.
  */
 #pragma once
@@ -15,25 +15,25 @@
 #include "../device.hpp"
 #include "../module.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 // Moved over from context.hpp
 template <typename ContiguousContainer,
-cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data) const
 {
 	return module::create<context_t const &>(*this, module_data);
 }
 
 template <typename ContiguousContainer,
-cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data, const link::options_t& link_options) const
 {
 	return module::create<context_t const &>(*this, module_data, link_options);
 }
 
 // These API calls are not really the way you want to work.
-inline cuda::kernel_t module_t::get_kernel(const char* name) const
+inline cuda_::kernel_t module_t::get_kernel(const char* name) const
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	kernel::handle_t kernel_function_handle;
@@ -55,7 +55,7 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 	handle_t new_module_handle;
 	auto status = creator_function(new_module_handle, module_data);
 	throw_if_error_lazy(status, ::std::string("Failed loading a module from memory location ")
-		+ cuda::detail_::ptr_as_hex(module_data)
+		+ cuda_::detail_::ptr_as_hex(module_data)
 		+ " within " + context::detail_::identify(context));
 	bool do_take_ownership { true };
 	bool doesnt_hold_pc_refcount_unit { false };
@@ -140,7 +140,7 @@ inline CUtexref module_t::get_texture_reference(const char* name) const
 #endif
 
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_MODULE_HPP_
 

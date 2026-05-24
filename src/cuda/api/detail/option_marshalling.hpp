@@ -10,7 +10,7 @@
 #include <sstream>
 #include <algorithm>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace marshalling {
 
@@ -62,7 +62,7 @@ public:
 		return oss.tellp() == 0;
 	}
 
-	template <typename T, typename = ::cuda::detail_::enable_if_t<not detail_::is_marshalling_control<typename ::std::decay<T>::type>::value>>
+	template <typename T, typename = ::cuda_::detail_::enable_if_t<not detail_::is_marshalling_control<typename ::std::decay<T>::type>::value>>
 	marshalled_options_t& operator<<(T&& x)
 	{
 		oss << x;
@@ -193,6 +193,6 @@ template <typename CompilationOptions>
 
 } // namespace marshalling
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif /* SRC_CUDA_API_DETAIL_OPTION_MARSHALLING_HPP_ */

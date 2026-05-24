@@ -14,7 +14,7 @@
 #include "identify.hpp"
 #include "../types.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 class stream_t;
 
@@ -511,11 +511,11 @@ inline instance_t instantiate(
 	return instance::wrap(template_.handle(), instance_handle, is_owning);
 }
 
-void launch(const cuda::stream_t& stream, const instance_t& instance);
+void launch(const cuda_::stream_t& stream, const instance_t& instance);
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

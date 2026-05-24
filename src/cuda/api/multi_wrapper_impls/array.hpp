@@ -4,8 +4,8 @@
 * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard events. Specifically:
  *
- * 1. Functions in the @ref cuda::array namespace.
- * 2. Methods of @ref cuda::array_t and {@ref cuda::texture_view_t}.
+ * 1. Functions in the @ref cuda_::array namespace.
+ * 2. Methods of @ref cuda_::array_t and {@ref cuda_::texture_view_t}.
   */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_ARRAY_HPP_
@@ -19,7 +19,7 @@
 #include "../current_device.hpp"
 #include "../texture_view.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace array {
 
@@ -69,7 +69,7 @@ context_t array_t<T, NumDimensions>::context() const
 	return context::wrap(device_id_, context_handle_);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_ARRAY_HPP_
 

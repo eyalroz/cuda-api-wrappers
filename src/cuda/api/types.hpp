@@ -54,8 +54,13 @@
 #endif
 
 
-/// @brief Definitions and functionality wrapping CUDA APIs.
-namespace cuda {
+/**
+ * @brief Definitions and functionality wrapping CUDA APIs.
+ *
+ * @note The namespace name has an underscore-suffix to avoid clashes with
+ * NVIDIA's own use of the `cuda` namespace.
+ **/
+namespace cuda_ {
 
 // This alias for plain C arrays is required due to an MSVC bug, making it fail to
 // accept straight up C array reference parameters to functions under some circumstances;
@@ -92,7 +97,7 @@ using dimension_t = size_t;
 
 /**
  * CUDA's array memory-objects are multi-dimensional; but their dimensions,
- * or extents, are not the same as @ref cuda::grid::dimensions_t ; they may be
+ * or extents, are not the same as @ref cuda_::grid::dimensions_t ; they may be
  * much larger in each axis.
  *
  * @note See also <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaExtent.html">
@@ -839,7 +844,7 @@ enum multiprocessor_shared_memory_bank_size_option_t
 
 /**
  * @brief Definitions and functionality related to CUDA devices (not
- * including the device wrapper type @ref cuda::device_t itself)
+ * including the device wrapper type @ref cuda_::device_t itself)
  */
 namespace device {
 
@@ -857,7 +862,7 @@ using id_t               = CUdevice;
  */
 using attribute_t        = CUdevice_attribute;
 /**
- * All CUDA device attributes (@ref cuda::device::attribute_t) have a value of this type.
+ * All CUDA device attributes (@ref cuda_::device::attribute_t) have a value of this type.
  */
 using attribute_value_t  = int;
 
@@ -945,7 +950,7 @@ using flags_t = context::flags_t;
 namespace primary_context {
 
 /// Raw CUDA driver handle for a device's primary context
-using handle_t = cuda::context::handle_t;
+using handle_t = cuda_::context::handle_t;
 
 } // namespace primary_context
 
@@ -985,11 +990,11 @@ namespace kernel {
 using attribute_t = CUfunction_attribute;
 
 /// The uniform type the CUDA driver uses for all kernel attributes; it is typically more
-/// appropriate to use @ref cuda::kernel_t methods, which also employ more specific,
+/// appropriate to use @ref cuda_::kernel_t methods, which also employ more specific,
 /// appropriate types.
 using attribute_value_t = int;
 
-// A raw CUDA driver handle for a kernel; prefer using the @ref cuda::kernel_t type.
+// A raw CUDA driver handle for a kernel; prefer using the @ref cuda_::kernel_t type.
 using handle_t = CUfunction;
 
 } // namespace kernel
@@ -1020,7 +1025,7 @@ constexpr const const_handle_t no_handle = nullptr;
 } // namespace node
 
 /**
- * Functionality related to the @ref cuda::template_t class - the
+ * Functionality related to the @ref cuda_::template_t class - the
  * templates of CUDA execution graphs, which are what one constructs and edits,
  * but then must instantiate for actual execution scheduling.
  */
@@ -1033,7 +1038,7 @@ constexpr const handle_t null_handle = nullptr;
 } // namespace template_
 
 /**
- * Functionality related to the @ref cuda::template_t class - the
+ * Functionality related to the @ref cuda_::template_t class - the
  * templates of CUDA execution graphs, which are what one constructs and edits,
  * but then must instantiate for actual execution scheduling.
  */
@@ -1048,6 +1053,6 @@ using handle_t = CUgraphExec;
 
 #endif // CUDA_VERSION >= 10000
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_COMMON_TYPES_HPP_
