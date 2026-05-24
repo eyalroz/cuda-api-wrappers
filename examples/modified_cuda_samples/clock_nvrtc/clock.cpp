@@ -153,10 +153,10 @@ int main()
 		const auto dynamic_shared_mem_size = (cuda::memory::shared::size_t)
             (sizeof(float) * 2 * num_threads_per_block);
 
-		auto d_input = cuda::memory::make_unique_span<float>(device, input_size);
-		auto d_output = cuda::memory::make_unique_span<float>(device, num_blocks);
+		auto d_input = cuda::make_unique_span<float>(device, input_size);
+		auto d_output = cuda::make_unique_span<float>(device, num_blocks);
 			// Note: We won't actually be checking the output...
-		auto d_timers = cuda::memory::make_unique_span<clock_t>(device, num_timers);
+		auto d_timers = cuda::make_unique_span<clock_t>(device, num_timers);
 		cuda::memory::copy(d_input, input.get());
 
 		auto launch_config = cuda::launch_config_builder()
