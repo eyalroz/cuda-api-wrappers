@@ -50,7 +50,7 @@ typedef struct sharedMemoryInfo_st {
 #endif
 } sharedMemoryInfo;
 
-constexpr const auto shared_handle_kind = static_cast<cuda_::memory::pool::shared_handle_kind_t>
+constexpr auto shared_handle_kind = static_cast<cuda_::memory::pool::shared_handle_kind_t>
 #if defined(__linux__)
 	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
 #else

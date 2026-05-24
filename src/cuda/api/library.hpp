@@ -254,7 +254,7 @@ inline module_t create(const context_t& context, const library_t& library)
 	auto status = cuLibraryGetModule(&new_handle, library.handle());
 	throw_if_error_lazy(status, ::std::string("Failed creating a module '") +
 		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
-	constexpr const bool is_owning { true };
+	constexpr bool is_owning { true };
 	return module::detail_::wrap(context.device_id(), context.handle(), new_handle,
 		is_owning, does_not_hold_primary_context_refcount_unit);
 	// TODO: We could consider adding a variant of this function taking a context&&, and using that

@@ -646,7 +646,7 @@ public: // mutators
 			// This fixed value is required by the CUDA Runtime API,
 			// to indicate that the entire memory region, rather than a part of it, will be
 			// attached to this stream
-			constexpr const size_t length = 0;
+			constexpr size_t length = 0;
 			auto flags = static_cast<unsigned>(attachment);
 			auto status =  cuStreamAttachMemAsync(
 				associated_stream.handle_,  memory::device::address(managed_region_start), length, flags);
@@ -1072,7 +1072,7 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
 	// The nVIDIA runtime API (at least up to v10.2) requires passing 0 as the flags
 	// variable, see:
 	// http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__STREAM.html
-	static constexpr const unsigned fixed_flags { 0u };
+	static constexpr unsigned fixed_flags { 0u };
 	auto status = cuStreamAddCallback(stream.handle(), function, argument, fixed_flags);
 #endif
 	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + stream::detail_::identify(stream));

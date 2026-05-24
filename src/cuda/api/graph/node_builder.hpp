@@ -44,7 +44,7 @@ public:
 template <>
 class typed_builder_t<kind_t::child_graph> {
 public:
-	static constexpr const kind_t kind = kind_t::child_graph;
+	static constexpr kind_t kind = kind_t::child_graph;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -85,7 +85,7 @@ public:
 template <>
 class typed_builder_t<kind_t::record_event> {
 public:
-	static constexpr const kind_t kind = kind_t::record_event;
+	static constexpr kind_t kind = kind_t::record_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -124,7 +124,7 @@ public:
 template <>
 class typed_builder_t<kind_t::wait_on_event> {
 public:
-	static constexpr const kind_t kind = kind_t::wait_on_event;
+	static constexpr kind_t kind = kind_t::wait_on_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -165,7 +165,7 @@ public:
 template <>
 class typed_builder_t<kind_t::host_function_call> {
 public:
-	static constexpr const kind_t kind = kind_t::host_function_call;
+	static constexpr kind_t kind = kind_t::host_function_call;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -217,7 +217,7 @@ public:
 template <>
 class typed_builder_t<kind_t::kernel_launch> {
 public:
-	static constexpr const kind_t kind = kind_t::kernel_launch;
+	static constexpr kind_t kind = kind_t::kernel_launch;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -302,7 +302,7 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_allocation> {
 public:
-	static constexpr const kind_t kind = kind_t::memory_allocation;
+	static constexpr kind_t kind = kind_t::memory_allocation;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -351,14 +351,14 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_copy> {
 public:
-	static constexpr const kind_t kind = kind_t::memory_copy;
+	static constexpr kind_t kind = kind_t::memory_copy;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 	using dimensions_type = params_type::dimensions_type;
 	using endpoint_t = cuda_::memory::endpoint_t;
-//	static constexpr const dimensionality_t num_dimensions = traits::num_dimensions;
+//	static constexpr dimensionality_t num_dimensions = traits::num_dimensions;
 
 
 protected:
@@ -451,7 +451,7 @@ class typed_builder_t<kind_t::memory_set> {
 	// in non-graph context - here the only builder functionality is for graph vertex construction; so we don't
 	// do any forwarding to a rich parameters class or its own builder.
 public:
-	static constexpr const kind_t kind = kind_t::memory_set;
+	static constexpr kind_t kind = kind_t::memory_set;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -515,7 +515,7 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_free> {
 public:
-	static constexpr const kind_t kind = kind_t::memory_free;
+	static constexpr kind_t kind = kind_t::memory_free;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
@@ -552,7 +552,7 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_barrier> {
 public:
-	static constexpr const kind_t kind = kind_t::memory_barrier;
+	static constexpr kind_t kind = kind_t::memory_barrier;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
 	using traits = cuda_::graph::node::detail_::kind_traits<kind>;

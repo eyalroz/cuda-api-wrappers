@@ -172,7 +172,7 @@ bool basic_module_tests(
 
 	{
 		auto a = module.get_global_region(compilation_result.get_mangling_of(constant_name));
-		static constexpr const size_t size_of_int_on_cuda_devices{4};
+		static constexpr size_t size_of_int_on_cuda_devices{4};
 		test_result = test_result and (a.size() == size_of_int_on_cuda_devices);
 		test_result = test_result and (a.start() != nullptr);
 	}

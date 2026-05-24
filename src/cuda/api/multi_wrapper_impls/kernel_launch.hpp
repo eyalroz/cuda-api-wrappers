@@ -33,11 +33,11 @@ void enqueue_launch(
 		"All kernel parameter types must fulfill the CUDA kernel argument requirements. "
 		"Refer to the documentation of 'cuda_::traits::is_valid_kernel_argument' for more details."
 	);
-	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+	static constexpr bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
 #if CUDA_VERSION >= 12000
-	static constexpr const bool library_kernel = cuda_::detail_::is_library_kernel<Kernel>::value;
+	static constexpr bool library_kernel = cuda_::detail_::is_library_kernel<Kernel>::value;
 #else
-	static constexpr const bool library_kernel = false;
+	static constexpr bool library_kernel = false;
 #endif // CUDA_VERSION >= 12000
 #ifndef NDEBUG
 	// wrapped kernel and library kernel compatibility with the launch configuration
@@ -279,7 +279,7 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 			const_cast<void**>(marshalled_arguments)
 		);
 	else {
-		static constexpr const auto no_arguments_in_alternative_format = nullptr;
+		static constexpr auto no_arguments_in_alternative_format = nullptr;
 		// TODO: Consider passing marshalled_arguments in the alternative format
 		status = cuLaunchKernel(
 			kernel_function_handle,

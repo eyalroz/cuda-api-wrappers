@@ -54,12 +54,12 @@ struct square_matrix {
 
 void print(const square_matrix<double> &bandwidthMatrix, const char* axis_cross_label);
 
-constexpr const unsigned long long default_timeout_clocks = 10000000ull;
+constexpr unsigned long long default_timeout_clocks = 10000000ull;
 
 namespace bandwidth {
-	constexpr const int precision { 2 };
-	constexpr const int integral_digits { 3 };
-	constexpr const int field_width { precision + 1 + integral_digits };
+	constexpr int precision { 2 };
+	constexpr int integral_digits { 3 };
+	constexpr int field_width { precision + 1 + integral_digits };
 } // namespace bandwidth
 
 __global__ void delay(volatile int *flag, unsigned long long timeout_clocks = default_timeout_clocks)
@@ -254,7 +254,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
 void print(const square_matrix<double> &bandwidthMatrix, const char* axis_cross_label)
 {
-	constexpr const std::size_t width = bandwidth::field_width;
+	constexpr std::size_t width = bandwidth::field_width;
 	cout << std::setw(width) << axis_cross_label;
 
 	for (auto device : cuda_::devices()) {

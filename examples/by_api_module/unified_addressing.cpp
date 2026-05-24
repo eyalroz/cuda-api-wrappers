@@ -23,7 +23,7 @@ namespace tests {
 #if CUDA_VERSION >= 9020
 void pointer_properties(const cuda_::device_t& device)
 {
-	constexpr const cuda_::size_t fixed_size { 123 };
+	constexpr cuda_::size_t fixed_size { 123 };
 	cuda_::context_t contexts[2] = {
 		cuda_::context::create(device),
 		cuda_::context::create(device)

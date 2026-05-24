@@ -46,7 +46,7 @@ inline void set_permissions(
 	permissions_t         permissions)
 {
 	CUmemAccessDesc desc { { CU_MEM_LOCATION_TYPE_DEVICE, device.id() }, CUmemAccess_flags(permissions) };
-	static constexpr const size_t count { 1 };
+	static constexpr size_t count { 1 };
 	auto result = cuMemSetAccess(device::address(fully_mapped_region), fully_mapped_region.size(), &desc, count);
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
 						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));

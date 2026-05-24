@@ -1031,7 +1031,7 @@ using handle_t = CUgraphNode;
 /// Internal CUDA handle for a node in a(n execution) graph - whether a template or an executable instance
 using const_handle_t = CUgraphNode_st const *;
 
-constexpr const const_handle_t no_handle = nullptr;
+constexpr const_handle_t no_handle = nullptr;
 
 } // namespace node
 
@@ -1044,7 +1044,7 @@ namespace template_ {
 
 /// Internal CUDA driver handle of a(n execution) graph template; wrapped by @ref graph::template_t
 using handle_t = CUgraph;
-constexpr const handle_t null_handle = nullptr;
+constexpr handle_t null_handle = nullptr;
 
 } // namespace template_
 

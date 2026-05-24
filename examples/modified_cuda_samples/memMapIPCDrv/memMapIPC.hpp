@@ -35,7 +35,7 @@
 // CU_MEM_HANDLE_TYPE_WIN32 meaning that NT HANDLEs will be used. The
 // ipcHandleTypeFlag variable is a convenience variable and is passed by value
 // to individual requests.
-//constexpr const auto shared_mem_handle_kind = (cuda_::memory::virtual_::physical_allocation::source_kind_t)
+//constexpr shared_mem_handle_kind = (cuda_::memory::virtual_::physical_allocation::source_kind_t)
 //#if defined(__linux__)
 //	CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
 //#else
@@ -45,10 +45,10 @@
 // For direct NVLINK and PCI-E peers, at max 8 simultaneous peers are allowed
 // For NVSWITCH connected peers like DGX-2, simultaneous peers are not limited
 // in the same way.
-constexpr const std::size_t max_num_devices_to_use { 32 };
+constexpr std::size_t max_num_devices_to_use { 32 };
 
 #define PROCESSES_PER_DEVICE 1
-constexpr const size_t data_buffer_size { 4ULL * 1024ULL * 1024ULL };
+constexpr size_t data_buffer_size { 4ULL * 1024ULL * 1024ULL };
 
 namespace names {
 

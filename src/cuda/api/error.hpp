@@ -430,7 +430,7 @@ namespace outstanding_error {
  */
 inline status_t get(bool try_clearing = false) noexcept(true)
 {
-	static constexpr const unsigned dummy_flags{0};
+	static constexpr unsigned dummy_flags{0};
 	auto status = cuInit(dummy_flags);
 	if (not is_success(status)) { return status; }
 	return static_cast<status_t>(try_clearing ? cudaGetLastError() : cudaPeekAtLastError());

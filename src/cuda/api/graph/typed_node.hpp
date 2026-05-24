@@ -122,16 +122,16 @@ struct kind_traits;
 
 template<>
 struct kind_traits<kind_t::empty> {
-	static constexpr const auto name = "empty";
+	static constexpr auto name = "empty";
 #if CUDA_VERSION >= 12030
 	using raw_parameters_type = CUgraphNodeParams;
-	static constexpr const bool inserter_takes_context = false; // The context is passed within the parameter struct
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false; // The context is passed within the parameter struct
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	using parameters_type = cuda_::nullopt_t;
 
-	static constexpr const auto inserter = cuGraphAddNode;
-	static constexpr const auto setter = cuGraphNodeSetParams;
-	static constexpr const auto getter = nullptr;
+	static constexpr auto inserter = cuGraphAddNode;
+	static constexpr auto setter = cuGraphNodeSetParams;
+	static constexpr auto getter = nullptr;
 
 	static raw_parameters_type marshal(const parameters_type&) {
 		raw_parameters_type raw_params;
@@ -144,16 +144,16 @@ struct kind_traits<kind_t::empty> {
 
 template<>
 struct kind_traits<kind_t::child_graph> {
-	static constexpr const auto name = "child graph";
+	static constexpr auto name = "child graph";
 	using raw_parameters_type = template_::handle_t;
-	static constexpr const bool inserter_takes_params_by_ptr = false;
-	static constexpr const bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = false;
+	static constexpr bool inserter_takes_context = false;
 	using parameters_type = template_t;
-	static constexpr const auto inserter = cuGraphAddChildGraphNode; // 1 extra param
+	static constexpr auto inserter = cuGraphAddChildGraphNode; // 1 extra param
 	// no param setter!
-	static constexpr const auto getter = cuGraphChildGraphNodeGetGraph;
+	static constexpr auto getter = cuGraphChildGraphNodeGetGraph;
 #if CUDA_VERSION >= 11010
-	static constexpr const auto instance_setter = cuGraphExecChildGraphNodeSetParams;
+	static constexpr auto instance_setter = cuGraphExecChildGraphNodeSetParams;
 #endif
 
 	static raw_parameters_type marshal(const parameters_type& params);
@@ -162,15 +162,15 @@ struct kind_traits<kind_t::child_graph> {
 #if CUDA_VERSION >= 11010
 template<>
 struct kind_traits<kind_t::record_event> {
-	static constexpr const auto name = "record event";
+	static constexpr auto name = "record event";
 	using raw_parameters_type = event::handle_t;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = false;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = false;
 	using parameters_type = event_t;
-	static constexpr const auto inserter = cuGraphAddEventRecordNode; // 1 extra param
-	static constexpr const auto setter = cuGraphEventRecordNodeSetEvent;
-	static constexpr const auto getter = cuGraphEventRecordNodeGetEvent;
-	static constexpr const auto instance_setter = cuGraphExecEventRecordNodeSetEvent;
+	static constexpr auto inserter = cuGraphAddEventRecordNode; // 1 extra param
+	static constexpr auto setter = cuGraphEventRecordNodeSetEvent;
+	static constexpr auto getter = cuGraphEventRecordNodeGetEvent;
+	static constexpr auto instance_setter = cuGraphExecEventRecordNodeSetEvent;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -180,15 +180,15 @@ struct kind_traits<kind_t::record_event> {
 
 template<>
 struct kind_traits<kind_t::wait_on_event> {
-	static constexpr const auto name = "wait on event";
+	static constexpr auto name = "wait on event";
 	using raw_parameters_type = event::handle_t;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = false;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = false;
 	using parameters_type = event_t;
-	static constexpr const auto inserter = cuGraphAddEventWaitNode; // 1 extra param
-	static constexpr const auto setter = cuGraphEventWaitNodeSetEvent;
-	static constexpr const auto getter = cuGraphEventWaitNodeGetEvent;
-	static constexpr const auto instance_setter = cuGraphExecEventWaitNodeSetEvent;
+	static constexpr auto inserter = cuGraphAddEventWaitNode; // 1 extra param
+	static constexpr auto setter = cuGraphEventWaitNodeSetEvent;
+	static constexpr auto getter = cuGraphEventWaitNodeGetEvent;
+	static constexpr auto instance_setter = cuGraphExecEventWaitNodeSetEvent;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -200,18 +200,18 @@ struct kind_traits<kind_t::wait_on_event> {
 
 template<>
 struct kind_traits<kind_t::host_function_call> {
-	static constexpr const auto name = "host function call";
+	static constexpr auto name = "host function call";
 	using raw_parameters_type = CUDA_HOST_NODE_PARAMS;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	struct parameters_type {
 		stream::callback_t function_ptr;
 		void* user_data;
 	};
-	static constexpr const auto inserter = cuGraphAddHostNode; // 1 extra param
-	static constexpr const auto setter = cuGraphHostNodeSetParams;
-	static constexpr const auto getter = cuGraphHostNodeGetParams;
-	static constexpr const auto instance_setter = cuGraphExecHostNodeSetParams;
+	static constexpr auto inserter = cuGraphAddHostNode; // 1 extra param
+	static constexpr auto setter = cuGraphHostNodeSetParams;
+	static constexpr auto getter = cuGraphHostNodeGetParams;
+	static constexpr auto instance_setter = cuGraphExecHostNodeSetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -225,19 +225,19 @@ struct kind_traits<kind_t::host_function_call> {
 
 template<>
 struct kind_traits<kind_t::kernel_launch> {
-	static constexpr const auto name = "kernel launch";
+	static constexpr auto name = "kernel launch";
 	using raw_parameters_type = CUDA_KERNEL_NODE_PARAMS;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	struct parameters_type {
 		kernel_t kernel;
 		launch_configuration_t launch_config;
 		::std::vector<void*> marshalled_arguments; // Does _not_ need a nullptr "argument" terminator
 	};
-	static constexpr const auto inserter = cuGraphAddKernelNode; // 1 extra param
-	static constexpr const auto setter = cuGraphKernelNodeSetParams;
-	static constexpr const auto getter = cuGraphKernelNodeGetParams;
-	static constexpr const auto instance_setter = cuGraphExecKernelNodeSetParams;
+	static constexpr auto inserter = cuGraphAddKernelNode; // 1 extra param
+	static constexpr auto setter = cuGraphKernelNodeSetParams;
+	static constexpr auto getter = cuGraphKernelNodeGetParams;
+	static constexpr auto instance_setter = cuGraphExecKernelNodeSetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -266,19 +266,19 @@ struct kind_traits<kind_t::kernel_launch> {
 #if CUDA_VERSION >= 11040
 template<>
 struct kind_traits<kind_t::memory_allocation> {
-	static constexpr const auto name = "memory allocation";
+	static constexpr auto name = "memory allocation";
 	using raw_parameters_type = CUDA_MEM_ALLOC_NODE_PARAMS;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	using parameters_type = ::std::pair<device_t, size_t>; // for now, assuming no peer access
 	// no setter
-	static constexpr const auto inserter = cuGraphAddMemAllocNode; // 1 extra param
-	// static constexpr const auto setter;
-	static constexpr const auto getter = cuGraphMemAllocNodeGetParams;
+	static constexpr auto inserter = cuGraphAddMemAllocNode; // 1 extra param
+	// static constexpr auto setter;
+	static constexpr auto getter = cuGraphMemAllocNodeGetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
-		static constexpr const auto no_export_handle_kind = memory::pool::shared_handle_kind_t::no_export;
+		static constexpr auto no_export_handle_kind = memory::pool::shared_handle_kind_t::no_export;
 		raw_parameters_type raw_params;
 		raw_params.poolProps = memory::pool::detail_::create_raw_properties<no_export_handle_kind>(params.first.id());
 		// TODO: DO we need to specify the allocation location in an access descriptor?
@@ -296,22 +296,22 @@ struct kind_traits<kind_t::memory_allocation> {
 template<>
 struct kind_traits<kind_t::memory_set> {
 	// TODO: Consider support for pitched memory; we would probably need mdspans for that...
-	static constexpr const auto name = "memory set";
+	static constexpr auto name = "memory set";
 	using raw_parameters_type = CUDA_MEMSET_NODE_PARAMS;
-	static constexpr const bool inserter_takes_context = true;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = true;
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	struct parameters_type {
 		memory::region_t region;
 		size_t width_in_bytes; // cannot exceed 4
 		unsigned value; // must fit inside `width_in_bytes`, i.e. not exceed 2^(width*8) -1
 	};
-	static constexpr const auto inserter = cuGraphAddMemsetNode; // 2 extra params incl context
+	static constexpr auto inserter = cuGraphAddMemsetNode; // 2 extra params incl context
 	// no setter
-	static constexpr const auto getter = cuGraphMemsetNodeGetParams;
+	static constexpr auto getter = cuGraphMemsetNodeGetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
-		static constexpr const size_t max_width = sizeof(parameters_type::value);
+		static constexpr size_t max_width = sizeof(parameters_type::value);
 		if (params.width_in_bytes > max_width) {
 			throw ::std::invalid_argument("Unsupported memset value width (maximum is " + ::std::to_string(max_width));
 		}
@@ -333,15 +333,15 @@ struct kind_traits<kind_t::memory_set> {
 #if CUDA_VERSION >= 11040
 template<>
 struct kind_traits<kind_t::memory_free> {
-	static constexpr const auto name = "memory free";
+	static constexpr auto name = "memory free";
 	using raw_parameters_type = CUdeviceptr;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = false; // the void* _is_ the parameter
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = false; // the void* _is_ the parameter
 	using parameters_type = void*;
-	static constexpr const auto inserter = cuGraphAddMemFreeNode; // 1 extra param
+	static constexpr auto inserter = cuGraphAddMemFreeNode; // 1 extra param
 	// no setter
-	// static constexpr const auto setter = ;
-	static constexpr const auto getter = cuGraphMemFreeNodeGetParams;
+	// static constexpr auto setter = ;
+	static constexpr auto getter = cuGraphMemFreeNodeGetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -353,14 +353,14 @@ struct kind_traits<kind_t::memory_free> {
 #if CUDA_VERSION >= 11070
 template<>
 struct kind_traits<kind_t::memory_barrier> {
-	static constexpr const auto name = "memory barrier";
+	static constexpr auto name = "memory barrier";
 	using raw_parameters_type = CUDA_BATCH_MEM_OP_NODE_PARAMS;
-	static constexpr const bool inserter_takes_context = false;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false;
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	using parameters_type = ::std::pair<context_t, cuda_::memory::barrier_scope_t>;
-	static constexpr const auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
-	static constexpr const auto setter = cuGraphBatchMemOpNodeSetParams;
-	static constexpr const auto getter = cuGraphBatchMemOpNodeGetParams;
+	static constexpr auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
+	static constexpr auto setter = cuGraphBatchMemOpNodeSetParams;
+	static constexpr auto getter = cuGraphBatchMemOpNodeGetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
@@ -382,16 +382,16 @@ struct kind_traits<kind_t::memory_barrier> {
 
 template<>
 struct kind_traits<kind_t::memory_copy> {
-	static constexpr const auto name = "memory copy";
+	static constexpr auto name = "memory copy";
 	using raw_parameters_type = CUDA_MEMCPY3D;
-	static constexpr const bool inserter_takes_context = true;
-	static constexpr const bool inserter_takes_params_by_ptr = true;
-	static constexpr const dimensionality_t num_dimensions { 3 };
+	static constexpr bool inserter_takes_context = true;
+	static constexpr bool inserter_takes_params_by_ptr = true;
+	static constexpr dimensionality_t num_dimensions { 3 };
 	using parameters_type = memory::copy_parameters_t<3>;
 
-	static constexpr const auto inserter = cuGraphAddMemcpyNode; // 2 extra params incl. context
-	static constexpr const auto setter = cuGraphMemcpyNodeSetParams;
-	static constexpr const auto getter = cuGraphMemcpyNodeGetParams;
+	static constexpr auto inserter = cuGraphAddMemcpyNode; // 2 extra params incl. context
+	static constexpr auto setter = cuGraphMemcpyNodeSetParams;
+	static constexpr auto getter = cuGraphMemcpyNodeGetParams;
 
 	static raw_parameters_type marshal(const parameters_type& params) {
 		auto& params_ptr = const_cast<parameters_type&>(params);
@@ -407,15 +407,15 @@ struct kind_traits<kind_t::memory_copy> {
 #if CUDA_VERSION >= 12040
 template<>
 struct kind_traits<kind_t::conditional> {
-	static constexpr const auto name = "conditional";
+	static constexpr auto name = "conditional";
 	using raw_parameters_type = CUgraphNodeParams; // within which, CUDA_CONDITIONAL_NODE_PARAMS will be used
-	static constexpr const bool inserter_takes_context = false; // The context is passed within the parameter struct
-	static constexpr const bool inserter_takes_params_by_ptr = true;
+	static constexpr bool inserter_takes_context = false; // The context is passed within the parameter struct
+	static constexpr bool inserter_takes_params_by_ptr = true;
 	using parameters_type = conditional::parameters_t;
 
-	static constexpr const auto inserter = cuGraphAddNode;
-	static constexpr const auto setter = cuGraphNodeSetParams;
-	static constexpr const auto getter = nullptr;
+	static constexpr auto inserter = cuGraphAddNode;
+	static constexpr auto setter = cuGraphNodeSetParams;
+	static constexpr auto getter = nullptr;
 
 	static raw_parameters_type marshal(const parameters_type& params) {
 		raw_parameters_type raw_params;

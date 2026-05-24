@@ -249,7 +249,7 @@ public: // non-mutators
 	physical_allocation::shared_handle_t<SharedHandleKind> sharing_handle() const
 	{
 		physical_allocation::shared_handle_t<SharedHandleKind> shared_handle_;
-		static constexpr const unsigned long long flags { 0 };
+		static constexpr unsigned long long flags { 0 };
 		auto result = cuMemExportToShareableHandle(&shared_handle_, handle_, static_cast<CUmemAllocationHandleType>(SharedHandleKind), flags);
 		throw_if_error_lazy(result, "Exporting a (generic CUDA) shared memory physical_allocation to a shared handle");
 		return shared_handle_;
@@ -265,11 +265,11 @@ namespace physical_allocation {
 
 inline physical_allocation_t create(size_t size, properties_t properties)
 {
-	static constexpr const unsigned long long flags { 0 };
+	static constexpr unsigned long long flags { 0 };
 	CUmemGenericAllocationHandle handle;
 	auto result = cuMemCreate(&handle, size, &properties.raw, flags);
 	throw_if_error_lazy(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size));
-	static constexpr const bool is_owning { true };
+	static constexpr bool is_owning { true };
 	return detail_::wrap(handle, size, is_owning);
 }
 
@@ -485,7 +485,7 @@ public:
 		throw_if_error_lazy(status, " Failed obtaining/retaining the physical_allocation handle for the virtual memory "
 			"range mapped to " + cuda_::detail_::ptr_as_hex(address_range_.data()) + " of size " +
 				::std::to_string(address_range_.size()) + " bytes");
-		constexpr const bool increase_refcount{false};
+		constexpr bool increase_refcount{false};
 		return physical_allocation::detail_::wrap(allocation_handle, address_range_.size(), increase_refcount);
 	}
 #endif
@@ -517,14 +517,14 @@ inline ::std::string identify(mapping_t mapping)
 inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 {
 	size_t offset_into_allocation { 0 }; // not yet supported, but in the API
-	constexpr const unsigned long long flags { 0 };
+	constexpr unsigned long long flags { 0 };
 	auto handle = physical_allocation.handle();
 	auto status = cuMemMap(device::address(region), region.size(), offset_into_allocation, handle, flags);
 	throw_if_error_lazy(status, "Failed making a virtual memory mapping of "
 		+ physical_allocation::detail_::identify(physical_allocation)
 		+ " to the range of size " + ::std::to_string(region.size()) + " bytes at " +
 		cuda_::detail_::ptr_as_hex(region.data()));
-	constexpr const bool is_owning { true };
+	constexpr bool is_owning { true };
 	return mapping::detail_::wrap(region, is_owning);
 }
 

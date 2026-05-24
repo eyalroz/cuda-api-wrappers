@@ -131,7 +131,7 @@ inline CUresult delete_edges(
 	size_t                 num_edges)
 {
 #if CUDA_VERSION >= 13000
-	static constexpr const auto no_edge_data = nullptr;
+	static constexpr auto no_edge_data = nullptr;
 	return cuGraphRemoveDependencies(template_handle, source_handles, destination_handles, no_edge_data, num_edges);
 #else
 	return cuGraphRemoveDependencies(template_handle, source_handles, destination_handles, num_edges);
@@ -178,7 +178,7 @@ inline status_t insert_edges(
 	size_t                  num_edges)
 {
 #if CUDA_VERSION >= 13000
-	static constexpr const auto no_edge_data = nullptr;
+	static constexpr auto no_edge_data = nullptr;
 	return cuGraphAddDependencies(template_handle, source_handles, destination_handles, no_edge_data, num_edges);
 #else
 	return cuGraphAddDependencies(template_handle, source_handles, destination_handles, num_edges);
@@ -382,7 +382,7 @@ node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
 	T&& first_arg, // still don't know of T is a context or something else
 	Ts&&... params_ctor_args)
 {
-	static constexpr const bool first_arg_is_a_context =
+	static constexpr bool first_arg_is_a_context =
 		::std::is_same<typename cuda_::detail_::remove_reference_t<T>, cuda_::context_t>::value;
 	return get_context_handle_build_params_and_insert_node<Kind>(
 //return blah<Kind>(
@@ -639,7 +639,7 @@ public: // non-mutators
 				const node::handle_t source;
 				const node::handle_t dest;
 			} handles { source.handle(), dest.handle() };
-			static constexpr const size_t remove_just_one = 1;
+			static constexpr size_t remove_just_one = 1;
 			auto status = template_::detail_::insert_edges(
 				handle(), &handles.source, &handles.dest, remove_just_one);
 			throw_if_error_lazy(status, "Inserting " + node::detail_::identify(edge_type{source, dest})
@@ -680,7 +680,7 @@ public: // non-mutators
 			// Note: arg may be either the first parameters constructor argument, or a context passed
 			// before the constructor arguments; due to the lack of C++17's if constexpr, we can only act
 			// on this knowledge in another function.
-			static constexpr const bool inserter_takes_context = node::detail_::kind_traits<Kind>::inserter_takes_context;
+			static constexpr bool inserter_takes_context = node::detail_::kind_traits<Kind>::inserter_takes_context;
 			return template_::detail_::build_params_and_insert_node_wrapper<Kind>(
 				cuda_::detail_::bool_constant<inserter_takes_context>{}, handle(),
 				::std::forward<T>(arg), ::std::forward<Ts>(node_params_ctor_arguments)...);
@@ -824,7 +824,7 @@ inline template_t wrap(handle_t handle, bool take_ownership) noexcept
 
 inline template_t create()
 {
-	constexpr const unsigned flags { 0 };
+	constexpr unsigned flags { 0 };
 	handle_t handle;
 	auto status = cuGraphCreate(&handle, flags);
 	throw_if_error_lazy(status, "Creating a CUDA graph");
@@ -836,7 +836,7 @@ inline ::std::string identify(const template_t& template_)
 	return "CUDA execution graph template at " + cuda_::detail_::ptr_as_hex(template_.handle());
 }
 
-constexpr const ::std::initializer_list<node_t> no_dependencies {};
+constexpr ::std::initializer_list<node_t> no_dependencies {};
 
 template <node::kind_t Kind, template <typename> class Container, typename NodeOrHandle, typename... NodeParametersCtorParams>
 node::typed_node_t<Kind> insert_node(
