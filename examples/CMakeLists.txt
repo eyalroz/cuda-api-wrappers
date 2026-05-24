@@ -234,6 +234,11 @@ if( WIN32 AND CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.0")
 	target_link_libraries(vectorAdd_profiled cuda-api-wrappers::nvtx${static_suffix})
 endif()
 add_executable(manipulate_current_device other/manipulate_current_device.cu)
+add_executable(chunks_in_streams other/chunks_in_streams.cu)
+set_target_properties(chunks_in_streams PROPERTIES
+	CUDA_STANDARD 20
+	CUDA_STANDARD_REQUIRED ON
+	CUDA_EXTENSIONS OFF)
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp)
 target_link_libraries(inclusion_in_two_translation_units ${rtc_lib_tgt} cuda-api-wrappers::nvtx${static_suffix})
 if( NOT MSVC )
