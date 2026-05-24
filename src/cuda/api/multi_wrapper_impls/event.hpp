@@ -33,7 +33,7 @@ inline event_t create(
 	bool              records_timing,
 	bool              interprocess)
 {
-	return event::detail_::create(
+	return detail_::create(
 		context.device_id(),
 		context.handle(),
 		does_not_hold_primary_context_refcount_unit,
@@ -59,7 +59,7 @@ inline event_t create(
 	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
 	device::primary_context::detail_::increase_refcount(device.id());
-	return event::detail_::create_in_current_context(
+	return detail_::create_in_current_context(
 		device.id(),
 		context::current::detail_::get_handle(),
 		does_hold_primary_context_refcount_unit,
@@ -102,7 +102,7 @@ inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
 
 inline device_t event_t::device() const
 {
-	return cuda::device::get(device_id());
+	return device::get(device_id());
 }
 
 inline context_t event_t::context() const
