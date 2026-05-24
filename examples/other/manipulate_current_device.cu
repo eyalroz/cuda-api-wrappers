@@ -10,23 +10,23 @@
 void report_current_device()
 {
 	std::cout << "Runtime believes the current device index is: "
-		<< cuda::device::current::detail_::get_id() << std::endl;
+		<< cuda_::device::current::detail_::get_id() << std::endl;
 }
 
 int main()
 {
-	namespace context = cuda::context::detail_;
-	namespace cur_dev = cuda::device::current::detail_;
-	namespace pc = cuda::device::primary_context::detail_;
-	namespace cur_ctx = cuda::context::current::detail_;
+	namespace context = cuda_::context::detail_;
+	namespace cur_dev = cuda_::device::current::detail_;
+	namespace pc = cuda_::device::primary_context::detail_;
+	namespace cur_ctx = cuda_::context::current::detail_;
 
-	cuda::device::id_t dev_idx[2];
-	cuda::context::handle_t pc_handle[2];
+	cuda_::device::id_t dev_idx[2];
+	cuda_::context::handle_t pc_handle[2];
 	
-	cuda::initialize_driver();
-	if (cuda::device::count() < 2) {
+	cuda_::initialize_driver();
+	if (cuda_::device::count() < 2) {
 		std::cout << "The example program requires at least 2 GPUs, while this system only has "
-			<< cuda::device::count() << '\n';
+			<< cuda_::device::count() << '\n';
 		return EXIT_SUCCESS;
 	}
 	dev_idx[0] = cur_dev::get_id();

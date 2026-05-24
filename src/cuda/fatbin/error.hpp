@@ -19,7 +19,7 @@
 
 #if CUDA_VERSION >= 12040
 
-namespace cuda {
+namespace cuda_ {
 
 namespace fatbin_builder {
 
@@ -145,9 +145,9 @@ private:
 
 /**
  * Do nothing... unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
 inline void throw_if_error(fatbin_builder::status_t status, const ::std::string& message) noexcept(false)
@@ -157,9 +157,9 @@ inline void throw_if_error(fatbin_builder::status_t status, const ::std::string&
 
 /**
  * Does nothing - unless the status indicates an error, in which case
- * a @ref cuda::runtime_error exception is thrown
+ * a @ref cuda_::runtime_error exception is thrown
  *
- * @param status should be @ref cuda::status::success - otherwise an exception is thrown
+ * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  */
 inline void throw_if_error(fatbin_builder::status_t status) noexcept(false)
 {
@@ -167,7 +167,7 @@ inline void throw_if_error(fatbin_builder::status_t status) noexcept(false)
 }
 
 /**
- * Throws a @ref ::cuda::fatbin_builder::runtime_error exception if the status is not success
+ * Throws a @ref ::cuda_::fatbin_builder::runtime_error exception if the status is not success
  *
  * @note The rationale for this macro is that neither the exception, nor its constructor
  * arguments, are evaluated on the "happy path"; and that cannot be achieved with a
@@ -177,13 +177,13 @@ inline void throw_if_error(fatbin_builder::status_t status) noexcept(false)
  */
 #define throw_if_fatbin_builder_error_lazy(Kind, status__, ... ) \
 do { \
-	::cuda::fatbin_builder::status_t tie_status__ = static_cast<::cuda::fatbin_builder::status_t>(status__); \
-	if (::cuda::is_failure<Kind>(tie_status__)) { \
-		throw ::cuda::fatbin_builder::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
+	::cuda_::fatbin_builder::status_t tie_status__ = static_cast<::cuda_::fatbin_builder::status_t>(status__); \
+	if (::cuda_::is_failure<Kind>(tie_status__)) { \
+		throw ::cuda_::fatbin_builder::runtime_error<Kind>(tie_status__, (__VA_ARGS__)); \
 	} \
 } while(false)
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12040
 

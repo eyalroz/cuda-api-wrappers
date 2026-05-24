@@ -36,8 +36,8 @@ typedef struct ipcCUDA_st
 {
 	int device;
 	pid_t pid;
-	cuda::event::ipc::handle_t eventHandle;
-	cuda::memory::ipc::ptr_handle_t memHandle;
+	cuda_::event::ipc::handle_t eventHandle;
+	cuda_::memory::ipc::ptr_handle_t memHandle;
 } ipcCUDA_t;
 
 typedef struct ipcDevices_st
@@ -104,14 +104,14 @@ void getDeviceCount(ipcDevices_t *devices)
 		int count, uvaCount = 0;
 		int uvaOrdinals[MAX_DEVICES];
 		printf("\nChecking for multiple GPUs...\n");
-		count = cuda::device::count();
+		count = cuda_::device::count();
 		printf("CUDA-capable device count: %i\n", count);
 
 		printf("\nSearching for UVA capable devices...\n");
 
 		for (i = 0; i < count; i++)
 		{
-			auto prop = cuda::device::get(i).properties();
+			auto prop = cuda_::device::get(i).properties();
 
 			if (prop.unifiedAddressing)
 			{
@@ -141,12 +141,12 @@ void getDeviceCount(ipcDevices_t *devices)
 		printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 		devices->count = 1;
 
-		auto device_0 = cuda::device::get(0);
+		auto device_0 = cuda_::device::get(0);
 
 		for (i = 1; i < uvaCount; i++)
 		{
-			auto device_i = cuda::device::get(i);
-			if (cuda::device::peer_to_peer::can_access_each_other(device_0, device_i))
+			auto device_i = cuda_::device::get(i);
+			if (cuda_::device::peer_to_peer::can_access_each_other(device_0, device_i))
 			{
 				devices->ordinals[devices->count] = uvaOrdinals[i];
 				printf("> Two-way peer access between GPU%d and GPU%d: YES\n", devices->ordinals[0], devices->ordinals[devices->count]);
@@ -186,8 +186,8 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		h_refData[i] = rand();
 	}
 
-	auto device = cuda::device::get(s_mem[index].device);
-	cuda::device::current::set(device);
+	auto device = cuda_::device::get(s_mem[index].device);
+	cuda_::device::current::set(device);
 
 	if (index == 0)
 	{
@@ -195,20 +195,20 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// host memory buffer for checking results
 		int h_results[data_buffer_size * MAX_DEVICES * PROCESSES_PER_DEVICE];
 
-		std::vector<cuda::event_t> events;
+		std::vector<cuda_::event_t> events;
 		events.reserve(MAX_DEVICES * PROCESSES_PER_DEVICE - 1);
 		int* d_ptr = reinterpret_cast<int*>(
 			device.memory().allocate(data_buffer_size * g_processCount * sizeof(int)).start()
 		);
-		s_mem[0].memHandle = cuda::memory::ipc::export_((void *) d_ptr);
-		cuda::memory::copy((void *) d_ptr, (void *) h_refData, data_buffer_size * sizeof(int));
+		s_mem[0].memHandle = cuda_::memory::ipc::export_((void *) d_ptr);
+		cuda_::memory::copy((void *) d_ptr, (void *) h_refData, data_buffer_size * sizeof(int));
 
 		// b.1: wait until all event handles are created in other processes
 		procBarrier();
 
 		for (int i = 1; i < g_processCount; i++)
 		{
-			events.push_back(cuda::event::ipc::import(device, s_mem[i].eventHandle));
+			events.push_back(cuda_::event::ipc::import(device, s_mem[i].eventHandle));
 		}
 
 		// b.2: wait until all kernels launched and events recorded
@@ -216,7 +216,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 
 		for (int i = 1; i < g_processCount; i++)
 		{
-			cuda::synchronize(events[i-1]);
+			cuda_::synchronize(events[i-1]);
 		}
 
 		//-------------------------------------------
@@ -224,8 +224,8 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 		// b.3
 		procBarrier();
 
-		cuda::memory::copy(&h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
-		cuda::memory::device::free(d_ptr);
+		cuda_::memory::copy(&h_results, d_ptr + data_buffer_size, data_buffer_size * (g_processCount - 1) * sizeof(int));
+		cuda_::memory::device::free(d_ptr);
 		printf("Checking test results...\n");
 
 		for (int n = 1; n < g_processCount; n++)
@@ -244,19 +244,19 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 	}
 	else
 	{
-		auto current_device  = cuda::device::current::get();
-		auto event = cuda::event::create(
+		auto current_device  = cuda_::device::current::get();
+		auto event = cuda_::event::create(
 			current_device,
-			cuda::event::sync_by_blocking,
-			cuda::event::dont_record_timings,
-			cuda::event::interprocess);
-		s_mem[index].eventHandle = cuda::event::ipc::export_(event);
+			cuda_::event::sync_by_blocking,
+			cuda_::event::dont_record_timings,
+			cuda_::event::interprocess);
+		s_mem[index].eventHandle = cuda_::event::ipc::export_(event);
 
 		// b.1: wait until proc 0 initializes device memory
 		procBarrier();
 
 		{
-			auto imported = cuda::memory::ipc::import(s_mem[0].memHandle);
+			auto imported = cuda_::memory::ipc::import(s_mem[0].memHandle);
 			auto d_ptr = imported.get<int>();
 
 			printf("> Process %3d: Run kernel on GPU%d, taking source data from and writing results to process %d, GPU%d...\n",
@@ -264,7 +264,7 @@ void runTestMultiKernel(ipcCUDA_t *s_mem, int index)
 			constexpr const auto threads = 512;
 			static_assert(data_buffer_size % threads == 0, "data_buffer_size value must be divisible by the kernel block size");
 			auto blocks = data_buffer_size / threads;
-			cuda::launch(
+			cuda_::launch(
 				simpleKernel,
 				{ blocks, threads },
 				d_ptr + index *data_buffer_size, d_ptr, index + 1
@@ -394,7 +394,7 @@ int main(int argc, char **argv)
 
 		for (int i = 0; i < s_devices->count; i++)
 		{
-			cuda::device::get(s_devices->ordinals[i]).synchronize();
+			cuda_::device::get(s_devices->ordinals[i]).synchronize();
 		}
 
 		printf("SUCCESS\n");

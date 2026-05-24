@@ -49,7 +49,7 @@
 #if __cplusplus >= 201712L
 using std::span;
 #else
-using cuda::span;
+using cuda_::span;
 #endif
 
 /* Add two vectors on the GPU */
@@ -94,7 +94,7 @@ bool check_results(
 }
 
 int basicStreamOrderedAllocation(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	span<const float> a,
 	span<const float> b,
 	span<float      > c)
@@ -102,13 +102,13 @@ int basicStreamOrderedAllocation(
 	static constexpr const char* method = "basicStreamOrderedAllocation";
 	assert(a.size() == c.size() and b.size() == c.size());
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.overall_size(c.size())
 		.no_dynamic_shared_memory().build();
 
 	std::cout << "Starting " << method << "\n";
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = device.create_stream(cuda_::stream::async);
 
 	auto d_a = span<float>(stream.enqueue.allocate(a.size() * sizeof(float)));
 	auto d_b = span<float>(stream.enqueue.allocate(b.size() * sizeof(float)));
@@ -130,20 +130,20 @@ int basicStreamOrderedAllocation(
 // release threshold on the pool. This way, when the application reaches the
 // "steady state", it is no longer allocating/freeing memory from the OS.
 int streamOrderedAllocationPostSync(
-	const cuda::device_t& device,
+	const cuda_::device_t& device,
 	span<const float> a,
 	span<const float> b,
 	span<float      > c)
 {
 	static constexpr const char* method = "streamOrderedAllocationPostSync";
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.overall_size(c.size())
 		.no_dynamic_shared_memory().build();
 
 	std::cout << "Starting " << method << "\n";
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = device.create_stream(cuda_::stream::async);
 
 	// set high release threshold on the default pool so that cudaFreeAsync will
 	// not actually release memory to the system. By default, the release
@@ -156,9 +156,9 @@ int streamOrderedAllocationPostSync(
 	auto start_event = stream.enqueue.event();
 	for (int i = 0; i < MAX_ITER; i++) {
 		// Not: Not using unique_span's,
-		auto d_a = cuda::span<float>(stream.enqueue.allocate(a.size() * sizeof(float)));
-		auto d_b = cuda::span<float>(stream.enqueue.allocate(b.size() * sizeof(float)));
-		auto d_c = cuda::span<float>(stream.enqueue.allocate(c.size() * sizeof(float)));
+		auto d_a = cuda_::span<float>(stream.enqueue.allocate(a.size() * sizeof(float)));
+		auto d_b = cuda_::span<float>(stream.enqueue.allocate(b.size() * sizeof(float)));
+		auto d_c = cuda_::span<float>(stream.enqueue.allocate(c.size() * sizeof(float)));
 		stream.enqueue.copy(d_a, a);
 		stream.enqueue.copy(d_b, b);
 		stream.enqueue.kernel_launch(vectorAddGPU, launch_config, d_a.data(), d_b.data(), d_c.data(), c.size());
@@ -171,7 +171,7 @@ int streamOrderedAllocationPostSync(
 	auto end_event = stream.enqueue.event();
 	end_event.synchronize();
 
-	auto elapsed_time_msec = cuda::event::time_elapsed_between(start_event, end_event);
+	auto elapsed_time_msec = cuda_::event::time_elapsed_between(start_event, end_event);
 	std::cout
 		<< "Total elapsed time for method " << method << " = "
 		<< elapsed_time_msec.count() << " msec over " << MAX_ITER << " iterations.\n";
@@ -180,8 +180,8 @@ int streamOrderedAllocationPostSync(
 
 int main(int argc, char **argv)
 {
-	cuda::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id);
+	cuda_::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda_::device::default_device_id;
+	auto device = cuda_::device::get(device_id);
 
 	if (not device.supports_memory_pools()) {
 		printf("Waiving execution as device does not support Memory Pools\n");

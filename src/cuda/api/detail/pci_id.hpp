@@ -2,8 +2,8 @@
  * @file
  *
  * @brief iostream-related freestanding operator functions for
- * @ref cuda::device::pci_location_t instances and iostream-related methods of
- * the @ref cuda::device::pci_location_t class.
+ * @ref cuda_::device::pci_location_t instances and iostream-related methods of
+ * the @ref cuda_::device::pci_location_t class.
  *
  * @note This file is split off from {@ref pci_id.hpp} since
  * it requires inclusions of standard library headers which most of the
@@ -20,12 +20,12 @@
 #include <ostream>
 #include <sstream>
 
-namespace cuda {
+namespace cuda_ {
 namespace device {
 
 ///@cond
 
-inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location_t& pci_id)
+inline ::std::istream& operator>>(::std::istream& is, cuda_::device::pci_location_t& pci_id)
 {
 	auto format_flags(is.flags());
 	is >> ::std::hex;
@@ -87,7 +87,7 @@ inline ::std::istream& operator>>(::std::istream& is, cuda::device::pci_location
 	throw ::std::invalid_argument("Failed parsing PCI location ID for a CUDA device");
 }
 
-inline ::std::ostream& operator<<(::std::ostream& os, const cuda::device::pci_location_t& pci_id)
+inline ::std::ostream& operator<<(::std::ostream& os, const cuda_::device::pci_location_t& pci_id)
 {
 	auto format_flags(os.flags());
 	os << ::std::hex;
@@ -124,6 +124,6 @@ inline pci_location_t pci_location_t::parse(const char* id_str)
 ///@endcond
 
 } //namespace device
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_PCI_ID_HPP_IMPL_

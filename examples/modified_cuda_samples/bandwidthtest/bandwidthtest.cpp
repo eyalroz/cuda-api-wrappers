@@ -50,7 +50,7 @@ void profileCopies(float        *h_a,
 
 	size_t bytes = nElements * sizeof(float);
 
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 	auto stream = device.default_stream();
 	auto events = std::make_pair(device.create_event(), device.create_event());
 	stream.enqueue.event(events.first);
@@ -58,7 +58,7 @@ void profileCopies(float        *h_a,
 	stream.enqueue.event(events.second);
 	stream.synchronize();
 
-	cuda::event::duration_t duration;
+	cuda_::event::duration_t duration;
     auto to_gb = [&duration](size_t bytes_) {
         return static_cast<double>(bytes_) * 1e-6 / static_cast<double>(duration.count());
     };
@@ -69,7 +69,7 @@ void profileCopies(float        *h_a,
 	stream.enqueue.event(events.second);
 	stream.synchronize();
 
-	duration = cuda::event::time_elapsed_between(events);
+	duration = cuda_::event::time_elapsed_between(events);
 	std::cout << "  Device to Host bandwidth (GB/s): " << to_gb(bytes) << "\n";
 
 	bool are_equal = std::equal(h_a, h_a + nElements, h_b);
@@ -89,11 +89,11 @@ int main()
 		std::unique_ptr<float[]>(new float[nElements])
 	);
 
-	auto device_buffer = cuda::memory::device::make_unique_span<float>(nElements);
+	auto device_buffer = cuda_::memory::device::make_unique_span<float>(nElements);
 
 	auto pinned_host_buffers = std::make_pair(
-		cuda::memory::host::make_unique_span<float>(nElements),
-		cuda::memory::host::make_unique_span<float>(nElements)
+		cuda_::memory::host::make_unique_span<float>(nElements),
+		cuda_::memory::host::make_unique_span<float>(nElements)
 	);
 
 	auto h_aPageable = pageable_host_buffers.first.get();
@@ -102,13 +102,13 @@ int main()
 	auto h_bPinned = pinned_host_buffers.second.data();
 
 	std::iota(h_aPageable, h_aPageable + nElements, 0.0f);
-	cuda::memory::copy(h_aPinned, h_aPageable, bytes);
+	cuda_::memory::copy(h_aPinned, h_aPageable, bytes);
 	// Note: the following two instructions can be replaced with CUDA API wrappers
-	// calls - cuda::memory::host::zero(), but that won't improve anything
+	// calls - cuda_::memory::host::zero(), but that won't improve anything
 	std::fill_n(h_bPageable, nElements, 0.0f);
 	std::fill_n(h_bPinned, nElements, 0.0f);
 
-	std::cout << "\nDevice: " << cuda::device::current::get().name() << "\n";
+	std::cout << "\nDevice: " << cuda_::device::current::get().name() << "\n";
 	std::cout << "\nTransfer size (MB): " << (bytes / Mi) << "\n";
 
 	// perform copies and report bandwidth

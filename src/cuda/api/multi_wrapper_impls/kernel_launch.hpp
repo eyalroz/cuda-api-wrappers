@@ -19,7 +19,7 @@
 // The following is needed for occupancy-related calculation convenience functions
 #include <cuda_runtime.h>
 
-namespace cuda {
+namespace cuda_ {
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
@@ -31,11 +31,11 @@ void enqueue_launch(
 	static_assert(
 		detail_::all_true<is_valid_kernel_argument<detail_::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
 		"All kernel parameter types must fulfill the CUDA kernel argument requirements. "
-		"Refer to the documentation of 'cuda::traits::is_valid_kernel_argument' for more details."
+		"Refer to the documentation of 'cuda_::traits::is_valid_kernel_argument' for more details."
 	);
 	static constexpr const bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
 #if CUDA_VERSION >= 12000
-	static constexpr const bool library_kernel = cuda::detail_::is_library_kernel<Kernel>::value;
+	static constexpr const bool library_kernel = cuda_::detail_::is_library_kernel<Kernel>::value;
 #else
 	static constexpr const bool library_kernel = false;
 #endif // CUDA_VERSION >= 12000
@@ -383,7 +383,7 @@ void enqueue_launch(
 	// from the kernel, and their compatibility will be validated further
 	// inside, against the contextualized kernel
 
-	kernel_t contextualized = cuda::contextualize(kernel, stream.context());
+	kernel_t contextualized = cuda_::contextualize(kernel, stream.context());
 	enqueue_launch_helper<kernel_t, KernelParameters...> {}(
 		contextualized, stream, launch_configuration,
 		::std::forward<KernelParameters>(parameters)...);
@@ -546,7 +546,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 #endif // defined(__CUDACC__)
 #endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_LAUNCH_HPP_
 

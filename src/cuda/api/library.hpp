@@ -17,7 +17,7 @@
 #include <filesystem>
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class context_t;
@@ -52,7 +52,7 @@ inline library_t wrap(
 
 inline ::std::string identify(const library::handle_t &handle)
 {
-	return ::std::string("library ") + cuda::detail_::ptr_as_hex(handle);
+	return ::std::string("library ") + cuda_::detail_::ptr_as_hex(handle);
 }
 
 ::std::string identify(const library_t &library);
@@ -75,11 +75,11 @@ inline void unload(handle_t handle)
  * Create a CUDA driver library of compiled code from raw image data.
  *
  * @param[in] module_data the opaque, raw binary data for the module - in a contiguous container
- *     such as a span, a cuda::unique_span etc..
+ *     such as a span, a cuda_::unique_span etc..
  */
 ///@{
 template <typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 library_t create(
 	ContiguousContainer        library_data,
 	optional<link::options_t>  link_options,
@@ -151,7 +151,7 @@ public: // getters
 
 	memory::region_t get_global(const char* name) const
 	{
-		return cuda::get_global(context::current::get(), *this, name);
+		return cuda_::get_global(context::current::get(), *this, name);
 	}
 
 	memory::region_t get_global(const ::std::string& name) const
@@ -161,7 +161,7 @@ public: // getters
 
 	memory::region_t get_managed(const char* name) const
 	{
-		return cuda::get_managed_region(*this, name);
+		return cuda_::get_managed_region(*this, name);
 	}
 
 	memory::region_t get_managed(const ::std::string& name) const
@@ -374,7 +374,7 @@ inline library_t create(
 {
 	return detail_::create(
 		cuLibraryLoadData, module_data,
-		[module_data]() { return ::std::string("data at ") + cuda::detail_::ptr_as_hex(module_data); },
+		[module_data]() { return ::std::string("data at ") + cuda_::detail_::ptr_as_hex(module_data); },
 		link_options, code_is_preserved);
 }
 
@@ -392,7 +392,7 @@ inline ::std::string identify(const library_t& library)
 } // namespace detail_
 
 template <typename ContiguousContainer,
-	cuda::detail_::enable_if_t<cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> >
+	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> >
 library_t create(
 	ContiguousContainer        library_data,
 	optional<link::options_t>  link_options,
@@ -403,7 +403,7 @@ library_t create(
 
 } // namespace library
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12000
 

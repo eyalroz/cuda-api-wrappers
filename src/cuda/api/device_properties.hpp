@@ -29,7 +29,7 @@
 #undef minor
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 namespace device {
 
@@ -177,7 +177,7 @@ struct properties_t : public cudaDeviceProp {
 };
 
 } // namespace device
-} // namespace cuda
+} // namespace cuda_
 
 #include "detail/device_properties.hpp"
 

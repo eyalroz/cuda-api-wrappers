@@ -26,7 +26,7 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 
 int main()
 {
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		std::cerr << "No CUDA devices on this system" << "\n";
 		exit(EXIT_FAILURE);
 	}
@@ -47,15 +47,15 @@ int main()
 	std::generate(h_A.begin(), h_A.end(), generator);
 	std::generate(h_B.begin(), h_B.end(), generator);
 
-	auto device = cuda::device::current::get();
-	auto d_A = cuda::make_unique_span<float>(device, numElements);
-	auto d_B = cuda::make_unique_span<float>(device, numElements);
-	auto d_C = cuda::make_unique_span<float>(device, numElements);
+	auto device = cuda_::device::current::get();
+	auto d_A = cuda_::make_unique_span<float>(device, numElements);
+	auto d_B = cuda_::make_unique_span<float>(device, numElements);
+	auto d_C = cuda_::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A, h_A);
-	cuda::memory::copy(d_B, h_B);
+	cuda_::memory::copy(d_A, h_A);
+	cuda_::memory::copy(d_B, h_B);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(numElements)
 		.block_size(256)
 		.build();
@@ -64,12 +64,12 @@ int main()
 		<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
 		<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
-	cuda::launch(
+	cuda_::launch(
 		vectorAdd, launch_config,
 		d_A.data(), d_B.data(), d_C.data(), numElements
 	);
 
-	cuda::memory::copy(h_C, d_C);
+	cuda_::memory::copy(h_C, d_C);
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {

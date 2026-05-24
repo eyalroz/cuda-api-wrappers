@@ -84,12 +84,12 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
 }
 
 void handle_compilation_failure(
-	const cuda::rtc::compilation_output_t<cuda::cuda_cpp> & compilation_output,
-	const cuda::rtc::compilation_options_t<cuda::cuda_cpp> & compilation_options = {})
+	const cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> & compilation_output,
+	const cuda_::rtc::compilation_options_t<cuda_::cuda_cpp> & compilation_options = {})
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
-	std::cerr << "Compilation options were: " << cuda::rtc::render(compilation_options) << '\n';
+	std::cerr << "Compilation options were: " << cuda_::rtc::render(compilation_options) << '\n';
 	if (not compilation_log.empty()) {
 		std::cerr
 			<< "Compilation log:\n"
@@ -99,8 +99,8 @@ void handle_compilation_failure(
 }
 
 
-std::pair<cuda::rtc::compilation_output_t<cuda::cuda_cpp>, std::vector<std::string>>
-get_compiled_program(const cuda::device_t &device)
+std::pair<cuda_::rtc::compilation_output_t<cuda_::cuda_cpp>, std::vector<std::string>>
+get_compiled_program(const cuda_::device_t &device)
 {
 	const char* program_source =R"(
 
@@ -130,7 +130,7 @@ void my_kernel2(float const* in_data, float* out_data) {
 	instantiation_names.push_back(make_instantiation_name(basic_kernel_names[1], std::to_string(C), type_name<float>()));
 
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, instantiation_names[1]);
-	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("my_program1")
+	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>("my_program1")
 		.set_source(source_with_instantiation)
 		.set_target(device)
 		.add_registered_global(instantiation_names[0])
@@ -149,12 +149,12 @@ void my_kernel2(float const* in_data, float* out_data) {
 
 bool basic_module_tests(
 	const char* title,
-	const cuda::device_t &device,
-	const cuda::rtc::compilation_output_t<cuda::cuda_cpp> &compilation_result,
+	const cuda_::device_t &device,
+	const cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> &compilation_result,
 	const char *const *mangled_kernel_names,
-	const cuda::module_t &module
+	const cuda_::module_t &module
 #if CUDA_VERSION >= 12040
-	, cuda::unique_span<cuda::kernel_t> &module_kernels
+	, cuda_::unique_span<cuda_::kernel_t> &module_kernels
 #endif
 	)
 {
@@ -167,8 +167,8 @@ bool basic_module_tests(
 
 	test_result = test_result and module.device_id() == device.id();
 	test_result = test_result and module.device() == device;
-	test_result = test_result and module.context() == device.primary_context(cuda::does_not_hold_primary_context_refcount_unit);
-	test_result = test_result and module.context_handle() == cuda::device::primary_context::detail_::get_handle(device.id());
+	test_result = test_result and module.context() == device.primary_context(cuda_::does_not_hold_primary_context_refcount_unit);
+	test_result = test_result and module.context_handle() == cuda_::device::primary_context::detail_::get_handle(device.id());
 
 	{
 		auto a = module.get_global_region(compilation_result.get_mangling_of(constant_name));
@@ -181,7 +181,7 @@ bool basic_module_tests(
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
 	auto list_kernel =
-		[](const char * title_, const char * mangled_name, cuda::optional<const char*> unmangled) {
+		[](const char * title_, const char * mangled_name, cuda_::optional<const char*> unmangled) {
 			std::cout
 				<< title_ << ":\n"
 				<< "  unmangled: " << unmangled.value_or("N/A") << '\n'
@@ -216,7 +216,7 @@ bool basic_module_tests(
 int main(int, char**)
 {
 	bool test_result { true };
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto pair = get_compiled_program(device);
 	auto& compilation_result = pair.first;
@@ -227,9 +227,9 @@ int main(int, char**)
 		compilation_result.get_mangling_of(kernel_names[1])
 	};
 
-	auto module = cuda::module::create(device, compilation_result);
+	auto module = cuda_::module::create(device, compilation_result);
 #if CUDA_VERSION >= 12040
-	cuda::unique_span<cuda::kernel_t> module_kernels;
+	cuda_::unique_span<cuda_::kernel_t> module_kernels;
 #endif
 	test_result = test_result and basic_module_tests(
 		"module created from compiled program",
@@ -239,10 +239,10 @@ int main(int, char**)
 #endif
 		);
 
-	cuda::link::options_t link_opts;
-	link_opts.default_load_caching_mode() =  cuda::caching_mode_t<cuda::memory_operation_t::load>::dont_cache;
+	cuda_::link::options_t link_opts;
+	link_opts.default_load_caching_mode() =  cuda_::caching_mode_t<cuda_::memory_operation_t::load>::dont_cache;
 	link_opts.generate_source_line_info = true;
-	auto module2 = cuda::module::create(device, compilation_result, link_opts);
+	auto module2 = cuda_::module::create(device, compilation_result, link_opts);
 #if CUDA_VERSION >= 12040
 	auto module_2_kernels = module2.get_kernels();
 	test_result = test_result and module_2_kernels.size() == module_kernels.size();

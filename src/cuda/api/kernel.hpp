@@ -26,7 +26,7 @@
 #endif
 ///@endcond
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class kernel_t;
@@ -100,9 +100,9 @@ inline void set_attribute_in_current_context(handle_t handle, attribute_t attrib
 	throw_if_error_lazy(result,
 		"Setting CUDA device function attribute " +
 		::std::string(kernel::detail_::attribute_name(attribute)) + " of function at "
-		+ cuda::kernel::detail_::identify(handle) + " to value " + ::std::to_string(value));
+		+ cuda_::kernel::detail_::identify(handle) + " to value " + ::std::to_string(value));
 #else
-	throw(cuda::runtime_error {cuda::status::not_yet_implemented});
+	throw(cuda_::runtime_error {cuda_::status::not_yet_implemented});
 #endif
 }
 
@@ -193,7 +193,7 @@ public: // getters
 #if CUDA_VERSION >= 12030
 	/// Return the mangled name of the kernel (representing the original name, and,
 	/// possibly, the parameter types)
-	const char *mangled_name() const { return cuda::kernel::detail_::get_name(context_handle_, handle_); }
+	const char *mangled_name() const { return cuda_::kernel::detail_::get_name(context_handle_, handle_); }
 	module_t module() const;
 #endif
 
@@ -220,7 +220,7 @@ public: // non-mutators
 
 	/// @returns the PTX version used as the target for the compilation of this kernel
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	cuda::device::compute_capability_t ptx_version() const
+	cuda_::device::compute_capability_t ptx_version() const
 	{
 		auto raw_attribute = get_attribute(CU_FUNC_ATTRIBUTE_PTX_VERSION);
 		return device::compute_capability_t::from_combined_number(raw_attribute);
@@ -228,7 +228,7 @@ public: // non-mutators
 
 	/// @returns the physical microarchitecture which this kernel was compiled to target
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	cuda::device::compute_capability_t binary_compilation_target_architecture() const {
+	cuda_::device::compute_capability_t binary_compilation_target_architecture() const {
 		auto raw_attribute = get_attribute(CU_FUNC_ATTRIBUTE_BINARY_VERSION);
 		return device::compute_capability_t::from_combined_number(raw_attribute);
 	}
@@ -330,10 +330,10 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	 * also be set on the individual device-function level, by specifying the amount of shared
 	 * memory the kernel may require.
 	 */
-	void set_maximum_dynamic_shared_memory_per_block(cuda::memory::shared::size_t amount_required_by_kernel) const
+	void set_maximum_dynamic_shared_memory_per_block(cuda_::memory::shared::size_t amount_required_by_kernel) const
 	{
 		auto amount_required_by_kernel_ = static_cast<kernel::attribute_value_t>(amount_required_by_kernel);
-		if (amount_required_by_kernel != static_cast<cuda::memory::shared::size_t>(amount_required_by_kernel_)) {
+		if (amount_required_by_kernel != static_cast<cuda_::memory::shared::size_t>(amount_required_by_kernel_)) {
 			throw ::std::invalid_argument("Requested amount of maximum shared memory exceeds the "
 				"representation range for kernel attribute values");
 		}
@@ -468,7 +468,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	int result;
 		// We don't need the initialization, but NVCC backed by GCC 8 warns us about it.
 	auto flags = static_cast<unsigned>(disable_caching_override) ? CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE : CU_OCCUPANCY_DEFAULT;
-	cuda::status_t status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+	cuda_::status_t status = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, handle, static_cast<int>(block_size_in_threads), dynamic_shared_memory_per_block, flags);
 	throw_if_error_lazy(status,
 		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");
@@ -480,10 +480,10 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 // if block_size_limit is 0, it is ignored.
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	CUfunction                     kernel_handle,
-	cuda::device::id_t             device_id,
+	cuda_::device::id_t             device_id,
 	CUoccupancyB2DSize             determine_shared_mem_by_block_size,
-	cuda::memory::shared::size_t   fixed_shared_mem_size,
-	cuda::grid::block_dimension_t  block_size_limit,
+	cuda_::memory::shared::size_t   fixed_shared_mem_size,
+	cuda_::grid::block_dimension_t  block_size_limit,
 	bool                           disable_caching_override)
 {
 	int min_grid_size_in_blocks { 0 };
@@ -563,7 +563,7 @@ inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 
 inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	kernel::shared_memory_size_determiner_t  shared_memory_size_determiner,
-	cuda::grid::block_dimension_t            block_size_limit,
+	cuda_::grid::block_dimension_t            block_size_limit,
 	bool                                     disable_caching_override) const
 {
 	memory::shared::size_t no_fixed_dynamic_shared_memory_size{ 0 };
@@ -596,6 +596,6 @@ inline bool operator!=(const kernel_t& lhs, const kernel_t& rhs) noexcept
 	return not (lhs == rhs);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_KERNEL_HPP_

@@ -61,8 +61,8 @@ typedef struct shmStruct_st {
 	size_t nprocesses;
 	int barrier;
 	int sense;
-	cuda::device::id_t devices[MAX_DEVICES];
-	cuda::memory::pool::ipc::ptr_handle_t exportPtrData[MAX_DEVICES];
+	cuda_::device::id_t devices[MAX_DEVICES];
+	cuda_::memory::pool::ipc::ptr_handle_t exportPtrData[MAX_DEVICES];
 } shmStruct;
 
 __global__ void simpleKernel(char *ptr, size_t sz, char val)
@@ -112,7 +112,7 @@ static void childProcess(int index_in_shared_devices)
 
 	volatile shmStruct *shm = NULL;
 	int threads = 128;
-	vector<cuda::memory::pool::ipc::imported_ptr_t> imported_ptrs;
+	vector<cuda_::memory::pool::ipc::imported_ptr_t> imported_ptrs;
 
 	vector<char> verification_buffer(DATA_SIZE);
 
@@ -122,14 +122,14 @@ static void childProcess(int index_in_shared_devices)
 	shm = obtain_info_shared_by_parent();
 	size_t procCount = shm->nprocesses;
 
-	auto device = cuda::device::get(shm->devices[index_in_shared_devices]);
+	auto device = cuda_::device::get(shm->devices[index_in_shared_devices]);
 
 	// Receive all allocation handles shared by Parent.
 	vector<shared_pool_handle_t>shared_pool_handles(shm->nprocesses);
 	checkIpcErrors(ipcRecvShareableHandles(ipcChildHandle, shared_pool_handles));
-	auto stream = device.create_stream(cuda::stream::async);
-	auto wrapped_kernel = cuda::kernel::get(device, simpleKernel);
-	auto launch_config = cuda::launch_config_builder()
+	auto stream = device.create_stream(cuda_::stream::async);
+	auto wrapped_kernel = cuda_::kernel::get(device, simpleKernel);
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(threads)
 		.no_dynamic_shared_memory()
 		.kernel(&wrapped_kernel)
@@ -144,17 +144,17 @@ static void childProcess(int index_in_shared_devices)
 	// exportData filled in shared memory by the master process.
 	for (size_t i = 0; i < shm->nprocesses; i++) {
 		auto shared_pool_handle = shared_pool_handles[i];
-		auto pool_device = cuda::device::get(shm->devices[i]);
-		auto pool = cuda::memory::pool::ipc::import<shared_handle_kind>(pool_device, shared_pool_handle);
+		auto pool_device = cuda_::device::get(shm->devices[i]);
+		auto pool = cuda_::memory::pool::ipc::import<shared_handle_kind>(pool_device, shared_pool_handle);
 		auto permissions = pool.permissions(device);
 		if (not (permissions.read and permissions.write)) {
-			pool.set_permissions(device, cuda::memory::permissions::read_and_write());
+			pool.set_permissions(device, cuda_::memory::permissions::read_and_write());
 		}
 
 		// Import the allocations from each memory pool
 		std::transform(shm->exportPtrData, shm->exportPtrData + procCount, std::back_inserter(imported_ptrs),
-			[&](const volatile cuda::memory::pool::ipc::ptr_handle_t& shared_allocation) {
-				const auto nonvolatile_handle_ptr = const_cast<cuda::memory::pool::ipc::ptr_handle_t*>(&shared_allocation);
+			[&](const volatile cuda_::memory::pool::ipc::ptr_handle_t& shared_allocation) {
+				const auto nonvolatile_handle_ptr = const_cast<cuda_::memory::pool::ipc::ptr_handle_t*>(&shared_allocation);
 				return pool.import(*nonvolatile_handle_ptr);
 			});
 		// Since we have imported allocations shared by the parent with us, we can
@@ -179,7 +179,7 @@ static void childProcess(int index_in_shared_devices)
 			static_cast<char *>(imported_ptrs[bufferId].get()),
             DATA_SIZE,
             static_cast<char>(index_in_shared_devices));
-		cuda::outstanding_error::ensure_none();
+		cuda_::outstanding_error::ensure_none();
 		stream.synchronize();
 
 		// Wait for all my sibling processes to push this stage of their work
@@ -224,7 +224,7 @@ void collect_relevant_device_ids(volatile shmStruct *shm)
 	// Keep in mind that CUDA has minimal support for fork() without a
 	// corresponding exec() in the child process, but in this case our
 	// spawnProcess will always exec, so no need to worry.
-	for(const auto device : cuda::devices()) {
+	for(const auto device : cuda_::devices()) {
 		if (not device.supports_memory_pools()) {
 			std::cout << "Device " << device.id() << " does not support cuda memory pools, skipping...\n";
 			continue;
@@ -242,18 +242,18 @@ void collect_relevant_device_ids(volatile shmStruct *shm)
 
 		bool all_peers_are_bidi_accessible =
 			std::all_of(shm->devices, shm->devices + shm->nprocesses,
-				[&](cuda::device::id_t peer_id) {
-					auto peer = cuda::device::get(peer_id);
-					return cuda::device::peer_to_peer::can_access_each_other(device, peer);
+				[&](cuda_::device::id_t peer_id) {
+					auto peer = cuda_::device::get(peer_id);
+					return cuda_::device::peer_to_peer::can_access_each_other(device, peer);
 				} );
 		if (all_peers_are_bidi_accessible) {
 			// Enable peers here.  This isn't necessary for IPC, but it will
 			// setup the peers for the device.  For systems that only allow 8
 			// peers per GPU at a time, this acts to remove devices from CanAccessPeer
 			std::for_each(shm->devices, shm->devices + shm->nprocesses,
-				[&](cuda::device::id_t peer_id) {
-					auto peer = cuda::device::get(peer_id);
-					cuda::device::peer_to_peer::enable_bidirectional_access(device, peer);
+				[&](cuda_::device::id_t peer_id) {
+					auto peer = cuda_::device::get(peer_id);
+					cuda_::device::peer_to_peer::enable_bidirectional_access(device, peer);
 				});
 			shm->devices[shm->nprocesses++] = device.id();
 			if (shm->nprocesses >= MAX_DEVICES) break;
@@ -276,7 +276,7 @@ static void parentProcess(char *app)
 	using std::vector;
 	sharedMemoryInfo info;
 	volatile shmStruct *shm = NULL;
-	vector<cuda::memory::pool::ipc::ptr_handle_t> shareable_ptrs;
+	vector<cuda_::memory::pool::ipc::ptr_handle_t> shareable_ptrs;
 	vector<Process> processes;
 
 	if (sharedMemoryCreate(shmName, sizeof(*shm), &info) != 0) {
@@ -289,20 +289,20 @@ static void parentProcess(char *app)
 	collect_relevant_device_ids(shm);
 
 	vector<shared_pool_handle_t> shareable_pool_handles(shm->nprocesses);
-	vector<cuda::stream_t> streams; streams.reserve(shm->nprocesses);
-	vector<cuda::memory::pool_t> pools; pools.reserve(shm->nprocesses);
+	vector<cuda_::stream_t> streams; streams.reserve(shm->nprocesses);
+	vector<cuda_::memory::pool_t> pools; pools.reserve(shm->nprocesses);
 
 	// Now allocate memory for each process and fill the shared
 	// memory buffer with the export data and get memPool handles to communicate
 	for (size_t i = 0; i < shm->nprocesses; i++) {
-		auto device = cuda::device::get(static_cast<cuda::device::id_t>(i));
+		auto device = cuda_::device::get(static_cast<cuda_::device::id_t>(i));
 		// Note that creating this stream keeps the device's primary context alive, even if the
 		// device wrapper gets discarded
-		streams.emplace_back(device.create_stream(cuda::stream::async));
+		streams.emplace_back(device.create_stream(cuda_::stream::async));
 		pools.emplace_back(device.create_memory_pool<shared_handle_kind>());
 		auto region = pools[i].allocate(streams[i], DATA_SIZE);
-		shareable_pool_handles[i] = cuda::memory::pool::ipc::export_<shared_handle_kind>(pools[i]);
-		shareable_ptrs.emplace_back(cuda::memory::pool::ipc::export_ptr(region.data()));
+		shareable_pool_handles[i] = cuda_::memory::pool::ipc::export_<shared_handle_kind>(pools[i]);
+		shareable_ptrs.emplace_back(cuda_::memory::pool::ipc::export_ptr(region.data()));
 	}
 
 	// Launch the child processes!

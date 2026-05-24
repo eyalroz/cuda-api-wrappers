@@ -12,7 +12,7 @@
 
 ///@cond
 
-namespace cuda {
+namespace cuda_ {
 namespace device {
 
 // compute_architecture_t-related functions
@@ -286,14 +286,14 @@ inline bool properties_t::usable_for_compute() const noexcept
 }
 
 } // namespace device
-} // namespace cuda
+} // namespace cuda_
 
 namespace std {
 
   template <>
-  struct hash<cuda::device::compute_capability_t>
+  struct hash<cuda_::device::compute_capability_t>
   {
-	::std::size_t operator()(const cuda::device::compute_capability_t& cc) const noexcept
+	::std::size_t operator()(const cuda_::device::compute_capability_t& cc) const noexcept
 	{
 	  using ::std::hash;
 

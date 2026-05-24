@@ -16,7 +16,7 @@
 
 #include <type_traits>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace kernel {
 
@@ -31,7 +31,7 @@ namespace detail_ {
 #if CUDA_VERSION < 11000
 inline handle_t get_handle(const void *, const char* = nullptr)
 {
-	throw cuda::runtime_error(status::not_supported,
+	throw cuda_::runtime_error(status::not_supported,
 		"Only CUDA versions 11.0 and later support obtaining CUDA driver handles "
 		"for kernels compiled alongside the program source");
 }
@@ -42,7 +42,7 @@ inline handle_t get_handle(const void *kernel_function_ptr, const char* name = n
 	auto status = cudaGetFuncBySymbol(&handle, kernel_function_ptr);
 	throw_if_error_lazy(status, "Failed obtaining a CUDA function handle for "
 		+ ((name == nullptr) ? ::std::string("a kernel function") : ::std::string("kernel function ") + name)
-		+ " at " + cuda::detail_::ptr_as_hex(kernel_function_ptr));
+		+ " at " + cuda_::detail_::ptr_as_hex(kernel_function_ptr));
 	return handle;
 }
 #endif
@@ -65,11 +65,11 @@ apriori_compiled_t wrap(
 struct attributes_t : cudaFuncAttributes {
 
 	/// See @ref apriori_compiled_t::ptx_version()
-	cuda::device::compute_capability_t ptx_version() const noexcept {
+	cuda_::device::compute_capability_t ptx_version() const noexcept {
 		return device::compute_capability_t::from_combined_number(ptxVersion);
 	}
 
-	cuda::device::compute_capability_t binary_compilation_target_architecture() const noexcept {
+	cuda_::device::compute_capability_t binary_compilation_target_architecture() const noexcept {
 		return device::compute_capability_t::from_combined_number(binaryVersion);
 	}
 };
@@ -252,9 +252,9 @@ static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWith
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const void*                    kernel_function_ptr,
-	cuda::device::id_t             device_id,
+	cuda_::device::id_t             device_id,
 	UnaryFunction                  determine_shared_mem_by_block_size,
-	cuda::grid::block_dimension_t  block_size_limit,
+	cuda_::grid::block_dimension_t  block_size_limit,
 	bool                           disable_caching_override)
 {
 	int min_grid_size_in_blocks { 0 };
@@ -263,7 +263,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	// spurious (?) compiler warning about potential uninitialized use.
 
 	unsigned flags = disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
-	auto result = (cuda::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, const void*>(
+	auto result = (cuda_::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, const void*>(
 		&min_grid_size_in_blocks,
 		&block_size,
 		kernel_function_ptr,
@@ -286,9 +286,9 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 {
 	// Assuming we don't need to set the current device here
 	int result;
-	cuda::status_t status = CUDA_SUCCESS;
+	cuda_::status_t status = CUDA_SUCCESS;
 	auto flags = (unsigned) disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
-	status = (cuda::status_t) cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
+	status = (cuda_::status_t) cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
 		&result, kernel_function_ptr, (int) block_size_in_threads, (int) dynamic_shared_memory_per_block, flags);
 	throw_if_error(status,
 		"Determining the maximum occupancy in blocks per multiprocessor, given the block size and the amount of dynamic memory per block");
@@ -342,12 +342,12 @@ public: // non-mutators
 	 *
 	 * @note PTX version is _not_ of the same category as compute capability.
 	 */
-	cuda::device::compute_capability_t ptx_version() const override
+	cuda_::device::compute_capability_t ptx_version() const override
 	{
 		return attributes().ptx_version();
 	}
 
-	cuda::device::compute_capability_t binary_compilation_target_architecture() const override
+	cuda_::device::compute_capability_t binary_compilation_target_architecture() const override
 	{
 		return attributes().binary_compilation_target_architecture();
 	}
@@ -471,7 +471,7 @@ inline apriori_compiled_t wrap(
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 inline ::std::string identify(const apriori_compiled_t& kernel)
 {
-	return "apriori-compiled kernel " + cuda::detail_::ptr_as_hex(kernel.ptr())
+	return "apriori-compiled kernel " + cuda_::detail_::ptr_as_hex(kernel.ptr())
 		+ " in " + context::detail_::identify(kernel.context());
 }
 #endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
@@ -535,6 +535,6 @@ apriori_compiled_t get(context_t context, KernelFunctionPtr function_ptr);
 
 } // namespace kernel
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_

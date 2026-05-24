@@ -29,7 +29,7 @@ __global__ void increment_kernel(datum*g_data, datum inc_value)
 	g_data[global_idx] = g_data[global_idx] + inc_value;
 }
 
-bool correct_output(cuda::span<const int> data, const int x)
+bool correct_output(cuda_::span<const int> data, const int x)
 {
 	for (size_t i = 0; i < data.size(); i++)
 		if (data[i] != x)
@@ -47,7 +47,7 @@ int main(int, char **)
 	// This will pick the best possible CUDA capable device
 	// int devID = findCudaDevice(argc, (const char **)argv);
 
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	std::cout << "CUDA device [" <<  device.name() << "]\n";
 
@@ -55,28 +55,28 @@ int main(int, char **)
 	int value = 26;
 
 	// allocate host memory
-	auto a = cuda::memory::host::make_unique_span<datum>(n);
-	cuda::memory::host::zero(a);
+	auto a = cuda_::memory::host::make_unique_span<datum>(n);
+	cuda_::memory::host::zero(a);
 
-	auto d_a = cuda::memory::make_unique_span<datum>(device, n);
+	auto d_a = cuda_::memory::make_unique_span<datum>(device, n);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(n)
 		.block_size(512).build();
 
 	// create cuda event handles
-	auto start_event = cuda::event::create(
+	auto start_event = cuda_::event::create(
 		device,
-		cuda::event::sync_by_blocking,
-		cuda::event::do_record_timings,
-		cuda::event::not_interprocess);
-	auto end_event = cuda::event::create(
+		cuda_::event::sync_by_blocking,
+		cuda_::event::do_record_timings,
+		cuda_::event::not_interprocess);
+	auto end_event = cuda_::event::create(
 		device,
-		cuda::event::sync_by_blocking,
-		cuda::event::do_record_timings,
-		cuda::event::not_interprocess);
+		cuda_::event::sync_by_blocking,
+		cuda_::event::do_record_timings,
+		cuda_::event::not_interprocess);
 
-	auto stream = device.default_stream(); // device.create_stream(cuda::stream::async);
+	auto stream = device.default_stream(); // device.create_stream(cuda_::stream::async);
 	auto cpu_time_start = std::chrono::high_resolution_clock::now();
 	stream.enqueue.event(start_event);
 	stream.enqueue.copy(d_a, a);
@@ -94,7 +94,7 @@ int main(int, char **)
 	}
 
 	std::cout << "time spent executing by the GPU: " << std::setprecision(2)
-		<< cuda::event::time_elapsed_between(start_event, end_event).count() << '\n';
+		<< cuda_::event::time_elapsed_between(start_event, end_event).count() << '\n';
 	std::cout << "time spent by CPU in CUDA calls: " << std::setprecision(2)<< (cpu_time_end - cpu_time_start).count() << '\n';
 	std::cout << "CPU executed " << counter << " iterations while waiting for GPU to finish\n";
 

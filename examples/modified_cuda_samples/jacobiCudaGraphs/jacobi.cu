@@ -6,15 +6,15 @@
 #include <cuda/api.hpp>
 
 static void finalize_error(
-	const cuda::stream_t& stream, span<double> d_sum, const cuda::launch_configuration_t& launch_config,
+	const cuda_::stream_t& stream, span<double> d_sum, const cuda_::launch_configuration_t& launch_config,
 	double& sum, int k, const span<double> x_to_overwrite)
 {
 	stream.enqueue.memzero(d_sum);
 	auto final_error_launch_config = launch_config;
 	final_error_launch_config.dimensions.grid.x = (N_ROWS / final_error_launch_config.dimensions.block.x) + 1;
-	auto warps_per_block = final_error_launch_config.dimensions.block.x / cuda::warp_size;
+	auto warps_per_block = final_error_launch_config.dimensions.block.x / cuda_::warp_size;
 	final_error_launch_config.dynamic_shared_memory_size =
-        static_cast<cuda::memory::shared::size_t>((warps_per_block + 1) * sizeof(double));
+        static_cast<cuda_::memory::shared::size_t>((warps_per_block + 1) * sizeof(double));
 	// TODO: Double-check the original source to ensure we're using the right x here
 	stream.enqueue.kernel_launch(finalError, final_error_launch_config, x_to_overwrite.data(), d_sum.data());
 	stream.enqueue.copy(&sum, d_sum);
@@ -24,8 +24,8 @@ static void finalize_error(
 
 template<>
 double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
-	const cuda::device_t &device,
-	const cuda::stream_t &stream,
+	const cuda_::device_t &device,
+	const cuda_::stream_t &stream,
 	span<float  const> A,
 	span<double const> b,
 	float convergence_threshold,
@@ -34,48 +34,48 @@ double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
 	span<double> x_new,
 	span<double> d_sum)
 {
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.grid_dimensions((N_ROWS / ROWS_PER_CTA) + 2, 1, 1)
 		.build();
 
 	double sum;
 
-	auto graph = cuda::graph::create();
+	auto graph = cuda_::graph::create();
 
-	using cuda::graph::node::kind_t;
+	using cuda_::graph::node::kind_t;
 
 	auto memset_node = [&] {
-		cuda::graph::node::parameters_t<kind_t::memory_set> params;
+		cuda_::graph::node::parameters_t<kind_t::memory_set> params;
 		params.value = 0;
 		params.width_in_bytes = 4;
 		params.region = d_sum;
 		return graph.insert.node<kind_t::memory_set>(params);
 	}();
 
-	auto jacobi_kernel = cuda::kernel::get(device, JacobiMethod);
-	struct { cuda::graph::node::parameters_t<kind_t::kernel_launch>  odd, even; } kernel_params = {
-		{ jacobi_kernel, launch_config, cuda::graph::make_kernel_argument_pointers(A, b, convergence_threshold, x, x_new, d_sum) },
-		{ jacobi_kernel, launch_config, cuda::graph::make_kernel_argument_pointers(A, b, convergence_threshold, x_new, x, d_sum) },
+	auto jacobi_kernel = cuda_::kernel::get(device, JacobiMethod);
+	struct { cuda_::graph::node::parameters_t<kind_t::kernel_launch>  odd, even; } kernel_params = {
+		{ jacobi_kernel, launch_config, cuda_::graph::make_kernel_argument_pointers(A, b, convergence_threshold, x, x_new, d_sum) },
+		{ jacobi_kernel, launch_config, cuda_::graph::make_kernel_argument_pointers(A, b, convergence_threshold, x_new, x, d_sum) },
 	};
 	auto jacobi_kernel_node = graph.insert.node<kind_t::kernel_launch>(kernel_params.even);
 
 	graph.insert.edge(memset_node, jacobi_kernel_node);
 
 	auto memcpy_node = [&] {
-		cuda::memory::copy_parameters_t<3> params;
+		cuda_::memory::copy_parameters_t<3> params;
 		params.set_source(d_sum);
 		params.set_destination(&sum, 1);
 		params.set_extent<double>(1);
 		params.clear_offsets();
 		params.clear_rest();
-		return graph.insert.node<cuda::graph::node::kind_t::memcpy>(params);
+		return graph.insert.node<cuda_::graph::node::kind_t::memcpy>(params);
 	}();
 
 	graph.insert.edge(jacobi_kernel_node, memcpy_node);
 
 
-	cuda::graph::instance_t instance = graph.instantiate();
+	cuda_::graph::instance_t instance = graph.instantiate();
 
 	for (int k = 0; k < num_iterations; k++) {
 		instance.launch(stream);
@@ -96,8 +96,8 @@ double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
 
 template<>
 double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
-	const cuda::device_t &,
-	const cuda::stream_t &stream,
+	const cuda_::device_t &,
+	const cuda_::stream_t &stream,
 	span<float  const> A,
 	span<double const> b,
 	float convergence_threshold,
@@ -106,16 +106,16 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 	span<double> x_new,
 	span<double> d_sum)
 {
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.grid_dimensions((N_ROWS / ROWS_PER_CTA) + 2, 1, 1)
 		.build();
 
-	::std::unique_ptr<cuda::graph::instance_t> instance_ptr{};
+	::std::unique_ptr<cuda_::graph::instance_t> instance_ptr{};
 
 	double sum = 0.0;
 	for (int k = 0; k < num_iterations; k++) {
-		stream.begin_capture(cuda::stream::capture::mode_t::global);
+		stream.begin_capture(cuda_::stream::capture::mode_t::global);
 		stream.enqueue.memzero(d_sum);
 		auto x_to_read = ((k & 1) == 0) ? x : x_new;
 		auto x_to_overwrite = ((k & 1) == 0) ? x_new : x;
@@ -126,7 +126,7 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 
 		if (instance_ptr == nullptr) {
 			auto instance = graph.instantiate();
-			instance_ptr.reset(new cuda::graph::instance_t{::std::move(instance)});
+			instance_ptr.reset(new cuda_::graph::instance_t{::std::move(instance)});
 		}
 		else {
 			instance_ptr->update(graph);
@@ -147,8 +147,8 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 
 template<>
 double do_jacobi_inner<computation_method_t::non_graph_gpu>(
-	const cuda::device_t &,
-	const cuda::stream_t &stream,
+	const cuda_::device_t &,
+	const cuda_::stream_t &stream,
 	span<float const> A,
 	span<double const> b,
 	float convergence_threshold,
@@ -157,7 +157,7 @@ double do_jacobi_inner<computation_method_t::non_graph_gpu>(
 	span<double> x_new,
 	span<double> d_sum)
 {
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.grid_dimensions((N_ROWS / ROWS_PER_CTA) + 2, 1, 1)
 		.build();

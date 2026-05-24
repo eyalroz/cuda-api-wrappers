@@ -11,7 +11,7 @@
 
 #include "optional.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -66,8 +66,8 @@ protected:
 } // namespace detail_
 
 template<typename T>
-using optional_ref = cuda::detail_::optional_ref<T>;
+using optional_ref = cuda_::detail_::optional_ref<T>;
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif //CUDA_API_WRAPPERS_OPTIONAL_REF_HPP_

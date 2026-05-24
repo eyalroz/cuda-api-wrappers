@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard events. Specifically:
  *
- * 1. Functions in the `cuda::event` namespace.
- * 2. Methods of @ref cuda::event_t and possibly some relates classes.
+ * 1. Functions in the `cuda_::event` namespace.
+ * 2. Methods of @ref cuda_::event_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_EVENT_HPP_
@@ -23,7 +23,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace event {
 
@@ -127,7 +127,7 @@ inline void event_t::fire(const stream_t& stream) const
 	stream.synchronize();
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_EVENT_HPP_
 

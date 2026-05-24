@@ -8,7 +8,7 @@
 #include "current_context.hpp"
 #include "context.hpp" // A primary context is a context, so can't avoid this
 
-namespace cuda {
+namespace cuda_ {
 
 namespace device {
 
@@ -163,7 +163,7 @@ public:
 
 public: // friendship
 
-	friend class ::cuda::device_t;
+	friend class ::cuda_::device_t;
 	friend primary_context_t device::primary_context::detail_::wrap(device::id_t, context::handle_t, bool) noexcept;
 
 public: // constructors and destructor
@@ -305,7 +305,7 @@ inline bool is_current()
 
 } // namespace device
 
-} // namespace cuda
+} // namespace cuda_
 
 
 // Should we want to let the primary context reset itself? That's something which regular

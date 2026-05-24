@@ -100,7 +100,7 @@ const char* name_of(FinityCheckMethod FCM)
 }
 
 template <FinityCheckMethod FCM>
-void sanity_check(cuda::span<count_t> d_finity_counts, cuda::span<count_t> finity_counts)
+void sanity_check(cuda_::span<count_t> d_finity_counts, cuda_::span<count_t> finity_counts)
 {
     for (size_t tid = 0; tid < d_finity_counts.size(); tid++) {
         auto num_encodings_of_finite_half_values { 0xf800u };
@@ -115,44 +115,44 @@ void sanity_check(cuda::span<count_t> d_finity_counts, cuda::span<count_t> finit
 }
 
 template <FinityCheckMethod FCM>
-void time_method(cuda::device_t const& device)
+void time_method(cuda_::device_t const& device)
 {
     auto threads_per_block { 128 };
     auto num_ushort_values { 1lu << sizeof(unsigned short) * CHAR_BIT };
     assert(num_ushort_values % threads_per_block == 0);
     auto num_iterations { 10 };
 
-    auto launch_config = cuda::launch_config_builder()
+    auto launch_config = cuda_::launch_config_builder()
         .overall_size(num_ushort_values)
         .block_size(threads_per_block)
         .build();
 
     auto total_threads = num_ushort_values;
 
-    auto d_finity_counts = cuda::make_unique_span<count_t>(device, total_threads);
-    auto finity_counts = cuda::make_unique_span<count_t>(total_threads);
+    auto d_finity_counts = cuda_::make_unique_span<count_t>(device, total_threads);
+    auto finity_counts = cuda_::make_unique_span<count_t>(total_threads);
 
-    cuda::memory::zero(d_finity_counts);
-    auto events = std::make_pair(cuda::event::create(device), cuda::event::create(device));
-    auto timings = cuda::generate_unique_span<cuda::event::duration_t>(num_iterations,
+    cuda_::memory::zero(d_finity_counts);
+    auto events = std::make_pair(cuda_::event::create(device), cuda_::event::create(device));
+    auto timings = cuda_::generate_unique_span<cuda_::event::duration_t>(num_iterations,
         [&](size_t) {
             events.first.record();
-            cuda::launch(kernel<FCM>, device, launch_config, d_finity_counts.data());
+            cuda_::launch(kernel<FCM>, device, launch_config, d_finity_counts.data());
             events.second.record();
             device.synchronize();
-            return cuda::event::time_elapsed_between(events.first, events.second);
+            return cuda_::event::time_elapsed_between(events.first, events.second);
         });
     std::nth_element(timings.begin(), timings.begin() + num_iterations / 2, timings.end());
     std::cout << "isfinite check method  " << std::left << std::setw(50) << name_of(FCM)
         << " : " << std::setw(12) << timings[num_iterations / 2].count() << " msec\n";
-    cuda::memory::copy(finity_counts, d_finity_counts);
+    cuda_::memory::copy(finity_counts, d_finity_counts);
 
     sanity_check<FCM>(d_finity_counts, finity_counts);
 }
 
 int main()
 {
-    auto device = cuda::device::current::get();
+    auto device = cuda_::device::current::get();
     time_method<smaller_than_infinity_literal>(device);
     time_method<using_cuda_intrinsic_for_float_type>(device);
     time_method<less_than_ushort_threshold_value_for_non_finite>(device);

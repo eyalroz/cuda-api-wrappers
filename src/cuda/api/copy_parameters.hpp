@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief The @ref cuda::memory::copy_parameters_t class template and related definitions.
+ * @brief The @ref cuda_::memory::copy_parameters_t class template and related definitions.
  */
 #ifndef CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP
 #define CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP
@@ -11,7 +11,7 @@
 #include "constants.hpp"
 #include "error.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -98,7 +98,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_endpoint(endpoint_t endpoint, const cuda::array_t<T, NumDimensions> &array) noexcept;
+	this_type& set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, NumDimensions> &array) noexcept;
 
 	this_type& set_endpoint_ptr(endpoint_t endpoint, context::handle_t context_handle, void *ptr);
 
@@ -150,7 +150,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_source(const cuda::array_t<T, NumDimensions> &array) noexcept
+	this_type& set_source(const cuda_::array_t<T, NumDimensions> &array) noexcept
 	{
 		return set_endpoint(endpoint_t::source, array);
 	}
@@ -210,7 +210,7 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_destination(const cuda::array_t<T, NumDimensions> &array) noexcept
+	this_type& set_destination(const cuda_::array_t<T, NumDimensions> &array) noexcept
 	{
 		return set_endpoint(endpoint_t::destination, array);
 	}
@@ -443,7 +443,7 @@ copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 
 template<>
 template<typename T>
-copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 2> &array) noexcept
+copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, 2> &array) noexcept
 {
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
 	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
@@ -476,7 +476,7 @@ inline array::dimensions_t<3> non_array_endpoint_dimensions<3>(endpoint_t endpoi
 
 template<>
 template<typename T>
-copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, const cuda::array_t<T, 3> &array) noexcept
+copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, 3> &array) noexcept
 {
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
 	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
@@ -578,7 +578,7 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
+		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{
@@ -617,7 +617,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda::detail_::ptr_as_hex(ptr));
+		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{
@@ -740,6 +740,6 @@ inline as_intra_context_parameters(const copy_parameters_t<3>& params)
 
 } //namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif //CUDA_API_WRAPPERS_COPY_PARAMETERS_HPP

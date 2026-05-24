@@ -20,15 +20,15 @@
 
 int main(int, char **)
 {
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		die_("No CUDA devices on this system (and, unfortunately, the CUDA runtime requires one to report its supported version)");
 	}
 
-	auto runtime_version = cuda::version_numbers::runtime();
+	auto runtime_version = cuda_::version_numbers::runtime();
 	std::cout << "Using CUDA runtime version " << runtime_version << ".\n";
 
-	auto driver_supported_version = cuda::version_numbers::driver();
-	if (driver_supported_version == cuda::version_numbers::none()) {
+	auto driver_supported_version = cuda_::version_numbers::driver();
+	if (driver_supported_version == cuda_::version_numbers::none()) {
 		std::cout << "There is no CUDA driver installed, so no CUDA runtime version is supported\n";
 	}
 	else {

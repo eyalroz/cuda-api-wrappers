@@ -23,7 +23,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class event_t;
@@ -126,7 +126,7 @@ inline ::std::string get_name(id_t id)
  * the device ID around all that time.
  *
  * @note this is one of the three main classes in the Runtime API wrapper library,
- * together with @ref cuda::stream_t and @ref cuda::event_t
+ * together with @ref cuda_::stream_t and @ref cuda_::event_t
  *
  * @note obtaining device LUID's is not supported (those are too graphics-specific)
  * @note This class is a "reference type", not a "value type". Therefore, making changes
@@ -401,7 +401,7 @@ public:
 
 	/**
 	 * Obtains the device's hardware architecture generation numeric
-	 * designator see @ref cuda::device::compute_architecture_t
+	 * designator see @ref cuda_::device::compute_architecture_t
 	 */
 	device::compute_architecture_t architecture() const
 	{
@@ -410,7 +410,7 @@ public:
 	}
 
 	/**
-	 * Obtains the device's compute capability; see @ref cuda::device::compute_capability_t
+	 * Obtains the device's compute capability; see @ref cuda_::device::compute_capability_t
 	 */
 	device::compute_capability_t compute_capability() const
 	{
@@ -491,13 +491,13 @@ public:
 	 */
 	const device_t& synchronize() const
 	{
-		cuda::synchronize(*this);
+		cuda_::synchronize(*this);
 		return *this;
 	}
 
 	device_t& synchronize()
 	{
-		cuda::synchronize(*this);
+		cuda_::synchronize(*this);
 		return *this;
 	}
 
@@ -606,25 +606,25 @@ public:
 	 */
 	stream_t default_stream(bool hold_primary_context_refcount_unit = false) const;
 
-	/// See @ref cuda::stream::create()
+	/// See @ref cuda_::stream::create()
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream = stream::async,
 		stream::priority_t  priority = stream::default_priority) const;
 
-	/// See @ref cuda::event::create()
+	/// See @ref cuda_::event::create()
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
 		bool records_timing     = event::do_record_timings,
 		bool interprocess       = event::not_interprocess) const;
 
-	/// See @ref cuda::context::create()
+	/// See @ref cuda_::context::create()
 	context_t create_context(
 		context::host_thread_sync_scheduling_policy_t   sync_scheduling_policy = context::heuristic,
 		bool                                            keep_larger_local_mem_after_resize = false) const;
 
 #if CUDA_VERSION >= 11020
 
-	/// See @ref cuda::memory::pool::create()
+	/// See @ref cuda_::memory::pool::create()
 	template <memory::pool::shared_handle_kind_t Kind = memory::pool::shared_handle_kind_t::no_export>
 	memory::pool_t create_memory_pool() const;
 
@@ -635,7 +635,7 @@ public:
 	 *
 	 * @tparam Kernel May be either a plain function type (for a `__global__` function
 	 *     accessible to the translation unit, or (a reference to) any subclass of
-	 * `   `cuda::kernel_t`.
+	 * `   `cuda_::kernel_t`.
 	 * @param kernel_function
 	 *     the kernel to launch; may be either a (`__global__`) function pointer,
 	 *     or a kernel proxy class.
@@ -909,6 +909,6 @@ inline device_t get(const ::std::string& pci_id_str)
 
 } // namespace device
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_DEVICE_HPP_

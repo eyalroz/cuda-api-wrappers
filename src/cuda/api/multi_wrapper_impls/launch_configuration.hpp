@@ -13,7 +13,7 @@
 #include "../device.hpp"
 #include "../event.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -95,6 +95,6 @@ inline CUlaunchConfig marshal(
 
 } // namespace detail_
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif //CUDA_API_WRAPPERS_MULTI_WRAPPERS_LAUNCH_CONFIGURATION_HPP

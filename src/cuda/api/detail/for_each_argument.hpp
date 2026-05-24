@@ -3,7 +3,7 @@
 
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -19,8 +19,8 @@ void for_each_argument(F f, Args&&... args) {
 // doesn't guarantee execution order
 }
 
-} // namespaced detail_
+} // namespace detail_
 
-} // namespaced cuda
+} // namespace cuda
 
 #endif //CUDA_API_WRAPPERS_FOR_EACH_ARGUMENT_HPP

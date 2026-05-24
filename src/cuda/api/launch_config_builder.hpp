@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains the @ref cuda::launch_config_builder_t class definition and
+ * @brief Contains the @ref cuda_::launch_config_builder_t class definition and
  * related definitions.
  *
  * @note Launch configurations are used mostly in {@ref kernel_launch.hpp}.
@@ -25,7 +25,7 @@
 #include <limits>
 #include <string>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -246,12 +246,12 @@ protected:
 	bool use_min_params_for_max_occupancy_ { false };
 #endif
 
-	static cuda::device_t device(optional<device::id_t> maybe_id)
+	static cuda_::device_t device(optional<device::id_t> maybe_id)
 	{
-		return cuda::device::get(maybe_id.value());
+		return cuda_::device::get(maybe_id.value());
 	}
 
-	cuda::device_t device() const { return device(device_id_.value()); }
+	cuda_::device_t device() const { return device(device_id_.value()); }
 
 	launch_config_builder_t& configure_for(launch_configuration_t config)
 	{
@@ -764,6 +764,6 @@ public:
 /// A slightly shorter-named construction idiom for @ref launch_config_builder_t
 inline launch_config_builder_t launch_config_builder() { return {}; }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_LAUNCH_CONFIG_BUILDER_CUH_

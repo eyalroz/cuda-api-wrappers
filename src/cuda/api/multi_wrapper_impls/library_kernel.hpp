@@ -14,7 +14,7 @@
 #include "../library.hpp"
 #include "../kernels/in_library.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace library {
 
@@ -37,10 +37,10 @@ inline void set_attribute(
 	detail_::set_attribute(library_kernel.handle(), device.id(), attribute, value);
 }
 
-cuda::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
+cuda_::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
 {
 	auto new_handle = detail_::contextualize(kernel.handle(), context.handle());
-	using cuda::kernel::wrap;
+	using cuda_::kernel::wrap;
 	return wrap(context.device_id(), context.handle(), new_handle, do_not_hold_primary_context_refcount_unit);
 }
 
@@ -48,7 +48,7 @@ cuda::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
 
 } // namespace library
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12000
 

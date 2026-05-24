@@ -15,7 +15,7 @@
 
 #include <string>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class fatbin_builder_t;
@@ -31,7 +31,7 @@ namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
 {
-	return "Fatbin builder with handle " + cuda::detail_::ptr_as_hex(handle);
+	return "Fatbin builder with handle " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(const fatbin_builder_t&);
@@ -65,7 +65,7 @@ protected: // unsafe actions
 	{
 		auto status = nvFatbinGet(handle_, target_region.data());
 		throw_if_error_lazy(status, "Failed completing the generation of a fatbin at " +
-			cuda::detail_::ptr_as_hex(target_region.data()));
+			cuda_::detail_::ptr_as_hex(target_region.data()));
 	}
 
 public:
@@ -260,7 +260,7 @@ inline ::std::string identify(const fatbin_builder_t& builder)
 } // namespace fatbin_builder
 
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12040
 

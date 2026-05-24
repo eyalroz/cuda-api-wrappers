@@ -47,7 +47,7 @@
 #include <thread>
 
 
-namespace cuda {
+namespace cuda_ {
 
 // Note: No implementation for now for nvtxStringHandle_t's
 /**
@@ -210,7 +210,7 @@ range::handle_t range_start(
 	auto attrs = detail_::create_attributes(description, color);
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&attrs);
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
-				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+				  "cuda_::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	return range_handle;
 }
 
@@ -219,7 +219,7 @@ range::handle_t range_start(
 inline void range_end(range::handle_t range_handle)
 {
 	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
-				  "cuda::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
+				  "cuda_::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	nvtxRangeEnd(range_handle);
 }
 
@@ -240,9 +240,9 @@ inline void stop()
 }
 
 } // namespace profiling
-} // namespace cuda
+} // namespace cuda_
 
-namespace cuda {
+namespace cuda_ {
 
 namespace profiling {
 
@@ -297,7 +297,7 @@ protected:
 	context::current::detail_::scoped_existence_ensurer_t context_existence_ensurer;
 };
 
-#define profile_this_scope() ::cuda::profiling::scope cuda_profiling_scope_{};
+#define profile_this_scope() ::cuda_::profiling::scope cuda_profiling_scope_{};
 
 namespace detail_ {
 
@@ -424,6 +424,6 @@ void name(const device_t& device, const CharT* name)
 }
 
 } // namespace profiling
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_PROFILING_HPP_

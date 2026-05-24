@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains an implementation of an std::span-like class, @ref cuda::span
+ * @brief Contains an implementation of an std::span-like class, @ref cuda_::span
  *
  * @note When compiling with C++20 or later, the actual std::span is used instead
  */
@@ -20,7 +20,7 @@
 /**
  * @brief All definitions and functionality wrapping the CUDA Runtime API.
  */
-namespace cuda {
+namespace cuda_ {
 
 #if __cplusplus >= 202002L
 using ::std::span;
@@ -74,6 +74,6 @@ struct span {
 };
 #endif
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_SPAN_HPP_

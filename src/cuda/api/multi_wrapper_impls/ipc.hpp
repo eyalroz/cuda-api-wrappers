@@ -14,7 +14,7 @@
 #include "../stream.hpp"
 #include "../memory_pool.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -25,7 +25,7 @@ namespace ipc {
 class imported_ptr_t;
 
 imported_ptr_t wrap(
-	cuda::device::id_t device_id,
+	cuda_::device::id_t device_id,
 	context::handle_t context_handle,
 	pool::handle_t pool_handle,
 	void * ptr,
@@ -36,7 +36,7 @@ imported_ptr_t wrap(
 class imported_ptr_t {
 protected: // constructors & destructor
 	imported_ptr_t(
-		cuda::device::id_t device_id,
+		cuda_::device::id_t device_id,
 		context::handle_t context_handle,
 		pool::handle_t pool_handle,
 		void * ptr,
@@ -54,7 +54,7 @@ protected: // constructors & destructor
 
 public: // constructors & destructor
 	friend imported_ptr_t wrap(
-		cuda::device::id_t device_id,
+		cuda_::device::id_t device_id,
 		context::handle_t context_handle,
 		pool::handle_t pool_handle,
 		void * ptr,
@@ -121,7 +121,7 @@ public: // getters
 	}
 
 protected: // data members
-	cuda::device::id_t  device_id_;
+	cuda_::device::id_t  device_id_;
 	context::handle_t   context_handle_;
 	pool::handle_t      pool_handle_;
 	void*               ptr_;
@@ -131,7 +131,7 @@ protected: // data members
 }; // class imported_ptr_t
 
 inline imported_ptr_t wrap(
-	cuda::device::id_t device_id,
+	cuda_::device::id_t device_id,
 	context::handle_t context_handle,
 	pool::handle_t pool_handle,
 	void * ptr,
@@ -180,7 +180,7 @@ inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& 
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 11020
 

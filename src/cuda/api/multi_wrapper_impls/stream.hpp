@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard streams. Specifically:
  *
- * 1. Functions in the `cuda::stream` namespace.
- * 2. Methods of @ref cuda::stream_t and possibly some relates classes.
+ * 1. Functions in the `cuda_::stream` namespace.
+ * 2. Methods of @ref cuda_::stream_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_STREAM_HPP_
@@ -22,7 +22,7 @@
 #include "../current_context.hpp"
 #include "../current_device.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace stream {
 
@@ -129,7 +129,7 @@ inline event_t stream_t::enqueue_t::event(
 
 inline device_t stream_t::device() const noexcept
 {
-	return cuda::device::wrap(device_id_);
+	return cuda_::device::wrap(device_id_);
 }
 
 inline context_t stream_t::context() const noexcept
@@ -158,7 +158,7 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 
 #endif // CUDA_VERSION >= 11000
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_STREAM_HPP_
 

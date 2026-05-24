@@ -19,7 +19,7 @@
 #include <cuda_fp16.h>
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -104,7 +104,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuArrayDestroy(handle);
-	throw_if_error_lazy(status, "Failed destroying the array at " + cuda::detail_::ptr_as_hex(handle));
+	throw_if_error_lazy(status, "Failed destroying the array at " + cuda_::detail_::ptr_as_hex(handle));
 }
 
 template <dimensionality_t NumDimensions>
@@ -117,7 +117,7 @@ inline descriptor_t<2> get_descriptor_in_current_context<2>(handle_t handle)
 	auto status = cuArrayGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
 		::std::string("Failed obtaining the descriptor of the CUDA 2D array at ")
-		+ cuda::detail_::ptr_as_hex(handle));
+		+ cuda_::detail_::ptr_as_hex(handle));
 	return result;
 }
 
@@ -128,7 +128,7 @@ inline descriptor_t<4> get_descriptor_in_current_context<3>(handle_t handle)
 	auto status = cuArray3DGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
 		::std::string("Failed obtaining the descriptor of the CUDA 3D array at ")
-		+ cuda::detail_::ptr_as_hex(handle));
+		+ cuda_::detail_::ptr_as_hex(handle));
 	return result;
 }
 
@@ -182,7 +182,7 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
  * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-arrays
  *
  * Arrays are particularly useful in combination with texture memory (see
- * @ref cuda::texture_view): One can access elements in a multi dimensional
+ * @ref cuda_::texture_view): One can access elements in a multi dimensional
  * array with the index, e.g. `array[i][j][k]`. In CUDA it is possible to
  * create a texture on an array, allowing for different kind of access to array
  * elements, e.g. `texture[u][v][w]` with `u, v, w` in `[0, 1]`, with
@@ -294,6 +294,6 @@ array_t<T,NumDimensions> create(
 
 } // namespace array
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_ARRAY_HPP_

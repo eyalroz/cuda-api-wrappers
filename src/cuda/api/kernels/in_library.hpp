@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief The cuda::library::kernel_t class and related code.
+ * @brief The cuda_::library::kernel_t class and related code.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_IN_LIBRARY_KERNEL_HPP_
@@ -13,7 +13,7 @@
 
 #include <type_traits>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class kernel_t;
@@ -43,9 +43,9 @@ namespace library {
 namespace kernel {
 
 using handle_t = CUkernel;
-using cuda::kernel::attribute_t;
-using cuda::kernel::attribute_value_t;
-// using cuda::kernel::apriori_compiled::attributes_t;
+using cuda_::kernel::attribute_t;
+using cuda_::kernel::attribute_value_t;
+// using cuda_::kernel::apriori_compiled::attributes_t;
 
 namespace detail_ {
 
@@ -55,7 +55,7 @@ kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle);
 
 inline ::std::string identify(kernel::handle_t handle)
 {
-	return "library kernel at " + cuda::detail_::ptr_as_hex(handle);
+	return "library kernel at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(library::handle_t library_handle, kernel::handle_t handle)
@@ -65,15 +65,15 @@ inline ::std::string identify(library::handle_t library_handle, kernel::handle_t
 
 ::std::string identify(const kernel_t &kernel);
 
-inline ::std::pair<cuda::kernel::handle_t, status_t> contextualize_in_current_context(
+inline ::std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_context(
 	const kernel::handle_t& library_kernel_handle)
 {
-	cuda::kernel::handle_t contextualized_kernel_handle;
+	cuda_::kernel::handle_t contextualized_kernel_handle;
 	auto status = cuKernelGetFunction(&contextualized_kernel_handle, library_kernel_handle);
 	return {contextualized_kernel_handle, status};
 }
 
-inline cuda::kernel::handle_t contextualize(
+inline cuda_::kernel::handle_t contextualize(
 	const handle_t& kernel_handle,
 	const context::handle_t context_handle)
 {
@@ -92,7 +92,7 @@ inline attribute_value_t get_attribute(
 	attribute_value_t value;
 	auto status = cuKernelGetAttribute(&value, attribute, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, ::std::string("Failed getting attribute ")
-		+ cuda::kernel::detail_::attribute_name(attribute) + " for " + identify(library_kernel_handle)
+		+ cuda_::kernel::detail_::attribute_name(attribute) + " for " + identify(library_kernel_handle)
 		+ " on " + device::detail_::identify(device_id));
 	return value;
 }
@@ -105,7 +105,7 @@ inline void set_attribute(
 {
 	auto status = cuKernelSetAttribute(attribute, value, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, ::std::string("Failed setting attribute ")
-								+ cuda::kernel::detail_::attribute_name(attribute) + " value to " + ::std::to_string(value)
+								+ cuda_::kernel::detail_::attribute_name(attribute) + " value to " + ::std::to_string(value)
 								+ " for " + identify(library_kernel_handle) + " on " + device::detail_::identify(device_id));
 }
 
@@ -154,7 +154,7 @@ public: // non-mutators
 		return name_;
 	}
 #endif
-	cuda::kernel_t contextualize(const context_t& context) const;
+	cuda_::kernel_t contextualize(const context_t& context) const;
 
 protected: // ctors & dtor
 	kernel_t(library::handle_t library_handle, kernel::handle_t handle)
@@ -191,7 +191,7 @@ inline ::std::string identify(const kernel_t& library_kernel)
 
 inline kernel_t get(const library_t& library, const char* name)
 {
-	auto kernel_handle = cuda::library::detail_::get_kernel_in_current_context(library.handle(), name);
+	auto kernel_handle = cuda_::library::detail_::get_kernel_in_current_context(library.handle(), name);
 	return kernel::detail_::wrap(library.handle(), kernel_handle);
 }
 
@@ -220,7 +220,7 @@ inline library::kernel_t library_t::get_kernel(const context_t& context, const :
 	return get_kernel(context, name.c_str());
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12000
 

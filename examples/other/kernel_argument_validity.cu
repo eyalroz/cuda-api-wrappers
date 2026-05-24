@@ -2,7 +2,7 @@
  * @file
  *
  * @brief An example program demonstrating the effects and use of the @ref
- * cuda::is_valid_kernel_argument trait
+ * cuda_::is_valid_kernel_argument trait
  */
 #include "../common.hpp"
 #include <cuda/api/kernel_launch.hpp>
@@ -44,7 +44,7 @@ static_assert(
 	"NonTriviallyCopyable should not be trivially copyable");
 
 template <>
-struct cuda::is_valid_kernel_argument<NonTriviallyCopyable> : ::std::true_type {};
+struct cuda_::is_valid_kernel_argument<NonTriviallyCopyable> : ::std::true_type {};
 
 __global__ void print_message(NonTriviallyCopyable message) {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
@@ -63,24 +63,24 @@ int main(int argc, char **argv) {
 
 	auto device = [&]() {
 		// Being very cavalier about our command-line arguments here...
-		cuda::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
+		cuda_::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda_::device::default_device_id;
 
-		if (cuda::device::count() == 0) {
+		if (cuda_::device::count() == 0) {
 			die_("No CUDA devices on this system");
 		}
-		return cuda::device::get(device_id).make_current();
+		return cuda_::device::get(device_id).make_current();
 	}();
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
-	auto stream = cuda::device::current::get().create_stream(cuda::stream::sync);
-	cuda::launch_configuration_t single_thread_config{1, 1};
+	auto stream = cuda_::device::current::get().create_stream(cuda_::stream::sync);
+	cuda_::launch_configuration_t single_thread_config{1, 1};
 
 	std::cout
 		<< "A new CUDA stream with no priority specified defaults to having priority " << stream.priority() << ".\n";
 	stream.enqueue.kernel_launch(print_message, single_thread_config, NonTriviallyCopyable("It works!"));
 
-	auto dest_mem = cuda::memory::device::make_unique_region(device, sizeof(NonTriviallyCopyable));
+	auto dest_mem = cuda_::memory::device::make_unique_region(device, sizeof(NonTriviallyCopyable));
 	auto dest_span = dest_mem.as_span<NonTriviallyCopyable>();
 
 	NonTriviallyCopyable src("Source");

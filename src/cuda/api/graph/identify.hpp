@@ -11,7 +11,7 @@
 #include "../error.hpp"
 #include "../types.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace graph {
 
@@ -21,7 +21,7 @@ namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
 {
-	return "execution graph template " + cuda::detail_::ptr_as_hex(handle);
+	return "execution graph template " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(handle_t handle, device::id_t device_id)
@@ -51,7 +51,7 @@ namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
 {
-	return "execution graph instance " + cuda::detail_::ptr_as_hex(handle);
+	return "execution graph instance " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(handle_t handle, device::id_t device_id)
@@ -79,7 +79,7 @@ namespace detail_ {
 
 inline ::std::string identify(handle_t handle)
 {
-	return ::std::string("node with handle ") + ::cuda::detail_::ptr_as_hex(handle);
+	return ::std::string("node with handle ") + ::cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(handle_t node_handle, template_::handle_t graph_template_handle)
@@ -93,7 +93,7 @@ inline ::std::string identify(handle_t node_handle, template_::handle_t graph_te
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

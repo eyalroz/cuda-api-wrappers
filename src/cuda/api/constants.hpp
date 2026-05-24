@@ -12,7 +12,7 @@
 
 #include "types.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 /**
 * CUDA's NVCC allows use the use of the warpSize identifier, without having
@@ -68,7 +68,7 @@ enum : device::id_t {
 namespace event {
 
 /**
- * Synchronization option for @ref cuda::event_t 's
+ * Synchronization option for @ref cuda_::event_t 's
  */
 enum : bool {
 	/**
@@ -99,7 +99,7 @@ enum : bool {
 };
 
 /**
- * IPC usability option for {@ref cuda::event_t}'s
+ * IPC usability option for {@ref cuda_::event_t}'s
  */
 enum : bool {
 	not_interprocess = false,         //!< Can only be used by the process which created it
@@ -143,6 +143,6 @@ constexpr const CUcontext none { 0 };
 
 } // namespace context
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_

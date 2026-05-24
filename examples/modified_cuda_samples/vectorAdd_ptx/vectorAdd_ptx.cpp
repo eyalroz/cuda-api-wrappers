@@ -78,8 +78,8 @@ int main(void)
 
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	auto device = cuda::device::current::get();
-	auto compilation_output = cuda::rtc::program_t<cuda::ptx>(kernel_name)
+	auto device = cuda_::device::current::get();
+	auto compilation_output = cuda_::rtc::program_t<cuda_::ptx>(kernel_name)
 		.set_source(vectorAdd_source)
 		.set_target(device).compile();
 
@@ -88,8 +88,8 @@ int main(void)
 		std::cout << "Compilation log:\n" << log.data() << "\n---------\n";
 	}
 
-	auto context = cuda::device::current::get().primary_context();
-	auto module = cuda::module::create(context, compilation_output);
+	auto context = cuda_::device::current::get().primary_context();
+	auto module = cuda_::module::create(context, compilation_output);
 	constexpr const auto mangled_kernel_name = "_Z9vectorAddPKfS0_Pfi";
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
@@ -106,14 +106,14 @@ int main(void)
 	std::generate(h_A.begin(), h_A.end(), generator);
 	std::generate(h_B.begin(), h_B.end(), generator);
 
-	auto d_A = cuda::make_unique_span<float>(device, numElements);
-	auto d_B = cuda::make_unique_span<float>(device, numElements);
-	auto d_C = cuda::make_unique_span<float>(device, numElements);
+	auto d_A = cuda_::make_unique_span<float>(device, numElements);
+	auto d_B = cuda_::make_unique_span<float>(device, numElements);
+	auto d_C = cuda_::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A, h_A);
-	cuda::memory::copy(d_B, h_B);
+	cuda_::memory::copy(d_A, h_A);
+	cuda_::memory::copy(d_B, h_B);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(numElements)
 		.block_size(256)
 		.build();
@@ -122,12 +122,12 @@ int main(void)
 		<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
 		<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
-	cuda::launch(
+	cuda_::launch(
 		vectorAdd, launch_config,
 		d_A.get(), d_B.get(), d_C.get(), numElements
 	);
 
-	cuda::memory::copy(h_C, d_C);
+	cuda_::memory::copy(h_C, d_C);
 
 	// Verify that the result vector is correct
 	for (int i = 0; i < numElements; ++i) {

@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <numeric>
 
-using cuda::size_t;
+using cuda_::size_t;
 
 namespace kernels {
 
@@ -42,7 +42,7 @@ __global__ void from_2D_texture_to_memory_space(cudaTextureObject_t texture_sour
 } // namespace kernels
 
 template <typename T>
-void check_output_is_iota(std::string name, cuda::span<T> actual) noexcept
+void check_output_is_iota(std::string name, cuda_::span<T> actual) noexcept
 {
 	bool failed { false };
 	for (size_t i = 0; i < actual.size(); ++i) {
@@ -57,20 +57,20 @@ void check_output_is_iota(std::string name, cuda::span<T> actual) noexcept
 	if (failed) { std::cerr << '\n'; }
 }
 
-void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
-	namespace grid = cuda::grid;
+void array_3d_example(cuda_::device_t& device, size_t w, size_t h, size_t d) {
+	namespace grid = cuda_::grid;
 
-	const cuda::array::dimensions_t<3> dims = {w, h, d};
-	auto arr = cuda::array::create<float>(device, dims);
+	const cuda_::array::dimensions_t<3> dims = {w, h, d};
+	auto arr = cuda_::array::create<float>(device, dims);
 	assert_(arr.device() == device);
-	auto span_in = cuda::memory::managed::make_unique_span<float>(arr.size());
+	auto span_in = cuda_::memory::managed::make_unique_span<float>(arr.size());
 	std::iota(span_in.begin(), span_in.end(), (float) 0.0);
-	auto span_out = cuda::memory::managed::make_unique_span<float>(arr.size());
-	cuda::memory::copy(arr, span_in.get());
-	cuda::texture_view tv(arr);
+	auto span_out = cuda_::memory::managed::make_unique_span<float>(arr.size());
+	cuda_::memory::copy(arr, span_in.get());
+	cuda_::texture_view tv(arr);
     assert_(tv.device() == device);
-	constexpr cuda::grid::block_dimension_t block_dim = 10;
-	constexpr auto block_dims = cuda::grid::block_dimensions_t::cube(block_dim);
+	constexpr cuda_::grid::block_dimension_t block_dim = 10;
+	constexpr auto block_dims = cuda_::grid::block_dimensions_t::cube(block_dim);
 	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
 	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
 	assert(div_rounding_up(d, block_dim) <= std::numeric_limits<grid::dimension_t>::max());
@@ -80,8 +80,8 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 		grid::dimension_t( div_rounding_up(d, block_dim) )
 	};
 
-	auto launch_config = cuda::launch_configuration_t{grid_dims, block_dims};
-	cuda::launch(
+	auto launch_config = cuda_::launch_configuration_t{grid_dims, block_dims};
+	cuda_::launch(
 		kernels::from_3D_texture_to_memory_space,
 		launch_config,
 		tv.raw_handle(), span_out.data(), w, h, d);
@@ -89,22 +89,22 @@ void array_3d_example(cuda::device_t& device, size_t w, size_t h, size_t d) {
 	check_output_is_iota("copy from 3D texture into (managed) global memory", span_out.get());
 
 	// copy between arrays and memory spaces
-	auto other_arr = cuda::array::create<float>(device, dims);
-	cuda::memory::copy(other_arr, span_out.get());
-	cuda::memory::copy(span_in, other_arr);
+	auto other_arr = cuda_::array::create<float>(device, dims);
+	cuda_::memory::copy(other_arr, span_out.get());
+	cuda_::memory::copy(span_in, other_arr);
 
 	check_output_is_iota("copy from (managed) global memory into a 3D array", span_in.get());
 
 	// also asynchronously
-	auto stream = device.create_stream(cuda::stream::async);
-	cuda::memory::copy(other_arr, span_out, stream);
-	cuda::memory::copy(span_in, other_arr, stream);
+	auto stream = device.create_stream(cuda_::stream::async);
+	cuda_::memory::copy(other_arr, span_out, stream);
+	cuda_::memory::copy(span_in, other_arr, stream);
 	device.synchronize();
 	check_output_is_iota("copy from (managed) global memory into a 3D array, asynchronously", span_in);
 }
 
 template <typename T>
-void print_2d_array(const char* title, cuda::span<T> a, size_t width, size_t height)
+void print_2d_array(const char* title, cuda_::span<T> a, size_t width, size_t height)
 {
     std::cout << title << ":\n";
 	for (size_t i = 0; i < height; ++i) {
@@ -115,55 +115,55 @@ void print_2d_array(const char* title, cuda::span<T> a, size_t width, size_t hei
 	}
 }
 
-void array_2d_example(cuda::device_t& device, size_t w, size_t h)
+void array_2d_example(cuda_::device_t& device, size_t w, size_t h)
 {
-	const cuda::array::dimensions_t<2> dims = {w, h};
-	auto arr = cuda::array::create<float>(device , dims);
-	auto span_in = cuda::memory::managed::make_unique_span<float>(arr.size());
+	const cuda_::array::dimensions_t<2> dims = {w, h};
+	auto arr = cuda_::array::create<float>(device , dims);
+	auto span_in = cuda_::memory::managed::make_unique_span<float>(arr.size());
 	std::iota(span_in.begin(), span_in.end(), (float) 0);
 
 	std::cout << std::endl;
 
     print_2d_array("Data in span_in after initialization", span_in, w, h);
 
-	cuda::memory::copy(arr, span_in);
-	cuda::texture_view tv(arr);
+	cuda_::memory::copy(arr, span_in);
+	cuda_::texture_view tv(arr);
 
-	constexpr cuda::grid::block_dimension_t block_dim = 10;
-	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<cuda::grid::dimension_t>::max());
-	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<cuda::grid::dimension_t>::max());
-	auto launch_config = cuda::launch_config_builder()
+	constexpr cuda_::grid::block_dimension_t block_dim = 10;
+	assert(div_rounding_up(w, block_dim) <= std::numeric_limits<cuda_::grid::dimension_t>::max());
+	assert(div_rounding_up(h, block_dim) <= std::numeric_limits<cuda_::grid::dimension_t>::max());
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_dimensions(w, h)
 		.block_dimensions(block_dim, block_dim)
 		.build();
 
-    auto span_out = cuda::memory::managed::make_unique_span<float>(arr.size());
+    auto span_out = cuda_::memory::managed::make_unique_span<float>(arr.size());
     // The following is to make it easier to notice if nothing get copied
     // to the output
     std::iota(span_out.begin(), span_out.end() + arr.size(), (float) 90);
 //    print_2d_array("Data at span_out after initialization", span_out.get(), w, h);
 
-	cuda::launch(
+	cuda_::launch(
 		kernels::from_2D_texture_to_memory_space,
 		launch_config,
 		tv.raw_handle(), span_out.data(), w, h);
-	cuda::memory::copy(span_out, arr);
+	cuda_::memory::copy(span_out, arr);
 	device.synchronize();
 	print_2d_array("Data at span_out after execution of 'from_2D_texture_to_memory_space'", span_out, w, h);
 
 	check_output_is_iota("copy from 2D texture into (managed) global memory", span_out.get());
 
 	// copy between arrays and memory spaces
-	auto other_arr = cuda::array::create<float>(device, dims);
-	cuda::memory::copy(other_arr, span_out);
-	cuda::memory::copy(span_in, other_arr);
+	auto other_arr = cuda_::array::create<float>(device, dims);
+	cuda_::memory::copy(other_arr, span_out);
+	cuda_::memory::copy(span_in, other_arr);
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array", span_in);
 
 	// also asynchronously
-	auto stream = cuda::stream::create(device, cuda::stream::async);
-	cuda::memory::copy(other_arr, span_out, stream);
-	cuda::memory::copy(span_in, other_arr, stream);
+	auto stream = cuda_::stream::create(device, cuda_::stream::async);
+	cuda_::memory::copy(other_arr, span_out, stream);
+	cuda_::memory::copy(span_in, other_arr, stream);
 	device.synchronize();
 
 	check_output_is_iota("copy from (managed) global memory into a 2D array, asynchronously", span_in);
@@ -171,7 +171,7 @@ void array_2d_example(cuda::device_t& device, size_t w, size_t h)
 
 int main()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	// array dimensions
 	constexpr size_t w = 3;

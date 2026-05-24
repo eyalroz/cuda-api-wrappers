@@ -85,20 +85,20 @@ __global__ void oddEvenCountAndSumCG(int *inputArr, int *numOfOdds, int *sumOfOd
  */
 int main(int argc, const char **argv)
 {
-    auto device = cuda::device::get(choose_device(argc, argv));
+    auto device = cuda_::device::get(choose_device(argc, argv));
 
     unsigned int arrSize = 1024 * 100;
 
-	auto h_inputArr = cuda::memory::host::make_unique_span<int>(arrSize);
-	auto h_numOfOdds = cuda::memory::host::make_unique_span<int>(1);
-	auto h_sumOfOddEvenElems = cuda::memory::host::make_unique_span<int>(2);
+	auto h_inputArr = cuda_::memory::host::make_unique_span<int>(arrSize);
+	auto h_numOfOdds = cuda_::memory::host::make_unique_span<int>(1);
+	auto h_sumOfOddEvenElems = cuda_::memory::host::make_unique_span<int>(2);
 	std::generate(h_inputArr.begin(), h_inputArr.end(), [] { return rand() % 50; });
 
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = device.create_stream(cuda_::stream::async);
 	// Note: With CUDA 11, we could allocate these asynchronously on the stream
-	auto d_inputArr = cuda::memory::make_unique_span<int>(device, arrSize);
-	auto d_numOfOdds = cuda::memory::make_unique_span<int>(device, 1);
-	auto d_sumOfOddEvenElems = cuda::memory::make_unique_span<int>(device, 2);
+	auto d_inputArr = cuda_::memory::make_unique_span<int>(device, arrSize);
+	auto d_numOfOdds = cuda_::memory::make_unique_span<int>(device, 1);
+	auto d_sumOfOddEvenElems = cuda_::memory::make_unique_span<int>(device, 2);
 
 	// Note: There's some code repetition here; unique pointers don't also keep track of the allocated size.
 	// Unfortunately, the standard library does not offer an owning dynamically-allocated memory region
@@ -107,8 +107,8 @@ int main(int argc, const char **argv)
 	stream.enqueue.memzero(d_numOfOdds);
 	stream.enqueue.memzero(d_sumOfOddEvenElems);
 
-	auto kernel = cuda::kernel::get(device, oddEvenCountAndSumCG);
-	auto launch_config = cuda::launch_config_builder()
+	auto kernel = cuda_::kernel::get(device, oddEvenCountAndSumCG);
+	auto launch_config = cuda_::launch_config_builder()
 		.kernel(&kernel)
 		.min_params_for_max_occupancy().build();
 		// Note: While the kernel uses the "cooperative groups" CUDA-C++ headers,
@@ -124,8 +124,8 @@ int main(int argc, const char **argv)
 
 	stream.enqueue.kernel_launch(kernel, launch_config, d_inputArr.data(), d_numOfOdds.data(), d_sumOfOddEvenElems.data(), arrSize);
 
-	cuda::memory::copy(h_numOfOdds, d_numOfOdds, stream);
-	cuda::memory::copy(h_sumOfOddEvenElems, d_sumOfOddEvenElems, stream);
+	cuda_::memory::copy(h_numOfOdds, d_numOfOdds, stream);
+	cuda_::memory::copy(h_sumOfOddEvenElems, d_sumOfOddEvenElems, stream);
 
 	stream.synchronize();
 

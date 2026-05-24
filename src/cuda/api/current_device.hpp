@@ -27,7 +27,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -59,7 +59,7 @@ inline id_t get_id()
 		// Should we activate and push the default device's context? probably not.
 		return default_device_id;
 	}
-	return cuda::context::current::detail_::get_device_id();
+	return cuda_::context::current::detail_::get_device_id();
 	// ... which is the equivalent of doing:
 	//
 }
@@ -146,8 +146,8 @@ inline void set(id_t device_id)
  */
 inline void set(const id_t *device_ids, size_t num_devices)
 {
-	if (num_devices > static_cast<size_t>(cuda::device::count())) {
-		throw cuda::runtime_error(status::invalid_device, "More devices listed than exist on the system");
+	if (num_devices > static_cast<size_t>(cuda_::device::count())) {
+		throw cuda_::runtime_error(status::invalid_device, "More devices listed than exist on the system");
 	}
 	auto result = cudaSetValidDevices(const_cast<int *>(device_ids), static_cast<int>(num_devices));
 	throw_if_error_lazy(result,
@@ -177,11 +177,11 @@ inline void set_to_default() { return detail_::set(device::default_device_id); }
  * the hood to effect this behavior.
  */
 #define CUDA_DEVICE_FOR_THIS_SCOPE(_cuda_device) \
-::cuda::device::current::scoped_override_t scoped_device_override{ _cuda_device }
+::cuda_::device::current::scoped_override_t scoped_device_override{ _cuda_device }
 
 
 } // namespace current
 } // namespace device
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_CURRENT_DEVICE_HPP_

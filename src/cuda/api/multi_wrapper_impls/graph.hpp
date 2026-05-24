@@ -25,7 +25,7 @@
 
 #if CUDA_VERSION >= 10000
 
-namespace cuda {
+namespace cuda_ {
 
 namespace graph {
 
@@ -169,7 +169,7 @@ inline ::std::string describe(
 /*
 inline ::std::string identify(instance::handle_t handle)
 {
-	return "execution graph instance at " + cuda::detail_::ptr_as_hex(handle);
+	return "execution graph instance at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(instance::handle_t handle, template_::handle_t template_handle)
@@ -212,7 +212,7 @@ inline ::std::string describe(graph::instance::update_status_t update_status, op
 namespace stream {
 namespace capture {
 
-inline graph::template_t end(const cuda::stream_t& stream)
+inline graph::template_t end(const cuda_::stream_t& stream)
 {
 	graph::template_::handle_t new_graph;
 	auto status = cuStreamEndCapture(stream.handle(), &new_graph);
@@ -229,7 +229,7 @@ inline void stream_t::enqueue_t::graph_launch(const graph::instance_t& graph_ins
 	graph::launch(graph_instance, associated_stream);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

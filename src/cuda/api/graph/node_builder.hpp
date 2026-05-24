@@ -11,7 +11,7 @@
 
 #include "typed_node.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace graph {
 
@@ -47,7 +47,7 @@ public:
 	static constexpr const kind_t kind = kind_t::child_graph;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -71,7 +71,7 @@ public:
 		});
 	}
 
-	CAW_MAYBE_UNUSED built_type build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.template_) {
 			throw detail_::make_unspec_error("child graph", "child graph template");
@@ -88,7 +88,7 @@ public:
 	static constexpr const kind_t kind = kind_t::record_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -112,7 +112,7 @@ public:
 		});
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("record event", "event");
@@ -127,7 +127,7 @@ public:
 	static constexpr const kind_t kind = kind_t::wait_on_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -151,7 +151,7 @@ public:
 		});
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("wait on event", "event");
@@ -168,7 +168,7 @@ public:
 	static constexpr const kind_t kind = kind_t::host_function_call;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -202,7 +202,7 @@ public:
 		});
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.function_ptr_set) {
 			throw detail_::make_unspec_error("kernel_launch", "host callback function pointer");
@@ -220,12 +220,12 @@ public:
 	static constexpr const kind_t kind = kind_t::kernel_launch;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
 	params_type params_ {
-		kernel_t { kernel::wrap(cuda::device::id_t(0), nullptr, nullptr) },
+		kernel_t { kernel::wrap(cuda_::device::id_t(0), nullptr, nullptr) },
 		{ 0, 0 },
 		{ }
 	}; // An ugly way of constructing with invalid junk; see `was_set` below. We could
@@ -282,7 +282,7 @@ public:
 		return marshalled_arguments(make_kernel_argument_pointers(::std::forward<Ts>(args)...));
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.kernel) {
 			throw detail_::make_unspec_error("kernel_launch", "kernel");
@@ -305,9 +305,9 @@ public:
 	static constexpr const kind_t kind = kind_t::memory_allocation;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
-	using endpoint_t = cuda::memory::endpoint_t;
+	using endpoint_t = cuda_::memory::endpoint_t;
 
 protected:
 	params_type params_;
@@ -327,7 +327,7 @@ protected:
 public:
 	params_type& params() { return params_; }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.device) {
 			throw detail_::make_unspec_error("memory allocation", "device");
@@ -354,10 +354,10 @@ public:
 	static constexpr const kind_t kind = kind_t::memory_copy;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 	using dimensions_type = params_type::dimensions_type;
-	using endpoint_t = cuda::memory::endpoint_t;
+	using endpoint_t = cuda_::memory::endpoint_t;
 //	static constexpr const dimensionality_t num_dimensions = traits::num_dimensions;
 
 
@@ -377,7 +377,7 @@ public:
 #if __cplusplus >= 201703L
 	CAW_MAYBE_UNUSED
 #endif
-	built_type	build_within(const cuda::graph::template_t& graph_template)
+	built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		// TODO: What about the extent???!!!
 		return graph_template.insert.node<kind>(params_);
@@ -454,7 +454,7 @@ public:
 	static constexpr const kind_t kind = kind_t::memory_set;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -499,7 +499,7 @@ public:
 		});
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.region) {
 			throw detail_::make_unspec_error("memory set", "memory region");
@@ -518,7 +518,7 @@ public:
 	static constexpr const kind_t kind = kind_t::memory_free;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -537,7 +537,7 @@ public:
 	this_type region(void* address) noexcept { return do_([&] { params_ = address; was_set.address = true;}); }
 	this_type region(memory::region_t allocated_region) noexcept { return this->region(allocated_region.data()); }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.address) {
 			throw detail_::make_unspec_error("memory free", "allocated region starting address");
@@ -555,7 +555,7 @@ public:
 	static constexpr const kind_t kind = kind_t::memory_barrier;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -584,7 +584,7 @@ public:
 		return do_([&] { params_.second = barrier_socpe; was_set.barrier_socpe = true;});
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.context) {
 			throw detail_::make_unspec_error("memory barrier", "CUDA context");
@@ -602,7 +602,7 @@ public:
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

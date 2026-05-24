@@ -4,8 +4,8 @@
  * @brief Variadic, chevron-less wrappers for the CUDA kernel launch mechanism.
  *
  * This file has two stand-alone functions used for launching kernels - by
- * application code directly and by other API wrappers (e.g. @ref cuda::device_t
- * and @ref cuda::stream_t ).
+ * application code directly and by other API wrappers (e.g. @ref cuda_::device_t
+ * and @ref cuda_::stream_t ).
  *
  * <p>The wrapper functions have two goals:
  *
@@ -21,7 +21,7 @@
  * block dimensions with each other; and even grid/block dimensions with
  * the scalar parameters - since a `dim3` is constructible from
  * integral values. Instead, we enforce a launch configuration structure:
- * @ref cuda::launch_configuration_t .
+ * @ref cuda_::launch_configuration_t .
  * </ul>
  *
  * @note Even though when you use this wrapper, your code will not have the silly
@@ -51,7 +51,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 /**
  * @brief A trait characterizing those types which can be used as kernel parameters
@@ -208,11 +208,11 @@ void enqueue_raw_kernel_launch_in_current_context(
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle
 		>>>(::std::forward<KernelParameters>(parameters)...);
-		cuda::outstanding_error::ensure_none("Kernel launch failed");
+		cuda_::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
 #if CUDA_VERSION < 9000
-		throw cuda::runtime_error(status::not_supported,
+		throw cuda_::runtime_error(status::not_supported,
 			"Only CUDA versions 9.0 and later support launching kernels with additional"
 			"arguments, e.g block cooperation");
 #else
@@ -277,17 +277,17 @@ struct raw_kernel_typegen {
 //		all_true<
 //		    ::std::is_same<
 //		    	KernelParameters,
-//		    	::cuda::detail_::kernel_parameter_decay_t<KernelParameters>>::value...
+//		    	::cuda_::detail_::kernel_parameter_decay_t<KernelParameters>>::value...
 //		    >::value,
 //		"All kernel parameter types must be decay-invariant" );
-	using type = void(*)(cuda::detail_::kernel_parameter_decay_t<KernelParameters>...);
+	using type = void(*)(cuda_::detail_::kernel_parameter_decay_t<KernelParameters>...);
 };
 
 } // namespace detail_
 
 /**
  * A function similar to ::std::any_cast for retrieving the function pointer wrapped
- * by a @ref cuda::kernel::apriori_compiled_t object: Only the user knows the exact
+ * by a @ref cuda_::kernel::apriori_compiled_t object: Only the user knows the exact
  * set of kernel function parameters, and the must supply them as template arguments
  * to obtain the function pointer they are after.
  */
@@ -340,7 +340,7 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
  * @param launch_configuration not all launches of the same kernel are identical: The launch may be configured
  * to use more of less blocks in the grid, to allow blocks dynamic memory, to control the block's dimensions
  * etc; this parameter defines that extra configuration outside the kernels' actual source. See also
- * @ref cuda::launch_configuration_t.
+ * @ref cuda_::launch_configuration_t.
  * @param parameters whatever parameters @p kernel_function takes
  */
 template<typename Kernel, typename... KernelParameters>
@@ -414,6 +414,6 @@ void launch_type_erased(
 ///@}
 #endif // CUDA_VERSION >= 12000
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_KERNEL_LAUNCH_CUH_

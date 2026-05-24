@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains @ref cuda::link::options_t class and related definitions
+ * @brief Contains @ref cuda_::link::options_t class and related definitions
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_
@@ -13,7 +13,7 @@
 
 #include <array>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class module_t;
@@ -235,6 +235,6 @@ inline marshalled_options_t marshal(const options_t& link_options)
 
 } // namespace link
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_ASSEMBLY_AND_LINK_OPTIONS_HPP_

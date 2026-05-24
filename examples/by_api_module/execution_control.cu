@@ -47,7 +47,7 @@ __global__ void grid_cooperating_foo(int bar)
 int main(int argc, char **argv)
 {
 	auto device_id = choose_device(argc, argv);
-	auto device = cuda::device::get(device_id).make_current();
+	auto device = cuda_::device::get(device_id).make_current();
 
 	const auto kernel_function = foo;
 	const auto kernel_name = "foo"; // no reflection, sadly...
@@ -57,11 +57,11 @@ int main(int argc, char **argv)
 #endif
 #endif
 
-	auto kernel = cuda::kernel::get(device, kernel_function);
+	auto kernel = cuda_::kernel::get(device, kernel_function);
 
 #if CUDA_VERSION >= 12030
 #ifdef __GNUC__
-	cuda::kernel_t const& base_ref = kernel;
+	cuda_::kernel_t const& base_ref = kernel;
 	auto mangled_name_from_kernel = base_ref.mangled_name();
 	auto demangled_name = demangle(mangled_name_from_kernel);
 	if (strcmp(demangled_name.c_str(), full_kernel_name) != 0) {
@@ -88,11 +88,11 @@ int main(int argc, char **argv)
 	// --------------------------------------------------------------
 
 	kernel.set_cache_preference(
-		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory);
+		cuda_::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory);
 
 #if CUDA_VERSION < 12030
 	kernel.set_shared_memory_bank_size(
-		cuda::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
+		cuda_::multiprocessor_shared_memory_bank_size_option_t::four_bytes_per_bank);
 #endif // CUDA_VERSION < 12030
 
 	// ------------------
@@ -103,19 +103,19 @@ int main(int argc, char **argv)
 	const unsigned num_blocks = 3;
 	std::cout << "Getting kernel attribute CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK" << std::endl;
 	auto max_threads_per_block = kernel.get_attribute(CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
-	auto launch_config = cuda::launch_configuration_t(num_blocks, max_threads_per_block);
+	auto launch_config = cuda_::launch_configuration_t(num_blocks, max_threads_per_block);
 	std::cout
 		<< "Launching kernel " << kernel_name
-		<< " with " << num_blocks << " blocks, using cuda::launch()" << std::endl;
+		<< " with " << num_blocks << " blocks, using cuda_::launch()" << std::endl;
 	{
 		// Copy and move construction and assignment of launch configurations
-		auto launch_config_2 = cuda::launch_configuration_t{2, 2};
-		auto launch_config_3 = cuda::launch_configuration_t{3, 3};
-		cuda::launch_configuration_t launch_config_4{launch_config};
+		auto launch_config_2 = cuda_::launch_configuration_t{2, 2};
+		auto launch_config_3 = cuda_::launch_configuration_t{3, 3};
+		cuda_::launch_configuration_t launch_config_4{launch_config};
 		(void) launch_config_4;
 		launch_config_4 = launch_config_2;
 		launch_config_4 = std::move(launch_config_3);
-		cuda::launch_configuration_t launch_config_5{std::move(launch_config_2)};
+		cuda_::launch_configuration_t launch_config_5{std::move(launch_config_2)};
 		(void) launch_config_4;
 		(void) launch_config_5;
 		// In case the `[[maybe_unused]]` attribute and the void-casting is ignored,
@@ -124,17 +124,17 @@ int main(int argc, char **argv)
     	launch_config_4.dimensions == launch_config.dimensions;
 	}
 
-	cuda::launch(kernel_function, launch_config, bar);
-	cuda::device::current::get().synchronize();
+	cuda_::launch(kernel_function, launch_config, bar);
+	cuda_::device::current::get().synchronize();
 
 	// Let's do the same, but when the kernel is wrapped in a kernel_t
 	std::cout
 		<< "Launching kernel " << kernel_name
 		<< " wrapped in a kernel_t structure,"
-		<< " with " << num_blocks << " blocks, using cuda::launch()\n" << std::flush;
+		<< " with " << num_blocks << " blocks, using cuda_::launch()\n" << std::flush;
 
-	cuda::launch(kernel, launch_config, bar);
-	cuda::device::current::get().synchronize();
+	cuda_::launch(kernel, launch_config, bar);
+	cuda_::device::current::get().synchronize();
 
 	// But there's more than one way to launch! we can also do
 	// it via the device proxy, using the default stream:
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
 	// or via a stream:
 
-	auto stream = cuda::device::current::get().create_stream(cuda::stream::async);
+	auto stream = cuda_::device::current::get().create_stream(cuda_::stream::async);
 
 	std::cout
 		<< "Launching kernel " << kernel_name
@@ -170,16 +170,16 @@ int main(int argc, char **argv)
 			stream.enqueue.kernel_launch(cooperative_kernel_function, cooperative_config, bar);
 			stream.synchronize();
 
-			// Same, but using cuda::enqueue_launch
+			// Same, but using cuda_::enqueue_launch
 			std::cout
 				<< "Launching kernel " << cooperative_kernel_name
 				<< " wrapped in a kernel_t structure,"
-				<< " with " << num_blocks << " blocks, using cuda::enqueue_launch(),"
+				<< " with " << num_blocks << " blocks, using cuda_::enqueue_launch(),"
 				<< " and allowing thread block cooperation\n"
 				<< "(but note this does not actually check that cooperation takes place).\n" << std::flush;
 
-			cuda::enqueue_launch(cooperative_kernel_function, stream, cooperative_config, bar);
-			cuda::device::current::get().synchronize();
+			cuda_::enqueue_launch(cooperative_kernel_function, stream, cooperative_config, bar);
+			cuda_::device::current::get().synchronize();
 		}
 		else {
 			std::cout
@@ -188,16 +188,16 @@ int main(int argc, char **argv)
 		}
 
 	}
-	catch(cuda::runtime_error& e) {
-		if (not (e.code() == cuda::status::not_supported)) {
+	catch(cuda_::runtime_error& e) {
+		if (not (e.code() == cuda_::status::not_supported)) {
 			throw e;
 		}
 		// We should really not have a sticky error at this point, but lets' make
 		// extra sure.
-		cuda::outstanding_error::ensure_none();
+		cuda_::outstanding_error::ensure_none();
 	}
 #endif
-	auto non_cooperative_kernel = cuda::kernel::get(device, kernel_function);
+	auto non_cooperative_kernel = cuda_::kernel::get(device, kernel_function);
 	auto non_cooperative_config = launch_config;
 	non_cooperative_config.block_cooperation = true;
 	std::cout

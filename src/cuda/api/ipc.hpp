@@ -15,7 +15,7 @@
  * <p>CUDA provides several functions to enable different processes
  * to share at least memory addresses and events, which are wrapped
  * here. In addition to the free-standing functions, the class
- * @ref cuda::memory::ipc::imported_ptr_t is defined, usable by receiving
+ * @ref cuda_::memory::ipc::imported_ptr_t is defined, usable by receiving
  * processes as an 'adapter' to incoming handles which may be passed
  * as-is to code requiring a proper pointer.
  *
@@ -30,7 +30,7 @@
 
 #include <string>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -91,7 +91,7 @@ inline status_t unmap_nothrow(void* ipc_mapped_ptr) noexcept
 inline void unmap(void* ipc_mapped_ptr)
 {
 	auto status = unmap_nothrow(ipc_mapped_ptr);
-	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda::detail_::ptr_as_hex(ipc_mapped_ptr));
+	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda_::detail_::ptr_as_hex(ipc_mapped_ptr));
 }
 
 } // namespace detail_
@@ -113,7 +113,7 @@ inline ptr_handle_t export_(void* device_ptr)
 	ptr_handle_t handle;
 	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
 	throw_if_error_lazy(status, "Failed producing an IPC memory handle for device pointer "
-		+ cuda::detail_::ptr_as_hex(device_ptr));
+		+ cuda_::detail_::ptr_as_hex(device_ptr));
 	return handle;
 }
 
@@ -227,7 +227,7 @@ inline ptr_handle_t export_ptr(void* pool_allocated) {
 	auto status = cuMemPoolExportPointer(&handle, device::address(pool_allocated));
 	throw_if_error_lazy(status,
 		"Failed producing an IPC handle for memory-pool-allocated pointer "
-		+ cuda::detail_::ptr_as_hex(pool_allocated));
+		+ cuda_::detail_::ptr_as_hex(pool_allocated));
 	return handle;
 }
 
@@ -333,6 +333,6 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 
 } // namespace ipc
 } // namespace event
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_IPC_HPP_

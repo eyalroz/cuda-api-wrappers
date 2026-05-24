@@ -17,9 +17,9 @@
 
 namespace tests {
 
-void basics(cuda::device::id_t device_id)
+void basics(cuda_::device::id_t device_id)
 {
-	auto num_devices = cuda::device::count();
+	auto num_devices = cuda_::device::count();
 	if (num_devices == 0) {
 		die_("No CUDA devices on this system");
 	}
@@ -32,7 +32,7 @@ void basics(cuda::device::id_t device_id)
 			 + std::to_string(num_devices) + " CUDA devices on this system");
 	}
 
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 
@@ -41,8 +41,8 @@ void basics(cuda::device::id_t device_id)
 		+ std::to_string(device.id()) + " !=" +  std::to_string(device_id));
 	}
 
-	if (device.id() == cuda::device::default_device_id) {
-		auto default_device = cuda::device::default_();
+	if (device.id() == cuda_::device::default_device_id) {
+		auto default_device = cuda_::device::default_();
 		if (device != default_device) {
 			die_("A device with the default device ID was not equal to the default CUDA device");
 		}
@@ -51,7 +51,7 @@ void basics(cuda::device::id_t device_id)
 
 void attributes_and_properties()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto max_registers_per_block = device.get_attribute(CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK);
 	std::cout
@@ -62,21 +62,21 @@ void attributes_and_properties()
 
 void pci_bus_id()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto pci_id = device.pci_id();
 	std::string pci_id_str(pci_id);
 
-	cuda::outstanding_error::ensure_none();
+	cuda_::outstanding_error::ensure_none();
 
-	auto re_obtained_device = cuda::device::get(pci_id_str);
+	auto re_obtained_device = cuda_::device::get(pci_id_str);
 	assert_(re_obtained_device == device);
 
 }
 
 void global_memory()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto device_global_mem = device.memory();
 	auto total_memory = device_global_mem.amount_total();
@@ -100,7 +100,7 @@ void global_memory()
 // and stream priority range
 void shared_memory()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 //	auto primary_context = device.primary_context();
 //	report_context_stack("After getting the current device (which is " + std::to_string(device.id()) + ')');
 
@@ -110,9 +110,9 @@ void shared_memory()
 //	report_context_stack("After getting the cache preference for device " + std::to_string(device.id()));
 
 	auto applied_cache_preference =
-		reported_cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
-		cuda::multiprocessor_cache_preference_t::prefer_shared_memory_over_l1 :
-		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
+		reported_cache_preference == cuda_::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
+		cuda_::multiprocessor_cache_preference_t::prefer_shared_memory_over_l1 :
+		cuda_::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
 	device.set_cache_preference(applied_cache_preference);
 
 //	report_context_stack("After setting cache pref");
@@ -153,7 +153,7 @@ void shared_memory()
 
 void stream_priority_range()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto stream_priority_range = device.stream_priority_range();
 	if (stream_priority_range.is_trivial()) {
@@ -170,7 +170,7 @@ void stream_priority_range()
 
 void limits()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	auto printf_fifo_size = device.get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	std::cout << "The printf FIFO size for device " << device.id() << " is " << printf_fifo_size << ".\n";
@@ -184,7 +184,7 @@ void limits()
 // Flags - yes, they're yet another kind of attribute/property
 void flags()
 {
-	auto device = cuda::device::current::get() ;
+	auto device = cuda_::device::current::get() ;
 
 	std::cout << "Device " << device.id() << " uses a"
 	<< (device.sync_scheduling_policy() ? " synchronous" : "n asynchronous")
@@ -195,16 +195,16 @@ void flags()
 	// TODO: Change the settings as well obtaining them
 }
 
-void peer_to_peer(std::pair<cuda::device::id_t,cuda::device::id_t> peer_ids)
+void peer_to_peer(std::pair<cuda_::device::id_t,cuda_::device::id_t> peer_ids)
 {
 	// Assumes at least two devices are available
 
-	auto device = cuda::device::get(peer_ids.first);
+	auto device = cuda_::device::get(peer_ids.first);
 	// This makes assumptions about the valid IDs and their use
-	auto peer = cuda::device::get(peer_ids.second);
+	auto peer = cuda_::device::get(peer_ids.second);
 	if (device.can_access(peer)) {
-		auto atomics_supported_over_link = cuda::device::peer_to_peer::get_attribute(
-			cuda::device::peer_to_peer::native_atomics_support, device, peer);
+		auto atomics_supported_over_link = cuda_::device::peer_to_peer::get_attribute(
+			cuda_::device::peer_to_peer::native_atomics_support, device, peer);
 		std::cout
 		<< "Native atomics are " << (atomics_supported_over_link ? "" : "not ")
 		<< "supported over the link from device " << device.id()
@@ -218,31 +218,31 @@ void peer_to_peer(std::pair<cuda::device::id_t,cuda::device::id_t> peer_ids)
 
 void current_device_manipulation()
 {
-	auto device_count = cuda::device::count();
+	auto device_count = cuda_::device::count();
 
 	if (device_count > 1) {
-		auto device_0 = cuda::device::get(0);
-		auto device_1 = cuda::device::get(1);
-		cuda::device::current::set(device_0);
-		assert_(cuda::device::current::get() == device_0);
-		assert_(cuda::device::current::detail_::get_id() == device_0.id());
-		cuda::device::current::set(device_1);
-		assert_(cuda::device::current::get() == device_1);
-		assert_(cuda::device::current::detail_::get_id() == device_1.id());
+		auto device_0 = cuda_::device::get(0);
+		auto device_1 = cuda_::device::get(1);
+		cuda_::device::current::set(device_0);
+		assert_(cuda_::device::current::get() == device_0);
+		assert_(cuda_::device::current::detail_::get_id() == device_0.id());
+		cuda_::device::current::set(device_1);
+		assert_(cuda_::device::current::get() == device_1);
+		assert_(cuda_::device::current::detail_::get_id() == device_1.id());
 	}
 
 	try {
-		cuda::device::current::detail_::set(device_count);
+		cuda_::device::current::detail_::set(device_count);
 		die_("Should not have been able to set the current device to "
 		+ std::to_string(device_count) + " since that's the device count, and "
 		+ "the maximum valid ID should be " + std::to_string(device_count - 1)
 		+ " (one less)");
 	}
-	catch(cuda::runtime_error& e) {
+	catch(cuda_::runtime_error& e) {
 		(void) e; // This avoids a spurious warning in MSVC 16.11
-		assert_(e.code() == cuda::status::invalid_device);
+		assert_(e.code() == cuda_::status::invalid_device);
 		// We expected to get this exception, just clear it
-		cuda::outstanding_error::ensure_none(
+		cuda_::outstanding_error::ensure_none(
 			"The attempt to set the current device to an invalid value should not "
 			"create an outstanding error");
 	}
@@ -250,11 +250,11 @@ void current_device_manipulation()
 	// Iterate over all devices
 	// ------------------------
 
-	auto devices = cuda::devices();
-	assert_(devices.size() == cuda::device::count());
+	auto devices = cuda_::devices();
+	assert_(devices.size() == cuda_::device::count());
 	std::cout << "There are " << devices.size() << " 'elements' in devices().\n";
 	std::cout << "Let's count the device IDs... ";
-	for(auto device : cuda::devices()) {
+	for(auto device : cuda_::devices()) {
 		std::cout << static_cast<int>(device.id()) << ' ';
 		device.synchronize();
 	}
@@ -265,8 +265,8 @@ void current_device_manipulation()
 
 int main(int argc, char **argv)
 {
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
+	cuda_::device::id_t device_id =  (argc > 1) ?
+		std::stoi(argv[1]) : cuda_::device::default_device_id;
 
 	// Being very cavalier about our command-line arguments here...
 
@@ -278,15 +278,15 @@ int main(int argc, char **argv)
 	tests::stream_priority_range();
 	tests::limits();
 
-	if (cuda::devices().size() > 1) {
+	if (cuda_::devices().size() > 1) {
 		auto peer_id = (argc > 2) ?
-			std::stoi(argv[2]) : (cuda::device::current::get().id() + 1) % cuda::device::count();
+			std::stoi(argv[2]) : (cuda_::device::current::get().id() + 1) % cuda_::device::count();
 
 		tests::peer_to_peer({device_id, peer_id});
 		tests::current_device_manipulation();
 	}
 
-	for (auto device : cuda::devices()) {
+	for (auto device : cuda_::devices()) {
 		device.synchronize();
 		device.reset();
 	}

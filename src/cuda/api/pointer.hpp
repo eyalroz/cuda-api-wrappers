@@ -24,7 +24,7 @@
 #include <cassert>
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -65,7 +65,7 @@ template <> struct attribute_value<CU_POINTER_ATTRIBUTE_SYNC_MEMOPS>            
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_BUFFER_ID>                  { using type = unsigned long long;};
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_IS_MANAGED>                 { using type = int;};
 #if CUDA_VERSION >= 9020
-template <> struct attribute_value<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>             { using type = cuda::device::id_t;};
+template <> struct attribute_value<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>             { using type = cuda_::device::id_t;};
 #if CUDA_VERSION >= 10020
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>           { using type = void*;};
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_RANGE_SIZE>                 { using type = size_t;};
@@ -98,7 +98,7 @@ inline context::handle_t context_handle_of(const void* ptr)
 	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(ptr);
 }
 
-inline cuda::device::id_t device_id_of(const void* ptr);
+inline cuda_::device::id_t device_id_of(const void* ptr);
 
 } // namespace detail_
 
@@ -247,6 +247,6 @@ pointer_t<T> wrap(T* ptr) noexcept { return { ptr }; }
 
 } // namespace pointer
 } // namespace memory
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_POINTER_HPP_

@@ -12,7 +12,7 @@
 #include "../types.hpp"
 #include "identify.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace graph {
 
@@ -84,7 +84,7 @@ using type_t = CUgraphNodeType;
  * @brief Wrapper class for a CUDA execution graph node
  *
  * Use this class to pass and receive nodes from/to other CUDA API wrapper functions
- * and objects (in particular, `cuda::graph::template_t` and `cuda::graph::instance_t`).
+ * and objects (in particular, `cuda_::graph::template_t` and `cuda_::graph::instance_t`).
  *
  * @note { This is a reference-type; it does not own the node, and will not remove
  * the node from its graph-template when destroyed. You may therefore safely make copies
@@ -214,7 +214,7 @@ inline node_t from_handle(handle_t handle)
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

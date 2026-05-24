@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard apriori-compiled kernels. Specifically:
  *
- * 1. Functions in the `cuda::kernel` namespace.
- * 2. Methods of @ref cuda::kernel_t and possibly some relates classes.
+ * 1. Functions in the `cuda_::kernel` namespace.
+ * 2. Methods of @ref cuda_::kernel_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_APRIORI_COMPILED_KERNEL_HPP_
@@ -15,7 +15,7 @@
 #include "device.hpp"
 #include "kernel.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 namespace detail_ {
@@ -81,7 +81,7 @@ inline void apriori_compiled_t::set_attribute(attribute_t attribute, attribute_v
 			case CU_FUNC_ATTRIBUTE_PREFERRED_SHARED_MEMORY_CARVEOUT:
 				return cudaFuncAttributePreferredSharedMemoryCarveout;
 			default:
-				throw cuda::runtime_error(status::not_supported,
+				throw cuda_::runtime_error(status::not_supported,
 					"Kernel attribute " + ::std::to_string(attribute) + " not supported (with CUDA version "
 					+ ::std::to_string(CUDA_VERSION));
 		}
@@ -97,11 +97,11 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 		case CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
 			return attrs.maxThreadsPerBlock;
 		case CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES:
-			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.sharedSizeBytes);
+			return cuda_::detail_::safe_narrow_cast<attribute_value_t>(attrs.sharedSizeBytes);
 		case CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES:
-			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.constSizeBytes);
+			return cuda_::detail_::safe_narrow_cast<attribute_value_t>(attrs.constSizeBytes);
 		case CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES:
-			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.localSizeBytes);
+			return cuda_::detail_::safe_narrow_cast<attribute_value_t>(attrs.localSizeBytes);
 		case CU_FUNC_ATTRIBUTE_NUM_REGS:
 			return attrs.numRegs;
 		case CU_FUNC_ATTRIBUTE_PTX_VERSION:
@@ -115,7 +115,7 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 		case CU_FUNC_ATTRIBUTE_PREFERRED_SHARED_MEMORY_CARVEOUT:
 			return attrs.preferredShmemCarveout;
 		default:
-			throw cuda::runtime_error(status::not_supported,
+			throw cuda_::runtime_error(status::not_supported,
 				::std::string("Attribute ") +
 #ifdef NDEBUG
 					::std::to_string(static_cast<::std::underlying_type<attribute_t>::type>(attribute))
@@ -180,7 +180,7 @@ apriori_compiled_t get(const device_t &device, KernelFunctionPtr function_ptr)
 namespace detail_ {
 
 template<>
-inline ::cuda::device::primary_context_t
+inline ::cuda_::device::primary_context_t
 get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compiled_t kernel)
 {
 	const kernel_t &kernel_ = kernel;
@@ -189,7 +189,7 @@ get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compile
 
 } // namespace detail_
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_APRIORI_COMPILED_KERNEL_HPP_
 

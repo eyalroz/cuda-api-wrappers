@@ -10,7 +10,7 @@
 
 #include "current_context.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace device {
 
@@ -240,6 +240,6 @@ inline attribute_value_t get_attribute(attribute_t attribute, const device_t& fi
 
 } // namespace peer_to_peer
 } // namespace device
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_PEER_TO_PEER_HPP_

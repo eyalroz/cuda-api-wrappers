@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard kernels. Specifically:
  *
- * 1. Functions in the `cuda::kernel` namespace.
- * 2. Methods of @ref cuda::kernel_t and possibly some relates classes.
+ * 1. Functions in the `cuda_::kernel` namespace.
+ * 2. Methods of @ref cuda_::kernel_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_KERNEL_HPP_
@@ -17,7 +17,7 @@
 #include "../kernel.hpp"
 #include "../module.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 inline context_t kernel_t::context() const noexcept
 {
@@ -65,7 +65,7 @@ inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t
 
 } // namespace detail_
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_KERNEL_HPP_
 

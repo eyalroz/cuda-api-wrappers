@@ -9,7 +9,7 @@
 
 #include "device.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace detail_ {
 
@@ -18,7 +18,7 @@ namespace detail_ {
 // devices aren't hot-pluggable).
 class all_devices {
 public:
-	using value_type = cuda::device_t;
+	using value_type = cuda_::device_t;
 	using pointer = void; // No pointers, since we don't have any elements in actual memory
 	using const_pointer = void; // ditto
 	using reference = value_type; // device_t is already a reference type; and there is no instance-of-device_t here to reference
@@ -218,7 +218,7 @@ inline bool operator!= (
  * @returns all CUDA-supporting GPU devices on the system - as a gadget for iteration, so
  * that one can write:
  *
- *     for(auto& dev : cuda::devices) { do_stuff_with(dev); }
+ *     for(auto& dev : cuda_::devices) { do_stuff_with(dev); }
  *
  */
 inline detail_::all_devices devices()
@@ -226,6 +226,6 @@ inline detail_::all_devices devices()
 	return detail_::all_devices();
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_DEVICES_HPP_

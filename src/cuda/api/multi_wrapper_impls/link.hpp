@@ -10,19 +10,19 @@
 #include "../link.hpp"
 #include "../device.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
-inline cuda::device_t link_t::device() const
+inline device_t link_t::device() const
 {
-	return cuda::device::get(device_id());
+	return device::get(device_id());
 }
 
-inline cuda::context_t link_t::context() const
+inline cuda_::context_t link_t::context() const
 {
 	static constexpr const bool dont_take_ownership { false };
 	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif //MULTI_WRAPPER_IMPLS_LINK_HPP_

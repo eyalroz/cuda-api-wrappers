@@ -12,13 +12,13 @@
 #include "../types.hpp"
 #include "../device.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
 namespace device {
 
-inline unique_region make_unique_region(const context_t& context, cuda::size_t num_bytes)
+inline unique_region make_unique_region(const context_t& context, cuda_::size_t num_bytes)
 {
 	return detail_::make_unique_region(context.handle(), num_bytes);
 }
@@ -54,8 +54,8 @@ inline unique_region make_unique_region(const device_t& device, size_t num_bytes
  */
 inline unique_region make_unique_region(size_t num_bytes)
 {
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail_::get_id();
+	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
 	return make_unique_region(pc, num_bytes);
 }
 
@@ -104,8 +104,8 @@ inline unique_region make_unique_region(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail_::get_id();
+	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
 	return make_unique_region(pc, num_bytes, initial_visibility);
 }
 ///@}
@@ -114,7 +114,7 @@ inline unique_region make_unique_region(
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_UNIQUE_REGION_HPP_
 

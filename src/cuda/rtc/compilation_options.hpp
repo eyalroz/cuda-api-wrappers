@@ -23,7 +23,7 @@
 #include <limits>
 #include <iterator>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace rtc {
 
@@ -85,7 +85,7 @@ inline const char* option_name_part(handling_method_t method)
 template <source_kind_t Kind>
 struct compilation_options_base_t {
 	template <typename T>
-	using optional = cuda::optional<T>;
+	using optional = cuda_::optional<T>;
 
 	/**
 	 * Target devices in terms of CUDA compute capability.
@@ -102,7 +102,7 @@ struct compilation_options_base_t {
 	 * @todo Use something less fancy than ::std::unordered_set, e.g.
 	 * a vector-backed ordered set or a dynamic bit-vector for membership.
 	 */
-	::std::unordered_set<cuda::device::compute_capability_t> targets_;
+	::std::unordered_set<cuda_::device::compute_capability_t> targets_;
 
 public:
 	// TODO: Drop the following methods and make targets a custom
@@ -751,6 +751,6 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 
 } // namespace marshalling
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_RTC_COMPILATION_OPTIONS_HPP_

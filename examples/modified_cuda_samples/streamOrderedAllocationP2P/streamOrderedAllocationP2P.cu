@@ -51,17 +51,17 @@ __global__ void copyP2PAndScale(const int *in, int *out, int N)
 	}
 }
 /*
-std::pair<cuda::device_t, cuda::device_t> getP2PCapableGpuPair()
+std::pair<cuda_::device_t, cuda_::device_t> getP2PCapableGpuPair()
 {
-	return {cuda::device::get(0), cuda::device::get(1)};
+	return {cuda_::device::get(0), cuda_::device::get(1)};
 }*/
 
 // Map of device version to device number
-std::multimap<cuda::device::compute_capability_t, int> getIdenticalGPUs() {
+std::multimap<cuda_::device::compute_capability_t, int> getIdenticalGPUs() {
 
-	std::multimap<cuda::device::compute_capability_t, int> identicalGpus;
+	std::multimap<cuda_::device::compute_capability_t, int> identicalGpus;
 
-	for(auto device : cuda::devices()) {
+	for(auto device : cuda_::devices()) {
 		if (device.supports_memory_pools()) {
 			identicalGpus.emplace(device.compute_capability(), device.id());
 		}
@@ -70,7 +70,7 @@ std::multimap<cuda::device::compute_capability_t, int> getIdenticalGPUs() {
 	return identicalGpus;
 }
 
-std::pair<cuda::device_t, cuda::device_t> getP2PCapableGpuPair() {
+std::pair<cuda_::device_t, cuda_::device_t> getP2PCapableGpuPair() {
 	constexpr size_t kNumGpusRequired = 2;
 
 	auto gpusByArch = getIdenticalGPUs();
@@ -107,12 +107,12 @@ std::pair<cuda::device_t, cuda::device_t> getP2PCapableGpuPair() {
 	int devIds[2];
 	for (auto itr = bestFit.first; itr != bestFit.second; itr++) {
 		int deviceId = itr->second;
-		auto device = cuda::device::get(deviceId);
+		auto device = cuda_::device::get(deviceId);
 
 		std::for_each(itr, bestFit.second, [&](decltype(*itr) mapPair) {
-			auto peer = cuda::device::get(mapPair.second);
+			auto peer = cuda_::device::get(mapPair.second);
 			if (device == peer) { return; }
-			int access = cuda::device::peer_to_peer::can_access(device, peer);
+			int access = cuda_::device::peer_to_peer::can_access(device, peer);
 			std::cout  << "Device " << device.id() << ' '
 				<< (access ? "CAN" : "CANNOT") << " access peer device " << peer.id() << '\n';
 			if (access and bestFitDeviceIds.size() < kNumGpusRequired) {
@@ -143,7 +143,7 @@ std::pair<cuda::device_t, cuda::device_t> getP2PCapableGpuPair() {
 		exit(EXIT_SUCCESS);
 	}
 
-	return { cuda::device::get(devIds[0]), cuda::device::get(devIds[1]) };
+	return { cuda_::device::get(devIds[0]), cuda_::device::get(devIds[1]) };
 }
 
 int memPoolP2PCopy()
@@ -151,30 +151,30 @@ int memPoolP2PCopy()
 	size_t nelem = 1048576;
 
 	auto input_uptr = std::unique_ptr<int[]>(new int[nelem]);
-	auto input = cuda::span<int>{input_uptr.get(), nelem};
+	auto input = cuda_::span<int>{input_uptr.get(), nelem};
 	auto output_uptr = std::unique_ptr<int[]>(new int[nelem]);
-	auto output = cuda::span<int>{input_uptr.get(), nelem};
+	auto output = cuda_::span<int>{input_uptr.get(), nelem};
 
 	auto generator = [] { return rand() / (int) RAND_MAX; };
 	std::generate(input.begin(), input.end(), generator);
 
-	std::pair<cuda::device_t, cuda::device_t> p2pDevices = getP2PCapableGpuPair();
-	cuda::device::peer_to_peer::enable_bidirectional_access(p2pDevices.first, p2pDevices.second);
+	std::pair<cuda_::device_t, cuda_::device_t> p2pDevices = getP2PCapableGpuPair();
+	cuda_::device::peer_to_peer::enable_bidirectional_access(p2pDevices.first, p2pDevices.second);
 	std::cout << "selected devices = " << p2pDevices.first.id() << " & " << p2pDevices.second.id() << '\n';
 
-	auto stream1 = p2pDevices.first.create_stream(cuda::stream::async);
+	auto stream1 = p2pDevices.first.create_stream(cuda_::stream::async);
 	auto memPool = p2pDevices.first.default_memory_pool();
 
-	auto input_on_device = cuda::span<int>(memPool.allocate(stream1, nelem * sizeof(int)));
+	auto input_on_device = cuda_::span<int>(memPool.allocate(stream1, nelem * sizeof(int)));
 	stream1.enqueue.copy(input_on_device, input);
 	auto waitOnStream1 = stream1.enqueue.event();
 
-	auto stream2 = p2pDevices.second.create_stream(cuda::stream::async);
-	auto output_on_device = cuda::span<int>(stream2.enqueue.allocate(nelem * sizeof(int)));
-	memPool.set_permissions(p2pDevices.second, cuda::memory::permissions::read_and_write());
+	auto stream2 = p2pDevices.second.create_stream(cuda_::stream::async);
+	auto output_on_device = cuda_::span<int>(stream2.enqueue.allocate(nelem * sizeof(int)));
+	memPool.set_permissions(p2pDevices.second, cuda_::memory::permissions::read_and_write());
 
 	std::cout << "> copyP2PAndScale kernel running ...\n";
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.overall_size(nelem)
 		.build();

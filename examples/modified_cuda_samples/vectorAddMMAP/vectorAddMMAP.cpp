@@ -40,14 +40,14 @@ constexpr const char *name = "vectorAdd_kernel";
 
 } // namespace kernel
 
-namespace virtual_mem = cuda::memory::virtual_;
-constexpr const auto shared_mem_handle_kind = static_cast<cuda::memory::physical_allocation::shared_handle_kind_t>
+namespace virtual_mem = cuda_::memory::virtual_;
+constexpr const auto shared_mem_handle_kind = static_cast<cuda_::memory::physical_allocation::shared_handle_kind_t>
 #if defined(__linux__)
 	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
 #else
 	(CU_MEM_HANDLE_TYPE_WIN32);
 #endif
-using shared_allocation_handle_t = cuda::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
+using shared_allocation_handle_t = cuda_::memory::physical_allocation::shared_handle_t<shared_mem_handle_kind>;
 using std::vector;
 
 size_t safe_round_up(size_t x, size_t divisor)
@@ -73,17 +73,17 @@ size_t div_rounding_up(size_t dividend, size_t divisor)
 // We cannot necessarily satisfy the exact request for a allocated-and-mapped region
 // in terms of size, because we want every device to allocate the same amount of memory,
 // and also the devices have allocation granularity requirements
-cuda::size_t determine_reservation_size(
-	cuda::size_t desired_region_size,
-	const vector<cuda::device_t> &backing_devices,
-	const vector<cuda::device_t> &mapping_devices)
+cuda_::size_t determine_reservation_size(
+	cuda_::size_t desired_region_size,
+	const vector<cuda_::device_t> &backing_devices,
+	const vector<cuda_::device_t> &mapping_devices)
 {
-	vector<cuda::size_t> allocation_granularities; // for both mapping and backing devices
-	cuda::size_t min_overall_granularity{0};
+	vector<cuda_::size_t> allocation_granularities; // for both mapping and backing devices
+	cuda_::size_t min_overall_granularity{0};
 
 	for (const auto &vec: {backing_devices, mapping_devices}) {
 		for (const auto &device: vec) {
-			auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
+			auto props = cuda_::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 			min_overall_granularity = std::max(min_overall_granularity, props.minimum_granularity());
 		}
 	}
@@ -103,7 +103,7 @@ struct reserved_range_and_mappings {
 	virtual_mem::reserved_address_range_t reserved_range;
 	Container<virtual_mem::mapping_t> mappings;
 
-	cuda::memory::region_t as_requested() const noexcept
+	cuda_::memory::region_t as_requested() const noexcept
 	{
 		return reserved_range.region().subregion(0, requested_size);
 	}
@@ -136,9 +136,9 @@ struct reserved_range_and_mappings {
  */
 reserved_range_and_mappings<std::vector>
 setup_virtual_memory(
-	cuda::size_t requested_region_size,
-	const vector<cuda::device_t> &backing_devices,
-	const vector<cuda::device_t> &mapping_devices,
+	cuda_::size_t requested_region_size,
+	const vector<cuda_::device_t> &backing_devices,
+	const vector<cuda_::device_t> &mapping_devices,
 	virtual_mem::alignment_t alignment = virtual_mem::alignment::default_)
 {
 	auto size_to_reserve = determine_reservation_size(requested_region_size, backing_devices, mapping_devices);
@@ -160,20 +160,20 @@ setup_virtual_memory(
 			// we no longer need and can release the allocation; it will be kept live until
 			// it is unmapped.
 			auto physical_allocation =
-				cuda::memory::physical_allocation::create<shared_mem_handle_kind>(stripe_size, device);
+				cuda_::memory::physical_allocation::create<shared_mem_handle_kind>(stripe_size, device);
 			auto single_device_subregion = reserved_range.region().subregion(stripe_size * index, stripe_size);
 			return virtual_mem::map(single_device_subregion, physical_allocation);
 		}
 	);
 
 #ifndef _MSC_VER
-	virtual_mem::set_permissions(reserved_range.region(), mapping_devices, cuda::memory::permissions::read_and_write());
+	virtual_mem::set_permissions(reserved_range.region(), mapping_devices, cuda_::memory::permissions::read_and_write());
 #else
 	// MSVC, at least as of 2019, can't handle template-template parameters with variadcs properly;
 	// so let's go manual:
 	for(const auto& mapping_device : mapping_devices) {
 		virtual_mem::set_permissions(reserved_range.region(), mapping_device,
-			cuda::memory::permissions::read_and_write());
+			cuda_::memory::permissions::read_and_write());
 	}
 #endif
 
@@ -181,12 +181,12 @@ setup_virtual_memory(
 }
 
 //collect all of the devices whose memory can be mapped from a given device.
-vector<cuda::device_t> get_backing_devices(cuda::device_t mapping_device)
+vector<cuda_::device_t> get_backing_devices(cuda_::device_t mapping_device)
 {
-	vector<cuda::device_t> backing_devices;
-	auto devices = cuda::devices();
+	vector<cuda_::device_t> backing_devices;
+	auto devices = cuda_::devices();
 	std::copy_if(devices.cbegin(), devices.cend(), std::back_inserter(backing_devices),
-		[&](cuda::device_t device) {
+		[&](cuda_::device_t device) {
 			return (device == mapping_device) or
 				(mapping_device.can_access(device) and device.supports_virtual_memory_management());
 		}
@@ -223,7 +223,7 @@ int main()
 	int num_elements = 50000;
 	size_t size_in_bytes = num_elements * sizeof(float);
 
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 
 	if (not device.supports_virtual_memory_management()) {
 		std::cout << "Device " << device.id() << " (" << device.name()
@@ -232,18 +232,18 @@ int main()
 	}
 
 	//The vector addition happens on cuDevice, so the allocations need to be mapped there.
-	vector<cuda::device_t> mapping_devices;
+	vector<cuda_::device_t> mapping_devices;
 	mapping_devices.push_back(device);
 
 	// Collect devices accessible by the mapping device (cuDevice) into the backing_devices vector.
-	vector<cuda::device_t> backing_devices = get_backing_devices(device);
+	vector<cuda_::device_t> backing_devices = get_backing_devices(device);
 	if (backing_devices.empty()) {
 		std::cout << "No devices can be used for physical allocation for virtual memory mapping" << std::endl;
 		exit(EXIT_SUCCESS);
 	}
 
 	auto fatbin = get_file_contents(kernel::fatbin_filename);
-	auto module = cuda::module::create(device, fatbin);
+	auto module = cuda_::module::create(device, fatbin);
 	auto kernel = module.get_kernel(kernel::name);
 
 //	std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << std::endl;
@@ -265,9 +265,9 @@ int main()
 	//
 	// Note that a call to device::enable_access_to() is not needed even though
 	// the backing devices and mapping device are not the same.
-	// This is because the cuda::memory::virtual::set_access_mode() call
+	// This is because the cuda_::memory::virtual::set_access_mode() call
 	// explicitly specifies the cross device mapping.
-	// set_access_mode() is still subject to the constraints of cuda::device::peer_to_peer::can_access()
+	// set_access_mode() is still subject to the constraints of cuda_::device::peer_to_peer::can_access()
 	// for cross device mappings (hence why we filtered the backing devices using device_t::can_access_peer() earlier).
 	auto d_A = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
 	auto d_B = setup_virtual_memory(size_in_bytes, backing_devices, mapping_devices);
@@ -277,11 +277,11 @@ int main()
 	auto d_B_sp = d_B.as_requested().as_span<float>();
 	auto d_C_sp = d_C.as_requested().as_span<float>();
 
-	cuda::memory::copy(d_A_sp, h_A);
-	cuda::memory::copy(d_B_sp, h_B);
+	cuda_::memory::copy(d_A_sp, h_A);
+	cuda_::memory::copy(d_B_sp, h_B);
 
 	// Launch the Vector Add CUDA Kernel
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.block_size(256)
 		.overall_size(num_elements)
 		.build();
@@ -290,11 +290,11 @@ int main()
 		<< "CUDA kernel launch with " << launch_config.dimensions.grid.volume()
 		<< " blocks of " << launch_config.dimensions.grid.volume() << " threads" << std::endl;
 
-	cuda::launch(kernel, launch_config,
+	cuda_::launch(kernel, launch_config,
 		d_A_sp.data(), d_B_sp.data(), d_C_sp.data(), num_elements
 	);
 
-	cuda::memory::copy(h_C, d_C_sp);
+	cuda_::memory::copy(h_C, d_C_sp);
 
 //	std::cout << "Checking results...\n\n";
 

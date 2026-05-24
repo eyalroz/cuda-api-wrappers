@@ -114,32 +114,32 @@ std::string output_filename_for(std::string filename)
 
 bool runTest(int device_id) {
 
-  auto device = cuda::device::get(device_id);
+  auto device = cuda_::device::get(device_id);
   auto context = device.create_context();
-  auto stream = context.create_stream(cuda::stream::async);
+  auto stream = context.create_stream(cuda_::stream::async);
   auto fatbin = get_file_contents(kernel::fatbin_filename);
   auto module = context.create_module(fatbin);
   auto kernel = module.get_kernel(kernel::name);
 
   auto image = sdkLoadPGM_<float>(image_filename);
-  auto image_data = cuda::span<float> {image.data.get(), image.size()};
+  auto image_data = cuda_::span<float> {image.data.get(), image.size()};
   std::cout << "Loaded '" << image_filename << "', " << image.width << " x " << image.height << " pixels\n";
 
-  auto arr = cuda::array::create<float, 2>(context, { image.width, image.height });
-  cuda::memory::copy(arr, image_data);
+  auto arr = cuda_::array::create<float, 2>(context, { image.width, image.height });
+  cuda_::memory::copy(arr, image_data);
 
-  auto texture_descriptor = cuda::texture::descriptor_t{};
+  auto texture_descriptor = cuda_::texture::descriptor_t{};
   texture_descriptor.filterMode = CU_TR_FILTER_MODE_LINEAR;
   texture_descriptor.addressMode[0] = CU_TR_ADDRESS_MODE_WRAP;
   texture_descriptor.addressMode[1] = CU_TR_ADDRESS_MODE_WRAP;
   texture_descriptor.addressMode[2] = CU_TR_ADDRESS_MODE_WRAP;
   texture_descriptor.flags = CU_TRSF_NORMALIZED_COORDINATES;
-  auto texture_view = cuda::texture_view(arr, texture_descriptor);
+  auto texture_view = cuda_::texture_view(arr, texture_descriptor);
 
-  auto d_output_image = cuda::memory::device::make_unique_span<float>(device, image.size());
+  auto d_output_image = cuda_::memory::device::make_unique_span<float>(device, image.size());
 
   constexpr int const block_dim { 8 };
-  auto config = cuda::launch_config_builder()
+  auto config = cuda_::launch_config_builder()
 	  .overall_dimensions(image.width, image.height)
 	  .block_dimensions(block_dim, block_dim)
 	  .no_dynamic_shared_memory()
@@ -149,9 +149,9 @@ bool runTest(int device_id) {
   stream.synchronize();
 
   // allocate mem for the result on host side
-  auto output_image = cuda::memory::host::make_unique_span<float>(image.size());
+  auto output_image = cuda_::memory::host::make_unique_span<float>(image.size());
   // copy result from device to host
-  cuda::memory::copy(output_image, d_output_image);
+  cuda_::memory::copy(output_image, d_output_image);
 
   auto output_filename = output_filename_for(image_filename);
   sdkSavePGM(output_filename.c_str(), output_image.data(), image.width, image.height);

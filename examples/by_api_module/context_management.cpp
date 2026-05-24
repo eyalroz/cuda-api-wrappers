@@ -6,13 +6,13 @@
  */
 #include "../common.hpp"
 
-void current_context_manipulation(const cuda::device_t &device, const cuda::device::primary_context_t &pc,
-	const cuda::context_t &created_context);
+void current_context_manipulation(const cuda_::device_t &device, const cuda_::device::primary_context_t &pc,
+	const cuda_::context_t &created_context);
 
 void test_context(
-	const cuda::context_t& context,
+	const cuda_::context_t& context,
 	bool is_primary,
-	cuda::device::id_t device_id)
+	cuda_::device::id_t device_id)
 {
 	std::cout << "Testing " << (is_primary ? "" : "non-") << "primary context " << context << '\n';
 	if (context.device_id() != device_id) {
@@ -39,9 +39,9 @@ void test_context(
 	std::cout << "The cache preference for context " << context << " is: " << cache_preference << ".\n";
 
 	auto new_cache_preference =
-		cache_preference == cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
-		cuda::multiprocessor_cache_preference_t::prefer_shared_memory_over_l1 :
-		cuda::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
+		cache_preference == cuda_::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory ?
+		cuda_::multiprocessor_cache_preference_t::prefer_shared_memory_over_l1 :
+		cuda_::multiprocessor_cache_preference_t::prefer_l1_over_shared_memory;
 	context.set_cache_preference(new_cache_preference);
 	cache_preference = context.cache_preference();
 	assert_(cache_preference == new_cache_preference);
@@ -91,30 +91,30 @@ void test_context(
 }
 
 void current_context_manipulation(
-	const cuda::device_t &device,
-	const cuda::device::primary_context_t &pc,
-	const cuda::context_t &created_context)
+	const cuda_::device_t &device,
+	const cuda_::device::primary_context_t &pc,
+	const cuda_::context_t &created_context)
 {
-	cuda::context_t context_0 = pc;
-	cuda::context_t context_1 = created_context;
-	cuda::context::current::set(context_0);
-	assert_(cuda::context::current::get() == context_0);
-	assert_(cuda::context::current::detail_::get_handle() == context_0.handle());
-	cuda::context::current::set(context_1);
-	assert_(cuda::context::current::get() == context_1);
-	assert_(cuda::context::current::detail_::get_handle() == context_1.handle());
+	cuda_::context_t context_0 = pc;
+	cuda_::context_t context_1 = created_context;
+	cuda_::context::current::set(context_0);
+	assert_(cuda_::context::current::get() == context_0);
+	assert_(cuda_::context::current::detail_::get_handle() == context_0.handle());
+	cuda_::context::current::set(context_1);
+	assert_(cuda_::context::current::get() == context_1);
+	assert_(cuda_::context::current::detail_::get_handle() == context_1.handle());
 
-	auto context_2 = cuda::context::create(device);
+	auto context_2 = cuda_::context::create(device);
 	{
-		cuda::context::current::scoped_override_t context_for_this_block { context_2 };
-		assert_(context_2.handle() == cuda::context::current::get().handle());
-		assert_(context_2 == cuda::context::current::get());
+		cuda_::context::current::scoped_override_t context_for_this_block { context_2 };
+		assert_(context_2.handle() == cuda_::context::current::get().handle());
+		assert_(context_2 == cuda_::context::current::get());
 	}
 	(void) context_2; // We want it in existence outside the inner scope
-	auto gotten = cuda::context::current::get();
+	auto gotten = cuda_::context::current::get();
 	assert_(gotten == context_1);
 
-	auto context_3 = cuda::context::create_and_push(device);
+	auto context_3 = cuda_::context::create_and_push(device);
 
 //	std::cout << "Contexts:\n";
 //	std::cout << "context_0: " << context_0 << '\n';
@@ -123,16 +123,16 @@ void current_context_manipulation(
 //	std::cout << "context_3: " << context_3 << '\n';
 
 	{
-		cuda::context::current::scoped_override_t context_for_this_block { context_3 };
-		assert_(context_3.handle() == cuda::context::current::get().handle());
-		assert_(context_3 == cuda::context::current::get());
+		cuda_::context::current::scoped_override_t context_for_this_block { context_3 };
+		assert_(context_3.handle() == cuda_::context::current::get().handle());
+		assert_(context_3 == cuda_::context::current::get());
 	}
 
 	{
-		auto popped = cuda::context::current::pop();
+		auto popped = cuda_::context::current::pop();
 		assert_(popped == context_3);
 	}
-	gotten = cuda::context::current::get();
+	gotten = cuda_::context::current::get();
 	assert_(gotten == context_1);
 }
 
@@ -140,9 +140,9 @@ void current_context_manipulation(
 int main(int argc, char **argv)
 {
 	auto device_id = choose_device(argc, argv);
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 
-	if (cuda::device::primary_context::is_active(device)) {
+	if (cuda_::device::primary_context::is_active(device)) {
 		std::ostringstream oss;
 		oss << "The primary context is unexpectedly active before we've done anything with its device (" << device << ")\n";
 		die_(oss.str());
@@ -150,9 +150,9 @@ int main(int argc, char **argv)
 
 	auto original_pc = device.primary_context();
 
-	cuda::device::primary_context::detail_::decrease_refcount(device.id());
+	cuda_::device::primary_context::detail_::decrease_refcount(device.id());
 
-	if (cuda::device::primary_context::is_active(device)) {
+	if (cuda_::device::primary_context::is_active(device)) {
 		die_("The primary context is unexpectedly active after increasing, then decreasing, its refcount");
 	}
 
@@ -160,28 +160,28 @@ int main(int argc, char **argv)
 
 	// std::cout << "New PC handle = " << pc.handle() << " ; old PC handle = " << original_pc.handle() << "\n";
 
-	cuda::device::primary_context::detail_::increase_refcount(device.id());
+	cuda_::device::primary_context::detail_::increase_refcount(device.id());
 
-	cuda::context::current::push(pc);
+	cuda_::context::current::push(pc);
 	constexpr const bool is_primary = true;
 	constexpr const bool isnt_primary = false;
 	test_context(pc, is_primary, device_id);
 
 	{
-		auto popped = cuda::context::current::pop();
+		auto popped = cuda_::context::current::pop();
 		if (popped != pc) {
 			die_("After pushing context " + std::to_string(pc) + " and popping it - the pop result is a different context, " + std::to_string(popped));
 		}
 	}
 
-	auto created_context = cuda::context::create(device);
+	auto created_context = cuda_::context::create(device);
 	test_context(created_context, isnt_primary, device_id);
 	current_context_manipulation(device, pc, created_context);
 
 	std::cout << std::endl;
 //	report_context_stack("After current_context_manipulation");
-	cuda::context::current::push(created_context);
-	cuda::context::current::push(created_context);
+	cuda_::context::current::push(created_context);
+	cuda_::context::current::push(created_context);
 	// We should have 3 copies of created_context on the stack at this point, and nothing else
 	cudaSetDevice(device_id);
 //	report_context_stack("After cudaSetDevice " + std::to_string(device_id));

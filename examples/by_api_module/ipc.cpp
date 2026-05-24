@@ -37,7 +37,7 @@
 int main(int argc, char **argv)
 {
 	auto device_id = choose_device(argc, argv);
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")\n";
 

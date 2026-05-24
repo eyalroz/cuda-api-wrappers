@@ -111,25 +111,25 @@ int main(int argc, char** argv)
     size_t  size = N * sizeof(float);
 
     auto device_id = choose_device(argc, argv);
-    auto device = cuda::device::get(device_id);
+    auto device = cuda_::device::get(device_id);
 
     // Create context
-    auto context = cuda::context::create(device);
+    auto context = cuda_::context::create(device);
 
-    cuda::context::current::scoped_override_t context_setter { context };
+    cuda_::context::current::scoped_override_t context_setter { context };
 
 // first search for the module path before we load the results
     auto ptx_filename = create_ptx_file();
 
-    auto module = cuda::module::load_from_file(context, ptx_filename);
+    auto module = cuda_::module::load_from_file(context, ptx_filename);
     auto vecAdd_kernel = module.get_kernel("VecAdd_kernel");
     auto dummy_kernel = module.get_kernel("dummy");
 
-    auto stream = cuda::stream::create(context, cuda::stream::async);
+    auto stream = cuda_::stream::create(context, cuda_::stream::async);
 
-    stream.enqueue.kernel_launch(dummy_kernel, cuda::launch_configuration_t{1,1});
+    stream.enqueue.kernel_launch(dummy_kernel, cuda_::launch_configuration_t{1,1});
 
-    cuda::outstanding_error::ensure_none();
+    cuda_::outstanding_error::ensure_none();
 
     stream.synchronize();
 
@@ -147,24 +147,24 @@ int main(int argc, char** argv)
 	std::generate_n(h_B.get(), N, generator);
 
     // Allocate vectors in device memory
-	auto d_A = cuda::make_unique_span<float>(device, N);
-	auto d_B = cuda::make_unique_span<float>(device, N);
-	auto d_C = cuda::make_unique_span<float>(device, N);
+	auto d_A = cuda_::make_unique_span<float>(device, N);
+	auto d_B = cuda_::make_unique_span<float>(device, N);
+	auto d_C = cuda_::make_unique_span<float>(device, N);
 
 
-	cuda::memory::copy(d_A, h_A.get(), size, stream);
-	cuda::memory::copy(d_B, h_B.get(), size, stream);
+	cuda_::memory::copy(d_A, h_A.get(), size, stream);
+	cuda_::memory::copy(d_B, h_B.get(), size, stream);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(N)
 		.block_size(256)
 		.build();
 
-    cuda::outstanding_error::ensure_none();
+    cuda_::outstanding_error::ensure_none();
 
     stream.enqueue.kernel_launch(vecAdd_kernel, launch_config, d_A.data(), d_B.data(), d_C.data(), N);
 
-	cuda::memory::copy(h_C.get(), d_C, size, stream);
+	cuda_::memory::copy(h_C.get(), d_C, size, stream);
 	stream.synchronize();
 
 	for (int i = 0; i < N; ++i) {

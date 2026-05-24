@@ -37,12 +37,12 @@ constexpr const char *name = "memMapIpc_kernel";
 
 // region will be divided up into multiple  sub-regions, one per process
 std::vector<memory_mapping_t> import_and_map_allocations(
-   cuda::memory::region_t mappings_region,
+   cuda_::memory::region_t mappings_region,
    std::vector<shared_allocation_handle_t> &shareable_handles,
-   cuda::device_t device)
+   cuda_::device_t device)
 {
-	namespace virtual_mem = cuda::memory::virtual_;
-	namespace allocation = cuda::memory::physical_allocation;
+	namespace virtual_mem = cuda_::memory::virtual_;
+	namespace allocation = cuda_::memory::physical_allocation;
 
 	auto subregion_size = mappings_region.size() / shareable_handles.size();
 
@@ -57,7 +57,7 @@ std::vector<memory_mapping_t> import_and_map_allocations(
 		});
 
 	// Retain peer access and map all chunks to mapDevice
-	virtual_mem::set_permissions(mappings_region, device, cuda::memory::permissions::read_and_write());
+	virtual_mem::set_permissions(mappings_region, device, cuda_::memory::permissions::read_and_write());
 	return mappings;
 }
 
@@ -89,8 +89,8 @@ shm_and_info_t open_shared_interprocess_memory()
 
 std::vector<memory_mapping_t>
 get_virtual_mem_mappings(
-	cuda::memory::region_t reserved_mappings_region,
-	cuda::device_t device,
+	cuda_::memory::region_t reserved_mappings_region,
+	cuda_::device_t device,
 	int num_processes)
 {
    ipcHandle *ipcChildHandle = NULL;
@@ -118,8 +118,8 @@ get_virtual_mem_mappings(
 
 bool results_are_valid(
 	int                     id_of_this_child,
-	cuda::memory::region_t  mappings_region,
-	const cuda::stream_t&   stream,
+	cuda_::memory::region_t  mappings_region,
+	const cuda_::stream_t&   stream,
 	int                     num_processes)
 {
 	std::cout << "Process " << id_of_this_child << ": verifying..." << std::endl;
@@ -127,7 +127,7 @@ bool results_are_valid(
 	// Copy the data onto host and verify value if it matches expected value or
 	// not.
 	auto verification_buffer = std::unique_ptr<char[]>(new char[data_buffer_size]);
-	cuda::memory::region_t subregion_for_this_process =
+	cuda_::memory::region_t subregion_for_this_process =
 		mappings_region.subregion(id_of_this_child * data_buffer_size, data_buffer_size);
 	stream.enqueue.copy(verification_buffer.get(), subregion_for_this_process);
 	stream.synchronize();
@@ -147,28 +147,28 @@ bool results_are_valid(
 
 void childProcess(int devId, int id_of_this_child, char **)
 {
-	auto device{cuda::device::get(devId)};
+	auto device{cuda_::device::get(devId)};
 
 	auto shm_and_info = open_shared_interprocess_memory();
 	auto num_processes = static_cast<int>(shm_and_info.shm->nprocesses);
 
 	barrierWait(shm_and_info.shm);
 
-	auto reserved_region = cuda::memory::region_t{nullptr, data_buffer_size * num_processes};
+	auto reserved_region = cuda_::memory::region_t{nullptr, data_buffer_size * num_processes};
 	// TODO: Double-check we don't need to multiple this by num_processes; also,
 	// I don't like this starting from 0/nullptr.
-	auto reservation = cuda::memory::virtual_::reserve(reserved_region);
+	auto reservation = cuda_::memory::virtual_::reserve(reserved_region);
 
 	auto mappings = get_virtual_mem_mappings(reserved_region, device, num_processes);
 
-	auto context = cuda::context::create(device);
-	auto stream = context.create_stream(cuda::stream::nonblocking);
+	auto context = cuda_::context::create(device);
+	auto stream = context.create_stream(cuda_::stream::nonblocking);
 
 	auto fatbin = get_file_contents(kernel::fatbin_filename);
-	auto module = cuda::module::create(device, fatbin);
+	auto module = cuda_::module::create(device, fatbin);
 
 	auto kernel = module.get_kernel(kernel::name);
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.kernel(&kernel)
 		.block_size(128)
 		.saturate_with_active_blocks().build();

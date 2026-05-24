@@ -109,12 +109,12 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
  * @param fine_day hello world
  */
 void handle_compilation_failure(
-	const cuda::rtc::compilation_output_t<cuda::cuda_cpp>& compilation_output,
-	cuda::rtc::compilation_options_t<cuda::cuda_cpp> compilation_options = {})
+	const cuda_::rtc::compilation_output_t<cuda_::cuda_cpp>& compilation_output,
+	cuda_::rtc::compilation_options_t<cuda_::cuda_cpp> compilation_options = {})
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
-	std::cerr << "Compilation options were: " << cuda::rtc::render(compilation_options) << '\n';
+	std::cerr << "Compilation options were: " << cuda_::rtc::render(compilation_options) << '\n';
 	if (not compilation_log.empty()) {
 		std::cerr
 			<< "Compilation log:\n"
@@ -138,8 +138,8 @@ void my_kernel(T* data) {
 )";
 	auto instantiation_name = make_instantiation_name(kernel_name, std::to_string(3), type_name<T>());
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, instantiation_name);
-	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program_t<cuda::cuda_cpp>("my_program")
+	auto device = cuda_::device::current::get();
+	auto program = cuda_::rtc::program_t<cuda_::cuda_cpp>("my_program")
 		.set_source(source_with_instantiation)
 		.set_target(device)
 		.add_registered_global(instantiation_name);
@@ -150,17 +150,17 @@ void my_kernel(T* data) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
 	auto mangled_kernel_name = compilation_result.get_mangling_of(instantiation_name);
-	auto module = cuda::module::create(device, compilation_result);
+	auto module = cuda_::module::create(device, compilation_result);
 	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
-	auto d_data = cuda::make_unique_span<T>(device, 1);
+	auto d_data = cuda_::make_unique_span<T>(device, 1);
 	T h_data = 5;
-	cuda::memory::copy_single<T>(d_data.data(), &h_data);
+	cuda_::memory::copy_single<T>(d_data.data(), &h_data);
 
-	auto single_thread_launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
+	auto single_thread_launch_config = cuda_::launch_configuration_t(cuda_::grid::composite_dimensions_t::point());
 	device.launch(kernel, single_thread_launch_config, d_data.get());
-	cuda::memory::copy_single<T>(&h_data, d_data.data());
+	cuda_::memory::copy_single<T>(&h_data, d_data.data());
 	return are_close(h_data, 125.f);
 }
 
@@ -209,8 +209,8 @@ void my_kernel2(float const* indata, float* outdata) {
 		{"example_headers/my_header4.cuh", my_header4_cuh_contents }
 	};
 
-	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("my_program1")
+	auto device = cuda_::device::current::get();
+	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>("my_program1")
 		.set_source(source_with_instantiation)
 		.set_headers(headers)
 		.set_target(device)
@@ -236,21 +236,21 @@ void my_kernel2(float const* indata, float* outdata) {
 		compilation_result.get_mangling_of(kernel_names[0]),
 		compilation_result.get_mangling_of(my_kernel2_instantiation_name)
 	};
-	auto module = cuda::module::create(device, compilation_result);
+	auto module = cuda_::module::create(device, compilation_result);
 	auto my_kernel1 = module.get_kernel(mangled_kernel_names[0]);
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
-	auto indata = cuda::make_unique_span<T>(device, 1);
-	auto outdata = cuda::make_unique_span<T>(device, 1);
+	auto indata = cuda_::make_unique_span<T>(device, 1);
+	auto outdata = cuda_::make_unique_span<T>(device, 1);
 	T inval = 3.14159f;
-	cuda::memory::copy_single<T>(indata.data(), &inval);
+	cuda_::memory::copy_single<T>(indata.data(), &inval);
 
-	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	cuda::launch(my_kernel1, launch_config, indata.get(), outdata.get());
-	cuda::launch(my_kernel2, launch_config, indata.get(), outdata.get());
+	auto launch_config = cuda_::launch_configuration_t(cuda_::grid::composite_dimensions_t::point());
+	cuda_::launch(my_kernel1, launch_config, indata.get(), outdata.get());
+	cuda_::launch(my_kernel2, launch_config, indata.get(), outdata.get());
 
 	T outval = 0;
-	cuda::memory::copy_single(&outval, outdata.data());
+	cuda_::memory::copy_single(&outval, outdata.data());
 	// std::cout << inval << " -> " << outval << std::endl;
 	return are_close(inval, outval);
 }
@@ -279,8 +279,8 @@ __global__ void constant_test(int *x) {
 		const char *c_b_a = "&c::b::a";
 	} names;
 
-	auto device = cuda::device::current::get();
-	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("const_program")
+	auto device = cuda_::device::current::get();
+	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>("const_program")
 		.set_source(const_program_source)
 		.add_registered_global(names.kernel)
 		.add_registered_global(names.a)
@@ -295,7 +295,7 @@ __global__ void constant_test(int *x) {
 	if (not compilation_result.succeeded()) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
-	auto module = cuda::module::create(device, compilation_result);
+	auto module = cuda_::module::create(device, compilation_result);
 
 	auto mangled_kernel_name = compilation_result.get_mangling_of(names.kernel);
 	auto kernel = module.get_kernel(mangled_kernel_name);
@@ -303,14 +303,14 @@ __global__ void constant_test(int *x) {
 	auto a = module.get_global_region(compilation_result.get_mangling_of(names.a));
 	auto b_a = module.get_global_region(compilation_result.get_mangling_of(names.b_a));
 	auto c_b_a = module.get_global_region(compilation_result.get_mangling_of(names.c_b_a));
-	cuda::memory::copy(a, &inval[0]);
-	cuda::memory::copy(b_a, &inval[1]);
-	cuda::memory::copy(c_b_a, &inval[2]);
-	auto outdata = cuda::make_unique_span<int>(device, n_const);
-	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	cuda::launch(kernel, launch_config, outdata.data());
+	cuda_::memory::copy(a, &inval[0]);
+	cuda_::memory::copy(b_a, &inval[1]);
+	cuda_::memory::copy(c_b_a, &inval[2]);
+	auto outdata = cuda_::make_unique_span<int>(device, n_const);
+	auto launch_config = cuda_::launch_configuration_t(cuda_::grid::composite_dimensions_t::point());
+	cuda_::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
-	cuda::memory::copy(outval, outdata.get(), sizeof(outval));
+	cuda_::memory::copy(outval, outdata.get(), sizeof(outval));
 
 	return std::equal(inval, inval + n_const, outval);
 }
@@ -321,9 +321,9 @@ bool test_constant_2()
 	// test __constant__ array look up in header nested in both anonymous and explicit namespace
 	constexpr int n_const = 3;
 	const char* second_kernel_name = "constant_test2";
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 	const char* name_of_anon_b_a = "&b::a";
-	auto program = cuda::rtc::program::create<cuda::cuda_cpp>("const_program_2")
+	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>("const_program_2")
 		.add_registered_global(second_kernel_name)
 		.add_registered_global(name_of_anon_b_a)
 		.set_target(device);
@@ -334,17 +334,17 @@ bool test_constant_2()
 	if (not compilation_result.succeeded()) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
-	auto module = cuda::module::create(device, compilation_result);
+	auto module = cuda_::module::create(device, compilation_result);
 	auto anon_b_a = module.get_global_region(compilation_result.get_mangling_of(name_of_anon_b_a));
 	auto kernel = module.get_kernel(compilation_result.get_mangling_of(second_kernel_name));
 	int inval[] = {3, 5, 9};
-	cuda::memory::copy(anon_b_a, inval);
-	auto launch_config = cuda::launch_configuration_t(cuda::grid::composite_dimensions_t::point());
-	auto outdata = cuda::make_unique_span<int>(device, n_const);
-	cuda::launch(kernel, launch_config, outdata.data());
+	cuda_::memory::copy(anon_b_a, inval);
+	auto launch_config = cuda_::launch_configuration_t(cuda_::grid::composite_dimensions_t::point());
+	auto outdata = cuda_::make_unique_span<int>(device, n_const);
+	cuda_::launch(kernel, launch_config, outdata.data());
 	int outval[n_const];
 	auto ptr = outdata.get();
-	cuda::memory::copy(outval, ptr);
+	cuda_::memory::copy(outval, ptr);
 	return std::equal(inval, inval + n_const, outval);
 }
 

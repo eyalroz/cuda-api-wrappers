@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace cuda {
+namespace cuda_ {
 namespace device {
 
 /**
@@ -80,6 +80,6 @@ inline id_t resolve_id(pci_location_t pci_id)
 
 
 } // namespace device
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_PCI_ID_HPP_

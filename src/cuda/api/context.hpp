@@ -16,7 +16,7 @@
 #include <string>
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -242,7 +242,7 @@ inline void synchronize(const context_t& context);
  * an ephemeral wrapper one could apply and discard; but this second kind of
  * semantics is also supported, through the @ref context_t::owning_ field.
  *
- * @note A context is a specific to a device; see, therefore, also {@ref cuda::device_t}.
+ * @note A context is a specific to a device; see, therefore, also {@ref cuda_::device_t}.
  * @note This class is a "reference type", not a "value type". Therefore, making changes
  * to properties of the context is a const-respecting operation on this class.
  */
@@ -316,8 +316,8 @@ public: // inner classes
 		 */
 		memory::region_t allocate_managed(
 			size_t size_in_bytes,
-			cuda::memory::managed::initial_visibility_t initial_visibility =
-			cuda::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access) const;
+			cuda_::memory::managed::initial_visibility_t initial_visibility =
+			cuda_::memory::managed::initial_visibility_t::to_supporters_of_concurrent_managed_access) const;
 
 		/**
 		 * Amount of total global memory on the CUDA device's primary context.
@@ -452,7 +452,7 @@ public: // other non-mutator methods
 
 	/**
 	 * @return the maximum grid depth at which a thread can issue the device
-	 * runtime call `cudaDeviceSynchronize()` / `cuda::device::synchronize()`
+	 * runtime call `cudaDeviceSynchronize()` / `cuda_::device::synchronize()`
 	 * to wait on child grid launches to complete.
 	 *
 	 * @todo Is this really a feature of the context? Not of the device?
@@ -578,13 +578,13 @@ public: // methods which mutate the context, but not its wrapper
 		return flags() & CU_CTX_LMEM_RESIZE_TO_MAX;
 	}
 
-	/// Create a new event within this context; see @ref cuda::stream::create() for details
+	/// Create a new event within this context; see @ref cuda_::stream::create() for details
 	/// regarding the parameters
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream,
-		stream::priority_t  priority = cuda::stream::default_priority) const;
+		stream::priority_t  priority = cuda_::stream::default_priority) const;
 
-	/// Create a new event within this context; see @ref cuda::event::create() for details
+	/// Create a new event within this context; see @ref cuda_::event::create() for details
 	/// regarding the parameters
 	event_t create_event(
 		bool uses_blocking_sync = event::sync_by_busy_waiting, // Yes, that's the runtime default
@@ -592,14 +592,14 @@ public: // methods which mutate the context, but not its wrapper
 		bool interprocess       = event::not_interprocess) const;
 
 	/// Create a new module of kernels and global memory regions within this context;
-	/// see also @ref cuda::module::create()
+	/// see also @ref cuda_::module::create()
 	///@{
 	template <typename ContiguousContainer,
-		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
+		cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
 
 	template <typename ContiguousContainer,
-		cuda::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
+		cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data) const;
 	///@}
 
@@ -620,8 +620,8 @@ public: // Methods which don't mutate the context, but affect the device itself
 		auto status = cuCtxResetPersistingL2Cache();
 		throw_if_error_lazy(status, "Failed resetting/clearing the persisting L2 cache memory");
 #endif
-		throw cuda::runtime_error(
-			cuda::status::insufficient_driver,
+		throw cuda_::runtime_error(
+			cuda_::status::insufficient_driver,
 			"Resetting/clearing the persisting L2 cache memory is not supported when compiling CUDA versions lower than 11.0");
 	}
 
@@ -697,7 +697,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	 */
 	void synchronize() const
 	{
-		cuda::synchronize(*this);
+		cuda_::synchronize(*this);
 	}
 
 protected: // constructors
@@ -982,6 +982,6 @@ inline void synchronize(const context_t& context)
 	context::detail_::synchronize(context.device_id(), context.handle());
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_CONTEXT_HPP_

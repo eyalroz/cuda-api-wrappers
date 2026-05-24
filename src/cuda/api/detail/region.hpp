@@ -1,8 +1,8 @@
 /**
  * @file
  *
- * @brief A memory region class (@ref cuda::memory::region_t and @ref
- * cuda::memory::const_region_t) and related functionality.
+ * @brief A memory region class (@ref cuda_::memory::region_t and @ref
+ * cuda_::memory::const_region_t) and related functionality.
  *
  * @note There is no CUDA-specific functionality here, and this class could be
  * used irrespective of the CUDA APIs and GPUs in general.
@@ -32,7 +32,7 @@
 #endif // NOEXCEPT_IF_NDEBUG
 
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -68,8 +68,8 @@ public:
 	 * A constructor from types such as `::std::span`'s or `::std::vector`'s, whose data is in
 	 * a contiguous region of memory
 	 */
-	template <typename ContiguousContainer, typename = cuda::detail_::enable_if_t<
-		cuda::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, void>>
+	template <typename ContiguousContainer, typename = cuda_::detail_::enable_if_t<
+		cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, void>>
 	constexpr base_region_t(ContiguousContainer&& contiguous_container) noexcept
 	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
@@ -164,6 +164,6 @@ struct const_region_t : public detail_::base_region_t<void const> {
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_REGION_HPP_

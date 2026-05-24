@@ -5,8 +5,8 @@
 #endif
 #include <cuda/rtc.hpp>
 
-cuda::device::id_t get_current_device_id()
+cuda_::device::id_t get_current_device_id()
 {
-	auto device = cuda::device::current::get();
+	auto device = cuda_::device::current::get();
 	return device.id();
 }

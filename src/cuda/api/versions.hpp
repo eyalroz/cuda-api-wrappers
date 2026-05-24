@@ -2,7 +2,7 @@
  * @file
  *
  * @brief Wrappers for Runtime API functions involving versions -
- * of the CUDA runtime and of the CUDA driver. Also defines a @ref cuda::version_t
+ * of the CUDA runtime and of the CUDA driver. Also defines a @ref cuda_::version_t
  * class for working with such versions (as they are not really single
  * numbers) - which is what the wrappers return.
  */
@@ -21,7 +21,7 @@
 #include <limits>
 
 
-namespace cuda {
+namespace cuda_ {
 
 /**
  * A combination of the major and minor version numbers for a CUDA release
@@ -186,6 +186,6 @@ inline version_t fatbin() {
 #endif // CUDA_VERSION >= 12040
 
 } // namespace version_numbers
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_VERSIONS_HPP_

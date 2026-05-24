@@ -13,7 +13,7 @@
 #include "error.hpp"
 #include "memory.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class texture_view;
@@ -82,7 +82,7 @@ inline texture_view wrap(
  * @brief Use texture memory for optimized read only cache access
  *
  * This represents a view on the memory owned by a CUDA array. Thus you can
- * first create a CUDA array (\ref cuda::array_t) and subsequently
+ * first create a CUDA array (\ref cuda_::array_t) and subsequently
  * create a `texture_view` from it. In CUDA kernels elements of the array
  * can be accessed with e.g. `float val = tex3D<float>(tex_obj, x, y, z);`,
  * where `tex_obj` can be obtained by the member function `get()` of this
@@ -98,7 +98,7 @@ inline texture_view wrap(
  */
 class texture_view {
 	using raw_handle_type = texture::raw_handle_t;
-	using scoped_context_setter = cuda::context::current::detail_::scoped_override_t;
+	using scoped_context_setter = cuda_::context::current::detail_::scoped_override_t;
 
 public:
 	/// Getters for this object's raw fields
@@ -124,7 +124,7 @@ public: // constructors and destructors
 
 	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
-		const cuda::array_t<T, NumDimensions>& arr,
+		const cuda_::array_t<T, NumDimensions>& arr,
 		texture::descriptor_t descriptor = texture::descriptor_t()) :
 		device_id_(arr.device_id()),
 		context_handle_(arr.context_handle()),
@@ -217,6 +217,6 @@ inline texture_view wrap(
 
 } // namespace texture
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_TEXTURE_VIEW_HPP
