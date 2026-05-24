@@ -422,13 +422,13 @@ void set_permissions(
  */
 ///@{
 template <template <typename...> class ContiguousContainer>
-inline void set_permissions(
+void set_permissions(
 	mapping_t mapping,
 	const ContiguousContainer<device_t>& devices,
 	permissions_t access_mode);
 
 template <template <typename...> class ContiguousContainer>
-inline void set_permissions(
+void set_permissions(
 	mapping_t mapping,
 	ContiguousContainer<device_t>&& devices,
 	permissions_t access_mode);

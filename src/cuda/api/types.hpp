@@ -957,7 +957,7 @@ using host_thread_sync_scheduling_policy_t = context::host_thread_sync_schedulin
 namespace detail_ {
 
 template <typename T, typename U>
-inline T identity_cast(U&& x)
+T identity_cast(U&& x)
 {
 	static_assert(::std::is_same<
 			typename ::std::remove_reference<T>::type,

@@ -37,7 +37,7 @@ namespace detail_ {
  * @param header_names Pointers to nul-terminated names of the different headers
  */
 template <source_kind_t Kind = cuda_cpp>
-inline program::handle_t<Kind> create(
+program::handle_t<Kind> create(
 	const char *program_name,
 	string_view program_source,
 	int num_headers = 0,
@@ -87,7 +87,7 @@ inline ::std::string get_concatenated_options(const const_cstrings_span& raw_opt
 }
 
 template <source_kind_t Kind>
-inline void maybe_handle_invalid_option(
+void maybe_handle_invalid_option(
 	status_t<Kind>,
 	const char *,
 	const const_cstrings_span&,
@@ -109,7 +109,7 @@ inline void maybe_handle_invalid_option<cuda_cpp>(
 }
 
 template <source_kind_t Kind>
-inline status_t<Kind> compile_and_return_status(
+status_t<Kind> compile_and_return_status(
 	handle_t<Kind> program_handle,
 	const const_cstrings_span& raw_options);
 
@@ -133,7 +133,7 @@ inline status_t<cuda_cpp> compile_and_return_status<cuda_cpp>(
 
 
 template <source_kind_t Kind>
-inline compilation_output_t<Kind> compile(
+compilation_output_t<Kind> compile(
 	const char *                program_name,
 	const const_cstrings_span&  raw_options,
 	handle_t<Kind>              program_handle)
@@ -754,14 +754,14 @@ namespace program {
  * constituent fields.
  */
 template <source_kind_t Kind>
-inline program_t<Kind> create(const char* program_name)
+program_t<Kind> create(const char* program_name)
 {
 	return program_t<Kind>(program_name);
 }
 
 /// @copydoc create <source_kind_t>(const char*)
 template <source_kind_t Kind>
-inline program_t<Kind> create(const ::std::string& program_name)
+program_t<Kind> create(const ::std::string& program_name)
 {
 	return program_t<Kind>(program_name);
 }

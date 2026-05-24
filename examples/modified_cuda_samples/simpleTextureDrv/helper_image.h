@@ -209,7 +209,7 @@ inline bool __loadPPM(const char *file, unsigned char **data, unsigned int *w,
 }
 
 template <class T>
-inline bool sdkLoadPGM(const char *file, T **data, unsigned int *w,
+bool sdkLoadPGM(const char *file, T **data, unsigned int *w,
                        unsigned int *h) {
   unsigned char *idata = NULL;
   unsigned int channels;
@@ -236,7 +236,7 @@ inline bool sdkLoadPGM(const char *file, T **data, unsigned int *w,
 }
 
 template <class T>
-inline bool sdkLoadPPM4(const char *file, T **data, unsigned int *w,
+bool sdkLoadPPM4(const char *file, T **data, unsigned int *w,
                         unsigned int *h) {
   unsigned char *idata = 0;
   unsigned int channels;
@@ -305,7 +305,7 @@ inline bool __savePPM(const char *file, unsigned char *data, unsigned int w,
 }
 
 template <class T>
-inline bool sdkSavePGM(const char *file, T *data, unsigned int w,
+bool sdkSavePGM(const char *file, T *data, unsigned int w,
                        unsigned int h) {
   unsigned int size = w * h;
   unsigned char *idata = (unsigned char *)malloc(sizeof(unsigned char) * size);
@@ -351,7 +351,7 @@ inline bool sdkSavePPM4ub(const char *file, unsigned char *data, unsigned int w,
 //! @param len  number of data elements in data, -1 on error
 //////////////////////////////////////////////////////////////////////////////
 template <class T>
-inline bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
+bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
                               unsigned int block_num, unsigned int block_size,
                               bool verbose) {
   // check input arguments
@@ -388,7 +388,7 @@ inline bool sdkReadFileBlocks(const char *filename, T **data, unsigned int *len,
 //! @param epsilon    epsilon to use for the comparison
 //////////////////////////////////////////////////////////////////////////////
 template <class T, class S>
-inline bool compareData(const T *reference, const T *data,
+bool compareData(const T *reference, const T *data,
                         size_t len, const S epsilon,
                         const float threshold) {
   assert(epsilon >= 0);

@@ -26,7 +26,7 @@ namespace cuda {
 namespace memory {
 
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream)
+void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
 		memory::copy<T, NumDimensions>(destination, source);
@@ -44,7 +44,7 @@ inline void copy(array_t<T, NumDimensions>& destination, span<T const> source, o
 
 // Note: Assumes the destination, source and stream are all usable on the same content
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
+void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
 		memory::copy(context_of(destination), destination, source);
@@ -75,7 +75,7 @@ void copy_single(T* destination, const T* source, optional_ref<const stream_t> s
 
 // Note: Assumes the source pointer is valid in the stream's context
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream)
+void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
 		memory::copy(destination, context_of(source), source);
@@ -181,20 +181,20 @@ namespace managed {
 namespace detail_ {
 
 template <typename GenericRegion>
-inline device_t region_helper<GenericRegion>::preferred_location() const
+device_t region_helper<GenericRegion>::preferred_location() const
 {
 	auto device_id = range::detail_::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 	return cuda::device::get(device_id);
 }
 
 template <typename GenericRegion>
-inline void region_helper<GenericRegion>::set_preferred_location(device_t& device) const
+void region_helper<GenericRegion>::set_preferred_location(device_t& device) const
 {
 	range::detail_::set_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
 }
 
 template <typename GenericRange>
-inline void region_helper<GenericRange>::clear_preferred_location() const
+void region_helper<GenericRange>::clear_preferred_location() const
 {
 	range::detail_::unset_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 }
@@ -388,7 +388,7 @@ inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attrib
 namespace device {
 
 template <typename T>
-inline void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream)
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream)
 {
 	if (stream) {
 		detail_::set(start, value, num_elements, stream->handle());

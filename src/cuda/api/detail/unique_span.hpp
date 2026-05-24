@@ -175,13 +175,13 @@ namespace detail_ {
 // @note that if a nullptr happens to be deleted - that's not a problem;
 // it is supported by the delete operation(s).
 template <typename T>
-inline void default_span_deleter(span<T> sp)
+void default_span_deleter(span<T> sp)
 {
 	delete[] sp.data();
 }
 
 template <typename T>
-inline void c_free_deleter(span<T> sp)
+void c_free_deleter(span<T> sp)
 {
 	::std::free(sp.data());
 }
@@ -211,7 +211,7 @@ unique_span<T> make_unique_span(size_t size) noexcept(false)
 namespace detail_ {
 
 template <typename T>
-inline void elementwise_destruct(span<T> sp)
+void elementwise_destruct(span<T> sp)
 {
 	for (auto& element : sp) { element.~T(); }
 }
