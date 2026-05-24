@@ -82,7 +82,7 @@ inline void stream_t::enqueue_t::wait(const event_t& event_) const
 	CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 
 	// Required by the CUDA runtime API; the flags value is currently unused
-	static constexpr const unsigned int flags = 0;
+	static constexpr unsigned int flags = 0;
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
 	throw_if_error_lazy(status,
@@ -134,7 +134,7 @@ inline device_t stream_t::device() const noexcept
 
 inline context_t stream_t::context() const noexcept
 {
-	static constexpr const bool dont_take_ownership { false };
+	static constexpr bool dont_take_ownership { false };
 	return context::wrap(device_id_, context_handle_, dont_take_ownership);
 }
 

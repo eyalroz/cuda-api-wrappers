@@ -7,7 +7,7 @@
 //	printf("%*s\n", length, message);
 //}
 
-static constexpr const size_t region_size { 1024UL }; // 64 MiB
+static constexpr size_t region_size { 1024UL }; // 64 MiB
 
 void check_getters_and_rewrapping(const cuda_::memory::pool_t &pool);
 

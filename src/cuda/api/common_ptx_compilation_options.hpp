@@ -136,7 +136,7 @@ namespace rtc {
  * The range of optimization level values outside of which the
  * compiler is certain not to support.
  */
-constexpr const struct {
+constexpr struct {
 	optimization_level_t minimum;
 	optimization_level_t maximum;
 } valid_optimization_level_range {0, 4};

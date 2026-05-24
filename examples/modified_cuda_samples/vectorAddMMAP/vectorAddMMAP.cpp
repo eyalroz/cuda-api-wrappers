@@ -41,7 +41,7 @@ constexpr const char *name = "vectorAdd_kernel";
 } // namespace kernel
 
 namespace virtual_mem = cuda_::memory::virtual_;
-constexpr const auto shared_mem_handle_kind = static_cast<cuda_::memory::physical_allocation::shared_handle_kind_t>
+constexpr auto shared_mem_handle_kind = static_cast<cuda_::memory::physical_allocation::shared_handle_kind_t>
 #if defined(__linux__)
 	(CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR);
 #else

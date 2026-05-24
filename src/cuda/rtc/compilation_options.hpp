@@ -37,7 +37,7 @@ enum class cpp_dialect_t {
 
 namespace detail_ {
 
-static constexpr const size_t language_dialect_name_length { 5 };
+static constexpr size_t language_dialect_name_length { 5 };
 constexpr const char* cpp_dialect_names[] =  {
 	"c++03",
 	"c++11",

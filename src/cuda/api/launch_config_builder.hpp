@@ -428,7 +428,7 @@ public:
 	/// with a specified size
 	launch_config_builder_t& block_size(size_t size)
 	{
-		static constexpr const auto max_representable_block_dim = ::std:: numeric_limits<grid::block_dimension_t> ::max();
+		static constexpr auto max_representable_block_dim = ::std:: numeric_limits<grid::block_dimension_t> ::max();
 		if (size > (size_t) max_representable_block_dim) {
 			throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
 				  + " exceeds " + ::std::to_string(max_representable_block_dim)

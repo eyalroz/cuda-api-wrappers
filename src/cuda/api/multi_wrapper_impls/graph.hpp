@@ -146,7 +146,7 @@ inline auto kind_traits<kind_t::child_graph>::marshal(const parameters_type& par
 
 inline template_t node_t::containing_graph() const noexcept
 {
-	static constexpr const bool dont_take_ownership { false };
+	static constexpr bool dont_take_ownership { false };
 	return template_::wrap(containing_graph_handle(), dont_take_ownership);
 }
 
