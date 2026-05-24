@@ -48,8 +48,8 @@ __global__ void increment(char* data, size_t length)
 
 inline void report_occurrence(
 	const std::string& prefix_message,
-	const cuda::event_t& e1,
-	const cuda::event_t& e2)
+	const cuda_::event_t& e1,
+	const cuda_::event_t& e2)
 {
 	std::cout
 		<< prefix_message << ": "
@@ -60,15 +60,15 @@ inline void report_occurrence(
 
 int main(int argc, char **argv)
 {
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		die_("No CUDA devices on this system");
 	}
 
 	static constexpr size_t N = 40;
 
 	// Being very cavalier about our command-line arguments here...
-	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id);
+	auto device_id =  (argc > 1) ? std::stoi(argv[1]) : cuda_::device::default_device_id;
+	auto device = cuda_::device::get(device_id);
 
 	std::cout << "Working with CUDA device " << device.name() << " (having ID " << device.id() << ")\n";
 
@@ -76,28 +76,28 @@ int main(int argc, char **argv)
 	// and memory attachments, recording and waiting on events
 	//--------------------------------------------------------------
 
-	auto stream = device.create_stream(cuda::stream::async);
+	auto stream = device.create_stream(cuda_::stream::async);
 
-	{ auto event = cuda::event::create(device); }
-	auto event_1 = cuda::event::create(
+	{ auto event = cuda_::event::create(device); }
+	auto event_1 = cuda_::event::create(
 		device,
-		cuda::event::sync_by_blocking,
-		cuda::event::do_record_timings,
-		cuda::event::not_interprocess);
-	auto event_2 = cuda::event::create(
+		cuda_::event::sync_by_blocking,
+		cuda_::event::do_record_timings,
+		cuda_::event::not_interprocess);
+	auto event_2 = cuda_::event::create(
 		device,
-		cuda::event::sync_by_blocking,
-		cuda::event::do_record_timings,
-		cuda::event::not_interprocess);
+		cuda_::event::sync_by_blocking,
+		cuda_::event::do_record_timings,
+		cuda_::event::not_interprocess);
 	auto event_3 = device.create_event(
-		cuda::event::sync_by_blocking,
-		cuda::event::do_record_timings,
-		cuda::event::not_interprocess);
+		cuda_::event::sync_by_blocking,
+		cuda_::event::do_record_timings,
+		cuda_::event::not_interprocess);
 
-	auto buffer = cuda::memory::managed::make_unique_span<char>(
-		device, 12345678, cuda::memory::managed::initial_visibility_t::to_all_devices);
-	auto wrapped_kernel = cuda::kernel::get(device, increment);
-	auto launch_config = cuda::launch_config_builder()
+	auto buffer = cuda_::memory::managed::make_unique_span<char>(
+		device, 12345678, cuda_::memory::managed::initial_visibility_t::to_all_devices);
+	auto wrapped_kernel = cuda_::kernel::get(device, increment);
+	auto launch_config = cuda_::launch_config_builder()
 		.kernel(&wrapped_kernel)
 		.overall_size(buffer.size())
 		.use_maximum_linear_block()
@@ -121,20 +121,20 @@ int main(int argc, char **argv)
 	stream.enqueue.kernel_launch(print_message<N,4>, { 1, 1 }, message<N>("I am launched after the third event"));
 
 	try {
-		cuda::event::time_elapsed_between(event_1, event_2);
+		cuda_::event::time_elapsed_between(event_1, event_2);
 		std::cerr << "Attempting to obtain the elapsed time between two events on a"
 			"stream which does not auto-sync with the default stream and has not been "
 			"synchronized should fail - but it didn't\n";
 		exit(EXIT_FAILURE);
 
-	} catch(cuda::runtime_error& e) {
+	} catch(cuda_::runtime_error& e) {
 		(void) e; // This avoids a spurious warning in MSVC 16.11
-		assert(e.code() == cuda::status::async_operations_not_yet_completed);
+		assert(e.code() == cuda_::status::async_operations_not_yet_completed);
 	}
 	event_2.synchronize();
 	report_occurrence("After synchronizing on event_2, but before synchronizing on the stream", event_1, event_2);
 	std::cout
-		<< cuda::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "
+		<< cuda_::event::time_elapsed_between(event_1, event_2).count() << " msec have elapsed, "
 		<< "executing the second kernel (\"increment\") on a buffer of " << buffer.size()
 		<< " chars and triggering two callbacks.\n";
 	// ... and this should make the third kernel execute

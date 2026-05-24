@@ -14,7 +14,7 @@
 #include "memory.hpp"
 #include <cassert>
 
-namespace cuda {
+namespace cuda_ {
 namespace memory {
 
 /**
@@ -221,7 +221,7 @@ inline unique_region make_unique_region(size_t num_bytes);
 
 namespace managed {
 
-/// A unique region of managed memory, see @ref cuda::memory::managed
+/// A unique region of managed memory, see @ref cuda_::memory::managed
 using unique_region = memory::unique_region<detail_::deleter>;
 
 namespace detail_ {
@@ -273,6 +273,6 @@ inline unique_region make_unique_region(
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_UNIQUE_REGION_HPP_

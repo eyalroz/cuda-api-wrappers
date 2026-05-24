@@ -23,7 +23,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -70,7 +70,7 @@ struct as_handles_partial_specialization_helper{
 		static_assert(
 			::std::is_same<typename ::std::remove_const<NodeOrHandle>::type, node::handle_t>::value or
 			::std::is_same<typename ::std::remove_const<NodeOrHandle>::type, node::handle_t>::value,
-			"Unsupported graph node dependency specifier type. Use either cuda::graph::node_t or cuda::graph::node::handle_t");
+			"Unsupported graph node dependency specifier type. Use either cuda_::graph::node_t or cuda_::graph::node::handle_t");
 		::std::vector<handle_t> handles;
 		handles.reserve(nodes_or_handles.size());
 		::std::transform(
@@ -251,7 +251,7 @@ inline status_t insert_edges(
 
 template <node::kind_t Kind>
 status_t invoke_inserter_possibly_with_context(
-	cuda::detail_::bool_constant<false>,
+	cuda_::detail_::bool_constant<false>,
 	node::handle_t&      new_node_handle,
 	template_::handle_t  graph_template_handle,
 	CUgraphNode*         dependency_handles,
@@ -271,7 +271,7 @@ status_t invoke_inserter_possibly_with_context(
 
 template <node::kind_t Kind>
 status_t invoke_inserter_possibly_with_context(
-	cuda::detail_::bool_constant<true>,
+	cuda_::detail_::bool_constant<true>,
 	node::handle_t&      new_node_handle,
 	template_::handle_t  graph_template_handle,
 	CUgraphNode*         dependency_handles,
@@ -311,7 +311,7 @@ node::handle_t insert_node(
 	auto no_dependency_handles = nullptr;
 	size_t no_dependencies_size = 0;
 	auto status = invoke_inserter_possibly_with_context<Kind>(
-		cuda::detail_::bool_constant<traits_type::inserter_takes_context>{},
+		cuda_::detail_::bool_constant<traits_type::inserter_takes_context>{},
 		new_node_handle,
 		graph_template_handle,
 		no_dependency_handles,
@@ -345,7 +345,7 @@ node::typed_node_t<Kind> build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
-	cuda::detail_::true_type, // we've been given a context
+	cuda_::detail_::true_type, // we've been given a context
 	template_::handle_t graph_template_handle,
 	const context_t& context,
 	Ts&&... params_ctor_args)
@@ -355,7 +355,7 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
-	cuda::detail_::false_type, // We've not been given a context
+	cuda_::detail_::false_type, // We've not been given a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
@@ -368,7 +368,7 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda::detail_::false_type , // inserter doesn't takes a context
+	cuda_::detail_::false_type , // inserter doesn't takes a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
@@ -377,16 +377,16 @@ node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
 
 template <node::kind_t Kind, typename T, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda::detail_::true_type, // inserter takes a context
+	cuda_::detail_::true_type, // inserter takes a context
 	template_::handle_t graph_template_handle,
 	T&& first_arg, // still don't know of T is a context or something else
 	Ts&&... params_ctor_args)
 {
 	static constexpr const bool first_arg_is_a_context =
-		::std::is_same<typename cuda::detail_::remove_reference_t<T>, cuda::context_t>::value;
+		::std::is_same<typename cuda_::detail_::remove_reference_t<T>, cuda_::context_t>::value;
 	return get_context_handle_build_params_and_insert_node<Kind>(
 //return blah<Kind>(
-		cuda::detail_::bool_constant<first_arg_is_a_context>{},
+		cuda_::detail_::bool_constant<first_arg_is_a_context>{},
 		graph_template_handle, ::std::forward<T>(first_arg), ::std::forward<Ts>(params_ctor_args)...);
 }
 
@@ -622,7 +622,7 @@ public: // non-mutators
 	 *
 	 * @note{The runtime API supposedly offers to insert "copy to symbol" and "copy from symbol"
 	 * nodes. These are actually just plain 1D memory copies; use
-	 * @ref cuda::memory::symbol::locate() to obtain the symbol's address. }
+	 * @ref cuda_::memory::symbol::locate() to obtain the symbol's address. }
 	 */
 	class insert_t {
 	protected:
@@ -682,7 +682,7 @@ public: // non-mutators
 			// on this knowledge in another function.
 			static constexpr const bool inserter_takes_context = node::detail_::kind_traits<Kind>::inserter_takes_context;
 			return template_::detail_::build_params_and_insert_node_wrapper<Kind>(
-				cuda::detail_::bool_constant<inserter_takes_context>{}, handle(),
+				cuda_::detail_::bool_constant<inserter_takes_context>{}, handle(),
 				::std::forward<T>(arg), ::std::forward<Ts>(node_params_ctor_arguments)...);
 		}
 	}; // insert_t
@@ -833,7 +833,7 @@ inline template_t create()
 
 inline ::std::string identify(const template_t& template_)
 {
-	return "CUDA execution graph template at " + cuda::detail_::ptr_as_hex(template_.handle());
+	return "CUDA execution graph template at " + cuda_::detail_::ptr_as_hex(template_.handle());
 }
 
 constexpr const ::std::initializer_list<node_t> no_dependencies {};
@@ -881,7 +881,7 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 	// parameters were valid, but the node was not found
 	auto search_result = reinterpret_cast<node::handle_t>(0x1);
 	auto status = cuGraphNodeFindInClone(&search_result, node.handle(), cloned_graph.handle());
-	if (status == cuda::status::invalid_value and search_result != nullptr) {
+	if (status == cuda_::status::invalid_value and search_result != nullptr) {
 		return nullopt;
 	}
 	throw_if_error_lazy(status, "Searching for a copy of " + node::detail_::identify(node) + " in " + template_::detail_::identify(cloned_graph));
@@ -890,7 +890,7 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 
 } // namespace graph
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

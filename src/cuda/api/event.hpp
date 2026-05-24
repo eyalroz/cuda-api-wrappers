@@ -17,7 +17,7 @@
 #include "error.hpp"
 #include "ipc.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -229,11 +229,11 @@ public: // other mutator methods
 	void fire(const stream_t& stream) const;
 
 	/**
-	 * See @see cuda::wait() .
+	 * See @see cuda_::wait() .
 	 */
 	void synchronize() const
 	{
-		return cuda::wait(*this);
+		return cuda_::wait(*this);
 	}
 
 protected: // constructors
@@ -397,7 +397,7 @@ inline event_t create_in_current_context(
 }
 
 /**
- * @note see @ref cuda::event::create()
+ * @note see @ref cuda_::event::create()
  */
 
 inline event_t create(
@@ -468,6 +468,6 @@ inline void synchronize(const event_t& event)
 	return wait(event);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_EVENT_HPP_

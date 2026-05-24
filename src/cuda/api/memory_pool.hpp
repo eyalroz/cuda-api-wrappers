@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief The @ref cuda::memory::pool_t proxy class for memory pools, and related
+ * @brief The @ref cuda_::memory::pool_t proxy class for memory pools, and related
  * code for creating, manipulating and allocating using memory pools.
  */
 #pragma once
@@ -12,7 +12,7 @@
 
 #include "memory.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -32,7 +32,7 @@ namespace detail_ {
  *
  * @param device_id id of the device on which the allocation is to be made.
  */
-inline CUmemLocation create_mem_location(cuda::device::id_t device_id) noexcept
+inline CUmemLocation create_mem_location(cuda_::device::id_t device_id) noexcept
 {
 	CUmemLocation result;
 	result.id = device_id;
@@ -45,7 +45,7 @@ template<pool::shared_handle_kind_t SharedHandleKind = pool::shared_handle_kind_
 #else
 template<pool::shared_handle_kind_t SharedHandleKind>
 #endif
-CUmemPoolProps create_raw_properties(cuda::device::id_t device_id) noexcept
+CUmemPoolProps create_raw_properties(cuda_::device::id_t device_id) noexcept
 {
 	CUmemPoolProps result;
 
@@ -62,12 +62,12 @@ CUmemPoolProps create_raw_properties(cuda::device::id_t device_id) noexcept
 
 inline ::std::string identify(pool::handle_t handle)
 {
-	return "memory pool at " + cuda::detail_::ptr_as_hex(handle);
+	return "memory pool at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(pool::handle_t handle, cuda::device::id_t device_id)
+inline ::std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
 {
-	return identify(handle) + " on " + cuda::device::detail_::identify(device_id);
+	return identify(handle) + " on " + cuda_::device::detail_::identify(device_id);
 }
 
 ::std::string identify(const pool_t &pool);
@@ -166,25 +166,25 @@ void set_attribute(handle_t pool_handle, attribute_value_t<attribute> value)
  * @param owning true if the proxy object needs to destroy the pool at
  * the end of its lifetime
  */
-pool_t wrap(cuda::device::id_t device_id, pool::handle_t handle, bool owning) noexcept;
+pool_t wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept;
 
 } // namespace pool
 
 
 namespace detail_ {
 
-inline permissions_t get_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle)
+inline permissions_t get_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle)
 {
 	CUmemAccess_flags access_flags;
 	auto mem_location = pool::detail_::create_mem_location(device_id);
 	auto status = cuMemPoolGetAccess(&access_flags, pool_handle, &mem_location);
 	throw_if_error_lazy(status,
-		"Determining access information for " + cuda::device::detail_::identify(device_id)
+		"Determining access information for " + cuda_::device::detail_::identify(device_id)
 		+ " to " + pool::detail_::identify(pool_handle));
 	return permissions::detail_::from_flags(access_flags);
 }
 
-inline void set_permissions(span<cuda::device::id_t> device_ids, pool::handle_t pool_handle, permissions_t permissions)
+inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
 		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
@@ -210,7 +210,7 @@ inline void set_permissions(span<cuda::device::id_t> device_ids, pool::handle_t 
 		+ " devices to " + pool::detail_::identify(pool_handle));
 }
 
-inline void set_permissions(cuda::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
+inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
 		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
@@ -226,14 +226,14 @@ inline void set_permissions(cuda::device::id_t device_id, pool::handle_t pool_ha
 	desc.location = pool::detail_::create_mem_location(device_id);
 	auto status = cuMemPoolSetAccess(pool_handle, &desc, 1);
 	throw_if_error_lazy(status,
-		"Setting access get_permissions for " + cuda::device::detail_::identify(device_id)
+		"Setting access get_permissions for " + cuda_::device::detail_::identify(device_id)
 		+ " to " + pool::detail_::identify(pool_handle));
 }
 
 } // namespace detail_
 
-permissions_t get_permissions(const cuda::device_t& device, const pool_t& pool);
-void set_permissions(const cuda::device_t& device, const pool_t& pool, permissions_t permissions);
+permissions_t get_permissions(const cuda_::device_t& device, const pool_t& pool);
+void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions);
 template <typename DeviceRange>
 void get_permissions(DeviceRange devices, const pool_t& pool_handle, permissions_t permissions);
 
@@ -316,7 +316,7 @@ public:
 		set_attribute<CU_MEMPOOL_ATTR_RELEASE_THRESHOLD>(threshold);
 	}
 
-	permissions_t permissions(const cuda::device_t& device)
+	permissions_t permissions(const cuda_::device_t& device)
 	{
 		return memory::get_permissions(device, *this);
 	}
@@ -335,7 +335,7 @@ public:
 	 * @param device the device the kernels running on which are governed by this new setting
 	 * @param permissions new read and write get_permissions to use
 	 */
-	void set_permissions(const cuda::device_t& device, permissions_t permissions)
+	void set_permissions(const cuda_::device_t& device, permissions_t permissions)
 	{
 		return memory::set_permissions(device, *this, permissions);
 	}
@@ -395,11 +395,11 @@ public: // field getters
 	/**
 	 * Obtain the id of the device in whose global memory this pool allocates
 	 */
-	cuda::device::id_t device_id() const noexcept { return device_id_; }
+	cuda_::device::id_t device_id() const noexcept { return device_id_; }
 	/**
 	 * Obtain the device in whose global memory this pool allocates
 	 */
-	cuda::device_t device() const noexcept;
+	cuda_::device_t device() const noexcept;
 	/**
 	 * Determine whether this proxy object "owns" the pool, i.e. whether
 	 * it is charged with destroying it at the end of its lifetime
@@ -408,7 +408,7 @@ public: // field getters
 
 
 public: // construction & destruction
-	friend pool_t pool::wrap(cuda::device::id_t device_id, pool::handle_t handle, bool owning) noexcept;
+	friend pool_t pool::wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept;
 
 	pool_t(const pool_t& other) = delete;
 
@@ -428,12 +428,12 @@ public: // construction & destruction
 	}
 
 protected: // constructors
-	pool_t(cuda::device::id_t device_id, pool::handle_t handle, bool owning) noexcept
+	pool_t(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept
 	: device_id_(device_id), handle_(handle), owning_(owning)
 	{ }
 
 protected: // data members
-	cuda::device::id_t device_id_;
+	cuda_::device::id_t device_id_;
 	pool::handle_t handle_;
 	bool owning_;
 }; // class pool_t
@@ -451,7 +451,7 @@ inline bool operator!=(const pool_t& lhs, const pool_t& rhs)
 
 namespace pool {
 
-inline pool_t wrap(cuda::device::id_t device_id, pool::handle_t handle, bool owning) noexcept
+inline pool_t wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept
 {
 	return { device_id, handle, owning };
 }
@@ -459,12 +459,12 @@ inline pool_t wrap(cuda::device::id_t device_id, pool::handle_t handle, bool own
 namespace detail_ {
 
 template<shared_handle_kind_t SharedHandleKind = shared_handle_kind_t::no_export>
-pool_t create(cuda::device::id_t device_id)
+pool_t create(cuda_::device::id_t device_id)
 {
 	auto props = create_raw_properties<SharedHandleKind>(device_id);
 	handle_t handle;
 	auto status = cuMemPoolCreate(&handle, &props);
-	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda::device::detail_::identify(device_id));
+	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda_::device::detail_::identify(device_id));
 	constexpr const bool is_owning { true };
 	return wrap(device_id, handle, is_owning);
 }
@@ -477,13 +477,13 @@ inline ::std::string identify(const pool_t& pool)
 } // namespace detail_
 
 template<shared_handle_kind_t SharedHandleKind>
-pool_t create(const cuda::device_t& device);
+pool_t create(const cuda_::device_t& device);
 
 } // namespace pool
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 11020
 

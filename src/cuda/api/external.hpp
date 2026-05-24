@@ -15,7 +15,7 @@
 #include "memory.hpp"
 #include "unique_region.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -61,7 +61,7 @@ inline ::std::string identify(subregion_spec_t subregion_spec)
 
 inline ::std::string identify(handle_t handle)
 {
-	return "external memory resource at " + cuda::detail_::ptr_as_hex(handle);
+	return "external memory resource at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline ::std::string identify(descriptor_t descriptor)
@@ -72,7 +72,7 @@ inline ::std::string identify(descriptor_t descriptor)
 inline ::std::string identify(handle_t handle, descriptor_t descriptor)
 {
 	return "external memory resource of kind " + ::std::to_string(descriptor.type)
-		   + " at " + cuda::detail_::ptr_as_hex(handle);
+		   + " at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 inline handle_t import(const descriptor_t& descriptor)
@@ -191,7 +191,7 @@ inline unique_region map(const resource_t& resource)
 
 } // namespace external
 } // namespace memory
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000
 

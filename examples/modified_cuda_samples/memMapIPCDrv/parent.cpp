@@ -15,16 +15,16 @@
 
 #include "memMapIPC.hpp"
 
-std::vector<cuda::device_t> get_usable_devices()
+std::vector<cuda_::device_t> get_usable_devices()
 {
-	std::vector<cuda::context_t> contexts;
-	std::vector<cuda::device_t> selected_devices;
+	std::vector<cuda_::context_t> contexts;
+	std::vector<cuda_::device_t> selected_devices;
 
 	// Pick all the devices that can access each other's memory for this test
 	// Keep in mind that CUDA has minimal support for fork() without a
 	// corresponding exec() in the child process, but in this case our
 	// spawnProcess will always exec, so no need to worry.
-	for (auto device: cuda::devices())
+	for (auto device: cuda_::devices())
 	{
 		auto compute_mode = device.get_attribute(CU_DEVICE_ATTRIBUTE_COMPUTE_MODE);
 		// This sample requires two processes accessing each device, so we need
@@ -53,20 +53,20 @@ std::vector<cuda::device_t> get_usable_devices()
 			continue;
 		}
 
-		bool can_access_all_peers = std::all_of(cuda::devices().begin(), cuda::devices().end(),
-			[&](const cuda::device_t& peer_device) {
-				return cuda::device::peer_to_peer::can_access_each_other(device, peer_device);
+		bool can_access_all_peers = std::all_of(cuda_::devices().begin(), cuda_::devices().end(),
+			[&](const cuda_::device_t& peer_device) {
+				return cuda_::device::peer_to_peer::can_access_each_other(device, peer_device);
 			} );
 
 		if (can_access_all_peers) {
-			auto context = cuda::context::create(device);
+			auto context = cuda_::context::create(device);
 
 			// Enable peers here.  This isn't necessary for IPC, but it will
 			// setup the peers for the device.  For systems that only allow 8
 			// peers per GPU at a time, this acts to remove devices from CanAccessPeer
 			for (const auto& peer_context : contexts) {
 				// Actually this doubles work
-				cuda::context::peer_to_peer::enable_bidirectional_access(context, peer_context);
+				cuda_::context::peer_to_peer::enable_bidirectional_access(context, peer_context);
 			}
 			contexts.emplace_back(std::move(context));
 
@@ -129,9 +129,9 @@ void getDefaultSecurityDescriptor(CUmemAllocationProp *prop)
 #endif
 }
 
-allocation_t make_allocation(const cuda::device_t& device, size_t single_allocation_size)
+allocation_t make_allocation(const cuda_::device_t& device, size_t single_allocation_size)
 {
-	auto props = cuda::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
+	auto props = cuda_::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 
 	// Get the minimum granularity supported for physical_allocation with cuMemCreate()
 	auto granularity = props.minimum_granularity();
@@ -148,10 +148,10 @@ allocation_t make_allocation(const cuda::device_t& device, size_t single_allocat
 	// other handle types, pass NULL.
 	getDefaultSecurityDescriptor(&props.raw);
 
-	return cuda::memory::physical_allocation::create(single_allocation_size, props);
+	return cuda_::memory::physical_allocation::create(single_allocation_size, props);
 }
 
-Process spawn_child_process(const char* path_to_this_executable, std::size_t process_index, cuda::device_t device)
+Process spawn_child_process(const char* path_to_this_executable, std::size_t process_index, cuda_::device_t device)
 {
 	// TODO: Avoid using NVIDIA's multiprocess helper header in favor of something less ugly.
 
@@ -167,7 +167,7 @@ Process spawn_child_process(const char* path_to_this_executable, std::size_t pro
 	return spawnProcess(path_to_this_executable, args);
 }
 
-std::vector<Process> spawn_child_processes(const char *path_to_this_executable, std::vector<cuda::device_t>& devices)
+std::vector<Process> spawn_child_processes(const char *path_to_this_executable, std::vector<cuda_::device_t>& devices)
 {
 	std::vector<Process> processes;
 	auto enumerated_devices = enumerate(devices);

@@ -13,7 +13,7 @@
 
 #include <nvFatbin.h>
 
-namespace cuda {
+namespace cuda_ {
 
 namespace fatbin_builder {
 
@@ -22,7 +22,7 @@ using status_t = nvFatbinResult;
 
 } // namespace fatbin_builder
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_VERSION >= 12040
 

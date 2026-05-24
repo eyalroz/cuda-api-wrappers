@@ -28,7 +28,7 @@
 #include <tuple>
 #include <algorithm>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -141,7 +141,7 @@ inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
 	context::handle_t handle;
 	auto result = cuStreamGetCtx(stream_handle, &handle);
-	throw_if_error_lazy(result, "Failed obtaining the context of " + cuda::detail_::ptr_as_hex(stream_handle));
+	throw_if_error_lazy(result, "Failed obtaining the context of " + cuda_::detail_::ptr_as_hex(stream_handle));
 	return handle;
 }
 #endif // CUDA_VERSION >= 9020
@@ -380,7 +380,7 @@ public: // mutators
 			launch_configuration_t      launch_configuration,
 			KernelParameters &&...      parameters) const
 		{
-			return cuda::enqueue_launch(
+			return cuda_::enqueue_launch(
 				kernel_function,
 				associated_stream,
 				launch_configuration,
@@ -624,7 +624,7 @@ public: // mutators
 		 *
 		 * @param managed_region_start a pointer to the beginning of the managed memory region.
 		 * This cannot be a pointer to anywhere in the middle of an allocated region - you must
-		 * pass whatever @ref cuda::memory::managed::allocate() returned.
+		 * pass whatever @ref cuda_::memory::managed::allocate() returned.
 		 *
 		 * The attachment is actually a commitment vis-a-vis the CUDA driver and the GPU itself
 		 * that it doesn't need to worry about accesses to this memory from devices other than
@@ -838,7 +838,7 @@ public: // mutators
 	 */
 	void synchronize() const
 	{
-		cuda::synchronize(*this);
+		cuda_::synchronize(*this);
 	}
 
 #if CUDA_VERSION >= 11000
@@ -863,7 +863,7 @@ public: // mutators
 
 	// TODO: Create a dummy capture object, then we could have capture.start(), capture.stop(), capture.status(),
 	// and perhaps a capture_() which takes a lambda. Also offer a
-	// cuda::stream::capture(const stream_t& stream, F f) template!
+	// cuda_::stream::capture(const stream_t& stream, F f) template!
 
 
 #if CUDA_VERSION >= 10000
@@ -1178,6 +1178,6 @@ inline void begin(const stream_t& stream, mode_t mode)
 void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_STREAM_HPP_

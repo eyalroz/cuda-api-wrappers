@@ -34,22 +34,22 @@ int main(int argc, char* argv[])
 	size_t num_chunks = 8;
 	auto overall_elements = num_chunks * chunk_size;
 
-	auto host_data = cuda::memory::host::make_unique_span<float>(overall_elements);
+	auto host_data = cuda_::memory::host::make_unique_span<float>(overall_elements);
 	// Fill with zeros as dummy data
 	std::memset(host_data.data(), 0, host_data.size());
 
 	auto device_id = (argc > 1) ? std::atoi(argv[1]) : 0;
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 	std::cout << "Device: " << device.name() << '\n';
 
-	auto device_data = cuda::make_unique_span<float>(device, overall_elements);
+	auto device_data = cuda_::make_unique_span<float>(device, overall_elements);
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(chunk_size)
 		.block_size(launch_grid_block_size)
 		.build();
 
-	auto streams = cuda::generate_unique_span<cuda::stream_t>(
+	auto streams = cuda_::generate_unique_span<cuda_::stream_t>(
 		num_chunks, [&](size_t) { return device.create_stream(); });
 
 	for (size_t i = 0; i < num_chunks; ++i) {

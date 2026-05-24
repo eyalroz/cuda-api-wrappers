@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Contains the @ref cuda::rtc::compilation_output_t class and related code.
+ * @brief Contains the @ref cuda_::rtc::compilation_output_t class and related code.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_
@@ -15,7 +15,7 @@
 #include <vector>
 #include <iostream>
 
-namespace cuda {
+namespace cuda_ {
 
 ///@cond
 class device_t;
@@ -76,7 +76,7 @@ template <source_kind_t Kind>
 template <source_kind_t Kind>
 ::std::string identify(program::handle_t<Kind> handle, const char *name = nullptr)
 {
-	return identify<Kind>(name) + " at " + cuda::detail_::ptr_as_hex(handle);
+	return identify<Kind>(name) + " at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
 template <source_kind_t Kind>
@@ -707,7 +707,7 @@ template<> inline module_t create<cuda_cpp>(
 {
 	if (not compilation_output.succeeded()) {
 		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda::rtc::program::detail_::identify<cuda_cpp>(compilation_output.program_handle()));
+			+ cuda_::rtc::program::detail_::identify<cuda_cpp>(compilation_output.program_handle()));
 	}
 #if CUDA_VERSION >= 11010
 	auto program_handle = compilation_output.program_handle();
@@ -736,7 +736,7 @@ template<> inline module_t create<source_kind_t::ptx>(
 {
 	if (not compilation_output.succeeded()) {
 		throw ::std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda::rtc::program::detail_::identify<source_kind_t::ptx>(compilation_output.program_handle()));
+			+ cuda_::rtc::program::detail_::identify<source_kind_t::ptx>(compilation_output.program_handle()));
 	}
 	auto cubin = compilation_output.cubin();
 	return module::create(context, cubin.get(), options);
@@ -757,6 +757,6 @@ module_t create(
 
 } // namespace module
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_

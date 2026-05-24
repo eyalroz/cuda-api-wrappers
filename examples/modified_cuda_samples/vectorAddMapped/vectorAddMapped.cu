@@ -28,7 +28,7 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 
 int main()
 {
-	if (cuda::device::count() == 0) {
+	if (cuda_::device::count() == 0) {
 		std::cerr << "No CUDA devices on this system" << "\n";
 		exit(EXIT_FAILURE);
 	}
@@ -37,10 +37,10 @@ int main()
 	size_t size = numElements * sizeof(float);
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
 
-	auto device = cuda::device::current::get();
-	auto buffer_A = cuda::memory::mapped::allocate(device, size);
-	auto buffer_B = cuda::memory::mapped::allocate(device, size);
-	auto buffer_C = cuda::memory::mapped::allocate(device, size);
+	auto device = cuda_::device::current::get();
+	auto buffer_A = cuda_::memory::mapped::allocate(device, size);
+	auto buffer_B = cuda_::memory::mapped::allocate(device, size);
+	auto buffer_C = cuda_::memory::mapped::allocate(device, size);
 
 	auto a = buffer_A.as_spans<float>();
 	auto b = buffer_B.as_spans<float>();
@@ -56,7 +56,7 @@ int main()
 
 	// Launch the Vector Add CUDA Kernel
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(numElements)
 		.block_size(256)
 		.build();
@@ -65,7 +65,7 @@ int main()
 		<< "CUDA kernel launch with " << launch_config.dimensions.grid.volume()
 		<< " blocks of " << launch_config.dimensions.block.volume() << " threads\n";
 
-	cuda::launch(
+	cuda_::launch(
 		vectorAdd, launch_config,
 		a.device_side.data(), b.device_side.data(), c.device_side.data(), numElements);
 
@@ -82,9 +82,9 @@ int main()
 		}
 	}
 
-	cuda::memory::mapped::free(buffer_A);
-	cuda::memory::mapped::free(buffer_B);
-	cuda::memory::mapped::free(buffer_C);
+	cuda_::memory::mapped::free(buffer_A);
+	cuda_::memory::mapped::free(buffer_B);
+	cuda_::memory::mapped::free(buffer_C);
 
 	std::cout << "Test PASSED\n";
 	std::cout << "SUCCESS\n";

@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief Implementations of utility functions related to the @ref cuda::unique_span class
+ * @brief Implementations of utility functions related to the @ref cuda_::unique_span class
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_UNIQUE_SPAN_HPP_
@@ -15,7 +15,7 @@
 #include "../types.hpp"
 #include "../device.hpp"
 
-namespace cuda {
+namespace cuda_ {
 
 namespace memory {
 
@@ -61,8 +61,8 @@ unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
 template <typename T>
 unique_span<T> make_unique_span(size_t num_elements)
 {
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail_::get_id();
+	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
 	return device::make_unique_span<T>(pc, num_elements);
 }
 
@@ -102,8 +102,8 @@ unique_span<T> make_unique_span(
 	size_t                size,
 	initial_visibility_t  initial_visibility)
 {
-	auto current_device_id = cuda::device::current::detail_::get_id();
-	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail_::get_id();
+	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
 	return make_unique_span<T>(pc, size, initial_visibility);
 }
 
@@ -111,7 +111,7 @@ unique_span<T> make_unique_span(
 
 } // namespace memory
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_UNIQUE_SPAN_HPP_
 

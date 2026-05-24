@@ -36,7 +36,7 @@
 #if __cplusplus >= 202001L
 using span = ::std::span;
 #else
-using ::cuda::span;
+using ::cuda_::span;
 #endif
 
 #define N_ROWS 512
@@ -63,8 +63,8 @@ void report_error_sum(const char* where, int num_iterations, double sum_on_cpu);
 
 template <computation_method_t Method>
 double do_jacobi_inner(
-	const cuda:: device_t& device,
-	const cuda::stream_t &stream,
+	const cuda_:: device_t& device,
+	const cuda_::stream_t &stream,
 	span<float  const> A,
 	span<double const> b,
 	float conv_threshold,

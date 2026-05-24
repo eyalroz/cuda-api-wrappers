@@ -4,8 +4,8 @@
  * @brief Implementations requiring the definitions of multiple CUDA entity proxy classes,
  * and which regard contexts. Specifically:
  *
- * 1. Functions in the @ref cuda::context namespace.
- * 2. Methods of @ref cuda::context_t and possibly some relates classes.
+ * 1. Functions in the @ref cuda_::context namespace.
+ * 2. Methods of @ref cuda_::context_t and possibly some relates classes.
  */
 #pragma once
 #ifndef MULTI_WRAPPER_IMPLS_CONTEXT_HPP_
@@ -21,7 +21,7 @@
 #include "../context.hpp"
 
 
-namespace cuda {
+namespace cuda_ {
 
 namespace context {
 
@@ -131,7 +131,7 @@ inline handle_t push_default_if_missing()
  * object - but the instantiator would be aware of this, having asked for such behavior
  * explicitly; and would itself carry the onus of decreasing the ref unit at some point.
  *
- * @note See also the simpler @ref cuda::context::current::scoped_ensurer_t ,
+ * @note See also the simpler @ref cuda_::context::current::scoped_ensurer_t ,
  * which takes the context handle to push in the first place.
  */
 class scoped_existence_ensurer_t {
@@ -143,7 +143,7 @@ public:
 	explicit scoped_existence_ensurer_t(bool avoid_pc_refcount_increase = true)
 	{
 		auto status_and_handle = get_with_status();
-		if (status_and_handle.status == cuda::status::not_yet_initialized) {
+		if (status_and_handle.status == cuda_::status::not_yet_initialized) {
 			context_handle = context::detail_::none;
 			initialize_driver(); // and the handle
 		}
@@ -276,13 +276,13 @@ inline memory::region_t context_t::global_memory_type::allocate_managed(
 
 inline device_t context_t::global_memory_type::associated_device() const
 {
-	return cuda::device::get(device_id_);
+	return cuda_::device::get(device_id_);
 }
 
 inline context_t context_t::global_memory_type::associated_context() const
 {
 	static constexpr const bool non_owning { false };
-	return cuda::context::wrap(device_id_, context_handle_, non_owning);
+	return cuda_::context::wrap(device_id_, context_handle_, non_owning);
 }
 
 inline bool context_t::is_primary() const
@@ -321,7 +321,7 @@ inline event_t context_t::create_event(
 	bool records_timing,
 	bool interprocess) const
 {
-	return cuda::event::detail_::create(
+	return cuda_::event::detail_::create(
 		device_id_, handle_, does_not_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
@@ -340,7 +340,7 @@ void context_t::launch(
 	default_stream().enqueue.kernel_launch(kernel, launch_configuration, parameters...);
 }
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // MULTI_WRAPPER_IMPLS_CONTEXT_HPP_
 

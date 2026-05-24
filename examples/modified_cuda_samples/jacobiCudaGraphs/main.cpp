@@ -100,8 +100,8 @@ void createLinearSystem(span<float> A, span<double> b)
 
 template <computation_method_t Method>
 bool do_gpu_jacobi(
-	const cuda::device_t& device,
-	const cuda::stream_t& stream,
+	const cuda_::device_t& device,
+	const cuda_::stream_t& stream,
 	span<float  const> A,
 	span<double const> b,
 	span<float      > d_A,
@@ -141,11 +141,11 @@ void report_error_sum(const char* where, int num_iterations, double sum_on_cpu)
 int main(int argc, char **argv)
 {
 	// Being very cavalier about our command-line arguments here...
-	cuda::device::id_t device_id = (argc > 1) ? ::std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id);
+	cuda_::device::id_t device_id = (argc > 1) ? ::std::stoi(argv[1]) : cuda_::device::default_device_id;
+	auto device = cuda_::device::get(device_id);
 
-	auto b = cuda::memory::host::make_unique_span<double>(N_ROWS);
-	auto A = cuda::memory::host::make_unique_span<float>(N_ROWS * N_ROWS);
+	auto b = cuda_::memory::host::make_unique_span<double>(N_ROWS);
+	auto A = cuda_::memory::host::make_unique_span<float>(N_ROWS * N_ROWS);
 
 	createLinearSystem(A, b);
 
@@ -163,12 +163,12 @@ int main(int argc, char **argv)
 
 //	printf("CPU Processing time: %f (ms)\n", sdkGetTimerValue(&timerCPU));
 
-	auto d_A = cuda::memory::device::make_unique_span<float>(device, N_ROWS * N_ROWS);
-	auto d_b = cuda::memory::device::make_unique_span<double>(device, N_ROWS);
-	auto d_x = cuda::memory::device::make_unique_span<double>(device, N_ROWS);
-	auto d_x_new = cuda::memory::device::make_unique_span<double>(device, N_ROWS);
-	auto d_sum = cuda::memory::device::make_unique_span<double>(device, 1);
-	auto stream = cuda::stream::create(device, cuda::stream::async);
+	auto d_A = cuda_::memory::device::make_unique_span<float>(device, N_ROWS * N_ROWS);
+	auto d_b = cuda_::memory::device::make_unique_span<double>(device, N_ROWS);
+	auto d_x = cuda_::memory::device::make_unique_span<double>(device, N_ROWS);
+	auto d_x_new = cuda_::memory::device::make_unique_span<double>(device, N_ROWS);
+	auto d_sum = cuda_::memory::device::make_unique_span<double>(device, 1);
+	auto stream = cuda_::stream::create(device, cuda_::stream::async);
 
 	do_gpu_jacobi<graph_with_set_kernel_params>(
 		device,	stream, A, b, d_A, d_b, convergence_threshold, num_iterations, d_x, d_x_new, d_sum, sum_on_cpu) or die_();

@@ -26,9 +26,9 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 int main()
 {
 	profile_this_scope();
-	cuda::profiling::name_this_thread("The single thread for vectorAdd_profile :-)");
-	auto profiling_range_handle = cuda::profiling::mark::range_start("main range of vectorAdd_profile");
-	if (cuda::device::count() == 0) {
+	cuda_::profiling::name_this_thread("The single thread for vectorAdd_profile :-)");
+	auto profiling_range_handle = cuda_::profiling::mark::range_start("main range of vectorAdd_profile");
+	if (cuda_::device::count() == 0) {
 		std::cerr << "No CUDA devices on this system" << "\n";
 		exit(EXIT_FAILURE);
 	}
@@ -43,17 +43,17 @@ int main()
 	std::generate(h_A.get(), h_A.get() + numElements, generator);
 	std::generate(h_B.get(), h_B.get() + numElements, generator);
 
-	auto device = cuda::device::current::get();
-	auto d_A = cuda::make_unique_span<float>(device, numElements);
-	auto d_B = cuda::make_unique_span<float>(device, numElements);
-	auto d_C = cuda::make_unique_span<float>(device, numElements);
+	auto device = cuda_::device::current::get();
+	auto d_A = cuda_::make_unique_span<float>(device, numElements);
+	auto d_B = cuda_::make_unique_span<float>(device, numElements);
+	auto d_C = cuda_::make_unique_span<float>(device, numElements);
 
-	cuda::memory::copy(d_A, h_A.get());
-	cuda::memory::copy(d_B, h_B.get());
+	cuda_::memory::copy(d_A, h_A.get());
+	cuda_::memory::copy(d_B, h_B.get());
 
 	// Launch the Vector Add CUDA Kernel
 
-	auto launch_config = cuda::launch_config_builder()
+	auto launch_config = cuda_::launch_config_builder()
 		.overall_size(numElements)
 		.block_size(256)
 		.build();
@@ -62,14 +62,14 @@ int main()
 		<< "CUDA kernel launch with " << launch_config.dimensions.grid.x
 		<< " blocks of " << launch_config.dimensions.block.x << " threads each\n";
 
-	cuda::launch(vectorAdd,
+	cuda_::launch(vectorAdd,
 		launch_config,
 		d_A.data(), d_B.data(), d_C.data(), numElements
 	);
 
-	cuda::memory::copy(h_C.get(), d_C);
+	cuda_::memory::copy(h_C.get(), d_C);
 
-	cuda::profiling::mark::range_end(profiling_range_handle);
+	cuda_::profiling::mark::range_end(profiling_range_handle);
 
 	std::cout << "SUCCESS\n";
 }

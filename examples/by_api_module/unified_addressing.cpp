@@ -21,34 +21,34 @@
 namespace tests {
 
 #if CUDA_VERSION >= 9020
-void pointer_properties(const cuda::device_t& device)
+void pointer_properties(const cuda_::device_t& device)
 {
-	constexpr const cuda::size_t fixed_size { 123 };
-	cuda::context_t contexts[2] = {
-		cuda::context::create(device),
-		cuda::context::create(device)
+	constexpr const cuda_::size_t fixed_size { 123 };
+	cuda_::context_t contexts[2] = {
+		cuda_::context::create(device),
+		cuda_::context::create(device)
 	};
-	cuda::memory::device::unique_region regions[2] = {
-		cuda::memory::make_unique_region(contexts[0], fixed_size),
-		cuda::memory::make_unique_region(contexts[1], fixed_size)
+	cuda_::memory::device::unique_region regions[2] = {
+		cuda_::memory::make_unique_region(contexts[0], fixed_size),
+		cuda_::memory::make_unique_region(contexts[1], fixed_size)
 	};
 	void* raw_pointers[2] = {
 		regions[0].data(),
 		regions[1].data()
 	};
-	cuda::memory::pointer_t<void> pointers[2] = {
-		cuda::memory::pointer::wrap(raw_pointers[0]),
-		cuda::memory::pointer::wrap(raw_pointers[1]),
+	cuda_::memory::pointer_t<void> pointers[2] = {
+		cuda_::memory::pointer::wrap(raw_pointers[0]),
+		cuda_::memory::pointer::wrap(raw_pointers[1]),
 	};
 	auto primary_context = device.primary_context();
-	cuda::context::current::push(primary_context); // so that we check from a different context
+	cuda_::context::current::push(primary_context); // so that we check from a different context
 	for(size_t i = 0; i < 2; i++) {
-		auto reported_device_id = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(raw_pointers[i]);
+		auto reported_device_id = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(raw_pointers[i]);
 		assert_(reported_device_id == device.id());
-		auto context_handle = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(raw_pointers[i]);
+		auto context_handle = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(raw_pointers[i]);
 		assert_(context_handle == contexts[i].handle());
-		auto ptr_mem_type = cuda::memory::type_of(raw_pointers[i]);
-		assert_(ptr_mem_type == cuda::memory::type_t::device_ or ptr_mem_type == cuda::memory::type_t::unified_);
+		auto ptr_mem_type = cuda_::memory::type_of(raw_pointers[i]);
+		assert_(ptr_mem_type == cuda_::memory::type_t::device_ or ptr_mem_type == cuda_::memory::type_t::unified_);
 		if (i == 0) {
 			std::cout << "The memory type reported for pointers to memory allocated on the device is: " << memory_type_name(ptr_mem_type) << "\n";
 		}
@@ -57,23 +57,23 @@ void pointer_properties(const cuda::device_t& device)
 			auto host_ptr = pointers[i].get_for_host();
 			(void) host_ptr; // Some compilers don't respect [[maybe_unused]] :-(
 			die_("Was expecting the host_ptr() method to fail for a device-side pointer");
-		} catch(cuda::runtime_error& e) {
-			if (e.code() != cuda::status::named_t::invalid_value) { throw; }
+		} catch(cuda_::runtime_error& e) {
+			if (e.code() != cuda_::status::named_t::invalid_value) { throw; }
 		}
-		auto ptr_reported_as_managed = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_IS_MANAGED>(raw_pointers[i]);
+		auto ptr_reported_as_managed = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_IS_MANAGED>(raw_pointers[i]);
 		assert_(ptr_reported_as_managed == 0);
-//		auto ptr_reported_as_mapped = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MAPPED>(raw_pointers[i]);
+//		auto ptr_reported_as_mapped = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MAPPED>(raw_pointers[i]);
 //		assert_(ptr_reported_as_mapped == 0);
 #if CUDA_VERSION >= 11030
-		auto mempool_handle = cuda::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>(raw_pointers[i]);
+		auto mempool_handle = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>(raw_pointers[i]);
 		assert_(mempool_handle == nullptr);
 #endif
 #if CUDA_VERSION >= 10020
-		auto raw_offset_ptr = cuda::memory::as_pointer(cuda::memory::device::address(raw_pointers[i]) + 17);
+		auto raw_offset_ptr = cuda_::memory::as_pointer(cuda_::memory::device::address(raw_pointers[i]) + 17);
 
-		cuda::memory::region_t range  = pointers[i].containing_range();
-		cuda::memory::pointer_t<void> offset_ptr { raw_offset_ptr };
-		cuda::memory::region_t range_for_offset_ptr = offset_ptr.containing_range();
+		cuda_::memory::region_t range  = pointers[i].containing_range();
+		cuda_::memory::pointer_t<void> offset_ptr { raw_offset_ptr };
+		cuda_::memory::region_t range_for_offset_ptr = offset_ptr.containing_range();
 		assert_(range == range_for_offset_ptr);
 		assert_(range_for_offset_ptr.start() == raw_pointers[i]);
 #endif
@@ -93,19 +93,19 @@ void pointer_properties(const cuda::device_t& device)
 }
 #endif // CUDA_VERSION >= 9020
 
-void wrapped_pointers_and_regions(const cuda::device_t& device)
+void wrapped_pointers_and_regions(const cuda_::device_t& device)
 {
 	static const size_t allocation_size { 1024 };
 	auto memory_region = device.memory().allocate(allocation_size);
 
-	auto ptr = cuda::memory::pointer::wrap(memory_region.start());
+	auto ptr = cuda_::memory::pointer::wrap(memory_region.start());
 
 	std::cout
 		<< "Verifying a wrapper for raw pointer " << memory_region.start()
 		<< " allocated on the CUDA device." << std::endl;
 
-	switch (cuda::memory::type_of(ptr)) {
-	using namespace cuda::memory;
+	switch (cuda_::memory::type_of(ptr)) {
+	using namespace cuda_::memory;
 	case non_cuda:      die_("Pointer incorrectly reported to point into non-CUDA-allocated memory");
 	case host_:         die_("Pointer incorrectly reported to point into host memory");
 	case array:         die_("Pointer incorrectly reported to point to array memory");
@@ -119,8 +119,8 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 		auto ptr_device = ptr.device();
 		auto ptr_device_id = ptr_device.id();
 		(ptr_device_id == device.id()) or die_(
-			"Pointer incorrectly reported as associated with " + cuda::device::detail_::identify(device.id())
-			+ " rather than + " + cuda::device::detail_::identify(device.id()));
+			"Pointer incorrectly reported as associated with " + cuda_::device::detail_::identify(device.id())
+			+ " rather than + " + cuda_::device::detail_::identify(device.id()));
 	}
 #endif // CUDA_VERSION >= 9020
 	(ptr.get() == memory_region.start()) or die_("Invalid get() output");
@@ -137,8 +137,8 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 		ss << "Unexpected success getting a host-side pointer for a device-only allocation; allocated pointer: "
 				<< ptr.get() << ", " << " host-side pointer: " << host_side_ptr;
 	}
-	catch(cuda::runtime_error& e) {
-		if (e.code() != cuda::status::invalid_value) { throw; }
+	catch(cuda_::runtime_error& e) {
+		if (e.code() != cuda_::status::invalid_value) { throw; }
 	}
 }
 
@@ -146,9 +146,9 @@ void wrapped_pointers_and_regions(const cuda::device_t& device)
 
 int main(int argc, char **argv)
 {
-	cuda::device::id_t device_id =  (argc > 1) ?
-		std::stoi(argv[1]) : cuda::device::default_device_id;
-	auto device = cuda::device::get(device_id);
+	cuda_::device::id_t device_id =  (argc > 1) ?
+		std::stoi(argv[1]) : cuda_::device::default_device_id;
+	auto device = cuda_::device::get(device_id);
 
 	std::cout << "Using CUDA device " << device.name() << " (having device ID " << device.id() << ")" << std::endl;
 

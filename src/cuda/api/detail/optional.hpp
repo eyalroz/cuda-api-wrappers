@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @brief An implementation or an importation of a @ref cuda::optional class and related definitions.
+ * @brief An implementation or an importation of a @ref cuda_::optional class and related definitions.
  *
  */
 #ifndef CUDA_API_WRAPPERS_OPTIONAL_HPP
@@ -12,25 +12,25 @@
 #if __cplusplus >= 201703L
 #include <optional>
 #include <any>
-namespace cuda {
+namespace cuda_ {
 using ::std::optional;
 using ::std::nullopt_t;
 using ::std::nullopt;
-} // namespace cuda
+} // namespace cuda_
 #elif __cplusplus >= 201402L
 #include <experimental/optional>
 #include <experimental/any>
-namespace cuda {
+namespace cuda_ {
 using ::std::experimental::optional;
 using ::std::experimental::nullopt;
 using ::std::experimental::nullopt_t;
-} // namespace cuda
+} // namespace cuda_
 #else
 
 #include <type_traits>
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 
 namespace detail_ {
@@ -123,9 +123,9 @@ protected:
 } // namespace detail_
 
 template<typename T>
-using optional = cuda::detail_::poor_mans_optional<T>;
+using optional = cuda_::detail_::poor_mans_optional<T>;
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // __cplusplus >= 201402L
 

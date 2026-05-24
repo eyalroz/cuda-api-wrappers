@@ -101,8 +101,8 @@ void matrixMulCPU(float *C, const float *A, const float *B, unsigned int hA,
 }
 
 inline bool compare_l2_norm(
-	cuda::span<float const> reference,
-	cuda::span<const float> data,
+	cuda_::span<float const> reference,
+	cuda_::span<const float> data,
 	float const epsilon)
 {
 	if (reference.size() != data.size()) {
@@ -166,11 +166,11 @@ sMatrixSize initialize_matrix_dimensions()
 }
 
 void multiply_and_time_with_cublas(
-	cuda::device_t device,
-	cuda::span<float> d_A,
-	cuda::span<float> d_B,
-	cuda::span<float> d_C,
-	cuda::span<float> h_CUBLAS,
+	cuda_::device_t device,
+	cuda_::span<float> d_A,
+	cuda_::span<float> d_B,
+	cuda_::span<float> d_C,
+	cuda_::span<float> h_CUBLAS,
 	sMatrixSize matrix_dims,
 	int num_iterations)
 {
@@ -216,7 +216,7 @@ void multiply_and_time_with_cublas(
 	// Wait for the stop event to complete
 	end.synchronize();
 
-	auto total = cuda::event::time_elapsed_between(start, end);
+	auto total = cuda_::event::time_elapsed_between(start, end);
 
 	// Compute and print the performance
 	auto msec_per_iteration = total.count() / (float) num_iterations;
@@ -228,7 +228,7 @@ void multiply_and_time_with_cublas(
 	printf("Performance= %.2f GFlop/s, Time= %.3f msec, Size= %.0f Ops\n",
 		giga_ops_per_second, msec_per_iteration, ops_per_multiplication);
 
-	cuda::memory::copy(h_CUBLAS, d_C);
+	cuda_::memory::copy(h_CUBLAS, d_C);
 
 	// Destroy the handle
 	cublasDestroy(handle);
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 {
 	std::cout << "[Matrix Multiply CUBLAS] - Starting...\n";
 	auto device_id = choose_device(argc, argv);
-	auto device = cuda::device::get(device_id);
+	auto device = cuda_::device::get(device_id);
 
 	std::cout << "GPU Device " << device_id << ": \"" << device.name() << "\" "
 			  << "with compute capability " << device.compute_capability() << '\n';
@@ -254,9 +254,9 @@ int main(int argc, char **argv)
 	auto size_B = matrix_dims.uiWB * matrix_dims.uiHB;
 	auto size_C = matrix_dims.uiWC * matrix_dims.uiHC;
 
-	auto h_A = cuda::make_unique_span<float>(size_A);
-	auto h_B = cuda::make_unique_span<float>(size_B);
-	auto h_CUBLAS_result = cuda::make_unique_span<float>(size_C);
+	auto h_A = cuda_::make_unique_span<float>(size_A);
+	auto h_B = cuda_::make_unique_span<float>(size_B);
+	auto h_CUBLAS_result = cuda_::make_unique_span<float>(size_C);
 
 	// set seed for rand()
 	srand(2006);
@@ -267,18 +267,18 @@ int main(int argc, char **argv)
 	std::generate(h_B.begin(), h_B.end(), generator);
 
 	// allocate device memory
-	auto d_A = cuda::make_unique_span<float>(device, size_A);
-	auto d_B = cuda::make_unique_span<float>(device, size_B);
-	auto d_C = cuda::make_unique_span<float>(device, size_C);
+	auto d_A = cuda_::make_unique_span<float>(device, size_A);
+	auto d_B = cuda_::make_unique_span<float>(device, size_B);
+	auto d_C = cuda_::make_unique_span<float>(device, size_C);
 
-	cuda::memory::copy(d_A, h_A);
-	cuda::memory::copy(d_B, h_B);
+	cuda_::memory::copy(d_A, h_A);
+	cuda_::memory::copy(d_B, h_B);
 
 	multiply_and_time_with_cublas(device, d_A, d_B, d_C, h_CUBLAS_result, matrix_dims, num_iterations);
 
 	// compute reference solution
 	std::cout << "Computing result using host CPU... ";
-	auto h_CPU_result = cuda::make_unique_span<float>(size_C);
+	auto h_CPU_result = cuda_::make_unique_span<float>(size_C);
 	matrixMulCPU(h_CPU_result.data(), h_A.data(), h_B.data(), matrix_dims.uiHA, matrix_dims.uiWA, matrix_dims.uiWB);
 	std::cout << "done.\n";
 

@@ -14,7 +14,7 @@
 #include <ostream>
 #include <utility>
 
-namespace cuda {
+namespace cuda_ {
 
 /**
  * Obtains the CUDA Runtime version
@@ -58,7 +58,7 @@ namespace device {
  * a signed integer.
  *
  * @return the number of CUDA devices on this system
- * @throws cuda::error if the device count could not be obtained
+ * @throws cuda_::error if the device count could not be obtained
  */
 inline device::id_t count()
 {
@@ -84,6 +84,6 @@ inline device::id_t count()
 } // namespace device
 
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_MISCELLANY_HPP_

@@ -18,21 +18,21 @@
 
 #if __cplusplus >= 201703L
 #include <string_view>
-namespace cuda {
+namespace cuda_ {
 ///@cond
 using string_view = ::std::string_view;
 ///@endcond
 }
 #else
 #include <cuda/rtc/detail/string_view.hpp>
-namespace cuda {
+namespace cuda_ {
 ///@cond
 using string_view = bpstd::string_view;
 ///@endcond
 }
 #endif
 
-namespace cuda {
+namespace cuda_ {
 
 /// The API wrappers support different kinds of source code, accepted by
 /// different NVIDIA run-time compilation libraries
@@ -121,7 +121,7 @@ namespace program {
 /// Raw program handle used by the NVIDIA run-time compilation libraries's API calls:
 ///// The NVRTC library for CUDA C++, and the PTX compiler library
 template <source_kind_t Kind>
-using handle_t = typename cuda::rtc::detail_::types<Kind>::handle_type;
+using handle_t = typename cuda_::rtc::detail_::types<Kind>::handle_type;
 
 } // namespace program
 
@@ -132,6 +132,6 @@ using status_t = typename detail_::types<Kind>::status_type;
 
 } // namespace rtc
 
-} // namespace cuda
+} // namespace cuda_
 
 #endif /* SRC_CUDA_NVRTC_TYPES_HPP_ */
