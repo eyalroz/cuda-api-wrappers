@@ -80,7 +80,19 @@ using status_t = CUresult;
 
 /// A size type for use throughout the wrappers library (except when specific API functions
 /// limit the size further)
-using size_t = ::std::size_t;
+using ::std::size_t;
+
+/// The CUDA wrappers adopt the standard library's sized type definitions
+/// @{
+using ::std::int8_t;
+using ::std::int16_t;
+using ::std::int32_t;
+using ::std::int64_t;
+using ::std::uint8_t;
+using ::std::uint16_t;
+using ::std::uint32_t;
+using ::std::uint64_t;
+/// @}
 
 /// The index or number of dimensions of an entity (as opposed to the extent in any
 /// dimension) - typically just 0, 1, 2 or 3.
