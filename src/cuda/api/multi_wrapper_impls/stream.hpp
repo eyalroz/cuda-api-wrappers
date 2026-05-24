@@ -34,7 +34,7 @@ inline ::std::string identify(const stream_t& stream)
 }
 
 #if CUDA_VERSION >= 9020
-inline device::id_t device_id_of(stream::handle_t stream_handle)
+inline device::id_t device_id_of(handle_t stream_handle)
 {
 	return context::detail_::get_device_id(context_handle_of(stream_handle));
 }

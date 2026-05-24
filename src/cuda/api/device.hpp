@@ -344,7 +344,7 @@ public:
 		// If I were lazy, I would just write:
 		// return properties().name;
 		// and let you wait for all of that to get populated. But not me!
-		return cuda::device::detail_::get_name(id_);
+		return device::detail_::get_name(id_);
 	}
 
 	/**
@@ -609,7 +609,7 @@ public:
 	/// See @ref cuda::stream::create()
 	stream_t create_stream(
 		bool                will_synchronize_with_default_stream = stream::async,
-		stream::priority_t  priority = cuda::stream::default_priority) const;
+		stream::priority_t  priority = stream::default_priority) const;
 
 	/// See @ref cuda::event::create()
 	event_t create_event(
@@ -845,7 +845,7 @@ inline device_t get(id_t id)
  */
 inline device_t default_()
 {
-	return get(cuda::device::default_device_id);
+	return get(default_device_id);
 }
 
 /**

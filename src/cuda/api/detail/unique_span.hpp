@@ -39,7 +39,7 @@ namespace cuda {
  * @tparam T an individual element in the unique_span
  */
 template<typename T>
-class unique_span : public ::cuda::span<T> {
+class unique_span : public span<T> {
 public: // span types
 	using span_type = span<T>;
 

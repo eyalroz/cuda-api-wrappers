@@ -186,9 +186,9 @@ public: // other non-mutator methods
 	bool has_occurred() const
 	{
 		auto status = cuEventQuery(handle_);
-		if (status == cuda::status::success) return true;
-		if (status == cuda::status::async_operations_not_yet_completed) return false;
-		throw cuda::runtime_error(status,
+		if (status == status::success) return true;
+		if (status == status::async_operations_not_yet_completed) return false;
+		throw runtime_error(status,
 			"Could not determine whether " + event::detail_::identify(handle_)
 			+ "has already occurred or not");
 	}
@@ -371,7 +371,7 @@ inline ::std::string identify(const event_t& event)
 
 inline handle_t create_raw_in_current_context(flags_t flags = 0u)
 {
-	cuda::event::handle_t new_event_handle;
+	handle_t new_event_handle;
 	auto status = cuEventCreate(&new_event_handle, flags);
 	throw_if_error_lazy(status, "Failed creating a CUDA event");
 	return new_event_handle;

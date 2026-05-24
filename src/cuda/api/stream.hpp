@@ -222,14 +222,14 @@ inline state_t state(const stream_t& stream);
  *
  * @note See also @ref graph::template_t
  */
-void begin(const cuda::stream_t& stream, stream::capture::mode_t mode = cuda::stream::capture::mode_t::global);
-graph::template_t end(const cuda::stream_t& stream);
+void begin(const stream_t& stream, mode_t mode = mode_t::global);
+graph::template_t end(const stream_t& stream);
 
 } // namespace capture
 
 inline bool is_capturing(const stream_t& stream)
 {
-	return is_capturing(stream::capture::state(stream));
+	return is_capturing(capture::state(stream));
 }
 
 #endif // CUDA_VERSION >= 10000
@@ -326,7 +326,7 @@ public: // other non-mutators
 		case CUDA_ERROR_NOT_READY:
 			return true;
 		default:
-			throw cuda::runtime_error(static_cast<cuda::status::named_t>(status),
+			throw runtime_error(static_cast<status::named_t>(status),
 				"unexpected stream status for " + stream::detail_::identify(handle_, device_id_));
 		}
 	}
@@ -405,7 +405,7 @@ public: // mutators
 			launch_configuration_t  launch_configuration,
 			span<const void*>       marshalled_arguments) const
 		{
-			cuda::launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
+			launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
 		}
 
 #if CUDA_VERSION >= 10000
@@ -872,7 +872,7 @@ public: // mutators
 	 *
 	 * @note See also @ref graph::template_t
 	 */
-	void begin_capture(stream::capture::mode_t mode = cuda::stream::capture::mode_t::global) const
+	void begin_capture(stream::capture::mode_t mode = stream::capture::mode_t::global) const
 	{
 		stream::capture::begin(*this, mode);
 	}
@@ -1027,7 +1027,7 @@ inline stream_t create(
 	bool               hold_pc_refcount_unit = false)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	auto new_stream_handle = cuda::stream::detail_::create_raw_in_current_context(
+	auto new_stream_handle = create_raw_in_current_context(
 		synchronizes_with_default_stream, priority);
 	return wrap(device_id, context_handle, new_stream_handle, do_take_ownership, hold_pc_refcount_unit);
 }
@@ -1132,7 +1132,7 @@ inline state_t state(const stream_t& stream)
 	return static_cast<state_t>(capture_status);
 }
 
-inline void begin(const cuda::stream_t& stream, stream::capture::mode_t mode)
+inline void begin(const stream_t& stream, mode_t mode)
 {
 	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	auto status = cuStreamBeginCapture(stream.handle(), static_cast<CUstreamCaptureMode>(mode));
