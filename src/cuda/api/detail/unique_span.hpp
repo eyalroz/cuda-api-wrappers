@@ -69,7 +69,7 @@ public: // constructors and destructor
 
 	// Note: This template provides constructibility of unique_span<const T> from unique_span<const T>
 	template<typename U>
-	unique_span(unique_span<U>&& other) : unique_span{ other.release(), other.deleter_ }
+	unique_span(unique_span<U>&& other) noexcept : unique_span{ other.release(), other.deleter_ }
 	{
 		static_assert(
 			::std::is_assignable<span_type, span<U>>::value,
@@ -105,7 +105,7 @@ public: // constructors and destructor
 	/// @TODO Can we drop this one in favor of the general move ctor?
 	unique_span(unique_span&& other) noexcept : unique_span(other.release(), other.deleter_) { }
 
-	~unique_span() noexcept
+	~unique_span()
 	{
 		if (data() != nullptr) {
 			deleter_(*this);
@@ -154,8 +154,9 @@ protected: // mutators
 	 * see also @url https://stackoverflow.com/q/60535399/1593077 and
 	 * @url http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0600r1.pdf
 	 *
-	 * @note it is the caller's responsibility to ensure it has a copy of the deleter
-	 * for the released span.
+	 * @note It is the caller's responsibility to ensure it has a copy of the deleter
+	 * for the released span. It is also the caller's responsibility to free the
+	 * allocated memory.
 	 */
 	span_type release() noexcept
 	{
@@ -200,7 +201,7 @@ inline void c_free_deleter(span<T> sp)
  * @param size The number of @tparam T elements to allocate
  */
 template <typename T>
-unique_span<T> make_unique_span(size_t size)
+unique_span<T> make_unique_span(size_t size) noexcept(false)
 {
 	// Note: It _is_ acceptable pass 0 here.
 	// See https://stackoverflow.com/q/1087042/1593077
@@ -252,7 +253,7 @@ void delete_with_elementwise_destruction(span<T> sp, RawDeleter raw_deleter)
  * @param size The number of @tparam T elements to allocate
  */
 template <typename T, typename Generator>
-unique_span <T> generate_unique_span(size_t size, Generator generator_by_index) noexcept
+unique_span<T> generate_unique_span(size_t size, Generator generator_by_index) noexcept(noexcept(::std::declval<Generator>()(0)))
 {
 	// Q: Do I need to check the alignment here? Perhaps allocate more to ensure alignment?
 	auto result_data = static_cast<T*>(::operator new(sizeof(T) * size));
