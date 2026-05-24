@@ -175,8 +175,8 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
     for (auto device : cuda::devices()) {
         streams.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffers.push_back(cuda::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }
@@ -307,8 +307,8 @@ void outputBidirectionalBandwidthMatrix(P2PEngine p2p_mechanism, bool test_p2p)
     for (auto device : cuda::devices()) {
         streams_0.push_back(device.create_stream(cuda::stream::async));
         streams_1.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffers.push_back(cuda::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }
@@ -416,8 +416,8 @@ void outputLatencyMatrix(P2PEngine p2p_mechanism, bool test_p2p, P2PDataTransfer
 
     for(auto device : cuda::devices()) {
         streams.push_back(device.create_stream(cuda::stream::async));
-        buffers.push_back(cuda::memory::make_unique_span<int>(device, numElems));
-        buffersD2D.push_back(cuda::memory::make_unique_span<int>(device, numElems));
+        buffers.push_back(cuda::make_unique_span<int>(device, numElems));
+        buffersD2D.push_back(cuda::make_unique_span<int>(device, numElems));
         start.push_back(device.create_event());
         stop.push_back(device.create_event());
     }

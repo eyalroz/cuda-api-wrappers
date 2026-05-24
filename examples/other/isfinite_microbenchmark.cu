@@ -129,7 +129,7 @@ void time_method(cuda::device_t const& device)
 
     auto total_threads = num_ushort_values;
 
-    auto d_finity_counts = cuda::memory::make_unique_span<count_t>(device, total_threads);
+    auto d_finity_counts = cuda::make_unique_span<count_t>(device, total_threads);
     auto finity_counts = cuda::make_unique_span<count_t>(total_threads);
 
     cuda::memory::zero(d_finity_counts);

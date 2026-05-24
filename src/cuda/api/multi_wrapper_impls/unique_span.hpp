@@ -42,7 +42,7 @@ unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
 {
 	auto pc = device.primary_context();
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	return make_unique_span<T>(pc, num_elements);
+	return device::make_unique_span<T>(pc, num_elements);
 }
 
 /**
@@ -63,7 +63,7 @@ unique_span<T> make_unique_span(size_t num_elements)
 {
 	auto current_device_id = cuda::device::current::detail_::get_id();
 	auto pc = cuda::device::primary_context::detail_::leaky_get(current_device_id);
-	return make_unique_span<T>(pc, num_elements);
+	return device::make_unique_span<T>(pc, num_elements);
 }
 
 } // namespace device

@@ -267,9 +267,9 @@ int main(int argc, char **argv)
 	std::generate(h_B.begin(), h_B.end(), generator);
 
 	// allocate device memory
-	auto d_A = cuda::memory::make_unique_span<float>(device, size_A);
-	auto d_B = cuda::memory::make_unique_span<float>(device, size_B);
-	auto d_C = cuda::memory::make_unique_span<float>(device, size_C);
+	auto d_A = cuda::make_unique_span<float>(device, size_A);
+	auto d_B = cuda::make_unique_span<float>(device, size_B);
+	auto d_C = cuda::make_unique_span<float>(device, size_C);
 
 	cuda::memory::copy(d_A, h_A);
 	cuda::memory::copy(d_B, h_B);
