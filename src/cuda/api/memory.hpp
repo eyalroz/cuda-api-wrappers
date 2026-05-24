@@ -101,7 +101,7 @@ struct allocation_options {
 namespace detail_ {
 
 template <typename T, bool CheckConstructibility = false>
-inline void check_allocation_type() noexcept
+void check_allocation_type() noexcept
 {
 	static_assert(::std::is_trivially_constructible<T>::value,
 		"Attempt to create a typed buffer of a non-trivially-constructive type");
@@ -440,7 +440,7 @@ inline void zero(region_t region, optional_ref<const stream_t> stream = {})
  * @param stream an existing stream on which to schedule this action; may be omitted
  */
 template <typename T>
-inline void zero(T* ptr, optional_ref<const stream_t> stream = {})
+void zero(T* ptr, optional_ref<const stream_t> stream = {})
 {
 	zero(ptr, sizeof(T), stream);
 }
@@ -624,7 +624,7 @@ void copy_single(T* destination, const T* source, optional<stream::handle_t> str
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-inline void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
@@ -666,7 +666,7 @@ void copy(c_array<T,N>& destination, span<T const> source, optional_ref<const st
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-inline void copy(void* destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(void* destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
 {
 	return copy(destination, source, sizeof(T) * N, stream);
 }
@@ -689,7 +689,7 @@ inline void copy(void* destination, c_array<const T,N> const& source, optional_r
  * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
-inline void copy(c_array<T,N>& destination, T* source, optional_ref<const stream_t> stream = {})
+void copy(c_array<T,N>& destination, T* source, optional_ref<const stream_t> stream = {})
 {
 	return copy(destination, source, sizeof(T) * N, stream);
 }
@@ -759,7 +759,7 @@ inline void zero(void* ptr, size_t num_bytes, optional_ref<const stream_t> strea
  * memory.
  */
 template <typename T>
-inline void zero(T* ptr)
+void zero(T* ptr)
 {
 	zero(ptr, sizeof(T));
 }
@@ -1097,7 +1097,7 @@ void copy(void* destination, void const* source, size_t num_bytes, optional_ref<
  * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
-inline void copy(c_array<T,N>& destination, const_region_t source, optional_ref<const stream_t> stream = {})
+void copy(c_array<T,N>& destination, const_region_t source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	size_t required_size = N * sizeof(T);
@@ -1134,7 +1134,7 @@ inline void copy(c_array<T,N>& destination, const_region_t source, optional_ref<
  * @param stream A stream on which to enqueue the copy operation
  */
 template <typename T, size_t N>
-inline void copy(region_t destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(region_t destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
@@ -1315,7 +1315,7 @@ inline void zero(region_t region, stream::handle_t stream_handle)
 
 // TODO: Drop this in favor of <algorithm>-like functions under `cuda::`.
 template <typename T>
-inline void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t stream_handle)
+void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t stream_handle)
 {
 	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(
@@ -1394,7 +1394,7 @@ inline void copy(
 /*
 
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(
+void copy(
 	array_t<T, NumDimensions>  destination,
 	array_t<T, NumDimensions>  source,
 	optional_ref<const stream_t> stream)
@@ -1482,7 +1482,7 @@ inline void copy(
 
 /// Asynchronously copy a CUDA array defined in one context into a CUDA array defined in another
 template <typename T, dimensionality_t NumDimensions>
-inline void copy(
+void copy(
 	array_t<T, NumDimensions>     destination,
 	array_t<T, NumDimensions>     source,
 	optional_ref<const stream_t>  stream)
@@ -1852,7 +1852,7 @@ inline void zero(region_t region)
  * @param ptr a pointer to the value to be to zero, in host memory
  */
 template <typename T>
-inline void zero(T* ptr)
+void zero(T* ptr)
 {
 	zero(ptr, sizeof(T));
 }
@@ -1870,7 +1870,7 @@ using attribute_t = CUmem_range_attribute;
 using advice_t = CUmem_advise;
 
 template <typename T>
-inline T get_scalar_attribute(const_region_t region, attribute_t attribute)
+T get_scalar_attribute(const_region_t region, attribute_t attribute)
 {
 	uint32_t attribute_value { 0 };
 	auto result = cuMemRangeGetAttribute(
@@ -2195,7 +2195,7 @@ namespace mapped {
  *    as one side of a CUDA mapped memory region pair
  */
 template <typename T>
-inline T* device_side_pointer_for(T* host_memory_ptr)
+T* device_side_pointer_for(T* host_memory_ptr)
 {
 	auto unconsted_host_mem_ptr = const_cast<typename ::std::remove_const<T>::type *>(host_memory_ptr);
 	device::address_t device_side_ptr;
@@ -2438,14 +2438,14 @@ unique_span<T> make_unique_span(size_t size);
 
 /// See @ref `device::make_unique_span(const context_t& context, size_t size)`
 template <typename T>
-inline unique_span<T> make_unique_span(const context_t& context, size_t size)
+unique_span<T> make_unique_span(const context_t& context, size_t size)
 {
 	return device::make_unique_span<T>(context, size);
 }
 
 /// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
 template <typename T>
-inline unique_span<T> make_unique_span(const device_t& device, size_t size)
+unique_span<T> make_unique_span(const device_t& device, size_t size)
 {
 	return device::make_unique_span<T>(device, size);
 }

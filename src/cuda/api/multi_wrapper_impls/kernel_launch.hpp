@@ -112,7 +112,7 @@ inline void validate_compatibility(
 }
 
 template <typename Dims>
-inline void validate_any_dimensions_compatibility(
+void validate_any_dimensions_compatibility(
 	const device_t &device, Dims dims,
 	Dims maxima,
 	const char* kind) noexcept(false)
@@ -425,7 +425,7 @@ void launch(
 }
 
 template <typename SpanOfConstVoidPtrLike>
-inline void launch_type_erased(
+void launch_type_erased(
 	const kernel_t&         kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
@@ -482,7 +482,7 @@ void launch_type_erased(
 namespace detail_ {
 
 template <typename UnaryFunction>
-inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
+grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const void *             ptr,
 	device::id_t             device_id,
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,

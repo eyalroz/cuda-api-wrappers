@@ -58,7 +58,7 @@ inline void set_permissions(mapping_t mapping, const device_t& device, permissio
 }
 
 template <template <typename...> class Container>
-inline void set_permissions(
+void set_permissions(
 	region_t                     fully_mapped_region,
 	const Container<device_t>&   devices,
 	permissions_t                permissions)
@@ -74,7 +74,7 @@ inline void set_permissions(
 }
 
 template <template <typename...> class Container>
-inline void set_permissions(
+void set_permissions(
 	region_t              fully_mapped_region,
 	Container<device_t>&& devices,
 	permissions_t         permissions)
@@ -83,7 +83,7 @@ inline void set_permissions(
 }
 
 template <template <typename...> class Container>
-inline void set_permissions(
+void set_permissions(
 	mapping_t                    mapping,
 	const Container<device_t>&   devices,
 	permissions_t                permissions)
@@ -92,7 +92,7 @@ inline void set_permissions(
 }
 
 template <template <typename...> class Container>
-inline void set_permissions(
+void set_permissions(
 	mapping_t             mapping,
 	Container<device_t>&& devices,
 	permissions_t         permissions)

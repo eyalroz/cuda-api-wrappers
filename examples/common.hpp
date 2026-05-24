@@ -48,7 +48,7 @@ inline const char* ordinal_suffix(int n)
 }
 
 template <typename N = int>
-inline ::std::string xth(N n) { return ::std::to_string(n) + ordinal_suffix(n); }
+::std::string xth(N n) { return ::std::to_string(n) + ordinal_suffix(n); }
 
 const char* cache_preference_name(cuda::multiprocessor_cache_preference_t pref)
 {
