@@ -250,7 +250,7 @@ static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWith
 // Note: If determine_shared_mem_by_block_size is not null, fixed_shared_mem_size is ignored;
 // if block_size_limit is 0, it is ignored.
 template <typename UnaryFunction>
-inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
+grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	const void*                    kernel_function_ptr,
 	cuda::device::id_t             device_id,
 	UnaryFunction                  determine_shared_mem_by_block_size,

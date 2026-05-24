@@ -53,7 +53,7 @@ constexpr const int invalid_compute_capability_return { 0 };
 enum : memory::shared::size_t { KiB = 1024 };
 
 template <typename T>
-inline T ensure_cc_attribute_validity(T v, const compute_capability_t& cc)
+T ensure_cc_attribute_validity(T v, const compute_capability_t& cc)
 {
 	if (v == detail_::invalid_compute_capability_return) {
 		throw ::std::invalid_argument("Compute capability unknown: " + ::std::to_string(cc.as_combined_number()));

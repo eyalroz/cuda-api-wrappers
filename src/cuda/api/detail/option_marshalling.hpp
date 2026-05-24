@@ -155,7 +155,7 @@ void process(
  * easy to modify and manipulate.
  */
 template <typename CompilationOptions>
-inline detail_::marshalled_options_t marshal(const CompilationOptions& opts)
+detail_::marshalled_options_t marshal(const CompilationOptions& opts)
 {
 	using detail_::marshalled_options_t;
 	marshalled_options_t marshalled;
@@ -180,7 +180,7 @@ inline detail_::marshalled_options_t marshal(const CompilationOptions& opts)
  *
  */
 template <typename CompilationOptions>
-inline ::std::string render(const CompilationOptions& opts)
+::std::string render(const CompilationOptions& opts)
 {
 	::std::ostringstream oss;
 	detail_::process(opts, oss, ' ');

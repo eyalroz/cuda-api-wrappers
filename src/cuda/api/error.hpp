@@ -263,7 +263,7 @@ template <typename I, bool UpperCase = false>
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
 // be called for pointer types as well? Would be easier with boost's uint<T>...
 template <typename I, bool UpperCase = false>
-inline ::std::string ptr_as_hex(const I* ptr)
+::std::string ptr_as_hex(const I* ptr)
 {
 	return as_hex(reinterpret_cast<uintptr_t>(ptr));
 }

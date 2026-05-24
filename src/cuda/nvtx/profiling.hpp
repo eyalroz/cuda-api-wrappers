@@ -332,7 +332,7 @@ inline void name_stream<wchar_t>(stream::handle_t stream_handle, const wchar_t* 
 }
 
 template <typename CharT>
-inline void name_event(event::handle_t event_handle, const CharT* name);
+void name_event(event::handle_t event_handle, const CharT* name);
 
 template <>
 inline void name_event<char>(event::handle_t event_handle, const char* name)

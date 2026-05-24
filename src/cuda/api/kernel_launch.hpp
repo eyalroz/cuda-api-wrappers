@@ -133,7 +133,7 @@ struct is_function_ptr: bool_constant<
 inline void collect_argument_addresses(void**) { }
 
 template <typename Arg, typename... Args>
-inline void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
+void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
 	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
 	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);

@@ -172,7 +172,7 @@ private:
  * @param message An extra description message to add to the exception
  */
 template <source_kind_t Kind>
-inline void throw_if_error(rtc::status_t<Kind> status, const ::std::string& message) noexcept(false)
+void throw_if_error(rtc::status_t<Kind> status, const ::std::string& message) noexcept(false)
 {
 	if (is_failure<Kind>(status)) { throw rtc::runtime_error<Kind>(status, message); }
 }
@@ -184,7 +184,7 @@ inline void throw_if_error(rtc::status_t<Kind> status, const ::std::string& mess
  * @param status should be @ref cuda::status::success - otherwise an exception is thrown
  */
 template <source_kind_t Kind>
-inline void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
+void throw_if_error(rtc::status_t<Kind> status) noexcept(false)
 {
 	if (is_failure(status)) { throw rtc::runtime_error<Kind>(status); }
 }

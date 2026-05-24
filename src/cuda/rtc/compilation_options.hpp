@@ -552,7 +552,7 @@ public: // "shorthands" for more complex option setting
 }; // compilation_options_t<cuda_cpp>
 
 template <typename CompilationOptions>
-inline ::std::string render(const CompilationOptions& opts)
+::std::string render(const CompilationOptions& opts)
 {
 	return marshalling::render(opts);
 }

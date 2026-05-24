@@ -36,13 +36,13 @@ inline cuda::device::id_t device_id_of(const void *ptr)
 
 
 template <typename T>
-inline device_t pointer_t<T>::device() const
+device_t pointer_t<T>::device() const
 {
 	return cuda::device::get(pointer::detail_::device_id_of(ptr_));
 }
 
 template <typename T>
-inline context_t pointer_t<T>::context() const
+context_t pointer_t<T>::context() const
 {
 	return context_of(ptr_);
 }

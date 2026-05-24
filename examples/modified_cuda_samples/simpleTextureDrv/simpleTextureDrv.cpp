@@ -95,7 +95,7 @@ struct pgm {
 };
 
 template <class T>
-inline pgm sdkLoadPGM_(char const* path)
+pgm sdkLoadPGM_(char const* path)
 {
 	float* data = nullptr;
 	pgm loaded;

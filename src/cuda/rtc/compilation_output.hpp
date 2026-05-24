@@ -53,7 +53,7 @@ namespace module {
 
 /// Build a contextualized module from the results of a successful compilation
 template <source_kind_t Kind>
-inline module_t create(
+module_t create(
 	const context_t&                        context,
 	const rtc::compilation_output_t<Kind>&  compilation_output,
 	const link::options_t&                  options = {});
@@ -67,20 +67,20 @@ namespace program {
 namespace detail_ {
 
 template <source_kind_t Kind>
-inline ::std::string identify(const char *name)
+::std::string identify(const char *name)
 {
 	return ::std::string{detail_::kind_name(Kind)} + " program" +
 		((name == nullptr) ? "" : " '" + ::std::string{name} + "'");
 }
 
 template <source_kind_t Kind>
-inline ::std::string identify(program::handle_t<Kind> handle, const char *name = nullptr)
+::std::string identify(program::handle_t<Kind> handle, const char *name = nullptr)
 {
 	return identify<Kind>(name) + " at " + cuda::detail_::ptr_as_hex(handle);
 }
 
 template <source_kind_t Kind>
-inline size_t get_log_size(program::handle_t<Kind> program_handle, const char* program_name);
+size_t get_log_size(program::handle_t<Kind> program_handle, const char* program_name);
 
 template <>
 inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, const char* program_name)
@@ -105,7 +105,7 @@ inline size_t get_log_size<ptx>(program::handle_t<ptx> program_handle, const cha
 #endif // CUDA_VERSION >= 11010
 
 template <source_kind_t Kind>
-inline void get_log(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+void get_log(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
 
 #if CUDA_VERSION >= 11010
 template <>
@@ -128,7 +128,7 @@ inline void get_log<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_
 
 #if CUDA_VERSION >= 11010
 template <source_kind_t Kind>
-inline size_t get_cubin_size_or_zero(program::handle_t<Kind> program_handle, const char* program_name);
+size_t get_cubin_size_or_zero(program::handle_t<Kind> program_handle, const char* program_name);
 
 template <>
 inline size_t get_cubin_size_or_zero<ptx>(program::handle_t<ptx> program_handle, const char* program_name)
@@ -151,7 +151,7 @@ inline size_t get_cubin_size_or_zero<cuda_cpp>(program::handle_t<cuda_cpp> progr
 }
 
 template <source_kind_t Kind, bool FailOnMissingCubin = true>
-inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
+size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
 {
 	auto size = get_cubin_size_or_zero<Kind>(program_handle, program_name);
 	const bool have_failed = (FailOnMissingCubin and size == 0);
@@ -166,7 +166,7 @@ inline size_t get_cubin_size(program::handle_t<Kind> program_handle, const char*
 }
 
 template <source_kind_t Kind>
-inline void get_cubin(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+void get_cubin(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
 
 template <>
 inline void get_cubin<ptx>(char* buffer, program::handle_t<ptx> program_handle, const char *program_name)
@@ -255,7 +255,7 @@ template <source_kind_t Kind>
 ::std::string identify(const compilation_output_t<Kind> &compilation_output);
 
 template <source_kind_t Kind>
-inline compilation_output_t<Kind> wrap(
+compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
 	::std::string            program_name,
 	bool                     succeeded,
@@ -675,7 +675,7 @@ namespace compilation_output {
 namespace detail_ {
 
 template <source_kind_t Kind>
-inline ::std::string identify(const compilation_output_t<Kind> &compilation_output)
+::std::string identify(const compilation_output_t<Kind> &compilation_output)
 {
 	return "Compilation output of " + program::detail_::identify<Kind>(
 		compilation_output.program_handle(),
@@ -683,7 +683,7 @@ inline ::std::string identify(const compilation_output_t<Kind> &compilation_outp
 }
 
 template <source_kind_t Kind>
-inline compilation_output_t<Kind> wrap(
+compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
 	::std::string            program_name,
 	bool                     succeeded,
@@ -747,7 +747,7 @@ template<> inline module_t create<source_kind_t::ptx>(
 /// Build a module from the results of a successful compilation, in the primary context
 /// of the specified device
 template <source_kind_t Kind>
-inline module_t create(
+module_t create(
 	device_t&                               device,
 	const rtc::compilation_output_t<Kind>&  compilation_output,
 	const link::options_t&                  options = {})
