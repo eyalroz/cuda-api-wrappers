@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		.block_size(launch_grid_block_size)
 		.build();
 
-	auto streams = cuda_::generate_unique_span<cuda_::stream_t>(
+	auto streams = cuda_::generate_unique_span(
 		num_chunks, [&](size_t) { return device.create_stream(); });
 
 	for (size_t i = 0; i < num_chunks; ++i) {
