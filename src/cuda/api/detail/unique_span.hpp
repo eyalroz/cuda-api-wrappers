@@ -244,8 +244,10 @@ void delete_with_elementwise_destruction(span<T> sp, RawDeleter raw_deleter)
  * The alternative to `std::generate` and similar functions, for the unique_span, seeing
  * how its elements must be constructed as it is constructed.
  *
- * @param size the number of elements in the unique_span to be created. It may legitimately be 0.
- * @param gen a function for generating new values for move-construction into the new unique_span
+ * @param[in] size
+ *     the number of elements in the unique_span to be created. It may legitimately be 0.
+ * @param[in] generator_by_index
+ *     a function for generating new values for move-construction into the new unique_span
  *
  * @tparam T the type of elements in the allocated @ref unique_span.
  * @tparam Generator A type invokable with the element index, to produce a T-constructor-argument
@@ -253,7 +255,7 @@ void delete_with_elementwise_destruction(span<T> sp, RawDeleter raw_deleter)
  * @param size The number of @tparam T elements to allocate
  */
 template <typename T, typename Generator>
-unique_span<T> generate_unique_span(size_t size, Generator generator_by_index) noexcept(noexcept(::std::declval<Generator>()(0)))
+unique_span<T> generate_unique_span(size_t size, Generator&& generator_by_index) noexcept(false)
 {
 	// Q: Do I need to check the alignment here? Perhaps allocate more to ensure alignment?
 	auto result_data = static_cast<T*>(::operator new(sizeof(T) * size));
@@ -266,6 +268,15 @@ unique_span<T> generate_unique_span(size_t size, Generator generator_by_index) n
 	};
 	return unique_span<T>(result_data, size, deleter);
 }
+
+template <typename Generator>
+unique_span<decltype(::std::declval<Generator>()(0))>
+generate_unique_span(size_t size, Generator&& generator_by_index) noexcept(false)
+{
+	using T = decltype(::std::declval<Generator>()(0));
+	return generate_unique_span<T, Generator>(size, ::std::forward<Generator>(generator_by_index));
+}
+
 
 } // namespace cuda_
 
