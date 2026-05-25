@@ -55,7 +55,7 @@ inline unique_span<char> demangle(const char* mangled_identifier)
 		throw ::std::logic_error("Invalid allocation size returned by __cu_demangle()");
 	}
 #endif
-	return unique_span<char>{demangled, allocated_size - 1, c_free_deleter<char> };
+	return unique_span<char>{demangled, allocated_size - 1, c_free<char> };
 }
 
 

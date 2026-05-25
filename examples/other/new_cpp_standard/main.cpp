@@ -27,8 +27,8 @@ void unique_spans()
 {
 	auto device = cuda_::device::current::get();
 	auto us1 = cuda_::make_unique_span<float>(10);
-	auto us2 = cuda_::unique_span<float>(nullptr, 0, cuda_::detail_::default_span_deleter<float>);
-	auto us3 = cuda_::unique_span<float>(nullptr, 0, cuda_::detail_::default_span_deleter<float>);
+	auto us2 = cuda_::unique_span<float>(nullptr, 0, cuda_::detail_::operator_delete_array<float>);
+	auto us3 = cuda_::unique_span<float>(nullptr, 0, cuda_::detail_::operator_delete_array<float>);
 	us2 = std::move(us3);
 	(void) us2;
 }
