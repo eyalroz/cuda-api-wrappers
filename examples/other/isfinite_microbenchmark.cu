@@ -134,7 +134,7 @@ void time_method(cuda_::device_t const& device)
 
     cuda_::memory::zero(d_finity_counts);
     auto events = std::make_pair(cuda_::event::create(device), cuda_::event::create(device));
-    auto timings = cuda_::generate_unique_span<cuda_::event::duration_t>(num_iterations,
+    auto timings = cuda_::generate_unique_span(num_iterations,
         [&](size_t) {
             events.first.record();
             cuda_::launch(kernel<FCM>, device, launch_config, d_finity_counts.data());
