@@ -42,22 +42,22 @@ inline module_t wrap(
 	bool                    take_ownership = false,
 	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
-inline ::std::string identify(const module::handle_t &handle)
+inline std::string identify(const module::handle_t &handle)
 {
-	return ::std::string("module ") + cuda_::detail_::ptr_as_hex(handle);
+	return std::string("module ") + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(const module::handle_t &handle, context::handle_t context_handle)
+inline std::string identify(const module::handle_t &handle, context::handle_t context_handle)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle);
 }
 
-inline ::std::string identify(const module::handle_t &handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(const module::handle_t &handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
 }
 
-::std::string identify(const module_t &module);
+std::string identify(const module_t &module);
 
 inline void unload(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
@@ -151,7 +151,7 @@ public: // getters
 	cuda_::kernel_t get_kernel(const char* name) const;
 
 	/// @copydoc get_kernel(const char*) const
-	cuda_::kernel_t get_kernel(const ::std::string& name) const
+	cuda_::kernel_t get_kernel(const std::string& name) const
 	{
 		return get_kernel(name.c_str());
 	}
@@ -258,11 +258,11 @@ public: // operators
 	module_t& operator=(const module_t&) = delete;
 	module_t& operator=(module_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
-		::std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
+		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
 		return *this;
 	}
 
@@ -291,7 +291,7 @@ inline module_t load_from_file_in_current_context(
 {
 	handle_t new_module_handle;
 	auto status = cuModuleLoad(&new_module_handle, path);
-	throw_if_error_lazy(status, ::std::string("Failed loading a module from file ") + path);
+	throw_if_error_lazy(status, std::string("Failed loading a module from file ") + path);
 	bool do_take_ownership{true};
 	return wrap(
 		current_context_device_id,
@@ -316,7 +316,7 @@ inline module_t load_from_file_in_current_context(
  *
  * @todo consider adding load_module methods to context_t
  * @todo When switching to the C++17 standard, use string_view's instead of the const char*
- * and ::std::string reference
+ * and std::string reference
  */
 inline module_t load_from_file(
 	const context_t&        context,
@@ -329,7 +329,7 @@ inline module_t load_from_file(
 /// @copydoc load_from_file(const context_t&, const char*)
 inline module_t load_from_file(
 	const context_t&        context,
-	const ::std::string&    path)
+	const std::string&    path)
 {
 	return load_from_file(context, path.c_str());
 }
@@ -352,7 +352,7 @@ module_t load_from_file(
  */
 inline module_t load_from_file(
 	const device_t&         device,
-	const ::std::string&    path)
+	const std::string&    path)
 {
 	return load_from_file(device, path.c_str());
 }
@@ -366,7 +366,7 @@ inline module_t load_from_file(
 module_t load_from_file(const char* path);
 
 /// @copydoc load_from_file(const char*)
-inline module_t load_from_file(const ::std::string& path)
+inline module_t load_from_file(const std::string& path)
 {
 	return load_from_file(path.c_str());
 }
@@ -375,14 +375,14 @@ inline module_t load_from_file(const ::std::string& path)
 /// @copydoc load_from_file(device_t, const char*)
 inline module_t load_from_file(
 	const device_t&                 device,
-	const ::std::filesystem::path&  path)
+	const std::filesystem::path&  path)
 {
 	return load_from_file(device, path.c_str());
 }
 
 /// @copydoc load_from_file(const char*)
 inline module_t load_from_file(
-	const ::std::filesystem::path&  path)
+	const std::filesystem::path&  path)
 {
 	return load_from_file(device::current::get(), path);
 }
@@ -422,7 +422,7 @@ module_t create(const context_t& context, const void* module_data);
 
 namespace detail_ {
 
-inline ::std::string identify(const module_t& module)
+inline std::string identify(const module_t& module)
 {
 	return identify(module.handle(), module.context_handle(), module.device_id());
 }

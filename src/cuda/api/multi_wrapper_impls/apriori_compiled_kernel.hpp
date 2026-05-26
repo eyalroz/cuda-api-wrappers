@@ -51,7 +51,7 @@ inline void apriori_compiled_t::set_shared_memory_bank_size(
 	// Note: assuming the primary context is active
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	auto result = cudaFuncSetSharedMemConfig(ptr_, (cudaSharedMemConfig) config);
-	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + ::std::to_string(config));
+	throw_if_error_lazy(result, "Failed setting shared memory bank size to " + std::to_string(config));
 }
 
 inline void apriori_compiled_t::set_attribute(attribute_t attribute, attribute_value_t value) const
@@ -66,12 +66,12 @@ inline void apriori_compiled_t::set_attribute(attribute_t attribute, attribute_v
 				return cudaFuncAttributePreferredSharedMemoryCarveout;
 			default:
 				throw cuda_::runtime_error(status::not_supported,
-					"Kernel attribute " + ::std::to_string(attribute) + " not supported (with CUDA version "
-					+ ::std::to_string(CUDA_VERSION));
+					"Kernel attribute " + std::to_string(attribute) + " not supported (with CUDA version "
+					+ std::to_string(CUDA_VERSION));
 		}
 	}();
 	auto result = cudaFuncSetAttribute(ptr_, runtime_attribute, value);
-	throw_if_error_lazy(result, "Setting CUDA device function attribute " + ::std::to_string(attribute) + " to value " + ::std::to_string(value));
+	throw_if_error_lazy(result, "Setting CUDA device function attribute " + std::to_string(attribute) + " to value " + std::to_string(value));
 }
 
 inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute) const
@@ -100,9 +100,9 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 			return attrs.preferredShmemCarveout;
 		default:
 			throw cuda_::runtime_error(status::not_supported,
-				::std::string("Attribute ") +
+				std::string("Attribute ") +
 #ifdef NDEBUG
-					::std::to_string(static_cast<::std::underlying_type<attribute_t>::type>(attribute))
+					std::to_string(static_cast<std::underlying_type<attribute_t>::type>(attribute))
 #else
 					detail_::attribute_name(attribute)
 #endif
@@ -125,8 +125,8 @@ apriori_compiled_t get(
 	KernelFunctionPtr    function_ptr)
 {
 	static_assert(
-		::std::is_pointer<KernelFunctionPtr>::value
-		and ::std::is_function<typename ::std::remove_pointer<KernelFunctionPtr>::type>::value,
+		std::is_pointer<KernelFunctionPtr>::value
+		and std::is_function<typename std::remove_pointer<KernelFunctionPtr>::type>::value,
 		"function must be a bona fide pointer to a kernel (__global__) function");
 
 	auto ptr_ = reinterpret_cast<const void *>(function_ptr);

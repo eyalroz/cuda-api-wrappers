@@ -58,7 +58,7 @@ inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t
 	auto device = context.device();
 	auto primary_context = device.primary_context();
 	if (context != primary_context) {
-		throw ::std::logic_error("Attempt to launch a kernel associated with a non-primary context without specifying a stream associated with that context.");
+		throw std::logic_error("Attempt to launch a kernel associated with a non-primary context without specifying a stream associated with that context.");
 	}
 	return primary_context;
 }

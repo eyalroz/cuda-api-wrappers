@@ -73,7 +73,7 @@ public: // constructors and destructor
 	unique_span(unique_span<U>&& other) noexcept : unique_span{ other.release(), other.deleter_ }
 	{
 		static_assert(
-			::std::is_assignable<span_type, span<U>>::value,
+			std::is_assignable<span_type, span<U>>::value,
 			"Invalid unique_span initializer");
 	}
 
@@ -92,7 +92,7 @@ public: // constructors and destructor
 	{
 #ifndef NDEBUG
 		if (sizeof(T) * size != region.size()) {
-			throw ::std::invalid_argument("Attempt to create a unique_span with a memory region which"
+			throw std::invalid_argument("Attempt to create a unique_span with a memory region which"
 				"does not comprise an integral number of areas of the element type size");
 		}
 #endif
@@ -143,8 +143,8 @@ public: // friends
 	/// Exchange the members of two unique_span's
 	friend void swap(unique_span& a, unique_span& b) noexcept
 	{
-		::std::swap<span_type>(a, b);
-		::std::swap<deleter_type>(a.deleter_, b.deleter_);
+		std::swap<span_type>(a, b);
+		std::swap<deleter_type>(a.deleter_, b.deleter_);
 	}
 
 protected: // mutators
@@ -176,7 +176,7 @@ namespace detail_ {
 ///@{
 template <typename T> void operator_delete_array(span<T> sp) { delete[] sp.data(); }
 template <typename T> void operator_delete      (span<T> sp) { ::operator delete(sp.data()); };
-template <typename T> void c_free               (span<T> sp) { ::std::free(sp.data()); }
+template <typename T> void c_free               (span<T> sp) { std::free(sp.data()); }
 ///@}
 
 template <typename T>
@@ -270,7 +270,7 @@ unique_span <T> generate_unique_span(
 	auto data_ = static_cast<T*>(region.data());
 	auto size_in_elements = region.size() / sizeof(T);
 	return detail_::generate_unique_span<T>(data_, size_in_elements,
-		::std::forward<Generator>(generator_by_index));
+		std::forward<Generator>(generator_by_index));
 }
 
 template <typename T, typename Generator>
@@ -279,15 +279,15 @@ unique_span<T> generate_unique_span(size_t size, Generator&& generator_by_index)
 	// Q: Do I need to check the alignment here? Perhaps allocate more to ensure alignment?
 	auto data = static_cast<T*>(::operator new(size * sizeof(T)));
 	return detail_::generate_unique_span<T, Generator>(
-		data, size, ::std::forward<Generator>(generator_by_index));
+		data, size, std::forward<Generator>(generator_by_index));
 }
 
 template <typename Generator>
-unique_span<decltype(::std::declval<Generator>()(0))>
+unique_span<decltype(std::declval<Generator>()(0))>
 generate_unique_span(size_t size, Generator&& generator_by_index) noexcept(false)
 {
-	using T = decltype(::std::declval<Generator>()(0));
-	return generate_unique_span<T, Generator>(size, ::std::forward<Generator>(generator_by_index));
+	using T = decltype(std::declval<Generator>()(0));
+	return generate_unique_span<T, Generator>(size, std::forward<Generator>(generator_by_index));
 }
 ///@}
 

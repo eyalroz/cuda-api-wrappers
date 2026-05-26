@@ -87,13 +87,13 @@ public: // operators
 	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
 	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(pool_handle_, other.pool_handle_);
-		::std::swap(ptr_, other.ptr_);
-		::std::swap(stream_handle_, other.stream_handle_);
-		::std::swap(free_using_stream_, other.free_using_stream_);
-		::std::swap(owning_, other.owning_);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(pool_handle_, other.pool_handle_);
+		std::swap(ptr_, other.ptr_);
+		std::swap(stream_handle_, other.stream_handle_);
+		std::swap(free_using_stream_, other.free_using_stream_);
+		std::swap(owning_, other.owning_);
 		return *this;
 	}
 	imported_ptr_t(imported_ptr_t&& other) noexcept = default;
@@ -109,7 +109,7 @@ public: // getters
 	}
 	stream_t stream() const
 	{
-		if (not free_using_stream_) throw ::std::runtime_error(
+		if (not free_using_stream_) throw std::runtime_error(
 			"Request of the freeing stream of an imported pointer"
 			"which is not to be freed on a stream.");
 		return stream::wrap(device_id_, context_handle_, stream_handle_);

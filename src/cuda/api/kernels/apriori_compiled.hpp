@@ -41,7 +41,7 @@ inline handle_t get_handle(const void *kernel_function_ptr, const char* name = n
 	handle_t handle;
 	auto status = cudaGetFuncBySymbol(&handle, kernel_function_ptr);
 	throw_if_error_lazy(status, "Failed obtaining a CUDA function handle for "
-		+ ((name == nullptr) ? ::std::string("a kernel function") : ::std::string("kernel function ") + name)
+		+ ((name == nullptr) ? std::string("a kernel function") : std::string("kernel function ") + name)
 		+ " at " + cuda_::detail_::ptr_as_hex(kernel_function_ptr));
 	return handle;
 }
@@ -469,7 +469,7 @@ inline apriori_compiled_t wrap(
 }
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-inline ::std::string identify(const apriori_compiled_t& kernel)
+inline std::string identify(const apriori_compiled_t& kernel)
 {
 	return "apriori-compiled kernel " + cuda_::detail_::ptr_as_hex(kernel.ptr())
 		+ " in " + context::detail_::identify(kernel.context());

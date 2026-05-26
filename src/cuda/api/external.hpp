@@ -22,7 +22,7 @@ namespace memory {
 /// Functionality regarding (process-)external memory resources and semaphores
 namespace external {
 
-enum kind_t : ::std::underlying_type<CUexternalMemoryHandleType_enum>::type {
+enum kind_t : std::underlying_type<CUexternalMemoryHandleType_enum>::type {
 	opaque_file_descriptor = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD,
 	opaque_shared_windows_handle = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32,
 	opaque_globally_shared_windows_handle = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT,
@@ -50,28 +50,28 @@ inline status_t destroy_nowthrow(handle_t handle)
 inline void destroy(handle_t handle, const descriptor_t &)
 {
 	auto status = destroy_nowthrow(handle);
-	throw_if_error_lazy(status, ::std::string("Destroying a memory resource"));
+	throw_if_error_lazy(status, std::string("Destroying a memory resource"));
 }
 
-inline ::std::string identify(subregion_spec_t subregion_spec)
+inline std::string identify(subregion_spec_t subregion_spec)
 {
-	return "subregion of size " + ::std::to_string(subregion_spec.size)
-		   + " at offset " + ::std::to_string(subregion_spec.offset);
+	return "subregion of size " + std::to_string(subregion_spec.size)
+		   + " at offset " + std::to_string(subregion_spec.offset);
 }
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "external memory resource at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(descriptor_t descriptor)
+inline std::string identify(descriptor_t descriptor)
 {
-	return "external memory resource of kind " + ::std::to_string(descriptor.type);
+	return "external memory resource of kind " + std::to_string(descriptor.type);
 }
 
-inline ::std::string identify(handle_t handle, descriptor_t descriptor)
+inline std::string identify(handle_t handle, descriptor_t descriptor)
 {
-	return "external memory resource of kind " + ::std::to_string(descriptor.type)
+	return "external memory resource of kind " + std::to_string(descriptor.type)
 		   + " at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
@@ -138,7 +138,7 @@ protected: // data members
 
 inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership)
 {
-	return { handle, ::std::move(descriptor), take_ownership };
+	return { handle, std::move(descriptor), take_ownership };
 }
 
 /// Import an external memory resource to be recognized by CUDA

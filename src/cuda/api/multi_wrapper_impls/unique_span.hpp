@@ -35,7 +35,7 @@ unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
  *
  * @param device        on which to construct the array of elements
  * @param num_elements  the number of elements to allocate
- * @return an ::std::unique_ptr pointing to the constructed T array
+ * @return an std::unique_ptr pointing to the constructed T array
  */
 template <typename T>
 unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
@@ -46,7 +46,7 @@ unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
 }
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
+ * @brief Create a variant of std::unique_pointer for an array in
  * device-global memory on the current device.
  *
  * @note The allocation will be made in the device's primary context -
@@ -56,7 +56,7 @@ unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
  *
  * @param num_elements  the number of elements to allocate
  *
- * @return an ::std::unique_ptr pointing to the constructed T array
+ * @return an std::unique_ptr pointing to the constructed T array
  */
 template <typename T>
 unique_span<T> make_unique_span(size_t num_elements)
@@ -83,7 +83,7 @@ unique_span<T> make_unique_span(
     case initial_visibility_t::to_supporters_of_concurrent_managed_access:
         return detail_::make_unique_span<T, initial_visibility_t::to_supporters_of_concurrent_managed_access>(context.handle(), size);
     default:
-        throw ::std::logic_error("Library not yet updated to support additional initial visibility values");
+        throw std::logic_error("Library not yet updated to support additional initial visibility values");
     }
 }
 

@@ -113,7 +113,7 @@ event_t wrap(
 	bool               take_ownership = false,
 	bool               hold_pc_refcount_unit = false) noexcept;
 
-::std::string identify(const event_t& event);
+std::string identify(const event_t& event);
 
 } // namespace event
 
@@ -300,11 +300,11 @@ public: // operators
 	event_t& operator=(const event_t&) = delete;
 	event_t& operator=(event_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
-		::std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
+		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
 		return *this;
 	}
 
@@ -327,7 +327,7 @@ namespace event {
  * @brief The type used by the CUDA Runtime API to represent the time difference
  * between pairs of events.
  */
-using duration_t = ::std::chrono::duration<float, ::std::milli>;
+using duration_t = std::chrono::duration<float, std::milli>;
 
 /**
  * Determine (inaccurately) the elapsed time between two events
@@ -347,7 +347,7 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
-inline duration_t time_elapsed_between(const ::std::pair<const event_t&, const event_t&>& event_pair)
+inline duration_t time_elapsed_between(const std::pair<const event_t&, const event_t&>& event_pair)
 {
 	return time_elapsed_between(event_pair.first, event_pair.second);
 }
@@ -364,7 +364,7 @@ inline event_t wrap(
 
 namespace detail_ {
 
-inline ::std::string identify(const event_t& event)
+inline std::string identify(const event_t& event)
 {
 	return identify(event.handle(), event.context_handle(), event.device_id());
 }

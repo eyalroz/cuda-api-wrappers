@@ -28,7 +28,7 @@ namespace stream {
 
 namespace detail_ {
 
-inline ::std::string identify(const stream_t& stream)
+inline std::string identify(const stream_t& stream)
 {
 	return identify(stream.handle(), stream.context().handle(), stream.device().id());
 }
@@ -97,7 +97,7 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event) const
 	auto context_handle = associated_stream.context_handle_;
 	auto stream_context_handle_ = associated_stream.context_handle_;
 	if (existing_event.context_handle() != stream_context_handle_) {
-		throw ::std::invalid_argument(
+		throw std::invalid_argument(
 			"Attempt to enqueue " + event::detail_::identify(existing_event)
 			+ " on a stream in a different context: " + stream::detail_::identify(associated_stream));
 	}
@@ -144,10 +144,10 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 {
 #ifndef NDEBUG
 	if (dest.device() != src.device()) {
-		throw ::std::invalid_argument("Attempt to copy attributes between streams on different devices");
+		throw std::invalid_argument("Attempt to copy attributes between streams on different devices");
 	}
 	if (dest.context() != src.context()) {
-		throw ::std::invalid_argument("Attempt to copy attributes between streams on different contexts");
+		throw std::invalid_argument("Attempt to copy attributes between streams on different contexts");
 	}
 #endif
 	CAW_SET_SCOPE_CONTEXT(dest.context_handle());

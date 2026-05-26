@@ -73,7 +73,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuLinkDestroy(handle);
 	throw_if_error_lazy(status,
-		::std::string("Failed destroying the link ") + cuda_::detail_::ptr_as_hex(handle)
+		std::string("Failed destroying the link ") + cuda_::detail_::ptr_as_hex(handle)
 		+ " in " + context::detail_::identify(context_handle)
 		+ " on " + device::detail_::identify(device_id));
 }
@@ -152,8 +152,8 @@ public:
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
-			"Failed adding input " + ::std::string(image.name) + " of type "
-			+ ::std::to_string(static_cast<int>(image.type)) + " to a link.");
+			"Failed adding input " + std::string(image.name) + " of type "
+			+ std::to_string(static_cast<int>(image.type)) + " to a link.");
 	}
 
 	/**
@@ -179,7 +179,7 @@ public:
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
-			"Failed loading an object of type " + ::std::to_string(static_cast<int>(file_input.type))
+			"Failed loading an object of type " + std::to_string(static_cast<int>(file_input.type))
 			+ " from file " + file_input.path);
 	}
 
@@ -194,7 +194,7 @@ public:
 
 #if __cplusplus >= 201703L
 	void add_file(
-        const ::std::filesystem::path& path,
+        const std::filesystem::path& path,
         link::input_kind_t file_contents_type,
         const link::options_t &options = {}) const
 	{
@@ -248,11 +248,11 @@ public: // operators
 
 	link_t &operator=(link_t &&other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(options_, other.options_);
-		::std::swap(owning, owning);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(options_, other.options_);
+		std::swap(owning, owning);
 		return *this;
 	}
 

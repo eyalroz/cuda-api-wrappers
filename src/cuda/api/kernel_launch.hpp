@@ -73,7 +73,7 @@ namespace cuda_ {
  *       the trait for known-to-be-problematic types, precluding their use.
  */
 template <typename T>
-struct is_valid_kernel_argument : ::std::is_trivially_copyable<T> { };
+struct is_valid_kernel_argument : std::is_trivially_copyable<T> { };
 
 /**
  * @brief A convenience type using the @ref is_valid_kernel_argument trait struct
@@ -104,20 +104,20 @@ namespace detail_ {
  *
  * CUDA kernels don't accept just any parameter type a C++ function may accept.
  * Specifically: No references, arrays decay (IIANM) and functions pass by address.
- * However - not all "decaying" of `::std::decay` is necessary. Such transformation
+ * However - not all "decaying" of `std::decay` is necessary. Such transformation
  * can be effected by this type-trait struct.
  */
 template<typename P>
 struct kernel_parameter_decay {
 private:
-	using U = typename ::std::remove_reference<P>::type;
+	using U = typename std::remove_reference<P>::type;
 public:
-	using type = typename ::std::conditional<
-		::std::is_array<U>::value,
-		typename ::std::remove_extent<U>::type*,
-		typename ::std::conditional<
-			::std::is_function<U>::value,
-			typename ::std::add_pointer<U>::type,
+	using type = typename std::conditional<
+		std::is_array<U>::value,
+		typename std::remove_extent<U>::type*,
+		typename std::conditional<
+			std::is_function<U>::value,
+			typename std::add_pointer<U>::type,
 			U
 		>::type
 	>::type;
@@ -128,7 +128,7 @@ using kernel_parameter_decay_t = typename kernel_parameter_decay<P>::type;
 
 template<typename Fun>
 struct is_function_ptr: bool_constant<
-	::std::is_pointer<Fun>::value and ::std::is_function<typename ::std::remove_pointer<Fun>::type>::value> { };
+	std::is_pointer<Fun>::value and std::is_function<typename std::remove_pointer<Fun>::type>::value> { };
 
 inline void collect_argument_addresses(void**) { }
 
@@ -136,7 +136,7 @@ template <typename Arg, typename... Args>
 void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
 	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
-	collect_argument_addresses(collected_addresses + 1, ::std::forward<Args>(args)...);
+	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -197,8 +197,8 @@ void enqueue_raw_kernel_launch_in_current_context(
 ;
 #else
 {
-	using decayed_kf_type = typename ::std::decay<KernelFunction>::type;
-	static_assert(::std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
+	using decayed_kf_type = typename std::decay<KernelFunction>::type;
+	static_assert(std::is_function<decayed_kf_type>::value or is_function_ptr<decayed_kf_type>::value,
 		"Only a bona fide function can be launched as a CUDA kernel");
 	if (not launch_configuration.has_nondefault_attributes()) {
 		// regular plain vanilla launch
@@ -207,7 +207,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 			launch_configuration.dimensions.block,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle
-		>>>(::std::forward<KernelParameters>(parameters)...);
+		>>>(std::forward<KernelParameters>(parameters)...);
 		cuda_::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
@@ -226,7 +226,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail_::collect_argument_addresses(argument_ptrs, ::std::forward<KernelParameters>(parameters)...);
+		detail_::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
 #if CUDA_VERSION >= 11000
 		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail_::get_handle( (const void*) kernel_function);
 		enqueue_kernel_launch_by_handle_in_current_context(
@@ -275,7 +275,7 @@ struct raw_kernel_typegen {
 	// You should be careful to only instantiate this class with nice simple types we can pass to CUDA kernels.
 //	static_assert(
 //		all_true<
-//		    ::std::is_same<
+//		    std::is_same<
 //		    	KernelParameters,
 //		    	::cuda_::detail_::kernel_parameter_decay_t<KernelParameters>>::value...
 //		    >::value,
@@ -286,7 +286,7 @@ struct raw_kernel_typegen {
 } // namespace detail_
 
 /**
- * A function similar to ::std::any_cast for retrieving the function pointer wrapped
+ * A function similar to std::any_cast for retrieving the function pointer wrapped
  * by a @ref cuda_::kernel::apriori_compiled_t object: Only the user knows the exact
  * set of kernel function parameters, and the must supply them as template arguments
  * to obtain the function pointer they are after.
@@ -325,7 +325,7 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
  * called from proper C++ code (across translation unit boundaries - the caller is compiled with a C++
  * compiler, the callee compiled by nvcc).
  *
- * <p>This function is similar to C++17's `::std::apply`, or to a a beta-reduction in Lambda calculus:
+ * <p>This function is similar to C++17's `std::apply`, or to a a beta-reduction in Lambda calculus:
  * It applies a function to its arguments; the difference is in the nature of the function (a CUDA kernel)
  * and in that the function application requires setting additional CUDA-related launch parameters,
  * additional to the function's own.
@@ -383,7 +383,7 @@ void launch(
  *
  * @tparam SpanOfConstVoidPtrLike
  *     Type of the container for the marshalled arguments; typically, this
- *     would be `span<const void*>` - but it can be an `::std::vector`, or
+ *     would be `span<const void*>` - but it can be an `std::vector`, or
  *     have non-const `void*` elements etc.
  * @param kernel
  *     A wrapped GPU kernel

@@ -23,7 +23,7 @@
 namespace cuda_ {
 
 #if __cplusplus >= 202002L
-using ::std::span;
+using std::span;
 #else
 /**
  * @brief A "poor man's" span class
@@ -38,8 +38,8 @@ template<typename T>
 struct span {
 	using value_type = T;
 	using element_type = T;
-	using size_type = ::std::size_t;
-	using difference_type = ::std::ptrdiff_t;
+	using size_type = std::size_t;
+	using difference_type = std::ptrdiff_t;
 	using pointer = T*;
 	using const_pointer = T const *;
 	using reference = T&;
@@ -64,11 +64,11 @@ struct span {
 	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
 	template<
 		typename U = value_type,
-		typename = typename ::std::enable_if<! ::std::is_const<U>::value>::type
+		typename = typename std::enable_if<! std::is_const<U>::value>::type
 	>
 	operator span<const U>()
 	{
-		static_assert(::std::is_same<U,T>::value, "Invalid type specified");
+		static_assert(std::is_same<U,T>::value, "Invalid type specified");
 		return { data_, size_ };
 	}
 };

@@ -34,9 +34,9 @@ void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional
 	}
 #ifndef NDEBUG
 	if (source.size() != destination.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy " + ::std::to_string(source.size()) +
-			" elements into an array of " + ::std::to_string(destination.size()) + " elements");
+		throw std::invalid_argument(
+			"Attempt to copy " + std::to_string(source.size()) +
+			" elements into an array of " + std::to_string(destination.size()) + " elements");
 	}
 #endif
 	detail_::copy<T, NumDimensions>(destination, source.data(), stream->handle());
@@ -51,7 +51,7 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<
 		return;
 	}
 	if (stream->context_handle() != source.context_handle()) {
-		throw ::std::invalid_argument("Attempt to copy an array in"
+		throw std::invalid_argument("Attempt to copy an array in"
 									  + context::detail_::identify(source.context_handle()) + " via "
 									  + stream::detail_::identify(*stream));
 	}
@@ -166,7 +166,7 @@ inline void copy(
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
 	throw_if_error_lazy(status,
-		::std::string("Failed copying data between devices: From address ")
+		std::string("Failed copying data between devices: From address ")
 		+ cuda_::detail_::ptr_as_hex(source) + " in "
 		+ context::detail_::identify(source_context.handle()) + " to address "
 		+ cuda_::detail_::ptr_as_hex(destination) + " in "
@@ -212,10 +212,10 @@ inline void advise_no_access_expected_by(const_region_t region, device_t& device
 }
 
 template <typename Allocator>
-::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator)
+std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator)
 {
 	auto num_devices = cuda_::device::count();
-	::std::vector<device_t, Allocator> devices(num_devices, allocator);
+	std::vector<device_t, Allocator> devices(num_devices, allocator);
 	auto device_ids = reinterpret_cast<cuda_::device::id_t *>(devices.data());
 
 	auto status = cuMemRangeGetAttribute(
@@ -223,7 +223,7 @@ template <typename Allocator>
 	CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY, device::address(region.start()), region.size());
 	throw_if_error_lazy(status, "Obtaining the IDs of devices with access to the managed memory range at "
 						   + cuda_::detail_::ptr_as_hex(region.start()));
-	auto first_invalid_element = ::std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
+	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
 	if (first_invalid_element - device_ids != num_devices) {
@@ -314,7 +314,7 @@ inline region_t allocate_in_current_context(
 		// Can this even happen? hopefully not
 		result = static_cast<status_t>(status::named_t::unknown);
 	}
-	throw_if_error_lazy(result, "Failed allocating " + ::std::to_string(size_in_bytes) + " bytes of host memory");
+	throw_if_error_lazy(result, "Failed allocating " + std::to_string(size_in_bytes) + " bytes of host memory");
 	return { allocated, size_in_bytes };
 }
 
@@ -369,7 +369,7 @@ attribute_value_t<attribute> get_attribute(const void *ptr)
 {
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
 	throw_if_error_lazy(status_and_attribute_value.status,
-		"Obtaining attribute " + ::std::to_string(static_cast<int>(attribute))
+		"Obtaining attribute " + std::to_string(static_cast<int>(attribute))
 		+ " for pointer " + cuda_::detail_::ptr_as_hex(ptr) );
 	return status_and_attribute_value.value;
 }
@@ -394,21 +394,21 @@ void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const
 		detail_::set(start, value, num_elements, stream->handle());
 	}
 	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
-	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
+	static_assert(std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(sizeof(T) == 1 or sizeof(T) == 2 or sizeof(T) == 4,
 		"Unsupported type size - only sizes 1, 2 and 4 are supported");
 	// TODO: Consider checking for alignment when compiling without NDEBUG
 	status_t result {CUDA_SUCCESS};
 	switch(sizeof(T)) {
 	case 1: result = stream ?
-		cuMemsetD8Async (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements, stream->handle()) :
-		cuMemsetD8      (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements); break;
+		cuMemsetD8Async (address(start), reinterpret_cast<const std::uint8_t& >(value), num_elements, stream->handle()) :
+		cuMemsetD8      (address(start), reinterpret_cast<const std::uint8_t& >(value), num_elements); break;
 	case 2: result = stream ?
-		cuMemsetD16Async(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements, stream->handle()) :
-		cuMemsetD16     (address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements); break;
+		cuMemsetD16Async(address(start), reinterpret_cast<const std::uint16_t&>(value), num_elements, stream->handle()) :
+		cuMemsetD16     (address(start), reinterpret_cast<const std::uint16_t&>(value), num_elements); break;
 	case 4: result = stream ?
-		cuMemsetD32Async(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements, stream->handle()) :
-		cuMemsetD32     (address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements); break;
+		cuMemsetD32Async(address(start), reinterpret_cast<const std::uint32_t&>(value), num_elements, stream->handle()) :
+		cuMemsetD32     (address(start), reinterpret_cast<const std::uint32_t&>(value), num_elements); break;
 	}
 	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
@@ -425,8 +425,8 @@ inline void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const 
 //		case unregistered_:
 	case host_:
 		if (stream) {
-			throw ::std::invalid_argument("Asynchronous host-memory set's not currently supported");
-		} else { ::std::memset(ptr, byte_value, num_bytes); }
+			throw std::invalid_argument("Asynchronous host-memory set's not currently supported");
+		} else { std::memset(ptr, byte_value, num_bytes); }
 		break;
 	default:
 		throw runtime_error(
@@ -449,7 +449,7 @@ inline region_t allocate(const pool_t& pool, const stream_t &stream, size_t num_
 {
 	CUdeviceptr dptr;
 	auto status = cuMemAllocFromPoolAsync(&dptr, num_bytes, pool.handle(), stream.handle());
-	throw_if_error_lazy(status, "Failed scheduling an allocation of " + ::std::to_string(num_bytes)
+	throw_if_error_lazy(status, "Failed scheduling an allocation of " + std::to_string(num_bytes)
 		+ " bytes of memory from " + detail_::identify(pool) + ", on " + stream::detail_::identify(stream));
 	return {as_pointer(dptr), num_bytes };
 }
@@ -502,7 +502,7 @@ inline permissions_t get_permissions(const cuda_::device_t& device, const pool_t
 inline void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions)
 {
 	if (pool.device_id() == device.id()) {
-		throw ::std::invalid_argument("Cannot change the access get_permissions to a pool of the device "
+		throw std::invalid_argument("Cannot change the access get_permissions to a pool of the device "
 			"on which the pool's memory is allocated (" + cuda_::device::detail_::identify(device.id()) + ')');
 	}
 	cuda_::memory::detail_::set_permissions(device.id(), pool.handle(), permissions);
@@ -512,9 +512,9 @@ template <typename DeviceRange>
 void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t permissions)
 {
 	// Not depending on unique_span here :-(
-	auto device_ids = ::std::unique_ptr<cuda_::device::id_t[]>(new cuda_::device::id_t[devices.size()]);
+	auto device_ids = std::unique_ptr<cuda_::device::id_t[]>(new cuda_::device::id_t[devices.size()]);
 	auto device_to_id = [](device_t const& device){ return device.id(); };
-	::std::transform(::std::begin(devices), ::std::end(devices), device_ids.get(), device_to_id);
+	std::transform(std::begin(devices), std::end(devices), device_ids.get(), device_to_id);
 	cuda_::memory::detail_::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
 }
 #endif // #if CUDA_VERSION >= 11020

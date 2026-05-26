@@ -29,12 +29,12 @@ inline fatbin_builder_t create(const options_t & options);
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "Fatbin builder with handle " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(const fatbin_builder_t&);
+inline std::string identify(const fatbin_builder_t&);
 
 } // namespace detail_
 
@@ -81,8 +81,8 @@ public:
 	{
 		auto required_size = size();
 		if (target_region.size() < required_size) {
-			throw ::std::invalid_argument("Provided region for fatbin creation is of size "
-				+ ::std::to_string(target_region.size()) + " bytes, while the fatbin requires " + ::std::to_string(required_size));
+			throw std::invalid_argument("Provided region for fatbin creation is of size "
+				+ std::to_string(target_region.size()) + " bytes, while the fatbin requires " + std::to_string(required_size));
 		}
 		return build_without_size_check_in(target_region);
 	}
@@ -103,13 +103,13 @@ public:
 	{
 #ifndef NDEBUG
 		if (nul_terminated_ptx_source.empty()) {
-			throw ::std::invalid_argument("Empty PTX source code passed for addition into fatbin");
+			throw std::invalid_argument("Empty PTX source code passed for addition into fatbin");
 		}
 		if (nul_terminated_ptx_source[nul_terminated_ptx_source.size() - 1] != '\0') {
-			throw ::std::invalid_argument("PTX source code passed for addition into fatbin was not nul-character-terminated");
+			throw std::invalid_argument("PTX source code passed for addition into fatbin was not nul-character-terminated");
 		}
 #endif
-		auto compute_capability_str = ::std::to_string(target_compute_capability.as_combined_number());
+		auto compute_capability_str = std::to_string(target_compute_capability.as_combined_number());
 		auto empty_cmdline = "";
 		auto status = nvFatbinAddPTX(handle_,
 			nul_terminated_ptx_source.data(),
@@ -118,7 +118,7 @@ public:
 			identifier,
 			empty_cmdline);
 		throw_if_error_lazy(status, "Failed adding PTX source fragment "
-			+ ::std::string(identifier) + " at " + detail_::ptr_as_hex(nul_terminated_ptx_source.data())
+			+ std::string(identifier) + " at " + detail_::ptr_as_hex(nul_terminated_ptx_source.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -127,12 +127,12 @@ public:
 		memory::region_t lto_ir,
 		device::compute_capability_t target_compute_capability) const
 	{
-		auto compute_capability_str = ::std::to_string(target_compute_capability.as_combined_number());
+		auto compute_capability_str = std::to_string(target_compute_capability.as_combined_number());
 		auto empty_cmdline = "";
 		auto status = nvFatbinAddLTOIR(
 			handle_, lto_ir.data(), lto_ir.size(), compute_capability_str.c_str(), identifier, empty_cmdline);
 		throw_if_error_lazy(status, "Failed adding LTO IR fragment "
-			+ ::std::string(identifier) + " at " + detail_::ptr_as_hex(lto_ir.data())
+			+ std::string(identifier) + " at " + detail_::ptr_as_hex(lto_ir.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -141,11 +141,11 @@ public:
 		memory::region_t cubin,
 		device::compute_capability_t target_compute_capability) const
 	{
-		auto compute_capability_str = ::std::to_string(target_compute_capability.as_combined_number());
+		auto compute_capability_str = std::to_string(target_compute_capability.as_combined_number());
 		auto status = nvFatbinAddCubin(
 			handle_, cubin.data(), cubin.size(), compute_capability_str.c_str(), identifier);
 		throw_if_error_lazy(status, "Failed adding cubin fragment "
-			+ ::std::string(identifier) + " at " + detail_::ptr_as_hex(cubin.data())
+			+ std::string(identifier) + " at " + detail_::ptr_as_hex(cubin.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -168,7 +168,7 @@ public:
 	void add_index(const char* identifier, memory::region_t index) const
 	{
 		auto status = nvFatbinAddIndex(handle_, index.data(), index.size(), identifier);
-		throw_if_error_lazy(status, "Failed adding index  " + ::std::string(identifier) + " at "
+		throw_if_error_lazy(status, "Failed adding index  " + std::string(identifier) + " at "
 			+ detail_::ptr_as_hex(index.data()) + " to a fat binary");
 	}
 #endif // CUDA_VERSION >= 12050
@@ -203,7 +203,7 @@ public: // constructors and destructor
 		auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
 #ifdef THROW_IN_DESTRUCTORS
 		throw_if_error_lazy(status,
-			::std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
+			std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
 			" in " + fatbin_builder::detail_::identify(handle_));
 #else
 		(void) status;
@@ -217,8 +217,8 @@ public: // operators
 
 	fatbin_builder_t &operator=(fatbin_builder_t &&other) noexcept
 	{
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning, owning);
+		std::swap(handle_, other.handle_);
+		std::swap(owning, owning);
 		return *this;
 	}
 
@@ -250,7 +250,7 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership) noexcept
 
 namespace detail_ {
 
-inline ::std::string identify(const fatbin_builder_t& builder)
+inline std::string identify(const fatbin_builder_t& builder)
 {
 	return identify(builder.handle());
 }

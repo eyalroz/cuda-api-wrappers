@@ -23,7 +23,7 @@ namespace detail_ {
 template <typename Delimiter> struct opt_start_t;
 
 template<typename T>
-struct is_marshalling_control : ::std::false_type {};
+struct is_marshalling_control : std::false_type {};
 
 /**
  * This class is necessary for realizing everything we need from
@@ -51,9 +51,9 @@ public:
 	marshalled_options_t(marshalled_options_t&&) = default;
 
 protected:
-	mutable ::std::ostringstream oss;
-	mutable ::std::string finalized {};
-	::std::vector<size_type> option_positions;
+	mutable std::ostringstream oss;
+	mutable std::string finalized {};
+	std::vector<size_type> option_positions;
 	// Offsets into the eventually-created options string.
 	// Note that the last offset is to a not-yet-existing option
 public:
@@ -62,7 +62,7 @@ public:
 		return oss.tellp() == 0;
 	}
 
-	template <typename T, typename = ::cuda_::detail_::enable_if_t<not detail_::is_marshalling_control<typename ::std::decay<T>::type>::value>>
+	template <typename T, typename = ::cuda_::detail_::enable_if_t<not detail_::is_marshalling_control<typename std::decay<T>::type>::value>>
 	marshalled_options_t& operator<<(T&& x)
 	{
 		oss << x;
@@ -76,12 +76,12 @@ public:
 		return *this;
 	}
 
-	::std::vector<const char*> option_ptrs() const {
+	std::vector<const char*> option_ptrs() const {
 		finalized = oss.str();
-		auto ptrs = ::std::vector<const char*>();
+		auto ptrs = std::vector<const char*>();
 		ptrs.reserve(option_positions.size()-1);
 		const char* start = finalized.data();
-		::std::transform(option_positions.cbegin(), option_positions.cend() - 1, ::std::back_inserter(ptrs),
+		std::transform(option_positions.cbegin(), option_positions.cend() - 1, std::back_inserter(ptrs),
 			[start] (size_type pos){ return start + pos; });
 		return ptrs;
 	}
@@ -93,10 +93,10 @@ inline marshalled_options_t& operator<< (marshalled_options_t& mo, marshalled_op
 	return mo;
 }
 
-template<> struct is_marshalling_control<marshalled_options_t::advance_gadget> : ::std::true_type {};
+template<> struct is_marshalling_control<marshalled_options_t::advance_gadget> : std::true_type {};
 
 template<typename Delimiter>
-struct is_marshalling_control<opt_start_t<Delimiter>> : ::std::true_type {};
+struct is_marshalling_control<opt_start_t<Delimiter>> : std::true_type {};
 
 template <typename Delimiter>
 struct opt_start_t {
@@ -180,9 +180,9 @@ detail_::marshalled_options_t marshal(const CompilationOptions& opts)
  *
  */
 template <typename CompilationOptions>
-::std::string render(const CompilationOptions& opts)
+std::string render(const CompilationOptions& opts)
 {
-	::std::ostringstream oss;
+	std::ostringstream oss;
 	detail_::process(opts, oss, ' ');
 	if (oss.tellp() > 0) {
 		// Remove the last, excessive, delimiter

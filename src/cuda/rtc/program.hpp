@@ -70,15 +70,15 @@ template <> inline program::handle_t<ptx> create<ptx>(
 inline void register_global(handle_t<cuda_cpp> program_handle, const char *global_to_register)
 {
 	auto status = nvrtcAddNameExpression(program_handle, global_to_register);
-	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed registering global entity " + ::std::string(global_to_register)
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed registering global entity " + std::string(global_to_register)
 		+ " with " + identify<cuda_cpp>(program_handle));
 }
 
 /// Splice multiple raw string options together with a ' ' separator character, and
 /// surrounding each option with double-quotes
-inline ::std::string get_concatenated_options(const const_cstrings_span& raw_options)
+inline std::string get_concatenated_options(const const_cstrings_span& raw_options)
 {
-	static ::std::ostringstream oss;
+	static std::ostringstream oss;
 	oss.str("");
 	for (const auto option: raw_options) {
 		oss << " \"" << option << '\"';
@@ -160,9 +160,9 @@ inline compilation_output_t<cuda_cpp> compile(
 	const_cstrings_span raw_options,
 	const_cstrings_span globals_to_register)
 {
-	assert(header_names.size() <= ::std::numeric_limits<int>::max());
+	assert(header_names.size() <= std::numeric_limits<int>::max());
 	if (program_name == nullptr or *program_name == '\0') {
-		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
+		throw std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
 	}
 	// Note: Not rejecting empty/missing source, because we may be pre-including source files
 	auto num_headers = static_cast<int>(header_names.size());
@@ -184,7 +184,7 @@ inline compilation_output_t<ptx> compile_ptx(
 	const_cstrings_span raw_options)
 {
 	if (program_name == nullptr or *program_name == '\0') {
-		throw ::std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
+		throw std::invalid_argument("Attempt to compile a CUDA program without specifying a name");
 	}
 	// Note: Not rejecting empty/missing source, because we may be pre-including source files
 	auto program_handle = create<ptx>(program_name, program_source);
@@ -204,7 +204,7 @@ public: // types and constants
 public: // getters
     /// Getters for the constituent object fields
     ///@{
-	const ::std::string& name() const { return name_; }
+	const std::string& name() const { return name_; }
 
 	/// Full source code of the program (possibly with preprocessor directives such as `#include`)
 	const char* source() const { return source_; }
@@ -220,7 +220,7 @@ public: // getters
 	///@}
 
 public: // constructors and destructor
-	explicit base_t(::std::string name) : name_(::std::move(name)) {};
+	explicit base_t(std::string name) : name_(std::move(name)) {};
 	base_t(const base_t&) = default;
 	base_t(base_t&&) noexcept = default;
 	~base_t() = default;
@@ -232,7 +232,7 @@ public: // operators
 
 protected: // data members
 	const char*           source_ { nullptr };
-	::std::string         name_;
+	std::string         name_;
 	compilation_options_t<Kind> options_;
 }; // base_t
 
@@ -331,7 +331,7 @@ public: // setters - duplicated with PTX programs
 	void add_target(const context_t& context) { add_target(context.device()); }
 
 	program_t& set_source(const char* source) { source_ = source; return *this; }
-	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
+	program_t& set_source(const std::string& source) { source_ = source.c_str(); return *this; }
 	program_t& set_options(const compilation_options_t<source_kind>& options)
 	{
 		options_ = options;
@@ -339,7 +339,7 @@ public: // setters - duplicated with PTX programs
 	}
 	program_t& set_options(compilation_options_t<source_kind>&& options)
 	{
-		options_ = ::std::move(options);
+		options_ = std::move(options);
 		return *this;
 	}
 
@@ -347,12 +347,12 @@ protected:
 	template <typename String>
 	static void check_string_type()
 	{
-		using no_cref_string_type = typename ::std::remove_const<typename ::std::remove_reference<String>::type>::type;
+		using no_cref_string_type = typename std::remove_const<typename std::remove_reference<String>::type>::type;
 		static_assert(
-			::std::is_same<no_cref_string_type, const char*>::value or
-			::std::is_same<no_cref_string_type, char*>::value or
-			::std::is_same<String, const ::std::string&>::value or
-			::std::is_same<String, ::std::string&>::value,
+			std::is_same<no_cref_string_type, const char*>::value or
+			std::is_same<no_cref_string_type, char*>::value or
+			std::is_same<String, const std::string&>::value or
+			std::is_same<String, std::string&>::value,
 			"Cannot use this type for a named header name or source; use char*, const char* or a "
 			"reference to a string you own"
 		);
@@ -360,19 +360,19 @@ protected:
 
 	// Note: All methods involved in adding headers - which eventually call one of the
 	// three adders of each kind here - are written carefully to support both C-style strings
-	// and lvalue references to ::std::string's - but _not_ rvalue strings or rvalue string
+	// and lvalue references to std::string's - but _not_ rvalue strings or rvalue string
 	// references, as the latter are not owned by the caller, and this class' code does not
 	// make a copy or take ownership. If you make any changes, you must be very careful not
 	// to _copy_ anything by mistake, but rather carry forward reference-types all the way
 	// to here.
 
 	void add_header_name_  (const char* name)            { headers_.names.emplace_back(name); }
-	void add_header_name_  (const ::std::string& name)   { add_header_name_(name.c_str()); }
-	void add_header_name_  (::std::string&& name) = delete;
+	void add_header_name_  (const std::string& name)   { add_header_name_(name.c_str()); }
+	void add_header_name_  (std::string&& name) = delete;
 
 	void add_header_source_(const char* source)          { headers_.sources.emplace_back(source); }
-	void add_header_source_(const ::std::string& source) { add_header_source_(source.c_str()); }
-	void add_header_source_(::std::string&& source) = delete;
+	void add_header_source_(const std::string& source) { add_header_source_(source.c_str()); }
+	void add_header_source_(std::string&& source) = delete;
 
 public: // mutators
 	/**
@@ -402,7 +402,7 @@ public: // mutators
 	 * @note "names" with path separators can be used, but are discouraged
 	 */
 	template <typename String1, typename String2>
-	program_t& add_header(const ::std::pair<String1, String2>& name_and_source)
+	program_t& add_header(const std::pair<String1, String2>& name_and_source)
 	{
 		add_header_name_(name_and_source.first);
 		add_header_source_(name_and_source.second);
@@ -411,7 +411,7 @@ public: // mutators
 
 	/// @copydoc add_header<String1, String2>(String1&&, String2&&)
 	template <typename String1, typename String2>
-	program_t& add_header(::std::pair<String1, String2>&& name_and_source)
+	program_t& add_header(std::pair<String1, String2>&& name_and_source)
 	{
 		check_string_type<String1>();
 		check_string_type<String2>();
@@ -436,16 +436,16 @@ public: // mutators
 		check_string_type<typename RangeOfSources::const_reference>();
 #ifndef NDEBUG
 		if (header_names.size() != header_sources.size()) {
-			throw ::std::invalid_argument(
-				"Got a different number of header names (" + ::std::to_string(header_names.size())
-				+ ") and header source (" + ::std::to_string(header_sources.size()) + ')');
+			throw std::invalid_argument(
+				"Got a different number of header names (" + std::to_string(header_names.size())
+				+ ") and header source (" + std::to_string(header_sources.size()) + ')');
 		}
 #endif
 		auto new_num_headers = headers_.names.size() + header_names.size();
 #ifndef NDEBUG
-		if (new_num_headers > ::std::numeric_limits<int>::max()) {
-			throw ::std::invalid_argument("Cannot use more than "
-				+ ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
+		if (new_num_headers > std::numeric_limits<int>::max()) {
+			throw std::invalid_argument("Cannot use more than "
+				+ std::to_string(std::numeric_limits<int>::max()) + " headers.");
 		}
 #endif
 		headers_.names.reserve(new_num_headers);
@@ -475,9 +475,9 @@ public: // mutators
 		auto num_headers_to_add = named_header_pairs.size();
 		auto new_num_headers = headers_.names.size() + num_headers_to_add;
 #ifndef NDEBUG
-		if (new_num_headers > ::std::numeric_limits<int>::max()) {
-			throw ::std::invalid_argument("Cannot use more than "
-										  + ::std::to_string(::std::numeric_limits<int>::max()) + " headers.");
+		if (new_num_headers > std::numeric_limits<int>::max()) {
+			throw std::invalid_argument("Cannot use more than "
+										  + std::to_string(std::numeric_limits<int>::max()) + " headers.");
 		}
 #endif
 		headers_.names.reserve(new_num_headers);
@@ -550,10 +550,10 @@ public:
 	compilation_output_t<cuda_cpp> compile() const
 	{
 		if ((source_ == nullptr or *source_ == '\0') and options_.preinclude_files.empty()) {
-			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
+			throw std::invalid_argument("Attempt to compile a CUDA program without any source code");
 		}
 		auto marshalled_options = cuda_::marshalling::marshal(options_);
-		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
+		std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
 		return program::detail_::compile(
 			name_.c_str(),
 			source_ == nullptr ? "" : source_,
@@ -579,7 +579,7 @@ public:
 	}
 
 	/// @copydoc add_registered_global(const char*)
-	program_t& add_registered_global(const ::std::string& unmangled_name)
+	program_t& add_registered_global(const std::string& unmangled_name)
 	{
 		globals_to_register_.push_back(unmangled_name.c_str());
 		return *this;
@@ -611,14 +611,14 @@ public:
 	template <typename Container>
 	program_t& add_registered_globals(Container&& globals_to_register)
 	{
-		static_assert(::std::is_same<typename Container::value_type, const char*>::value,
+		static_assert(std::is_same<typename Container::value_type, const char*>::value,
 			"For an rvalue container, we only accept raw C strings as the value type, to prevent"
 			"the possible passing of string-like objects at the end of their lifetime");
 		return add_registered_globals(static_cast<const Container&>(globals_to_register));
 	}
 
 public: // constructors and destructor
-	program_t(::std::string name) : base_t(::std::move(name)) {}
+	program_t(std::string name) : base_t(std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
@@ -631,10 +631,10 @@ public: // operators
 
 protected: // data members
 	struct {
-		::std::vector<const char*> names;
-		::std::vector<const char*> sources;
+		std::vector<const char*> names;
+		std::vector<const char*> sources;
 	} headers_;
-	::std::vector<const char*> globals_to_register_;
+	std::vector<const char*> globals_to_register_;
 }; // class program_t<cuda_cpp>
 
 #if CUDA_VERSION >= 11010
@@ -701,13 +701,13 @@ public: // setters - duplicated with CUDA-C++/NVRTC programs
 	/// @copydoc program_t<cuda_cpp>::set_source(char const*)
 	program_t& set_source(char const* source) { source_ = source; return *this; }
 
-	/// @copydoc program_t<cuda_cpp>::set_source(const ::std::string&)
-	program_t& set_source(const ::std::string& source) { source_ = source.c_str(); return *this; }
+	/// @copydoc program_t<cuda_cpp>::set_source(const std::string&)
+	program_t& set_source(const std::string& source) { source_ = source.c_str(); return *this; }
 
 	/// @copydoc program_t<cuda_cpp>::set_options(compilation_options_t<ptx>)
 	program_t& set_options(compilation_options_t<source_kind> options)
 	{
-		options_ = ::std::move(options);
+		options_ = std::move(options);
 		return *this;
 	}
 	/// @copydoc program_t<cuda_cpp>::clear_options()
@@ -721,10 +721,10 @@ public:
 	compilation_output_t<ptx> compile() const
 	{
 		if (source_ == nullptr or *source_ == '\0') {
-			throw ::std::invalid_argument("Attempt to compile a CUDA program without any source code");
+			throw std::invalid_argument("Attempt to compile a CUDA program without any source code");
 		}
 		auto marshalled_options = cuda_::marshalling::marshal(options_);
-		::std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
+		std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
 		return program::detail_::compile_ptx(
 			name_.c_str(),
 			source_,
@@ -732,7 +732,7 @@ public:
 	}
 
 public: // constructors and destructor
-	program_t(::std::string name) : parent(::std::move(name)) {}
+	program_t(std::string name) : parent(std::move(name)) {}
 	program_t(const program_t&) = default;
 	program_t(program_t&&) = default;
 	~program_t() = default;
@@ -761,7 +761,7 @@ program_t<Kind> create(const char* program_name)
 
 /// @copydoc create <source_kind_t>(const char*)
 template <source_kind_t Kind>
-program_t<Kind> create(const ::std::string& program_name)
+program_t<Kind> create(const std::string& program_name)
 {
 	return program_t<Kind>(program_name);
 }
@@ -781,11 +781,11 @@ supported_targets()
 	int num_supported_archs;
 	auto status = nvrtcGetNumSupportedArchs(&num_supported_archs);
 	throw_if_error<cuda_cpp>(status, "Failed obtaining the number of target NVRTC architectures");
-	auto raw_archs = ::std::unique_ptr<int[]>(new int[num_supported_archs]);
+	auto raw_archs = std::unique_ptr<int[]>(new int[num_supported_archs]);
 	status = nvrtcGetSupportedArchs(raw_archs.get());
 	throw_if_error<cuda_cpp>(status, "Failed obtaining the architectures supported by NVRTC");
 	auto result = make_unique_span<device::compute_capability_t>(num_supported_archs);
-	::std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, ::std::begin(result),
+	std::transform(raw_archs.get(), raw_archs.get() + num_supported_archs, std::begin(result),
 		[](int raw_arch) { return device::compute_capability_t::from_combined_number(raw_arch); });
 	return result;
 }

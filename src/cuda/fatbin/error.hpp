@@ -3,7 +3,7 @@
  *
  * @brief Facilities for exception-based handling of errors originating
  * in NVIDIA's fatbin creating library (nvFatbin), including a basic exception
- * class wrapping `::std::runtime_error`.
+ * class wrapping `std::runtime_error`.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_FATBIN_BUILDER_ERROR_HPP_
@@ -25,7 +25,7 @@ namespace fatbin_builder {
 
 namespace status {
 
-enum named_t : ::std::underlying_type<status_t>::type {
+enum named_t : std::underlying_type<status_t>::type {
 	success = NVFATBIN_SUCCESS,
 	other_internal_error = NVFATBIN_ERROR_INTERNAL,
 	elf_architecture_mismatch = NVFATBIN_ERROR_ELF_ARCH_MISMATCH,
@@ -85,7 +85,7 @@ constexpr bool is_failure(fatbin_builder::status_t status)
  * or error code.
  */
 ///@{
-inline ::std::string describe(fatbin_builder::status_t status)
+inline std::string describe(fatbin_builder::status_t status)
 {
 	return nvFatbinGetErrorString(status);
 }
@@ -99,32 +99,32 @@ namespace fatbin_builder {
  * A CUDA runtime error can be constructed with either just a CUDA error code
  * (=status code), or a code plus an additional message.
  */
-class runtime_error : public ::std::runtime_error {
+class runtime_error : public std::runtime_error {
 public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(status_t error_code) :
-		::std::runtime_error(describe(error_code)),
+		std::runtime_error(describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t error_code, ::std::string what_arg) :
-		::std::runtime_error(::std::move(what_arg) + ": " + describe(error_code)),
+	runtime_error(status_t error_code, std::string what_arg) :
+		std::runtime_error(std::move(what_arg) + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	runtime_error(status::named_t error_code) :
 		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(status::named_t error_code, const ::std::string& what_arg) :
+	runtime_error(status::named_t error_code, const std::string& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
 protected:
-	runtime_error(status_t error_code, ::std::runtime_error err) :
-		::std::runtime_error(::std::move(err)), code_(error_code)
+	runtime_error(status_t error_code, std::runtime_error err) :
+		std::runtime_error(std::move(err)), code_(error_code)
 	{ }
 
 public:
-	static runtime_error with_message_override(status_t error_code, ::std::string complete_what_arg)
+	static runtime_error with_message_override(status_t error_code, std::string complete_what_arg)
 	{
-		return runtime_error(error_code, ::std::runtime_error(complete_what_arg));
+		return runtime_error(error_code, std::runtime_error(complete_what_arg));
 	}
 
 	/**
@@ -139,7 +139,7 @@ private:
 
 } // namespace fatbin_builder
 
-// TODO: The following could use ::std::optional arguments - which would
+// TODO: The following could use std::optional arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
@@ -150,7 +150,7 @@ private:
  * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(fatbin_builder::status_t status, const ::std::string& message) noexcept(false)
+inline void throw_if_error(fatbin_builder::status_t status, const std::string& message) noexcept(false)
 {
 	if (is_failure(status)) { throw fatbin_builder::runtime_error(status, message); }
 }

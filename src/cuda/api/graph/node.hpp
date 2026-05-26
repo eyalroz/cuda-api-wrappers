@@ -28,12 +28,12 @@ node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept;
 
 namespace detail_ {
 
-::std::string identify(const node_t &node);
+std::string identify(const node_t &node);
 
 inline status_t get_dependencies(
 	handle_t                     handle,
 	handle_t      * __restrict__ dependency_handles,
-	::std::size_t * __restrict__ num_dependencies)
+	std::size_t * __restrict__ num_dependencies)
 {
 #if CUDA_VERSION >= 13000
 	static constexpr auto no_edge_data { nullptr };
@@ -46,7 +46,7 @@ inline status_t get_dependencies(
 inline status_t get_dependents(
 	handle_t                     handle,
 	handle_t      * __restrict__ dependent_handles,
-	::std::size_t * __restrict__ num_dependencies)
+	std::size_t * __restrict__ num_dependencies)
 {
 #if CUDA_VERSION >= 13000
 	static constexpr auto no_edge_data { nullptr };
@@ -96,8 +96,8 @@ using type_t = CUgraphNodeType;
 class node_t {
 public: // data types
 	using handle_type = node::handle_t;
-	using dependencies_type = ::std::vector<node_t>;
-	using dependents_type = ::std::vector<node_t>;
+	using dependencies_type = std::vector<node_t>;
+	using dependents_type = std::vector<node_t>;
 	using type_type = node::type_t;
 	using size_type = size_t;
 
@@ -135,7 +135,7 @@ public:
 	dependencies_type dependencies() const
 	{
 		size_type num_dependencies_ { num_dependencies() } ;
-		::std::vector<node::handle_t> node_handles {num_dependencies_ };
+		std::vector<node::handle_t> node_handles {num_dependencies_ };
 		auto status = node::detail_::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
 		throw_if_error_lazy(status, "Obtaining the set nodes on which " + node::detail_::identify(*this) + " is dependent");
 		dependencies_type result;
@@ -148,7 +148,7 @@ public:
 	dependencies_type dependents() const
 	{
 		size_type num_dependents_ { num_dependents() } ;
-		::std::vector<node::handle_t> node_handles {num_dependents_ };
+		std::vector<node::handle_t> node_handles {num_dependents_ };
 		auto status = node::detail_::get_dependents(handle_, node_handles.data(), &num_dependents_);
 		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + node::detail_::identify(*this));
 		dependencies_type result;

@@ -35,7 +35,7 @@ using handle_t = CUarray;
 
 /// Raw CUDA driver descriptor structure for an array of dimension @tparam NumDimensions
 template <dimensionality_t NumDimensions>
-using descriptor_t = typename ::std::conditional<NumDimensions == 2, CUDA_ARRAY_DESCRIPTOR, CUDA_ARRAY3D_DESCRIPTOR>::type;
+using descriptor_t = typename std::conditional<NumDimensions == 2, CUDA_ARRAY_DESCRIPTOR, CUDA_ARRAY3D_DESCRIPTOR>::type;
 
 /// Wrap an existing CUDA array in an @ref array_t instance.
 template <typename T, dimensionality_t NumDimensions>
@@ -116,7 +116,7 @@ inline descriptor_t<2> get_descriptor_in_current_context<2>(handle_t handle)
 	descriptor_t<2> result;
 	auto status = cuArrayGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
-		::std::string("Failed obtaining the descriptor of the CUDA 2D array at ")
+		std::string("Failed obtaining the descriptor of the CUDA 2D array at ")
 		+ cuda_::detail_::ptr_as_hex(handle));
 	return result;
 }
@@ -127,7 +127,7 @@ inline descriptor_t<4> get_descriptor_in_current_context<3>(handle_t handle)
 	descriptor_t<3> result;
 	auto status = cuArray3DGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
-		::std::string("Failed obtaining the descriptor of the CUDA 3D array at ")
+		std::string("Failed obtaining the descriptor of the CUDA 3D array at ")
 		+ cuda_::detail_::ptr_as_hex(handle));
 	return result;
 }
@@ -176,7 +176,7 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
  * @brief Owning wrapper for CUDA 2D and 3D arrays
  *
  * A CUDA array is a multi-dimensional structure on CUDA GPUs with specific
- * GPU hardware support. CUDA arrays are _not_ equivalent to `::std::array`s,
+ * GPU hardware support. CUDA arrays are _not_ equivalent to `std::array`s,
  * nor to C/C++ arrays! Please read the relevant sections of the CUDA
  * programming guide for information regarding the uses of these arrays:
  * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-arrays
@@ -249,10 +249,10 @@ public:
 	context_t context() const;
 
 	/// Overall number of elements in the array, over all dimensions
-	::std::size_t size() const noexcept { return dimensions().size(); }
+	std::size_t size() const noexcept { return dimensions().size(); }
 
 	/// Overall size in bytes of the elements of the array, over all dimensions
-	::std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
+	std::size_t size_bytes() const noexcept { return size() * sizeof(T); }
 
 	/// Get the full set of features of this array in a single structure,
 	/// recognizable by the CUDA driver (e.g. for creating additional arrays)
