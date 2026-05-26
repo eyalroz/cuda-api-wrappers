@@ -34,7 +34,7 @@
 #include <cuda/api.hpp>
 
 #if __cplusplus >= 202001L
-using span = ::std::span;
+using span = std::span;
 #else
 using ::cuda_::span;
 #endif

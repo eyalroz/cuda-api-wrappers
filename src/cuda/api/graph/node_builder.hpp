@@ -19,11 +19,11 @@ namespace node {
 
 namespace detail_ {
 
-inline ::std::logic_error make_unspec_error(const char *node_type, const char *missing_arg_name)
+inline std::logic_error make_unspec_error(const char *node_type, const char *missing_arg_name)
 {
 	// Yes, returning it, not throwing it. This is an exception builder function
-	return ::std::logic_error(
-		::std::string("Attempt to build a CUDA execution graph node of type ") + node_type +
+	return std::logic_error(
+		std::string("Attempt to build a CUDA execution graph node of type ") + node_type +
 		" without specifying its " + missing_arg_name + " argument");
 }
 
@@ -66,7 +66,7 @@ public:
 
 	this_type& template_(template_t subgraph) {
 		return do_([&] {
-			params_ = ::std::move(subgraph);
+			params_ = std::move(subgraph);
 			was_set.template_ = true;
 		});
 	}
@@ -76,7 +76,7 @@ public:
 		if (not was_set.template_) {
 			throw detail_::make_unspec_error("child graph", "child graph template");
 		}
-		return graph_template.insert.node<kind>(::std::move(params_));
+		return graph_template.insert.node<kind>(std::move(params_));
 	}
 }; // typed_builder_t<kind_t::child_graph>
 
@@ -107,7 +107,7 @@ public:
 
 	this_type& event(event_t event) {
 		return do_([&] {
-			params_ = ::std::move(event);
+			params_ = std::move(event);
 			was_set.event = true;
 		});
 	}
@@ -117,7 +117,7 @@ public:
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("record event", "event");
 		}
-		return graph_template.insert.node<kind>(::std::move(params_));
+		return graph_template.insert.node<kind>(std::move(params_));
 	}
 }; // typed_builder_t<kind_t::record_event>
 
@@ -146,7 +146,7 @@ public:
 
 	this_type& event(event_t event) {
 		return do_([&] {
-			params_ = ::std::move(event);
+			params_ = std::move(event);
 			was_set.event = true;
 		});
 	}
@@ -156,7 +156,7 @@ public:
 		if (not was_set.event) {
 			throw detail_::make_unspec_error("wait on event", "event");
 		}
-		return graph_template.insert.node<kind>(::std::move(params_));
+		return graph_template.insert.node<kind>(std::move(params_));
 	}
 }; // typed_builder_t<kind_t::wait_event>
 
@@ -250,7 +250,7 @@ public:
 		return do_([&] {
 			// we can't just make an assignment to the `kernel` field, we have to reassign
 			// the whole structure...
-			params_ = { kernel, params_.launch_config, ::std::move(params_.marshalled_arguments) };
+			params_ = { kernel, params_.launch_config, std::move(params_.marshalled_arguments) };
 			was_set.kernel = true;
 		});
 	}
@@ -268,10 +268,10 @@ public:
 		});
 	}
 
-	this_type marshalled_arguments(::std::vector<void*> argument_ptrs)
+	this_type marshalled_arguments(std::vector<void*> argument_ptrs)
 	{
 		return do_([&] {
-			params_.marshalled_arguments = ::std::move(argument_ptrs);
+			params_.marshalled_arguments = std::move(argument_ptrs);
 			was_set.marshalled_arguments = true;
 		});
 	}
@@ -279,7 +279,7 @@ public:
 	template <typename... Ts>
 	this_type arguments(Ts&&... args)
 	{
-		return marshalled_arguments(make_kernel_argument_pointers(::std::forward<Ts>(args)...));
+		return marshalled_arguments(make_kernel_argument_pointers(std::forward<Ts>(args)...));
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -403,7 +403,7 @@ public:
 
 	template <typename... Ts>
 	this_type& source(Ts&&... args) {
-		return do_([&]{ params_.set_source(::std::forward<Ts>(args)...); });
+		return do_([&]{ params_.set_source(std::forward<Ts>(args)...); });
 	}
 //
 //	template <typename... Ts>
@@ -413,12 +413,12 @@ public:
 
 	template <typename... Ts>
 	this_type& destination(Ts&&... args) {
-		return do_([&]{ params_.set_destination(::std::forward<Ts>(args)...); });
+		return do_([&]{ params_.set_destination(std::forward<Ts>(args)...); });
 	}
 
 	template <typename... Ts>
 	this_type& endpoint(endpoint_t endpoint, Ts&&... args) {
-		return do_([&]{ params_.set_endpoint(endpoint, ::std::forward<Ts>(args)...); });
+		return do_([&]{ params_.set_endpoint(endpoint, std::forward<Ts>(args)...); });
 	}
 
 //	this_type& source_untyped(context::handle_t context_handle, void *ptr, dimensions_type dimensions) noexcept
@@ -485,7 +485,7 @@ public:
 	{
 		static_assert(sizeof(T) <= 4, "Type of value to set is too wide; maximum size is 4");
 		static_assert(sizeof(T) != 3, "Size of type to set is not a power of 2");
-		static_assert(::std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
+		static_assert(std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
 		return do_([&] {
 			params_.width_in_bytes = sizeof(T);
 			switch(sizeof(T)) {
@@ -575,7 +575,7 @@ public:
 	this_type context(context_t context) noexcept
 	{
 		return do_([&] {
-			params_.first = ::std::move(context);
+			params_.first = std::move(context);
 			was_set.context = true;});
 	}
 

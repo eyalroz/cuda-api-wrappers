@@ -55,7 +55,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
 	attribute_value_t value;
 	auto status = cuDeviceGetP2PAttribute(&value, attribute, source, destination);
 	throw_if_error_lazy(status, "Failed obtaining peer-to-peer device attribute for device pair ("
-		+ ::std::to_string(source) + ", " + ::std::to_string(destination) + ')');
+		+ std::to_string(source) + ", " + std::to_string(destination) + ')');
 	return value;
 }
 

@@ -3,7 +3,7 @@
  *
  * @brief Facilities for exception-based handling of errors originating
  * to the NVRTC library, including a basic exception class
- * wrapping `::std::runtime_error`.
+ * wrapping `std::runtime_error`.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_RTC_ERROR_HPP_
@@ -82,13 +82,13 @@ constexpr bool is_failure(rtc::status_t<Kind> status)
  * or error code.
  */
 ///@{
-inline ::std::string describe(rtc::status_t<cuda_cpp> status)
+inline std::string describe(rtc::status_t<cuda_cpp> status)
 {
 	return nvrtcGetErrorString(status);
 }
 
 #if CUDA_VERSION >= 11010
-inline ::std::string describe(rtc::status_t<ptx> status)
+inline std::string describe(rtc::status_t<ptx> status)
 {
 	using named = rtc::status::named_t<ptx>;
 	switch((status_t) status) {
@@ -120,32 +120,32 @@ namespace rtc {
  * (=status code), or a code plus an additional message.
  */
 template <source_kind_t Kind>
-class runtime_error : public ::std::runtime_error {
+class runtime_error : public std::runtime_error {
 public:
 	// TODO: Constructor chaining; and perhaps allow for more construction mechanisms?
 	runtime_error(status_t<Kind> error_code) :
-		::std::runtime_error(describe(error_code)),
+		std::runtime_error(describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t<Kind> error_code, ::std::string what_arg) :
-		::std::runtime_error(::std::move(what_arg) + ": " + describe(error_code)),
+	runtime_error(status_t<Kind> error_code, std::string what_arg) :
+		std::runtime_error(std::move(what_arg) + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	runtime_error(status::named_t<Kind> error_code) :
 		runtime_error(static_cast<status_t<Kind>>(error_code)) { }
-	runtime_error(status::named_t<Kind> error_code, const ::std::string& what_arg) :
+	runtime_error(status::named_t<Kind> error_code, const std::string& what_arg) :
 		runtime_error(static_cast<status_t<Kind>>(error_code), what_arg) { }
 
 protected:
-	runtime_error(status_t<Kind> error_code, ::std::runtime_error err) :
-		::std::runtime_error(::std::move(err)), code_(error_code)
+	runtime_error(status_t<Kind> error_code, std::runtime_error err) :
+		std::runtime_error(std::move(err)), code_(error_code)
 	{ }
 
 public:
-	static runtime_error with_message_override(status_t<Kind> error_code, ::std::string complete_what_arg)
+	static runtime_error with_message_override(status_t<Kind> error_code, std::string complete_what_arg)
 	{
-		return runtime_error<Kind>(error_code, ::std::runtime_error(complete_what_arg));
+		return runtime_error<Kind>(error_code, std::runtime_error(complete_what_arg));
 	}
 
 	/**
@@ -160,7 +160,7 @@ private:
 
 } // namespace rtc
 
-// TODO: The following could use ::std::optional arguments - which would
+// TODO: The following could use std::optional arguments - which would
 // prevent the need for dual versions of the functions - but we're
 // not writing C++17 here
 
@@ -172,7 +172,7 @@ private:
  * @param message An extra description message to add to the exception
  */
 template <source_kind_t Kind>
-void throw_if_error(rtc::status_t<Kind> status, const ::std::string& message) noexcept(false)
+void throw_if_error(rtc::status_t<Kind> status, const std::string& message) noexcept(false)
 {
 	if (is_failure<Kind>(status)) { throw rtc::runtime_error<Kind>(status, message); }
 }

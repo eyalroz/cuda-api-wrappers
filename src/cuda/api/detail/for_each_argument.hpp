@@ -13,9 +13,9 @@ void for_each_argument(F) { }
 template <class F, class... Args>
 void for_each_argument(F f, Args&&... args) {
 	using arrT = int[];
-	static_cast<void>(arrT{(f(::std::forward<Args>(args)), 0)...});
+	static_cast<void>(arrT{(f(std::forward<Args>(args)), 0)...});
 // This:
-//	[](...){}((f(::std::forward<Args>(args)), 0)...);
+//	[](...){}((f(std::forward<Args>(args)), 0)...);
 // doesn't guarantee execution order
 }
 

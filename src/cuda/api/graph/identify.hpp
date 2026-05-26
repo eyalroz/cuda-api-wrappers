@@ -19,23 +19,23 @@ namespace template_ {
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "execution graph template " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
 /*
 
-inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle);
 }
 
-inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle, device_id);
 }
@@ -49,22 +49,22 @@ namespace instance {
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "execution graph instance " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
 
-inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle);
 }
 
-inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle, device_id);
 }
@@ -77,12 +77,12 @@ namespace node {
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
-	return ::std::string("node with handle ") + ::cuda_::detail_::ptr_as_hex(handle);
+	return std::string("node with handle ") + ::cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(handle_t node_handle, template_::handle_t graph_template_handle)
+inline std::string identify(handle_t node_handle, template_::handle_t graph_template_handle)
 {
 	return identify(node_handle) + " in " + template_::detail_::identify(graph_template_handle);
 }

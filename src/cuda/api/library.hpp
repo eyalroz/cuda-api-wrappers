@@ -50,12 +50,12 @@ inline library_t wrap(
 	handle_t                handle,
 	bool                    take_ownership = false) noexcept;
 
-inline ::std::string identify(const library::handle_t &handle)
+inline std::string identify(const library::handle_t &handle)
 {
-	return ::std::string("library ") + cuda_::detail_::ptr_as_hex(handle);
+	return std::string("library ") + cuda_::detail_::ptr_as_hex(handle);
 }
 
-::std::string identify(const library_t &library);
+std::string identify(const library_t &library);
 
 inline status_t unload_nothrow(handle_t handle) noexcept
 {
@@ -65,7 +65,7 @@ inline status_t unload_nothrow(handle_t handle) noexcept
 inline void unload(handle_t handle)
 {
 	auto status = unload_nothrow(handle);
-	throw_if_error_lazy(status, ::std::string{"Failed unloading "}
+	throw_if_error_lazy(status, std::string{"Failed unloading "}
 		+ library::detail_::identify(handle));
 }
 
@@ -93,7 +93,7 @@ inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, c
 {
 	library::kernel::handle_t kernel_handle;
 	auto status = cuLibraryGetKernel(&kernel_handle, library_handle, name);
-	throw_if_error_lazy(status, ::std::string{"Failed obtaining kernel "}
+	throw_if_error_lazy(status, std::string{"Failed obtaining kernel "}
 		 + name + "' from " + library::detail_::identify(library_handle));
 	return kernel_handle;
 }
@@ -145,16 +145,16 @@ public: // getters
 	 * in the current context.
 	 */
 	library::kernel_t get_kernel(const context_t& context, const char* name) const;
-	library::kernel_t get_kernel(const context_t& context, const ::std::string& name) const;
+	library::kernel_t get_kernel(const context_t& context, const std::string& name) const;
 	library::kernel_t get_kernel(const char* name) const;
-	library::kernel_t get_kernel(const ::std::string& name) const;
+	library::kernel_t get_kernel(const std::string& name) const;
 
 	memory::region_t get_global(const char* name) const
 	{
 		return cuda_::get_global(context::current::get(), *this, name);
 	}
 
-	memory::region_t get_global(const ::std::string& name) const
+	memory::region_t get_global(const std::string& name) const
 	{
 		return get_global(name.c_str());
 	}
@@ -164,7 +164,7 @@ public: // getters
 		return cuda_::get_managed_region(*this, name);
 	}
 
-	memory::region_t get_managed(const ::std::string& name) const
+	memory::region_t get_managed(const std::string& name) const
 	{
 		return get_managed(name.c_str());
 	}
@@ -203,8 +203,8 @@ public: // operators
 	library_t& operator=(const library_t&) = delete;
 	library_t& operator=(library_t&& other) noexcept
 	{
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
 		return *this;
 	}
 
@@ -221,7 +221,7 @@ inline memory::region_t get_global(const context_t& context, const library_t& li
 	size_t size;
 	auto result = cuLibraryGetGlobal(&dptr, &size, library.handle(), name);
 	throw_if_error_lazy(result,
-		::std::string("Obtaining the memory address and size for the global object '") + name + "' from "
+		std::string("Obtaining the memory address and size for the global object '") + name + "' from "
 		+ library::detail_::identify(library) + " in context " + context::detail_::identify(context));
 	return { memory::as_pointer(dptr), size };
 	// Note: Nothing is holding a PC refcount unit here!
@@ -237,7 +237,7 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 	memory::device::address_t region_start;
 	size_t region_size;
 	auto status = cuLibraryGetManaged(&region_start, &region_size, library.handle(), name);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining the managed memory region '") + name
+	throw_if_error_lazy(status, std::string("Failed obtaining the managed memory region '") + name
 		+ "' from " + library::detail_::identify(library));
 	return { memory::as_pointer(region_start), region_size };
 }
@@ -252,7 +252,7 @@ inline module_t create(const context_t& context, const library_t& library)
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	module::handle_t new_handle;
 	auto status = cuLibraryGetModule(&new_handle, library.handle());
-	throw_if_error_lazy(status, ::std::string("Failed creating a module '") +
+	throw_if_error_lazy(status, std::string("Failed creating a module '") +
 		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
 	constexpr bool is_owning { true };
 	return module::detail_::wrap(context.device_id(), context.handle(), new_handle,
@@ -269,7 +269,7 @@ inline void* get_unified_function(const context_t& context, const library_t& lib
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	void* function_ptr;
 	auto status = cuLibraryGetUnifiedFunction(&function_ptr, library.handle(), symbol);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining a pointer for function '") + symbol
+	throw_if_error_lazy(status, std::string("Failed obtaining a pointer for function '") + symbol
 		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
 	return function_ptr;
 }
@@ -300,7 +300,7 @@ library_t create(
 		raw_opts.options, raw_opts.values, raw_opts.count
 	);
 	throw_if_error_lazy(status,
-		::std::string("Failed loading a compiled CUDA code library from ") + error_string_generator());
+		std::string("Failed loading a compiled CUDA code library from ") + error_string_generator());
 	bool do_take_ownership{true};
 	return detail_::wrap(new_lib_handle, do_take_ownership);
 }
@@ -326,12 +326,12 @@ inline library_t load_from_file(
 {
 	return detail_::create(
 		cuLibraryLoadFromFile, path,
-		[path]() { return ::std::string("file ") + path; },
+		[path]() { return std::string("file ") + path; },
 		link_options, code_is_preserved);
 }
 
 inline library_t load_from_file(
-	const ::std::string&    path,
+	const std::string&    path,
 	const link::options_t&  link_options = {},
 	bool                    code_is_preserved = false)
 {
@@ -341,7 +341,7 @@ inline library_t load_from_file(
 #if __cplusplus >= 201703L
 
 inline library_t load_from_file(
-	const ::std::filesystem::path&  path,
+	const std::filesystem::path&  path,
 	const link::options_t&          link_options = {},
 	bool                            code_is_preserved = false)
 {
@@ -374,7 +374,7 @@ inline library_t create(
 {
 	return detail_::create(
 		cuLibraryLoadData, module_data,
-		[module_data]() { return ::std::string("data at ") + cuda_::detail_::ptr_as_hex(module_data); },
+		[module_data]() { return std::string("data at ") + cuda_::detail_::ptr_as_hex(module_data); },
 		link_options, code_is_preserved);
 }
 
@@ -384,7 +384,7 @@ inline library_t create(
 
 namespace detail_ {
 
-inline ::std::string identify(const library_t& library)
+inline std::string identify(const library_t& library)
 {
 	return identify(library.handle());
 }

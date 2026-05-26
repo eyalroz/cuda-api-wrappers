@@ -111,7 +111,7 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 		.grid_dimensions((N_ROWS / ROWS_PER_CTA) + 2, 1, 1)
 		.build();
 
-	::std::unique_ptr<cuda_::graph::instance_t> instance_ptr{};
+	std::unique_ptr<cuda_::graph::instance_t> instance_ptr{};
 
 	double sum = 0.0;
 	for (int k = 0; k < num_iterations; k++) {
@@ -126,7 +126,7 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 
 		if (instance_ptr == nullptr) {
 			auto instance = graph.instantiate();
-			instance_ptr.reset(new cuda_::graph::instance_t{::std::move(instance)});
+			instance_ptr.reset(new cuda_::graph::instance_t{std::move(instance)});
 		}
 		else {
 			instance_ptr->update(graph);

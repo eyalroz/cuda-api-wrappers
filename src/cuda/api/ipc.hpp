@@ -130,7 +130,7 @@ protected: // constructors & destructor
 	imported_ptr_t(void* ptr, bool owning) : ptr_(ptr), owning_(owning)
 	{
 		if (ptr_ == nullptr) {
-			throw ::std::logic_error("IPC memory handle yielded a null pointer");
+			throw std::logic_error("IPC memory handle yielded a null pointer");
 		}
 	}
 
@@ -153,8 +153,8 @@ public: // operators
 	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
 	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept
 	{
-		::std::swap(ptr_, other.ptr_);
-		::std::swap(owning_, other.owning_);
+		std::swap(ptr_, other.ptr_);
+		std::swap(owning_, other.owning_);
 		return *this;
 	}
 	imported_ptr_t(imported_ptr_t&& other) noexcept = default;

@@ -30,9 +30,9 @@ inline void validate_mangling_status(int status)
 {
 	switch (status) {
 	// 0 is fine
-	case -1: throw ::std::runtime_error("Memory allocation failure by __cu_demangle for a demangled CUDA identifier");
-	case -2: throw ::std::invalid_argument("Mangled identifier passed for demangling was invalid");
-	case -3: throw ::std::invalid_argument("Validation of one of the input arguments for a __cu_demangle() call failed");
+	case -1: throw std::runtime_error("Memory allocation failure by __cu_demangle for a demangled CUDA identifier");
+	case -2: throw std::invalid_argument("Mangled identifier passed for demangling was invalid");
+	case -3: throw std::invalid_argument("Validation of one of the input arguments for a __cu_demangle() call failed");
 	}
 	return;
 }
@@ -52,7 +52,7 @@ inline unique_span<char> demangle(const char* mangled_identifier)
 	auto demangled = demangle(mangled_identifier, nullptr, allocated_size);
 #ifndef NDEBUG
 	if (allocated_size <= 1) {
-		throw ::std::logic_error("Invalid allocation size returned by __cu_demangle()");
+		throw std::logic_error("Invalid allocation size returned by __cu_demangle()");
 	}
 #endif
 	return unique_span<char>{demangled, allocated_size - 1, c_free<char> };
@@ -74,7 +74,7 @@ T demangle_as(const char* mangled_identifier)
 }
 
 template<>
-inline ::std::string demangle_as<::std::string>(const char* mangled_identifier)
+inline std::string demangle_as<std::string>(const char* mangled_identifier)
 {
 	auto demangled = detail_::demangle(mangled_identifier);
 	return { demangled.data(), demangled.size() };

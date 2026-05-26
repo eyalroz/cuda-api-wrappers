@@ -47,14 +47,14 @@ public: // types
 	using size_type = size_t;
 	// No pointer difference type, as the pointers here are void-typed and
 	// there's no sense in subtracting them except internally
-	// difference_type = ::std::ptrdiff_t
+	// difference_type = std::ptrdiff_t
 
 private:
 	T* start_ = nullptr;
 	size_type size_in_bytes_ = 0;
 
-	// If we were using C++17 or later, we could forget about this and use `::std::byte`
-	using char_type = typename ::std::conditional<::std::is_const<T>::value, const char *, char *>::type;
+	// If we were using C++17 or later, we could forget about this and use `std::byte`
+	using char_type = typename std::conditional<std::is_const<T>::value, const char *, char *>::type;
 public:
 	constexpr base_region_t() noexcept = default;
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
@@ -65,7 +65,7 @@ public:
 		: start_(arr), size_in_bytes_(N * sizeof(E)) {}
 
 	/**
-	 * A constructor from types such as `::std::span`'s or `::std::vector`'s, whose data is in
+	 * A constructor from types such as `std::span`'s or `std::vector`'s, whose data is in
 	 * a contiguous region of memory
 	 */
 	template <typename ContiguousContainer, typename = cuda_::detail_::enable_if_t<
@@ -73,7 +73,7 @@ public:
 	constexpr base_region_t(ContiguousContainer&& contiguous_container) noexcept
 	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
-		static_assert(::std::is_const<T>::value or not ::std::is_const<decltype(*(contiguous_container.data()))>::value,
+		static_assert(std::is_const<T>::value or not std::is_const<decltype(*(contiguous_container.data()))>::value,
 			"Attempt to construct a non-const memory region from a container of const data");
 	}
 
@@ -81,14 +81,14 @@ public:
 	CPP14_CONSTEXPR span<U> as_span() const NOEXCEPT_IF_NDEBUG
 	{
 		static_assert(
-			::std::is_const<U>::value or not ::std::is_const<typename ::std::remove_pointer<T>::type>::value,
+			std::is_const<U>::value or not std::is_const<typename std::remove_pointer<T>::type>::value,
 			"Attempt to create a non-const span referencing a const memory region");
 #ifndef NDEBUG
 		if (size() == 0) {
-			throw ::std::logic_error("Attempt to use a span of size 0 as a sequence of typed elements");
+			throw std::logic_error("Attempt to use a span of size 0 as a sequence of typed elements");
 		}
 		if (size() % sizeof(U) != 0) {
-			throw ::std::logic_error("Attempt to use a region of size not an integral multiple of the size of a type, "
+			throw std::logic_error("Attempt to use a region of size not an integral multiple of the size of a type, "
 				"as a span of elements of that type");
 		}
 #endif
@@ -111,10 +111,10 @@ protected:
 	{
 #if ! defined(NDEBUG) && __cplusplus >= 201402L
 		if (offset_in_bytes >= size_in_bytes_) {
-			throw ::std::invalid_argument("subregion begins past region end");
+			throw std::invalid_argument("subregion begins past region end");
 		}
 		else if (offset_in_bytes + size_in_bytes > size_in_bytes_) {
-			throw ::std::invalid_argument("subregion exceeds original region bounds");
+			throw std::invalid_argument("subregion exceeds original region bounds");
 		}
 #endif
 		return { static_cast<char_type>(start_) + offset_in_bytes, size_in_bytes };

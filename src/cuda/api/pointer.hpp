@@ -10,7 +10,7 @@
  * This may change in the future.
  *
  * @todo Consider allowing for storing attributes within the class,
- * lazily (e.g. with an ::std::optional).
+ * lazily (e.g. with an std::optional).
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_POINTER_HPP_
@@ -37,13 +37,13 @@ namespace memory {
  *     to a GPU device or their treatment by the CUDA driver; this type distinguishes among
  *     them.
  */
-enum type_t : ::std::underlying_type<CUmemorytype>::type {
+enum type_t : std::underlying_type<CUmemorytype>::type {
 	host_         = CU_MEMORYTYPE_HOST,
 	device_       = CU_MEMORYTYPE_DEVICE,
 	array         = CU_MEMORYTYPE_ARRAY,
 	unified_      = CU_MEMORYTYPE_UNIFIED,
 	managed_      = CU_MEMORYTYPE_UNIFIED, // an alias (more like the runtime API name)
-	non_cuda      = ~(::std::underlying_type<CUmemorytype>::type{0})
+	non_cuda      = ~(std::underlying_type<CUmemorytype>::type{0})
 };
 
 namespace pointer {

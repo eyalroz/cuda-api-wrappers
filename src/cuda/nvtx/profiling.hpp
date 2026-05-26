@@ -101,10 +101,10 @@ using handle_t = nvtxRangeId_t;
  */
 struct color_t {
 	/// A profiler color corresponds to a 32-bit value
-	using underlying_type = ::std::uint32_t;
+	using underlying_type = std::uint32_t;
 
 	/// Each color channel is an 8-bit value
-	using channel_value = ::std::uint8_t;
+	using channel_value = std::uint8_t;
 
 	/// A profiler color is made up of three color channels and a transparency
 	/// or "alpha" channel
@@ -159,9 +159,9 @@ namespace mark {
 namespace detail_ {
 
 // Used to prevent multiple threads from accessing the profiler simultaneously
-inline ::std::mutex& get_mutex() noexcept
+inline std::mutex& get_mutex() noexcept
 {
-	static ::std::mutex profiler_mutex;
+	static std::mutex profiler_mutex;
 	return profiler_mutex;
 }
 
@@ -185,7 +185,7 @@ template <typename CharT>
 void point(const CharT* description, color_t color = color_t::Black())
 {
 	auto attrs = detail_::create_attributes(description, color);
-	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
+	std::lock_guard<std::mutex> guard{ detail_::get_mutex() };
 	// logging?
 	nvtxMarkEx(&attrs);
 }
@@ -206,10 +206,10 @@ range::handle_t range_start(
 	color_t        color = color_t::LightRed())
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
-	::std::lock_guard<::std::mutex> guard{ detail_::get_mutex() };
+	std::lock_guard<std::mutex> guard{ detail_::get_mutex() };
 	auto attrs = detail_::create_attributes(description, color);
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&attrs);
-	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
+	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
 				  "cuda_::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	return range_handle;
 }
@@ -218,7 +218,7 @@ range::handle_t range_start(
 /// marking its beginning.
 inline void range_end(range::handle_t range_handle)
 {
-	static_assert(::std::is_same<range::handle_t, nvtxRangeId_t>::value,
+	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
 				  "cuda_::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
 	nvtxRangeEnd(range_handle);
 }
@@ -361,15 +361,15 @@ inline void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
 	nvtxNameCuDeviceW(device_id, name);
 }
 
-inline void name(::std::thread::id host_thread_id, const char* name)
+inline void name(std::thread::id host_thread_id, const char* name)
 {
-    auto native_handle = *(reinterpret_cast<const ::std::thread::native_handle_type*>(&host_thread_id));
+    auto native_handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
 #ifdef _WIN32
     uint32_t thread_id = GetThreadId(native_handle);
 #else
-    if (native_handle >= ::std::numeric_limits<uint32_t>::max()) {
-        throw ::std::runtime_error("Native thread ID " + ::std::to_string(native_handle) +
-            " exceeds maximum representable thread ID " + ::std::to_string(::std::numeric_limits<uint32_t>::max()));
+    if (native_handle >= std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("Native thread ID " + std::to_string(native_handle) +
+            " exceeds maximum representable thread ID " + std::to_string(std::numeric_limits<uint32_t>::max()));
     }
     auto thread_id = static_cast<uint32_t>(native_handle);
 #endif
@@ -385,7 +385,7 @@ inline void name(::std::thread::id host_thread_id, const char* name)
  * @param[in] name The name to use for the specified thread
  */
 template <typename CharT>
-void name(const ::std::thread& host_thread, const CharT* name);
+void name(const std::thread& host_thread, const CharT* name);
 
 /**
  * @brief Have the profiler refer to the current thread using a specified string
@@ -397,7 +397,7 @@ void name(const ::std::thread& host_thread, const CharT* name);
 template <typename CharT>
 void name_this_thread(const CharT* name)
 {
-	detail_::name(::std::this_thread::get_id(), name);
+	detail_::name(std::this_thread::get_id(), name);
 }
 
 /// Have the profile assign a name to a certain stream

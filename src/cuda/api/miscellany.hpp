@@ -76,7 +76,7 @@ inline device::id_t count()
 		throw runtime_error(result, "Failed obtaining the number of CUDA devices on the system");
 	}
 	if (device_count < 0) {
-		throw ::std::logic_error("cudaGetDeviceCount() reports an invalid number of CUDA devices");
+		throw std::logic_error("cudaGetDeviceCount() reports an invalid number of CUDA devices");
 	}
 	return device_count;
 }

@@ -35,13 +35,13 @@
 #ifndef BPSTD_STRING_VIEW_HPP
 #define BPSTD_STRING_VIEW_HPP
 
-#include <algorithm>  // ::std::
-#include <string>     // ::std::char_traits
-#include <ostream>    // ::std::basic_ostream
-#include <cstddef>    // ::std::size_t
-#include <memory>     // ::std::allocator
-#include <stdexcept>  // ::std::out_of_range
-#include <iterator>   // ::std::reverse_iterator
+#include <algorithm>  // std::
+#include <string>     // std::char_traits
+#include <ostream>    // std::basic_ostream
+#include <cstddef>    // std::size_t
+#include <memory>     // std::allocator
+#include <stdexcept>  // std::out_of_range
+#include <iterator>   // std::reverse_iterator
 namespace bpstd { // back-port std
 
   ////////////////////////////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ namespace bpstd { // back-port std
   ////////////////////////////////////////////////////////////////////////////
   template<
     typename CharT,
-    typename Traits = ::std::char_traits<CharT>
+    typename Traits = std::char_traits<CharT>
   >
   class basic_string_view final
   {
@@ -63,7 +63,7 @@ namespace bpstd { // back-port std
 
     using char_type   = CharT;
     using traits_type = Traits;
-    using size_type   = ::std::size_t;
+    using size_type   = std::size_t;
 
     using value_type      = CharT;
     using reference       = value_type&;
@@ -73,8 +73,8 @@ namespace bpstd { // back-port std
 
     using iterator       = const CharT*;
     using const_iterator = const CharT*;
-    using reverse_iterator = ::std::reverse_iterator<iterator>;
-    using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     //------------------------------------------------------------------------
     // Public Members
@@ -101,11 +101,11 @@ namespace bpstd { // back-port std
     /// \param other the string view being moved
     constexpr basic_string_view(basic_string_view&& other) noexcept = default;
 
-    /// \brief Constructs a basic_string_view from a ::std::basic_string
+    /// \brief Constructs a basic_string_view from a std::basic_string
     ///
     /// \param str the string to view
     template<typename Allocator>
-    basic_string_view(const ::std::basic_string<CharT,Traits,Allocator>& str) noexcept;
+    basic_string_view(const std::basic_string<CharT,Traits,Allocator>& str) noexcept;
 
     /// \brief Constructs a basic_string_view from an ansi-string
     ///
@@ -231,13 +231,13 @@ namespace bpstd { // back-port std
     /// \param a Allocator instance to use for allocating the new string
     ///
     /// \return A basic_string containing a copy of the characters of the current view.
-    template<class Allocator = ::std::allocator<CharT>>
-    constexpr ::std::basic_string<CharT, Traits, Allocator>
+    template<class Allocator = std::allocator<CharT>>
+    constexpr std::basic_string<CharT, Traits, Allocator>
       to_string(const Allocator& a = Allocator()) const;
 
     /// \copydoc basic_string_view::to_string
     template<class Allocator>
-    explicit constexpr operator ::std::basic_string<CharT, Traits, Allocator>() const;
+    explicit constexpr operator std::basic_string<CharT, Traits, Allocator>() const;
 
     //------------------------------------------------------------------------
     // Operations
@@ -451,7 +451,7 @@ namespace bpstd { // back-port std
   /// \param str the string to print
   /// \return reference to the output stream
   template<typename CharT, typename Traits>
-  ::std::basic_ostream<CharT,Traits>& operator<<(::std::basic_ostream<CharT,Traits>& o,
+  std::basic_ostream<CharT,Traits>& operator<<(std::basic_ostream<CharT,Traits>& o,
                                                const basic_string_view<CharT,Traits>& str);
 
   template<typename CharT, typename Traits>
@@ -512,7 +512,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits>
   template<typename Allocator>
-  inline basic_string_view<CharT,Traits>::basic_string_view(const ::std::basic_string<CharT,Traits,Allocator>& str)
+  inline basic_string_view<CharT,Traits>::basic_string_view(const std::basic_string<CharT,Traits,Allocator>& str)
     noexcept
     : m_str(str.c_str()),
       m_size(str.size())
@@ -606,7 +606,7 @@ namespace bpstd {
     basic_string_view<CharT,Traits>::at(size_type pos)
     const
   {
-    return pos < m_size ? m_str[pos] : throw ::std::out_of_range("Input out of range in basic_string_view::at"), m_str[pos];
+    return pos < m_size ? m_str[pos] : throw std::out_of_range("Input out of range in basic_string_view::at"), m_str[pos];
   }
 
   template<typename CharT, typename Traits>
@@ -650,7 +650,7 @@ namespace bpstd {
     basic_string_view<CharT,Traits>::swap(basic_string_view& v)
     noexcept
   {
-    using ::std::swap;
+    using std::swap;
     swap(m_size,v.m_size);
     swap(m_str,v.m_str);
   }
@@ -661,20 +661,20 @@ namespace bpstd {
 
   template<typename CharT, typename Traits>
   template<class Allocator>
-  inline constexpr ::std::basic_string<CharT, Traits, Allocator>
+  inline constexpr std::basic_string<CharT, Traits, Allocator>
     basic_string_view<CharT,Traits>::to_string(const Allocator& a)
     const
   {
-    return ::std::basic_string<CharT,Traits,Allocator>(m_str, m_size, a);
+    return std::basic_string<CharT,Traits,Allocator>(m_str, m_size, a);
   }
 
   template<typename CharT, typename Traits>
   template<class Allocator>
   inline constexpr basic_string_view<CharT,Traits>::operator
-    ::std::basic_string<CharT, Traits, Allocator>()
+    std::basic_string<CharT, Traits, Allocator>()
     const
   {
-    return ::std::basic_string<CharT,Traits,Allocator>(m_str, m_size);
+    return std::basic_string<CharT,Traits,Allocator>(m_str, m_size);
   }
 
   //--------------------------------------------------------------------------
@@ -689,11 +689,11 @@ namespace bpstd {
     const
   {
     if(pos >= m_size) {
-      throw ::std::out_of_range("Index out of range in basic_string_view::copy");
+      throw std::out_of_range("Index out of range in basic_string_view::copy");
     }
 
-    const size_type rcount = ::std::min(m_size - pos,count+1);
-    ::std::copy( m_str + pos, m_str + pos + rcount, dest);
+    const size_type rcount = std::min(m_size - pos,count+1);
+    std::copy( m_str + pos, m_str + pos + rcount, dest);
     return rcount;
   }
 
@@ -706,10 +706,10 @@ namespace bpstd {
     const size_type max_length = pos > m_size ? 0 : m_size - pos;
 
     if (pos > size()) {
-      throw ::std::out_of_range("Index out of range in basic_string_view::substr");
+      throw std::out_of_range("Index out of range in basic_string_view::substr");
     }
 
-    return basic_string_view(m_str + pos, ::std::min(len, max_length) );
+    return basic_string_view(m_str + pos, std::min(len, max_length) );
   }
 
   //--------------------------------------------------------------------------
@@ -718,7 +718,7 @@ namespace bpstd {
   inline int basic_string_view<CharT,Traits>::compare(basic_string_view v)
     const noexcept
   {
-    const size_type rlen = ::std::min(m_size,v.m_size);
+    const size_type rlen = std::min(m_size,v.m_size);
     const int compare = Traits::compare(m_str,v.m_str,rlen);
 
     return (compare ? compare : (m_size < v.m_size ? -1 : (m_size > v.m_size ? 1 : 0)));
@@ -837,13 +837,13 @@ namespace bpstd {
       return v.empty() ? 0u : npos;
     }
     if (v.empty()) {
-      return ::std::min(size() - 1, pos);
+      return std::min(size() - 1, pos);
     }
     if (v.size() > size()) {
       return npos;
     }
 
-    auto i = ::std::min(pos, (size() - v.size()));
+    auto i = std::min(pos, (size() - v.size()));
     while (i != npos) {
       if (substr(i, v.size()) == v) {
         return i;
@@ -937,7 +937,7 @@ namespace bpstd {
     if (empty()) {
       return npos;
     }
-    const auto max_index = ::std::min(size() - 1, pos);
+    const auto max_index = std::min(size() - 1, pos);
     for (auto i = 0u; i <= max_index;  ++i) {
       const auto j = max_index - i;
 
@@ -1033,7 +1033,7 @@ namespace bpstd {
     if (empty()) {
       return npos;
     }
-    const auto max_index = ::std::min(size() - 1, pos);
+    const auto max_index = std::min(size() - 1, pos);
     for (auto i = 0u; i <= max_index;  ++i) {
       const auto j = max_index - i;
 
@@ -1158,7 +1158,7 @@ namespace bpstd {
   //--------------------------------------------------------------------------
 
   template<typename CharT, typename Traits>
-  ::std::basic_ostream<CharT,Traits>& operator<<(::std::basic_ostream<CharT,Traits>& o,
+  std::basic_ostream<CharT,Traits>& operator<<(std::basic_ostream<CharT,Traits>& o,
                                                const basic_string_view<CharT,Traits>& str)
   {
     o.write(str.data(),str.size());
@@ -1202,7 +1202,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator==(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator==(const std::basic_string<CharT,Traits,Allocator>& lhs,
                          const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) == rhs;
@@ -1210,7 +1210,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator==(const basic_string_view<CharT,Traits>& lhs,
-                         const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                         const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs == basic_string_view<CharT,Traits>(rhs);
   }
@@ -1242,7 +1242,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator!=(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator!=(const std::basic_string<CharT,Traits,Allocator>& lhs,
                          const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) != rhs;
@@ -1250,7 +1250,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator!=(const basic_string_view<CharT,Traits>& lhs,
-                         const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                         const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs != basic_string_view<CharT,Traits>(rhs);
   }
@@ -1281,7 +1281,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator<(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator<(const std::basic_string<CharT,Traits,Allocator>& lhs,
                         const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) < rhs;
@@ -1289,7 +1289,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator<(const basic_string_view<CharT,Traits>& lhs,
-                        const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                        const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs < basic_string_view<CharT,Traits>(rhs);
   }
@@ -1321,7 +1321,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator>(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator>(const std::basic_string<CharT,Traits,Allocator>& lhs,
                         const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) > rhs;
@@ -1329,7 +1329,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator>(const basic_string_view<CharT,Traits>& lhs,
-                        const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                        const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs > basic_string_view<CharT,Traits>(rhs);
   }
@@ -1361,7 +1361,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator<=(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator<=(const std::basic_string<CharT,Traits,Allocator>& lhs,
                          const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) <= rhs;
@@ -1369,7 +1369,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator<=(const basic_string_view<CharT,Traits>& lhs,
-                         const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                         const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs <= basic_string_view<CharT,Traits>(rhs);
   }
@@ -1401,7 +1401,7 @@ namespace bpstd {
   }
 
   template<typename CharT, typename Traits, typename Allocator>
-  inline bool operator>=(const ::std::basic_string<CharT,Traits,Allocator>& lhs,
+  inline bool operator>=(const std::basic_string<CharT,Traits,Allocator>& lhs,
                          const basic_string_view<CharT,Traits>& rhs)
   {
     return basic_string_view<CharT,Traits>(lhs) >= rhs;
@@ -1409,7 +1409,7 @@ namespace bpstd {
 
   template<typename CharT, typename Traits, typename Allocator>
   inline bool operator>=(const basic_string_view<CharT,Traits>& lhs,
-                         const ::std::basic_string<CharT,Traits,Allocator>& rhs)
+                         const std::basic_string<CharT,Traits,Allocator>& rhs)
   {
     return lhs >= basic_string_view<CharT,Traits>(rhs);
   }

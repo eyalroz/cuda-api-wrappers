@@ -129,7 +129,7 @@ namespace node {
 
 namespace detail_ {
 
-inline ::std::string identify(const node_t &node)
+inline std::string identify(const node_t &node)
 {
 	return identify(node.handle(), node.containing_graph_handle());
 }
@@ -154,12 +154,12 @@ namespace instance {
 
 namespace detail_ {
 
-inline ::std::string describe(
+inline std::string describe(
 	instance::update_status_t  update_status,
 	node::handle_t             node_handle,
 	template_::handle_t        graph_template_handle)
 {
-	::std::string result = describe(update_status);
+	std::string result = describe(update_status);
 	if (node_handle != node::no_handle) {
 		result += node::detail_::identify(node_handle, graph_template_handle);
 	}
@@ -167,17 +167,17 @@ inline ::std::string describe(
 }
 
 /*
-inline ::std::string identify(instance::handle_t handle)
+inline std::string identify(instance::handle_t handle)
 {
 	return "execution graph instance at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(instance::handle_t handle, template_::handle_t template_handle)
+inline std::string identify(instance::handle_t handle, template_::handle_t template_handle)
 {
 	return identify(handle) + " within " + graph::template_::detail_::identify(template_handle);
 }
 
-inline ::std::string identify(const instance_t& instance)
+inline std::string identify(const instance_t& instance)
 {
 	return identify(instance.handle(), instance.template_handle());
 }
@@ -191,7 +191,7 @@ namespace template_ {
 
 namespace detail_ {
 
-inline ::std::string identify(const template_t& graph_template)
+inline std::string identify(const template_t& graph_template)
 {
 	return identify(graph_template.handle());
 }
@@ -202,7 +202,7 @@ inline ::std::string identify(const template_t& graph_template)
 
 } // namespace graph
 
-inline ::std::string describe(graph::instance::update_status_t update_status, optional<graph::node_t> node)
+inline std::string describe(graph::instance::update_status_t update_status, optional<graph::node_t> node)
 {
 	return node ?
 		   describe(update_status) :

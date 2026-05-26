@@ -31,7 +31,7 @@ class kernel_t;
 namespace detail_ {
 
 template <typename Kernel>
-struct is_library_kernel : ::std::is_same<typename ::std::decay<Kernel>::type, library::kernel_t> { };
+struct is_library_kernel : std::is_same<typename std::decay<Kernel>::type, library::kernel_t> { };
 
 } // namespace detail_
 
@@ -53,19 +53,19 @@ namespace detail_ {
 // only the library wrapper owns (and it's not associated with the kernel).
 kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle);
 
-inline ::std::string identify(kernel::handle_t handle)
+inline std::string identify(kernel::handle_t handle)
 {
 	return "library kernel at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(library::handle_t library_handle, kernel::handle_t handle)
+inline std::string identify(library::handle_t library_handle, kernel::handle_t handle)
 {
 	return identify(handle) + " within " + library::detail_::identify(library_handle);
 }
 
-::std::string identify(const kernel_t &kernel);
+std::string identify(const kernel_t &kernel);
 
-inline ::std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_context(
+inline std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_context(
 	const kernel::handle_t& library_kernel_handle)
 {
 	cuda_::kernel::handle_t contextualized_kernel_handle;
@@ -91,7 +91,7 @@ inline attribute_value_t get_attribute(
 {
 	attribute_value_t value;
 	auto status = cuKernelGetAttribute(&value, attribute, library_kernel_handle, device_id);
-	throw_if_error_lazy(status, ::std::string("Failed getting attribute ")
+	throw_if_error_lazy(status, std::string("Failed getting attribute ")
 		+ cuda_::kernel::detail_::attribute_name(attribute) + " for " + identify(library_kernel_handle)
 		+ " on " + device::detail_::identify(device_id));
 	return value;
@@ -104,8 +104,8 @@ inline void set_attribute(
 	attribute_value_t    value)
 {
 	auto status = cuKernelSetAttribute(attribute, value, library_kernel_handle, device_id);
-	throw_if_error_lazy(status, ::std::string("Failed setting attribute ")
-								+ cuda_::kernel::detail_::attribute_name(attribute) + " value to " + ::std::to_string(value)
+	throw_if_error_lazy(status, std::string("Failed setting attribute ")
+								+ cuda_::kernel::detail_::attribute_name(attribute) + " value to " + std::to_string(value)
 								+ " for " + identify(library_kernel_handle) + " on " + device::detail_::identify(device_id));
 }
 
@@ -182,7 +182,7 @@ inline kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle)
 	return {library_handle, handle};
 }
 
-inline ::std::string identify(const kernel_t& library_kernel)
+inline std::string identify(const kernel_t& library_kernel)
 {
 	return identify(library_kernel.library_handle(), library_kernel.handle());
 }
@@ -204,7 +204,7 @@ inline library::kernel_t library_t::get_kernel(const char* name) const
 	return library::kernel::get(*this, name);
 }
 
-inline library::kernel_t library_t::get_kernel(const ::std::string& name) const
+inline library::kernel_t library_t::get_kernel(const std::string& name) const
 {
 	return get_kernel(name.c_str());
 }
@@ -215,7 +215,7 @@ inline library::kernel_t library_t::get_kernel(const context_t& context, const c
 	return library::kernel::get(*this, name);
 }
 
-inline library::kernel_t library_t::get_kernel(const context_t& context, const ::std::string& name) const
+inline library::kernel_t library_t::get_kernel(const context_t& context, const std::string& name) const
 {
 	return get_kernel(context, name.c_str());
 }

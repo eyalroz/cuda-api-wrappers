@@ -36,7 +36,7 @@ physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_uni
 } // namespace detail_
 
 namespace detail_ {
-enum class granularity_kind_t : ::std::underlying_type<CUmemAllocationGranularity_flags_enum>::type {
+enum class granularity_kind_t : std::underlying_type<CUmemAllocationGranularity_flags_enum>::type {
 	minimum_required = CU_MEM_ALLOC_GRANULARITY_MINIMUM,
 	recommended_for_performance = CU_MEM_ALLOC_GRANULARITY_RECOMMENDED
 };
@@ -76,7 +76,7 @@ public:
 	properties_t(CUmemAllocationProp_st raw_properties) : raw(raw_properties)
 	{
 		if (raw.location.type != CU_MEM_LOCATION_TYPE_DEVICE) {
-			throw ::std::runtime_error("Unexpected physical_allocation type - we only know about devices!");
+			throw std::runtime_error("Unexpected physical_allocation type - we only know about devices!");
 		}
 	}
 
@@ -194,7 +194,7 @@ inline reserved_address_range_t reserve(region_t requested_region, alignment_t a
 	CUdeviceptr ptr;
 	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, device::address(requested_region), flags);
 	throw_if_error_lazy(status, "Failed making a reservation of " + cuda_::memory::detail_::identify(requested_region)
-		+ " with alignment value " + ::std::to_string(alignment));
+		+ " with alignment value " + std::to_string(alignment));
 	bool is_owning { true };
 	return detail_::wrap(memory::region_t {as_pointer(ptr), requested_region.size() }, alignment, is_owning);
 }
@@ -225,7 +225,7 @@ public: // constructors & destructor
 		if (not holds_refcount_unit_) { return; }
 		auto status = cuMemRelease(handle_);
 #ifdef THROW_IN_DESTRUCTORS
-		throw_if_error_lazy(status, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size_));
+		throw_if_error_lazy(status, "Failed making a virtual memory physical_allocation of size " + std::to_string(size_));
 #else
 		(void) status;
 #endif
@@ -241,7 +241,7 @@ public: // non-mutators
 	physical_allocation::properties_t properties() const {
 		CUmemAllocationProp raw_properties;
 		auto status = cuMemGetAllocationPropertiesFromHandle(&raw_properties, handle_);
-		throw_if_error_lazy(status, "Obtaining the properties of a virtual memory physical_allocation with handle " + ::std::to_string(handle_));
+		throw_if_error_lazy(status, "Obtaining the properties of a virtual memory physical_allocation with handle " + std::to_string(handle_));
 		return { raw_properties };
 	}
 
@@ -268,7 +268,7 @@ inline physical_allocation_t create(size_t size, properties_t properties)
 	static constexpr unsigned long long flags { 0 };
 	CUmemGenericAllocationHandle handle;
 	auto result = cuMemCreate(&handle, size, &properties.raw, flags);
-	throw_if_error_lazy(result, "Failed making a virtual memory physical_allocation of size " + ::std::to_string(size));
+	throw_if_error_lazy(result, "Failed making a virtual memory physical_allocation of size " + std::to_string(size));
 	static constexpr bool is_owning { true };
 	return detail_::wrap(handle, size, is_owning);
 }
@@ -277,9 +277,9 @@ physical_allocation_t create(size_t size, device_t device);
 
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle, size_t size) {
-	return ::std::string("physical allocation with handle ") + ::std::to_string(handle)
-		+ " of size " + ::std::to_string(size);
+inline std::string identify(handle_t handle, size_t size) {
+	return std::string("physical allocation with handle ") + std::to_string(handle)
+		+ " of size " + std::to_string(size);
 }
 
 inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit)
@@ -292,7 +292,7 @@ inline properties_t properties_of(handle_t handle)
 	CUmemAllocationProp prop;
 	auto result = cuMemGetAllocationPropertiesFromHandle (&prop, handle);
 	throw_if_error_lazy(result, "Failed obtaining the properties of the virtual memory physical_allocation with handle "
-	  + ::std::to_string(handle));
+	  + std::to_string(handle));
 	return { prop };
 }
 
@@ -321,7 +321,7 @@ physical_allocation_t import(shared_handle_t<SharedHandleKind> shared_handle, si
 
 namespace detail_ {
 
-inline ::std::string identify(physical_allocation_t physical_allocation) {
+inline std::string identify(physical_allocation_t physical_allocation) {
 	return identify(physical_allocation.handle(), physical_allocation.size());
 }
 
@@ -330,7 +330,7 @@ inline ::std::string identify(physical_allocation_t physical_allocation) {
 } // namespace physical_allocation
 
 /*
-enum access_mode_t : ::std::underlying_type<CUmemAccess_flags>::type {
+enum access_mode_t : std::underlying_type<CUmemAccess_flags>::type {
 	no_access             = CU_MEM_ACCESS_FLAGS_PROT_NONE,
 	read_access           = CU_MEM_ACCESS_FLAGS_PROT_READ,
 	read_and_write_access = CU_MEM_ACCESS_FLAGS_PROT_READWRITE,
@@ -344,8 +344,8 @@ namespace detail_ {
 
 inline mapping_t wrap(region_t address_range, bool owning = false);
 
-inline ::std::string identify(region_t address_range) {
-	return ::std::string("mapping of ") + memory::detail_::identify(address_range);
+inline std::string identify(region_t address_range) {
+	return std::string("mapping of ") + memory::detail_::identify(address_range);
 }
 
 } // namespace detail_
@@ -361,7 +361,7 @@ inline permissions_t get_permissions(region_t fully_mapped_region, cuda_::device
 	throw_if_error_lazy(result, "Failed determining the access mode for "
 		+ cuda_::device::detail_::identify(device_id)
 		+ " to the virtual memory mapping to the range of size "
-		+ ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
+		+ std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 	return permissions::detail_::from_flags(static_cast<CUmemAccess_flags>(flags)); // Does this actually work?
 }
 
@@ -484,7 +484,7 @@ public:
 		auto status = cuMemRetainAllocationHandle(&allocation_handle, address_range_.data());
 		throw_if_error_lazy(status, " Failed obtaining/retaining the physical_allocation handle for the virtual memory "
 			"range mapped to " + cuda_::detail_::ptr_as_hex(address_range_.data()) + " of size " +
-				::std::to_string(address_range_.size()) + " bytes");
+				std::to_string(address_range_.size()) + " bytes");
 		constexpr bool increase_refcount{false};
 		return physical_allocation::detail_::wrap(allocation_handle, address_range_.size(), increase_refcount);
 	}
@@ -505,7 +505,7 @@ mapping_t wrap(region_t range, bool owning)
 	return { range, owning };
 }
 
-inline ::std::string identify(mapping_t mapping)
+inline std::string identify(mapping_t mapping)
 {
 	return mapping::detail_::identify(mapping.address_range());
 }
@@ -522,7 +522,7 @@ inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 	auto status = cuMemMap(device::address(region), region.size(), offset_into_allocation, handle, flags);
 	throw_if_error_lazy(status, "Failed making a virtual memory mapping of "
 		+ physical_allocation::detail_::identify(physical_allocation)
-		+ " to the range of size " + ::std::to_string(region.size()) + " bytes at " +
+		+ " to the range of size " + std::to_string(region.size()) + " bytes at " +
 		cuda_::detail_::ptr_as_hex(region.data()));
 	constexpr bool is_owning { true };
 	return mapping::detail_::wrap(region, is_owning);

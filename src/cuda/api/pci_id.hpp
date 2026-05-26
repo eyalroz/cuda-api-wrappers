@@ -37,7 +37,7 @@ struct pci_location_t {
 	optional<int> function;
 	///@}
 
-	operator ::std::string() const;
+	operator std::string() const;
 
 	/**
 	 * Parse a string representation of a device's PCI location.
@@ -52,9 +52,9 @@ struct pci_location_t {
 	 *
 	 * and any of them can be used.
 	 */
-	static pci_location_t parse(const ::std::string& id_str);
+	static pci_location_t parse(const std::string& id_str);
 
-	/// @copydoc parse(const ::std::string& id_str)
+	/// @copydoc parse(const std::string& id_str)
 	static pci_location_t parse(const char* id_str);
 };
 
@@ -68,7 +68,7 @@ namespace detail_ {
  */
 inline id_t resolve_id(pci_location_t pci_id)
 {
-	::std::string as_string { pci_id };
+	std::string as_string { pci_id };
 	id_t cuda_device_id;
 	auto result = cuDeviceGetByPCIBusId(&cuda_device_id, as_string.c_str());
 	throw_if_error_lazy(result,

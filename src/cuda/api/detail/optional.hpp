@@ -13,17 +13,17 @@
 #include <optional>
 #include <any>
 namespace cuda_ {
-using ::std::optional;
-using ::std::nullopt_t;
-using ::std::nullopt;
+using std::optional;
+using std::nullopt_t;
+using std::nullopt;
 } // namespace cuda_
 #elif __cplusplus >= 201402L
 #include <experimental/optional>
 #include <experimental/any>
 namespace cuda_ {
-using ::std::experimental::optional;
-using ::std::experimental::nullopt;
-using ::std::experimental::nullopt_t;
+using std::experimental::optional;
+using std::experimental::nullopt;
+using std::experimental::nullopt_t;
 } // namespace cuda_
 #else
 
@@ -46,7 +46,7 @@ namespace detail_ {
 
 template<typename T>
 struct poor_mans_optional {
-	static_assert(::std::is_trivially_destructible<T>::value, "Use a simpler type");
+	static_assert(std::is_trivially_destructible<T>::value, "Use a simpler type");
 	union maybe_value_union_t {
 		no_value_t no_value;
 		T value;
@@ -56,7 +56,7 @@ struct poor_mans_optional {
 
 	poor_mans_optional &operator=(poor_mans_optional &&other) noexcept = default;
 
-	poor_mans_optional &operator=(const T &value) noexcept(::std::is_nothrow_assignable<T,T>::value)
+	poor_mans_optional &operator=(const T &value) noexcept(std::is_nothrow_assignable<T,T>::value)
 	{
 		has_value_ = true;
 		maybe_value.value = value;
@@ -69,13 +69,13 @@ struct poor_mans_optional {
 		return *this;
 	}
 
-	poor_mans_optional &operator=(T &&value) noexcept(::std::is_nothrow_move_assignable<T>::value)
+	poor_mans_optional &operator=(T &&value) noexcept(std::is_nothrow_move_assignable<T>::value)
 	{ return *this = value; }
 
 	poor_mans_optional() noexcept: has_value_(false)
 	{}
 
-	poor_mans_optional(T v) noexcept(::std::is_nothrow_assignable<T,T>::value) : has_value_(true)
+	poor_mans_optional(T v) noexcept(std::is_nothrow_assignable<T,T>::value) : has_value_(true)
 	{
 		maybe_value.value = v;
 	}
@@ -100,7 +100,7 @@ struct poor_mans_optional {
 	template<typename U>
 	T value_or(U&& fallback_value) const
 	{
-		return has_value_ ? maybe_value.value : static_cast<T>(::std::forward<U>(fallback_value));
+		return has_value_ ? maybe_value.value : static_cast<T>(std::forward<U>(fallback_value));
 	}
 
 	T& operator*() noexcept { return maybe_value.value; }

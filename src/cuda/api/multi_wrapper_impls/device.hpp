@@ -39,7 +39,7 @@ inline bool is_active(const device_t& device)
 inline void destroy(const device_t& device)
 {
 	auto status = cuDevicePrimaryCtxReset(device.id());
-	throw_if_error_lazy(status, "Failed destroying/resetting the primary context of device " + ::std::to_string(device.id()));
+	throw_if_error_lazy(status, "Failed destroying/resetting the primary context of device " + std::to_string(device.id()));
 }
 
 inline primary_context_t get(const device_t& device)
@@ -79,7 +79,7 @@ inline void disable_access(const device_t& accessor, const device_t& peer)
 {
 #ifndef NDEBUG
 	if (accessor == peer) {
-		throw ::std::invalid_argument("A device cannot be used as its own peer");
+		throw std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::disable_access(accessor.primary_context(), peer.primary_context());
@@ -94,7 +94,7 @@ inline void enable_bidirectional_access(const device_t& first, const device_t& s
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw ::std::invalid_argument("A device cannot be used as its own peer");
+		throw std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::enable_bidirectional_access(first.primary_context(), second.primary_context());
@@ -104,7 +104,7 @@ inline void disable_bidirectional_access(const device_t& first, const device_t& 
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw ::std::invalid_argument("A device cannot be used as its own peer");
+		throw std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	context::peer_to_peer::disable_bidirectional_access(first.primary_context(), second.primary_context());
@@ -114,7 +114,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, const device_t& fi
 {
 #ifndef NDEBUG
 	if (first == second) {
-		throw ::std::invalid_argument("A device cannot be used as its own peer");
+		throw std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
 	return detail_::get_attribute(attribute, first.id(), second.id());

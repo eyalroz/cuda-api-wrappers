@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <utility>
 #include <cassert>
-#include <cstddef> // for ::std::size_t
+#include <cstddef> // for std::size_t
 #include <cstdint>
 #ifndef NDEBUG
 #include <stdexcept>
@@ -79,18 +79,18 @@ using status_t = CUresult;
 
 /// A size type for use throughout the wrappers library (except when specific API functions
 /// limit the size further)
-using ::std::size_t;
+using std::size_t;
 
 /// The CUDA wrappers adopt the standard library's sized type definitions
 /// @{
-using ::std::int8_t;
-using ::std::int16_t;
-using ::std::int32_t;
-using ::std::int64_t;
-using ::std::uint8_t;
-using ::std::uint16_t;
-using ::std::uint32_t;
-using ::std::uint64_t;
+using std::int8_t;
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
 /// @}
 
 /// The index or number of dimensions of an entity (as opposed to the extent in any
@@ -274,14 +274,14 @@ using callback_t = CUstreamCallback;
 
 namespace capture {
 
-enum class mode_t : ::std::underlying_type<CUstreamCaptureMode>::type {
+enum class mode_t : std::underlying_type<CUstreamCaptureMode>::type {
 	global        = CU_STREAM_CAPTURE_MODE_GLOBAL,
 	thread        = CU_STREAM_CAPTURE_MODE_THREAD_LOCAL,
 	thread_local_ = thread,
 	relaxed       = CU_STREAM_CAPTURE_MODE_RELAXED
 };
 
-enum class state_t : ::std::underlying_type<CUstreamCaptureStatus>::type {
+enum class state_t : std::underlying_type<CUstreamCaptureStatus>::type {
 	active        = CU_STREAM_CAPTURE_STATUS_ACTIVE,
 	capturing     = active,
 	invalidated   = CU_STREAM_CAPTURE_STATUS_INVALIDATED,
@@ -620,7 +620,7 @@ namespace physical_allocation {
 
 /// The different kinds of memory handles the CUDA driver recognizes, and can possibly
 /// utilize
-enum class shared_handle_kind_t : ::std::underlying_type<CUmemAllocationHandleType>::type {
+enum class shared_handle_kind_t : std::underlying_type<CUmemAllocationHandleType>::type {
 #if CUDA_VERSION >= 11020
 	no_export             = CU_MEM_HANDLE_TYPE_NONE,
 #endif
@@ -778,7 +778,7 @@ enum class initial_visibility_t {
 #if CUDA_VERSION >= 11070
 /// Memory barriers can apply to different scops of scheduled work which must reach it before
 /// continuing
-enum class barrier_scope_t : ::std::underlying_type<CUstreamMemoryBarrier_flags>::type {
+enum class barrier_scope_t : std::underlying_type<CUstreamMemoryBarrier_flags>::type {
 	/// All wortk on
 	device = CU_STREAM_MEMORY_BARRIER_TYPE_GPU,
 	system = CU_STREAM_MEMORY_BARRIER_TYPE_SYS
@@ -819,7 +819,7 @@ struct launch_configuration_t;
  * change the balance in the allocation of L1-cache-like resources between
  * actual L1 cache and shared memory; these are the possible choices.
  */
-enum class multiprocessor_cache_preference_t : ::std::underlying_type<CUfunc_cache_enum>::type {
+enum class multiprocessor_cache_preference_t : std::underlying_type<CUfunc_cache_enum>::type {
 	/** No preference for more L1 cache or for more shared memory; the API can do as it please */
 	no_preference                 = CU_FUNC_CACHE_PREFER_NONE,
 	/** Divide the cache resources equally between actual L1 cache and shared memory */
@@ -846,7 +846,7 @@ enum class multiprocessor_cache_preference_t : ::std::underlying_type<CUfunc_cac
  * @ref device_t::shared_memory_bank_size .
  */
 enum multiprocessor_shared_memory_bank_size_option_t
-	: ::std::underlying_type<CUsharedconfig>::type
+	: std::underlying_type<CUsharedconfig>::type
 {
 	device_default       = CU_SHARED_MEM_CONFIG_DEFAULT_BANK_SIZE,
 	four_bytes_per_bank  = CU_SHARED_MEM_CONFIG_FOUR_BYTE_BANK_SIZE,
@@ -975,12 +975,12 @@ namespace detail_ {
 template <typename T, typename U>
 T identity_cast(U&& x)
 {
-	static_assert(::std::is_same<
-			typename ::std::remove_reference<T>::type,
-			typename ::std::remove_reference<U>::type
+	static_assert(std::is_same<
+			typename std::remove_reference<T>::type,
+			typename std::remove_reference<U>::type
 		>::value,
 		"Casting to a different type - don't use identity_cast");
-	return static_cast<T>(::std::forward<U>(x));
+	return static_cast<T>(std::forward<U>(x));
 }
 
 } // namespace detail_

@@ -49,12 +49,12 @@ struct version_t {
 	}
 
 	///@cond
-	operator ::std::pair<int, int>() const noexcept { return { major, minor }; }
+	operator std::pair<int, int>() const noexcept { return { major, minor }; }
 	///@endcond
 };
 
 ///@cond
-inline ::std::ostream& operator<<(::std::ostream& os, version_t v)
+inline std::ostream& operator<<(std::ostream& os, version_t v)
 {
 	return os << v.major << '.' << v.minor;
 }
@@ -63,32 +63,32 @@ inline ::std::ostream& operator<<(::std::ostream& os, version_t v)
 
 inline bool operator==(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() == rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() == rhs.operator std::pair<int, int>();
 }
 
 inline bool operator!=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() != rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() != rhs.operator std::pair<int, int>();
 }
 
 inline bool operator<(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() < rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() < rhs.operator std::pair<int, int>();
 }
 
 inline bool operator<=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() <= rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() <= rhs.operator std::pair<int, int>();
 }
 
 inline bool operator>(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() > rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() > rhs.operator std::pair<int, int>();
 }
 
 inline bool operator>=(const version_t& lhs, const version_t& rhs) noexcept
 {
-	return lhs.operator ::std::pair<int, int>() >= rhs.operator ::std::pair<int, int>();
+	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
 }
 
 // comparison with single integers - as major versions
@@ -175,10 +175,10 @@ inline version_t fatbin() {
 	auto status = nvFatbinVersion(&major, &minor);
 	throw_if_error_lazy(status, "Failed obtaining the nvfatbin library version");
 #ifndef NDEBUG
-	if ((major == 0) or (major > static_cast<unsigned int>(::std::numeric_limits<int>::max()))
-		or (minor == 0) or (minor > static_cast<unsigned int>(::std::numeric_limits<int>::max()))) {
-		throw ::std::logic_error("Invalid version encountered: ("
-			+ ::std::to_string(major) + ", " + ::std::to_string(minor) + ')' );
+	if ((major == 0) or (major > static_cast<unsigned int>(std::numeric_limits<int>::max()))
+		or (minor == 0) or (minor > static_cast<unsigned int>(std::numeric_limits<int>::max()))) {
+		throw std::logic_error("Invalid version encountered: ("
+			+ std::to_string(major) + ", " + std::to_string(minor) + ')' );
 	}
 #endif
 	return version_t{ static_cast<int>(major), static_cast<int>(minor) };

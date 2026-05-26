@@ -87,7 +87,7 @@ using stream_priority_range_t = context::stream_priority_range_t;
 
 namespace detail_ {
 
-inline ::std::string get_name(id_t id)
+inline std::string get_name(id_t id)
 {
 	using size_type = int; // Yes, an int, that's what cuDeviceName takes
 	static constexpr size_type initial_size_reservation { 100 };
@@ -96,20 +96,20 @@ inline ::std::string get_name(id_t id)
 	auto buffer_size = static_cast<size_type>(sizeof(stack_buffer) / sizeof(char));
 	auto try_getting_name = [&](char* buffer, size_type buffer_size_) -> size_type {
 		auto status = cuDeviceGetName(buffer, buffer_size-1, id);
-		throw_if_error_lazy(status, "Failed obtaining the CUDA device name of device " + ::std::to_string(id));
+		throw_if_error_lazy(status, "Failed obtaining the CUDA device name of device " + std::to_string(id));
 		buffer[buffer_size_-1] = '\0';
-		return static_cast<size_type>(::std::strlen(buffer));
+		return static_cast<size_type>(std::strlen(buffer));
 	};
 	auto prospective_name_length = try_getting_name(stack_buffer, initial_size_reservation);
 	if (prospective_name_length < buffer_size - 1) {
-		return { stack_buffer, static_cast<::std::string::size_type>(prospective_name_length) };
+		return { stack_buffer, static_cast<std::string::size_type>(prospective_name_length) };
 	}
-	::std::string result;
+	std::string result;
 	result.reserve(prospective_name_length);
 	prospective_name_length = try_getting_name(&result[0], buffer_size);
 		// We can't use result.data() since it's const until C++20ץץץ
 	if (prospective_name_length >= buffer_size - 1) {
-		throw ::std::runtime_error("CUDA device name longer than expected maximum size " + ::std::to_string(larger_size));
+		throw std::runtime_error("CUDA device name longer than expected maximum size " + std::to_string(larger_size));
 	}
 	return result;
 }
@@ -339,7 +339,7 @@ public:
 	/**
 	 * Obtains this device's human-readable name, e.g. "GeForce GTX 650 Ti BOOST".
 	 */
-	::std::string name() const
+	std::string name() const
 	{
 		// If I were lazy, I would just write:
 		// return properties().name;
@@ -713,9 +713,9 @@ public: 	// constructors and destructor
 
 	friend void swap(device_t& lhs, device_t& rhs) noexcept
 	{
-		::std::swap(lhs.id_, rhs.id_);
-		::std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
-		::std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
+		std::swap(lhs.id_, rhs.id_);
+		std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
+		std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
 	}
 
 	~device_t() DESTRUCTOR_EXCEPTION_SPEC
@@ -770,7 +770,7 @@ protected: // constructors
 	{
 #ifndef NDEBUG
 		if (id_ < 0) {
-			throw ::std::invalid_argument("Attempt to construct a CUDA device object for a negative device ID of " + ::std::to_string(id_));
+			throw std::invalid_argument("Attempt to construct a CUDA device object for a negative device ID of " + std::to_string(id_));
 		}
 #endif
 	}
@@ -833,7 +833,7 @@ inline device_t get(id_t id)
 {
 #ifndef NDEBUG
 	if (id < 0) {
-		throw ::std::invalid_argument("Attempt to obtain a CUDA device with a negative device ID " + ::std::to_string(id));
+		throw std::invalid_argument("Attempt to obtain a CUDA device with a negative device ID " + std::to_string(id));
 	}
 #endif
 	ensure_driver_is_initialized(); // The device_t class mostly assumes the driver has been initialized
@@ -901,7 +901,7 @@ inline device_t get(pci_location_t pci_id)
  * make IMHO. But - it's convenient for now and there's no immediate risk
  * from some other obvious source of CUDA-device-identifying strings.
  */
-inline device_t get(const ::std::string& pci_id_str)
+inline device_t get(const std::string& pci_id_str)
 {
 	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);

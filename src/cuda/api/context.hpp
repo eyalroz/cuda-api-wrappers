@@ -87,7 +87,7 @@ context_t wrap(
 
 namespace detail_ {
 
-::std::string identify(const context_t& context);
+std::string identify(const context_t& context);
 
 inline limit_value_t get_limit(limit_t limit_id)
 {
@@ -150,7 +150,7 @@ inline void set_cache_preference(handle_t handle, multiprocessor_cache_preferenc
 	auto status = cuCtxSetCacheConfig(static_cast<CUfunc_cache>(preference));
 	throw_if_error_lazy(status,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference to " +
-		::std::to_string(static_cast<unsigned>(preference)) + " for " + identify(handle));
+		std::to_string(static_cast<unsigned>(preference)) + " for " + identify(handle));
 }
 
 inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
@@ -254,7 +254,7 @@ protected: // types
 public: // types
 
 	static_assert(
-		::std::is_same<::std::underlying_type<CUsharedconfig>::type, ::std::underlying_type<cudaSharedMemConfig>::type>::value,
+		std::is_same<std::underlying_type<CUsharedconfig>::type, std::underlying_type<cudaSharedMemConfig>::type>::value,
 		"Unexpected difference between enumerators used for the same purpose by the CUDA runtime and the CUDA driver");
 
 public: // inner classes
@@ -745,9 +745,9 @@ public: // operators
 	context_t& operator=(const context_t&) = delete;
 	context_t& operator=(context_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
+		std::swap(device_id_, other.device_id_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
 		return *this;
 	}
 
@@ -871,13 +871,13 @@ namespace current {
 /**
  * Obtain the current CUDA context, if one exists.
  *
- * @throws ::std::runtime_error in case there is no current context
+ * @throws std::runtime_error in case there is no current context
  */
 inline context_t get()
 {
 	auto handle = detail_::get_handle();
 	if (handle == context::detail_::none) {
-		throw ::std::runtime_error("Attempt to obtain the current CUDA context when no context is current.");
+		throw std::runtime_error("Attempt to obtain the current CUDA context when no context is current.");
 	}
 	return context::detail_::from_handle(handle);
 }
@@ -940,7 +940,7 @@ handle_t push_default_if_missing();
  * Ensures that a current context exists by pushing the current device's primary context
  * if necessary, and returns the current context
  *
- * @throws ::std::runtime_error in case there is no current context
+ * @throws std::runtime_error in case there is no current context
  */
 inline context_t get_with_fallback_push()
 {
@@ -958,7 +958,7 @@ bool is_primary(const context_t& context);
 
 namespace detail_ {
 
-inline ::std::string identify(const context_t& context)
+inline std::string identify(const context_t& context)
 {
 	return identify(context.handle(), context.device_id());
 }

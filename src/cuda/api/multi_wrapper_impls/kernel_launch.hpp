@@ -33,7 +33,7 @@ void enqueue_launch(
 		"All kernel parameter types must fulfill the CUDA kernel argument requirements. "
 		"Refer to the documentation of 'cuda_::traits::is_valid_kernel_argument' for more details."
 	);
-	static constexpr bool wrapped_contextual_kernel = ::std::is_base_of<kernel_t, typename ::std::decay<Kernel>::type>::value;
+	static constexpr bool wrapped_contextual_kernel = std::is_base_of<kernel_t, typename std::decay<Kernel>::type>::value;
 #if CUDA_VERSION >= 12000
 	static constexpr bool library_kernel = cuda_::detail_::is_library_kernel<Kernel>::value;
 #else
@@ -51,8 +51,8 @@ void enqueue_launch(
 	detail_::enqueue_launch<Kernel, KernelParameters...>(
 		detail_::bool_constant<wrapped_contextual_kernel>{},
 		detail_::bool_constant<library_kernel>{},
-		::std::forward<Kernel>(kernel), stream, launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+		std::forward<Kernel>(kernel), stream, launch_configuration,
+		std::forward<KernelParameters>(parameters)...);
 }
 
 namespace detail_ {
@@ -68,9 +68,9 @@ inline void validate_shared_mem_compatibility(
 	// it using	kernel_t::set_maximum_dynamic_shared_memory_per_block. See @ref kernel_t
 
 	if (shared_mem_size > max_shared) {
-		throw ::std::invalid_argument(
-			"A dynamic shared memory size of " + ::std::to_string(shared_mem_size)
-			+ " bytes exceeds the device maximum of " + ::std::to_string(max_shared));
+		throw std::invalid_argument(
+			"A dynamic shared memory size of " + std::to_string(shared_mem_size)
+			+ " bytes exceeds the device maximum of " + std::to_string(max_shared));
 	}
 }
 
@@ -82,14 +82,14 @@ inline void validate_compatibility(
 {
 	auto device = device::get(device_id);
 	if (not cooperative_launch or device.supports_block_cooperation()) {
-		throw ::std::runtime_error(device::detail_::identify(device_id)
+		throw std::runtime_error(device::detail_::identify(device_id)
 			+ " cannot launch kernels with inter-block cooperation");
 	}
 	validate_shared_mem_compatibility(device, shared_mem_size);
 	if (block_cluster_dimensions) {
 #if CUDA_VERSION >= 12000
 		if (not device.supports_block_clustering()) {
-			throw ::std::runtime_error(device::detail_::identify(device_id)
+			throw std::runtime_error(device::detail_::identify(device_id)
 				+ " cannot launch kernels with inter-block cooperation");
 			// TODO: Uncomment this once the CUDA driver offers info on the maximum
 			// cluster size...
@@ -97,12 +97,12 @@ inline void validate_compatibility(
 			// auto max_cluster_size = ???;
 			// auto cluster_size = block_cluster_dimensions.value().volume();
 			// if (cluster_size > max_cluster_size) {
-			// 	throw ::std::runtime_error(device::detail_::identify(device_id)
-			// 		+ " only supports as many as " + ::std::to_string(max_cluster_size)
-			// 		+ "blocks per block-cluster, but " + ::std::to_string(cluster_size));
+			// 	throw std::runtime_error(device::detail_::identify(device_id)
+			// 		+ " only supports as many as " + std::to_string(max_cluster_size)
+			// 		+ "blocks per block-cluster, but " + std::to_string(cluster_size));
 		}
 #else
-		throw ::std::runtime_error("Block clusters are not supported with CUDA versions earlier than 12.0");
+		throw std::runtime_error("Block clusters are not supported with CUDA versions earlier than 12.0");
 #endif // CUDA_VERSION >= 12000
 	}
 
@@ -121,9 +121,9 @@ void validate_any_dimensions_compatibility(
 	auto check =
 		[device_id, kind](grid::dimension_t dim, grid::dimension_t max, const char *axis) {
 			if (max < dim) {
-				throw ::std::invalid_argument(
-					::std::string("specified ") + kind + " " + axis + "-axis dimension " + ::std::to_string(dim)
-					+ " exceeds the maximum supported " + axis + " dimension of " + ::std::to_string(max)
+				throw std::invalid_argument(
+					std::string("specified ") + kind + " " + axis + "-axis dimension " + std::to_string(dim)
+					+ " exceeds the maximum supported " + axis + " dimension of " + std::to_string(max)
 					+ " for " + device::detail_::identify(device_id));
 			}
 		};
@@ -139,9 +139,9 @@ inline void validate_block_dimension_compatibility(
 	auto max_block_size = device.maximum_threads_per_block();
 	auto volume = block_dims.volume();
 	if (volume > max_block_size) {
-		throw ::std::invalid_argument(
-			"Specified block dimensions result in blocks of size " + ::std::to_string(volume)
-			+ ", exceeding the maximum possible block size of " + ::std::to_string(max_block_size)
+		throw std::invalid_argument(
+			"Specified block dimensions result in blocks of size " + std::to_string(volume)
+			+ ", exceeding the maximum possible block size of " + std::to_string(max_block_size)
 			+ " for " + device::detail_::identify(device.id()));
 	}
 	auto maxima = grid::block_dimensions_t{
@@ -172,10 +172,10 @@ inline void validate_shared_mem_size_compatibility(
 	if (shared_mem_size == 0) { return; }
 	auto max_shared = kernel_ptr.get_maximum_dynamic_shared_memory_per_block();
 	if (shared_mem_size > max_shared) {
-		throw ::std::invalid_argument(
+		throw std::invalid_argument(
 			"Requested dynamic shared memory size "
-			+ ::std::to_string(shared_mem_size) + " exceeds kernel's maximum allowed value of "
-			+ ::std::to_string(max_shared));
+			+ std::to_string(shared_mem_size) + " exceeds kernel's maximum allowed value of "
+			+ std::to_string(max_shared));
 	}
 }
 
@@ -186,9 +186,9 @@ inline void validate_block_dimension_compatibility(
 	auto max_block_size = kernel.maximum_threads_per_block();
 	auto volume = block_dims.volume();
 	if (volume > max_block_size) {
-		throw ::std::invalid_argument(
-			"specified block dimensions result in blocks of size " + ::std::to_string(volume)
-			+ ", exceeding the maximum possible block size of " + ::std::to_string(max_block_size)
+		throw std::invalid_argument(
+			"specified block dimensions result in blocks of size " + std::to_string(volume)
+			+ ", exceeding the maximum possible block size of " + std::to_string(max_block_size)
 			+ " for " + kernel::detail_::identify(kernel));
 	}
 }
@@ -200,10 +200,10 @@ inline void validate_dyanmic_shared_memory_size(
 	memory::shared::size_t max_dyn_shmem = kernel.get_attribute(
 		kernel::attribute_t::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES);
 	if (dynamic_shared_memory_size > max_dyn_shmem) {
-		throw ::std::invalid_argument(
-			"specified size of dynamic shared memory, " + ::std::to_string(dynamic_shared_memory_size)
+		throw std::invalid_argument(
+			"specified size of dynamic shared memory, " + std::to_string(dynamic_shared_memory_size)
 			+ "bytes, exceeds the maximum supported by  " + kernel::detail_::identify(kernel)
-			+ ", " + ::std::to_string(max_dyn_shmem) + " bytes");
+			+ ", " + std::to_string(max_dyn_shmem) + " bytes");
 	}
 }
 
@@ -234,14 +234,14 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 		stream.context_handle(),
 		stream.handle(),
 		launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename... KernelParameters>
-::std::array<const void*, sizeof...(KernelParameters)>
+std::array<const void*, sizeof...(KernelParameters)>
 marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
 {
-	return ::std::array<const void*, sizeof...(KernelParameters)> { &parameters... };
+	return std::array<const void*, sizeof...(KernelParameters)> { &parameters... };
 }
 
 // Note: The last (valid) element of marshalled_arguments must be null
@@ -293,7 +293,7 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 	}
 #endif // CUDA_VERSION >= 12000
 	throw_if_error_lazy(status,
-		::std::string(" kernel launch failed for ") + kernel::detail_::identify(kernel_function_handle)
+		std::string(" kernel launch failed for ") + kernel::detail_::identify(kernel_function_handle)
 		+ " on " + stream::detail_::identify(stream_handle, context_handle, device_id));
 }
 
@@ -311,12 +311,12 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 #ifndef NDEBUG
 		if (wrapped_kernel.context() != stream.context()) {
-			throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(wrapped_kernel)
+			throw std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(wrapped_kernel)
 				+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
 		}
 		validate_compatibility(wrapped_kernel, launch_config);
 #endif
-		auto marshalled_arguments { marshal_dynamic_kernel_arguments(::std::forward<KernelParameters>(arguments)...) };
+		auto marshalled_arguments { marshal_dynamic_kernel_arguments(std::forward<KernelParameters>(arguments)...) };
 		auto function_handle = wrapped_kernel.handle();
 		CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 
@@ -343,7 +343,7 @@ void enqueue_launch(
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	detail_::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
 		kernel_function, stream.device_id(), stream.context_handle(), stream.handle(), launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -358,15 +358,15 @@ void enqueue_launch(
 	// It is assumed arguments were already been validated - except for:
 #ifndef NDEBUG
 	if (kernel.context() != stream.context()) {
-		throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
+		throw std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
 			+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
 	}
 	detail_::validate_compatibility(kernel, launch_configuration);
 #endif // #ifndef NDEBUG
 
-	enqueue_launch_helper<typename ::std::decay<Kernel>::type, KernelParameters...>{}(
-		::std::forward<Kernel>(kernel), stream, launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch_helper<typename std::decay<Kernel>::type, KernelParameters...>{}(
+		std::forward<Kernel>(kernel), stream, launch_configuration,
+		std::forward<KernelParameters>(parameters)...);
 }
 
 #if CUDA_VERSION >= 12000
@@ -386,7 +386,7 @@ void enqueue_launch(
 	kernel_t contextualized = cuda_::contextualize(kernel, stream.context());
 	enqueue_launch_helper<kernel_t, KernelParameters...> {}(
 		contextualized, stream, launch_configuration,
-		::std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(parameters)...);
 }
 #endif // CUDA_VERSION >= 12000
 
@@ -400,13 +400,13 @@ void launch(
 {
 	// Argument validation will occur within call to enqueue_launch
 
-	auto primary_context = detail_::get_implicit_primary_context(::std::forward<Kernel>(kernel));
+	auto primary_context = detail_::get_implicit_primary_context(std::forward<Kernel>(kernel));
 	auto stream = primary_context.default_stream();
 
 	// Note: If Kernel is a kernel_t, and its associated device is different
 	// than the current device, the next call will fail:
 
-	enqueue_launch(kernel, stream, launch_configuration, ::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(parameters)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -417,11 +417,11 @@ void launch(
 	KernelParameters&&...   parameters)
 {
 	// Argument validation will occur within call to enqueue_launch
-	static_assert(not ::std::is_base_of<kernel_t, Kernel>::value,
+	static_assert(not std::is_base_of<kernel_t, Kernel>::value,
 		"A wrapped kernel is already associated with a particular GPU device; drop the gratuitous device parameter");
 	auto primary_context = device.primary_context();
 	auto stream = primary_context.default_stream();
-	enqueue_launch(kernel, stream, launch_configuration, ::std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(parameters)...);
 }
 
 template <typename SpanOfConstVoidPtrLike>
@@ -433,18 +433,18 @@ void launch_type_erased(
 {
 	// Note: We assume that kernel, stream and launch_configuration have already been validated.
 	static_assert(
-		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
-		::std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
+		std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
+		std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
 		"The element type of the marshalled arguments container type must be either void* or const void*");
 #ifndef NDEBUG
 	if (kernel.context() != stream.context()) {
-		throw ::std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
+		throw std::invalid_argument{"Attempt to launch " + kernel::detail_::identify(kernel)
 			+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
 	}
 	detail_::validate_compatibility(kernel, launch_configuration);
 	detail_::validate(launch_configuration);
 	if (*(marshalled_arguments.end() - 1) != nullptr) {
-		throw ::std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
+		throw std::invalid_argument("marshalled arguments for a kernel launch must end with a nullptr element");
 	}
 #endif
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
@@ -502,7 +502,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	);
 	throw_if_error_lazy(result,
 		"Failed obtaining parameters for a minimum-size grid for kernel " + detail_::ptr_as_hex(ptr) +
-			" on device " + ::std::to_string(device_id) + ".");
+			" on device " + std::to_string(device_id) + ".");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 }
 

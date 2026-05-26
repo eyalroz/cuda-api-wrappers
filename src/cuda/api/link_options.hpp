@@ -55,14 +55,14 @@ struct marshalled_options_t {
 	constexpr static const size_type max_num_options { CU_JIT_NUM_OPTIONS };
 
 protected:
-	::std::array<option_t, max_num_options> option_buffer;
-	::std::array<void*, max_num_options> value_buffer;
+	std::array<option_t, max_num_options> option_buffer;
+	std::array<void*, max_num_options> value_buffer;
 	size_type count_ { 0 };
 public:
 	void push_back(option_t option)
 	{
 		if (count_ >= max_num_options) {
-			throw ::std::invalid_argument("Attempt to push back the same option a second time");
+			throw std::invalid_argument("Attempt to push back the same option a second time");
 			// If each option is pushed back at most once, the count cannot exist the number
 			// of possible options. In fact, it can't even reach it because some options contradict.
 			//
@@ -74,7 +74,7 @@ public:
 	}
 protected:
 	template <typename I>
-	void* process_value(typename ::std::enable_if<::std::is_integral<I>::value, I>::type value)
+	void* process_value(typename std::enable_if<std::is_integral<I>::value, I>::type value)
 	{
 		return reinterpret_cast<void*>(static_cast<uintptr_t>(value));
 	}
@@ -89,7 +89,7 @@ protected:
 
 	void* process_value(caching_mode_t<memory_operation_t::load> value)
 	{
-		using ut = typename ::std::underlying_type<caching_mode_t<memory_operation_t::load>>::type;
+		using ut = typename std::underlying_type<caching_mode_t<memory_operation_t::load>>::type;
 		return process_value(static_cast<ut>(value));
 	}
 
