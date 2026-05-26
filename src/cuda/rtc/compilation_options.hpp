@@ -55,7 +55,7 @@ inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(fa
 			return static_cast<cpp_dialect_t>(known_dialect);
 		}
 	}
-	throw ::std::invalid_argument(::std::string("No C++ dialect named \"") + dialect_name + '"');
+	throw std::invalid_argument(std::string("No C++ dialect named \"") + dialect_name + '"');
 }
 
 } // namespace detail_
@@ -99,10 +99,10 @@ struct compilation_options_base_t {
 	 *
 	 * @note As of CUDA 11.0, the default is compute_52.
 	 *
-	 * @todo Use something less fancy than ::std::unordered_set, e.g.
+	 * @todo Use something less fancy than std::unordered_set, e.g.
 	 * a vector-backed ordered set or a dynamic bit-vector for membership.
 	 */
-	::std::unordered_set<cuda_::device::compute_capability_t> targets_;
+	std::unordered_set<cuda_::device::compute_capability_t> targets_;
 
 public:
 	// TODO: Drop the following methods and make targets a custom
@@ -280,11 +280,11 @@ public:
 	 *
 	 * @note The PTX source may contain code for additional `.entry` functions.
 	 */
-	::std::vector<::std::string> mangled_entry_function_names;
+	std::vector<std::string> mangled_entry_function_names;
 
-	::std::vector<::std::string>& entries();
-	::std::vector<::std::string>& kernels();
-	::std::vector<::std::string>& kernel_names();
+	std::vector<std::string>& entries();
+	std::vector<std::string>& kernels();
+	std::vector<std::string>& kernel_names();
 }; // compilation_options_t<ptx>
 
 /// Options for JIT-compilation of CUDA C++ code
@@ -409,13 +409,13 @@ public:
 	optional<cpp_dialect_t> language_dialect { };
 
 	/// Preprocessor macros to have the compiler define, without specifying a particular value
-	::std::unordered_set<::std::string> no_value_defines;
+	std::unordered_set<std::string> no_value_defines;
 
 	/// Preprocessor macros to tell the compiler to specifically _un_define.
-	::std::unordered_set<::std::string> undefines;
+	std::unordered_set<std::string> undefines;
 
 	/// Preprocessor macros to have the compiler define to specific values
-	::std::unordered_map<::std::string,::std::string> valued_defines;
+	std::unordered_map<std::string,std::string> valued_defines;
 
 	/// Have the compiler treat all warnings as though they were suppressed, and print nothing
 	bool disable_warnings { false };
@@ -431,33 +431,33 @@ public:
 	bool display_error_numbers { true };
 
 	/// Extra options for the PTX compiler (a.k.a. "PTX optimizing assembler").
-	::std::string ptxas;
+	std::string ptxas;
 
 	/**
 	 * A sequence of directories to be searched for headers. These paths are searched _after_ the
 	 * list of headers given to nvrtcCreateProgram.
 	 *
-	 * @note The members here are `::std::string`'s rather than `const char*` or `::std::string_view`'s,
+	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
 	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
 	 *
-	 * @todo In C++17, consider making the elements `::std::filesystem::path`'s.
+	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
 	 */
-	::std::vector<::std::string> additional_include_paths;
+	std::vector<std::string> additional_include_paths;
 
 	/**
 	 * Header files to preinclude during preprocessing of the source.
 	 *
-	 * @note The members here are `::std::string`'s rather than `const char*` or `::std::string_view`'s,
+	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
 	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
 	 *
-	 * @todo In C++17, consider making the elements `::std::filesystem::path`'s.
+	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
 	 *
 	 * @todo Check how these strings are interpreted. Do they need quotation marks? brackets? full paths?
 	 */
-	::std::vector<::std::string> preinclude_files;
+	std::vector<std::string> preinclude_files;
 
 	/**
-	 * Provide builtin definitions of @ref ::std::move and @ref ::std::forward.
+	 * Provide builtin definitions of @ref std::move and @ref std::forward.
 	 *
 	 * @note Only relevant when the dialect is C++11 or later.
 	 */
@@ -475,7 +475,7 @@ public:
 	bool increase_stack_limit_to_max { true };
 
 	/**
-	 * Provide builtin definitions of ::std::initializer_list class and member functions.
+	 * Provide builtin definitions of std::initializer_list class and member functions.
 	 *
 	 * @note Only relevant when the dialect is C++11 or later.
 	 */
@@ -488,9 +488,9 @@ public:
 	 * @note These are appended to the command-line verbatim (so, no prefixing with `-`
 	 * signs, no combining pairs of consecutive elements as opt=value etc.)
 	 */
-	::std::vector<::std::string> extra_options;
+	std::vector<std::string> extra_options;
 
-	::std::unordered_map<error::number_t, error::handling_method_t> error_handling_overrides;
+	std::unordered_map<error::number_t, error::handling_method_t> error_handling_overrides;
 
 public: // "shorthands" for more complex option setting
 
@@ -519,7 +519,7 @@ public: // "shorthands" for more complex option setting
 	}
 
 	/// @copydoc set_language_dialect(cpp_dialect_t)
-	compilation_options_t& set_language_dialect(const ::std::string& dialect_name)
+	compilation_options_t& set_language_dialect(const std::string& dialect_name)
 	{
 		return dialect_name.empty() ?
 			clear_language_dialect() :
@@ -552,7 +552,7 @@ public: // "shorthands" for more complex option setting
 }; // compilation_options_t<cuda_cpp>
 
 template <typename CompilationOptions>
-::std::string render(const CompilationOptions& opts)
+std::string render(const CompilationOptions& opts)
 {
 	return marshalling::render(opts);
 }

@@ -2,7 +2,7 @@
  * @file
  *
  * @brief A smart pointer for CUDA device- and host-side memory, similar
- * to the standard library's <a href="http://en.cppreference.com/w/cpp/memory/unique_ptr">::std::unique_ptr</a>.
+ * to the standard library's <a href="http://en.cppreference.com/w/cpp/memory/unique_ptr">std::unique_ptr</a>.
  *
  * @note Unique pointers, like any (wrapped) memory allocations, do _not_ extend the lifetime of
  * contexts (primary or otherwise). In particular, they do not increase primary context refcounts.
@@ -19,13 +19,13 @@ namespace memory {
 
 /**
  * A class for holding a @ref region_t of memory owned "uniquely" by
- * its creator - similar to how `::std::unique_ptr` holds a uniquely-
+ * its creator - similar to how `std::unique_ptr` holds a uniquely-
  * owned pointer.
  *
  * @note The class is not templated on the element type - since that
  * is quite immaterial to its management (as well as its copying etc.)
  *
- * @tparam Deleter Similar to @ref ::std::unique_ptr's Deleter parameter;
+ * @tparam Deleter Similar to @ref std::unique_ptr's Deleter parameter;
  * it needs to be default-constructible and have an operator().
  *
  * @todo : Should we really expose the region parent class? We could,
@@ -53,7 +53,7 @@ public:
     constexpr unique_region() noexcept = default;
 
     /// Act like the default constructor for nullptr_t's
-    constexpr unique_region(::std::nullptr_t) noexcept : unique_region() { }
+    constexpr unique_region(std::nullptr_t) noexcept : unique_region() { }
 
     /// Take ownership of an existing region
     explicit unique_region(region_t region) noexcept : region_t{region} { }
@@ -67,7 +67,7 @@ public:
     // Disable copy construction
     unique_region(const unique_region&) = delete;
 
-    // Note: No conversion from "another type" like with ::std::unique_pointer, since
+    // Note: No conversion from "another type" like with std::unique_pointer, since
     // this class is not variant with the element type; and there's not much sense in
     // supporting conversion of memory between different deleters (/ allocators).
 
@@ -91,7 +91,7 @@ public:
 
     /// Reset the %unique_region to empty, invoking the deleter if necessary.
     unique_region&
-    operator=(::std::nullptr_t) noexcept
+    operator=(std::nullptr_t) noexcept
     {
         reset();
         return *this;
@@ -134,7 +134,7 @@ public:
      */
     void reset(region_t region = region_t{})
     {
-        ::std::swap<region_t>(*this, region);
+        std::swap<region_t>(*this, region);
         if (region.start() != nullptr) {
             get_deleter()(region.data());
         }
@@ -143,7 +143,7 @@ public:
     /// Exchange the pointer and deleter with another object.
     friend void swap(unique_region& a, unique_region& b) noexcept
     {
-        ::std::swap<region_t>(a, b);
+        std::swap<region_t>(a, b);
     }
 }; // class unique_region
 

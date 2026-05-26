@@ -30,14 +30,14 @@ namespace detail_ {
 inline void validate_block_dimensions(grid::block_dimensions_t block_dims)
 {
 	if (block_dims.volume() == 0) {
-		throw ::std::invalid_argument("Zero-volume grid-of-blocks dimensions provided");
+		throw std::invalid_argument("Zero-volume grid-of-blocks dimensions provided");
 	}
 }
 
 inline void validate_grid_dimensions(grid::dimensions_t grid_dims)
 {
 	if (grid_dims.volume() == 0) {
-		throw ::std::invalid_argument("Zero-volume block dimensions provided");
+		throw std::invalid_argument("Zero-volume block dimensions provided");
 	}
 }
 

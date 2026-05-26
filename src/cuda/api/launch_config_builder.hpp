@@ -75,7 +75,7 @@ static void validate_all_dimensions_compatibility(
 	grid::overall_dimensions_t overall)
 {
 	if (grid * block != overall) {
-		throw ::std::invalid_argument("specified block, grid and overall dimensions do not agree");
+		throw std::invalid_argument("specified block, grid and overall dimensions do not agree");
 	}
 }
 
@@ -116,19 +116,19 @@ protected:
 		if (saturate_with_active_blocks_) {
 #if CUDA_VERSION >= 10000
 			if (use_min_params_for_max_occupancy_) {
-				throw ::std::logic_error(
+				throw std::logic_error(
 					"Cannot both use the minimum grid parameters for achieving maximum occupancy, _and_ saturate "
 					"the grid with fixed-size blocks.");
 			}
 #endif
 			if (not (kernel_)) {
-				throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+				throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 			}
 			if (not (dimensions_.block)) {
-				throw ::std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
+				throw std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
 			}
 			if (dimensions_.grid or dimensions_.overall) {
-				throw ::std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
+				throw std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
 			}
 
 			result.block = dimensions_.block.value();
@@ -142,10 +142,10 @@ protected:
 #if CUDA_VERSION >= 10000
 		if (use_min_params_for_max_occupancy_) {
 			if (not (kernel_)) {
-				throw ::std::logic_error("A kernel must be set to determine the minimum grid parameter sfor m");
+				throw std::logic_error("A kernel must be set to determine the minimum grid parameter sfor m");
 			}
 			if (dimensions_.block or dimensions_.grid or dimensions_.overall) {
-				throw ::std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
+				throw std::logic_error("Conflicting specifications: Grid or overall dimensions specified, but requested to saturate kernels with active blocks");
 			}
 			auto composite_dims = dynamic_shared_memory_size_determiner_ ?
 								  kernel_->min_grid_params_for_max_occupancy(dynamic_shared_memory_size_determiner_) :
@@ -168,7 +168,7 @@ protected:
 
 		if (dimensions_.grid and dimensions_.block) {
 			if (dimensions_.overall and (dimensions_.grid.value() * dimensions_.block.value() != dimensions_.overall.value())) {
-		        throw ::std::invalid_argument("specified block, grid and overall dimensions do not agree");
+		        throw std::invalid_argument("specified block, grid and overall dimensions do not agree");
 		    }
 			result.block = dimensions_.block.value();
 			result.grid = dimensions_.grid.value();
@@ -176,14 +176,14 @@ protected:
 		}
 
 		if (not dimensions_.block and not dimensions_.grid) {
-			throw ::std::logic_error(
+			throw std::logic_error(
 				"Neither block nor grid dimensions have been specified");
 		} else if (not dimensions_.block and not dimensions_.overall) {
-			throw ::std::logic_error(
+			throw std::logic_error(
 				"Attempt to obtain the composite grid dimensions, while the grid dimensions have only been specified "
 				"in terms of blocks, not threads, with no block dimensions specified");
 		} else { // it must be the case that (not dimensions_.block and not dimensions_.overall)
-			throw ::std::logic_error(
+			throw std::logic_error(
 				"Only block dimensions have been specified - cannot resolve launch grid dimensions");
 		}
 	}
@@ -340,7 +340,7 @@ protected:
 	void validate_cluster_dimensions(grid::dimensions_t cluster_dims) const
 	{
 		if (dimensions_.grid and grid::dimensions_t::divides(cluster_dims, dimensions_.grid.value())) {
-			throw ::std::runtime_error("The requested block cluster dimensions do not "
+			throw std::runtime_error("The requested block cluster dimensions do not "
 				"divide the grid dimensions (in blocks)");
 		}
 	}
@@ -350,7 +350,7 @@ protected:
 	{
 		if (dimensions_.block and dimensions_.grid) {
 			if (dimensions_.grid.value() * dimensions_.block.value() != overall_dims) {
-				throw ::std::invalid_argument(
+				throw std::invalid_argument(
 				"specified overall dimensions conflict with the already-specified "
 				"block and grid dimensions");
 			}
@@ -428,10 +428,10 @@ public:
 	/// with a specified size
 	launch_config_builder_t& block_size(size_t size)
 	{
-		static constexpr auto max_representable_block_dim = ::std:: numeric_limits<grid::block_dimension_t> ::max();
+		static constexpr auto max_representable_block_dim = std:: numeric_limits<grid::block_dimension_t> ::max();
 		if (size > (size_t) max_representable_block_dim) {
-			throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
-				  + " exceeds " + ::std::to_string(max_representable_block_dim)
+			throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
+				  + " exceeds " + std::to_string(max_representable_block_dim)
 				  + " , the maximum representable size of a block");
 			// and note this is a super-lenient check, since in practice, device properties
 			// limit block sizes at much lower values; but NVIDIA doesn't "let us know that" via
@@ -441,8 +441,8 @@ public:
 		if (kernel_) {
 			auto max_threads_per_block = kernel_->maximum_threads_per_block();
 			if (size > max_threads_per_block) {
-				throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
-					+ " exceeds " + ::std::to_string(max_threads_per_block)
+				throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
+					+ " exceeds " + std::to_string(max_threads_per_block)
 					+ " , the maximum number of threads per block supported by "
 					+ kernel::detail_::identify(*kernel_));
 			}
@@ -450,8 +450,8 @@ public:
 		if (device_id_) {
 			auto max_threads_per_block = device().maximum_threads_per_block();
 			if (size > max_threads_per_block) {
-				throw ::std::invalid_argument("Specified (1-dimensional) block size " + ::std::to_string(size)
-					+ " exceeds " + ::std::to_string(max_threads_per_block)
+				throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
+					+ " exceeds " + std::to_string(max_threads_per_block)
 			 		+ " , the maximum number of threads per block supported by "
 					+ device::detail_::identify(device_id_.value()));
 			}
@@ -476,7 +476,7 @@ public:
 			max_size = device().maximum_threads_per_block();
 		}
 		else {
-			throw ::std::logic_error("Request to use the maximum-size linear block, with no device or kernel specified");
+			throw std::logic_error("Request to use the maximum-size linear block, with no device or kernel specified");
 		}
 		auto block_dims = grid::block_dimensions_t { max_size, 1, 1 };
 
@@ -538,9 +538,9 @@ public:
 	///@{
 	launch_config_builder_t& grid_size(size_t size) {
 #ifndef NDEBUG
-		if (size > static_cast<size_t>(::std::numeric_limits<int>::max())) {
-			throw ::std::invalid_argument("Specified (1-dimensional) grid size " + ::std::to_string(size)
-				+ "in blocks exceeds " + ::std::to_string(::std::numeric_limits<int>::max())
+		if (size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+			throw std::invalid_argument("Specified (1-dimensional) grid size " + std::to_string(size)
+				+ "in blocks exceeds " + std::to_string(std::numeric_limits<int>::max())
 				+ " , the maximum supported number of blocks");
 		}
 #endif
@@ -575,7 +575,7 @@ public:
 	/// over all (1D) blocks in the grid
 	launch_config_builder_t& overall_size(size_t size)
 	{
-		static_assert(::std::is_same<grid::overall_dimension_t, size_t>::value, "Unexpected type difference");
+		static_assert(std::is_same<grid::overall_dimension_t, size_t>::value, "Unexpected type difference");
 		return overall_dimensions(size, 1, 1);
 	}
 
@@ -661,7 +661,7 @@ public:
 	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
 	{
 		if (device_id_ and kernel_->device_id() != device_id_.value()) {
-			throw ::std::invalid_argument("Launch config builder already associated with "
+			throw std::invalid_argument("Launch config builder already associated with "
 			+ device::detail_::identify(*device_id_) + " and cannot further be associated "
 			"with " +kernel::detail_::identify(*wrapped_kernel_ptr));
 		}
@@ -684,7 +684,7 @@ public:
 	launch_config_builder_t& device(const device::id_t device_id)
 	{
 		if (kernel_ and kernel_->device_id() != device_id) {
-			throw ::std::invalid_argument("Launch config builder already associated with "
+			throw std::invalid_argument("Launch config builder already associated with "
 				+ kernel::detail_::identify(*kernel_) + " and cannot further be associated "
 				"another device: " + device::detail_::identify(device_id));
 		}
@@ -723,10 +723,10 @@ public:
 	launch_config_builder_t& saturate_with_active_blocks()
 	{
 		if (not (kernel_)) {
-			throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+			throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 		}
 		if (not (dimensions_.block)) {
-			throw ::std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
+			throw std::logic_error("The block dimensions must be known to determine how many of them one needs for saturating a device");
 		}
 		dimensions_.grid = nullopt;
 		dimensions_.overall = nullopt;
@@ -748,7 +748,7 @@ public:
 	launch_config_builder_t& min_params_for_max_occupancy()
 	{
 		if (not (kernel_)) {
-			throw ::std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
+			throw std::logic_error("A kernel must be set to determine how many blocks are required to saturate the device");
 		}
 		dimensions_.block = nullopt;
 		dimensions_.grid = nullopt;

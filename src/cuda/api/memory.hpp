@@ -39,7 +39,7 @@
 #include <cuda_runtime.h>
 
 #include <memory>
-#include <cstring> // for ::std::memset
+#include <cstring> // for std::memset
 #include <vector>
 #include <utility>
 
@@ -103,12 +103,12 @@ namespace detail_ {
 template <typename T, bool CheckConstructibility = false>
 void check_allocation_type() noexcept
 {
-	static_assert(::std::is_trivially_constructible<T>::value,
+	static_assert(std::is_trivially_constructible<T>::value,
 		"Attempt to create a typed buffer of a non-trivially-constructive type");
-	static_assert(not CheckConstructibility or ::std::is_trivially_destructible<T>::value,
+	static_assert(not CheckConstructibility or std::is_trivially_destructible<T>::value,
 		"Attempt to create a typed buffer of a non-trivially-destructible type "
 		"without allowing for its destruction");
-	static_assert(::std::is_trivially_copyable<T>::value,
+	static_assert(std::is_trivially_copyable<T>::value,
 		"Attempt to create a typed buffer of a non-trivially-copyable type");
 }
 
@@ -145,8 +145,8 @@ struct span_pair_t {
 	span<T> host_side, device_side;
 
 	///@cond
-	constexpr operator ::std::pair<span<T>, span<T>>() const { return { host_side, device_side }; }
-	constexpr operator ::std::pair<region_t, region_t>() const { return { host_side, device_side }; }
+	constexpr operator std::pair<span<T>, span<T>>() const { return { host_side, device_side }; }
+	constexpr operator std::pair<region_t, region_t>() const { return { host_side, device_side }; }
 	///@endcond
 };
 
@@ -200,7 +200,7 @@ inline region_t allocate_in_current_context(size_t num_bytes)
 			status = static_cast<decltype(status)>(status::unknown);
 		}
 		throw_if_error_lazy(status,
-			"Failed scheduling an asynchronous allocation of " + ::std::to_string(num_bytes) +
+			"Failed scheduling an asynchronous allocation of " + std::to_string(num_bytes) +
 			" bytes of global memory on " + stream::detail_::identify(*stream_handle, context::current::detail_::get_handle()) );
 		return {as_pointer(allocated), num_bytes};
 	}
@@ -211,7 +211,7 @@ inline region_t allocate_in_current_context(size_t num_bytes)
 		// Can this even happen? hopefully not
 		status = static_cast<status_t>(status::unknown);
 	}
-	throw_if_error_lazy(status, "Failed allocating " + ::std::to_string(num_bytes) +
+	throw_if_error_lazy(status, "Failed allocating " + std::to_string(num_bytes) +
 		" bytes of global memory on the current CUDA device");
 	return {as_pointer(allocated), num_bytes};
 }
@@ -365,7 +365,7 @@ void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const
 /**
  * Sets all bytes in a region of memory to a fixed value
  *
- * @note The equivalent of @ref ::std::memset for CUDA device-side memory
+ * @note The equivalent of @ref std::memset for CUDA device-side memory
  *
  * @param byte_value value to set the memory region to
  * @param start starting address of the memory region to set, in a CUDA
@@ -396,7 +396,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<cons
 /**
  * Sets all bytes in a region of memory to a fixed value
  *
- * @note The equivalent of @ref ::std::memset for CUDA device-side memory
+ * @note The equivalent of @ref std::memset for CUDA device-side memory
  *
  * @param byte_value value to set the memory region to
  * @param region a region to zero-out, in a CUDA device's global memory
@@ -483,7 +483,7 @@ inline void copy(region_t destination, const_region_t source, stream::handle_t s
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw ::std::logic_error("Source size exceeds destination size");
+		throw std::logic_error("Source size exceeds destination size");
 	}
 #endif
 	copy(destination.start(), source.start(), source.size(), stream_handle);
@@ -493,7 +493,7 @@ inline void copy(region_t destination, const_region_t source, stream::handle_t s
 using memory::copy_parameters_t;
 
 inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 2>,
+	std::integral_constant<dimensionality_t, 2>,
 	copy_parameters_t<2> params,
 	optional<stream::handle_t> stream_handle)
 {
@@ -509,7 +509,7 @@ inline status_t multidim_copy_in_current_context(
 }
 
 inline status_t multidim_copy_in_current_context(
-	::std::integral_constant<dimensionality_t, 3>,
+	std::integral_constant<dimensionality_t, 3>,
 	copy_parameters_t<3> params,
 	optional<stream::handle_t> stream_handle)
 {
@@ -528,7 +528,7 @@ inline status_t multidim_copy_in_current_context(
 
 template<dimensionality_t NumDimensions>
 status_t multidim_copy_in_current_context(copy_parameters_t<NumDimensions> params, optional<stream::handle_t> stream_handle) {
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+	return multidim_copy_in_current_context(std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
 // Note: Assumes the stream handle is for a stream in the current context
@@ -539,7 +539,7 @@ status_t multidim_copy(
     optional<stream::handle_t>        stream_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return multidim_copy_in_current_context(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+	return multidim_copy_in_current_context(std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
 // Assumes the array and the stream share the same context, and that the destination is
@@ -628,7 +628,7 @@ void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<co
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
-		throw ::std::logic_error("Source size exceeds destination size");
+		throw std::logic_error("Source size exceeds destination size");
 	}
 #endif
 	return copy(destination.data(), source, sizeof(T) * N, stream);
@@ -648,9 +648,9 @@ void copy(c_array<T,N>& destination, span<T const> source, optional_ref<const st
 {
 #ifndef NDEBUG
 	if (source.size() > N) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a span of " + ::std::to_string(source.size()) +
-			" elements into an array of " + ::std::to_string(N) + " elements");
+		throw std::invalid_argument(
+			"Attempt to copy a span of " + std::to_string(source.size()) +
+			" elements into an array of " + std::to_string(N) + " elements");
 	}
 #endif
 	return copy(destination, source.start(), sizeof(T) * N, stream);
@@ -699,7 +699,7 @@ void copy(c_array<T,N>& destination, T* source, optional_ref<const stream_t> str
 /**
  * Sets a number of bytes in memory to a fixed value
  *
- * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
+ * @note The equivalent of @ref std::memset - for any and all CUDA-related
  * memory spaces
  *
  * @param ptr Address of the first byte in memory to set. May be in host-side
@@ -713,7 +713,7 @@ void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_
 /**
  * Sets all bytes in a region of memory to a fixed value
  *
- * @note The equivalent of @ref ::std::memset - for any and all CUDA-related
+ * @note The equivalent of @ref std::memset - for any and all CUDA-related
  * memory spaces
  *
  * @param region the memory region to set; may be in host-side memory,
@@ -766,7 +766,7 @@ void zero(T* ptr)
 
 namespace detail_ {
 
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2> two, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
+inline status_t multidim_copy(std::integral_constant<dimensionality_t, 2> two, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
 {
 	// TODO: Move this logic into the scoped ensurer class
 	auto context_handle = context::current::detail_::get_handle();
@@ -784,13 +784,13 @@ inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 2> two,
 	return status;
 }
 
-inline status_t multidim_copy(context::handle_t context_handle, ::std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
+inline status_t multidim_copy(context::handle_t context_handle, std::integral_constant<dimensionality_t, 2>, copy_parameters_t<2> params, optional<stream::handle_t> stream_handle)
 {
 	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
-	return multidim_copy(::std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
+	return multidim_copy(std::integral_constant<dimensionality_t, 2>{}, params, stream_handle);
 }
 
-inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, optional<stream::handle_t> stream_handle)
+inline status_t multidim_copy(std::integral_constant<dimensionality_t, 3>, copy_parameters_t<3> params, optional<stream::handle_t> stream_handle)
 {
 	if (params.srcContext == params.dstContext) {
 		context::current::detail_::scoped_ensurer_t ensure_context_for_this_scope{params.srcContext};
@@ -804,7 +804,7 @@ inline status_t multidim_copy(::std::integral_constant<dimensionality_t, 3>, cop
 template<dimensionality_t NumDimensions>
 status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t stream_handle)
 {
-	return multidim_copy(::std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
+	return multidim_copy(std::integral_constant<dimensionality_t, NumDimensions>{}, params, stream_handle);
 }
 
 
@@ -882,9 +882,9 @@ void copy(const array_t<T, NumDimensions>& destination, span<T const> source, op
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a span of " + ::std::to_string(source.size()) +
-			" elements into a CUDA array of " + ::std::to_string(destination.size()) + " elements");
+		throw std::invalid_argument(
+			"Attempt to copy a span of " + std::to_string(source.size()) +
+			" elements into a CUDA array of " + std::to_string(destination.size()) + " elements");
 	}
 #endif
 	copy(destination, source.data(), stream);
@@ -949,9 +949,9 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a CUDA array of " + ::std::to_string(source.size()) +
-			" elements into a span of " + ::std::to_string(destination.size()) + " elements");
+		throw std::invalid_argument(
+			"Attempt to copy a CUDA array of " + std::to_string(source.size()) +
+			" elements into a span of " + std::to_string(destination.size()) + " elements");
 	}
 #endif
 	copy(destination.data(), source, stream);
@@ -1003,9 +1003,9 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, optiona
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size_bytes()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy " + ::std::to_string(source.size_bytes()) + " bytes from an array into a "
-				"region of smaller size (" + ::std::to_string(destination.size()) + " bytes)");
+		throw std::invalid_argument(
+			"Attempt to copy " + std::to_string(source.size_bytes()) + " bytes from an array into a "
+				"region of smaller size (" + std::to_string(destination.size()) + " bytes)");
 	}
 #endif
 	copy(destination.start(), source, stream);
@@ -1029,9 +1029,9 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, optiona
 {
 #ifndef NDEBUG
 	if (destination.size_bytes() < source.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-			" bytes into an array of size " + ::std::to_string(destination.size_bytes()) + " bytes");
+		throw std::invalid_argument(
+			"Attempt to copy a region of " + std::to_string(source.size()) +
+			" bytes into an array of size " + std::to_string(destination.size_bytes()) + " bytes");
 	}
 #endif
 	copy(destination, static_cast<T const*>(source.start()), stream);
@@ -1102,9 +1102,9 @@ void copy(c_array<T,N>& destination, const_region_t source, optional_ref<const s
 #ifndef NDEBUG
 	size_t required_size = N * sizeof(T);
 	if (source.size() != required_size) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-			" bytes into an array of size " + ::std::to_string(required_size) + " bytes");
+		throw std::invalid_argument(
+			"Attempt to copy a region of " + std::to_string(source.size()) +
+			" bytes into an array of size " + std::to_string(required_size) + " bytes");
 	}
 #endif
 	return copy(&(destination[0]), source.start(), sizeof(T) * N, stream);
@@ -1138,7 +1138,7 @@ void copy(region_t destination, c_array<const T,N> const& source, optional_ref<c
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
-		throw ::std::logic_error("Source size exceeds destination size");
+		throw std::logic_error("Source size exceeds destination size");
 	}
 #endif
 	return copy(destination.start(), source, sizeof(T) * N, stream);
@@ -1160,7 +1160,7 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
-		throw ::std::logic_error("Attempt to copy beyond the end of the destination region");
+		throw std::logic_error("Attempt to copy beyond the end of the destination region");
 	}
 #endif
 	copy(destination.start(), source.start(), num_bytes, stream);
@@ -1232,7 +1232,7 @@ inline void copy(region_t destination, void* source, size_t num_bytes, optional_
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
-		throw ::std::logic_error("Number of bytes to copy exceeds destination size");
+		throw std::logic_error("Number of bytes to copy exceeds destination size");
 	}
 #endif
 	return copy(destination.start(), source, num_bytes, stream);
@@ -1261,7 +1261,7 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, opt
 {
 #ifndef NDEBUG
 	if (source.size() < num_bytes) {
-		throw ::std::logic_error("Attempt to copy more than the source region's size");
+		throw std::logic_error("Attempt to copy more than the source region's size");
 	}
 #endif
 	copy(destination, source.start(), num_bytes, stream);
@@ -1317,7 +1317,7 @@ inline void zero(region_t region, stream::handle_t stream_handle)
 template <typename T>
 void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t stream_handle)
 {
-	static_assert(::std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
+	static_assert(std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(
 		sizeof(T) == 1 or sizeof(T) == 2 or
 		sizeof(T) == 4 or sizeof(T) == 8,
@@ -1325,9 +1325,9 @@ void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t s
 	// TODO: Consider checking for alignment when compiling without NDEBUG
 	status_t result = static_cast<status_t>(cuda_::status::success);
 	switch(sizeof(T)) {
-		case(1): result = cuMemsetD8Async (address(start), reinterpret_cast<const ::std::uint8_t& >(value), num_elements, stream_handle); break;
-		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<const ::std::uint16_t&>(value), num_elements, stream_handle); break;
-		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<const ::std::uint32_t&>(value), num_elements, stream_handle); break;
+		case(1): result = cuMemsetD8Async (address(start), reinterpret_cast<const std::uint8_t& >(value), num_elements, stream_handle); break;
+		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<const std::uint16_t&>(value), num_elements, stream_handle); break;
+		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<const std::uint32_t&>(value), num_elements, stream_handle); break;
 	}
 	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
@@ -1381,9 +1381,9 @@ inline void copy(
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-				" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
+		throw std::invalid_argument(
+			"Attempt to copy a region of " + std::to_string(source.size()) +
+				" bytes into a region of size " + std::to_string(destination.size()) + " bytes");
 	}
 #endif
 	copy(destination.start(), destination_context, source, source_context, stream);
@@ -1422,7 +1422,7 @@ inline void copy(
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
-		throw ::std::logic_error("Can't copy a large region into a smaller one");
+		throw std::logic_error("Can't copy a large region into a smaller one");
 	}
 #endif
 	copy(destination.start(), destination_context_handle, source.start(), source_context_handle, source.size(), stream_handle);
@@ -1472,9 +1472,9 @@ inline void copy(
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
-		throw ::std::invalid_argument(
-			"Attempt to copy a region of " + ::std::to_string(source.size()) +
-			" bytes into a region of size " + ::std::to_string(destination.size()) + " bytes");
+		throw std::invalid_argument(
+			"Attempt to copy a region of " + std::to_string(source.size()) +
+			" bytes into a region of size " + std::to_string(destination.size()) + " bytes");
 	}
 #endif
 	copy(destination.start(), destination_context, source, source_context, stream);
@@ -1602,7 +1602,7 @@ inline void register_(const void *ptr, size_t size, unsigned flags)
 {
 	auto result = cuMemHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error_lazy(result,
-		"Could not register and page-lock the region of " + ::std::to_string(size) +
+		"Could not register and page-lock the region of " + std::to_string(size) +
 		" bytes of host memory at " + cuda_::detail_::ptr_as_hex(ptr) +
 		" with flags " + cuda_::detail_::as_hex(flags));
 }
@@ -1800,7 +1800,7 @@ inline void deregister(const_region_t region)
 /**
  * Sets all bytes in a stretch of host-side memory to a single value
  *
- * @note a wrapper for @ref ::std::memset
+ * @note a wrapper for @ref std::memset
  * @param byte_value The value to set each byte in the memory region to.
  */
 ///@{
@@ -1812,7 +1812,7 @@ inline void deregister(const_region_t region)
  */
 inline void set(void* start, int byte_value, size_t num_bytes)
 {
-	::std::memset(start, byte_value, num_bytes);
+	std::memset(start, byte_value, num_bytes);
 	// TODO: Error handling?
 }
 
@@ -1913,7 +1913,7 @@ inline advice_t as_advice(attribute_t attribute, bool set)
 	case CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY:
 		return set ? CU_MEM_ADVISE_SET_ACCESSED_BY : CU_MEM_ADVISE_UNSET_ACCESSED_BY;
 	default:
-		throw ::std::invalid_argument(
+		throw std::invalid_argument(
 			"CUDA memory range attribute does not correspond to any range advice value");
 	}
 }
@@ -1982,8 +1982,8 @@ void advise_expected_access_by(const_region_t region, device_t& device);
 void advise_no_access_expected_by(const_region_t region, device_t& device);
 
 /// @return the devices which are marked by attribute as being the accessors of a specified memory region
-template <typename Allocator = ::std::allocator<cuda_::device_t> >
-::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
+template <typename Allocator = std::allocator<cuda_::device_t> >
+std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
 
 /// Kinds of managed memory region attachments
 enum class attachment_t : unsigned {
@@ -2016,7 +2016,7 @@ inline managed::region_t allocate_in_current_context(
 		status = static_cast<status_t>(status::unknown);
 	}
 	throw_if_error_lazy(status, "Failed allocating "
-		+ ::std::to_string(num_bytes) + " bytes of managed CUDA memory");
+		+ std::to_string(num_bytes) + " bytes of managed CUDA memory");
 	return {as_pointer(allocated), num_bytes};
 }
 
@@ -2150,7 +2150,7 @@ inline void prefetch(
 	auto result = cuMemPrefetchAsync(address, region.size(), destination.id, source_stream_handle);
 #endif
 	throw_if_error_lazy(result,
-		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
+		"Prefetching " + std::to_string(region.size()) + " bytes of managed memory at address "
 		 + cuda_::detail_::ptr_as_hex(region.start()) + " to " + cuda_::memory::detail_::identify(destination));
 }
 
@@ -2197,7 +2197,7 @@ namespace mapped {
 template <typename T>
 T* device_side_pointer_for(T* host_memory_ptr)
 {
-	auto unconsted_host_mem_ptr = const_cast<typename ::std::remove_const<T>::type *>(host_memory_ptr);
+	auto unconsted_host_mem_ptr = const_cast<typename std::remove_const<T>::type *>(host_memory_ptr);
 	device::address_t device_side_ptr;
 	auto get_device_pointer_flags = 0u; // see the CUDA runtime documentation
 	auto status = cuMemHostGetDevicePointer(
@@ -2252,7 +2252,7 @@ inline region_pair_t allocate_in_current_context(
 		status = static_cast<status_t>(status::named_t::unknown);
 	}
 	throw_if_error_lazy(status,
-		"Failed allocating a mapped pair of memory regions of size " + ::std::to_string(size_in_bytes)
+		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
 		+ " bytes of global memory in " + context::detail_::identify(current_context_handle));
 	allocated.host_side = { allocated_ptr, size_in_bytes };
 	allocated.device_side = device_side_region_for(allocated.host_side);
@@ -2406,7 +2406,7 @@ unique_span<T> make_unique_span(const context::handle_t context_handle, size_t s
  * @param size the number of elements to allocate
  * @return A @ref unique_span which owns the allocated memory (and will release said
  *
- * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * @note This function is somewhat similar to std:: make_unique_for_overwrite(), except
  * that the returned value is not "just" a unique pointer, but also has a size. It is also
  * similar to {@ref cuda_::device::make_unique_region}, except that the allocation is
  * conceived as typed elements.
@@ -2462,7 +2462,7 @@ namespace host {
  * @return A @ref unique_span which owns the allocated memory (and will release said
  * memory upon destruction)
  *
- * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * @note This function is somewhat similar to std:: make_unique_for_overwrite(), except
  * that the returned value is not "just" a unique pointer, but also has a size. It is also
  * similar to {@ref cuda_::device::make_unique_region}, except that the allocation is
  * conceived as typed elements.
@@ -2513,7 +2513,7 @@ unique_span<T> make_unique_span(
  * @return A @ref unique_span which owns the allocated memory (and will release said
  * memory upon destruction)
  *
- * @note This function is somewhat similar to ::std:: make_unique_for_overwrite(), except
+ * @note This function is somewhat similar to std:: make_unique_for_overwrite(), except
  * that the returned value is not "just" a unique pointer, but also has a size. It is also
  * similar to {@ref cuda_::device::make_unique_region}, except that the allocation is
  * conceived as typed elements.
@@ -2568,9 +2568,9 @@ memory::region_t locate(T&& symbol)
 {
 	void *start;
 	size_t symbol_size;
-	auto api_call_result = cudaGetSymbolAddress(&start, ::std::forward<T>(symbol));
+	auto api_call_result = cudaGetSymbolAddress(&start, std::forward<T>(symbol));
 	throw_if_error_lazy(api_call_result, "Could not locate the device memory address for a symbol");
-	api_call_result = cudaGetSymbolSize(&symbol_size, ::std::forward<T>(symbol));
+	api_call_result = cudaGetSymbolSize(&symbol_size, std::forward<T>(symbol));
 	throw_if_error_lazy(api_call_result, "Could not locate the device memory address for the symbol at address"
 		+ cuda_::detail_::ptr_as_hex(start));
 	return { start, symbol_size };

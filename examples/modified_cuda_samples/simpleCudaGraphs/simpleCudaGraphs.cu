@@ -133,7 +133,7 @@ __global__ void reduceFinal(double *inputVec, double *result, size_t inputSize)
 
 void init_input(cuda_::span<float> a) {
 	auto generator = []() {  return static_cast<float>(rand() & 0xFF) / static_cast<float>(RAND_MAX); };
-	::std::generate_n(a.data(), a.size(), generator);
+	std::generate_n(a.data(), a.size(), generator);
 }
 
 void myRealHostNodeCallback(char const *graph_construction_mode, double result)

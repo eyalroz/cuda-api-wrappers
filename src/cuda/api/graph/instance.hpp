@@ -32,7 +32,7 @@ using update_status_t = CUgraphExecUpdateResult;
 
 namespace update_status {
 
-enum named_t : ::std::underlying_type<update_status_t>::type {
+enum named_t : std::underlying_type<update_status_t>::type {
 	success                                          = CU_GRAPH_EXEC_UPDATE_SUCCESS,
 	failure_for_unexpected_reason                    = CU_GRAPH_EXEC_UPDATE_ERROR,
 	topology_has_changed                             = CU_GRAPH_EXEC_UPDATE_ERROR_TOPOLOGY_CHANGED,
@@ -89,7 +89,7 @@ inline const char *describe(instance::update_status_t update_status)
 	return instance::update_status::detail_::descriptions[update_status];
 }
 
-inline ::std::string describe(
+inline std::string describe(
 	instance::update_status_t  update_status,
 	node::handle_t             node_handle,
 	template_::handle_t        graph_template_handle);
@@ -136,12 +136,12 @@ inline id_t get_id(handle_t handle)
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
-inline ::std::string describe(graph::instance::update_status_t status)
+inline std::string describe(graph::instance::update_status_t status)
 {
 	return graph::instance::detail_::describe(status);
 }
 
-::std::string describe(graph::instance::update_status_t update_status, optional<graph::node_t> node);
+std::string describe(graph::instance::update_status_t update_status, optional<graph::node_t> node);
 
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
@@ -164,29 +164,29 @@ instance_t wrap(template_::handle_t template_handle, handle_t handle, bool  is_o
 
 namespace detail_ {
 
-::std::string identify(const instance_t &instance);
+std::string identify(const instance_t &instance);
 
 } // namespace detail_
 
 // TODO: Add support for reporting errors involving edges
-class update_failure : public ::std::runtime_error {
+class update_failure : public std::runtime_error {
 public:
-	using parent = ::std::runtime_error;
+	using parent = std::runtime_error;
 
 	update_failure(
 		update_status_t kind,
 		optional<node_t>&& impermissible_node,
-		::std::string&& what_arg) noexcept
+		std::string&& what_arg) noexcept
 		:
 		parent((what_arg.empty() ? "" : what_arg + ": ") + describe(kind, impermissible_node)),
 		kind_(kind),
-		impermissible_node_(::std::move(impermissible_node))
+		impermissible_node_(std::move(impermissible_node))
 	{
 		// TODO: Ensure the kind needs a node handle IFF a node handle has been provided
 	}
 
 	update_failure(update_status_t kind, node_t impermissible_node) noexcept
-		: update_failure(kind, optional<node_t>(::std::move(impermissible_node)), "")
+		: update_failure(kind, optional<node_t>(std::move(impermissible_node)), "")
 	{ }
 
 	update_status_t kind() const noexcept { return kind_; }
@@ -285,9 +285,9 @@ public: // operators
 	instance_t& operator=(const instance_t&) = delete;
 	instance_t& operator=(instance_t&& other) noexcept
 	{
-		::std::swap(template_handle_, other.template_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
+		std::swap(template_handle_, other.template_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
 		return *this;
 	}
 
@@ -340,7 +340,7 @@ public: // non-mutators
 	template <node::kind_t Kind>
 	void set_node_parameters(const node_t& node, node::parameters_t<Kind> new_parameters)
 	{
-		instance::set_node_parameters<Kind>(*this, node, ::std::move(new_parameters));
+		instance::set_node_parameters<Kind>(*this, node, std::move(new_parameters));
 	}
 
 	template <node::kind_t Kind>
@@ -431,13 +431,13 @@ inline flags_t build_flags(
 }
 #endif // CUDA_VERSION >= 11040
 
-inline ::std::string identify(const instance_t& instance)
+inline std::string identify(const instance_t& instance)
 {
 	return identify(instance.handle()) + " instantiated from "
 		+ template_::detail_::identify(instance.template_handle());
 }
 
-inline ::std::string identify(const instance_t& instance, const template_t& template_)
+inline std::string identify(const instance_t& instance, const template_t& template_)
 {
 	return identify(instance.handle()) + " instantiated from "
 	   + template_::detail_::identify(template_);

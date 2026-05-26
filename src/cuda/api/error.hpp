@@ -3,7 +3,7 @@
  *
  * @brief Facilities for exception-based handling of Runtime
  * and Driver API errors, including a basic exception class
- * wrapping `::std::runtime_error`.
+ * wrapping `std::runtime_error`.
  *
  * @note Does not - for now - support wrapping errors generated
  * by other CUDA-related libraries like NVRTC.
@@ -33,7 +33,7 @@ namespace status {
  *
  * @note unfortunately, this enum can't inherit from @ref cuda_::status_t
  */
-enum named_t : ::std::underlying_type<status_t>::type {
+enum named_t : std::underlying_type<status_t>::type {
 	success                          = CUDA_SUCCESS, /// Operation was successful; no errors
 	memory_allocation_failure        = CUDA_ERROR_OUT_OF_MEMORY, // corresponds to cudaErrorMemoryAllocation
 	not_yet_initialized              = CUDA_ERROR_NOT_INITIALIZED, // corresponds to cudaErrorInitializationError
@@ -223,7 +223,7 @@ constexpr bool is_failure(cudaError_t status)  { return is_failure(static_cast<s
 
 /// Obtain a brief textual explanation for a specified kind of CUDA Runtime API status or error code.
 ///@{
-inline ::std::string describe(status_t status)
+inline std::string describe(status_t status)
 {
 	// Even though status_t aliases the driver's CUresult type, some values are actually
 	// runtime error codes. The driver will fail to identify them (they're luckily distinct),
@@ -234,15 +234,15 @@ inline ::std::string describe(status_t status)
 	return (description_lookup_status == CUDA_SUCCESS) ?
 		description : cudaGetErrorString(static_cast<cudaError_t>(status));
 }
-inline ::std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
+inline std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
 ///@}
 
 namespace detail_ {
 
 template <typename I, bool UpperCase = false>
-::std::string as_hex(I x)
+std::string as_hex(I x)
 {
-	static_assert(::std::is_unsigned<I>::value, "only signed representations are supported");
+	static_assert(std::is_unsigned<I>::value, "only signed representations are supported");
 	unsigned num_hex_digits = 2*sizeof(I);
 	if (x == 0) return "0x0";
 
@@ -250,20 +250,20 @@ template <typename I, bool UpperCase = false>
 	static const char* digit_characters =
 		UpperCase ? "0123456789ABCDEF" : "0123456789abcdef" ;
 
-	::std::string result(num_hex_digits,'0');
+	std::string result(num_hex_digits,'0');
 	for (unsigned digit_index = 0; digit_index < num_hex_digits ; digit_index++)
 	{
 		size_t bit_offset = (num_hex_digits - 1 - digit_index) * bits_per_hex_digit;
 		auto hexadecimal_digit = (x >> bit_offset) & 0xF;
 		result[digit_index] = digit_characters[hexadecimal_digit];
 	}
-	return "0x0" + result.substr(result.find_first_not_of('0'), ::std::string::npos);
+	return "0x0" + result.substr(result.find_first_not_of('0'), std::string::npos);
 }
 
 // TODO: Perhaps find a way to avoid the extra function, so that as_hex() can
 // be called for pointer types as well? Would be easier with boost's uint<T>...
 template <typename I, bool UpperCase = false>
-::std::string ptr_as_hex(const I* ptr)
+std::string ptr_as_hex(const I* ptr)
 {
 	return as_hex(reinterpret_cast<uintptr_t>(ptr));
 }
@@ -279,40 +279,40 @@ template <typename I, bool UpperCase = false>
  *
  * @todo Consider renaming this to avoid confusion with the CUDA Runtime.
  */
-class runtime_error : public ::std::runtime_error {
+class runtime_error : public std::runtime_error {
 public:
 	///@cond
 	runtime_error(status_t error_code) :
-		::std::runtime_error(describe(error_code)), code_(error_code)
+		std::runtime_error(describe(error_code)), code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t error_code, const ::std::string& what_arg) :
-		::std::runtime_error(what_arg + ": " + describe(error_code)),
+	runtime_error(status_t error_code, const std::string& what_arg) :
+		std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t error_code, ::std::string&& what_arg) :
+	runtime_error(status_t error_code, std::string&& what_arg) :
 		runtime_error(error_code, what_arg)
 	{ }
 	///@endcond
 	explicit runtime_error(status::named_t error_code) :
 		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(status::named_t error_code, const ::std::string& what_arg) :
+	runtime_error(status::named_t error_code, const std::string& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
-	runtime_error(status::named_t error_code, ::std::string&& what_arg) :
+	runtime_error(status::named_t error_code, std::string&& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
 protected:
-	runtime_error(status_t error_code, ::std::runtime_error&& err) :
-		::std::runtime_error(::std::move(err)), code_(error_code)
+	runtime_error(status_t error_code, std::runtime_error&& err) :
+		std::runtime_error(std::move(err)), code_(error_code)
 	{ }
 
 public:
 	/// Construct a runtime error which will not produce the default description for the error code,
 	/// but rather only the specified message.
-	static runtime_error with_message_override(status_t error_code, ::std::string complete_what_arg)
+	static runtime_error with_message_override(status_t error_code, std::string complete_what_arg)
 	{
-		return runtime_error(error_code, ::std::runtime_error(::std::move(complete_what_arg)));
+		return runtime_error(error_code, std::runtime_error(std::move(complete_what_arg)));
 	}
 
 	/// Obtain the CUDA status code which resulted in this error being thrown.
@@ -343,22 +343,22 @@ do { \
  * @param message An extra description message to add to the exception
  */
 ///@{
-inline void throw_if_error(status_t status, const ::std::string& message) noexcept(false)
+inline void throw_if_error(status_t status, const std::string& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
-inline void throw_if_error(cudaError_t status, const ::std::string& message) noexcept(false)
+inline void throw_if_error(cudaError_t status, const std::string& message) noexcept(false)
 {
 	throw_if_error(static_cast<status_t>(status), message);
 }
 
-inline void throw_if_error(status_t status, ::std::string&& message) noexcept(false)
+inline void throw_if_error(status_t status, std::string&& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
-inline void throw_if_error(cudaError_t status, ::std::string&& message) noexcept(false)
+inline void throw_if_error(cudaError_t status, std::string&& message) noexcept(false)
 {
 	return throw_if_error(static_cast<status_t>(status), message);
 }
@@ -446,7 +446,7 @@ inline status_t get(bool try_clearing = false) noexcept(true)
  * @note similar to @ref cuda_::throw_if_error, but uses the CUDA driver's
  * own state regarding whether or not a sticky error has occurred
  */
-inline void ensure_none(const ::std::string &message) noexcept(false)
+inline void ensure_none(const std::string &message) noexcept(false)
 {
 	auto status = get();
 	throw_if_error(status, message);
@@ -460,7 +460,7 @@ inline void ensure_none(const ::std::string &message) noexcept(false)
  */
 inline void ensure_none(const char *message) noexcept(false)
 {
-	return ensure_none(::std::string{message});
+	return ensure_none(std::string{message});
 }
 
 /**
@@ -485,9 +485,9 @@ inline void ensure_none() noexcept(false)
 
 namespace device {
 namespace detail_ {
-inline ::std::string identify(device::id_t device_id)
+inline std::string identify(device::id_t device_id)
 {
-	return ::std::string("device ") + ::std::to_string(device_id);
+	return std::string("device ") + std::to_string(device_id);
 }
 } // namespace detail_
 } // namespace device
@@ -495,12 +495,12 @@ inline ::std::string identify(device::id_t device_id)
 namespace context {
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "context " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
@@ -509,11 +509,11 @@ inline ::std::string identify(handle_t handle, device::id_t device_id)
 
 namespace current {
 namespace detail_ {
-inline ::std::string identify(context::handle_t handle)
+inline std::string identify(context::handle_t handle)
 {
 	return "current context: " + context::detail_::identify(handle);
 }
-inline ::std::string identify(context::handle_t handle, device::id_t device_id)
+inline std::string identify(context::handle_t handle, device::id_t device_id)
 {
 	return "current context: " + context::detail_::identify(handle, device_id);
 }
@@ -526,11 +526,11 @@ namespace device {
 namespace primary_context {
 namespace detail_ {
 
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return "context " + context::detail_::identify(handle, device_id);
 }
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "context " + context::detail_::identify(handle);
 }
@@ -540,20 +540,20 @@ inline ::std::string identify(handle_t handle)
 
 namespace stream {
 namespace detail_ {
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return (handle == nullptr) ? "default/null stream" :
 		"stream at" + cuda_::detail_::ptr_as_hex(handle);
 }
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
 }
@@ -562,19 +562,19 @@ inline ::std::string identify(handle_t handle, context::handle_t context_handle,
 
 namespace event {
 namespace detail_ {
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "event " + cuda_::detail_::ptr_as_hex(handle);
 }
-inline ::std::string identify(handle_t handle, device::id_t device_id)
+inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + context::detail_::identify(context_handle, device_id);
 }
@@ -584,35 +584,35 @@ inline ::std::string identify(handle_t handle, context::handle_t context_handle,
 namespace kernel {
 namespace detail_ {
 
-inline ::std::string identify(const void* ptr)
+inline std::string identify(const void* ptr)
 {
 	return "kernel " + cuda_::detail_::ptr_as_hex(ptr);
 }
-inline ::std::string identify(const void* ptr, device::id_t device_id)
+inline std::string identify(const void* ptr, device::id_t device_id)
 {
 	return identify(ptr) + " on " + device::detail_::identify(device_id);
 }
-inline ::std::string identify(const void* ptr, context::handle_t context_handle)
+inline std::string identify(const void* ptr, context::handle_t context_handle)
 {
 	return identify(ptr) + " in " + context::detail_::identify(context_handle);
 }
-inline ::std::string identify(const void* ptr, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(const void* ptr, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(ptr) + " in " + context::detail_::identify(context_handle, device_id);
 }
-inline ::std::string identify(handle_t handle)
+inline std::string identify(handle_t handle)
 {
 	return "kernel at " + cuda_::detail_::ptr_as_hex(handle);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle)
+inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle);
 }
-inline ::std::string identify(handle_t handle,  device::id_t device_id)
+inline std::string identify(handle_t handle,  device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail_::identify(device_id);
 }
-inline ::std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
 }
@@ -623,13 +623,13 @@ inline ::std::string identify(handle_t handle, context::handle_t context_handle,
 namespace memory {
 namespace detail_ {
 
-inline ::std::string identify(region_t region)
+inline std::string identify(region_t region)
 {
-	return ::std::string("memory region at ") + cuda_::detail_::ptr_as_hex(region.data())
-		+ " of size " + ::std::to_string(region.size());
+	return std::string("memory region at ") + cuda_::detail_::ptr_as_hex(region.data())
+		+ " of size " + std::to_string(region.size());
 }
 
-inline ::std::string identify(location_t location)
+inline std::string identify(location_t location)
 {
 	switch (location.type) {
 	case CU_MEM_LOCATION_TYPE_DEVICE:
@@ -640,7 +640,7 @@ inline ::std::string identify(location_t location)
 	case CU_MEM_LOCATION_TYPE_HOST:
 		return "host (system) memory";
 	case CU_MEM_LOCATION_TYPE_HOST_NUMA:
-		return "host (system) NUMA node " + ::std::to_string(location.id);
+		return "host (system) NUMA node " + std::to_string(location.id);
 	case CU_MEM_LOCATION_TYPE_HOST_NUMA_CURRENT:
 		return "current host (system) NUMA node ";
 	default:

@@ -49,7 +49,7 @@ inline void set_permissions(
 	static constexpr size_t count { 1 };
 	auto result = cuMemSetAccess(device::address(fully_mapped_region), fully_mapped_region.size(), &desc, count);
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
 inline void set_permissions(mapping_t mapping, const device_t& device, permissions_t permissions)
@@ -63,14 +63,14 @@ void set_permissions(
 	const Container<device_t>&   devices,
 	permissions_t                permissions)
 {
-	auto descriptors = ::std::unique_ptr<CUmemAccessDesc[]>(new CUmemAccessDesc[devices.size()]);
-	for(::std::size_t i = 0; i < devices.size(); i++) {
+	auto descriptors = std::unique_ptr<CUmemAccessDesc[]>(new CUmemAccessDesc[devices.size()]);
+	for(std::size_t i = 0; i < devices.size(); i++) {
 		descriptors[i] = {{CU_MEM_LOCATION_TYPE_DEVICE, devices[i].id()}, CUmemAccess_flags(permissions)};
 	}
 	auto result = cuMemSetAccess(
 		device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + ::std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
 }
 
 template <template <typename...> class Container>

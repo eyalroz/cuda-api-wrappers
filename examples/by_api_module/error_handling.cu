@@ -43,11 +43,11 @@ int main(int, char **)
 			.block_dimensions(15000) // Note: higher than the possible maximum for known CUDA devices
 			.build();
 		(void) lc;
-	} catch (::std::invalid_argument&) {
+	} catch (std::invalid_argument&) {
 		got_expected_exception = true;
 	}
 	if (not got_expected_exception) {
-		die_("Should have gotten an ::std::invalid_argument exception about a launch configuration, but - didn't");
+		die_("Should have gotten an std::invalid_argument exception about a launch configuration, but - didn't");
 	}
 
 	std::cout << "SUCCESS\n";

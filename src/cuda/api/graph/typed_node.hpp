@@ -36,9 +36,9 @@ namespace graph {
  * the execution graph template (or any of its instances) are alive.
  */
 template<typename... Ts>
-::std::vector<void*> make_kernel_argument_pointers(const Ts&... kernel_arguments)
+std::vector<void*> make_kernel_argument_pointers(const Ts&... kernel_arguments)
 {
-	// The extra curly brackets mean the vector constructor gets an ::std::initializer_list<void*>;
+	// The extra curly brackets mean the vector constructor gets an std::initializer_list<void*>;
 	// Note that we don't add an extern terminating NULLPTR - the Graph API is different than
 	// the traditional kernel launch API in that respect
 	return { { const_cast<void *>(reinterpret_cast<const void*>(&kernel_arguments)) ... } };
@@ -46,7 +46,7 @@ template<typename... Ts>
 
 namespace node {
 
-enum class kind_t : ::std::underlying_type<CUgraphNodeType>::type {
+enum class kind_t : std::underlying_type<CUgraphNodeType>::type {
 	kernel_launch = CU_GRAPH_NODE_TYPE_KERNEL,
 	memory_copy = CU_GRAPH_NODE_TYPE_MEMCPY, memcpy = memory_copy,
 	memory_set = CU_GRAPH_NODE_TYPE_MEMSET, memset = memory_set,
@@ -135,7 +135,7 @@ struct kind_traits<kind_t::empty> {
 
 	static raw_parameters_type marshal(const parameters_type&) {
 		raw_parameters_type raw_params;
-		::std::memset(&raw_params, 0, sizeof(raw_parameters_type));
+		std::memset(&raw_params, 0, sizeof(raw_parameters_type));
 		raw_params.type = static_cast<CUgraphNodeType>(kind_t::empty);
 		return raw_params;
 	}
@@ -217,7 +217,7 @@ struct kind_traits<kind_t::host_function_call> {
 	{
 		return { params.function_ptr, params.user_data };
 	}
-	static raw_parameters_type marshal(::std::pair<stream::callback_t, void*> param_pair)
+	static raw_parameters_type marshal(std::pair<stream::callback_t, void*> param_pair)
 	{
 		return { param_pair.first, param_pair.second };
 	}
@@ -232,7 +232,7 @@ struct kind_traits<kind_t::kernel_launch> {
 	struct parameters_type {
 		kernel_t kernel;
 		launch_configuration_t launch_config;
-		::std::vector<void*> marshalled_arguments; // Does _not_ need a nullptr "argument" terminator
+		std::vector<void*> marshalled_arguments; // Does _not_ need a nullptr "argument" terminator
 	};
 	static constexpr auto inserter = cuGraphAddKernelNode; // 1 extra param
 	static constexpr auto setter = cuGraphKernelNodeSetParams;
@@ -270,7 +270,7 @@ struct kind_traits<kind_t::memory_allocation> {
 	using raw_parameters_type = CUDA_MEM_ALLOC_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = ::std::pair<device_t, size_t>; // for now, assuming no peer access
+	using parameters_type = std::pair<device_t, size_t>; // for now, assuming no peer access
 	// no setter
 	static constexpr auto inserter = cuGraphAddMemAllocNode; // 1 extra param
 	// static constexpr auto setter;
@@ -313,11 +313,11 @@ struct kind_traits<kind_t::memory_set> {
 	{
 		static constexpr size_t max_width = sizeof(parameters_type::value);
 		if (params.width_in_bytes > max_width) {
-			throw ::std::invalid_argument("Unsupported memset value width (maximum is " + ::std::to_string(max_width));
+			throw std::invalid_argument("Unsupported memset value width (maximum is " + std::to_string(max_width));
 		}
 		const unsigned long min_overwide_value = 1lu << (params.width_in_bytes * CHAR_BIT);
 		if (static_cast<unsigned long>(params.value) >= min_overwide_value) {
-			throw ::std::invalid_argument("Memset value exceeds specified width");
+			throw std::invalid_argument("Memset value exceeds specified width");
 		}
 		CUDA_MEMSET_NODE_PARAMS raw_params;
 		raw_params.dst = memory::device::address(params.region.data());
@@ -357,7 +357,7 @@ struct kind_traits<kind_t::memory_barrier> {
 	using raw_parameters_type = CUDA_BATCH_MEM_OP_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = ::std::pair<context_t, cuda_::memory::barrier_scope_t>;
+	using parameters_type = std::pair<context_t, cuda_::memory::barrier_scope_t>;
 	static constexpr auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
 	static constexpr auto setter = cuGraphBatchMemOpNodeSetParams;
 	static constexpr auto getter = cuGraphBatchMemOpNodeGetParams;
@@ -419,14 +419,14 @@ struct kind_traits<kind_t::conditional> {
 
 	static raw_parameters_type marshal(const parameters_type& params) {
 		raw_parameters_type raw_params;
-		::std::memset(&raw_params, 0, sizeof(raw_parameters_type));
+		std::memset(&raw_params, 0, sizeof(raw_parameters_type));
 		raw_params.type = static_cast<CUgraphNodeType>(kind_t::conditional);
 		raw_params.conditional.type = params.kind;
 		raw_params.conditional.ctx = params.context_handle ?
 									 params.context_handle.value() : context::current::detail_::get_handle();
 		if (not params.handle and
 		   not (params.graph_template_handle and params.context_handle and params.default_value)) {
-			throw ::std::invalid_argument(
+			throw std::invalid_argument(
 				"Conditional node creation parameters specify neither a pre-existing conditional handle, "
 				"nor the arguments required for its creation");
 		}
@@ -439,14 +439,14 @@ struct kind_traits<kind_t::conditional> {
 };
 #endif // CUDA_VERSION >= 12300
 
-template <kind_t Kind, typename = typename ::std::enable_if<kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
+template <kind_t Kind, typename = typename std::enable_if<kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
 typename kind_traits<Kind>::raw_parameters_type *
 maybe_add_ptr(const typename kind_traits<Kind>::raw_parameters_type& raw_params)
 {
 	return const_cast<typename kind_traits<Kind>::raw_parameters_type *>(&raw_params);
 }
 
-template <kind_t Kind, typename = typename ::std::enable_if<not kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
+template <kind_t Kind, typename = typename std::enable_if<not kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
 const typename kind_traits<Kind>::raw_parameters_type&
 maybe_add_ptr(const typename kind_traits<Kind>::raw_parameters_type& raw_params) { return raw_params; }
 
@@ -504,7 +504,7 @@ public: // friendship
 
 protected: // constructors and destructors
 	typed_node_t(template_::handle_t graph_template_handle, handle_type handle, parameters_type parameters) noexcept
-	: node_t(graph_template_handle, handle), params_(::std::move(parameters)) { }
+	: node_t(graph_template_handle, handle), params_(std::move(parameters)) { }
 
 public:  // constructors and destructors
 	typed_node_t(const typed_node_t<Kind>&) = default; // It's a reference type, so copying is not a problem
@@ -523,7 +523,7 @@ protected: // data members
 template <kind_t Kind>
 typed_node_t<Kind> wrap(template_::handle_t graph_handle, handle_t handle, parameters_t<Kind> parameters) noexcept
 {
-	return typed_node_t<Kind>{ graph_handle, handle, ::std::move(parameters) };
+	return typed_node_t<Kind>{ graph_handle, handle, std::move(parameters) };
 }
 
 } // namespace node
@@ -532,9 +532,9 @@ inline node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
 	kernel_t kernel,
 	launch_configuration_t launch_config,
-	const ::std::vector<void*>& argument_pointers)
+	const std::vector<void*>& argument_pointers)
 {
-	return { ::std::move(kernel), ::std::move(launch_config), ::std::move(argument_pointers) };
+	return { std::move(kernel), std::move(launch_config), std::move(argument_pointers) };
 }
 
 template <typename... KernelParameters>
@@ -545,8 +545,8 @@ make_launch_primed_kernel(
 	const KernelParameters&... kernel_arguments)
 {
 	return {
-		::std::move(kernel),
-		::std::move(launch_config),
+		std::move(kernel),
+		std::move(launch_config),
 		make_kernel_arg_ptrs(kernel_arguments...)
 	};
 }

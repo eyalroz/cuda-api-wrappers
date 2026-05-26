@@ -45,9 +45,9 @@
 #include <numeric>
 #include "jacobi.h"
 
-[[noreturn]] bool die_(const ::std::string& message = "")
+[[noreturn]] bool die_(const std::string& message = "")
 {
-	if (not message.empty()) { ::std::cerr << message << ::std::endl; }
+	if (not message.empty()) { std::cerr << message << std::endl; }
 	exit(EXIT_FAILURE);
 }
 
@@ -65,11 +65,11 @@ void createLinearSystem(span<float> A, span<double> b)
 }
 
 // Run the Jacobi method for A*x = b on CPU.
-::std::pair<int, double> do_jacobi_on_cpu(span<float> A, span<double> b, float convergence_threshold, int max_iterations)
+std::pair<int, double> do_jacobi_on_cpu(span<float> A, span<double> b, float convergence_threshold, int max_iterations)
 {
-	auto x_ = ::std::array<double, N_ROWS>{};
+	auto x_ = std::array<double, N_ROWS>{};
 	span<double> x = { x_.data(), N_ROWS };
-	auto x_new = ::std::array<double, N_ROWS> { 0 };
+	auto x_new = std::array<double, N_ROWS> { 0 };
 	int k;
 
 	for (k = 0; k < max_iterations; k++) {
@@ -79,21 +79,21 @@ void createLinearSystem(span<float> A, span<double> b)
 			for (int j = 0; j < N_ROWS; j++) temp_dx -= A[i * N_ROWS + j] * x[j];
 			temp_dx /= A[i * N_ROWS + i];
 			x_new[i] += temp_dx;
-			sum += ::std::fabs(temp_dx);
+			sum += std::fabs(temp_dx);
 		}
-		::std::copy(x_new.cbegin(), x_new.cend(), x.begin());
+		std::copy(x_new.cbegin(), x_new.cend(), x.begin());
 
 		if (sum <= convergence_threshold) break;
 	}
 
-	double sum = ::std::accumulate(std::begin(x), ::std::end(x), 0.0,
+	double sum = std::accumulate(std::begin(x), std::end(x), 0.0,
 		[](double accumulation_so_far, double element) {
-			return accumulation_so_far + ::std::fabs(element - 1.0);
+			return accumulation_so_far + std::fabs(element - 1.0);
 		} );
 //	sdkStopTimer(&timerCPU);
 
 	report_error_sum("CPU", k+1, sum);
-	::std::cout << '\n';
+	std::cout << '\n';
 
 	return {k + 1, sum};
 }
@@ -122,26 +122,26 @@ bool do_gpu_jacobi(
 //	sdkCreateTimer(&timerGpu);
 //	sdkStartTimer(&timerGpu);
 
-	::std::cout << "Jacobi computation with method " << method_name(Method) << ":\n";
+	std::cout << "Jacobi computation with method " << method_name(Method) << ":\n";
 	double sum = do_jacobi_inner<Method>(device, stream, d_A, d_b, convergence_threshold, max_iterations, d_x, d_x_new, d_sum);
 
-	bool success = ::std::fabs(sum_on_cpu - sum) < convergence_threshold;
-	::std::cout << (success ? "PASSED" : "FAILED") << "\n\n";
+	bool success = std::fabs(sum_on_cpu - sum) < convergence_threshold;
+	std::cout << (success ? "PASSED" : "FAILED") << "\n\n";
 	return success;
 }
 
 void report_error_sum(const char* where, int num_iterations, double sum_on_cpu)
 {
-	::std::cout << where << " iterations : " << num_iterations << '\n';
+	std::cout << where << " iterations : " << num_iterations << '\n';
 	auto cout_flags (std::cout.flags());
-	::std::cout << where << " error : " << ::std::setprecision(3) << ::std::scientific << sum_on_cpu << '\n';
-	::std::cout.setf(cout_flags);
+	std::cout << where << " error : " << std::setprecision(3) << std::scientific << sum_on_cpu << '\n';
+	std::cout.setf(cout_flags);
 }
 
 int main(int argc, char **argv)
 {
 	// Being very cavalier about our command-line arguments here...
-	cuda_::device::id_t device_id = (argc > 1) ? ::std::stoi(argv[1]) : cuda_::device::default_device_id;
+	cuda_::device::id_t device_id = (argc > 1) ? std::stoi(argv[1]) : cuda_::device::default_device_id;
 	auto device = cuda_::device::get(device_id);
 
 	auto b = cuda_::memory::host::make_unique_span<double>(N_ROWS);
@@ -177,6 +177,6 @@ int main(int argc, char **argv)
 	do_gpu_jacobi<non_graph_gpu>(
 		device,	stream, A, b, d_A, d_b, convergence_threshold, num_iterations, d_x, d_x_new, d_sum, sum_on_cpu) or die_();
 
-	::std::cout << "SUCCESS\n";
+	std::cout << "SUCCESS\n";
 }
 

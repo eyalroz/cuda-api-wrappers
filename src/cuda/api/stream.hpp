@@ -70,7 +70,7 @@ enum wait_condition_t : unsigned {
  * Possible synchronization behavior of a host thread when performing a synchronous action
  * on a stream (in particular, synchronizing with a stream).
  */
-enum synchronization_policy_t : typename ::std::underlying_type<CUsynchronizationPolicy>::type {
+enum synchronization_policy_t : typename std::underlying_type<CUsynchronizationPolicy>::type {
 	/**
 	 * @todo Figure out what this default actually is!
 	 */
@@ -109,7 +109,7 @@ enum synchronization_policy_t : typename ::std::underlying_type<CUsynchronizatio
 
 namespace detail_ {
 
-::std::string identify(const stream_t& stream);
+std::string identify(const stream_t& stream);
 
 inline handle_t create_raw_in_current_context(
 	bool          synchronizes_with_default_stream,
@@ -384,7 +384,7 @@ public: // mutators
 				kernel_function,
 				associated_stream,
 				launch_configuration,
-				::std::forward<KernelParameters>(parameters)...);
+				std::forward<KernelParameters>(parameters)...);
 		}
 
 		/**
@@ -441,7 +441,7 @@ public: // mutators
 		{
 #ifndef NDEBUG
 			if (source.size() < num_bytes) {
-				throw ::std::logic_error("Attempt to copy more than the source region's size");
+				throw std::logic_error("Attempt to copy more than the source region's size");
 			}
 #endif
 			copy(destination, source.start(), num_bytes);
@@ -711,7 +711,7 @@ public: // mutators
 		void set_single_value(T* __restrict__ ptr, T value, bool with_memory_barrier = true) const
 		{
 			static_assert(
-				::std::is_same<T,uint32_t>::value or ::std::is_same<T,uint64_t>::value,
+				std::is_same<T,uint32_t>::value or std::is_same<T,uint64_t>::value,
 				"Unsupported type for stream value wait."
 			);
 			unsigned flags = with_memory_barrier ?
@@ -742,7 +742,7 @@ public: // mutators
 		void wait(const T* address, stream::wait_condition_t condition, T value, bool with_memory_barrier = false) const
 		{
 			static_assert(
-				::std::is_same<T,int32_t>::value or ::std::is_same<T,int64_t>::value,
+				std::is_same<T,int32_t>::value or std::is_same<T,int64_t>::value,
 				"Unsupported type for stream value wait."
 			);
 			unsigned flags = static_cast<unsigned>(condition) |
@@ -804,19 +804,19 @@ public: // mutators
 		void single_value_operations_batch(Iterator ops_begin, Iterator ops_end) const
 		{
 			static_assert(
-				::std::is_same<typename ::std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
+				std::is_same<typename std::iterator_traits<Iterator>::value_type, CUstreamBatchMemOpParams>::value,
 				"Only accepting iterator pairs for the CUDA-driver-API memory operation descriptor,"
 				" CUstreamBatchMemOpParams, as the value type");
-			auto num_ops = ::std::distance(ops_begin, ops_end);
-			if (::std::is_same<typename ::std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
+			auto num_ops = std::distance(ops_begin, ops_end);
+			if (std::is_same<typename std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
 				"Only accepting containers of the CUDA-driver-API memory operation descriptor, CUstreamBatchMemOpParams")
 			{
 				auto ops_ptr = reinterpret_cast<const CUstreamBatchMemOpParams*>(ops_begin);
 				cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_ptr);
 			}
 			else {
-				auto ops_uptr = ::std::unique_ptr<CUstreamBatchMemOpParams[]>(new CUstreamBatchMemOpParams[num_ops]);
-				::std::copy(ops_begin, ops_end, ops_uptr.get());
+				auto ops_uptr = std::unique_ptr<CUstreamBatchMemOpParams[]>(new CUstreamBatchMemOpParams[num_ops]);
+				std::copy(ops_begin, ops_end, ops_uptr.get());
 				cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_uptr.get());
 			}
 		}
@@ -847,7 +847,7 @@ public: // mutators
 		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
-		throw_if_error_lazy(status, ::std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
@@ -857,7 +857,7 @@ public: // mutators
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
-		throw_if_error_lazy(status, ::std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
 	}
 #endif
 
@@ -946,11 +946,11 @@ public: // operators
 	stream_t& operator=(const stream_t& other) = delete;
 	stream_t& operator=(stream_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(owning_, other.owning_);
-		::std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(owning_, other.owning_);
+		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
 		return *this;
 	}
 

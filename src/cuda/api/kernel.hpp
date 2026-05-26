@@ -65,7 +65,7 @@ kernel_t wrap(
 
 namespace detail_ {
 
-inline ::std::string identify(const kernel_t& kernel);
+inline std::string identify(const kernel_t& kernel);
 
 static const char* attribute_name(int attribute_index)
 {
@@ -89,7 +89,7 @@ inline attribute_value_t get_attribute_in_current_context(handle_t handle, attri
 {
 	kernel::attribute_value_t attribute_value;
 	auto result = cuFuncGetAttribute(&attribute_value,  attribute, handle);
-	throw_if_error_lazy(result, ::std::string("Failed obtaining attribute ") + attribute_name(attribute));
+	throw_if_error_lazy(result, std::string("Failed obtaining attribute ") + attribute_name(attribute));
 	return attribute_value;
 }
 
@@ -99,8 +99,8 @@ inline void set_attribute_in_current_context(handle_t handle, attribute_t attrib
 	auto result = cuFuncSetAttribute(handle, static_cast<CUfunction_attribute>(attribute), value);
 	throw_if_error_lazy(result,
 		"Setting CUDA device function attribute " +
-		::std::string(kernel::detail_::attribute_name(attribute)) + " of function at "
-		+ cuda_::kernel::detail_::identify(handle) + " to value " + ::std::to_string(value));
+		std::string(kernel::detail_::attribute_name(attribute)) + " of function at "
+		+ cuda_::kernel::detail_::identify(handle) + " to value " + std::to_string(value));
 #else
 	throw(cuda_::runtime_error {cuda_::status::not_yet_implemented});
 #endif
@@ -202,10 +202,10 @@ public: // operators
 	kernel_t& operator=(const kernel_t&) = delete;
 	kernel_t& operator=(kernel_t&& other) noexcept
 	{
-		::std::swap(device_id_, other.device_id_);
-		::std::swap(context_handle_, other.context_handle_);
-		::std::swap(handle_, other.handle_);
-		::std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
+		std::swap(device_id_, other.device_id_);
+		std::swap(context_handle_, other.context_handle_);
+		std::swap(handle_, other.handle_);
+		std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
 		return *this;
 	}
 
@@ -334,7 +334,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	{
 		auto amount_required_by_kernel_ = static_cast<kernel::attribute_value_t>(amount_required_by_kernel);
 		if (amount_required_by_kernel != static_cast<cuda_::memory::shared::size_t>(amount_required_by_kernel_)) {
-			throw ::std::invalid_argument("Requested amount of maximum shared memory exceeds the "
+			throw std::invalid_argument("Requested amount of maximum shared memory exceeds the "
 				"representation range for kernel attribute values");
 		}
 		// TODO: Consider a check in debug mode for the value being within range
@@ -412,7 +412,7 @@ public: // ctors & dtor
 	kernel_t(kernel_t&& other) :
 		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
 	{
-		::std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
+		std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
 	}
 
 public: // ctors & dtor
@@ -540,7 +540,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 
 namespace detail_ {
 
-inline ::std::string identify(const kernel_t& kernel)
+inline std::string identify(const kernel_t& kernel)
 {
 	return kernel::detail_::identify(kernel.handle()) + " in " + context::detail_::identify(kernel.context());
 }

@@ -366,9 +366,9 @@ struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
 		auto extent_ = bytes_extent();
 #ifndef NDEBUG
 		if (extent_.width % sizeof(T) != 0) {
-			throw ::std::invalid_argument(
+			throw std::invalid_argument(
 				"Attempt to get the copy extent with assumed type of size "
-				+ ::std::to_string(sizeof(T)) + " while the byte extent's "
+				+ std::to_string(sizeof(T)) + " while the byte extent's "
 				+ "minor dimension is not a multiple of this size");
 		}
 #endif
@@ -578,7 +578,7 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
+		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{
@@ -617,7 +617,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw ::std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
+		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{
@@ -699,10 +699,10 @@ copy_parameters_t<3>::intra_context_type
 inline as_intra_context_parameters(const copy_parameters_t<3>& params)
 {
 	if (params.srcDevice != params.dstDevice) {
-		throw ::std::invalid_argument("Attempt to use inter-device copy parameters for an intra-context copy");
+		throw std::invalid_argument("Attempt to use inter-device copy parameters for an intra-context copy");
 	}
 	if (params.srcContext != params.dstContext) {
-		throw ::std::invalid_argument("Attempt to use inter-context copy parameters for an intra-context copy");
+		throw std::invalid_argument("Attempt to use inter-context copy parameters for an intra-context copy");
 	}
 
 	// TODO: Use designated initializers in C++20

@@ -51,7 +51,7 @@ CUmemPoolProps create_raw_properties(cuda_::device::id_t device_id) noexcept
 
 	// We set the pool properties structure to 0, since it seems the CUDA driver
 	// isn't too fond of arbitrary values, e.g. in the reserved fields
-	::std::memset(&result, 0, sizeof(CUmemPoolProps));
+	std::memset(&result, 0, sizeof(CUmemPoolProps));
 
 	result.location = create_mem_location(device_id);
 	result.allocType = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -60,17 +60,17 @@ CUmemPoolProps create_raw_properties(cuda_::device::id_t device_id) noexcept
 	return result;
 }
 
-inline ::std::string identify(pool::handle_t handle)
+inline std::string identify(pool::handle_t handle)
 {
 	return "memory pool at " + cuda_::detail_::ptr_as_hex(handle);
 }
 
-inline ::std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
+inline std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
 {
 	return identify(handle) + " on " + cuda_::device::detail_::identify(device_id);
 }
 
-::std::string identify(const pool_t &pool);
+std::string identify(const pool_t &pool);
 
 inline status_t destroy_nothrow(handle_t handle) noexcept
 {
@@ -139,7 +139,7 @@ attribute_value_t<attribute> get_attribute(handle_t pool_handle)
 {
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(pool_handle);
 	throw_if_error_lazy(status_and_attribute_value.status,
-		"Obtaining attribute " + ::std::to_string(static_cast<int>(attribute))
+		"Obtaining attribute " + std::to_string(static_cast<int>(attribute))
 		+ " of " + detail_::identify(pool_handle));
 	return status_and_attribute_value.value;
 }
@@ -151,7 +151,7 @@ void set_attribute(handle_t pool_handle, attribute_value_t<attribute> value)
 	using inner_type = typename attribute_value_inner_type<outer_type>::type;
 	inner_type value_ = static_cast<inner_type>(value);
 	auto status = cuMemPoolSetAttribute(pool_handle, attribute, &value_);
-	throw_if_error_lazy(status, "Setting attribute " + ::std::to_string(static_cast<int>(attribute))
+	throw_if_error_lazy(status, "Setting attribute " + std::to_string(static_cast<int>(attribute))
 		+ " of " + detail_::identify(pool_handle));
 }
 
@@ -187,14 +187,14 @@ inline permissions_t get_permissions(cuda_::device::id_t device_id, pool::handle
 inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
-		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
+		throw std::invalid_argument("Memory pool access get_permissions cannot be write-only");
 	}
 
 	CUmemAccess_flags flags = permissions.read ?
 	   (permissions.write ? CU_MEM_ACCESS_FLAGS_PROT_READWRITE : CU_MEM_ACCESS_FLAGS_PROT_READ) :
 	   CU_MEM_ACCESS_FLAGS_PROT_NONE;
 
-	::std::vector<CUmemAccessDesc> descriptors;
+	std::vector<CUmemAccessDesc> descriptors;
 	descriptors.reserve(device_ids.size());
 	// TODO: This could use a zip iterator
 	for(auto device_id : device_ids) {
@@ -206,14 +206,14 @@ inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t
 
 	auto status = cuMemPoolSetAccess(pool_handle, descriptors.data(), descriptors.size());
 	throw_if_error_lazy(status,
-		"Setting access get_permissions for " + ::std::to_string(descriptors.size())
+		"Setting access get_permissions for " + std::to_string(descriptors.size())
 		+ " devices to " + pool::detail_::identify(pool_handle));
 }
 
 inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
 {
 	if (permissions.write and not permissions.read) {
-		throw ::std::invalid_argument("Memory pool access get_permissions cannot be write-only");
+		throw std::invalid_argument("Memory pool access get_permissions cannot be write-only");
 	}
 
 	CUmemAccessDesc desc;
@@ -283,7 +283,7 @@ public:
 	{
 		auto status = cuMemPoolTrimTo(handle_, min_bytes_to_keep);
 		throw_if_error_lazy(status, "Attempting to trim " + pool::detail_::identify(*this)
-			+ " down to " + ::std::to_string(min_bytes_to_keep));
+			+ " down to " + std::to_string(min_bytes_to_keep));
 	}
 
 	template<pool::attribute_t attribute>
@@ -291,7 +291,7 @@ public:
 	{
 		auto attribute_with_status = pool::detail_::get_attribute_with_status<attribute>(handle_);
 		throw_if_error_lazy(attribute_with_status.status, "Failed obtaining attribute "
-			+ ::std::to_string(static_cast<int>(attribute)) + " of " + pool::detail_::identify(*this));
+			+ std::to_string(static_cast<int>(attribute)) + " of " + pool::detail_::identify(*this));
 		return attribute_with_status.value;
 	}
 
@@ -302,7 +302,7 @@ public:
 		using inner_type = typename pool::detail_::attribute_value_inner_type<outer_type>::type;
 		auto inner_value = static_cast<inner_type>(value);
 		auto status = cuMemPoolSetAttribute(handle_, attribute, &inner_value);
-		throw_if_error_lazy(status, "Failed setting attribute " + ::std::to_string(static_cast<int>(attribute))
+		throw_if_error_lazy(status, "Failed setting attribute " + std::to_string(static_cast<int>(attribute))
 			+ " of " + pool::detail_::identify(*this));
 	}
 
@@ -469,7 +469,7 @@ pool_t create(cuda_::device::id_t device_id)
 	return wrap(device_id, handle, is_owning);
 }
 
-inline ::std::string identify(const pool_t& pool)
+inline std::string identify(const pool_t& pool)
 {
 	return identify(pool.handle(), pool.device_id());
 }

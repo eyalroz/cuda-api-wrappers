@@ -24,7 +24,7 @@ public:
 	using reference = value_type; // device_t is already a reference type; and there is no instance-of-device_t here to reference
 	using const_reference = const value_type; // ditto
 	using size_type = decltype(device::count());
-	using difference_type = typename ::std::make_signed<size_type>::type;
+	using difference_type = typename std::make_signed<size_type>::type;
 
 	class index_based_iterator {
 	public:
@@ -33,7 +33,7 @@ public:
 		using value_type = container::value_type;
 		using pointer = container::pointer;
 		using reference = container::reference;
-		using iterator_category = ::std::random_access_iterator_tag;
+		using iterator_category = std::random_access_iterator_tag;
 
 		// Note: the sentinel iterator value has an index equal to num_indices
 
@@ -42,7 +42,7 @@ public:
 		index_based_iterator(size_type num_devices, size_type index)
 			: num_devices_(num_devices), index_(index)
 		{
-			if (index_ > num_devices_) { throw ::std::logic_error("Out of range"); }
+			if (index_ > num_devices_) { throw std::logic_error("Out of range"); }
 		}
 
 		index_based_iterator(const index_based_iterator& it)
@@ -54,28 +54,28 @@ public:
 
 		index_based_iterator&  operator++()
 		{
-			if (index_ == num_devices_) { throw ::std::logic_error("Out of range"); }
+			if (index_ == num_devices_) { throw std::logic_error("Out of range"); }
 			++index_;
 			return *this;
 		}
 
 		index_based_iterator operator++(int)
 		{
-			if (index_== num_devices_) { throw ::std::logic_error("Out of range"); }
+			if (index_== num_devices_) { throw std::logic_error("Out of range"); }
 			return index_based_iterator(num_devices_, index_++);
 		}
 
 		// Bidirectional iterator requirements
 		index_based_iterator& operator--()
 		{
-			if (index_ == 0) { throw ::std::logic_error("Out of range"); }
+			if (index_ == 0) { throw std::logic_error("Out of range"); }
 			--index_;
 			return *this;
 		}
 
 		index_based_iterator operator--(int)
 		{
-			if (index_ == 0) { throw ::std::logic_error("Out of range"); }
+			if (index_ == 0) { throw std::logic_error("Out of range"); }
 			return index_based_iterator(num_devices_, index_--);
 		}
 
@@ -88,7 +88,7 @@ public:
 		index_based_iterator& operator+=(difference_type n)
 		{
 #ifndef NDEBUG
-			if (index_ + n > num_devices_) { throw ::std::logic_error("Out of range"); }
+			if (index_ + n > num_devices_) { throw std::logic_error("Out of range"); }
 #endif
 			index_ += n;
 			return *this;
@@ -98,7 +98,7 @@ public:
 		{
 #ifndef NDEBUG
 			if (n + index_ > num_devices_) {
-				throw ::std::logic_error("Out of range");
+				throw std::logic_error("Out of range");
 			}
 #endif
 			return index_based_iterator(num_devices_, index_ + n);
@@ -107,7 +107,7 @@ public:
 		index_based_iterator& operator-=(difference_type n)
 		{
 			if (n > index_) {
-				throw ::std::logic_error("Out of range");
+				throw std::logic_error("Out of range");
 			}
 			index_ -= n;
 			return *this;
@@ -116,7 +116,7 @@ public:
 		index_based_iterator operator-(difference_type n) const
 		{
 			if (n > index_) {
-				throw ::std::logic_error("Out of range");
+				throw std::logic_error("Out of range");
 			}
 			return index_based_iterator(num_devices_, index_ - n);
 		}
@@ -136,8 +136,8 @@ public:
 
 	using iterator = index_based_iterator;
 	using const_iterator = index_based_iterator;
-	using reverse_iterator = ::std::reverse_iterator<iterator>;
-	using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 
 	all_devices() : num_devices_(device::count()) { }

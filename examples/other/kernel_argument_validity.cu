@@ -44,7 +44,7 @@ static_assert(
 	"NonTriviallyCopyable should not be trivially copyable");
 
 template <>
-struct cuda_::is_valid_kernel_argument<NonTriviallyCopyable> : ::std::true_type {};
+struct cuda_::is_valid_kernel_argument<NonTriviallyCopyable> : std::true_type {};
 
 __global__ void print_message(NonTriviallyCopyable message) {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {

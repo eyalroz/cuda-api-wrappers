@@ -38,7 +38,7 @@ inline cuda_::kernel_t module_t::get_kernel(const char* name) const
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	kernel::handle_t kernel_function_handle;
 	auto result = cuModuleGetFunction(&kernel_function_handle, handle_, name);
-	throw_if_error_lazy(result, ::std::string("Failed obtaining function ") + name
+	throw_if_error_lazy(result, std::string("Failed obtaining function ") + name
 						   + " from " + module::detail_::identify(*this));
 	return kernel::wrap(context::detail_::get_device_id(context_handle_), context_handle_, kernel_function_handle);
 }
@@ -54,7 +54,7 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	handle_t new_module_handle;
 	auto status = creator_function(new_module_handle, module_data);
-	throw_if_error_lazy(status, ::std::string("Failed loading a module from memory location ")
+	throw_if_error_lazy(status, std::string("Failed loading a module from memory location ")
 		+ cuda_::detail_::ptr_as_hex(module_data)
 		+ " within " + context::detail_::identify(context));
 	bool do_take_ownership { true };
@@ -123,7 +123,7 @@ inline CUsurfref module_t::get_surface(const char* name) const
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUsurfref raw_surface_reference;
 	auto status = cuModuleGetSurfRef(&raw_surface_reference, handle_, name);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining a reference to surface \"") + name + "\" from "
+	throw_if_error_lazy(status, std::string("Failed obtaining a reference to surface \"") + name + "\" from "
 		+ module::detail_::identify(*this));
 	return raw_surface_reference;
 }
@@ -133,7 +133,7 @@ inline CUtexref module_t::get_texture_reference(const char* name) const
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUtexref raw_texture_reference;
 	auto status = cuModuleGetTexRef(&raw_texture_reference, handle_, name);
-	throw_if_error_lazy(status, ::std::string("Failed obtaining a reference to texture \"") + name + "\" from "
+	throw_if_error_lazy(status, std::string("Failed obtaining a reference to texture \"") + name + "\" from "
 		+ module::detail_::identify(*this));
 	return raw_texture_reference;
 }

@@ -70,8 +70,8 @@ struct options_t final {
 namespace detail_ {
 
 struct marshalled_options_t {
-	::std::size_t num_options;
-	::std::string option_str;
+	std::size_t num_options;
+	std::string option_str;
 };
 
 } // namespace detail

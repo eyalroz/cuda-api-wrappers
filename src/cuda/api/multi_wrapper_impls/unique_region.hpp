@@ -24,14 +24,14 @@ inline unique_region make_unique_region(const context_t& context, cuda_::size_t 
 }
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
+ * @brief Create a variant of std::unique_pointer for an array in
  * device-global memory
  *
  * @tparam T  an array type; _not_ the type of individual elements
  *
  * @param device        on which to construct the array of elements
  * @param num_bytes  the number of elements to allocate
- * @return an ::std::unique_ptr pointing to the constructed T array
+ * @return an std::unique_ptr pointing to the constructed T array
  */
 inline unique_region make_unique_region(const device_t& device, size_t num_bytes)
 {
@@ -40,7 +40,7 @@ inline unique_region make_unique_region(const device_t& device, size_t num_bytes
 }
 
 /**
- * @brief Create a variant of ::std::unique_pointer for an array in
+ * @brief Create a variant of std::unique_pointer for an array in
  * device-global memory on the current device.
  *
  * @note The allocation will be made in the device's primary context -
@@ -50,7 +50,7 @@ inline unique_region make_unique_region(const device_t& device, size_t num_bytes
  *
  * @param num_bytes  the number of elements to allocate
  *
- * @return an ::std::unique_ptr pointing to the constructed T array
+ * @return an std::unique_ptr pointing to the constructed T array
  */
 inline unique_region make_unique_region(size_t num_bytes)
 {

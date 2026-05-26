@@ -56,7 +56,7 @@ template <typename T>
 T ensure_cc_attribute_validity(T v, const compute_capability_t& cc)
 {
 	if (v == detail_::invalid_compute_capability_return) {
-		throw ::std::invalid_argument("Compute capability unknown: " + ::std::to_string(cc.as_combined_number()));
+		throw std::invalid_argument("Compute capability unknown: " + std::to_string(cc.as_combined_number()));
 	}
 	return v;
 }
@@ -65,7 +65,7 @@ template <>
 inline const char* ensure_cc_attribute_validity<const char*>(const char* v, const compute_capability_t& cc)
 {
 	if (v == nullptr) {
-		throw ::std::invalid_argument("Compute capability unknown: " + ::std::to_string(cc.as_combined_number()));
+		throw std::invalid_argument("Compute capability unknown: " + std::to_string(cc.as_combined_number()));
 	}
 	return v;
 }
@@ -97,7 +97,7 @@ inline constexpr const char* architecture_name(const compute_architecture_t& arc
 inline const char* compute_architecture_t::name() const {
 	auto name_ = detail_::architecture_name(*this);
 	if (name_ == nullptr) {
-		throw ::std::invalid_argument("No known architecture numbered " + ::std::to_string(major));
+		throw std::invalid_argument("No known architecture numbered " + std::to_string(major));
 	}
 	return name_;
 }
@@ -293,9 +293,9 @@ namespace std {
   template <>
   struct hash<cuda_::device::compute_capability_t>
   {
-	::std::size_t operator()(const cuda_::device::compute_capability_t& cc) const noexcept
+	std::size_t operator()(const cuda_::device::compute_capability_t& cc) const noexcept
 	{
-	  using ::std::hash;
+	  using std::hash;
 
 	  // Compute individual hash values for first,
 	  // second and third and combine them using XOR
