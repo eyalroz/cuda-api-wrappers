@@ -62,6 +62,8 @@ $CUDA_KNOWN_URLS = @{
     "13.0.3" = "https://developer.download.nvidia.com/compute/cuda/13.0.3/network_installers/cuda_13.0.3_windows_network.exe";
     "13.1.2" = "https://developer.download.nvidia.com/compute/cuda/13.1.2/network_installers/cuda_13.1.2_windows_network.exe";
     "13.2.0" = "https://developer.download.nvidia.com/compute/cuda/13.2.0/network_installers/cuda_13.2.0_windows_network.exe";
+    "13.2.1" = "https://developer.download.nvidia.com/compute/cuda/13.2.1/network_installers/cuda_13.2.1_windows_network.exe";
+    "13.3.0" = "https://developer.download.nvidia.com/compute/cuda/13.3.0/network_installers/cuda_13.3.0_windows_network.exe";
 }
 
 # @todo - change this to be based on _MSC_VER intead, or invert it to be CUDA keyed instead?
