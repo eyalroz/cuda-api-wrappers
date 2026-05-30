@@ -73,6 +73,15 @@ int main(int argc, char **argv)
 	}
 #endif
 #endif
+#if CUDA_VERSION >= 13020
+	auto num_params = kernel.num_parameters();
+	enum { num_params_of_foo = 1 }; // look at the signature above to verify...
+	if (num_params != num_params_of_foo) {
+		std::cerr << "CUDA reports the wrapped kernel with signature foo(int bar) "
+			" has " << num_params << " parameters (rather than exactly one)\n";
+		return EXIT_FAILURE;
+	}
+#endif
 
 	// ------------------------------------------
 	//  Attributes without a specific API call

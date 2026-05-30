@@ -121,6 +121,22 @@ inline const char * get_name(context::handle_t context_handle, handle_t kernel_h
 	return get_name_in_current_context(kernel_handle);
 }
 
+#if CUDA_VERSION >= 13020
+inline size_t get_num_parameters_in_current_context(handle_t handle)
+{
+	size_t count;
+	auto status = cuFuncGetParamCount(handle, &count);
+	throw_if_error_lazy(status, "Failed obtaining the number of parameters of " + identify(handle));
+	return count;
+}
+
+inline size_t get_num_parameters(context::handle_t context_handle, handle_t kernel_handle)
+{
+	CAW_SET_SCOPE_CONTEXT(context_handle);
+	return get_num_parameters_in_current_context(kernel_handle);
+}
+#endif
+
 inline module::handle_t get_module_in_current_context(handle_t handle)
 {
 	module::handle_t result;
@@ -195,6 +211,9 @@ public: // getters
 	/// possibly, the parameter types)
 	const char *mangled_name() const { return cuda_::kernel::detail_::get_name(context_handle_, handle_); }
 	module_t module() const;
+#endif
+#if CUDA_VERSION >= 13020
+	size_t num_parameters() const { return cuda_::kernel::detail_::get_num_parameters(context_handle_, handle_); }
 #endif
 
 public: // operators
