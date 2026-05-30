@@ -122,7 +122,7 @@ Since this is a header-only library, you can simply add the `src/` subdirectory 
 
 Most, but not quite all, API calls in the Runtime, Driver, NVTX and NVRTC are covered by these wrappers. You can find the main omissions as [issues tagged with "missing-cuda-feature"](https://github.com/eyalroz/cuda-api-wrappers/issues?q=is%3Aissue+is%3Aopen+label%3Amissing-cuda-feature), intended for further development work. Additionally, the wrapper library does not cover the APIs for interoperability with OpenGL, Direct3D, EGL and VDAPU.
 
-The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indicates some features which aren't covered and are slated for future work. Since I am not currently working on anything graphics-related, there are no short-term plans to extend coverage to more graphics-related APIs; however - PRs are welcome.
+The [Milestones](https://github.com/eyalroz/cuda-api-wrappers/milestones) indicates some features which aren't covered and are slated for future work. Since I am not currently working on anything graphics-related, there are no short-term plans to extend coverage to more graphics-related APIs. Support for CiG (CUDA-in-Graphics) is also not currently planned; however - PRs are welcome.
 
 ## A taste of some features in play
 
