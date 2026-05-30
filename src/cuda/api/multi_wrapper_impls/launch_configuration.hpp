@@ -29,6 +29,17 @@ inline void validate_compatibility(
 	validate_compatibility(kernel.device(), launch_config);
 }
 
+#if CUDA_VERSION >= 13020
+inline void validate_num_parameters(const kernel_t& kernel, size_t num_parameters)
+{
+	auto expected_num_parameters = kernel.num_parameters();
+	if (expected_num_parameters != num_parameters) {
+		throw std::invalid_argument("Attempt to launch a kernel taking " + std::to_string(num_parameters)
+			+ " parameters with " + std::to_string(expected_num_parameters) + ": " + kernel::detail_::identify(kernel));
+	}
+}
+#endif
+
 #if CUDA_VERSION >= 12000
 inline CUlaunchConfig marshal(
 	const launch_configuration_t &config,

@@ -48,6 +48,7 @@ void validate_block_dimension_compatibility(const kernel_t &kernel, grid::block_
 void validate_compatibility(const kernel_t &kernel, memory::shared::size_t shared_mem_size);
 void validate_compatibility(const device_t &device, memory::shared::size_t shared_mem_size);
 
+void validate_num_parameters(const kernel_t &kernel, size_t num_parameters);
 } // namespace detail_
 
 #if CUDA_VERSION >= 12000
@@ -268,6 +269,8 @@ inline void validate_compatibility(
 void validate_compatibility(
 	const kernel_t& kernel,
 	launch_configuration_t launch_config) noexcept(false);
+
+void validate_num_parameters(const kernel_t& kernel, size_t num_parameters);
 
 using launch_attribute_index_t = unsigned int;
 
