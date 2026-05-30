@@ -84,6 +84,16 @@ inline cuda_::kernel::handle_t contextualize(
 	return handle_and_status.first;
 }
 
+#if CUDA_VERSION >= 13020
+inline size_t get_num_parameters(handle_t handle)
+{
+	size_t count;
+	auto status = cuKernelGetParamCount(handle, &count);
+	throw_if_error_lazy(status, "Retrieving the parameter count of " + kernel::detail_::identify(handle));
+	return count;
+}
+#endif
+
 inline attribute_value_t get_attribute(
 	handle_t             library_kernel_handle,
 	device::id_t         device_id,
@@ -153,6 +163,9 @@ public: // non-mutators
 		name_ = result;
 		return name_;
 	}
+#endif
+#if CUDA_VERSION >= 13020
+	size_t num_parameters() const { return kernel::detail_::get_num_parameters(handle_); }
 #endif
 	cuda_::kernel_t contextualize(const context_t& context) const;
 

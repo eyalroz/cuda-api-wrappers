@@ -362,6 +362,9 @@ void enqueue_launch(
 			+ " on " + stream::detail_::identify(stream) + ": Different contexts"};
 	}
 	detail_::validate_compatibility(kernel, launch_configuration);
+#if CUDA_VERSION >= 13020
+	detail_::validate_num_parameters(kernel, sizeof...(KernelParameters));
+#endif
 #endif // #ifndef NDEBUG
 
 	enqueue_launch_helper<typename std::decay<Kernel>::type, KernelParameters...>{}(
