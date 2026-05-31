@@ -84,11 +84,9 @@ inline constexpr const char* architecture_name(const compute_architecture_t& arc
 			// designate the architecture name, with Turing (Compute Capability 7.5 _only_).
 		(arch.major ==  8) ? "Ampere/Lovelace" :
         (arch.major ==  9) ? "Hopper" :
-        (arch.major == 10) ? "Blackwell" :
-            // Note: No architecture number 11!
-        (arch.major == 12) ? "Blackwell" :
-            // Note: As of 2025-01-28, NVIDIA claims both architectures 10 and 12 would
-            // be named "Blackwell".
+        (arch.major >= 10 && arch.major <= 12) ? "Blackwell" :
+            // Note: Yes, for some reason, NVIDIA has named 3 consecutive microarchitectures
+			// with the same name
 		nullptr;
 }
 
@@ -171,26 +169,48 @@ inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capa
 		(cc.architecture.major == 8)     ? 128 :
 		(cc.architecture.major == 9)     ? 128 :
 		(cc.architecture.major == 10)    ? 128 :
-		(cc.as_combined_number() == 120) ? 128 :
+		(cc.architecture.major == 11)    ? 128 :
+		(cc.architecture.major == 12)    ? 128 :
 		invalid_compute_capability_return;
 }
 
-inline constexpr unsigned max_warp_schedulings_per_processor_cycle(const compute_capability_t& cc)
+inline constexpr unsigned num_sm_partitions(const compute_capability_t& cc)
+{
+	return
+		(cc.architecture.major ==  1)    ?  1 :
+		(cc.as_combined_number() ==  60) ?  2 :
+		(cc.architecture.major >=  2 &&
+		 cc.architecture.major <= 12)    ?  4 :
+		invalid_compute_capability_return;
+}
+
+inline constexpr unsigned num_schedulers_per_sm_partition(const compute_capability_t& cc)
 {
 	return
 		(cc.architecture.major ==  1)    ?  1 :
 		(cc.architecture.major ==  2)    ?  2 :
 		(cc.architecture.major ==  3)    ?  4 :
-		// Note: No architecture number 4!
-		(cc.architecture.major ==  5)    ?  4 :
-		(cc.as_combined_number() ==  60) ?  2 :
-		(cc.architecture.major ==  6)    ?  4 :
-		(cc.architecture.major ==  7)    ?  4 :
-		(cc.architecture.major ==  8)    ?  4 :
-		(cc.architecture.major ==  9)    ?  4 :
-		(cc.architecture.major == 10)    ?  4 :
-		// Note: No architecture number 11!
-		(cc.as_combined_number() == 120) ?  4 :
+		(cc.architecture.major >=  4 &&
+		 cc.architecture.major <= 12)    ?  1 :
+		invalid_compute_capability_return;
+}
+
+inline constexpr unsigned num_schedulers_per_sm(const compute_capability_t& cc)
+{
+	return num_sm_partitions(cc) * num_schedulers_per_sm(cc);
+}
+
+inline constexpr unsigned max_num_instructions_per_scheduler_cycle(const compute_capability_t& cc)
+{
+	return
+		(cc.architecture.major   ==  1)  ?  2 :
+		(cc.as_combined_number() == 20)  ?  1 :
+		(cc.architecture.major   >=  2 &&
+		 cc.architecture.major   <=  6)  ?  2 :
+		// ... but note that for CC 2.1, it was only possible for one of the two schedulers to issue
+		// two instructions in a cycle - not both
+		(cc.architecture.major   >=  7 &&
+		 cc.architecture.major   <= 12)  ?  1 :
 		invalid_compute_capability_return;
 }
 
@@ -219,15 +239,16 @@ inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t
 		(cc.architecture.major ==  5)     ?  48 * KiB :
 		(cc.architecture.major ==  6)     ?  48 * KiB :
 		(cc.as_combined_number() ==  70)  ?  96 * KiB : // of  96
-		(cc.as_combined_number() ==  72)  ?  96 * KiB : // of  96
-		(cc.as_combined_number() ==  75)  ?  64 * KiB : // of  64
+		(cc.as_combined_number() ==  72)  ?  48 * KiB : // of  96
+		(cc.as_combined_number() ==  75)  ?  64 * KiB : // of  96
 		(cc.as_combined_number() ==  80)  ? 163 * KiB : // of 164
 		(cc.as_combined_number() ==  86)  ?  99 * KiB : // of 100
 		(cc.as_combined_number() ==  87)  ? 163 * KiB : // of 164
 		(cc.as_combined_number() ==  89)  ?  99 * KiB : // of 100
         (cc.as_combined_number() ==  90)  ? 227 * KiB : // of 228
-        (cc.architecture.major == 10)     ?  99 * KiB : // of 256
-        (cc.as_combined_number() == 120)  ?  99 * KiB : // of 128
+        (cc.architecture.major == 10)     ? 227 * KiB : // of 228
+        (cc.architecture.major == 11)     ? 227 * KiB : // of 228
+        (cc.architecture.major == 12)     ?  99 * KiB : // of 100
 		invalid_compute_capability_return;
 }
 
@@ -248,15 +269,32 @@ inline constexpr unsigned max_resident_warps_per_processor(const compute_capabil
 		(cc.architecture.major == 8)     ?  48 :
 		(cc.as_combined_number() == 90)  ?  64 :
 		(cc.architecture.major == 10)    ?  64 :
-		(cc.as_combined_number() == 120) ?  48 :
+		(cc.architecture.major == 11)    ?  48 :
+		(cc.architecture.major == 12)    ?  48 :
 		invalid_compute_capability_return;
 }
 
 } // namespace detail_
 
-inline unsigned compute_capability_t::max_warp_schedulings_per_processor_cycle() const
+
+inline unsigned compute_capability_t::num_schedulers_per_sm_partition() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::max_warp_schedulings_per_processor_cycle(*this), *this);
+	return detail_::ensure_cc_attribute_validity(detail_::num_schedulers_per_sm_partition(*this), *this);
+}
+
+inline unsigned compute_capability_t::num_sm_partitions() const
+{
+	return detail_::ensure_cc_attribute_validity(detail_::num_sm_partitions(*this), *this);
+}
+
+inline unsigned compute_capability_t::num_schedulers_per_sm() const
+{
+	return detail_::ensure_cc_attribute_validity(detail_::num_schedulers_per_sm(*this), *this);
+}
+
+inline unsigned compute_capability_t::max_num_instructions_per_scheduler_cycle() const
+{
+	return detail_::ensure_cc_attribute_validity(detail_::max_num_instructions_per_scheduler_cycle(*this), *this);
 }
 
 inline unsigned compute_capability_t::max_in_flight_threads_per_processor() const
