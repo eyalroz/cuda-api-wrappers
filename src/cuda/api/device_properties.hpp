@@ -110,7 +110,10 @@ struct compute_capability_t {
 
 	/// Some (of many) specific properties of GPUs with a given compute capability
 	///@{
-	unsigned max_warp_schedulings_per_processor_cycle() const;
+	unsigned num_schedulers_per_sm() const;
+	unsigned num_schedulers_per_sm_partition() const;
+	unsigned num_sm_partitions() const;
+	unsigned max_num_instructions_per_scheduler_cycle() const;
 	unsigned max_resident_warps_per_processor() const;
 	///@}
 
