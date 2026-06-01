@@ -615,14 +615,14 @@ public: // Methods which don't mutate the context, but affect the device itself
 	/// Clear the L2 cache memory which persists between invocations of kernels
 	void reset_persisting_l2_cache() const
 	{
+#if (CUDA_VERSION < 11000)
+		throw cuda_::runtime_error(
+			cuda_::status::not_yet_implemented,
+			"Resetting/clearing the persisting L2 cache memory is not supported when compiling CUDA versions lower than 11.0");
+#endif
 		CAW_SET_SCOPE_CONTEXT(handle_);
-#if (CUDA_VERSION >= 11000)
 		auto status = cuCtxResetPersistingL2Cache();
 		throw_if_error_lazy(status, "Failed resetting/clearing the persisting L2 cache memory");
-#endif
-		throw cuda_::runtime_error(
-			cuda_::status::insufficient_driver,
-			"Resetting/clearing the persisting L2 cache memory is not supported when compiling CUDA versions lower than 11.0");
 	}
 
 public: // other methods which don't mutate this class as a reference, but do mutate the context
