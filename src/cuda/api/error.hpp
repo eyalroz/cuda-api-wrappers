@@ -34,170 +34,218 @@ namespace status {
  * @note unfortunately, this enum can't inherit from @ref cuda_::status_t
  */
 enum named_t : std::underlying_type<status_t>::type {
-	success                          = CUDA_SUCCESS, /// Operation was successful; no errors
-	memory_allocation_failure        = CUDA_ERROR_OUT_OF_MEMORY, // corresponds to cudaErrorMemoryAllocation
-	not_yet_initialized              = CUDA_ERROR_NOT_INITIALIZED, // corresponds to cudaErrorInitializationError
-	already_deinitialized            = CUDA_ERROR_DEINITIALIZED, // corresponds to cudaErrorCudartUnloading
-	profiler_disabled                = CUDA_ERROR_PROFILER_DISABLED,
+	// Errors defined for the CUDA driver API (including ones which are
+	// duplicated in the runtime API)
+
+	success                              = CUDA_SUCCESS, /// Operation was successful; no errors
+	invalid_value                        = CUDA_ERROR_INVALID_VALUE,
+	memory_allocation_failure            = CUDA_ERROR_OUT_OF_MEMORY,
+	not_yet_initialized                  = CUDA_ERROR_NOT_INITIALIZED,
+	already_deinitialized                = CUDA_ERROR_DEINITIALIZED,
+	profiler_disabled                    = CUDA_ERROR_PROFILER_DISABLED,
 #if CUDA_VERSION >= 10100
-	profiler_not_initialized         = CUDA_ERROR_PROFILER_NOT_INITIALIZED,
+	profiler_not_initialized             = CUDA_ERROR_PROFILER_NOT_INITIALIZED,
 #endif
-	profiler_already_started         = CUDA_ERROR_PROFILER_ALREADY_STARTED,
-	profiler_already_stopped         = CUDA_ERROR_PROFILER_ALREADY_STOPPED,
+	profiler_already_started             = CUDA_ERROR_PROFILER_ALREADY_STARTED,
+	profiler_already_stopped             = CUDA_ERROR_PROFILER_ALREADY_STOPPED,
 #if CUDA_VERSION >= 11100
-	stub_library                     = CUDA_ERROR_STUB_LIBRARY,
-	device_not_licensed              = CUDA_ERROR_DEVICE_NOT_LICENSED,
+	stub_library                         = CUDA_ERROR_STUB_LIBRARY,
 #endif
-	prior_launch_failure             = cudaErrorPriorLaunchFailure,
-	launch_timeout                   = CUDA_ERROR_LAUNCH_TIMEOUT,
-	launch_out_of_resources          = CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES,
-	kernel_launch_incompatible_texturing_mode = CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING,
-	invalid_kernel_function          = cudaErrorInvalidDeviceFunction,
-	invalid_configuration            = cudaErrorInvalidConfiguration,
-	invalid_device                   = CUDA_ERROR_INVALID_DEVICE,
-	invalid_value                    = CUDA_ERROR_INVALID_VALUE,
-	invalid_pitch_value              = cudaErrorInvalidPitchValue,
-	invalid_symbol                   = cudaErrorInvalidSymbol,
-	map_buffer_object_failed         = CUDA_ERROR_MAP_FAILED, // corresponds to cudaErrorMapBufferObjectFailed,
-	unmap_buffer_object_failed       = CUDA_ERROR_UNMAP_FAILED, // corresponds to cudaErrorUnmapBufferObjectFailed,
-	array_still_mapped               = CUDA_ERROR_ARRAY_IS_MAPPED,
-	resource_already_mapped          = CUDA_ERROR_ALREADY_MAPPED,
-	resource_already_acquired        = CUDA_ERROR_ALREADY_ACQUIRED,
-	resource_not_mapped              = CUDA_ERROR_NOT_MAPPED,
-	not_mapped_as_pointer            = CUDA_ERROR_NOT_MAPPED_AS_POINTER,
-	not_mapped_as_array              = CUDA_ERROR_NOT_MAPPED_AS_ARRAY,
-	invalid_host_pointer             = cudaErrorInvalidHostPointer,
-	invalid_device_pointer           = cudaErrorInvalidDevicePointer,
-	invalid_texture                  = cudaErrorInvalidTexture,
-	invalid_texture_binding          = cudaErrorInvalidTextureBinding,
-	invalid_channel_descriptor       = cudaErrorInvalidChannelDescriptor,
-	invalid_memcpy_direction         = cudaErrorInvalidMemcpyDirection,
-	address_of_constant              = cudaErrorAddressOfConstant,
-	texture_fetch_failed             = cudaErrorTextureFetchFailed,
-	texture_not_bound                = cudaErrorTextureNotBound,
-	synchronization_error            = cudaErrorSynchronizationError,
-	invalid_filter_setting           = cudaErrorInvalidFilterSetting,
-	invalid_norm_setting             = cudaErrorInvalidNormSetting,
-	mixed_device_execution           = cudaErrorMixedDeviceExecution,
-	unknown                          = CUDA_ERROR_UNKNOWN,
-	not_yet_implemented              = cudaErrorNotYetImplemented,
-	memory_value_too_large           = cudaErrorMemoryValueTooLarge,
-	invalid_resource_handle          = CUDA_ERROR_INVALID_HANDLE,
-#if CUDA_VERSION >= 10000
-	resource_not_in_valid_state     = CUDA_ERROR_ILLEGAL_STATE,
+#if CUDA_VERSION >= 13000
+	call_requires_newer_driver           = CUDA_ERROR_CALL_REQUIRES_NEWER_DRIVER,
 #endif
-	async_operations_not_yet_completed = CUDA_ERROR_NOT_READY,
-	insufficient_driver              = cudaErrorInsufficientDriver,
-	set_on_active_process            = cudaErrorSetOnActiveProcess,
-	invalid_surface                  = cudaErrorInvalidSurface,
-	symbol_not_found                 = CUDA_ERROR_NOT_FOUND, // corresponds to cudaErrorSymbolNotFound
-	no_device                        = CUDA_ERROR_NO_DEVICE,
-	ecc_uncorrectable                = CUDA_ERROR_ECC_UNCORRECTABLE,
-	shared_object_symbol_not_found   = CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND,
-	invalid_source                   = CUDA_ERROR_INVALID_SOURCE,
-	file_not_found                   = CUDA_ERROR_FILE_NOT_FOUND,
-	shared_object_init_failed        = CUDA_ERROR_SHARED_OBJECT_INIT_FAILED,
-	jit_compiler_not_found           = CUDA_ERROR_JIT_COMPILER_NOT_FOUND,
+#if CUDA_VERSION >= 11070
+	device_unavailable                   = CUDA_ERROR_DEVICE_UNAVAILABLE,
+#endif
+	no_device                            = CUDA_ERROR_NO_DEVICE,
+	invalid_device                       = CUDA_ERROR_INVALID_DEVICE,
 #if CUDA_VERSION >= 11100
-	unsupported_ptx_version          = CUDA_ERROR_UNSUPPORTED_PTX_VERSION,
+	device_not_licensed                  = CUDA_ERROR_DEVICE_NOT_LICENSED,
+#endif
+	invalid_kernel_image                 = CUDA_ERROR_INVALID_IMAGE,
+	invalid_context                      = CUDA_ERROR_INVALID_CONTEXT,
+	context_already_current              = CUDA_ERROR_CONTEXT_ALREADY_CURRENT,
+	map_buffer_object_failed             = CUDA_ERROR_MAP_FAILED,
+	unmap_buffer_object_failed           = CUDA_ERROR_UNMAP_FAILED,
+	array_still_mapped                   = CUDA_ERROR_ARRAY_IS_MAPPED,
+	resource_already_mapped              = CUDA_ERROR_ALREADY_MAPPED,
+	no_binary_for_this_gpu               = CUDA_ERROR_NO_BINARY_FOR_GPU,
+	resource_already_acquired            = CUDA_ERROR_ALREADY_ACQUIRED,
+	resource_not_mapped                  = CUDA_ERROR_NOT_MAPPED,
+	not_mapped_as_array                  = CUDA_ERROR_NOT_MAPPED_AS_ARRAY,
+	not_mapped_as_pointer                = CUDA_ERROR_NOT_MAPPED_AS_POINTER,
+	ecc_uncorrectable                    = CUDA_ERROR_ECC_UNCORRECTABLE,
+	unsupported_limit                    = CUDA_ERROR_UNSUPPORTED_LIMIT,
+	context_already_in_use               = CUDA_ERROR_CONTEXT_ALREADY_IN_USE,
+	peer_access_unsupported              = CUDA_ERROR_PEER_ACCESS_UNSUPPORTED,
+	invalid_ptx                          = CUDA_ERROR_INVALID_PTX,
+	invalid_graphics_content             = CUDA_ERROR_INVALID_GRAPHICS_CONTEXT,
+	nvlink_uncorrectable                 = CUDA_ERROR_NVLINK_UNCORRECTABLE,
+	jit_compiler_not_found               = CUDA_ERROR_JIT_COMPILER_NOT_FOUND,
+#if CUDA_VERSION >= 11100
+	unsupported_ptx_version              = CUDA_ERROR_UNSUPPORTED_PTX_VERSION,
 #endif
 #if CUDA_VERSION >= 11200
-	jit_compilation_disabled         = CUDA_ERROR_JIT_COMPILATION_DISABLED,
+	jit_compilation_disabled             = CUDA_ERROR_JIT_COMPILATION_DISABLED,
 #endif
-#if CUDA_VERSION >= 11400
-	unsupported_exec_affinity        = CUDA_ERROR_UNSUPPORTED_EXEC_AFFINITY,
+#if CUDA_VERSION >= 11040
+	unsupported_exec_affinity            = CUDA_ERROR_UNSUPPORTED_EXEC_AFFINITY,
 #endif
-	unsupported_limit                = CUDA_ERROR_UNSUPPORTED_LIMIT,
-	duplicate_variable_name          = cudaErrorDuplicateVariableName,
-	duplicate_texture_name           = cudaErrorDuplicateTextureName,
-	duplicate_surface_name           = cudaErrorDuplicateSurfaceName,
-	devices_unavailable              = cudaErrorDevicesUnavailable,
-	invalid_kernel_image             = CUDA_ERROR_INVALID_IMAGE, // corresponds to cudaErrorInvalidKernelImage,
-	no_kernel_image_for_device       = CUDA_ERROR_NO_BINARY_FOR_GPU, // corresponds to cudaErrorNoKernelImageForDevice,
-	incompatible_driver_context      = cudaErrorIncompatibleDriverContext,
-	missing_configuration            = cudaErrorMissingConfiguration,
-	invalid_context                  = CUDA_ERROR_INVALID_CONTEXT,
-	context_already_current          = CUDA_ERROR_CONTEXT_ALREADY_CURRENT,
-	context_already_in_use           = CUDA_ERROR_CONTEXT_ALREADY_IN_USE,
-	peer_access_already_enabled      = CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED,
-	peer_access_not_enabled          = CUDA_ERROR_PEER_ACCESS_NOT_ENABLED,
-	device_already_in_use            = cudaErrorDeviceAlreadyInUse,
-	primary_context_already_active   = CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE,
-	context_is_destroyed             = CUDA_ERROR_CONTEXT_IS_DESTROYED,
-	primary_context_is_uninitialized = CUDA_ERROR_CONTEXT_IS_DESTROYED, // an alias!
-#if CUDA_VERSION >= 10200
-	device_uninitialized             = cudaErrorDeviceUninitialized,
+	unsupported_device_sync_call_in_jit_code
+	                                     = CUDA_ERROR_UNSUPPORTED_DEVSIDE_SYNC,
+#if CUDA_VERSION >= 12080
+	opaque_error_contained_on_device     = CUDA_ERROR_CONTAINED,
 #endif
-	assert                           = CUDA_ERROR_ASSERT,
-	too_many_peers                   = CUDA_ERROR_TOO_MANY_PEERS,
-	host_memory_already_registered   = CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED,
-	host_memory_not_registered       = CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
-	operating_system                 = CUDA_ERROR_OPERATING_SYSTEM,
-	peer_access_unsupported          = CUDA_ERROR_PEER_ACCESS_UNSUPPORTED,
-	launch_max_depth_exceeded        = cudaErrorLaunchMaxDepthExceeded,
-	launch_file_scoped_tex           = cudaErrorLaunchFileScopedTex,
-	launch_file_scoped_surf          = cudaErrorLaunchFileScopedSurf,
-	sync_depth_exceeded              = cudaErrorSyncDepthExceeded,
-	launch_pending_count_exceeded    = cudaErrorLaunchPendingCountExceeded,
-	invalid_device_function          = cudaErrorInvalidDeviceFunction,
-	not_permitted                    = CUDA_ERROR_NOT_PERMITTED,
-	not_supported                    = CUDA_ERROR_NOT_SUPPORTED,
-	hardware_stack_error             = CUDA_ERROR_HARDWARE_STACK_ERROR,
-	illegal_instruction              = CUDA_ERROR_ILLEGAL_INSTRUCTION,
-	misaligned_address               = CUDA_ERROR_MISALIGNED_ADDRESS,
-	exception_during_kernel_execution = CUDA_ERROR_LAUNCH_FAILED,
-	cooperative_launch_too_large     = CUDA_ERROR_COOPERATIVE_LAUNCH_TOO_LARGE,
-	invalid_address_space            = CUDA_ERROR_INVALID_ADDRESS_SPACE,
-	invalid_pc                       = CUDA_ERROR_INVALID_PC,
-	illegal_address                  = CUDA_ERROR_ILLEGAL_ADDRESS,
-	invalid_ptx                      = CUDA_ERROR_INVALID_PTX,
-	invalid_graphics_context         = CUDA_ERROR_INVALID_GRAPHICS_CONTEXT,
-	nvlink_uncorrectable             = CUDA_ERROR_NVLINK_UNCORRECTABLE,
-	startup_failure                  = cudaErrorStartupFailure,
-	api_failure_base                 = cudaErrorApiFailureBase,
+	invalid_kernel_source                = CUDA_ERROR_INVALID_SOURCE,
+	file_not_found                       = CUDA_ERROR_FILE_NOT_FOUND,
+	shared_object_symbol_not_found       = CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND,
+	shared_object_init_failed            = CUDA_ERROR_SHARED_OBJECT_INIT_FAILED,
+	system_call_failed                   = CUDA_ERROR_OPERATING_SYSTEM,
+	invalid_resource_handle              = CUDA_ERROR_INVALID_HANDLE,
 #if CUDA_VERSION >= 10000
-	system_not_ready                 = CUDA_ERROR_SYSTEM_NOT_READY,
-	stream_capture_unsupported       = CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED,
-	stream_capture_invalidated       = CUDA_ERROR_STREAM_CAPTURE_INVALIDATED,
-	stream_capture_merge             = CUDA_ERROR_STREAM_CAPTURE_MERGE,
-	stream_capture_unmatched         = CUDA_ERROR_STREAM_CAPTURE_UNMATCHED,
-	stream_capture_unjoined          = CUDA_ERROR_STREAM_CAPTURE_UNJOINED,
-	stream_capture_isolation         = CUDA_ERROR_STREAM_CAPTURE_ISOLATION,
-	stream_capture_disallowed_implicit_dependency = CUDA_ERROR_STREAM_CAPTURE_IMPLICIT,
-	not_permitted_on_captured_event  = CUDA_ERROR_CAPTURED_EVENT,
+	resource_not_in_valid_state          = CUDA_ERROR_ILLEGAL_STATE,
+#endif
+	introspection_would_discard_info     = CUDA_ERROR_LOSSY_QUERY,
+	named_symbol_not_found               = CUDA_ERROR_NOT_FOUND,
+	async_dependency_ops_not_yet_completed
+	                                     = CUDA_ERROR_NOT_READY,
+	invalid_address_in_load_or_store     = CUDA_ERROR_ILLEGAL_ADDRESS,
+	too_many_args_or_grid_threads_for_launch
+	                                     = CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES,
+	kernel_launch_timed_out              = CUDA_ERROR_LAUNCH_TIMEOUT,
+	kernel_uses_incompatible_texturing_mode
+	                                     = CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING,
+	peer_access_already_enabled          = CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED,
+	peer_access_already_disabled         = CUDA_ERROR_PEER_ACCESS_NOT_ENABLED,
+	primary_context_already_active       = CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE,
+	context_is_destroyed                 = CUDA_ERROR_CONTEXT_IS_DESTROYED,
+	assert                               = CUDA_ERROR_ASSERT,
+	too_many_peers                       = CUDA_ERROR_TOO_MANY_PEERS,
+	host_memory_already_registered       = CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED,
+	host_memory_not_registered           = CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
+	hardware_stack_error                 = CUDA_ERROR_HARDWARE_STACK_ERROR,
+	illegal_instruction                  = CUDA_ERROR_ILLEGAL_INSTRUCTION,
+	misaligned_address                   = CUDA_ERROR_MISALIGNED_ADDRESS,
+	invalid_address_space                = CUDA_ERROR_INVALID_ADDRESS_SPACE,
+	invalid_pc                           = CUDA_ERROR_INVALID_PC,
+	exception_during_kernel_execution    = CUDA_ERROR_LAUNCH_FAILED, // Not clear whether it's during scheduling, launch or execution
+	cooperative_kernel_launch_grid_too_large
+	                                     = CUDA_ERROR_COOPERATIVE_LAUNCH_TOO_LARGE,
+#if CUDA_VERSION >= 12800
+	kernel_allocated_tensor_memory_not_freed
+	                                     = CUDA_ERROR_TENSOR_MEMORY_LEAK,
+#endif
+	not_permitted                        = CUDA_ERROR_NOT_PERMITTED,
+	not_supported                        = CUDA_ERROR_NOT_SUPPORTED,
+#if CUDA_VERSION >= 10000
+	system_not_ready                     = CUDA_ERROR_SYSTEM_NOT_READY,
 #endif
 #if CUDA_VERSION >= 10100
-	system_driver_mismatch           = CUDA_ERROR_SYSTEM_DRIVER_MISMATCH,
-	not_supported_on_device          = CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE,
-	stream_capture_wrong_thread      = CUDA_ERROR_STREAM_CAPTURE_WRONG_THREAD,
+	system_cuda_and_display_drivers_mismatch
+	                                     = CUDA_ERROR_SYSTEM_DRIVER_MISMATCH,
+#endif
+	not_supported_on_device              = CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE,
+#if CUDA_VERSION >= 11040
+	failure_connecting_to_mps_server     = CUDA_ERROR_MPS_CONNECTION_FAILED,
+	mps_client_rpc_call_failed           = CUDA_ERROR_MPS_RPC_FAILURE,
+	mps_server_not_ready_for_new_client_request
+	                                     = CUDA_ERROR_MPS_SERVER_NOT_READY,
+	resources_to_create_mps_clients_exhausted
+	                                     = CUDA_ERROR_MPS_MAX_CLIENTS_REACHED,
+	resources_for_mps_device_connections_exhausted
+	                                     = CUDA_ERROR_MPS_MAX_CONNECTIONS_REACHED,
+#endif
+	mps_client_terminated_by_server      = CUDA_ERROR_MPS_CLIENT_TERMINATED,
+	dynamic_parallelism_not_supported    = CUDA_ERROR_CDP_NOT_SUPPORTED,
+	dynamic_parallelism_version_mismatch = CUDA_ERROR_CDP_VERSION_MISMATCH,
+#if CUDA_VERSION >= 10000
+	stream_capture_unsupported           = CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED,
+	stream_capture_invalidated           = CUDA_ERROR_STREAM_CAPTURE_INVALIDATED,
+	stream_capture_merge                 = CUDA_ERROR_STREAM_CAPTURE_MERGE,
+	stream_capture_unmatched             = CUDA_ERROR_STREAM_CAPTURE_UNMATCHED,
+	stream_capture_unjoined              = CUDA_ERROR_STREAM_CAPTURE_UNJOINED,
+	stream_capture_isolation             = CUDA_ERROR_STREAM_CAPTURE_ISOLATION,
+	stream_capture_disallowed_implicit_dependency
+	                                     = CUDA_ERROR_STREAM_CAPTURE_IMPLICIT,
+	not_permitted_on_captured_event      = CUDA_ERROR_CAPTURED_EVENT,
+#endif
+#if CUDA_VERSION >= 10100
+	wrong_thread_for_ending_stream_capture
+	                                     = CUDA_ERROR_STREAM_CAPTURE_WRONG_THREAD,
 #endif
 #if CUDA_VERSION >= 10200
-	timeout_lapsed                   = CUDA_ERROR_TIMEOUT,
-	graph_update_would_violate_constraints = CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE,
+	specified_timeout_lapsed             = CUDA_ERROR_TIMEOUT,
+	graph_update_would_violate_constraints
+	                                     = CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE,
 #endif
-#if CUDA_VERSION >= 11400
-	mps_connection_failed            = CUDA_ERROR_MPS_CONNECTION_FAILED,
-	mps_rpc_failure                  = CUDA_ERROR_MPS_RPC_FAILURE,
-	mps_server_not_ready             = CUDA_ERROR_MPS_SERVER_NOT_READY,
-	mps_max_clients_reached          = CUDA_ERROR_MPS_MAX_CLIENTS_REACHED,
-	mps_max_connections_reached      = CUDA_ERROR_MPS_MAX_CONNECTIONS_REACHED,
-	async_error_in_external_device   = CUDA_ERROR_EXTERNAL_DEVICE,
-#endif // CUDA_VERSION >= 11400
+#if CUDA_VERSION >= 11040
+	async_error_on_external_device       = CUDA_ERROR_EXTERNAL_DEVICE,
+#endif // CUDA_VERSION >= 11040
 #if CUDA_VERSION >= 12000
-	invalid_cluster_size             = CUDA_ERROR_INVALID_CLUSTER_SIZE,
+	invalid_cluster_size                 = CUDA_ERROR_INVALID_CLUSTER_SIZE,
 #endif // CUDA_VERSION >= 12000
 #if CUDA_VERSION >= 12040
-	necessary_function_not_loaded    = CUDA_ERROR_FUNCTION_NOT_LOADED,
-	invalid_resource_type            = CUDA_ERROR_INVALID_RESOURCE_TYPE,
-	resources_insufficient_or_inapplicable
-									 = CUDA_ERROR_INVALID_RESOURCE_CONFIGURATION,
+	necessary_function_not_loaded        = CUDA_ERROR_FUNCTION_NOT_LOADED,
+	invalid_resource_type                = CUDA_ERROR_INVALID_RESOURCE_TYPE,
+	resources_insufficient_or_inapplicable = CUDA_ERROR_INVALID_RESOURCE_CONFIGURATION,
 #endif // CUDA_VERSION >= 12040
 #if CUDA_VERSION >= 12080
-	key_rotation_sequence_failure    = CUDA_ERROR_KEY_ROTATION,
+	key_rotation_sequence_failure        = CUDA_ERROR_KEY_ROTATION,
 #endif // CUDA_VERSION >= 12080
 #if CUDA_VERSION >= 13010
-	not_permitted_on_detached_stream = CUDA_ERROR_STREAM_DETACHED,
-#endif // CUDA_VERSION >= 13010
+	not_permitted_on_detached_stream     = CUDA_ERROR_STREAM_DETACHED,
+#endif
+#if CUDA_VERSION >= 13030
+	graph_recapture_failure              = CUDA_ERROR_GRAPH_RECAPTURE_FAILURE,
+#endif
+	unknown                              = CUDA_ERROR_UNKNOWN,
+
+	// Other errors, only defined in the Runtime API headers.
+	// TODO: Consider adding named constants for more of these
+
+	invalid_configuration                = cudaErrorInvalidConfiguration,
+
+	invalid_pitch_value                  = cudaErrorInvalidPitchValue,
+	invalid_symbol                       = cudaErrorInvalidSymbol,
+	invalid_host_pointer                 = cudaErrorInvalidHostPointer,
+	invalid_device_pointer               = cudaErrorInvalidDevicePointer,
+	invalid_texture                      = cudaErrorInvalidTexture,
+	invalid_texture_binding              = cudaErrorInvalidTextureBinding,
+	invalid_channel_descriptor           = cudaErrorInvalidChannelDescriptor,
+	invalid_memcpy_direction             = cudaErrorInvalidMemcpyDirection,
+	address_of_constant                  = cudaErrorAddressOfConstant,
+	texture_fetch_failed                 = cudaErrorTextureFetchFailed,
+	texture_not_bound                    = cudaErrorTextureNotBound,
+	synchronization_error                = cudaErrorSynchronizationError,
+	invalid_filter_setting               = cudaErrorInvalidFilterSetting,
+	invalid_norm_setting                 = cudaErrorInvalidNormSetting,
+	mixed_device_execution               = cudaErrorMixedDeviceExecution,
+	not_yet_implemented                  = cudaErrorNotYetImplemented,
+	memory_value_too_large               = cudaErrorMemoryValueTooLarge,
+
+	driver_too_old_for_cuda_runtime      = cudaErrorInsufficientDriver,
+	invalid_surface                      = cudaErrorInvalidSurface,
+	prior_launch_failure                 = cudaErrorPriorLaunchFailure,
+	invalid_kernel_function              = cudaErrorInvalidDeviceFunction,
+	devices_unavailable                  = cudaErrorDevicesUnavailable,
+
+	missing_configuration                = cudaErrorMissingConfiguration,
+
+	launch_max_depth_exceeded            = cudaErrorLaunchMaxDepthExceeded,
+	launch_file_scoped_tex               = cudaErrorLaunchFileScopedTex,
+	launch_file_scoped_surfaces          = cudaErrorLaunchFileScopedSurf,
+	sync_depth_exceeded                  = cudaErrorSyncDepthExceeded,
+	launch_pending_count_exceeded        = cudaErrorLaunchPendingCountExceeded,
+
+	invalid_device_function              = cudaErrorInvalidDeviceFunction,
+
+	runtime_startup_failure              = cudaErrorStartupFailure,
+
+#if CUDA_VERSION >= 10200
+	device_not_initialized_for_runtime   = cudaErrorDeviceUninitialized, // see also not_yet_initialized
+#endif
+
+	set_on_active_process                = cudaErrorSetOnActiveProcess,
 };
 
 ///@cond
