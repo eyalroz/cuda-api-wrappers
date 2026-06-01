@@ -187,7 +187,7 @@ public: // other non-mutator methods
 	{
 		auto status = cuEventQuery(handle_);
 		if (status == status::success) return true;
-		if (status == status::async_operations_not_yet_completed) return false;
+		if (status == status::async_dependency_ops_not_yet_completed) return false;
 		throw runtime_error(status,
 			"Could not determine whether " + event::detail_::identify(handle_)
 			+ "has already occurred or not");
