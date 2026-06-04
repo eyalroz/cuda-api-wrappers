@@ -17,32 +17,32 @@ namespace device {
 
 // compute_architecture_t-related functions
 
-inline constexpr bool compute_architecture_t::is_valid() const noexcept
+constexpr bool compute_architecture_t::is_valid() const noexcept
 {
 	return (major > 0) and (major < 9999); // Picked this up from somewhere in the CUDA code
 }
 
-inline constexpr bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator ==(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major == rhs.major;
 }
-inline constexpr bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator !=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major != rhs.major;
 }
-inline constexpr bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator <(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major < rhs.major;
 }
-inline constexpr bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator <=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major < rhs.major;
 }
-inline constexpr bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator >(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major > rhs.major;
 }
-inline constexpr bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
+constexpr bool operator >=(const compute_architecture_t& lhs, const compute_architecture_t& rhs) noexcept
 {
 	return lhs.major > rhs.major;
 }
@@ -70,7 +70,7 @@ inline const char* ensure_cc_attribute_validity<const char*>(const char* v, cons
 	return v;
 }
 
-inline constexpr const char* architecture_name(const compute_architecture_t& arch)
+constexpr const char* architecture_name(const compute_architecture_t& arch)
 {
 	return
 		(arch.major ==  1) ? "Tesla" :
@@ -102,51 +102,51 @@ inline const char* compute_architecture_t::name() const {
 
 // compute_capability_t-related
 
-inline constexpr bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator ==(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() == rhs.major() and lhs.minor_ == rhs.minor_;
 }
-inline constexpr bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator !=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() != rhs.major() or lhs.minor_ != rhs.minor_;
 }
-inline constexpr bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator <(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ < rhs.minor_);
 }
-inline constexpr bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator <=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() < rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ <= rhs.minor_);
 }
-inline constexpr bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator >(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ > rhs.minor_);
 }
-inline constexpr bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
+constexpr bool operator >=(const compute_capability_t& lhs, const compute_capability_t& rhs) noexcept
 {
 	return lhs.major() > rhs.major() or (lhs.major() == rhs.major() and lhs.minor_ >= rhs.minor_);
 }
 
-inline constexpr bool compute_capability_t::is_valid() const noexcept
+constexpr bool compute_capability_t::is_valid() const noexcept
 {
 	return architecture.is_valid() and (minor_ > 0) and (minor_ < 9999);
 		// Picked this up from the CUDA code somewhere
 }
 
-inline constexpr compute_capability_t compute_capability_t::from_combined_number(unsigned combined) noexcept
+constexpr compute_capability_t compute_capability_t::from_combined_number(unsigned combined) noexcept
 {
 	return  compute_capability_t{ { combined / 10 }, combined % 10 };
 }
 
-inline constexpr unsigned compute_capability_t::as_combined_number() const noexcept { return major() * 10 + minor_; }
+constexpr unsigned compute_capability_t::as_combined_number() const noexcept { return major() * 10 + minor_; }
 
 
-inline constexpr compute_capability_t make_compute_capability(unsigned combined) noexcept
+constexpr compute_capability_t make_compute_capability(unsigned combined) noexcept
 {
 	return compute_capability_t::from_combined_number(combined);
 }
 
-inline constexpr compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept
+constexpr compute_capability_t make_compute_capability(unsigned major, unsigned minor) noexcept
 {
 	return { {major}, minor };
 }
@@ -154,7 +154,7 @@ inline constexpr compute_capability_t make_compute_capability(unsigned major, un
 namespace detail_ {
 
 // Based on `_ConvertSMVer2Cores()` from the CUDA samples
-inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
+constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
 {
 	return
 		(cc.architecture.major == 1)     ?   8 :
@@ -174,7 +174,7 @@ inline constexpr unsigned max_in_flight_threads_per_processor(const compute_capa
 		invalid_compute_capability_return;
 }
 
-inline constexpr unsigned num_sm_partitions(const compute_capability_t& cc)
+constexpr unsigned num_sm_partitions(const compute_capability_t& cc)
 {
 	return
 		(cc.architecture.major ==  1)    ?  1 :
@@ -184,7 +184,7 @@ inline constexpr unsigned num_sm_partitions(const compute_capability_t& cc)
 		invalid_compute_capability_return;
 }
 
-inline constexpr unsigned num_schedulers_per_sm_partition(const compute_capability_t& cc)
+constexpr unsigned num_schedulers_per_sm_partition(const compute_capability_t& cc)
 {
 	return
 		(cc.architecture.major ==  1)    ?  1 :
@@ -195,12 +195,12 @@ inline constexpr unsigned num_schedulers_per_sm_partition(const compute_capabili
 		invalid_compute_capability_return;
 }
 
-inline constexpr unsigned num_schedulers_per_sm(const compute_capability_t& cc)
+constexpr unsigned num_schedulers_per_sm(const compute_capability_t& cc)
 {
 	return num_sm_partitions(cc) * num_schedulers_per_sm(cc);
 }
 
-inline constexpr unsigned max_num_instructions_per_scheduler_cycle(const compute_capability_t& cc)
+constexpr unsigned max_num_instructions_per_scheduler_cycle(const compute_capability_t& cc)
 {
 	return
 		(cc.architecture.major   ==  1)  ?  2 :
@@ -228,7 +228,7 @@ inline constexpr unsigned max_num_instructions_per_scheduler_cycle(const compute
  *
  * for details, see the CUDA C++ Programming Guide v12.8, section 16.6.4
  */
-inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t& cc)
+constexpr unsigned max_shared_memory_per_block(const compute_capability_t& cc)
 {
 	// Based on table 24 in the CUDA C++ Programming Guide
 	return
@@ -253,7 +253,7 @@ inline constexpr unsigned max_shared_memory_per_block(const compute_capability_t
 }
 
 
-inline constexpr unsigned max_resident_warps_per_processor(const compute_capability_t& cc) noexcept
+constexpr unsigned max_resident_warps_per_processor(const compute_capability_t& cc) noexcept
 {
 	// Based on table 24 in the CUDA C++ Programming Guide
 	return

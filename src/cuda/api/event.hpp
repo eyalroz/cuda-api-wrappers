@@ -69,7 +69,7 @@ inline void enqueue(context::handle_t context_handle, stream::handle_t stream_ha
 
 using flags_t = unsigned int;
 
-constexpr flags_t inline make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
+constexpr flags_t make_flags(bool uses_blocking_sync, bool records_timing, bool interprocess)
 {
 	return
 		  ( uses_blocking_sync  ? CU_EVENT_BLOCKING_SYNC : 0  )
