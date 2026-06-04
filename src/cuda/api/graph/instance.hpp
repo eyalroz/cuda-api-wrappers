@@ -48,10 +48,10 @@ enum named_t : std::underlying_type<update_status_t>::type {
 #endif // CUDA_VERSION >= 11020
 };
 
-constexpr inline bool operator==(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs == static_cast<update_status_t>(rhs); }
-constexpr inline bool operator!=(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs != static_cast<update_status_t>(rhs); }
-constexpr inline bool operator==(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) == rhs; }
-constexpr inline bool operator!=(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) != rhs; }
+constexpr bool operator==(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs == static_cast<update_status_t>(rhs); }
+constexpr bool operator!=(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs != static_cast<update_status_t>(rhs); }
+constexpr bool operator==(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) == rhs; }
+constexpr bool operator!=(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) != rhs; }
 
 namespace detail_ {
 
@@ -146,7 +146,7 @@ std::string describe(graph::instance::update_status_t update_status, optional<gr
 /**
  * @brief Determine whether the API call returning the specified status had succeeded
  */
-inline constexpr bool is_success(graph::instance::update_status_t status)
+constexpr bool is_success(graph::instance::update_status_t status)
 { 
 	return status == graph::instance::update_status::success;
 }
