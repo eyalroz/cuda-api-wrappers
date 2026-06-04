@@ -403,19 +403,19 @@ struct dimensions_t // this almost-inherits dim3
 };
 
 ///@cond
-constexpr inline bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr inline bool operator!=(const dim3& lhs, const dim3& rhs) noexcept
+constexpr bool operator!=(const dim3& lhs, const dim3& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
-constexpr inline bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr inline bool operator!=(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr bool operator!=(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -596,10 +596,10 @@ struct permissions_t {
 
 namespace permissions {
 
-constexpr inline permissions_t none()           { return permissions_t{ false, false }; }
-constexpr inline permissions_t read_only()      { return permissions_t{ true,  false }; }
-constexpr inline permissions_t write_only()     { return permissions_t{ false, true  }; }
-constexpr inline permissions_t read_and_write() { return permissions_t{ true,  true  }; }
+constexpr permissions_t none()           { return permissions_t{ false, false }; }
+constexpr permissions_t read_only()      { return permissions_t{ true,  false }; }
+constexpr permissions_t write_only()     { return permissions_t{ false, true  }; }
+constexpr permissions_t read_and_write() { return permissions_t{ true,  true  }; }
 
 namespace detail_ {
 

@@ -103,7 +103,7 @@ inline void set_limit(limit_t limit_id, limit_value_t new_value)
 	throw_if_error_lazy(status, "Failed obtaining CUDA context limit value");
 }
 
-constexpr flags_t inline make_flags(
+constexpr flags_t make_flags(
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
