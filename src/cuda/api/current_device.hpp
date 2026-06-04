@@ -135,27 +135,7 @@ inline void set(id_t device_id)
 }
 ///@}
 
-/**
- * Set the first possible of several devices to be the current one for the CUDA Runtime API.
- *
- * @param[in] device_ids Numeric IDs of the devices to try and make current, in order
- * @param[in] num_devices The number of device IDs pointed to by @device_ids
- *
- * @note this replaces the current CUDA context (rather than pushing a context
- * onto the stack), so use with care.
- */
-inline void set(const id_t *device_ids, size_t num_devices)
-{
-	if (num_devices > static_cast<size_t>(cuda_::device::count())) {
-		throw cuda_::runtime_error(status::invalid_device, "More devices listed than exist on the system");
-	}
-	auto result = cudaSetValidDevices(const_cast<int *>(device_ids), static_cast<int>(num_devices));
-	throw_if_error_lazy(result,
-		"Failure setting the current device to any of the list of "
-		+ std::to_string(num_devices) + " devices specified");
-}
-
-} // namespace detail
+} // namespace detail_
 
 /**
  * Tells the CUDA runtime API to consider the specified device as the current one.
