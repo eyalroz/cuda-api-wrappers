@@ -144,17 +144,16 @@ public: // operators
 
 	~texture_view() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-#ifdef THROW_IN_DESTRUCTORS
-			try
+		if (not owning_) { return; }
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		try
 #endif
-			{
-				texture::detail_::destroy_view(raw_view_handle, context_handle_);
-			}
-#ifdef THROW_IN_DESTRUCTORS
-			catch (...) {}
-#endif
+		{
+			texture::detail_::destroy_view(raw_view_handle, context_handle_);
 		}
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
 	}
 
 	texture_view& operator=(const texture_view& other) = delete;

@@ -48,7 +48,7 @@
 #endif
 #endif // NOEXCEPT_IF_NDEBUG
 
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 #define DESTRUCTOR_EXCEPTION_SPEC noexcept(false)
 #else
 #define DESTRUCTOR_EXCEPTION_SPEC noexcept

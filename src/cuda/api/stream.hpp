@@ -929,18 +929,16 @@ public: // constructors and destructor
 
 	~stream_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-#if THROW_IN_DESTRUCTORS
-			stream::detail_::destroy(handle_, context_handle_, device_id_);
+		if (not owning_) { return; }
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		stream::detail_::destroy(handle_, context_handle_, device_id_);
 #else
-			stream::detail_::destroy_nothrow(handle_, context_handle_);
+		stream::detail_::destroy_nothrow(handle_, context_handle_);
 #endif
-		}
 		if (holds_pc_refcount_unit_) {
 			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
 	}
-
 public: // operators
 
 	stream_t& operator=(const stream_t& other) = delete;

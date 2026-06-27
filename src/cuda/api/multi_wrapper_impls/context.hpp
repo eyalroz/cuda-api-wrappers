@@ -86,13 +86,13 @@ inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, 
 
 inline scoped_override_t::~scoped_override_t() DESTRUCTOR_EXCEPTION_SPEC
 {
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 	pop();
 #else
 	pop_and_discard_nothrow();
 #endif
 	if (hold_primary_context_ref_unit_) {
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		device::primary_context::detail_::decrease_refcount(device_id_or_0_);
 #else
 		device::primary_context::detail_::decrease_refcount_nothrow(device_id_or_0_);
@@ -168,7 +168,7 @@ public:
 	~scoped_existence_ensurer_t()
 	{
 		if (context_handle != context::detail_::none and decrease_pc_refcount_on_destruct_) {
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 			context::current::detail_::pop();
 			device::primary_context::detail_::decrease_refcount(device_id_);
 #else

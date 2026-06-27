@@ -140,7 +140,7 @@ public: // constructors & destructors
 	~imported_ptr_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		detail_::unmap(ptr_);
 #else
 		detail_::unmap_nothrow(ptr_);

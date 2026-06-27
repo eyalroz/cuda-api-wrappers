@@ -65,7 +65,7 @@ public: // constructors & destructor
 	~imported_ptr_t() noexcept(false)
 	{
 		if (not owning_) { return; }
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		try
 #endif
 		{
@@ -76,7 +76,7 @@ public: // constructors & destructor
 				device::free(ptr_);
 			}
 		}
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
 #endif
 	}
