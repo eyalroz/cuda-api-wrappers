@@ -161,7 +161,7 @@ public:
 	~reserved_address_range_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		detail_::cancel_reservation(region_);
 #else
 		detail_::cancel_reservation_nothrow(region_);
@@ -224,7 +224,7 @@ public: // constructors & destructor
 	{
 		if (not holds_refcount_unit_) { return; }
 		auto status = cuMemRelease(handle_);
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		throw_if_error_lazy(status, "Failed making a virtual memory physical_allocation of size " + std::to_string(size_));
 #else
 		(void) status;

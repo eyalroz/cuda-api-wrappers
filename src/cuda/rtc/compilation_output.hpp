@@ -388,7 +388,7 @@ public: // constructors & destructor
 	{
 		if (not owns_handle_) { return; }
 		auto status = program::detail_::destroy_and_return_status<Kind>(program_handle_);
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		throw_if_error<Kind>(status, "Destroying " + program::detail_::identify<Kind>(program_handle_, program_name_.c_str()));
 #endif
 	}

@@ -283,13 +283,13 @@ public:
 	scope() { start(); }
 	~scope()
 	{
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		try
 #endif
 		{
 			stop();
 		}
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
 #endif
 	}

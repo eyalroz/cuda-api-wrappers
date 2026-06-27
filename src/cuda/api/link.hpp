@@ -231,13 +231,13 @@ public: // constructors and destructor
 	~link_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning) { return; }
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		try
 #endif
 		{
 			link::detail_::destroy(handle_, context_handle_, device_id_);
 		}
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
 #endif
 	}

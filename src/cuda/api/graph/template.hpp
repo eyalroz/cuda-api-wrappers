@@ -766,7 +766,7 @@ public: // ctors & dtor
 	{
 		if (owning_) {
 			auto status = cuGraphDestroy(handle_);
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 			throw_if_error_lazy(status, "Destroying " + template_::detail_::identify(*this));
 #else
 			(void) status;

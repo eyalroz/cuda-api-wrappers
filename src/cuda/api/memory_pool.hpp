@@ -420,7 +420,7 @@ public: // construction & destruction
 	~pool_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		pool::detail_::destroy(handle_);
 #else
 		memory::pool::detail_::destroy_nothrow(handle_);

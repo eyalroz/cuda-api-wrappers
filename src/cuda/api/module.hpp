@@ -237,17 +237,16 @@ public: // constructors and destructor
 	// primary contexts
 	~module_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-#ifdef THROW_IN_DESTRUCTORS
-			try
+		if (not owning_) { return; }
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		try
 #endif
-			{
-				module::detail_::unload(handle_, context_handle_, device_id_);
-			}
-#ifdef THROW_IN_DESTRUCTORS
-			catch (...) {}
-#endif
+		{
+			module::detail_::unload(handle_, context_handle_, device_id_);
 		}
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		catch (...) {}
+#endif
 		if (holds_pc_refcount_unit_) {
 			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
 		}
