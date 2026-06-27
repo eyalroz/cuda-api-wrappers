@@ -228,13 +228,13 @@ public:
 	~array_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not handle_) { return; }
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		try
 #endif
 		{
 			array::detail_::destroy(handle_, context_handle_);
 		}
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
 #endif
 	}

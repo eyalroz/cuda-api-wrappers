@@ -123,7 +123,7 @@ public:
 	~resource_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		detail_::destroy(handle_, descriptor_);
 #else
 		detail_::destroy(handle_, descriptor_);

@@ -271,14 +271,13 @@ public: // constructors & destructor
 	}
 	~instance_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
-		if (owning_) {
-			auto status = cuGraphExecDestroy(handle_);
-#if THROW_IN_DESTRUCTORS
-			throw_if_error_lazy(status, "Destroying " + instance::detail_::identify(*this));
+		if (not owning_) { return; }
+		auto status = cuGraphExecDestroy(handle_);
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		throw_if_error_lazy(status, "Destroying " + instance::detail_::identify(*this));
 #else
-			(void) status;
+		(void) status;
 #endif
-		}
 	}
 
 public: // operators

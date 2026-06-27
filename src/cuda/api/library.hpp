@@ -191,7 +191,7 @@ public: // constructors and destructor
 	~library_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		library::detail_::unload(handle_);
 #else
 		library::detail_::unload_nothrow(handle_);

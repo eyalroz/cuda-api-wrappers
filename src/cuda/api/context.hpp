@@ -733,7 +733,7 @@ public: // constructors and destructor
 	~context_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		context::detail_::destroy(handle_, device_id_);
 #else
 		context::detail_::destroy_nothrow(handle_);

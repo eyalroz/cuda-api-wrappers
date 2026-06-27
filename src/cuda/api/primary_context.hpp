@@ -58,10 +58,10 @@ inline void decrease_refcount(device::id_t device_id)
 }
 
 // Use this in destructors whose throwing behavior is controlled by the
-// preprocessor definition THROW_IN_DESTRUCTORS
+// preprocessor definition CAW_THROW_IN_DESTRUCTORS
 inline void decrease_refcount_in_dtor(device::id_t device_id) noexcept
 {
-#if THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 	decrease_refcount(device_id);
 #else
 	decrease_refcount_nothrow(device_id);

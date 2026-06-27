@@ -201,7 +201,7 @@ public: // constructors and destructor
 		if (not owning) { return; }
 
 		auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
-#ifdef THROW_IN_DESTRUCTORS
+#ifdef CAW_THROW_IN_DESTRUCTORS
 		throw_if_error_lazy(status,
 			std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
 			" in " + fatbin_builder::detail_::identify(handle_));

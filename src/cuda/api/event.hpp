@@ -280,13 +280,13 @@ public: // constructors and destructor
 	~event_t() DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 			try
 #endif
 			{
 				event::detail_::destroy(handle_, context_handle_, device_id_);
 			}
-#ifndef THROW_IN_DESTRUCTORS
+#ifndef CAW_THROW_IN_DESTRUCTORS
 			catch (...) {}
 #endif
 		}
