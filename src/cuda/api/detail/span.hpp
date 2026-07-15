@@ -52,6 +52,8 @@ struct span {
 	size_type     size() const noexcept { return size_; }
 	bool          empty() const noexcept { return size() == 0; }
 
+	span subspan(size_type offset, size_type count) const noexcept { return span{data_ + offset, count}; }
+
 	// About cbegin() and cend() for spans, see:
 	// https://stackoverflow.com/q/62757700/1593077
 	// (for which reason, they're not implemented here)
