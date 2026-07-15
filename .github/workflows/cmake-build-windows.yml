@@ -31,25 +31,25 @@ jobs:
         include:
           - os: windows-2025
             cuda: "13.3.0"
-            visual-studio: "Visual Studio 17 2022"
+            visual-studio: "Visual Studio 18 2026"
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
           - os: windows-2025
             cuda: "13.2.1"
-            visual-studio: "Visual Studio 17 2022"
+            visual-studio: "Visual Studio 18 2026"
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
           - os: windows-2025
             cuda: "13.1.2"
-            visual-studio: "Visual Studio 17 2022"
+            visual-studio: "Visual Studio 18 2026"
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
           - os: windows-2025
             cuda: "13.0.3"
-            visual-studio: "Visual Studio 17 2022"
+            visual-studio: "Visual Studio 18 2026"
             shell: "powershell"
             os-type: "windows"
             cmake-platform-flag: "-A x64"
