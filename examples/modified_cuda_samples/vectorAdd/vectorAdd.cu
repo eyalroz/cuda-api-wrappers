@@ -1,7 +1,7 @@
 /**
  * Derived from the nVIDIA CUDA 8.0 samples by
  *
- *   Eyal Rozenberg
+ *   Eyal Rozenberg <eyalroz1@gmx.com>
  *
  * The derivation is specifically permitted in the nVIDIA CUDA Samples EULA
  * and the deriver is the owner of this code according to the EULA.
