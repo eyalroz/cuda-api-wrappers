@@ -39,6 +39,7 @@
 #include <cuda/api.hpp>
 #include <cuda/rtc.hpp>
 
+#include "../../string_view.hpp"
 #include "../../type_name.hpp"
 
 #include <cassert>
