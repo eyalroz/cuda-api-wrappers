@@ -261,6 +261,15 @@ if( NOT MSVC )
 	endforeach()
 endif()
 add_executable(jitify other/jitify/jitify.cpp)
+if (MSVC)
+	set_target_properties(jitify PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON
+		CXX_EXTENSIONS OFF)
+	# Note: This requirement should not be necessary; but we're getting errors with MSVC somehow,
+	# failing to recognize string_view
+endif()
+
 set(jitify_headers_target_dir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/example_headers)
 file(MAKE_DIRECTORY ${jitify_headers_target_dir})
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${jitify_headers_target_dir})
