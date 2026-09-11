@@ -20,11 +20,11 @@
 #include <ciso646>
 #endif
 
-#ifndef CPP14_CONSTEXPR
+#ifndef CONSTEXPR_CPP14
 #if __cplusplus >= 201402L
-#define CPP14_CONSTEXPR constexpr
+#define CONSTEXPR_CPP14 constexpr
 #else
-#define CPP14_CONSTEXPR
+#define CONSTEXPR_CPP14
 #endif
 #endif
 

@@ -135,8 +135,8 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
 		: dimensions_t(linear_size, 1, 1) { }
 
-	CPP14_CONSTEXPR dimensions_t& operator=(const dimensions_t& other) = default;
-	CPP14_CONSTEXPR dimensions_t& operator=(dimensions_t&& other) = default;
+	CONSTEXPR_CPP14 dimensions_t& operator=(const dimensions_t& other) = default;
+	CONSTEXPR_CPP14 dimensions_t& operator=(dimensions_t&& other) = default;
 
 	constexpr __host__ __device__ operator cudaExtent() const
 	{
@@ -183,13 +183,13 @@ struct dimensions_t<2>
 	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
 		: dimensions_t(linear_size, 1) { }
 
-	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	CONSTEXPR_CPP14 __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
 	{
 		width = other.width; height = other.height;
 		return *this;
 
 	}
-	CPP14_CONSTEXPR __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
+	CONSTEXPR_CPP14 __host__ __device__ dimensions_t& operator=(dimensions_t&& other)
 	{
 		width = other.width; height = other.height;
 		return *this;
@@ -394,7 +394,7 @@ struct dimensions_t // this almost-inherits dim3
                (i == 1) ? y :
                z;
     }
-    CPP14_CONSTEXPR dimension_t& operator[](int i) noexcept {
+    CONSTEXPR_CPP14 dimension_t& operator[](int i) noexcept {
         return (i == 0) ? x :
                (i == 1) ? y :
                z;
@@ -466,8 +466,8 @@ struct overall_dimensions_t
 	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t dims) noexcept
 		: overall_dimensions_t(dims.x, dims.y, dims.z) { }
 
-	CPP14_CONSTEXPR overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
-	CPP14_CONSTEXPR overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept = default;
+	CONSTEXPR_CPP14 overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
+	CONSTEXPR_CPP14 overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept = default;
 
 	constexpr __host__ __device__ size_t volume() const noexcept { return x * y * z; }
 	constexpr __host__ __device__ size_t size() const noexcept { return volume(); }
@@ -485,7 +485,7 @@ struct overall_dimensions_t
                (i == 1) ? y :
                z;
     }
-    CPP14_CONSTEXPR dimension_type& operator[](int i) noexcept {
+    CONSTEXPR_CPP14 dimension_type& operator[](int i) noexcept {
         return (i == 0) ? x :
                (i == 1) ? y :
                z;
