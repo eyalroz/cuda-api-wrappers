@@ -15,11 +15,11 @@
 #include "type_traits.hpp"
 #include <stdexcept>
 
-#ifndef CPP14_CONSTEXPR
+#ifndef CONSTEXPR_CPP14
 #if __cplusplus >= 201402L
-#define CPP14_CONSTEXPR constexpr
+#define CONSTEXPR_CPP14 constexpr
 #else
-#define CPP14_CONSTEXPR
+#define CONSTEXPR_CPP14
 #endif
 #endif
 
@@ -79,7 +79,7 @@ public:
 	}
 
 	template <typename U>
-	CPP14_CONSTEXPR span<U> as_span() const NOEXCEPT_IF_NDEBUG
+	CONSTEXPR_CPP14 span<U> as_span() const NOEXCEPT_IF_NDEBUG
 	{
 		static_assert(
 			std::is_const<U>::value or not std::is_const<typename std::remove_pointer<T>::type>::value,
@@ -97,7 +97,7 @@ public:
 	}
 
 	template <typename U>
-	CPP14_CONSTEXPR operator span<U>() const NOEXCEPT_IF_NDEBUG { return as_span<U>(); }
+	CONSTEXPR_CPP14 operator span<U>() const NOEXCEPT_IF_NDEBUG { return as_span<U>(); }
 
 	constexpr pointer start() const noexcept { return start_; }
 	constexpr size_type size() const noexcept { return size_in_bytes_; }

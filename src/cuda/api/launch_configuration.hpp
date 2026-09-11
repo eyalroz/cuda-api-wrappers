@@ -216,8 +216,8 @@ public: // non-mutators
 	{ }
 	///@}
 
-	CPP14_CONSTEXPR launch_configuration_t& operator=(const launch_configuration_t& other) = default;
-	CPP14_CONSTEXPR launch_configuration_t& operator=(launch_configuration_t&&) = default;
+	CONSTEXPR_CPP14 launch_configuration_t& operator=(const launch_configuration_t& other) = default;
+	CONSTEXPR_CPP14 launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
 #if __cplusplus < 202002L
