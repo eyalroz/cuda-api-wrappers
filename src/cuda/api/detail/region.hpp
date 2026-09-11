@@ -59,6 +59,7 @@ public:
 	constexpr base_region_t() noexcept = default;
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
 		: start_(start), size_in_bytes_(size_in_bytes) {}
+	constexpr base_region_t(std::nullptr_t) noexcept : base_region_t(nullptr, 0) {}
 
 	template <typename E, size_t N>
 	constexpr base_region_t(E (&arr)[N]) noexcept
@@ -139,26 +140,23 @@ constexpr bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& r
 /**
  * An untyped, but sized, region in some memory space
  */
-struct region_t : public detail_::base_region_t<void> {
-	using base_region_t<void>::base_region_t;
-	constexpr region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
+struct region_t : detail_::base_region_t<void> {
+	using parent_type = detail_::base_region_t<void>;
+	using parent_type::parent_type;
+	constexpr region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const noexcept
 	{
-		return { base_region_t<void>::subregion(offset_in_bytes, size_in_bytes).data(), size_in_bytes };
+		return { parent_type::subregion(offset_in_bytes, size_in_bytes).data(), size_in_bytes };
 	}
 };
 
-/**
- * An untyped, but sized, region with const-constrained data in some memory space
- */
-struct const_region_t : public detail_::base_region_t<void const> {
-	using base_region_t<void const>::base_region_t;
+/// An untyped, but sized, region with const-constrained data in some memory space
+struct const_region_t : detail_::base_region_t<void const> {
+	using parent_type = detail_::base_region_t<void const>;
+	using parent_type::parent_type;
 	const_region_t(region_t r) : base_region_t(r.start(), r.size()) {}
 	const_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const
 	{
-		return {
-			base_region_t<void const>::subregion(offset_in_bytes, size_in_bytes).data(),
-			size_in_bytes
-		};
+		return { parent_type::subregion(offset_in_bytes, size_in_bytes).data(), size_in_bytes};
 	}
 };
 
