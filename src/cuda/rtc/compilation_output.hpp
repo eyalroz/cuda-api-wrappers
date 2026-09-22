@@ -390,6 +390,8 @@ public: // constructors & destructor
 		auto status = program::detail::destroy_and_return_status<Kind>(program_handle_);
 #ifndef CAW_THROW_IN_DESTRUCTORS
 		throw_if_error<Kind>(status, "Destroying " + program::detail::identify<Kind>(program_handle_, program_name_.c_str()));
+#else
+		(void) status;
 #endif
 	}
 

@@ -23,6 +23,8 @@
 #include <cstring>
 #include <type_traits>
 
+#include "detail/token_holder.hpp"
+
 namespace cuda_ {
 
 ///@cond
@@ -273,7 +275,7 @@ protected:
 	void cache_and_ensure_primary_context_activation() const {
 		if (primary_context_handle_ == context::detail::none) {
 			primary_context_handle_ = device::primary_context::detail::obtain_and_increase_refcount(id_);
-			holds_pc_refcount_unit_ = true;
+			pc_refcount_unit_ = {true, id_};
 		}
 	}
 
@@ -647,7 +649,7 @@ public:
 	 */
 	template<typename Kernel, typename ... KernelParameters>
 	void launch(
-		Kernel                  kernel,
+		Kernel&&                kernel,
 		launch_configuration_t  launch_configuration,
 		KernelParameters...     arguments) const;
 
@@ -704,54 +706,38 @@ public:
 protected:
 	void maybe_decrease_primary_context_refcount() const
 	{
-		if (holds_pc_refcount_unit_) {
+		if (pc_refcount_unit_) {
 			device::primary_context::detail::decrease_refcount(id_);
 		}
 	}
 
 public: 	// constructors and destructor
 
-	friend void swap(device_t& lhs, device_t& rhs) noexcept
-	{
-		std::swap(lhs.id_, rhs.id_);
-		std::swap(lhs.primary_context_handle_, rhs.primary_context_handle_);
-		std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
-	}
-
-	~device_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail::decrease_refcount_in_dtor(id_);
-		}
-	}
-
-	device_t(device_t&& other) noexcept : id_(other.id_)
-	{
-		swap(*this, other);
-	}
+	device_t(device_t&& other) noexcept = default;
 
 	device_t(const device_t& other) noexcept : id_(other.id_) { }
 		// Device proxies are not owning - as devices aren't allocated nor de-allocated.
 		// Also, the proxies don't hold any state (except for one bit regarding whether
-		// or not the device proxy has increased the primary context refcount); it's
-		// the devices _themselves_ which have state; so there's no problem copying
-		// the proxies around. This is unlike events and streams, which get created
-		// and destroyed.
+		// or not the device proxy has increased the primary context refcount); so
+		// there's no problem copying the proxies around or assigning. This is unlike,
+		// say, events and streams, which get created and destroyed.
+		//
+		// TODO: For simplicity and consistency - we may want to remove the copy ctor
+		// and assignment operator from this class as well; references should be
+		// sufficient
 
-	device_t& operator=(const device_t& other) noexcept
+	device_t& operator=(const device_t& other)
 	{
 		maybe_decrease_primary_context_refcount();
+		pc_refcount_unit_.drop();
+		// Q: Why didn't trigger the pc_refcount_unit_'s release?
+		// A: Because that release can't throw, and this way, we can throw.
 		id_ = other.id_;
 		primary_context_handle_ = other.primary_context_handle_;
-		holds_pc_refcount_unit_ = false;
 		return *this;
 	}
 
-	device_t& operator=(device_t&& other) noexcept
-	{
-		swap(*this, other);
-		return *this;
-	}
+	device_t& operator=(device_t&& other) noexcept = default;
 
 protected: // constructors
 
@@ -766,7 +752,7 @@ protected: // constructors
 	:
 		id_(device_id),
 		primary_context_handle_(primary_context_handle),
-		holds_pc_refcount_unit_(holds_primary_context_refcount_unit)
+		pc_refcount_unit_(holds_primary_context_refcount_unit, device_id)
 	{
 #ifndef NDEBUG
 		if (id_ < 0) {
@@ -786,7 +772,7 @@ protected: // data members
 	mutable device::primary_context::handle_t primary_context_handle_ { context::detail::none };
 		/// Most work involving a device actually occurs using its primary context; we cache the handle
 		/// to this context here - albeit not necessary on construction
-	mutable bool holds_pc_refcount_unit_ {false };
+	mutable detail::pc_refcount_unit_t pc_refcount_unit_ { };
 		/// Since we're allowed to cache the primary context handle on constant device_t's, we
 		/// also need to keep track of whether this object "owns" this reference.
 };

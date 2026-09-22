@@ -333,7 +333,7 @@ inline stream_t context_t::default_stream() const
 
 template <typename Kernel, typename ... KernelParameters>
 void context_t::launch(
-	Kernel                  kernel,
+	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters...     parameters) const
 {

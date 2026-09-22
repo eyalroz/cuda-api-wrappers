@@ -14,6 +14,7 @@
 
 #include "context.hpp"
 #include "error.hpp"
+#include "detail/token_holder.hpp"
 
 #ifndef CUDA_NO_HALF
 #include <cuda_fp16.h>
@@ -29,9 +30,6 @@ template <typename T, dimensionality_t NumDimensions>
 class array_t;
 
 namespace array {
-
-/// Raw CUDA driver handle for arrays (of any dimension)
-using handle_t = CUarray;
 
 /// Raw CUDA driver descriptor structure for an array of dimension @tparam NumDimensions
 template <dimensionality_t NumDimensions>
@@ -194,6 +192,9 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
  * @note Instances of this class do _not_ keep devices' primary contexts
  * alive/active - just like memory allocations (but unlike events and streams).
  *
+ * @note This class can _only_ be owning. Instead of creating non-owning instances
+ * of it, use a {@ref texture_view_t}.
+ *
  * @tparam T array element type
  * @tparam NumDimensions number of array dimensions - either 2 or 3
  */
@@ -214,30 +215,15 @@ public:
 	 * Runtime API - and takes ownership of the array
 	 */
 	array_t(device::id_t device_id, context::handle_t context_handle, handle_type handle, dimensions_type dimensions) :
-		dimensions_(dimensions), device_id_(device_id), context_handle_(context_handle), handle_(handle)
+		dimensions_(dimensions), device_id_(device_id), context_handle_(context_handle), handle_(handle),
+		ownership_(do_take_ownership, { context_handle, handle })
 	{
 		assert(handle != nullptr);
 	}
-
-	array_t(const array_t& other) = delete;
-	array_t(array_t&& other) noexcept : array_t(other.device_id_, other.context_handle_, other.handle_, other.dimensions_)
-	{
-		other.handle_ = nullptr;
-	}
-
-	~array_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not handle_) { return; }
-#ifndef CAW_THROW_IN_DESTRUCTORS
-		try
-#endif
-		{
-			array::detail::destroy(handle_, context_handle_);
-		}
-#ifndef CAW_THROW_IN_DESTRUCTORS
-		catch (...) {}
-#endif
-	}
+	array_t(const array_t&) = delete;
+	array_t(array_t&&) noexcept = default;
+	array_t& operator=(const array_t&) = delete;
+	array_t& operator=(array_t&&) noexcept = default;
 
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, context::handle_t, handle_type, dimensions_type) noexcept;
 
@@ -263,7 +249,10 @@ protected:
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	handle_type        handle_;
+	detail::handle_ownership_t<array_t> ownership_;
 };
+
+CAW_DEFINE_HANDLE_TRAITS(array::handle_t, is_contextual, cuArrayDestroy, cuArrayDestroy, array::detail::identify)
 
 namespace array {
 

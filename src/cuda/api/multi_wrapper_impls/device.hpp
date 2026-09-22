@@ -172,7 +172,7 @@ inline void synchronize(const device_t& device)
 
 template <typename Kernel, typename ... KernelParameters>
 void device_t::launch(
-	Kernel                  kernel,
+	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
 	KernelParameters...     parameters) const
 {

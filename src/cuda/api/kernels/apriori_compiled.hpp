@@ -320,7 +320,7 @@ public: // getters
 	const void *get() const noexcept { return ptr_; }
 
 public: // type_conversions
-	explicit operator const void *() noexcept { return ptr_; }
+	explicit operator const void *() const noexcept { return ptr_; }
 	///@}
 
 public: // non-mutators
@@ -443,9 +443,11 @@ protected: // ctors & dtor
 		hold_primary_context_refcount_unit)
 	{ }
 
-public: // ctors & dtor
-	apriori_compiled_t(const apriori_compiled_t&) = default;
+public: // constructors & operators
+	apriori_compiled_t(const apriori_compiled_t&) = delete;
 	apriori_compiled_t(apriori_compiled_t&&) = default;
+	apriori_compiled_t& operator=(const apriori_compiled_t&) = delete;
+	apriori_compiled_t& operator=(apriori_compiled_t&&) = default;
 
 public: // friends
 	friend apriori_compiled_t apriori_compiled::detail::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);

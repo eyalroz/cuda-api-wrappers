@@ -102,6 +102,8 @@ using dimensionality_t = size_t;
  * in particular via the @ref array_t class.
  */
 namespace array {
+/// Raw CUDA driver handle for arrays (of any dimension)
+using handle_t = CUarray;
 
 /// An individual dimension extent for an array
 using dimension_t = size_t;
@@ -299,6 +301,13 @@ inline bool is_capturing(capture::state_t status) noexcept
 #endif // CUDA_VERSION >= 10000
 
 } // namespace stream
+
+namespace link {
+
+/// A raw CUDA driver handle for a linking-process
+using handle_t = CUlinkState;
+
+} // namespace link
 
 namespace grid {
 
@@ -804,7 +813,18 @@ struct subregion_spec_t {
 
 #endif // CUDA_VERSION >= 10000
 
+#if CUDA_VERSION >= 10020
+
+///@cond
+namespace virtual_ {
+class reserved_address_range_t;
+class mapping_t;
+}
 } // namespace memory
+///@end cond
+
+#endif // CUDA_VERSION >= 10020
+
 
 /**
  * Holds the parameters necessary to "launch" a CUDA kernel (i.e. schedule it for
@@ -952,6 +972,12 @@ enum host_thread_sync_scheduling_policy_t : unsigned int {
 	automatic = heuristic,
 };
 
+namespace detail {
+
+constexpr CUcontext none { nullptr };
+
+} // namespace detail
+
 } // namespace context
 
 namespace device {
@@ -1009,6 +1035,12 @@ using attribute_value_t = int;
 using handle_t = CUfunction;
 
 } // namespace kernel
+
+namespace texture {
+/// The CUDA driver's raw, opaque handle for texture objects
+using handle_t = CUtexObject;
+
+} // namespace texture
 
 #if CUDA_VERSION >= 10000
 

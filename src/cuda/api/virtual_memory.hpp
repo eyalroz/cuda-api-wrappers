@@ -11,9 +11,9 @@
 #if CUDA_VERSION >= 10020
 #include "types.hpp"
 #include "error.hpp"
+#include "detail/token_holder.hpp"
 
 namespace cuda_ {
-
 ///@cond
 class device_t;
 ///@endcond
@@ -31,7 +31,7 @@ using handle_t = CUmemGenericAllocationHandle;
 
 namespace detail {
 
-physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit);
+physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit) noexcept;
 
 } // namespace detail
 
@@ -121,6 +121,14 @@ inline status_t cancel_reservation_nothrow(memory::region_t reserved) noexcept
 	return cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
 }
 
+// I'm sorry, this is super-ugly. We should be able to get rid of this with C++17 -
+// replacing it with a constexpr lambda in the traits class
+inline status_t cancel_reservation_nothrow(
+	cuda_::detail::tagged<reserved_address_range_t, region_t> reserved_) noexcept
+{
+	return cancel_reservation_nothrow(reserved_.value);
+}
+
 inline void cancel_reservation(memory::region_t reserved)
 {
 	auto status = cancel_reservation_nothrow(reserved);
@@ -138,50 +146,43 @@ enum alignment : alignment_t {
 
 namespace detail {
 
-reserved_address_range_t wrap(region_t address_range, alignment_t alignment, bool take_ownership);
+reserved_address_range_t wrap(region_t address_range, alignment_t alignment, bool take_ownership) noexcept;
 
 } // namespace detail
 
 
 class reserved_address_range_t {
+public: // types
+	using handle_type = cuda_::detail::tagged<reserved_address_range_t, region_t>;
+
 protected:
 
 	reserved_address_range_t(region_t region, alignment_t alignment, bool owning) noexcept
-		: region_(region), alignment_(alignment), owning_(owning) { }
+		: region_(region), alignment_(alignment), ownership_(owning, { cuda_::context::detail::none, handle_type {region } })
+	{ }
 
 public:
-	friend reserved_address_range_t detail::wrap(region_t, alignment_t, bool);
+	friend reserved_address_range_t detail::wrap(region_t, alignment_t, bool) noexcept;
 
-	reserved_address_range_t(reserved_address_range_t&& other) noexcept
-	: region_(other.region_), alignment_(other.alignment_), owning_(other.owning_)
-	{
-		other.owning_ = false;
-	}
-
-	~reserved_address_range_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		detail::cancel_reservation(region_);
-#else
-		detail::cancel_reservation_nothrow(region_);
-#endif
-	}
+	reserved_address_range_t(const reserved_address_range_t&) = delete;
+	reserved_address_range_t(reserved_address_range_t&&) noexcept = default;
+	reserved_address_range_t& operator=(const reserved_address_range_t&) = delete;
+	reserved_address_range_t& operator=(reserved_address_range_t&&) noexcept = default;
 
 public: // getters
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 	region_t region() const noexcept{ return region_; }
 	alignment_t alignment() const noexcept { return alignment_; }
 
 protected: // data members
 	const region_t     region_;
 	const alignment_t  alignment_;
-	bool               owning_;
-};
+	cuda_::detail::handle_ownership_t<reserved_address_range_t> ownership_;
+}; // reserved_address_range_t
 
 namespace detail {
 
-inline reserved_address_range_t wrap(region_t address_range, alignment_t alignment, bool take_ownership)
+inline reserved_address_range_t wrap(region_t address_range, alignment_t alignment, bool take_ownership) noexcept
 {
 	return { address_range, alignment, take_ownership };
 }
@@ -232,7 +233,8 @@ public: // constructors & destructor
 	}
 
 public: // non-mutators
-	friend physical_allocation_t physical_allocation::detail::wrap(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit);
+	friend physical_allocation_t physical_allocation::detail::wrap(
+		physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit) noexcept;
 
 	size_t size() const noexcept { return size_; }
 	physical_allocation::handle_t handle() const noexcept { return handle_; }
@@ -282,7 +284,7 @@ inline std::string identify(handle_t handle, size_t size) {
 		+ " of size " + std::to_string(size);
 }
 
-inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit)
+inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit) noexcept
 {
 	return { handle, size, holds_refcount_unit };
 }
@@ -342,11 +344,7 @@ namespace virtual_ {
 namespace mapping {
 namespace detail {
 
-inline mapping_t wrap(region_t address_range, bool owning = false);
-
-inline std::string identify(region_t address_range) {
-	return std::string("mapping of ") + memory::detail::identify(address_range);
-}
+inline mapping_t wrap(region_t address_range, bool owning = false) noexcept;
 
 } // namespace detail
 } // namespace mapping
@@ -393,7 +391,7 @@ void set_permissions(region_t fully_mapped_region, const device_t& device, permi
  * Set the access mode from a single device to the region of memory mapped to a single
  * physical allocation.
  */
-void set_permissions(mapping_t mapping, const device_t& device, permissions_t access_mode);
+void set_permissions(const mapping_t& mapping, const device_t& device, permissions_t access_mode);
 ///@}
 
 /**
@@ -434,26 +432,45 @@ void set_permissions(
 	permissions_t access_mode);
 ///@}
 
+namespace detail {
+
+inline status_t unmap_nothrow(region_t address_range) noexcept
+{
+	return cuMemUnmap(device::address(address_range.start()), address_range.size());
+}
+
+inline status_t unmap_nothrow(cuda_::detail::tagged<mapping_t, region_t> address_range_) noexcept
+{
+	return unmap_nothrow(address_range_.value);
+}
+
+inline void unmap_(region_t address_range)
+{
+	auto result = unmap_nothrow(address_range);
+	throw_if_error_lazy(result, "Failed unmapping " + mapping::detail::identify(address_range));
+}
+
+} // namespace detail
 
 class mapping_t {
+public: // types
+	using handle_type = cuda_::detail::tagged<mapping_t, region_t>;
+
 protected:  // constructors
-	mapping_t(region_t region, bool owning) : address_range_(region), owning_(owning) { }
+	mapping_t(region_t address_range, bool owning)
+	: address_range_(address_range), ownership_(owning, { cuda_::context::detail::none, address_range }) { }
 
 public: // constructors & destructors
+	mapping_t(const mapping_t&) = delete;
+	mapping_t(mapping_t&&) noexcept = default;
+	mapping_t& operator=(const mapping_t&) = delete;
+	mapping_t& operator=(mapping_t&&) noexcept = default;
 
-	friend mapping_t mapping::detail::wrap(region_t address_range, bool owning);
+	friend mapping_t mapping::detail::wrap(region_t address_range, bool owning) noexcept;
 
-	mapping_t(const mapping_t& other) noexcept :
-		address_range_(other.address_range()), owning_(false) { }
-
-	mapping_t(mapping_t&& other) noexcept :
-		address_range_(other.address_range()), owning_(other.owning_)
-	{
-		other.owning_ = false;
-	}
 
 	region_t address_range() const noexcept { return address_range_; }
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 	permissions_t get_permissions(const device_t& device) const;
 	void set_permissions(const device_t& device, permissions_t access_mode) const;
@@ -467,13 +484,6 @@ public: // constructors & destructors
 	inline void set_permissions(
 		ContiguousContainer<device_t>&& devices,
 		permissions_t access_mode) const;
-
-	~mapping_t() noexcept(false)
-	{
-		if (not owning_) { return; }
-		auto result = cuMemUnmap(device::address(address_range_), address_range_.size());
-		throw_if_error_lazy(result, "Failed unmapping " + mapping::detail::identify(address_range_));
-	}
 
 public:
 #if CUDA_VERSION >= 11000
@@ -492,22 +502,21 @@ public:
 protected:
 
 	region_t address_range_;
-	bool owning_;
-
-};
+	cuda_::detail::handle_ownership_t<mapping_t> ownership_;
+}; // mapping_t
 
 namespace mapping {
 
 namespace detail {
 
-mapping_t wrap(region_t range, bool owning)
+mapping_t wrap(region_t address_range, bool owning) noexcept
 {
-	return { range, owning };
+	return { address_range, owning };
 }
 
-inline std::string identify(mapping_t mapping)
+inline std::string identify(mapping_t const& mapping)
 {
-	return mapping::detail::identify(mapping.address_range());
+	return detail::identify(mapping.address_range());
 }
 
 } // namespace detail
@@ -530,6 +539,7 @@ inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
 
 } // namespace virtual_
 } // namespace memory
+
 } // namespace cuda_
 
 #endif // CUDA_VERSION >= 10020

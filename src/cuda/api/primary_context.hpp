@@ -7,6 +7,7 @@
 
 #include "current_context.hpp"
 #include "context.hpp" // A primary context is a context, so can't avoid this
+#include "detail/token_holder.hpp"
 
 namespace cuda_ {
 
@@ -165,30 +166,6 @@ public: // friendship
 
 	friend class ::cuda_::device_t;
 	friend primary_context_t device::primary_context::detail::wrap(device::id_t, context::handle_t, bool) noexcept;
-
-public: // constructors and destructor
-
-	primary_context_t(const primary_context_t& other)
-	: context_t(other), owns_refcount_unit_(other.owns_refcount_unit_)
-	{
-		if (owns_refcount_unit_) {
-			primary_context::detail::obtain_and_increase_refcount(device_id_);
-		}
-	}
-
-	primary_context_t(primary_context_t&& other) noexcept = default;
-
-	~primary_context_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (owns_refcount_unit_) {
-			primary_context::detail::decrease_refcount_in_dtor(device_id_);
-		}
-	}
-
-public: // operators
-
-	primary_context_t& operator=(const primary_context_t& other) = delete;
-	primary_context_t& operator=(primary_context_t&& other) = default;
 };
 
 namespace primary_context {
@@ -304,6 +281,22 @@ inline bool is_current()
 } // namespace primary_context
 
 } // namespace device
+
+namespace detail {
+
+struct release_pc_refcount_helper {
+	void operator()(device::id_t device_id) const noexcept {
+		device::primary_context::detail::decrease_refcount_in_dtor(device_id);
+	}
+};
+
+class pc_refcount_unit_t : public token_holder<release_pc_refcount_helper, device::id_t> {
+	using handle_type = device::id_t;
+	using parent_type = token_holder;
+	using parent_type::token_holder;
+};
+
+} // namespace detail
 
 } // namespace cuda_
 
