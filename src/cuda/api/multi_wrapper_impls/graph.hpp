@@ -35,22 +35,22 @@ inline bool is_enabled_in(const node_t& node, const instance_t& instance)
 {
 	unsigned result;
 	auto status = cuGraphNodeGetEnabled(instance.handle(), node.handle(), &result);
-	throw_if_error_lazy(status, "Determining whether " + node::detail_::identify(node) + " is active in " + instance::detail_::identify(instance));
+	throw_if_error_lazy(status, "Determining whether " + node::detail::identify(node) + " is active in " + instance::detail::identify(instance));
 	return (result == 1);
 }
 
 inline void set_enabled_in(const node_t& node, const instance_t& instance, bool enabled)
 {
 	auto status = cuGraphNodeSetEnabled(instance.handle(), node.handle(), enabled);
-	throw_if_error_lazy(status, "Enabling " + node::detail_::identify(node) + " in " + instance::detail_::identify(instance));
+	throw_if_error_lazy(status, "Enabling " + node::detail::identify(node) + " in " + instance::detail::identify(instance));
 }
 #endif // CUDA_VERSION >= 11060
 
 inline void launch(const instance_t& instance, const stream_t& stream)
 {
-	context::current::detail_::scoped_override_t set_context_for_current_scope(stream.context_handle());
+	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphLaunch(instance.handle(), stream.handle());
-	throw_if_error_lazy(status, "Launching " + instance::detail_::identify(instance) + " on " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status, "Launching " + instance::detail::identify(instance) + " on " + stream::detail::identify(stream));
 }
 
 namespace instance {
@@ -58,9 +58,9 @@ namespace instance {
 #if CUDA_VERSION >= 11010
 inline void upload(const instance_t& instance, const stream_t& stream)
 {
-	context::current::detail_::scoped_override_t set_context_for_current_scope(stream.context_handle());
+	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphUpload(instance.handle(), stream.handle());
-	throw_if_error_lazy(status, "Uploading " + instance::detail_::identify(instance) + " on " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status, "Uploading " + instance::detail::identify(instance) + " on " + stream::detail::identify(stream));
 }
 #endif // CUDA_VERSION >= 11010
 
@@ -127,7 +127,7 @@ inline instance_t template_t::instantiate(
 
 namespace node {
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const node_t &node)
 {
@@ -139,7 +139,7 @@ inline auto kind_traits<kind_t::child_graph>::marshal(const parameters_type& par
 	return params.handle();
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 } // namespace node
@@ -152,7 +152,7 @@ inline template_t node_t::containing_graph() const noexcept
 
 namespace instance {
 
-namespace detail_ {
+namespace detail {
 
 inline std::string describe(
 	instance::update_status_t  update_status,
@@ -161,7 +161,7 @@ inline std::string describe(
 {
 	std::string result = describe(update_status);
 	if (node_handle != node::no_handle) {
-		result += node::detail_::identify(node_handle, graph_template_handle);
+		result += node::detail::identify(node_handle, graph_template_handle);
 	}
 	return result;
 }
@@ -169,12 +169,12 @@ inline std::string describe(
 /*
 inline std::string identify(instance::handle_t handle)
 {
-	return "execution graph instance at " + cuda_::detail_::ptr_as_hex(handle);
+	return "execution graph instance at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(instance::handle_t handle, template_::handle_t template_handle)
 {
-	return identify(handle) + " within " + graph::template_::detail_::identify(template_handle);
+	return identify(handle) + " within " + graph::template_::detail::identify(template_handle);
 }
 
 inline std::string identify(const instance_t& instance)
@@ -183,20 +183,20 @@ inline std::string identify(const instance_t& instance)
 }
 */
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace instance
 
 namespace template_ {
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const template_t& graph_template)
 {
 	return identify(graph_template.handle());
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace template_
 
@@ -206,7 +206,7 @@ inline std::string describe(graph::instance::update_status_t update_status, opti
 {
 	return node ?
 		   describe(update_status) :
-		   graph::instance::detail_::describe(update_status, node.value().handle(), node.value().containing_graph_handle());
+		   graph::instance::detail::describe(update_status, node.value().handle(), node.value().containing_graph_handle());
 }
 
 namespace stream {
@@ -217,7 +217,7 @@ inline graph::template_t end(const cuda_::stream_t& stream)
 	graph::template_::handle_t new_graph;
 	auto status = cuStreamEndCapture(stream.handle(), &new_graph);
 	throw_if_error_lazy(status,
-		"Completing the capture of operations into a graph on " + stream::detail_::identify(stream));
+		"Completing the capture of operations into a graph on " + stream::detail::identify(stream));
 	return graph::template_::wrap(new_graph, do_take_ownership);
 }
 

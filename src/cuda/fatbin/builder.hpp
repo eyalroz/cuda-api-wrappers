@@ -27,16 +27,16 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership = false) noexc
 
 inline fatbin_builder_t create(const options_t & options);
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(handle_t handle)
 {
-	return "Fatbin builder with handle " + cuda_::detail_::ptr_as_hex(handle);
+	return "Fatbin builder with handle " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(const fatbin_builder_t&);
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace fatbin_builder
 
@@ -65,7 +65,7 @@ protected: // unsafe actions
 	{
 		auto status = nvFatbinGet(handle_, target_region.data());
 		throw_if_error_lazy(status, "Failed completing the generation of a fatbin at " +
-			cuda_::detail_::ptr_as_hex(target_region.data()));
+			cuda_::detail::ptr_as_hex(target_region.data()));
 	}
 
 public:
@@ -73,7 +73,7 @@ public:
 	{
 		size_type result;
 		auto status = nvFatbinSize(handle_, &result);
-		throw_if_error_lazy(status, "Failed determining prospective fatbin size for " + fatbin_builder::detail_::identify(*this));
+		throw_if_error_lazy(status, "Failed determining prospective fatbin size for " + fatbin_builder::detail::identify(*this));
 		return result;
 	}
 
@@ -118,7 +118,7 @@ public:
 			identifier,
 			empty_cmdline);
 		throw_if_error_lazy(status, "Failed adding PTX source fragment "
-			+ std::string(identifier) + " at " + detail_::ptr_as_hex(nul_terminated_ptx_source.data())
+			+ std::string(identifier) + " at " + detail::ptr_as_hex(nul_terminated_ptx_source.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -132,7 +132,7 @@ public:
 		auto status = nvFatbinAddLTOIR(
 			handle_, lto_ir.data(), lto_ir.size(), compute_capability_str.c_str(), identifier, empty_cmdline);
 		throw_if_error_lazy(status, "Failed adding LTO IR fragment "
-			+ std::string(identifier) + " at " + detail_::ptr_as_hex(lto_ir.data())
+			+ std::string(identifier) + " at " + detail::ptr_as_hex(lto_ir.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -145,7 +145,7 @@ public:
 		auto status = nvFatbinAddCubin(
 			handle_, cubin.data(), cubin.size(), compute_capability_str.c_str(), identifier);
 		throw_if_error_lazy(status, "Failed adding cubin fragment "
-			+ std::string(identifier) + " at " + detail_::ptr_as_hex(cubin.data())
+			+ std::string(identifier) + " at " + detail::ptr_as_hex(cubin.data())
 			+ " to a fat binary for target compute capability " + compute_capability_str);
 	}
 
@@ -160,8 +160,8 @@ public:
 	void add_relocatable_ptx(memory::region_t ptx_code) const
 	{
 		auto status = nvFatbinAddReloc(handle_, ptx_code.data(), ptx_code.size());
-		throw_if_error_lazy(status, "Failed adding relocatable PTX code at " + detail_::ptr_as_hex(ptx_code.data())
-									+ "to fatbin builder " + fatbin_builder::detail_::identify(*this) );
+		throw_if_error_lazy(status, "Failed adding relocatable PTX code at " + detail::ptr_as_hex(ptx_code.data())
+									+ "to fatbin builder " + fatbin_builder::detail::identify(*this) );
 	}
 
 	// TODO: WTF is an index?
@@ -169,7 +169,7 @@ public:
 	{
 		auto status = nvFatbinAddIndex(handle_, index.data(), index.size(), identifier);
 		throw_if_error_lazy(status, "Failed adding index  " + std::string(identifier) + " at "
-			+ detail_::ptr_as_hex(index.data()) + " to a fat binary");
+			+ detail::ptr_as_hex(index.data()) + " to a fat binary");
 	}
 #endif // CUDA_VERSION >= 12050
 
@@ -203,8 +203,8 @@ public: // constructors and destructor
 		auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
 #ifdef CAW_THROW_IN_DESTRUCTORS
 		throw_if_error_lazy(status,
-			std::string("Failed destroying fatbin builder ") + detail_::ptr_as_hex(handle_) +
-			" in " + fatbin_builder::detail_::identify(handle_));
+			std::string("Failed destroying fatbin builder ") + detail::ptr_as_hex(handle_) +
+			" in " + fatbin_builder::detail::identify(handle_));
 #else
 		(void) status;
 #endif
@@ -248,14 +248,14 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership) noexcept
 	return fatbin_builder_t{handle, take_ownership};
 }
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const fatbin_builder_t& builder)
 {
 	return identify(builder.handle());
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace fatbin_builder
 

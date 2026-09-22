@@ -21,7 +21,7 @@ namespace rtc {
 
 namespace program {
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Create a new program object from source code
@@ -50,7 +50,7 @@ template <> inline program::handle_t<cuda_cpp> create<cuda_cpp>(
 {
 	program::handle_t<cuda_cpp> program_handle;
 	auto status = nvrtcCreateProgram(&program_handle, program_source.data(), program_name, num_headers, header_sources, header_names);
-	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed creating " + detail_::identify<cuda_cpp>(program_name));
+	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed creating " + detail::identify<cuda_cpp>(program_name));
 	return program_handle;
 }
 
@@ -61,7 +61,7 @@ template <> inline program::handle_t<ptx> create<ptx>(
 {
 	program::handle_t<ptx> program_handle;
 	auto status = nvPTXCompilerCreate(&program_handle, program_source.size(), program_source.data());
-	throw_if_rtc_error_lazy(ptx, status, "Failed creating " + detail_::identify<ptx>(program_name));
+	throw_if_rtc_error_lazy(ptx, status, "Failed creating " + detail::identify<ptx>(program_name));
 	return program_handle;
 }
 #endif // CUDA_VERSION >= 11010
@@ -143,7 +143,7 @@ compilation_output_t<Kind> compile(
 	switch(status) {
 	case (rtc::status_t<Kind>) status::named_t<Kind>::success:
 	case (rtc::status_t<Kind>) status::named_t<Kind>::compilation_failure:
-		return compilation_output::detail_::wrap<Kind>(program_handle, program_name, succeeded, do_take_ownership);
+		return compilation_output::detail::wrap<Kind>(program_handle, program_name, succeeded, do_take_ownership);
 	default:
 		maybe_handle_invalid_option<Kind>(status, program_name, raw_options, program_handle);
 		throw rtc::runtime_error<Kind>(status, "Failed invoking compiler for " + identify<Kind>(program_handle, program_name));
@@ -236,7 +236,7 @@ protected: // data members
 	compilation_options_t<Kind> options_;
 }; // base_t
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace program
 
@@ -254,7 +254,7 @@ class program_t;
  * allowing for builder-pattern-like use.
  */
 template <>
-class program_t<cuda_cpp> : public program::detail_::base_t<cuda_cpp> {
+class program_t<cuda_cpp> : public program::detail::base_t<cuda_cpp> {
 public: // types
 	using parent = base_t<source_kind>;
 
@@ -554,7 +554,7 @@ public:
 		}
 		auto marshalled_options = cuda_::marshalling::marshal(options_);
 		std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
-		return program::detail_::compile(
+		return program::detail::compile(
 			name_.c_str(),
 			source_ == nullptr ? "" : source_,
 			{headers_.sources.data(), headers_.sources.size()},
@@ -650,10 +650,10 @@ protected: // data members
  * allowing for builder-pattern-like use.
  */
 template <>
-class program_t<ptx> : public program::detail_::base_t<ptx> {
+class program_t<ptx> : public program::detail::base_t<ptx> {
 public: // types
 	///@cond
-	using parent = program::detail_::base_t<source_kind>;
+	using parent = program::detail::base_t<source_kind>;
 	///@endcond
 
 public: // setters - duplicated with CUDA-C++/NVRTC programs
@@ -725,7 +725,7 @@ public:
 		}
 		auto marshalled_options = cuda_::marshalling::marshal(options_);
 		std::vector<const char*> option_ptrs = marshalled_options.option_ptrs();
-		return program::detail_::compile_ptx(
+		return program::detail::compile_ptx(
 			name_.c_str(),
 			source_,
 			{option_ptrs.data(), option_ptrs.size()});

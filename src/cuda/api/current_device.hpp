@@ -37,7 +37,7 @@ namespace device {
 
 namespace current {
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Obtains the numeric id of the device set as current for the CUDA Runtime API
@@ -55,11 +55,11 @@ inline id_t get_id()
 	throw_if_error_lazy(status,
 		"Failed obtaining the current context for determining which device is active");
 
-	if (current_context_handle == context::detail_::none) {
+	if (current_context_handle == context::detail::none) {
 		// Should we activate and push the default device's context? probably not.
 		return default_device_id;
 	}
-	return cuda_::context::current::detail_::get_device_id();
+	return cuda_::context::current::detail::get_device_id();
 	// ... which is the equivalent of doing:
 	//
 }
@@ -80,7 +80,7 @@ inline id_t get_id()
  * function, except if the following conditions are met:
  *
  * 1. The primary context handle was specified as a parameter (i.e.
- *    we got something other than @ref detail_::none was for nit).
+ *    we got something other than @ref detail::none was for nit).
  * 2. The current context is the desired device's primary context.
  *
  * USE WITH EXTRA CARE!
@@ -88,25 +88,25 @@ inline id_t get_id()
 inline context::handle_t set_with_aux_info(
 	id_t device_id,
 	bool driver_is_initialized,
-	context::handle_t current_context_handle = context::detail_::none,
-	context::handle_t device_pc_handle = context::detail_::none)
+	context::handle_t current_context_handle = context::detail::none,
+	context::handle_t device_pc_handle = context::detail::none)
 {
 	if (not driver_is_initialized) {
 		initialize_driver();
-		device_pc_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id);
-		context::current::detail_::set(device_pc_handle);
+		device_pc_handle = device::primary_context::detail::obtain_and_increase_refcount(device_id);
+		context::current::detail::set(device_pc_handle);
 		return device_pc_handle;
 	}
-	if (current_context_handle != context::detail_::none) {
+	if (current_context_handle != context::detail::none) {
 		if (current_context_handle == device_pc_handle) {
 			return device_pc_handle;
 		}
 	}
-	device_pc_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id);
+	device_pc_handle = device::primary_context::detail::obtain_and_increase_refcount(device_id);
 	if (current_context_handle == device_pc_handle) {
 		return device_pc_handle;
 	}
-	context::current::detail_::set(device_pc_handle); // Remember: This _replaces_ the current context
+	context::current::detail::set(device_pc_handle); // Remember: This _replaces_ the current context
 	return device_pc_handle;
 }
 
@@ -135,7 +135,7 @@ inline void set(id_t device_id)
 }
 ///@}
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Tells the CUDA runtime API to consider the specified device as the current one.
@@ -148,7 +148,7 @@ void set(const device_t& device);
 /**
  * Reset the CUDA Runtime API's current device to its default value - the default device
  */
-inline void set_to_default() { return detail_::set(device::default_device_id); }
+inline void set_to_default() { return detail::set(device::default_device_id); }
 
 /**
  * This macro will set the current device for the remainder of the scope in which it is

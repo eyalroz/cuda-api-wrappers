@@ -19,7 +19,7 @@ int main(int, char **)
 	}
 
 	try {
-		cuda_::device::current::detail_::set(device_count);
+		cuda_::device::current::detail::set(device_count);
 		die_("An exception should have be thrown when setting the current device to one-past-the-last.");
 	}
 	catch(cuda_::runtime_error& e) {

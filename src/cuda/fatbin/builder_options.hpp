@@ -67,7 +67,7 @@ struct options_t final {
 	optional<host_os_t> targeted_host_os;
 };
 
-namespace detail_ {
+namespace detail {
 
 struct marshalled_options_t {
 	std::size_t num_options;
@@ -80,7 +80,7 @@ struct marshalled_options_t {
 
 namespace marshalling {
 
-namespace detail_ {
+namespace detail {
 
 template <typename MarshalTarget, typename Delimiter>
 struct gadget<fatbin_builder::options_t, MarshalTarget, Delimiter> {
@@ -112,7 +112,7 @@ struct gadget<fatbin_builder::options_t, MarshalTarget, Delimiter> {
 	}
 };
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace marshalling
 

@@ -168,7 +168,7 @@ bool basic_module_tests(
 	test_result = test_result and module.device_id() == device.id();
 	test_result = test_result and module.device() == device;
 	test_result = test_result and module.context() == device.primary_context(cuda_::does_not_hold_primary_context_refcount_unit);
-	test_result = test_result and module.context_handle() == cuda_::device::primary_context::detail_::get_handle(device.id());
+	test_result = test_result and module.context_handle() == cuda_::device::primary_context::detail::get_handle(device.id());
 
 	{
 		auto a = module.get_global_region(compilation_result.get_mangling_of(constant_name));

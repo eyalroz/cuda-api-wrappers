@@ -48,7 +48,7 @@ enum type_t : std::underlying_type<CUmemorytype>::type {
 
 namespace pointer {
 
-namespace detail_ {
+namespace detail {
 
 // Note: We could theoretically template this, but - there don't seem to be a lot of "clients" for this
 // function right now, and I would rather not drag in <tuple>
@@ -94,12 +94,12 @@ attribute_value_t<attribute> get_attribute(const void* ptr);
 
 inline context::handle_t context_handle_of(const void* ptr)
 {
-	return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(ptr);
+	return pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(ptr);
 }
 
 inline cuda_::device::id_t device_id_of(const void* ptr);
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace pointer
 
@@ -110,7 +110,7 @@ inline cuda_::device::id_t device_id_of(const void* ptr);
  */
 inline memory::type_t type_of(const void* ptr)
 {
-	auto result = pointer::detail_::get_attribute_with_status<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
+	auto result = pointer::detail::get_attribute_with_status<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
 	// Note: As of CUDA 12, CUDA treats passing a non-CUDA-allocated pointer to the memory type check
 	// as an error, though it really should not be
 	return (result.status == status::named_t::invalid_value) ?
@@ -141,9 +141,9 @@ public: // getters and operators
 
 protected:
 	template <pointer::attribute_t attribute>
-	pointer::detail_::attribute_value_t<attribute> get_attribute() const
+	pointer::detail::attribute_value_t<attribute> get_attribute() const
 	{
-		return pointer::detail_::get_attribute<attribute>(ptr_);
+		return pointer::detail::get_attribute<attribute>(ptr_);
 	}
 
 public: // other non-mutators
@@ -168,7 +168,7 @@ public: // other non-mutators
 	 */
 	T* get_for_device() const
 	{
-		return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(ptr_);
+		return pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_POINTER>(ptr_);
 	}
 
 	/**
@@ -180,15 +180,15 @@ public: // other non-mutators
 	 */
 	T* get_for_host() const
 	{
-		return pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_HOST_POINTER>(ptr_);
+		return pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_HOST_POINTER>(ptr_);
 	}
 
 #if CUDA_VERSION >= 10020
 	region_t containing_range() const
 	{
 		// TODO: Consider checking the alignment
-		auto range_start = pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>(ptr_);
-		auto range_size = pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_SIZE>(ptr_);
+		auto range_start = pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_START_ADDR>(ptr_);
+		auto range_size = pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_RANGE_SIZE>(ptr_);
 		return { range_start, range_size};
 	}
 #endif
@@ -215,7 +215,7 @@ public: // other non-mutators
 		T* host_ptr;
 		T* device_ptr;
 		void* value_ptrs[] = { &memory_type, &host_ptr, &device_ptr };
-		pointer::detail_::get_attributes(3, attributes, value_ptrs, ptr_);
+		pointer::detail::get_attributes(3, attributes, value_ptrs, ptr_);
 
 #ifndef NDEBUG
 		assert(host_ptr == ptr_ or device_ptr == ptr_);

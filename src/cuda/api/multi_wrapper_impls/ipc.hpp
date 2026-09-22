@@ -146,7 +146,7 @@ inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& 
 {
 	constexpr auto free_using_stream { true };
 	assert(shared_pool.device_id() == freeing_stream.device_id());
-	void* raw_ptr = detail_::import_ptr(shared_pool.handle(), ptr_handle);
+	void* raw_ptr = detail::import_ptr(shared_pool.handle(), ptr_handle);
 	static constexpr bool is_owning { true };
 	return wrap(
 		shared_pool.device_id(),
@@ -162,11 +162,11 @@ inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& 
 {
 	constexpr auto free_using_stream { false };
 	auto free_without_using_stream = static_cast<bool>(free_using_stream);
-	void* raw_ptr = detail_::import_ptr(shared_pool.handle(), ptr_handle);
+	void* raw_ptr = detail::import_ptr(shared_pool.handle(), ptr_handle);
 	static constexpr bool is_owning { true };
 	return wrap(
 		shared_pool.device_id(),
-		context::detail_::none,
+		context::detail::none,
 		shared_pool.handle(),
 		raw_ptr,
 		stream::default_stream_handle,

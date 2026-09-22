@@ -24,7 +24,7 @@ namespace texture {
 /// The CUDA driver's raw, opaque handle for texture objects
 using raw_handle_t = CUtexObject;
 
-namespace detail_ {
+namespace detail {
 
 inline void destroy_view(raw_handle_t handle, context::handle_t context_handle) noexcept(false)
 {
@@ -98,7 +98,7 @@ inline texture_view wrap(
  */
 class texture_view {
 	using raw_handle_type = texture::raw_handle_t;
-	using scoped_context_setter = cuda_::context::current::detail_::scoped_override_t;
+	using scoped_context_setter = cuda_::context::current::detail::scoped_override_t;
 
 public:
 	/// Getters for this object's raw fields
@@ -149,7 +149,7 @@ public: // operators
 		try
 #endif
 		{
-			texture::detail_::destroy_view(raw_view_handle, context_handle_);
+			texture::detail::destroy_view(raw_view_handle, context_handle_);
 		}
 #ifdef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}

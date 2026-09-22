@@ -43,9 +43,9 @@ void pointer_properties(const cuda_::device_t& device)
 	auto primary_context = device.primary_context();
 	cuda_::context::current::push(primary_context); // so that we check from a different context
 	for(size_t i = 0; i < 2; i++) {
-		auto reported_device_id = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(raw_pointers[i]);
+		auto reported_device_id = cuda_::memory::pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(raw_pointers[i]);
 		assert_(reported_device_id == device.id());
-		auto context_handle = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(raw_pointers[i]);
+		auto context_handle = cuda_::memory::pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(raw_pointers[i]);
 		assert_(context_handle == contexts[i].handle());
 		auto ptr_mem_type = cuda_::memory::type_of(raw_pointers[i]);
 		assert_(ptr_mem_type == cuda_::memory::type_t::device_ or ptr_mem_type == cuda_::memory::type_t::unified_);
@@ -60,12 +60,12 @@ void pointer_properties(const cuda_::device_t& device)
 		} catch(cuda_::runtime_error& e) {
 			if (e.code() != cuda_::status::named_t::invalid_value) { throw; }
 		}
-		auto ptr_reported_as_managed = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_IS_MANAGED>(raw_pointers[i]);
+		auto ptr_reported_as_managed = cuda_::memory::pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_IS_MANAGED>(raw_pointers[i]);
 		assert_(ptr_reported_as_managed == 0);
-//		auto ptr_reported_as_mapped = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MAPPED>(raw_pointers[i]);
+//		auto ptr_reported_as_mapped = cuda_::memory::pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_MAPPED>(raw_pointers[i]);
 //		assert_(ptr_reported_as_mapped == 0);
 #if CUDA_VERSION >= 11030
-		auto mempool_handle = cuda_::memory::pointer::detail_::get_attribute<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>(raw_pointers[i]);
+		auto mempool_handle = cuda_::memory::pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE>(raw_pointers[i]);
 		assert_(mempool_handle == nullptr);
 #endif
 #if CUDA_VERSION >= 10020
@@ -119,8 +119,8 @@ void wrapped_pointers_and_regions(const cuda_::device_t& device)
 		auto ptr_device = ptr.device();
 		auto ptr_device_id = ptr_device.id();
 		(ptr_device_id == device.id()) or die_(
-			"Pointer incorrectly reported as associated with " + cuda_::device::detail_::identify(device.id())
-			+ " rather than + " + cuda_::device::detail_::identify(device.id()));
+			"Pointer incorrectly reported as associated with " + cuda_::device::detail::identify(device.id())
+			+ " rather than + " + cuda_::device::detail::identify(device.id()));
 	}
 #endif // CUDA_VERSION >= 9020
 	(ptr.get() == memory_region.start()) or die_("Invalid get() output");

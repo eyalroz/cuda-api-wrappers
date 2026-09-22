@@ -55,7 +55,7 @@ using limit_t = context::limit_t;
 using limit_value_t = context::limit_value_t;
 using shared_memory_bank_size_t = context::shared_memory_bank_size_t;
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Construct a @ref device_t wrapper class instance for a given device ID
@@ -69,7 +69,7 @@ namespace detail_ {
  */
 device_t wrap(
 	id_t id,
-	primary_context::handle_t primary_context_handle = context::detail_::none,
+	primary_context::handle_t primary_context_handle = context::detail::none,
 	bool holds_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG;
 
 } // namespace detail
@@ -85,7 +85,7 @@ device_t wrap(id_t id) NOEXCEPT_IF_NDEBUG;
 
 using stream_priority_range_t = context::stream_priority_range_t;
 
-namespace detail_ {
+namespace detail {
 
 inline std::string get_name(id_t id)
 {
@@ -167,7 +167,7 @@ public: // types
 			auto status = cuDeviceGetGraphMemAttribute(device_id_, attribute, &result);
 			throw_if_error_lazy(status,
 				"Obtaining the current amount of memory used for execution graphs on "
-				+ device::detail_::identify(device_id_));
+				+ device::detail::identify(device_id_));
 			return result;
 		}
 
@@ -178,7 +178,7 @@ public: // types
 		{
 			auto status = cuDeviceGraphMemTrim(device_id_);
 			throw_if_error_lazy(status, "Freeing unused execution graph memory on "
-				+ device::detail_::identify(device_id_));
+				+ device::detail::identify(device_id_));
 		}
 
 		/**
@@ -201,7 +201,7 @@ public: // types
 				&result);
 			throw_if_error_lazy(status,
 				"Obtaining the current amount of memory used for execution graphs on "
-				+ device::detail_::identify(device_id_));
+				+ device::detail::identify(device_id_));
 			return result;
 		}
 
@@ -234,8 +234,8 @@ public:
 		int result;
 		auto status = cuDeviceCanAccessPeer(&result, id(), peer.id());
 		throw_if_error_lazy(status, "Failed determining whether "
-			+ device::detail_::identify(id_) + " can access "
-			+ device::detail_::identify(peer.id_));
+			+ device::detail::identify(id_) + " can access "
+			+ device::detail::identify(peer.id_));
 		return (result == 1);
 	}
 
@@ -264,15 +264,15 @@ public:
 	uuid_t uuid () const {
 		uuid_t result;
 		auto status = cuDeviceGetUuid(&result, id_);
-		throw_if_error_lazy(status, "Failed obtaining UUID for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining UUID for " + device::detail::identify(id_));
 		return result;
 	}
 #endif // CUDA_VERSION >= 9020
 
 protected:
 	void cache_and_ensure_primary_context_activation() const {
-		if (primary_context_handle_ == context::detail_::none) {
-			primary_context_handle_ = device::primary_context::detail_::obtain_and_increase_refcount(id_);
+		if (primary_context_handle_ == context::detail::none) {
+			primary_context_handle_ = device::primary_context::detail::obtain_and_increase_refcount(id_);
 			holds_pc_refcount_unit_ = true;
 		}
 	}
@@ -292,12 +292,12 @@ protected:
 		// differ on this particular flag - and cuDevicePrimaryCtxSetFlags() doesn't
 		// like seeing it.
 		auto status = cuDevicePrimaryCtxSetFlags(id(), new_flags);
-		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed setting (primary context) flags for device " + device::detail::identify(id_));
 	}
 
 	context::flags_t flags() const
 	{
-		return device::primary_context::detail_::flags(id_);
+		return device::primary_context::detail::flags(id_);
 	}
 
 public:
@@ -325,7 +325,7 @@ public:
 	{
 		properties_t properties;
 		auto status = cudaGetDeviceProperties(&properties, id());
-		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail::identify(id_));
 		return properties;
 	}
 
@@ -344,7 +344,7 @@ public:
 		// If I were lazy, I would just write:
 		// return properties().name;
 		// and let you wait for all of that to get populated. But not me!
-		return device::detail_::get_name(id_);
+		return device::detail::get_name(id_);
 	}
 
 	/**
@@ -357,7 +357,7 @@ public:
 	{
 		attribute_value_t attribute_value;
 		auto status = cuDeviceGetAttribute(&attribute_value, attribute, id_);
-		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Failed obtaining device properties for " + device::detail::identify(id_));
 		return attribute_value;
 	}
 
@@ -529,12 +529,12 @@ public:
 		// 2. We don't need the primary context to be active here, so not using the usual
 		//    primary_context_handle() getter mechanism.
 
-		auto pc_handle = (primary_context_handle_ == context::detail_::none) ?
-			device::primary_context::detail_::obtain_and_increase_refcount(id_) :
+		auto pc_handle = (primary_context_handle_ == context::detail::none) ?
+			device::primary_context::detail::obtain_and_increase_refcount(id_) :
 			primary_context_handle_;
 		CAW_SET_SCOPE_CONTEXT(pc_handle);
 		auto status = cudaDeviceReset();
-		throw_if_error_lazy(status, "Resetting " + device::detail_::identify(id_));
+		throw_if_error_lazy(status, "Resetting " + device::detail::identify(id_));
 	}
 
 	/**
@@ -705,7 +705,7 @@ protected:
 	void maybe_decrease_primary_context_refcount() const
 	{
 		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail_::decrease_refcount(id_);
+			device::primary_context::detail::decrease_refcount(id_);
 		}
 	}
 
@@ -721,7 +721,7 @@ public: 	// constructors and destructor
 	~device_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail_::decrease_refcount_in_dtor(id_);
+			device::primary_context::detail::decrease_refcount_in_dtor(id_);
 		}
 	}
 
@@ -761,7 +761,7 @@ protected: // constructors
 	 */
 	explicit device_t(
 		device::id_t device_id,
-		device::primary_context::handle_t primary_context_handle = context::detail_::none,
+		device::primary_context::handle_t primary_context_handle = context::detail::none,
 		bool holds_primary_context_refcount_unit = false) NOEXCEPT_IF_NDEBUG
 	:
 		id_(device_id),
@@ -776,14 +776,14 @@ protected: // constructors
 	}
 
 public: // friends
-	friend device_t device::detail_::wrap(
+	friend device_t device::detail::wrap(
 		device::id_t,
 		device::primary_context::handle_t handle,
 		bool holds_primary_context_refcount_unit) NOEXCEPT_IF_NDEBUG;
 
 protected: // data members
 	device::id_t id_; /// Numeric ID of the proxied device.
-	mutable device::primary_context::handle_t primary_context_handle_ { context::detail_::none };
+	mutable device::primary_context::handle_t primary_context_handle_ { context::detail::none };
 		/// Most work involving a device actually occurs using its primary context; we cache the handle
 		/// to this context here - albeit not necessary on construction
 	mutable bool holds_pc_refcount_unit_ {false };
@@ -805,7 +805,7 @@ inline bool operator!=(const device_t& lhs, const device_t& rhs)
 
 namespace device {
 
-namespace detail_ {
+namespace detail {
 
 inline device_t wrap(
 	id_t id,
@@ -815,11 +815,11 @@ inline device_t wrap(
 	return device_t{ id, primary_context_handle, holds_primary_context_refcount_unit };
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline device_t wrap(id_t id) NOEXCEPT_IF_NDEBUG
 {
-	return detail_::wrap(id);
+	return detail::wrap(id);
 }
 
 /**
@@ -865,15 +865,15 @@ namespace current {
 inline device_t get()
 {
 	ensure_driver_is_initialized();
-	auto id = detail_::get_id();
-	auto pc_handle = primary_context::detail_::obtain_and_increase_refcount(id);
-	return device::detail_::wrap(id, pc_handle, does_hold_primary_context_refcount_unit);
+	auto id = detail::get_id();
+	auto pc_handle = primary_context::detail::obtain_and_increase_refcount(id);
+	return device::detail::wrap(id, pc_handle, does_hold_primary_context_refcount_unit);
 }
 
 inline void set(const device_t& device)
 {
 	auto pc = device.primary_context();
-	context::current::detail_::set(pc.handle());
+	context::current::detail::set(pc.handle());
 }
 
 } // namespace current
@@ -886,7 +886,7 @@ inline void set(const device_t& device)
  */
 inline device_t get(pci_location_t pci_id)
 {
-	auto resolved_id = device::detail_::resolve_id(pci_id);
+	auto resolved_id = device::detail::resolve_id(pci_id);
 	return get(resolved_id);
 }
 

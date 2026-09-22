@@ -31,7 +31,7 @@ namespace module {
 // The CUDA driver's raw handle for modules
 using handle_t = CUmodule;
 
-namespace detail_ {
+namespace detail {
 
 /// Construct a module proxy object - for an existing module - from the class'
 /// constituent fields
@@ -44,17 +44,17 @@ inline module_t wrap(
 
 inline std::string identify(const module::handle_t &handle)
 {
-	return std::string("module ") + cuda_::detail_::ptr_as_hex(handle);
+	return std::string("module ") + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(const module::handle_t &handle, context::handle_t context_handle)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle);
+	return identify(handle) + " in " + context::detail::identify(context_handle);
 }
 
 inline std::string identify(const module::handle_t &handle, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
+	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
 }
 
 std::string identify(const module_t &module);
@@ -71,12 +71,12 @@ inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, 
 {
 	auto result = make_unique_span<kernel::handle_t>(num_kernels);
 	auto status = cuModuleEnumerateFunctions(result.data(), (unsigned int) num_kernels, module_handle);
-	throw_if_error_lazy(status, "Failed enumerating the kernels in " + module::detail_::identify(module_handle));
+	throw_if_error_lazy(status, "Failed enumerating the kernels in " + module::detail::identify(module_handle));
 	return result;
 }
 #endif
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Create a CUDA driver module from raw module image data.
@@ -91,14 +91,14 @@ inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, 
  */
 ///@{
 template <typename Locus, typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
 	const link::options_t&  link_options);
 
 template <typename Locus, typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 module_t create(
 	Locus&&              locus,
 	ContiguousContainer  module_data);
@@ -171,7 +171,7 @@ public: // getters
 	{
 		unsigned result;
 		auto status = cuModuleGetFunctionCount(&result, handle_);
-		throw_if_error_lazy(status, "Failed determining function count for " + module::detail_::identify(*this));
+		throw_if_error_lazy(status, "Failed determining function count for " + module::detail::identify(*this));
 		return result;
 	}
 
@@ -179,7 +179,7 @@ public: // getters
 	{
 		auto num_kernels = get_num_kernels();
 		// It's ok if the number is 0!
-		auto handles = module::detail_::get_kernel_handles(handle_, num_kernels);
+		auto handles = module::detail::get_kernel_handles(handle_, num_kernels);
 		auto gen = [&](size_t i) { return kernel::wrap(device_id_, context_handle_, handles[i]); };
 		return generate_unique_span<kernel_t>(handles.size(), gen);
 	}
@@ -214,7 +214,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend module_t module::detail_::wrap(device::id_t, context::handle_t, module::handle_t, bool, bool) noexcept;
+	friend module_t module::detail::wrap(device::id_t, context::handle_t, module::handle_t, bool, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -242,13 +242,13 @@ public: // constructors and destructor
 		try
 #endif
 		{
-			module::detail_::unload(handle_, context_handle_, device_id_);
+			module::detail::unload(handle_, context_handle_, device_id_);
 		}
 #ifdef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
 #endif
 		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
+			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -280,7 +280,7 @@ protected: // data members
 
 namespace module {
 
-namespace detail_ {
+namespace detail {
 
 inline module_t load_from_file_in_current_context(
 	device::id_t            current_context_device_id,
@@ -300,7 +300,7 @@ inline module_t load_from_file_in_current_context(
 		holds_primary_context_refcount_unit);
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 /**
@@ -322,7 +322,7 @@ inline module_t load_from_file(
 	const char*             path)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return detail_::load_from_file_in_current_context(context.device_id(), context.handle(), path);
+	return detail::load_from_file_in_current_context(context.device_id(), context.handle(), path);
 }
 
 /// @copydoc load_from_file(const context_t&, const char*)
@@ -387,7 +387,7 @@ inline module_t load_from_file(
 }
 #endif
 
-namespace detail_ {
+namespace detail {
 
 inline module_t wrap(
 	device::id_t            device_id,
@@ -414,12 +414,12 @@ module_t create(const context_t& context, const void* module_data, const link::o
 /// @copydoc create(const context_t&, const void*, const link::options_t&)
 module_t create(const context_t& context, const void* module_data);
 
-} // namespace detail_
+} // namespace detail
 
 // TODO: Use an optional to reduce the number of functions here... when the
 // library starts requiring C++14.
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const module_t& module)
 {
@@ -429,7 +429,7 @@ inline std::string identify(const module_t& module)
 inline context_t get_context_for(const context_t& locus) { return locus; }
 inline device::primary_context_t get_context_for(const device_t& locus);
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Create a new module - in a specified context or in a device's primary context,
@@ -443,13 +443,13 @@ inline device::primary_context_t get_context_for(const device_t& locus);
  * @note This function may create/allocate resources for the primary context of a device!
  */
 template <typename Locus, typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
 	Locus&&             locus,
 	ContiguousContainer module_data)
 {
-	auto context = detail_::get_context_for(locus);
-	return detail_::create(context, module_data.data());
+	auto context = detail::get_context_for(locus);
+	return detail::create(context, module_data.data());
 }
 
 /**
@@ -462,14 +462,14 @@ module_t create(
  */
 // Note: The following may create the primary context of a device!
 template <typename Locus, typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
 	const link::options_t&  link_options)
 {
-	auto context = detail_::get_context_for(locus);
-	return detail_::create(context, module_data.data(), link_options);
+	auto context = detail::get_context_for(locus);
+	return detail::create(context, module_data.data(), link_options);
 }
 
 } // namespace module

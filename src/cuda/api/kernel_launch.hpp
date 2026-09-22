@@ -97,7 +97,7 @@ constexpr grid::dimensions_t single_block() { return 1; }
  */
 constexpr grid::block_dimensions_t single_thread_per_block() { return 1; }
 
-namespace detail_ {
+namespace detail {
 
 /**
  * @brief adapt a type to be usable as a kernel parameter.
@@ -226,9 +226,9 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail_::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
+		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
 #if CUDA_VERSION >= 11000
-		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail_::get_handle( (const void*) kernel_function);
+		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail::get_handle( (const void*) kernel_function);
 		enqueue_kernel_launch_by_handle_in_current_context(
 			kernel_function_handle,
 			device_id,
@@ -254,12 +254,12 @@ void enqueue_raw_kernel_launch_in_current_context(
 }
 #endif
 
-} // namespace detail_
+} // namespace detail
 
 
 namespace kernel {
 
-namespace detail_ {
+namespace detail {
 
 // The helper code here is intended for re-imbuing kernel-related classes with the types
 // of the kernel parameters. This is necessary since kernel wrappers may be type-erased
@@ -277,13 +277,13 @@ struct raw_kernel_typegen {
 //		all_true<
 //		    std::is_same<
 //		    	KernelParameters,
-//		    	::cuda_::detail_::kernel_parameter_decay_t<KernelParameters>>::value...
+//		    	::cuda_::detail::kernel_parameter_decay_t<KernelParameters>>::value...
 //		    >::value,
 //		"All kernel parameter types must be decay-invariant" );
-	using type = void(*)(cuda_::detail_::kernel_parameter_decay_t<KernelParameters>...);
+	using type = void(*)(cuda_::detail::kernel_parameter_decay_t<KernelParameters>...);
 };
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * A function similar to std::any_cast for retrieving the function pointer wrapped
@@ -292,16 +292,16 @@ struct raw_kernel_typegen {
  * to obtain the function pointer they are after.
  */
 template<typename... KernelParameters>
-typename detail_::raw_kernel_typegen<KernelParameters...>::type
+typename detail::raw_kernel_typegen<KernelParameters...>::type
 unwrap(const kernel::apriori_compiled_t& kernel)
 {
-	using raw_kernel_t = typename detail_::raw_kernel_typegen<KernelParameters ...>::type;
+	using raw_kernel_t = typename detail::raw_kernel_typegen<KernelParameters ...>::type;
 	return reinterpret_cast<raw_kernel_t>(const_cast<void *>(kernel.ptr()));
 }
 
 } // namespace kernel
 
-namespace detail_ {
+namespace detail {
 
 template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
@@ -312,7 +312,7 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
 		KernelParameters &&...            parameters) const;
 };
 
-} // namespace detail_
+} // namespace detail
 
 
 /**

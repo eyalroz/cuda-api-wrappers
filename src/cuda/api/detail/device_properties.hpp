@@ -47,7 +47,7 @@ constexpr bool operator >=(const compute_architecture_t& lhs, const compute_arch
 	return lhs.major > rhs.major;
 }
 
-namespace detail_ {
+namespace detail {
 
 constexpr int invalid_compute_capability_return { 0 };
 enum : memory::shared::size_t { KiB = 1024 };
@@ -55,7 +55,7 @@ enum : memory::shared::size_t { KiB = 1024 };
 template <typename T>
 T ensure_cc_attribute_validity(T v, const compute_capability_t& cc)
 {
-	if (v == detail_::invalid_compute_capability_return) {
+	if (v == detail::invalid_compute_capability_return) {
 		throw std::invalid_argument("Compute capability unknown: " + std::to_string(cc.as_combined_number()));
 	}
 	return v;
@@ -90,10 +90,10 @@ constexpr const char* architecture_name(const compute_architecture_t& arch)
 		nullptr;
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline const char* compute_architecture_t::name() const {
-	auto name_ = detail_::architecture_name(*this);
+	auto name_ = detail::architecture_name(*this);
 	if (name_ == nullptr) {
 		throw std::invalid_argument("No known architecture numbered " + std::to_string(major));
 	}
@@ -151,7 +151,7 @@ constexpr compute_capability_t make_compute_capability(unsigned major, unsigned 
 	return { {major}, minor };
 }
 
-namespace detail_ {
+namespace detail {
 
 // Based on `_ConvertSMVer2Cores()` from the CUDA samples
 constexpr unsigned max_in_flight_threads_per_processor(const compute_capability_t& cc)
@@ -274,42 +274,42 @@ constexpr unsigned max_resident_warps_per_processor(const compute_capability_t& 
 		invalid_compute_capability_return;
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 inline unsigned compute_capability_t::num_schedulers_per_sm_partition() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::num_schedulers_per_sm_partition(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::num_schedulers_per_sm_partition(*this), *this);
 }
 
 inline unsigned compute_capability_t::num_sm_partitions() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::num_sm_partitions(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::num_sm_partitions(*this), *this);
 }
 
 inline unsigned compute_capability_t::num_schedulers_per_sm() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::num_schedulers_per_sm(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::num_schedulers_per_sm(*this), *this);
 }
 
 inline unsigned compute_capability_t::max_num_instructions_per_scheduler_cycle() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::max_num_instructions_per_scheduler_cycle(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::max_num_instructions_per_scheduler_cycle(*this), *this);
 }
 
 inline unsigned compute_capability_t::max_in_flight_threads_per_processor() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::max_in_flight_threads_per_processor(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::max_in_flight_threads_per_processor(*this), *this);
 }
 
 inline unsigned compute_capability_t::max_shared_memory_per_block() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::max_shared_memory_per_block(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::max_shared_memory_per_block(*this), *this);
 }
 
 inline unsigned compute_capability_t::max_resident_warps_per_processor() const
 {
-	return detail_::ensure_cc_attribute_validity(detail_::max_resident_warps_per_processor(*this), *this);
+	return detail::ensure_cc_attribute_validity(detail::max_resident_warps_per_processor(*this), *this);
 }
 
 // properties_t-related

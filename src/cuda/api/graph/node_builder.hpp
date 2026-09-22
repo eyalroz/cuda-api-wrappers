@@ -17,7 +17,7 @@ namespace graph {
 
 namespace node {
 
-namespace detail_ {
+namespace detail {
 
 inline std::logic_error make_unspec_error(const char *node_type, const char *missing_arg_name)
 {
@@ -27,7 +27,7 @@ inline std::logic_error make_unspec_error(const char *node_type, const char *mis
 		" without specifying its " + missing_arg_name + " argument");
 }
 
-} // namespace detail_
+} // namespace detail
 
 template <kind_t Kind>
 class typed_builder_t;
@@ -47,7 +47,7 @@ public:
 	static constexpr kind_t kind = kind_t::child_graph;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -74,7 +74,7 @@ public:
 	CAW_MAYBE_UNUSED built_type build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.template_) {
-			throw detail_::make_unspec_error("child graph", "child graph template");
+			throw detail::make_unspec_error("child graph", "child graph template");
 		}
 		return graph_template.insert.node<kind>(std::move(params_));
 	}
@@ -88,7 +88,7 @@ public:
 	static constexpr kind_t kind = kind_t::record_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -115,7 +115,7 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.event) {
-			throw detail_::make_unspec_error("record event", "event");
+			throw detail::make_unspec_error("record event", "event");
 		}
 		return graph_template.insert.node<kind>(std::move(params_));
 	}
@@ -127,7 +127,7 @@ public:
 	static constexpr kind_t kind = kind_t::wait_on_event;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -154,7 +154,7 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.event) {
-			throw detail_::make_unspec_error("wait on event", "event");
+			throw detail::make_unspec_error("wait on event", "event");
 		}
 		return graph_template.insert.node<kind>(std::move(params_));
 	}
@@ -168,7 +168,7 @@ public:
 	static constexpr kind_t kind = kind_t::host_function_call;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -205,10 +205,10 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.function_ptr_set) {
-			throw detail_::make_unspec_error("kernel_launch", "host callback function pointer");
+			throw detail::make_unspec_error("kernel_launch", "host callback function pointer");
 		}
 		if (not was_set.user_argument_set) {
-			throw detail_::make_unspec_error("kernel_launch", "user-specified callback function argument");
+			throw detail::make_unspec_error("kernel_launch", "user-specified callback function argument");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}
@@ -220,7 +220,7 @@ public:
 	static constexpr kind_t kind = kind_t::kernel_launch;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -285,13 +285,13 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.kernel) {
-			throw detail_::make_unspec_error("kernel_launch", "kernel");
+			throw detail::make_unspec_error("kernel_launch", "kernel");
 		}
 		if (not was_set.launch_config) {
-			throw detail_::make_unspec_error("kernel_launch", "launch configuration");
+			throw detail::make_unspec_error("kernel_launch", "launch configuration");
 		}
 		if (not was_set.marshalled_arguments) {
-			throw detail_::make_unspec_error("kernel_launch", "launch arguments");
+			throw detail::make_unspec_error("kernel_launch", "launch arguments");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}
@@ -305,7 +305,7 @@ public:
 	static constexpr kind_t kind = kind_t::memory_allocation;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 	using endpoint_t = cuda_::memory::endpoint_t;
 
@@ -330,10 +330,10 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.device) {
-			throw detail_::make_unspec_error("memory allocation", "device");
+			throw detail::make_unspec_error("memory allocation", "device");
 		}
 		if (not was_set.size_in_bytes) {
-			throw detail_::make_unspec_error("memory allocation", "allocation size in bytes");
+			throw detail::make_unspec_error("memory allocation", "allocation size in bytes");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}
@@ -354,7 +354,7 @@ public:
 	static constexpr kind_t kind = kind_t::memory_copy;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 	using dimensions_type = params_type::dimensions_type;
 	using endpoint_t = cuda_::memory::endpoint_t;
@@ -454,7 +454,7 @@ public:
 	static constexpr kind_t kind = kind_t::memory_set;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -502,10 +502,10 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.region) {
-			throw detail_::make_unspec_error("memory set", "memory region");
+			throw detail::make_unspec_error("memory set", "memory region");
 		}
 		if (not was_set.value_and_width) {
-			throw detail_::make_unspec_error("memory set", "value to set");
+			throw detail::make_unspec_error("memory set", "value to set");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}
@@ -518,7 +518,7 @@ public:
 	static constexpr kind_t kind = kind_t::memory_free;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -540,7 +540,7 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.address) {
-			throw detail_::make_unspec_error("memory free", "allocated region starting address");
+			throw detail::make_unspec_error("memory free", "allocated region starting address");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}
@@ -555,7 +555,7 @@ public:
 	static constexpr kind_t kind = kind_t::memory_barrier;
 	using this_type = typed_builder_t<kind>;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail_::kind_traits<kind>;
+	using traits = cuda_::graph::node::detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
@@ -587,10 +587,10 @@ public:
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
 		if (not was_set.context) {
-			throw detail_::make_unspec_error("memory barrier", "CUDA context");
+			throw detail::make_unspec_error("memory barrier", "CUDA context");
 		}
 		if (not was_set.barrier_socpe) {
-			throw detail_::make_unspec_error("memory barrier", "barrier scope");
+			throw detail::make_unspec_error("memory barrier", "barrier scope");
 		}
 		return graph_template.insert.node<kind>(params_);
 	}

@@ -33,16 +33,16 @@ using std::experimental::nullopt_t;
 namespace cuda_ {
 
 
-namespace detail_ {
+namespace detail {
 
 struct no_value_t { };
 
-} // namespace detail_
+} // namespace detail
 
-using nullopt_t = detail_::no_value_t;
+using nullopt_t = detail::no_value_t;
 constexpr nullopt_t nullopt{};
 
-namespace detail_ {
+namespace detail {
 
 template<typename T>
 struct poor_mans_optional {
@@ -120,10 +120,10 @@ protected:
 	maybe_value_union_t maybe_value { no_value_t{} };
 };
 
-} // namespace detail_
+} // namespace detail
 
 template<typename T>
-using optional = cuda_::detail_::poor_mans_optional<T>;
+using optional = cuda_::detail::poor_mans_optional<T>;
 
 } // namespace cuda_
 

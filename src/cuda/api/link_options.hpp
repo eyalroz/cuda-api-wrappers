@@ -31,7 +31,7 @@ enum fallback_strategy_for_binary_code_t {
 	prefer_using_compatible_binary  = 1,
 };
 
-namespace detail_ {
+namespace detail {
 
 /// The CUDA driver's raw generic JIT-related option type
 using option_t = CUjit_option;
@@ -118,7 +118,7 @@ public:
 	///@}
 };
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * A convenience class for holding, setting and inspecting options for a CUDA binary code
@@ -160,7 +160,7 @@ struct options_t final : public rtc::common_ptx_compilation_options_t {
 	//
 };
 
-namespace detail_ {
+namespace detail {
 
 /// Construct a easily-driver-usable link-process options structure from
 /// a more user-friendly `options_t` structure.
@@ -225,7 +225,7 @@ inline marshalled_options_t marshal(const options_t& link_options)
 	return marshalled;
 }
 
-} // namespace detail_
+} // namespace detail
 
 // TODO: Compiler "output options":
 //

@@ -11,7 +11,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 // Note that while nothing constrains you from instantiating
 // this class many times, all instances are the same (as CUDA
@@ -212,7 +212,7 @@ inline bool operator!= (
 	return not (lhs == rhs);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @returns all CUDA-supporting GPU devices on the system - as a gadget for iteration, so
@@ -221,9 +221,9 @@ inline bool operator!= (
  *     for(auto& dev : cuda_::devices) { do_stuff_with(dev); }
  *
  */
-inline detail_::all_devices devices()
+inline detail::all_devices devices()
 {
-	return detail_::all_devices();
+	return detail::all_devices();
 }
 
 } // namespace cuda_

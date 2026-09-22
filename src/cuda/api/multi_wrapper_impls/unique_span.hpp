@@ -24,7 +24,7 @@ namespace device {
 template <typename T>
 unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
 {
-	return detail_::make_unique_span<T>(context.handle(), num_elements);
+	return detail::make_unique_span<T>(context.handle(), num_elements);
 }
 
 /**
@@ -61,8 +61,8 @@ unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
 template <typename T>
 unique_span<T> make_unique_span(size_t num_elements)
 {
-	auto current_device_id = cuda_::device::current::detail_::get_id();
-	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail::get_id();
+	auto pc = cuda_::device::primary_context::detail::leaky_get(current_device_id);
 	return device::make_unique_span<T>(pc, num_elements);
 }
 
@@ -79,9 +79,9 @@ unique_span<T> make_unique_span(
 	CAW_SET_SCOPE_CONTEXT(context.handle());
     switch (initial_visibility) {
     case initial_visibility_t::to_all_devices:
-        return detail_::make_unique_span<T, initial_visibility_t::to_all_devices>(context.handle(), size);
+        return detail::make_unique_span<T, initial_visibility_t::to_all_devices>(context.handle(), size);
     case initial_visibility_t::to_supporters_of_concurrent_managed_access:
-        return detail_::make_unique_span<T, initial_visibility_t::to_supporters_of_concurrent_managed_access>(context.handle(), size);
+        return detail::make_unique_span<T, initial_visibility_t::to_supporters_of_concurrent_managed_access>(context.handle(), size);
     default:
         throw std::logic_error("Library not yet updated to support additional initial visibility values");
     }
@@ -102,8 +102,8 @@ unique_span<T> make_unique_span(
 	size_t                size,
 	initial_visibility_t  initial_visibility)
 {
-	auto current_device_id = cuda_::device::current::detail_::get_id();
-	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail::get_id();
+	auto pc = cuda_::device::primary_context::detail::leaky_get(current_device_id);
 	return make_unique_span<T>(pc, size, initial_visibility);
 }
 
