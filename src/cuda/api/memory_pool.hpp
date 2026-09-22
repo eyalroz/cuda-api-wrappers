@@ -273,7 +273,8 @@ class imported_ptr_t;
  * "draining" the memory available to other pools.
  */
 class pool_t {
-
+public: // types
+	using handle_type = pool::handle_t;
 public:
 	region_t allocate(const stream_t& stream, size_t num_bytes) const;
 
@@ -404,38 +405,27 @@ public: // field getters
 	 * Determine whether this proxy object "owns" the pool, i.e. whether
 	 * it is charged with destroying it at the end of its lifetime
 	 */
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 
 public: // construction & destruction
 	friend pool_t pool::wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept;
 
-	pool_t(const pool_t& other) = delete;
-
-	pool_t(pool_t&& other) noexcept : pool_t(other.device_id_, other.handle_, other.owning_)
-	{
-		other.owning_ = false;
-	}
-
-	~pool_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		pool::detail::destroy(handle_);
-#else
-		memory::pool::detail::destroy_nothrow(handle_);
-#endif
-	}
-
 protected: // constructors
 	pool_t(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) noexcept
-	: device_id_(device_id), handle_(handle), owning_(owning)
+	: device_id_(device_id), handle_(handle), ownership_(owning, { context::detail::none, handle })
 	{ }
+
+public: // constructors & operators
+	pool_t(const pool_t&) = delete;
+	pool_t(pool_t&&) noexcept = default;
+	pool_t& operator=(const pool_t&) = delete;
+	pool_t& operator=(pool_t&&) noexcept = default;
 
 protected: // data members
 	cuda_::device::id_t device_id_;
 	pool::handle_t handle_;
-	bool owning_;
+	cuda_::detail::handle_ownership_t<pool_t> ownership_;
 }; // class pool_t
 
 inline bool operator==(const pool_t& lhs, const pool_t& rhs)
@@ -482,6 +472,8 @@ pool_t create(const cuda_::device_t& device);
 } // namespace pool
 
 } // namespace memory
+
+CAW_DEFINE_HANDLE_TRAITS(memory::pool::handle_t, isnt_contextual, cuMemPoolDestroy, cuMemPoolDestroy, memory::pool::detail::identify);
 
 } // namespace cuda_
 

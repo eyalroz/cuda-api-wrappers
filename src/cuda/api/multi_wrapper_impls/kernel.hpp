@@ -45,13 +45,13 @@ inline module_t kernel_t::module() const
 namespace detail {
 
 template<typename Kernel>
-device::primary_context_t get_implicit_primary_context(Kernel)
+device::primary_context_t get_implicit_primary_context(const Kernel &)
 {
 	return device::current::get().primary_context();
 }
 
 template<>
-inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t kernel)
+inline device::primary_context_t get_implicit_primary_context<kernel_t>(const kernel_t& kernel)
 {
 	auto context = kernel.context();
 	auto device = context.device();

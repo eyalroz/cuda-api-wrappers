@@ -57,14 +57,9 @@ inline std::string identify(const library::handle_t &handle)
 
 std::string identify(const library_t &library);
 
-inline status_t unload_nothrow(handle_t handle) noexcept
-{
-	return cuLibraryUnload(handle);
-}
-
 inline void unload(handle_t handle)
 {
-	auto status = unload_nothrow(handle);
+	auto status = cuLibraryUnload(handle);
 	throw_if_error_lazy(status, std::string{"Failed unloading "}
 		+ library::detail::identify(handle));
 }
@@ -128,10 +123,12 @@ void* get_unified_function(const context_t& context, const library_t& library, c
  * with a context)
  */
 class library_t {
-
+public: // types
+	using handle_type = library::handle_t;
 public: // getters
 
-	library::handle_t handle() const { return handle_; }
+	library::handle_t handle() const noexcept { return handle_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 	/**
 	 * Obtains an already-compiled kernel previously associated with
@@ -172,48 +169,25 @@ public: // getters
 protected: // constructors
 
 	library_t(library::handle_t handle, bool owning) noexcept
-		: handle_(handle), owning_(owning)
+		: handle_(handle), ownership_(owning, { context::detail::none, handle })
 	{ }
+
+public: // constructors & operators
+	library_t(const library_t&) = delete;
+	library_t(library_t&&) noexcept = default;
+	library_t& operator=(const library_t&) = delete;
+	library_t& operator=(library_t&&) noexcept = default;
 
 public: // friendship
 
 	friend library_t library::detail::wrap(library::handle_t, bool) noexcept;
 
-public: // constructors and destructor
-
-	library_t(const library_t&) = delete;
-
-	library_t(library_t&& other) noexcept : library_t(other.handle_,  other.owning_)
-	{
-		other.owning_ = false;
-	};
-
-	~library_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		library::detail::unload(handle_);
-#else
-		library::detail::unload_nothrow(handle_);
-#endif
-	}
-
-public: // operators
-
-	library_t& operator=(const library_t&) = delete;
-	library_t& operator=(library_t&& other) noexcept
-	{
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
-
 protected: // data members
-	library::handle_t   handle_;
-	bool                owning_;
+	library::handle_t                     handle_;
+	detail::handle_ownership_t<library_t> ownership_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
-};
+}; // library_t
 
 inline memory::region_t get_global(const context_t& context, const library_t& library, const char* name)
 {
@@ -402,6 +376,8 @@ library_t create(
 }
 
 } // namespace library
+
+CAW_DEFINE_HANDLE_TRAITS(library::handle_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload, library::detail::identify);
 
 } // namespace cuda_
 

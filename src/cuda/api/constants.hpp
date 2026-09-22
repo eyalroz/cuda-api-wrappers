@@ -133,16 +133,6 @@ enum : bool {
 	does_not_hold_primary_context_refcount_unit = false,
 };
 
-namespace context {
-
-namespace detail {
-
-constexpr CUcontext none { 0 };
-
-} // namespace detail
-
-} // namespace context
-
 } // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_CONSTANTS_HPP_

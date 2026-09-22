@@ -255,41 +255,18 @@ public: // data types
 public: // getters
 	template_::handle_t template_handle() const noexcept { return template_handle_; }
 	handle_type handle() const noexcept	{ return handle_; }
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 protected: // constructors
 	instance_t(template_::handle_t template_handle, handle_type handle, bool owning) noexcept
-	: template_handle_(template_handle), handle_(handle), owning_(owning)
+	: template_handle_(template_handle), handle_(handle), ownership_(owning, { context::detail::none, handle })
 	{ }
 
-public: // constructors & destructor
-	instance_t(const instance_t& other) noexcept = delete;
-
-	instance_t(instance_t&& other) noexcept : instance_t(other.template_handle_, other.handle_, other.owning_)
-	{
-		other.owning_ = false;
-	}
-	~instance_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-		auto status = cuGraphExecDestroy(handle_);
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		throw_if_error_lazy(status, "Destroying " + instance::detail::identify(*this));
-#else
-		(void) status;
-#endif
-	}
-
-public: // operators
+public: // constructors & operators
+	instance_t(const instance_t& other) = delete;
+	instance_t(instance_t&& other) noexcept = default;
 	instance_t& operator=(const instance_t&) = delete;
-	instance_t& operator=(instance_t&& other) noexcept
-	{
-		std::swap(template_handle_, other.template_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
-
+	instance_t& operator=(instance_t&& other) noexcept = default;
 
 public: // friends
 	friend instance_t instance::wrap(template_::handle_t template_handle, handle_type handle, bool  is_owning) noexcept;
@@ -351,8 +328,8 @@ public: // non-mutators
 protected:
 	template_::handle_t template_handle_;
 	handle_type handle_;
-	bool owning_;
-};
+	cuda_::detail::handle_ownership_t<instance_t> ownership_;
+}; // class instance_t
 
 /**
  * @brief Have a GPU reserve resource and maintain a "copy" of an execution graph instance, allowing
@@ -513,6 +490,9 @@ inline instance_t instantiate(
 void launch(const cuda_::stream_t& stream, const instance_t& instance);
 
 } // namespace graph
+
+CAW_DEFINE_HANDLE_TRAITS(graph::instance::handle_t, isnt_contextual, cuGraphExecDestroy,
+	cuGraphExecDestroy, graph::instance::detail::identify);
 
 } // namespace cuda_
 

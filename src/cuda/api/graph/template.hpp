@@ -435,7 +435,7 @@ public: // getters
 	handle_type handle() const noexcept { return handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 public: // non-mutators
 
@@ -749,36 +749,14 @@ public: // friendship
 
 protected: // constructors
 	template_t(handle_type handle, bool owning) noexcept
-	: handle_(handle), owning_(owning)
+	: handle_(handle), ownership_(owning, { context::detail::none, handle })
 	{ }
 
-public: // ctors & dtor
-	template_t(const template_t& other) noexcept = delete;
-	template_t(template_t&& other) noexcept : template_t(other.handle_, other.owning_)
-	{
-		other.owning_ = false;
-	}
-
-	~template_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (owning_) {
-			auto status = cuGraphDestroy(handle_);
-#ifdef CAW_THROW_IN_DESTRUCTORS
-			throw_if_error_lazy(status, "Destroying " + template_::detail::identify(*this));
-#else
-			(void) status;
-#endif
-		}
-	}
-
-public: // operators
+public: // constructors & operators
+	template_t(const template_t& other) = delete;
+	template_t(template_t&& other) noexcept = default;
 	template_t& operator=(const template_t&) = delete;
-	template_t& operator=(template_t&& other) noexcept
-	{
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
+	template_t& operator=(template_t&& other) noexcept = default;
 
 public: // non-mutators
 	instance_t instantiate(
@@ -809,7 +787,7 @@ public: // data members
 private: // data members
 	// Note: A CUDA graph template is not specific to a context, nor a device!
 	template_::handle_t handle_;
-	bool owning_;
+	detail::handle_ownership_t<template_t> ownership_;
 }; // class template_t
 
 namespace template_ {
@@ -886,6 +864,9 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 }
 
 } // namespace graph
+
+CAW_DEFINE_HANDLE_TRAITS(graph::template_::handle_t, isnt_contextual, cuGraphDestroy,
+	cuDestroyExternalMemory, graph::template_::detail::identify);
 
 } // namespace cuda_
 

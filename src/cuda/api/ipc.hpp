@@ -83,6 +83,11 @@ inline status_t unmap_nothrow(void* ipc_mapped_ptr) noexcept
 	return cuIpcCloseMemHandle(device::address(ipc_mapped_ptr));
 }
 
+inline status_t unmap_nothrow(cuda_::detail::tagged<imported_ptr_t, void*> ipc_mapped_ptr) noexcept
+{
+	return unmap_nothrow(ipc_mapped_ptr.value);
+}
+
 /**
  * @brief Unmap CUDA host-side memory shared by another process
  *
@@ -126,38 +131,24 @@ inline ptr_handle_t export_(void* device_ptr)
  * @tparam the element type in the stretch of IPC-shared memory
  */
 class imported_ptr_t {
+public:
+	using handle_type = cuda_::detail::tagged<imported_ptr_t, void*>;
 protected: // constructors & destructor
-	imported_ptr_t(void* ptr, bool owning) : ptr_(ptr), owning_(owning)
+	imported_ptr_t(void* ptr, bool owning) : ptr_(ptr), ownership_(owning, { context::detail::none, ptr })
 	{
 		if (ptr_ == nullptr) {
 			throw std::logic_error("IPC memory handle yielded a null pointer");
 		}
 	}
 
-public: // constructors & destructors
+public: // constructors & operator
+	imported_ptr_t(const imported_ptr_t&) = delete;
+	imported_ptr_t(imported_ptr_t&&) noexcept = default;
+	imported_ptr_t& operator=(const imported_ptr_t&) = delete;
+	imported_ptr_t& operator=(imported_ptr_t&&) noexcept = default;
+
+public: // friendship
 	friend imported_ptr_t wrap(void * ptr, bool owning) noexcept;
-
-	~imported_ptr_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		detail::unmap(ptr_);
-#else
-		detail::unmap_nothrow(ptr_);
-#endif
-	}
-
-public: // operators
-
-	imported_ptr_t(const imported_ptr_t& other) = delete;
-	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
-	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept
-	{
-		std::swap(ptr_, other.ptr_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
-	imported_ptr_t(imported_ptr_t&& other) noexcept = default;
 
 public: // getters
 
@@ -171,11 +162,11 @@ public: // getters
 	}
 
 	/// @return true if this object is charged with unmapping the imported memory upon destruction
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 protected: // data members
 	void*  ptr_;
-	bool   owning_;
+	cuda_::detail::handle_ownership_t<imported_ptr_t> ownership_;
 }; // class imported_ptr_t
 
 /// Construct an instance of our wrapper class for IPC-imported memory from a raw pointer to the mapping
@@ -333,6 +324,10 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 
 } // namespace ipc
 } // namespace event
+
+CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t::handle_type, isnt_contextual,
+	memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle, memory::ipc::detail::identify);
+
 } // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_IPC_HPP_

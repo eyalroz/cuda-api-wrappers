@@ -52,7 +52,7 @@ inline void set_permissions(
 						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail::ptr_as_hex(fully_mapped_region.data()));
 }
 
-inline void set_permissions(mapping_t mapping, const device_t& device, permissions_t permissions)
+inline void set_permissions(const mapping_t& mapping, const device_t& device, permissions_t permissions)
 {
 	set_permissions(mapping.address_range(), device, permissions);
 }
@@ -141,6 +141,16 @@ void mapping_t::set_permissions(
 #endif // CUDA_VERSION >= 10020
 
 } // namespace memory
+
+CAW_DEFINE_HANDLE_TRAITS(
+	memory::virtual_::reserved_address_range_t::handle_type,
+	isnt_contextual, memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree,
+	memory::virtual_::reservation::detail::identify);
+
+CAW_DEFINE_HANDLE_TRAITS(
+	memory::virtual_::mapping_t::handle_type,
+	isnt_contextual, memory::virtual_::detail::unmap_nothrow, cuMemUnmap,
+	memory::virtual_::mapping::detail::identify);
 
 } // namespace cuda_
 

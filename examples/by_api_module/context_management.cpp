@@ -95,8 +95,8 @@ void current_context_manipulation(
 	const cuda_::device::primary_context_t &pc,
 	const cuda_::context_t &created_context)
 {
-	cuda_::context_t context_0 = pc;
-	cuda_::context_t context_1 = created_context;
+	auto& context_0 = pc;
+	auto& context_1 = created_context;
 	cuda_::context::current::set(context_0);
 	assert_(cuda_::context::current::get() == context_0);
 	assert_(cuda_::context::current::detail::get_handle() == context_0.handle());

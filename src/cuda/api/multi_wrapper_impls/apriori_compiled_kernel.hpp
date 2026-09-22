@@ -142,7 +142,6 @@ apriori_compiled_t get(
 
 } // namespace apriori_compiled
 
-
 /**
  * @brief Obtain a wrapped kernel object corresponding to a "raw" kernel function
  *
@@ -165,7 +164,7 @@ namespace detail {
 
 template<>
 inline ::cuda_::device::primary_context_t
-get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compiled_t kernel)
+get_implicit_primary_context<kernel::apriori_compiled_t>(const kernel::apriori_compiled_t& kernel)
 {
 	const kernel_t &kernel_ = kernel;
 	return get_implicit_primary_context(kernel_);
