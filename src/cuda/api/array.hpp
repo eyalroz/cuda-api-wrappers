@@ -45,7 +45,7 @@ array_t<T, NumDimensions> wrap(
 	handle_t                     handle,
 	dimensions_t<NumDimensions>  dimensions) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 template <typename T> struct format_specifier {};
 
@@ -104,7 +104,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuArrayDestroy(handle);
-	throw_if_error_lazy(status, "Failed destroying the array at " + cuda_::detail_::ptr_as_hex(handle));
+	throw_if_error_lazy(status, "Failed destroying the array at " + cuda_::detail::ptr_as_hex(handle));
 }
 
 template <dimensionality_t NumDimensions>
@@ -117,7 +117,7 @@ inline descriptor_t<2> get_descriptor_in_current_context<2>(handle_t handle)
 	auto status = cuArrayGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
 		std::string("Failed obtaining the descriptor of the CUDA 2D array at ")
-		+ cuda_::detail_::ptr_as_hex(handle));
+		+ cuda_::detail::ptr_as_hex(handle));
 	return result;
 }
 
@@ -128,7 +128,7 @@ inline descriptor_t<4> get_descriptor_in_current_context<3>(handle_t handle)
 	auto status = cuArray3DGetDescriptor(&result, handle);
 	throw_if_error_lazy(status,
 		std::string("Failed obtaining the descriptor of the CUDA 3D array at ")
-		+ cuda_::detail_::ptr_as_hex(handle));
+		+ cuda_::detail::ptr_as_hex(handle));
 	return result;
 }
 
@@ -168,7 +168,7 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
 	return dimensions_of_in_current_context<NumDimensions>(handle);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace array
 
@@ -232,7 +232,7 @@ public:
 		try
 #endif
 		{
-			array::detail_::destroy(handle_, context_handle_);
+			array::detail::destroy(handle_, context_handle_);
 		}
 #ifndef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
@@ -256,7 +256,7 @@ public:
 
 	/// Get the full set of features of this array in a single structure,
 	/// recognizable by the CUDA driver (e.g. for creating additional arrays)
-	descriptor_type descriptor() const	{ return array::detail_::get_descriptor<NumDimensions>(context_handle_, handle_); }
+	descriptor_type descriptor() const	{ return array::detail::get_descriptor<NumDimensions>(context_handle_, handle_); }
 
 protected:
 	dimensions_type    dimensions_;

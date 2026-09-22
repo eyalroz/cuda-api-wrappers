@@ -135,11 +135,11 @@ enum : bool {
 
 namespace context {
 
-namespace detail_ {
+namespace detail {
 
 constexpr CUcontext none { 0 };
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace context
 

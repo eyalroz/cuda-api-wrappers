@@ -52,7 +52,7 @@ using ptr_handle_t = CUipcMemHandle;
 class imported_ptr_t;
 imported_ptr_t wrap(void * ptr,	bool owning) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 /**
  * @brief Obtain a CUDA pointer from a handle passed
@@ -91,10 +91,10 @@ inline status_t unmap_nothrow(void* ipc_mapped_ptr) noexcept
 inline void unmap(void* ipc_mapped_ptr)
 {
 	auto status = unmap_nothrow(ipc_mapped_ptr);
-	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda_::detail_::ptr_as_hex(ipc_mapped_ptr));
+	throw_if_error_lazy(status, "Failed unmapping IPC memory mapped to " + cuda_::detail::ptr_as_hex(ipc_mapped_ptr));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Obtain a handle for a region of on-device memory which can
@@ -105,7 +105,7 @@ inline void unmap(void* ipc_mapped_ptr)
  *
  * @param device_ptr beginning of the region of memory
  * to be shared with other processes
- * @return a handle which another process can call @ref detail_::import()
+ * @return a handle which another process can call @ref detail::import()
  * on to obtain a device pointer it can use
  */
 inline ptr_handle_t export_(void* device_ptr)
@@ -113,7 +113,7 @@ inline ptr_handle_t export_(void* device_ptr)
 	ptr_handle_t handle;
 	auto status = cuIpcGetMemHandle(&handle, device::address(device_ptr));
 	throw_if_error_lazy(status, "Failed producing an IPC memory handle for device pointer "
-		+ cuda_::detail_::ptr_as_hex(device_ptr));
+		+ cuda_::detail::ptr_as_hex(device_ptr));
 	return handle;
 }
 
@@ -141,9 +141,9 @@ public: // constructors & destructors
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		detail_::unmap(ptr_);
+		detail::unmap(ptr_);
 #else
-		detail_::unmap_nothrow(ptr_);
+		detail::unmap_nothrow(ptr_);
 #endif
 	}
 
@@ -187,7 +187,7 @@ inline imported_ptr_t wrap(void * ptr, bool owning) noexcept
 /// Import memory from another process, given the appropriate handle
 inline imported_ptr_t import(const ptr_handle_t& ptr_handle)
 {
-	auto raw_ptr = detail_::import(ptr_handle);
+	auto raw_ptr = detail::import(ptr_handle);
 	return wrap(raw_ptr, do_take_ownership);
 }
 
@@ -203,7 +203,7 @@ using handle_t = void *;
 template <shared_handle_kind_t Kind>
 shared_handle_t<Kind> export_(const pool_t& pool);
 
-namespace detail_ {
+namespace detail {
 
 template <shared_handle_kind_t Kind>
 pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
@@ -217,7 +217,7 @@ pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
 	return result;
 }
 
-} // namespace detail_
+} // namespace detail
 
 template <shared_handle_kind_t Kind>
 pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle);
@@ -227,11 +227,11 @@ inline ptr_handle_t export_ptr(void* pool_allocated) {
 	auto status = cuMemPoolExportPointer(&handle, device::address(pool_allocated));
 	throw_if_error_lazy(status,
 		"Failed producing an IPC handle for memory-pool-allocated pointer "
-		+ cuda_::detail_::ptr_as_hex(pool_allocated));
+		+ cuda_::detail::ptr_as_hex(pool_allocated));
 	return handle;
 }
 
-namespace detail_ {
+namespace detail {
 
 inline void* import_ptr(const pool::handle_t pool_handle, const ptr_handle_t& handle)
 {
@@ -241,7 +241,7 @@ inline void* import_ptr(const pool::handle_t pool_handle, const ptr_handle_t& ha
 	return as_pointer(imported);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief A smart-pointer-like class for memory obtained via IPC (inter-process communication),
@@ -275,14 +275,14 @@ namespace ipc {
  */
 using handle_t = CUipcEventHandle;
 
-namespace detail_ {
+namespace detail {
 
 inline handle_t export_(event::handle_t event_handle)
 {
 	handle_t ipc_handle;
 	auto status = cuIpcGetEventHandle(&ipc_handle, event_handle);
 	throw_if_error_lazy(status, "Failed obtaining an IPC event handle for " +
-		event::detail_::identify(event_handle));
+		event::detail::identify(event_handle));
 	return ipc_handle;
 }
 
@@ -294,7 +294,7 @@ inline event::handle_t import(const handle_t& handle)
 	return event_handle;
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Enable use of an event which this process created by other processes

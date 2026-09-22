@@ -38,7 +38,7 @@ constexpr attribute_t	array_access_support = CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_
 #endif
 ///@}
 
-namespace detail_ {
+namespace detail {
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
  * relating to their interaction
@@ -71,12 +71,12 @@ inline bool can_access(const device::id_t accessor, const device::id_t peer)
 {
 	int result;
 	auto status = cuDeviceCanAccessPeer(&result, accessor, peer);
-	throw_if_error_lazy(status, "Failed determining whether " + device::detail_::identify(accessor)
-		+ " can access " + device::detail_::identify(peer));
+	throw_if_error_lazy(status, "Failed determining whether " + device::detail::identify(accessor)
+		+ " can access " + device::detail::identify(peer));
 	return (result == 1);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace peer_to_peer
 
@@ -112,35 +112,35 @@ void disable_access_to(const context_t &peer_context);
  */
 namespace peer_to_peer {
 
-namespace detail_ {
+namespace detail {
 
 inline void enable_access_to(context::handle_t peer_context)
 {
 	enum : unsigned {fixed_flags = 0 };
 	// No flags are supported as of CUDA 8.0
 	auto status = cuCtxEnablePeerAccess(peer_context, fixed_flags);
-	throw_if_error_lazy(status, "Failed enabling access to peer " + context::detail_::identify(peer_context));
+	throw_if_error_lazy(status, "Failed enabling access to peer " + context::detail::identify(peer_context));
 }
 
 inline void disable_access_to(context::handle_t peer_context)
 {
 	auto status = cuCtxDisablePeerAccess(peer_context);
-	throw_if_error_lazy(status, "Failed disabling access to peer " + context::detail_::identify(peer_context));
+	throw_if_error_lazy(status, "Failed disabling access to peer " + context::detail::identify(peer_context));
 }
 
 inline void enable_access(context::handle_t accessor, context::handle_t peer)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_context(accessor);
+	context::current::detail::scoped_override_t set_context_for_this_context(accessor);
 	enable_access_to(peer);
 }
 
 inline void disable_access(context::handle_t accessor, context::handle_t peer)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_context(accessor);
+	context::current::detail::scoped_override_t set_context_for_this_context(accessor);
 	disable_access_to(peer);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Check if a CUDA context can access the global memory of another CUDA context

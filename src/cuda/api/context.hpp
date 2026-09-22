@@ -85,7 +85,7 @@ context_t wrap(
 	context::handle_t  context_id,
 	bool               take_ownership = false) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 std::string identify(const context_t& context);
 
@@ -115,10 +115,10 @@ constexpr flags_t make_flags(
 // consider renaming this: device_id_of
 inline device::id_t get_device_id(handle_t context_handle)
 {
-	auto needed_push = current::detail_::push_if_not_on_top(context_handle);
-	auto device_id = current::detail_::get_device_id();
+	auto needed_push = current::detail::push_if_not_on_top(context_handle);
+	auto device_id = current::detail::get_device_id();
 	if (needed_push) {
-		current::detail_::pop();
+		current::detail::pop();
 	}
 	return device_id;
 }
@@ -184,13 +184,13 @@ inline void set_shared_memory_bank_size(handle_t handle, shared_memory_bank_size
 inline void synchronize(context::handle_t handle)
 {
 	CAW_SET_SCOPE_CONTEXT(handle);
-	context::current::detail_::synchronize(handle);
+	context::current::detail::synchronize(handle);
 }
 
 inline void synchronize(device::id_t device_id, context::handle_t handle)
 {
 	CAW_SET_SCOPE_CONTEXT(handle);
-	context::current::detail_::synchronize(device_id, handle);
+	context::current::detail::synchronize(device_id, handle);
 }
 
 inline status_t destroy_nothrow(handle_t handle) noexcept
@@ -213,10 +213,10 @@ inline void destroy(handle_t handle, device::id_t device_index)
 inline context::flags_t get_flags(handle_t handle)
 {
 	CAW_SET_SCOPE_CONTEXT(handle);
-	return context::current::detail_::get_flags();
+	return context::current::detail::get_flags();
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace context
 
@@ -325,7 +325,7 @@ public: // inner classes
 		size_t amount_total() const
 		{
 			CAW_SET_SCOPE_CONTEXT(context_handle_);
-			return context::detail_::total_memory(context_handle_);
+			return context::detail::total_memory(context_handle_);
 		}
 
 		/**
@@ -334,7 +334,7 @@ public: // inner classes
 		size_t amount_free() const
 		{
 			CAW_SET_SCOPE_CONTEXT(context_handle_);
-			return context::detail_::free_memory(context_handle_);
+			return context::detail::free_memory(context_handle_);
 		}
 
 #if CUDA_VERSION >= 11040
@@ -348,7 +348,7 @@ public: // inner classes
 		{
 			auto status = cuDeviceGraphMemTrim(device_id_);
 			throw_if_error_lazy(status,
-				"Trimming memory used for CUDA execution graphs on " + device::detail_::identify(device_id_));
+				"Trimming memory used for CUDA execution graphs on " + device::detail::identify(device_id_));
 		}
 
 		/**
@@ -359,7 +359,7 @@ public: // inner classes
 			cuuint64_t result;
 			auto status = cuDeviceGetGraphMemAttribute(device_id_, attribute, &result);
 			throw_if_error_lazy(status, "Failed obtaining an execution-graph-related memory attribute for "
-										+ device::detail_::identify(device_id_));
+										+ device::detail::identify(device_id_));
 			return result;
 		}
 
@@ -368,7 +368,7 @@ public: // inner classes
 			cuuint64_t value_{0};
 			auto status = cuDeviceSetGraphMemAttribute(device_id_, CU_GRAPH_MEM_ATTR_USED_MEM_HIGH, &value_);
 			throw_if_error_lazy(status, "Failed setting an execution-graph-related memory attribute for "
-										+ device::detail_::identify(device_id_));
+										+ device::detail::identify(device_id_));
 		}
 		///@}
 #endif // CUDA_VERSION >= 11040
@@ -392,7 +392,7 @@ public: // data member non-mutator getters
 	size_t total_memory() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::total_memory(handle_);
+		return context::detail::total_memory(handle_);
 	}
 
 	/**
@@ -404,7 +404,7 @@ public: // data member non-mutator getters
 	size_t free_memory() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::free_memory(handle_);
+		return context::detail::free_memory(handle_);
 	}
 
 public: // other non-mutator methods
@@ -424,14 +424,14 @@ public: // other non-mutator methods
 	multiprocessor_cache_preference_t cache_preference() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::cache_preference(handle_);
+		return context::detail::cache_preference(handle_);
 	}
 
 	/// @return the stack size in bytes of each GPU thread when running kernels within this context
 	size_t stack_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_STACK_SIZE);
+		return context::detail::get_limit(CU_LIMIT_STACK_SIZE);
 	}
 
 	/// @return the size of the FIFO (first-in, first-out) buffer used by the `printf()` function
@@ -439,7 +439,7 @@ public: // other non-mutator methods
 	context::limit_value_t printf_buffer_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
+		return context::detail::get_limit(CU_LIMIT_PRINTF_FIFO_SIZE);
 	}
 
 	/// @return the size in bytes of the heap available to malloc() & free() calls in device-side
@@ -447,7 +447,7 @@ public: // other non-mutator methods
 	context::limit_value_t memory_allocation_heap_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_MALLOC_HEAP_SIZE);
+		return context::detail::get_limit(CU_LIMIT_MALLOC_HEAP_SIZE);
 	}
 
 	/**
@@ -460,7 +460,7 @@ public: // other non-mutator methods
 	context::limit_value_t maximum_depth_of_child_grid_sync_calls() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH);
+		return context::detail::get_limit(CU_LIMIT_DEV_RUNTIME_SYNC_DEPTH);
 	}
 
 	/// Get a wrapper object for this context's associated device-global memory
@@ -477,7 +477,7 @@ public: // other non-mutator methods
 	context::limit_value_t maximum_outstanding_kernel_launches() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT);
+		return context::detail::get_limit(CU_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT);
 	}
 
 #if CUDA_VERSION >= 10000
@@ -491,7 +491,7 @@ public: // other non-mutator methods
 	context::limit_value_t l2_fetch_granularity() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(CU_LIMIT_MAX_L2_FETCH_GRANULARITY);
+		return context::detail::get_limit(CU_LIMIT_MAX_L2_FETCH_GRANULARITY);
 	}
 #endif
 
@@ -505,7 +505,7 @@ public: // other non-mutator methods
 	context::shared_memory_bank_size_t shared_memory_bank_size() const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::shared_memory_bank_size(handle_);
+		return context::detail::shared_memory_bank_size(handle_);
 	}
 #endif // CUDA_VERSION < 12030
 
@@ -513,7 +513,7 @@ public: // other non-mutator methods
 	/// top item in the context stack)
 	bool is_current() const
 	{
-		return context::current::detail_::is_(handle_);
+		return context::current::detail::is_(handle_);
 	}
 
 	/// @return True if this context is the primary context for its associated device.
@@ -526,7 +526,7 @@ public: // other non-mutator methods
 		context::stream_priority_range_t result;
 		auto status = cuCtxGetStreamPriorityRange(&result.least, &result.greatest);
 		throw_if_error_lazy(status, "Obtaining the priority range for streams within " +
-			context::detail_::identify(*this));
+			context::detail::identify(*this));
 		return result;
 	}
 
@@ -535,7 +535,7 @@ public: // other non-mutator methods
 	context::limit_value_t get_limit(context::limit_t limit_id) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::get_limit(limit_id);
+		return context::detail::get_limit(limit_id);
 	}
 
 	/**
@@ -548,7 +548,7 @@ public: // other non-mutator methods
 	{
 		unsigned int raw_version;
 		auto status = cuCtxGetApiVersion(handle_, &raw_version);
-		throw_if_error_lazy(status, "Failed obtaining the API version for " + context::detail_::identify(*this));
+		throw_if_error_lazy(status, "Failed obtaining the API version for " + context::detail::identify(*this));
 		return version_t::from_single_number(static_cast<combined_version_t>(raw_version));
 	}
 
@@ -556,7 +556,7 @@ protected:
 	///@cond
 	context::flags_t flags() const
 	{
-		return context::detail_::get_flags(handle_);
+		return context::detail::get_flags(handle_);
 	}
 	///@endcond
 
@@ -595,11 +595,11 @@ public: // methods which mutate the context, but not its wrapper
 	/// see also @ref cuda_::module::create()
 	///@{
 	template <typename ContiguousContainer,
-		cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
+		cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
 
 	template <typename ContiguousContainer,
-		cuda_::detail_::enable_if_t<detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
+		cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
 	module_t create_module(ContiguousContainer module_data) const;
 	///@}
 
@@ -638,7 +638,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	void set_shared_memory_bank_size(context::shared_memory_bank_size_t bank_size) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		context::detail_::set_shared_memory_bank_size(handle_, bank_size);
+		context::detail::set_shared_memory_bank_size(handle_, bank_size);
 	}
 #endif // CUDA_VERSION < 12030
 
@@ -651,7 +651,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		context::detail_::set_cache_preference(handle_, preference);
+		context::detail::set_cache_preference(handle_, preference);
 	}
 
 	/// Set one of the configurable limits for this context (and events, streams,
@@ -659,7 +659,7 @@ public: // other methods which don't mutate this class as a reference, but do mu
 	void set_limit(context::limit_t limit_id, context::limit_value_t new_value) const
 	{
 		CAW_SET_SCOPE_CONTEXT(handle_);
-		return context::detail_::set_limit(limit_id, new_value);
+		return context::detail::set_limit(limit_id, new_value);
 	}
 
 	/// Set the limit on the size of the stack a kernel thread can use when running
@@ -735,9 +735,9 @@ public: // constructors and destructor
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		context::detail_::destroy(handle_, device_id_);
+		context::detail::destroy(handle_, device_id_);
 #else
-		context::detail_::destroy_nothrow(handle_);
+		context::detail::destroy_nothrow(handle_);
 #endif
 	}
 
@@ -794,7 +794,7 @@ inline context_t wrap(
 	return { device_id, context_id, take_ownership };
 }
 
-namespace detail_ {
+namespace detail {
 
 inline context_t from_handle(
 	context::handle_t  context_handle,
@@ -809,7 +809,7 @@ inline handle_t create_and_push(
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = automatic,
 	bool                                   keep_larger_local_mem_after_resize = false)
 {
-	auto flags = context::detail_::make_flags(
+	auto flags = context::detail::make_flags(
 		sync_scheduling_policy,
 		keep_larger_local_mem_after_resize);
 	handle_t handle;
@@ -821,11 +821,11 @@ inline handle_t create_and_push(
 	auto status = cuCtxCreate(&handle, flags, device_id);
 #endif
 	throw_if_error_lazy(status, "failed creating a CUDA context associated with "
-		+ device::detail_::identify(device_id));
+		+ device::detail::identify(device_id));
 	return handle;
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief creates a new context on a given device
@@ -876,11 +876,11 @@ namespace current {
  */
 inline context_t get()
 {
-	auto handle = detail_::get_handle();
-	if (handle == context::detail_::none) {
+	auto handle = detail::get_handle();
+	if (handle == context::detail::none) {
 		throw std::runtime_error("Attempt to obtain the current CUDA context when no context is current.");
 	}
-	return context::detail_::from_handle(handle);
+	return context::detail::from_handle(handle);
 }
 
 /**
@@ -892,14 +892,14 @@ inline context_t get()
  */
 inline void set(const context_t& context)
 {
-	return detail_::set(context.handle());
+	return detail::set(context.handle());
 }
 
 /// Push a (reference to a) context onto the top of the context stack - unless
 /// that context is already at the top of the stack, in which case do nothing
 inline bool push_if_not_on_top(const context_t& context)
 {
-	return context::current::detail_::push_if_not_on_top(context.handle());
+	return context::current::detail::push_if_not_on_top(context.handle());
 }
 
 /**
@@ -911,7 +911,7 @@ inline bool push_if_not_on_top(const context_t& context)
  */
 inline void push(const context_t& context)
 {
-	return context::current::detail_::push(context.handle());
+	return context::current::detail::push(context.handle());
 }
 
 /**
@@ -925,12 +925,12 @@ inline context_t pop()
 	static constexpr bool do_not_take_ownership { false };
 	// Unfortunately, since we don't store the device IDs of contexts
 	// on the stack, this incurs an extra API call beyond just the popping...
-	auto handle = context::current::detail_::pop();
-	auto device_id = context::detail_::get_device_id(handle);
+	auto handle = context::current::detail::pop();
+	auto device_id = context::detail::get_device_id(handle);
 	return context::wrap(device_id, handle, do_not_take_ownership);
 }
 
-namespace detail_ {
+namespace detail {
 
 /**
  * If now current context exists, push the current device's primary context onto the stack
@@ -946,25 +946,25 @@ handle_t push_default_if_missing();
 inline context_t get_with_fallback_push()
 {
 	auto handle = push_default_if_missing();
-	return context::detail_::from_handle(handle);
+	return context::detail::from_handle(handle);
 }
 
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace current
 
 /// @return true if the context is the primary context of its device
 bool is_primary(const context_t& context);
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const context_t& context)
 {
 	return identify(context.handle(), context.device_id());
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace context
 
@@ -980,7 +980,7 @@ inline std::string identify(const context_t& context)
  */
 inline void synchronize(const context_t& context)
 {
-	context::detail_::synchronize(context.device_id(), context.handle());
+	context::detail::synchronize(context.device_id(), context.handle());
 }
 
 } // namespace cuda_

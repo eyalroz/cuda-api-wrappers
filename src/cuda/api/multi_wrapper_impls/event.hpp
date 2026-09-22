@@ -33,7 +33,7 @@ inline event_t create(
 	bool              records_timing,
 	bool              interprocess)
 {
-	return detail_::create(
+	return detail::create(
 		context.device_id(),
 		context.handle(),
 		does_not_hold_primary_context_refcount_unit,
@@ -58,10 +58,10 @@ inline event_t create(
 	//
 	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	device::primary_context::detail_::increase_refcount(device.id());
-	return detail_::create_in_current_context(
+	device::primary_context::detail::increase_refcount(device.id());
+	return detail::create_in_current_context(
 		device.id(),
-		context::current::detail_::get_handle(),
+		context::current::detail::get_handle(),
 		does_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
@@ -70,7 +70,7 @@ namespace ipc {
 
 inline handle_t export_(const event_t& event)
 {
-	return detail_::export_(event.handle());
+	return detail::export_(event.handle());
 }
 
 inline event_t import(const context_t& context, const handle_t& event_ipc_handle)
@@ -80,7 +80,7 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 	return event::wrap(
 		context.device_id(),
 		context.handle(),
-		detail_::import(event_ipc_handle),
+		detail::import(event_ipc_handle),
 		do_not_take_ownership,
 		do_not_own_pc_refcount_unit);
 }
@@ -89,10 +89,10 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
 {
 	auto pc = device.primary_context();
-	device::primary_context::detail_::increase_refcount(device.id());
-	auto handle = detail_::import(event_ipc_handle);
+	device::primary_context::detail::increase_refcount(device.id());
+	auto handle = detail::import(event_ipc_handle);
 	return event::wrap(
-		device.id(), context::current::detail_::get_handle(), handle,
+		device.id(), context::current::detail::get_handle(), handle,
 		do_not_take_ownership, does_hold_primary_context_refcount_unit);
 }
 
@@ -118,7 +118,7 @@ inline void event_t::record(const stream_t& stream) const
 		throw std::invalid_argument("Attempt to record an event on a stream in a different context");
 	}
 #endif
-	event::detail_::enqueue(context_handle_, stream.handle(), handle_);
+	event::detail::enqueue(context_handle_, stream.handle(), handle_);
 }
 
 inline void event_t::fire(const stream_t& stream) const

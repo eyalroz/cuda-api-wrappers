@@ -56,7 +56,7 @@ namespace cuda_ {
  */
 namespace profiling {
 
-namespace detail_ {
+namespace detail {
 
 inline void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
 {
@@ -76,7 +76,7 @@ inline void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) no
 	attrs.message.registered = rsh;
 }
 
-} // namespace detail_
+} // namespace detail
 
 /// definitions related to profiled ranges and the @ref range_t class
 namespace range {
@@ -156,7 +156,7 @@ struct color_t {
 /// definitions related to marking individual time points in the profiler timeline
 namespace mark {
 
-namespace detail_ {
+namespace detail {
 
 // Used to prevent multiple threads from accessing the profiler simultaneously
 inline std::mutex& get_mutex() noexcept
@@ -173,19 +173,19 @@ nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
 	eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
 	eventAttrib.colorType = NVTX_COLOR_ARGB;
 	eventAttrib.color = color;
-	profiling::detail_::set_message(eventAttrib,description);
+	profiling::detail::set_message(eventAttrib,description);
 	return eventAttrib;
 }
 
-} // namespace detail_
+} // namespace detail
 
 /// Mark a single point on the profiler timeline, giving
 /// it also a color and some descriptive text
 template <typename CharT>
 void point(const CharT* description, color_t color = color_t::Black())
 {
-	auto attrs = detail_::create_attributes(description, color);
-	std::lock_guard<std::mutex> guard{ detail_::get_mutex() };
+	auto attrs = detail::create_attributes(description, color);
+	std::lock_guard<std::mutex> guard{ detail::get_mutex() };
 	// logging?
 	nvtxMarkEx(&attrs);
 }
@@ -206,8 +206,8 @@ range::handle_t range_start(
 	color_t        color = color_t::LightRed())
 {
 	(void) type; // Currently not doing anything with the type; maybe in the future
-	std::lock_guard<std::mutex> guard{ detail_::get_mutex() };
-	auto attrs = detail_::create_attributes(description, color);
+	std::lock_guard<std::mutex> guard{ detail::get_mutex() };
+	auto attrs = detail::create_attributes(description, color);
 	nvtxRangeId_t range_handle = nvtxRangeStartEx(&attrs);
 	static_assert(std::is_same<range::handle_t, nvtxRangeId_t>::value,
 				  "cuda_::profiling::range::handle_t must be the same type as nvtxRangeId_t - but isn't.");
@@ -294,12 +294,12 @@ public:
 #endif
 	}
 protected:
-	context::current::detail_::scoped_existence_ensurer_t context_existence_ensurer;
+	context::current::detail::scoped_existence_ensurer_t context_existence_ensurer;
 };
 
 #define profile_this_scope() ::cuda_::profiling::scope cuda_profiling_scope_{};
 
-namespace detail_ {
+namespace detail {
 
 template <typename CharT>
 void name_host_thread(uint32_t raw_thread_id, const CharT* name);
@@ -375,7 +375,7 @@ inline void name(std::thread::id host_thread_id, const char* name)
 #endif
     name_host_thread(thread_id, name);}
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Have the profiler refer to a given host thread, using a specified string
@@ -397,30 +397,30 @@ void name(const std::thread& host_thread, const CharT* name);
 template <typename CharT>
 void name_this_thread(const CharT* name)
 {
-	detail_::name(std::this_thread::get_id(), name);
+	detail::name(std::this_thread::get_id(), name);
 }
 
 /// Have the profile assign a name to a certain stream
 template <typename CharT>
 void name(const stream_t& stream, const CharT* name)
 {
-	context::current::detail_::scoped_override_t context_setter{stream.context_handle()};
-	detail_::name_stream(stream.handle(), name);
+	context::current::detail::scoped_override_t context_setter{stream.context_handle()};
+	detail::name_stream(stream.handle(), name);
 }
 
 /// Have the profile assign a name to a certain event
 template <typename CharT>
 void name(const event_t& event, const CharT* name)
 {
-	context::current::detail_::scoped_override_t context_setter{event.context_handle()};
-	detail_::name_stream(event.handle(), name);
+	context::current::detail::scoped_override_t context_setter{event.context_handle()};
+	detail::name_stream(event.handle(), name);
 }
 
 /// Have the profile assign a name to a certain CUDA device
 template <typename CharT>
 void name(const device_t& device, const CharT* name)
 {
-	detail_::name_stream(device.id(), name);
+	detail::name_stream(device.id(), name);
 }
 
 } // namespace profiling

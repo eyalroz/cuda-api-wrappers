@@ -291,7 +291,7 @@ inline std::string describe(status_t status)
 inline std::string describe(cudaError_t status) { return cudaGetErrorString(status); }
 ///@}
 
-namespace detail_ {
+namespace detail {
 
 template <typename I, bool UpperCase = false>
 std::string as_hex(I x)
@@ -322,7 +322,7 @@ std::string ptr_as_hex(const I* ptr)
 	return as_hex(reinterpret_cast<uintptr_t>(ptr));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * A (base?) class for exceptions raised by CUDA code; these errors are thrown by
@@ -442,7 +442,7 @@ enum : bool {
 	do_clear_errors    = true
 };
 
-namespace detail_ {
+namespace detail {
 
 namespace outstanding_runtime_error {
 
@@ -467,7 +467,7 @@ inline status_t get() noexcept
 }
 
 } // namespace outstanding_runtime_error
-} // namespace detail_
+} // namespace detail
 
 /**
  * Unlike the Runtime API, where every error is outstanding
@@ -538,148 +538,148 @@ inline void ensure_none() noexcept(false)
 // generated for exceptions thrown by various API wrappers.
 
 namespace device {
-namespace detail_ {
+namespace detail {
 inline std::string identify(device::id_t device_id)
 {
 	return std::string("device ") + std::to_string(device_id);
 }
-} // namespace detail_
+} // namespace detail
 } // namespace device
 
 namespace context {
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(handle_t handle)
 {
-	return "context " + cuda_::detail_::ptr_as_hex(handle);
+	return "context " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail_::identify(device_id);
+	return identify(handle) + " on " + device::detail::identify(device_id);
 }
 
-} // namespace detail_
+} // namespace detail
 
 namespace current {
-namespace detail_ {
+namespace detail {
 inline std::string identify(context::handle_t handle)
 {
-	return "current context: " + context::detail_::identify(handle);
+	return "current context: " + context::detail::identify(handle);
 }
 inline std::string identify(context::handle_t handle, device::id_t device_id)
 {
-	return "current context: " + context::detail_::identify(handle, device_id);
+	return "current context: " + context::detail::identify(handle, device_id);
 }
-} // namespace detail_
+} // namespace detail
 } // namespace current
 
 } // namespace context
 
 namespace device {
 namespace primary_context {
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return "context " + context::detail_::identify(handle, device_id);
+	return "context " + context::detail::identify(handle, device_id);
 }
 inline std::string identify(handle_t handle)
 {
-	return "context " + context::detail_::identify(handle);
+	return "context " + context::detail::identify(handle);
 }
-} // namespace detail_
+} // namespace detail
 } // namespace primary_context
 } // namespace device
 
 namespace stream {
-namespace detail_ {
+namespace detail {
 inline std::string identify(handle_t handle)
 {
 	return (handle == nullptr) ? "default/null stream" :
-		"stream at" + cuda_::detail_::ptr_as_hex(handle);
+		"stream at" + cuda_::detail::ptr_as_hex(handle);
 }
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail_::identify(device_id);
+	return identify(handle) + " on " + device::detail::identify(device_id);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle);
+	return identify(handle) + " in " + context::detail::identify(context_handle);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
+	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
 }
-} // namespace detail_
+} // namespace detail
 } // namespace stream
 
 namespace event {
-namespace detail_ {
+namespace detail {
 inline std::string identify(handle_t handle)
 {
-	return "event " + cuda_::detail_::ptr_as_hex(handle);
+	return "event " + cuda_::detail::ptr_as_hex(handle);
 }
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail_::identify(device_id);
+	return identify(handle) + " on " + device::detail::identify(device_id);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
-	return identify(handle) + " on " + context::detail_::identify(context_handle);
+	return identify(handle) + " on " + context::detail::identify(context_handle);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + context::detail_::identify(context_handle, device_id);
+	return identify(handle) + " on " + context::detail::identify(context_handle, device_id);
 }
-} // namespace detail_
+} // namespace detail
 } // namespace event
 
 namespace kernel {
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const void* ptr)
 {
-	return "kernel " + cuda_::detail_::ptr_as_hex(ptr);
+	return "kernel " + cuda_::detail::ptr_as_hex(ptr);
 }
 inline std::string identify(const void* ptr, device::id_t device_id)
 {
-	return identify(ptr) + " on " + device::detail_::identify(device_id);
+	return identify(ptr) + " on " + device::detail::identify(device_id);
 }
 inline std::string identify(const void* ptr, context::handle_t context_handle)
 {
-	return identify(ptr) + " in " + context::detail_::identify(context_handle);
+	return identify(ptr) + " in " + context::detail::identify(context_handle);
 }
 inline std::string identify(const void* ptr, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(ptr) + " in " + context::detail_::identify(context_handle, device_id);
+	return identify(ptr) + " in " + context::detail::identify(context_handle, device_id);
 }
 inline std::string identify(handle_t handle)
 {
-	return "kernel at " + cuda_::detail_::ptr_as_hex(handle);
+	return "kernel at " + cuda_::detail::ptr_as_hex(handle);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle);
+	return identify(handle) + " in " + context::detail::identify(context_handle);
 }
 inline std::string identify(handle_t handle,  device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail_::identify(device_id);
+	return identify(handle) + " on " + device::detail::identify(device_id);
 }
 inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(handle) + " in " + context::detail_::identify(context_handle, device_id);
+	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
 }
 
-} // namespace detail_
+} // namespace detail
 } // namespace kernel
 
 namespace memory {
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(region_t region)
 {
-	return std::string("memory region at ") + cuda_::detail_::ptr_as_hex(region.data())
+	return std::string("memory region at ") + cuda_::detail::ptr_as_hex(region.data())
 		+ " of size " + std::to_string(region.size());
 }
 #if CUDA_VERSION >= 10020
@@ -688,7 +688,7 @@ inline std::string identify(location_t location)
 	switch (location.type) {
 	case CU_MEM_LOCATION_TYPE_DEVICE:
 		if (location.id != CU_DEVICE_CPU) {
-			return "global memory of " + cuda_::device::detail_::identify(location.id);
+			return "global memory of " + cuda_::device::detail::identify(location.id);
 		}
 		// fallthrough
 #if CUDA_VERSION >= 12020
@@ -705,7 +705,7 @@ inline std::string identify(location_t location)
 }
 #endif // CUDA_VERSION >= 10020
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace memory
 

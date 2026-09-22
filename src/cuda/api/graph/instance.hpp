@@ -53,7 +53,7 @@ constexpr bool operator!=(const update_status_t &lhs, const named_t &rhs) noexce
 constexpr bool operator==(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) == rhs; }
 constexpr bool operator!=(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) != rhs; }
 
-namespace detail_ {
+namespace detail {
 
 constexpr const char * const descriptions[] = {
 	"success",
@@ -76,17 +76,17 @@ inline bool is_node_specific(update_status_t update_status)
 		update_status != unsupported_kind_of_parameter_change;
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace update_status
 
-namespace detail_ {
+namespace detail {
 
 using flags_t = cuuint64_t;
 
 inline const char *describe(instance::update_status_t update_status)
 {
-	return instance::update_status::detail_::descriptions[update_status];
+	return instance::update_status::detail::descriptions[update_status];
 }
 
 inline std::string describe(
@@ -104,7 +104,7 @@ inline id_t get_id(handle_t handle)
 }
 #endif // CUDA_VERSION >= 13010
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace instance
 
@@ -138,7 +138,7 @@ inline id_t get_id(handle_t handle)
  */
 inline std::string describe(graph::instance::update_status_t status)
 {
-	return graph::instance::detail_::describe(status);
+	return graph::instance::detail::describe(status);
 }
 
 std::string describe(graph::instance::update_status_t update_status, optional<graph::node_t> node);
@@ -162,11 +162,11 @@ namespace instance {
 
 instance_t wrap(template_::handle_t template_handle, handle_t handle, bool  is_owning) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 std::string identify(const instance_t &instance);
 
-} // namespace detail_
+} // namespace detail
 
 // TODO: Add support for reporting errors involving edges
 class update_failure : public std::runtime_error {
@@ -208,19 +208,19 @@ private:
  */
 void update(const instance_t& destination, const template_t& source);
 
-namespace detail_ {
+namespace detail {
 
 template <node::kind_t Kind>
 status_t set_node_parameters_nothrow(
 	const instance::handle_t instance_handle,
 	const node::handle_t node_handle,
-	const typename node::detail_::kind_traits<Kind>::raw_parameters_type raw_params)
+	const typename node::detail::kind_traits<Kind>::raw_parameters_type raw_params)
 {
-	auto raw_params_maybe_ptr = node::detail_::maybe_add_ptr<Kind>(raw_params);
-	return node::detail_::kind_traits<Kind>::instance_setter(instance_handle, node_handle, raw_params_maybe_ptr);
+	auto raw_params_maybe_ptr = node::detail::maybe_add_ptr<Kind>(raw_params);
+	return node::detail::kind_traits<Kind>::instance_setter(instance_handle, node_handle, raw_params_maybe_ptr);
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 template <node::kind_t Kind>
@@ -231,22 +231,22 @@ void set_node_parameters(
 
 } // namespace instance
 
-namespace detail_ {
+namespace detail {
 
 inline void launch_graph_in_current_context(stream::handle_t stream_handle, instance::handle_t graph_instance_handle)
 {
 	auto status = cuGraphLaunch(graph_instance_handle, stream_handle);
 	throw_if_error_lazy(status, "Trying to launch "
-		+ instance::detail_::identify(graph_instance_handle) + " on " + stream::detail_::identify(stream_handle));
+		+ instance::detail::identify(graph_instance_handle) + " on " + stream::detail::identify(stream_handle));
 }
 
 inline void launch(context::handle_t context_handle, stream::handle_t stream_handle, instance::handle_t graph_instance_handle)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(context_handle);
+	context::current::detail::scoped_override_t set_context_for_this_scope(context_handle);
 	launch_graph_in_current_context(stream_handle, graph_instance_handle);
 }
 
-} // namespace detail_
+} // namespace detail
 
 class instance_t {
 public: // data types
@@ -274,7 +274,7 @@ public: // constructors & destructor
 		if (not owning_) { return; }
 		auto status = cuGraphExecDestroy(handle_);
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		throw_if_error_lazy(status, "Destroying " + instance::detail_::identify(*this));
+		throw_if_error_lazy(status, "Destroying " + instance::detail::identify(*this));
 #else
 		(void) status;
 #endif
@@ -311,7 +311,7 @@ public: // non-mutators
 #if CUDA_VERSION >= 12000
 	bool frees_allocations_before_relaunch() const
 	{
-		instance::detail_::flags_t flags;
+		instance::detail::flags_t flags;
 		auto status = cuGraphExecGetFlags (handle_, &flags);
 		throw_if_error_lazy(status, "Obtaining execution graph instance flags");
 		return flags & CUDA_GRAPH_INSTANTIATE_FLAG_AUTO_FREE_ON_LAUNCH;
@@ -319,7 +319,7 @@ public: // non-mutators
 
 	bool uses_node_priorities() const
 	{
-		instance::detail_::flags_t flags;
+		instance::detail::flags_t flags;
 		auto status = cuGraphExecGetFlags (handle_, &flags);
 		throw_if_error_lazy(status, "Obtaining execution graph instance flags");
 		return flags & CUDA_GRAPH_INSTANTIATE_FLAG_USE_NODE_PRIORITY;
@@ -332,7 +332,7 @@ public: // non-mutators
 	/// ID one would find in the output of DOT printing the instance.
 	id_t get_id() const
 	{
-		return instance::detail_::get_id(handle_);
+		return instance::detail::get_id(handle_);
 	}
 #endif // CUDA_VERSION >= 13010
 
@@ -403,7 +403,7 @@ enum : bool {
 #endif // CUDA_VERSION >= 11700
 };
 
-namespace detail_ {
+namespace detail {
 
 #if CUDA_VERSION >= 11040
 inline flags_t build_flags(
@@ -433,16 +433,16 @@ inline flags_t build_flags(
 inline std::string identify(const instance_t& instance)
 {
 	return identify(instance.handle()) + " instantiated from "
-		+ template_::detail_::identify(instance.template_handle());
+		+ template_::detail::identify(instance.template_handle());
 }
 
 inline std::string identify(const instance_t& instance, const template_t& template_)
 {
 	return identify(instance.handle()) + " instantiated from "
-	   + template_::detail_::identify(template_);
+	   + template_::detail::identify(template_);
 }
 
-} // namespace detail_
+} // namespace detail
 
 template <node::kind_t Kind>
 void set_node_parameters(
@@ -450,10 +450,10 @@ void set_node_parameters(
 	const node_t&              node,
 	node::parameters_t<Kind>   parameters)
 {
-	auto status = detail_::set_node_parameters_nothrow<Kind>(
-		instance.handle(), node.handle(), node::detail_::kind_traits<Kind>::marshal(parameters));
-	throw_if_error_lazy(status, "Setting parameters of " + node::detail_::identify(node)
-		+ " in " + instance::detail_::identify(instance));
+	auto status = detail::set_node_parameters_nothrow<Kind>(
+		instance.handle(), node.handle(), node::detail::kind_traits<Kind>::marshal(parameters));
+	throw_if_error_lazy(status, "Setting parameters of " + node::detail::identify(node)
+		+ " in " + instance::detail::identify(instance));
 }
 
 
@@ -484,7 +484,7 @@ inline instance_t instantiate(
 )
 {
 #if CUDA_VERSION >= 11040
-	instance::detail_::flags_t flags = instance::detail_::build_flags(
+	instance::detail::flags_t flags = instance::detail::build_flags(
 		free_previous_allocations_before_relaunch
 #if CUDA_VERSION >= 12000
 		, upload_on_instantiation, make_device_launchable
@@ -497,14 +497,14 @@ inline instance_t instantiate(
 	instance::handle_t instance_handle;
 #if CUDA_VERSION >= 11040
 	auto status = cuGraphInstantiateWithFlags(&instance_handle, template_.handle(), flags);
-	throw_if_error_lazy(status, "Instantiating " + template_::detail_::identify(template_) );
+	throw_if_error_lazy(status, "Instantiating " + template_::detail::identify(template_) );
 #else
 	static constexpr size_t log_buffer_size { 2048 };
 	auto log_buffer = make_unique_span<char>(log_buffer_size);
 	node::handle_t error_node;
 	auto status = cuGraphInstantiate(&instance_handle, template_.handle(), &error_node, log_buffer.data(), log_buffer_size);
-	throw_if_error_lazy(status, "Instantiating " + template_::detail_::identify(template_) + ": error at "
-		+ node::detail_::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
+	throw_if_error_lazy(status, "Instantiating " + template_::detail::identify(template_) + ": error at "
+		+ node::detail::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
 #endif // CUDA_VERSION >= 11000
 	static constexpr bool is_owning { true };
 	return instance::wrap(template_.handle(), instance_handle, is_owning);

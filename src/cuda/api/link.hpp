@@ -66,19 +66,19 @@ struct file_t {
 
 } // namespace input
 
-namespace detail_ {
+namespace detail {
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto status = cuLinkDestroy(handle);
 	throw_if_error_lazy(status,
-		std::string("Failed destroying the link ") + cuda_::detail_::ptr_as_hex(handle)
-		+ " in " + context::detail_::identify(context_handle)
-		+ " on " + device::detail_::identify(device_id));
+		std::string("Failed destroying the link ") + cuda_::detail::ptr_as_hex(handle)
+		+ " in " + context::detail::identify(context_handle)
+		+ " on " + device::detail::identify(device_id));
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace link
 
@@ -124,7 +124,7 @@ public:
 		size_t cubin_output_size;
 		auto status = cuLinkComplete(handle_, &cubin_output_start, &cubin_output_size);
 		throw_if_error_lazy(status,
-			"Failed completing the link with state at address " + cuda_::detail_::ptr_as_hex(handle_));
+			"Failed completing the link with state at address " + cuda_::detail::ptr_as_hex(handle_));
 		return memory::region_t{cubin_output_start, cubin_output_size};
 	}
 
@@ -140,7 +140,7 @@ public:
 	 */
 	void add(link::input::image_t image, const link::options_t &ptx_compilation_options = {}) const
 	{
-		auto marshalled_options = link::detail_::marshal(ptx_compilation_options);
+		auto marshalled_options = link::detail::marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
 			handle_,
 			static_cast<CUjitInputType>(image.type),
@@ -148,7 +148,7 @@ public:
 			image.size(),
 			image.name,
 			marshalled_options.count(),
-			const_cast<link::detail_::option_t *>(marshalled_options.options()),
+			const_cast<link::detail::option_t *>(marshalled_options.options()),
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
@@ -169,13 +169,13 @@ public:
 	///@{
 	void add_file(link::input::file_t file_input, const link::options_t &options = {}) const
 	{
-		auto marshalled_options = link::detail_::marshal(options);
+		auto marshalled_options = link::detail::marshal(options);
 		auto status = cuLinkAddFile(
 			handle_,
 			static_cast<CUjitInputType_enum>(file_input.type),
 			file_input.path,
 			marshalled_options.count(),
-			const_cast<link::detail_::option_t *>(marshalled_options.options()),
+			const_cast<link::detail::option_t *>(marshalled_options.options()),
 			const_cast<void **>(marshalled_options.values())
 		);
 		throw_if_error_lazy(status,
@@ -235,7 +235,7 @@ public: // constructors and destructor
 		try
 #endif
 		{
-			link::detail_::destroy(handle_, context_handle_, device_id_);
+			link::detail::destroy(handle_, context_handle_, device_id_);
 		}
 #ifndef CAW_THROW_IN_DESTRUCTORS
 		catch (...) {}
@@ -272,17 +272,17 @@ namespace link {
 inline link_t create(const link::options_t &options = link::options_t{})
 {
 	handle_t new_link_handle;
-	auto marshalled_options = link::detail_::marshal(options);
+	auto marshalled_options = link::detail::marshal(options);
 	auto status = cuLinkCreate(
 		marshalled_options.count(),
-		const_cast<link::detail_::option_t *>(marshalled_options.options()),
+		const_cast<link::detail::option_t *>(marshalled_options.options()),
 		const_cast<void **>(marshalled_options.values()),
 		&new_link_handle
 	);
 	throw_if_error_lazy(status, "Failed creating a new link ");
 	auto do_take_ownership = true;
-	auto context_handle = context::current::detail_::get_handle();
-	auto device_id = context::current::detail_::get_device_id();
+	auto context_handle = context::current::detail::get_handle();
+	auto device_id = context::current::detail::get_device_id();
 	return wrap(
 		device_id,
 		context_handle,

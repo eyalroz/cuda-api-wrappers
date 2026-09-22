@@ -26,7 +26,7 @@ class stream_t;
 
 namespace event {
 
-namespace detail_ {
+namespace detail {
 
 inline void destroy_in_current_context(
 	handle_t           handle,
@@ -51,8 +51,8 @@ inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t 
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
 	throw_if_error_lazy(status,
-		"Failed recording " + event::detail_::identify(event_handle)
-		+ " on " + stream::detail_::identify(stream_handle));
+		"Failed recording " + event::detail::identify(event_handle)
+		+ " on " + stream::detail::identify(stream_handle));
 }
 
 /**
@@ -77,7 +77,7 @@ constexpr flags_t make_flags(bool uses_blocking_sync, bool records_timing, bool 
 		| ( interprocess        ? CU_EVENT_INTERPROCESS : 0  );
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace event
 
@@ -189,7 +189,7 @@ public: // other non-mutator methods
 		if (status == status::success) return true;
 		if (status == status::async_dependency_ops_not_yet_completed) return false;
 		throw runtime_error(status,
-			"Could not determine whether " + event::detail_::identify(handle_)
+			"Could not determine whether " + event::detail::identify(handle_)
 			+ "has already occurred or not");
 	}
 
@@ -209,7 +209,7 @@ public: // other mutator methods
 	 */
 	void record() const
 	{
-		event::detail_::enqueue(context_handle_, stream::default_stream_handle, handle_);
+		event::detail::enqueue(context_handle_, stream::default_stream_handle, handle_);
 	}
 
 	/**
@@ -284,14 +284,14 @@ public: // constructors and destructor
 			try
 #endif
 			{
-				event::detail_::destroy(handle_, context_handle_, device_id_);
+				event::detail::destroy(handle_, context_handle_, device_id_);
 			}
 #ifndef CAW_THROW_IN_DESTRUCTORS
 			catch (...) {}
 #endif
 		}
 		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
+			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -362,7 +362,7 @@ inline event_t wrap(
 	return { device_id, context_handle, event_handle, take_ownership, hold_pc_refcount_unit };
 }
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const event_t& event)
 {
@@ -410,13 +410,13 @@ inline event_t create(
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 
-	return detail_::create_in_current_context(
+	return detail::create_in_current_context(
 		device_id, context_handle,
 		hold_pc_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief creates a new event on (the primary execution context of) a device.
@@ -458,9 +458,9 @@ inline void wait(const event_t& event)
 {
 	auto context_handle = event.context_handle();
 	auto event_handle = event.handle();
-	context::current::detail_::scoped_override_t context_for_this_scope(context_handle);
+	context::current::detail::scoped_override_t context_for_this_scope(context_handle);
 	auto status = cuEventSynchronize(event_handle);
-	throw_if_error_lazy(status, "Failed synchronizing " + event::detail_::identify(event));
+	throw_if_error_lazy(status, "Failed synchronizing " + event::detail::identify(event));
 }
 
 inline void synchronize(const event_t& event)

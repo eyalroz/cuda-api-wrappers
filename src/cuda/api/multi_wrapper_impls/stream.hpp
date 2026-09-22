@@ -26,7 +26,7 @@ namespace cuda_ {
 
 namespace stream {
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const stream_t& stream)
 {
@@ -36,7 +36,7 @@ inline std::string identify(const stream_t& stream)
 #if CUDA_VERSION >= 9020
 inline device::id_t device_id_of(handle_t stream_handle)
 {
-	return context::detail_::get_device_id(context_handle_of(stream_handle));
+	return context::detail::get_device_id(context_handle_of(stream_handle));
 }
 #endif // CUDA_VERSION >= 9020
 
@@ -48,11 +48,11 @@ inline void record_event_in_current_context(
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
 	throw_if_error_lazy(status,
-		"Failed scheduling " + event::detail_::identify(event_handle)
-		+ " on " + stream::detail_::identify(stream_handle, current_context_handle_, current_device_id));
+		"Failed scheduling " + event::detail::identify(event_handle)
+		+ " on " + stream::detail::identify(stream_handle, current_context_handle_, current_device_id));
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline stream_t create(
 	const device_t&  device,
@@ -60,7 +60,7 @@ inline stream_t create(
 	priority_t       priority)
 {
 	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);
-	device::primary_context::detail_::increase_refcount(device.id());
+	device::primary_context::detail::increase_refcount(device.id());
 	return create(pc, synchronizes_with_default_stream, priority, does_hold_primary_context_refcount_unit);
 }
 
@@ -70,7 +70,7 @@ inline stream_t create(
 	priority_t        priority,
 	bool              hold_pc_refcount_unit)
 {
-	return detail_::create(
+	return detail::create(
 		context.device_id(), context.handle(), synchronizes_with_default_stream,
 		priority, hold_pc_refcount_unit);
 }
@@ -86,8 +86,8 @@ inline void stream_t::enqueue_t::wait(const event_t& event_) const
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
 	throw_if_error_lazy(status,
-		"Failed scheduling a wait for " + event::detail_::identify(event_.handle())
-		+ " on " + stream::detail_::identify(associated_stream));
+		"Failed scheduling a wait for " + event::detail::identify(event_.handle())
+		+ " on " + stream::detail::identify(associated_stream));
 
 }
 
@@ -98,11 +98,11 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event) const
 	auto stream_context_handle_ = associated_stream.context_handle_;
 	if (existing_event.context_handle() != stream_context_handle_) {
 		throw std::invalid_argument(
-			"Attempt to enqueue " + event::detail_::identify(existing_event)
-			+ " on a stream in a different context: " + stream::detail_::identify(associated_stream));
+			"Attempt to enqueue " + event::detail::identify(existing_event)
+			+ " on a stream in a different context: " + stream::detail::identify(associated_stream));
 	}
 	CAW_SET_SCOPE_CONTEXT(context_handle);
-	stream::detail_::record_event_in_current_context(
+	stream::detail::record_event_in_current_context(
 		device_id, context_handle, associated_stream.handle_,existing_event.handle());
 	return existing_event;
 }
@@ -116,7 +116,7 @@ inline event_t stream_t::enqueue_t::event(
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 
 		// Note that even if this stream is in the primary context, the created event
-	auto ev = event::detail_::create_in_current_context(
+	auto ev = event::detail::create_in_current_context(
 		associated_stream.device_id_,
 		context_handle,
 		does_not_hold_primary_context_refcount_unit,
@@ -152,8 +152,8 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 #endif
 	CAW_SET_SCOPE_CONTEXT(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
-	throw_if_error_lazy(status, "Copying attributes from " + stream::detail_::identify(src)
-		+ " to " + stream::detail_::identify(src));
+	throw_if_error_lazy(status, "Copying attributes from " + stream::detail::identify(src)
+		+ " to " + stream::detail::identify(src));
 }
 
 #endif // CUDA_VERSION >= 11000

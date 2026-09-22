@@ -28,7 +28,7 @@ array_t<T,NumDimensions> create(
 	const context_t&             context,
 	dimensions_t<NumDimensions>  dimensions)
 {
-	handle_t handle = detail_::create<T, NumDimensions>(context.handle(), dimensions);
+	handle_t handle = detail::create<T, NumDimensions>(context.handle(), dimensions);
 	return wrap<T, NumDimensions>(context.device_id(), context.handle(), handle, dimensions);
 }
 

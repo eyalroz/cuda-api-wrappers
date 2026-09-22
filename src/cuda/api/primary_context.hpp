@@ -18,7 +18,7 @@ class primary_context_t;
 
 namespace primary_context {
 
-namespace detail_ {
+namespace detail {
 
 struct state_t {
 	context::flags_t flags;
@@ -30,7 +30,7 @@ inline state_t raw_state(device::id_t device_id)
 	state_t result;
 	auto status = cuDevicePrimaryCtxGetState(device_id, &result.flags, &result.is_active);
 	throw_if_error(status, "Failed obtaining the state of the primary context for "
-		+ device::detail_::identify(device_id));
+		+ device::detail::identify(device_id));
 	// Note: Not sanitizing the flags from having CU_CTX_MAP_HOST set
 	return result;
 }
@@ -54,7 +54,7 @@ inline status_t decrease_refcount_nothrow(device::id_t device_id) noexcept
 inline void decrease_refcount(device::id_t device_id)
 {
 	auto status = decrease_refcount_nothrow(device_id);
-	throw_if_error_lazy(status, "Failed releasing the reference to the primary context for " + device::detail_::identify(device_id));
+	throw_if_error_lazy(status, "Failed releasing the reference to the primary context for " + device::detail::identify(device_id));
 }
 
 // Use this in destructors whose throwing behavior is controlled by the
@@ -74,7 +74,7 @@ inline handle_t obtain_and_increase_refcount(device::id_t device_id)
 	auto status = cuDevicePrimaryCtxRetain(&primary_context_handle, device_id);
 	throw_if_error_lazy(status,
 		"Failed obtaining (and possibly creating, and adding a reference count to) the primary context for "
-		+ device::detail_::identify(device_id));
+		+ device::detail::identify(device_id));
 	return primary_context_handle;
 }
 
@@ -83,7 +83,7 @@ inline void increase_refcount(device::id_t device_id)
 	obtain_and_increase_refcount(device_id);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @returns true if the device's primary context is active (i.e. has resources allocated for it),
@@ -100,14 +100,14 @@ inline bool is_active(const device_t& device);
  */
 void destroy(const device_t& device);
 
-namespace detail_ {
+namespace detail {
 
 inline primary_context_t wrap(
 	device::id_t       device_id,
 	context::handle_t  handle,
 	bool               decrease_refcount_on_destruct) noexcept;
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace primary_context
 
@@ -164,7 +164,7 @@ public:
 public: // friendship
 
 	friend class ::cuda_::device_t;
-	friend primary_context_t device::primary_context::detail_::wrap(device::id_t, context::handle_t, bool) noexcept;
+	friend primary_context_t device::primary_context::detail::wrap(device::id_t, context::handle_t, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -172,7 +172,7 @@ public: // constructors and destructor
 	: context_t(other), owns_refcount_unit_(other.owns_refcount_unit_)
 	{
 		if (owns_refcount_unit_) {
-			primary_context::detail_::obtain_and_increase_refcount(device_id_);
+			primary_context::detail::obtain_and_increase_refcount(device_id_);
 		}
 	}
 
@@ -181,7 +181,7 @@ public: // constructors and destructor
 	~primary_context_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owns_refcount_unit_) {
-			primary_context::detail_::decrease_refcount_in_dtor(device_id_);
+			primary_context::detail::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -193,7 +193,7 @@ public: // operators
 
 namespace primary_context {
 
-namespace detail_ {
+namespace detail {
 
 // Note the refcount semantics here, they're a bit tricky
 inline context::handle_t get_handle(device::id_t device_id, bool with_refcount_increase = false)
@@ -205,7 +205,7 @@ inline context::handle_t get_handle(device::id_t device_id, bool with_refcount_i
 	return handle;
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Obtain a handle to the primary context of a given device - creating
@@ -224,13 +224,13 @@ inline context::handle_t get_handle(device::id_t device_id, bool with_refcount_i
  */
 primary_context_t get(const device_t& device);
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Like `get()`, but never holds a refcount unit, and if the primary
  * context was inactive - activates it and leaks the refcount unit.
  *
- * @todo DRY with @ref context::current::detail_::get_with_fallback_push()
+ * @todo DRY with @ref context::current::detail::get_with_fallback_push()
 
  */
 primary_context_t leaky_get(device::id_t device_id);
@@ -246,7 +246,7 @@ inline device::primary_context_t wrap(
 	return {device_id, handle, decrease_refcount_on_destruct};
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 
@@ -255,7 +255,7 @@ inline device::primary_context_t wrap(
 
 namespace context {
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Checks if a context is the primary one for a device.
@@ -276,7 +276,7 @@ inline bool is_primary(handle_t handle)
 	return is_primary_for_device(handle, get_device_id(handle));
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace context
 
@@ -284,12 +284,12 @@ namespace device {
 
 namespace primary_context {
 
-namespace detail_ {
+namespace detail {
 
 inline bool is_current(device::id_t device_id)
 {
-	auto current_context = context::current::detail_::get_handle();
-	return context::detail_::is_primary_for_device(current_context, device_id);
+	auto current_context = context::current::detail::get_handle();
+	return context::detail::is_primary_for_device(current_context, device_id);
 }
 
 } // namespace detail
@@ -297,8 +297,8 @@ inline bool is_current(device::id_t device_id)
 /// @return true if the current context is its device's primary context
 inline bool is_current()
 {
-	auto device_id = context::current::detail_::get_device_id();
-	return detail_::is_current(device_id);
+	auto device_id = context::current::detail::get_device_id();
+	return detail::is_current(device_id);
 }
 
 } // namespace primary_context

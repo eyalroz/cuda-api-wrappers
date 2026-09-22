@@ -27,7 +27,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 void validate_shared_mem_size_compatibility(const kernel_t& kernel_ptr, memory::shared::size_t shared_mem_size) noexcept(false);
 void validate_shared_mem_compatibility(const device_t &device, memory::shared::size_t shared_mem_size) noexcept(false);
@@ -35,12 +35,12 @@ void validate_grid_dimension_compatibility(const device_t &device, grid::block_d
 void validate_compatibility(const kernel_t& kernel, launch_configuration_t launch_config) noexcept(false);
 void validate_compatibility(device::id_t, memory::shared::size_t, bool, optional<grid::dimensions_t>) noexcept(false);
 
-} // namespace detail_
+} // namespace detail
 
 
 namespace grid {
 
-namespace detail_ {
+namespace detail {
 
 inline dimension_t div_rounding_up(overall_dimension_t dividend, block_dimension_t divisor)
 {
@@ -61,13 +61,13 @@ inline dimensions_t div_rounding_up(overall_dimensions_t overall_dims, block_dim
 // Note: We're not implementing a grid-to-block rounding up here, since - currently -
 // block_dimensions_t is the same as grid_dimensions_t.
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace grid
 
 #ifndef NDEBUG
 
-namespace detail_ {
+namespace detail {
 
 static void validate_all_dimensions_compatibility(
 	grid::block_dimensions_t   block,
@@ -79,7 +79,7 @@ static void validate_all_dimensions_compatibility(
 	}
 }
 
-} // namespace detail_
+} // namespace detail
 
 #endif // NDEBUG
 
@@ -156,12 +156,12 @@ protected:
 		}
 #endif
 		if (dimensions_.block and dimensions_.overall and not dimensions_.grid) {
-			result.grid = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
+			result.grid = grid::detail::div_rounding_up(dimensions_.overall.value(), dimensions_.block.value());
 			result.block = dimensions_.block.value();
 			return result;
 		}
 		if (dimensions_.grid and dimensions_.overall and not dimensions_.block) {
-			result.block = grid::detail_::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
+			result.block = grid::detail::div_rounding_up(dimensions_.overall.value(), dimensions_.grid.value());
 			result.grid = dimensions_.grid.value();
 			return result;
 		}
@@ -210,13 +210,13 @@ public:
 		result.dynamic_shared_memory_size = get_dynamic_shared_memory_size(result.dimensions.block);
 		result.block_cooperation = thread_block_cooperation;
 		// TODO: More fields!
-		detail_::validate(result);
+		detail::validate(result);
 		if (device_id_) {
 			auto device = device::get(*device_id_);
-			detail_::validate_compatibility(device, result);
+			detail::validate_compatibility(device, result);
 		}
 		if (kernel_) {
-			detail_::validate_compatibility(*kernel_, result);
+			detail::validate_compatibility(*kernel_, result);
 		}
 		return result;
 	}
@@ -256,9 +256,9 @@ protected:
 	launch_config_builder_t& configure_for(launch_configuration_t config)
 	{
 #ifndef NDEBUG
-		detail_::validate(config);
-		if (kernel_) { detail_::validate_compatibility(*kernel_, config); }
-		if (device_id_) { detail_::validate_compatibility(device(), config); }
+		detail::validate(config);
+		if (kernel_) { detail::validate_compatibility(*kernel_, config); }
+		if (device_id_) { detail::validate_compatibility(device(), config); }
 #endif
 		thread_block_cooperation = config.block_cooperation;
 		dynamic_shared_memory_size_ = config.dynamic_shared_memory_size;
@@ -272,7 +272,7 @@ protected:
 		memory::shared::size_t  shared_mem_size)
 	{
 		if (kernel_ptr == nullptr) { return; }
-		detail_::validate_shared_mem_size_compatibility(*kernel_ptr, shared_mem_size);
+		detail::validate_shared_mem_size_compatibility(*kernel_ptr, shared_mem_size);
 	}
 
 	static void validate_compatibility(
@@ -280,7 +280,7 @@ protected:
 		memory::shared::size_t shared_mem_size)
 	{
 		if (not maybe_device_id) { return; }
-		detail_::validate_shared_mem_compatibility(device(maybe_device_id), shared_mem_size);
+		detail::validate_shared_mem_compatibility(device(maybe_device_id), shared_mem_size);
 	}
 
 	void validate_dynamic_shared_memory_size(memory::shared::size_t size)
@@ -294,7 +294,7 @@ protected:
 		grid::block_dimensions_t block_dims)
 	{
 		if (kernel_ptr == nullptr) { return; }
-		return detail_::validate_block_dimension_compatibility(*kernel_ptr, block_dims);
+		return detail::validate_block_dimension_compatibility(*kernel_ptr, block_dims);
 	}
 
 	static void validate_block_dimension_compatibility(
@@ -302,14 +302,14 @@ protected:
 		grid::block_dimensions_t  block_dims)
 	{
 		if (not maybe_device_id) { return; }
-		detail_::validate_block_dimension_compatibility(device(maybe_device_id), block_dims);
+		detail::validate_block_dimension_compatibility(device(maybe_device_id), block_dims);
 	}
 
 	void validate_block_dimensions(grid::block_dimensions_t block_dims) const
 	{
-		detail_::validate_block_dimensions(block_dims);
+		detail::validate_block_dimensions(block_dims);
 		if (dimensions_.grid and dimensions_.overall) {
-			detail_::validate_all_dimensions_compatibility(
+			detail::validate_all_dimensions_compatibility(
 				block_dims, dimensions_.grid.value(), dimensions_.overall.value());
 		}
 		// TODO: Check divisibility
@@ -323,14 +323,14 @@ protected:
 		grid::block_dimensions_t  block_dims)
 	{
 		if (not maybe_device_id) { return; }
-		detail_::validate_grid_dimension_compatibility(device(maybe_device_id), block_dims);
+		detail::validate_grid_dimension_compatibility(device(maybe_device_id), block_dims);
 	}
 
 	void validate_grid_dimensions(grid::dimensions_t grid_dims) const
 	{
-		detail_::validate_grid_dimensions(grid_dims);
+		detail::validate_grid_dimensions(grid_dims);
 		if (dimensions_.block and dimensions_.overall) {
-			detail_::validate_all_dimensions_compatibility(
+			detail::validate_all_dimensions_compatibility(
 				dimensions_.block.value(), grid_dims, dimensions_.overall.value());
 		}
 		// TODO: Check divisibility
@@ -376,7 +376,7 @@ protected:
 				get_composite_dimensions().block;
 			validate_block_dimension_compatibility(device_id, block_dims);
 		}
-		detail_::validate_compatibility(
+		detail::validate_compatibility(
 			device_id, dynamic_shared_memory_size_, thread_block_cooperation, dimensions_.block_cluster);
 	}
 
@@ -444,7 +444,7 @@ public:
 				throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
 					+ " exceeds " + std::to_string(max_threads_per_block)
 					+ " , the maximum number of threads per block supported by "
-					+ kernel::detail_::identify(*kernel_));
+					+ kernel::detail::identify(*kernel_));
 			}
 		}
 		if (device_id_) {
@@ -453,7 +453,7 @@ public:
 				throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
 					+ " exceeds " + std::to_string(max_threads_per_block)
 			 		+ " , the maximum number of threads per block supported by "
-					+ device::detail_::identify(device_id_.value()));
+					+ device::detail::identify(device_id_.value()));
 			}
 		}
 		return block_dimensions(static_cast<grid::block_dimension_t>(size), 1, 1);
@@ -662,8 +662,8 @@ public:
 	{
 		if (device_id_ and kernel_->device_id() != device_id_.value()) {
 			throw std::invalid_argument("Launch config builder already associated with "
-			+ device::detail_::identify(*device_id_) + " and cannot further be associated "
-			"with " +kernel::detail_::identify(*wrapped_kernel_ptr));
+			+ device::detail::identify(*device_id_) + " and cannot further be associated "
+			"with " +kernel::detail::identify(*wrapped_kernel_ptr));
 		}
 #ifndef NDEBUG
 		validate_kernel(wrapped_kernel_ptr);
@@ -685,8 +685,8 @@ public:
 	{
 		if (kernel_ and kernel_->device_id() != device_id) {
 			throw std::invalid_argument("Launch config builder already associated with "
-				+ kernel::detail_::identify(*kernel_) + " and cannot further be associated "
-				"another device: " + device::detail_::identify(device_id));
+				+ kernel::detail::identify(*kernel_) + " and cannot further be associated "
+				"another device: " + device::detail::identify(device_id));
 		}
 		device_id_ = device_id;
 		return *this;

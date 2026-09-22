@@ -20,7 +20,7 @@ namespace device {
 
 inline unique_region make_unique_region(const context_t& context, cuda_::size_t num_bytes)
 {
-	return detail_::make_unique_region(context.handle(), num_bytes);
+	return detail::make_unique_region(context.handle(), num_bytes);
 }
 
 /**
@@ -54,8 +54,8 @@ inline unique_region make_unique_region(const device_t& device, size_t num_bytes
  */
 inline unique_region make_unique_region(size_t num_bytes)
 {
-	auto current_device_id = cuda_::device::current::detail_::get_id();
-	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail::get_id();
+	auto pc = cuda_::device::primary_context::detail::leaky_get(current_device_id);
 	return make_unique_region(pc, num_bytes);
 }
 
@@ -86,7 +86,7 @@ inline unique_region make_unique_region(
 	initial_visibility_t  initial_visibility)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
-	return unique_region { detail_::allocate_in_current_context(num_bytes, initial_visibility) };
+	return unique_region { detail::allocate_in_current_context(num_bytes, initial_visibility) };
 }
 
 /// @param[in] device  whose primary context's memory the unique reqion is to be allocated in.
@@ -104,8 +104,8 @@ inline unique_region make_unique_region(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	auto current_device_id = cuda_::device::current::detail_::get_id();
-	auto pc = cuda_::device::primary_context::detail_::leaky_get(current_device_id);
+	auto current_device_id = cuda_::device::current::detail::get_id();
+	auto pc = cuda_::device::primary_context::detail::leaky_get(current_device_id);
 	return make_unique_region(pc, num_bytes, initial_visibility);
 }
 ///@}

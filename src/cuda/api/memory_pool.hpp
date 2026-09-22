@@ -24,7 +24,7 @@ namespace pool {
 
 using handle_t = cudaMemPool_t;
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Generate a degenerate form of one of the memory pool API arguments, for
@@ -62,12 +62,12 @@ CUmemPoolProps create_raw_properties(cuda_::device::id_t device_id) noexcept
 
 inline std::string identify(pool::handle_t handle)
 {
-	return "memory pool at " + cuda_::detail_::ptr_as_hex(handle);
+	return "memory pool at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
 {
-	return identify(handle) + " on " + cuda_::device::detail_::identify(device_id);
+	return identify(handle) + " on " + cuda_::device::detail::identify(device_id);
 }
 
 std::string identify(const pool_t &pool);
@@ -84,11 +84,11 @@ inline void destroy(handle_t handle)
 }
 
 
-} // namespace detail_
+} // namespace detail
 
 using attribute_t = CUmemPool_attribute;
 
-namespace detail_ {
+namespace detail {
 
 template <attribute_t attribute> struct attribute_value {};
 
@@ -110,13 +110,13 @@ template <> struct attribute_value_inner_type<size_t> { using type = cuuint64_t;
 template <typename T>
 using attribute_value_inner_type_t = typename attribute_value_inner_type<T>::type;
 
-} // namespace detail_
+} // namespace detail
 
 
 template <attribute_t attribute>
-using attribute_value_t = typename detail_::attribute_value<attribute>::type;
+using attribute_value_t = typename detail::attribute_value<attribute>::type;
 
-namespace detail_ {
+namespace detail {
 
 template<attribute_t attribute>
 struct status_and_attribute_value {
@@ -140,7 +140,7 @@ attribute_value_t<attribute> get_attribute(handle_t pool_handle)
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(pool_handle);
 	throw_if_error_lazy(status_and_attribute_value.status,
 		"Obtaining attribute " + std::to_string(static_cast<int>(attribute))
-		+ " of " + detail_::identify(pool_handle));
+		+ " of " + detail::identify(pool_handle));
 	return status_and_attribute_value.value;
 }
 
@@ -152,10 +152,10 @@ void set_attribute(handle_t pool_handle, attribute_value_t<attribute> value)
 	inner_type value_ = static_cast<inner_type>(value);
 	auto status = cuMemPoolSetAttribute(pool_handle, attribute, &value_);
 	throw_if_error_lazy(status, "Setting attribute " + std::to_string(static_cast<int>(attribute))
-		+ " of " + detail_::identify(pool_handle));
+		+ " of " + detail::identify(pool_handle));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Wrap an existing memory pool with a `memory::pool_t` wrapper
@@ -171,17 +171,17 @@ pool_t wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool owning) n
 } // namespace pool
 
 
-namespace detail_ {
+namespace detail {
 
 inline permissions_t get_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle)
 {
 	CUmemAccess_flags access_flags;
-	auto mem_location = pool::detail_::create_mem_location(device_id);
+	auto mem_location = pool::detail::create_mem_location(device_id);
 	auto status = cuMemPoolGetAccess(&access_flags, pool_handle, &mem_location);
 	throw_if_error_lazy(status,
-		"Determining access information for " + cuda_::device::detail_::identify(device_id)
-		+ " to " + pool::detail_::identify(pool_handle));
-	return permissions::detail_::from_flags(access_flags);
+		"Determining access information for " + cuda_::device::detail::identify(device_id)
+		+ " to " + pool::detail::identify(pool_handle));
+	return permissions::detail::from_flags(access_flags);
 }
 
 inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t pool_handle, permissions_t permissions)
@@ -200,14 +200,14 @@ inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t
 	for(auto device_id : device_ids) {
 		CUmemAccessDesc desc;
 		desc.flags = flags;
-		desc.location = pool::detail_::create_mem_location(device_id);
+		desc.location = pool::detail::create_mem_location(device_id);
 		descriptors.push_back(desc);
 	}
 
 	auto status = cuMemPoolSetAccess(pool_handle, descriptors.data(), descriptors.size());
 	throw_if_error_lazy(status,
 		"Setting access get_permissions for " + std::to_string(descriptors.size())
-		+ " devices to " + pool::detail_::identify(pool_handle));
+		+ " devices to " + pool::detail::identify(pool_handle));
 }
 
 inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
@@ -223,14 +223,14 @@ inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_h
 			CU_MEM_ACCESS_FLAGS_PROT_READ) :
 		CU_MEM_ACCESS_FLAGS_PROT_NONE;
 
-	desc.location = pool::detail_::create_mem_location(device_id);
+	desc.location = pool::detail::create_mem_location(device_id);
 	auto status = cuMemPoolSetAccess(pool_handle, &desc, 1);
 	throw_if_error_lazy(status,
-		"Setting access get_permissions for " + cuda_::device::detail_::identify(device_id)
-		+ " to " + pool::detail_::identify(pool_handle));
+		"Setting access get_permissions for " + cuda_::device::detail::identify(device_id)
+		+ " to " + pool::detail::identify(pool_handle));
 }
 
-} // namespace detail_
+} // namespace detail
 
 permissions_t get_permissions(const cuda_::device_t& device, const pool_t& pool);
 void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions);
@@ -282,16 +282,16 @@ public:
 	void trim(size_t min_bytes_to_keep) const
 	{
 		auto status = cuMemPoolTrimTo(handle_, min_bytes_to_keep);
-		throw_if_error_lazy(status, "Attempting to trim " + pool::detail_::identify(*this)
+		throw_if_error_lazy(status, "Attempting to trim " + pool::detail::identify(*this)
 			+ " down to " + std::to_string(min_bytes_to_keep));
 	}
 
 	template<pool::attribute_t attribute>
 	pool::attribute_value_t<attribute> get_attribute() const
 	{
-		auto attribute_with_status = pool::detail_::get_attribute_with_status<attribute>(handle_);
+		auto attribute_with_status = pool::detail::get_attribute_with_status<attribute>(handle_);
 		throw_if_error_lazy(attribute_with_status.status, "Failed obtaining attribute "
-			+ std::to_string(static_cast<int>(attribute)) + " of " + pool::detail_::identify(*this));
+			+ std::to_string(static_cast<int>(attribute)) + " of " + pool::detail::identify(*this));
 		return attribute_with_status.value;
 	}
 
@@ -299,11 +299,11 @@ public:
 	void set_attribute(const pool::attribute_value_t<attribute>& value) const
 	{
 		using outer_type = pool::attribute_value_t <attribute>;
-		using inner_type = typename pool::detail_::attribute_value_inner_type<outer_type>::type;
+		using inner_type = typename pool::detail::attribute_value_inner_type<outer_type>::type;
 		auto inner_value = static_cast<inner_type>(value);
 		auto status = cuMemPoolSetAttribute(handle_, attribute, &inner_value);
 		throw_if_error_lazy(status, "Failed setting attribute " + std::to_string(static_cast<int>(attribute))
-			+ " of " + pool::detail_::identify(*this));
+			+ " of " + pool::detail::identify(*this));
 	}
 
 	size_t release_threshold() const
@@ -421,9 +421,9 @@ public: // construction & destruction
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		pool::detail_::destroy(handle_);
+		pool::detail::destroy(handle_);
 #else
-		memory::pool::detail_::destroy_nothrow(handle_);
+		memory::pool::detail::destroy_nothrow(handle_);
 #endif
 	}
 
@@ -456,7 +456,7 @@ inline pool_t wrap(cuda_::device::id_t device_id, pool::handle_t handle, bool ow
 	return { device_id, handle, owning };
 }
 
-namespace detail_ {
+namespace detail {
 
 template<shared_handle_kind_t SharedHandleKind = shared_handle_kind_t::no_export>
 pool_t create(cuda_::device::id_t device_id)
@@ -464,7 +464,7 @@ pool_t create(cuda_::device::id_t device_id)
 	auto props = create_raw_properties<SharedHandleKind>(device_id);
 	handle_t handle;
 	auto status = cuMemPoolCreate(&handle, &props);
-	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda_::device::detail_::identify(device_id));
+	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda_::device::detail::identify(device_id));
 	constexpr const bool is_owning { true };
 	return wrap(device_id, handle, is_owning);
 }
@@ -474,7 +474,7 @@ inline std::string identify(const pool_t& pool)
 	return identify(pool.handle(), pool.device_id());
 }
 
-} // namespace detail_
+} // namespace detail
 
 template<shared_handle_kind_t SharedHandleKind>
 pool_t create(const cuda_::device_t& device);

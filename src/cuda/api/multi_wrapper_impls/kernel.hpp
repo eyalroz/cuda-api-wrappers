@@ -32,18 +32,18 @@ return device::get(device_id_);
 
 inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attribute_value_t value) const
 {
-	kernel::detail_::set_attribute_in_current_context(handle_, attribute, value);
+	kernel::detail::set_attribute_in_current_context(handle_, attribute, value);
 }
 
 #if CUDA_VERSION >= 12030
 inline module_t kernel_t::module() const
 {
-	auto module_handle = kernel::detail_::get_module(context_handle_, handle_);
-	return module::detail_::wrap(device_id_, context_handle_, module_handle, do_not_take_ownership);
+	auto module_handle = kernel::detail::get_module(context_handle_, handle_);
+	return module::detail::wrap(device_id_, context_handle_, module_handle, do_not_take_ownership);
 }
 #endif
 
-namespace detail_ {
+namespace detail {
 
 template<typename Kernel>
 device::primary_context_t get_implicit_primary_context(Kernel)
@@ -63,7 +63,7 @@ inline device::primary_context_t get_implicit_primary_context<kernel_t>(kernel_t
 	return primary_context;
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda_
 

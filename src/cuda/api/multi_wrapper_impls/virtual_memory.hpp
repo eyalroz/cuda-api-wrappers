@@ -26,7 +26,7 @@ inline device_t properties_t::device() const
 template<shared_handle_kind_t SharedHandleKind>
 properties_t create_properties_for(const device_t& device)
 {
-	return detail_::create_properties<SharedHandleKind>(device.id());
+	return detail::create_properties<SharedHandleKind>(device.id());
 }
 
 template<shared_handle_kind_t SharedHandleKind>
@@ -49,7 +49,7 @@ inline void set_permissions(
 	static constexpr size_t count { 1 };
 	auto result = cuMemSetAccess(device::address(fully_mapped_region), fully_mapped_region.size(), &desc, count);
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail::ptr_as_hex(fully_mapped_region.data()));
 }
 
 inline void set_permissions(mapping_t mapping, const device_t& device, permissions_t permissions)
@@ -70,7 +70,7 @@ void set_permissions(
 	auto result = cuMemSetAccess(
 		device::address(fully_mapped_region.start()), fully_mapped_region.size(), descriptors.get(), devices.size());
 	throw_if_error_lazy(result, "Failed setting the access mode to the virtual memory mapping to the range of size "
-						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail_::ptr_as_hex(fully_mapped_region.data()));
+						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail::ptr_as_hex(fully_mapped_region.data()));
 }
 
 template <template <typename...> class Container>
@@ -102,7 +102,7 @@ void set_permissions(
 
 inline permissions_t get_permissions(region_t fully_mapped_region, const device_t& device)
 {
-	return detail_::get_permissions(fully_mapped_region, device.id());
+	return detail::get_permissions(fully_mapped_region, device.id());
 }
 
 inline permissions_t get_permissions(const mapping_t& fully_mapped_region, const device_t& device)

@@ -25,22 +25,22 @@ namespace cuda_ {
 
 namespace context {
 
-namespace detail_ {
+namespace detail {
 
 inline handle_t get_primary_for_same_device(handle_t handle, bool increase_refcount)
 {
 	auto device_id = get_device_id(handle);
-	return device::primary_context::detail_::get_handle(device_id, increase_refcount);
+	return device::primary_context::detail::get_handle(device_id, increase_refcount);
 }
 
 inline bool is_primary_for_device(handle_t handle, device::id_t device_id)
 {
-	auto context_device_id = context::detail_::get_device_id(handle);
+	auto context_device_id = context::detail::get_device_id(handle);
 	if (context_device_id != device_id) {
 		return false;
 	}
 	static constexpr bool dont_increase_refcount { false };
-	auto pc_handle = device::primary_context::detail_::get_handle(device_id, dont_increase_refcount);
+	auto pc_handle = device::primary_context::detail::get_handle(device_id, dont_increase_refcount);
 	return handle == pc_handle;
 }
 
@@ -48,39 +48,39 @@ inline bool is_primary_for_device(handle_t handle, device::id_t device_id)
 
 inline bool is_primary(const context_t& context)
 {
-	return context::detail_::is_primary_for_device(context.handle(), context.device_id());
+	return context::detail::is_primary_for_device(context.handle(), context.device_id());
 }
 
 inline void synchronize(const context_t& context)
 {
-	return detail_::synchronize(context.device_id(), context.handle());
+	return detail::synchronize(context.device_id(), context.handle());
 }
 
 namespace current {
 
-namespace detail_ {
+namespace detail {
 
 inline bool is_primary(handle_t cc_handle, device::id_t current_context_device_id)
 {
 	// Note we assume current_context_device_id really is the device ID for cc_handle;
 	// otherwise we could just use is_primary_for_device()
-	return cc_handle == device::primary_context::detail_::get_handle(current_context_device_id);
+	return cc_handle == device::primary_context::detail::get_handle(current_context_device_id);
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline bool is_primary()
 {
 	auto current_context = get();
-	return detail_::is_primary(current_context.handle(), current_context.device_id());
+	return detail::is_primary(current_context.handle(), current_context.device_id());
 }
 
-namespace detail_ {
+namespace detail {
 
 inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle)
 : hold_primary_context_ref_unit_(hold_primary_context_ref_unit), device_id_or_0_(device_id)
 {
-	if (hold_primary_context_ref_unit) { device::primary_context::detail_::increase_refcount(device_id); }
+	if (hold_primary_context_ref_unit) { device::primary_context::detail::increase_refcount(device_id); }
 	push(context_handle);
 }
 
@@ -93,9 +93,9 @@ inline scoped_override_t::~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 #endif
 	if (hold_primary_context_ref_unit_) {
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		device::primary_context::detail_::decrease_refcount(device_id_or_0_);
+		device::primary_context::detail::decrease_refcount(device_id_or_0_);
 #else
-		device::primary_context::detail_::decrease_refcount_nothrow(device_id_or_0_);
+		device::primary_context::detail::decrease_refcount_nothrow(device_id_or_0_);
 #endif
 	}
 }
@@ -106,13 +106,13 @@ inline scoped_override_t::~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
  */
 inline handle_t push_default_if_missing()
 {
-	auto handle = detail_::get_handle();
-	if (handle != context::detail_::none) {
+	auto handle = detail::get_handle();
+	if (handle != context::detail::none) {
 		return handle;
 	}
 	// TODO: consider using cudaSetDevice here instead
-	auto current_device_id = device::current::detail_::get_id();
-	auto pc_handle = device::primary_context::detail_::obtain_and_increase_refcount(current_device_id);
+	auto current_device_id = device::current::detail::get_id();
+	auto pc_handle = device::primary_context::detail::obtain_and_increase_refcount(current_device_id);
 	push(pc_handle);
 	return pc_handle;
 }
@@ -144,16 +144,16 @@ public:
 	{
 		auto status_and_handle = get_with_status();
 		if (status_and_handle.status == cuda_::status::not_yet_initialized) {
-			context_handle = context::detail_::none;
+			context_handle = context::detail::none;
 			initialize_driver(); // and the handle
 		}
 		else {
 			context_handle = status_and_handle.handle;
 		}
-		if (context_handle == context::detail_::none) {
-			device_id_ = device::current::detail_::get_id();
-			context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device_id_);
-			context::current::detail_::push(context_handle);
+		if (context_handle == context::detail::none) {
+			device_id_ = device::current::detail::get_id();
+			context_handle = device::primary_context::detail::obtain_and_increase_refcount(device_id_);
+			context::current::detail::push(context_handle);
 			decrease_pc_refcount_on_destruct_ = avoid_pc_refcount_increase;
 		}
 		else {
@@ -167,19 +167,19 @@ public:
 
 	~scoped_existence_ensurer_t()
 	{
-		if (context_handle != context::detail_::none and decrease_pc_refcount_on_destruct_) {
+		if (context_handle != context::detail::none and decrease_pc_refcount_on_destruct_) {
 #ifdef CAW_THROW_IN_DESTRUCTORS
-			context::current::detail_::pop();
-			device::primary_context::detail_::decrease_refcount(device_id_);
+			context::current::detail::pop();
+			device::primary_context::detail::decrease_refcount(device_id_);
 #else
-			context::current::detail_::pop_and_discard_nothrow();
-			device::primary_context::detail_::decrease_refcount_nothrow(device_id_);
+			context::current::detail::pop_and_discard_nothrow();
+			device::primary_context::detail::decrease_refcount_nothrow(device_id_);
 #endif
 		}
 	}
 };
 
-} // namespace detail_
+} // namespace detail
 
 inline scoped_override_t::scoped_override_t(device::primary_context_t&& primary_context)
 		: parent(primary_context.is_owning(), primary_context.device_id(), primary_context.handle()) {}
@@ -193,7 +193,7 @@ inline context_t create_and_push(
 	host_thread_sync_scheduling_policy_t  sync_scheduling_policy,
 	bool                                  keep_larger_local_mem_after_resize)
 {
-	auto handle = detail_::create_and_push(device.id(), sync_scheduling_policy, keep_larger_local_mem_after_resize);
+	auto handle = detail::create_and_push(device.id(), sync_scheduling_policy, keep_larger_local_mem_after_resize);
 	bool take_ownership = true;
 	return context::wrap(device.id(), handle, take_ownership);
 }
@@ -212,17 +212,17 @@ namespace peer_to_peer {
 
 inline bool can_access(context_t accessor, context_t peer)
 {
-	return device::peer_to_peer::detail_::can_access(accessor.device_id(), peer.device_id());
+	return device::peer_to_peer::detail::can_access(accessor.device_id(), peer.device_id());
 }
 
 inline void enable_access(context_t accessor, context_t peer)
 {
-	detail_::enable_access(accessor.handle(), peer.handle());
+	detail::enable_access(accessor.handle(), peer.handle());
 }
 
 inline void disable_access(context_t accessor, context_t peer)
 {
-	detail_::disable_access(accessor.handle(), peer.handle());
+	detail::disable_access(accessor.handle(), peer.handle());
 }
 
 inline void enable_bidirectional_access(context_t first, context_t second)
@@ -248,12 +248,12 @@ namespace peer_to_peer {
 
 inline void enable_access_to(const context_t &peer_context)
 {
-	context::peer_to_peer::detail_::enable_access_to(peer_context.handle());
+	context::peer_to_peer::detail::enable_access_to(peer_context.handle());
 }
 
 inline void disable_access_to(const context_t &peer_context)
 {
-	context::peer_to_peer::detail_::disable_access_to(peer_context.handle());
+	context::peer_to_peer::detail::disable_access_to(peer_context.handle());
 }
 
 } // namespace peer_to_peer
@@ -264,13 +264,13 @@ inline void disable_access_to(const context_t &peer_context)
 
 inline memory::region_t context_t::global_memory_type::allocate(size_t size_in_bytes) const
 {
-	return memory::device::detail_::allocate(context_handle_, size_in_bytes);
+	return memory::device::detail::allocate(context_handle_, size_in_bytes);
 }
 
 inline memory::region_t context_t::global_memory_type::allocate_managed(
 	size_t size_in_bytes, memory::managed::initial_visibility_t initial_visibility) const
 {
-	return memory::managed::detail_::allocate(context_handle_, size_in_bytes, initial_visibility);
+	return memory::managed::detail::allocate(context_handle_, size_in_bytes, initial_visibility);
 }
 
 
@@ -287,7 +287,7 @@ inline context_t context_t::global_memory_type::associated_context() const
 
 inline bool context_t::is_primary() const
 {
-	return context::current::detail_::is_primary(handle(), device_id());
+	return context::current::detail::is_primary(handle(), device_id());
 }
 
 // Note: The context_t::create_module() member functions are defined in module.hpp,
@@ -313,7 +313,7 @@ inline stream_t context_t::create_stream(
 	bool                will_synchronize_with_default_stream,
 	stream::priority_t  priority) const
 {
-	return stream::detail_::create(device_id_, handle_, will_synchronize_with_default_stream, priority);
+	return stream::detail::create(device_id_, handle_, will_synchronize_with_default_stream, priority);
 }
 
 inline event_t context_t::create_event(
@@ -321,7 +321,7 @@ inline event_t context_t::create_event(
 	bool records_timing,
 	bool interprocess) const
 {
-	return cuda_::event::detail_::create(
+	return cuda_::event::detail::create(
 		device_id_, handle_, does_not_hold_primary_context_refcount_unit,
 		uses_blocking_sync, records_timing, interprocess);
 }

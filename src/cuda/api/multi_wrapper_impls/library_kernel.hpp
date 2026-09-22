@@ -25,7 +25,7 @@ inline attribute_value_t get_attribute(
 	kernel::attribute_t       attribute,
 	const device_t&           device)
 {
-	return detail_::get_attribute(library_kernel.handle(), device.id(), attribute);
+	return detail::get_attribute(library_kernel.handle(), device.id(), attribute);
 }
 
 inline void set_attribute(
@@ -34,12 +34,12 @@ inline void set_attribute(
 	const device_t&           device,
 	attribute_value_t         value)
 {
-	detail_::set_attribute(library_kernel.handle(), device.id(), attribute, value);
+	detail::set_attribute(library_kernel.handle(), device.id(), attribute, value);
 }
 
 cuda_::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
 {
-	auto new_handle = detail_::contextualize(kernel.handle(), context.handle());
+	auto new_handle = detail::contextualize(kernel.handle(), context.handle());
 	using cuda_::kernel::wrap;
 	return wrap(context.device_id(), context.handle(), new_handle, do_not_hold_primary_context_refcount_unit);
 }

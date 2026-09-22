@@ -26,7 +26,7 @@ namespace node {
 
 node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 std::string identify(const node_t &node);
 
@@ -61,7 +61,7 @@ inline template_::handle_t graph_handle_of(handle_t handle)
 {
 	template_::handle_t graph_template_handle;
 	auto status = cuGraphNodeGetContainingGraph(handle, &graph_template_handle);
-	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + graph::node::detail_::identify(handle));
+	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + graph::node::detail::identify(handle));
 	return graph_template_handle;
 }
 
@@ -74,7 +74,7 @@ inline id_t get_id(handle_t handle)
 }
 #endif // CUDA_VERSION >= 13010
 
-} // namespace detail_
+} // namespace detail
 
 using type_t = CUgraphNodeType;
 
@@ -110,7 +110,7 @@ public:
 	{
 		type_type result;
 		auto status = cuGraphNodeGetType(handle_, &result);
-		throw_if_error_lazy(status, "Obtaining the type of " + node::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the type of " + node::detail::identify(*this));
 		return result;
 	}
 
@@ -118,8 +118,8 @@ public:
 	{
 		size_t num_dependencies_;
 		static constexpr auto no_returned_handles = nullptr;
-		auto status = node::detail_::get_dependencies(handle_, no_returned_handles, &num_dependencies_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes on which " + node::detail_::identify(*this) + " is dependent");
+		auto status = node::detail::get_dependencies(handle_, no_returned_handles, &num_dependencies_);
+		throw_if_error_lazy(status, "Obtaining the number of nodes on which " + node::detail::identify(*this) + " is dependent");
 		return num_dependencies_;
 	}
 
@@ -127,8 +127,8 @@ public:
 	{
 		size_t num_dependents_;
 		static constexpr auto no_returned_handles = nullptr;
-		auto status = node::detail_::get_dependents(handle_, no_returned_handles, &num_dependents_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes dependent on " + node::detail_::identify(*this));
+		auto status = node::detail::get_dependents(handle_, no_returned_handles, &num_dependents_);
+		throw_if_error_lazy(status, "Obtaining the number of nodes dependent on " + node::detail::identify(*this));
 		return num_dependents_;
 	}
 
@@ -136,8 +136,8 @@ public:
 	{
 		size_type num_dependencies_ { num_dependencies() } ;
 		std::vector<node::handle_t> node_handles {num_dependencies_ };
-		auto status = node::detail_::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
-		throw_if_error_lazy(status, "Obtaining the set nodes on which " + node::detail_::identify(*this) + " is dependent");
+		auto status = node::detail::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
+		throw_if_error_lazy(status, "Obtaining the set nodes on which " + node::detail::identify(*this) + " is dependent");
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));
@@ -149,8 +149,8 @@ public:
 	{
 		size_type num_dependents_ { num_dependents() } ;
 		std::vector<node::handle_t> node_handles {num_dependents_ };
-		auto status = node::detail_::get_dependents(handle_, node_handles.data(), &num_dependents_);
-		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + node::detail_::identify(*this));
+		auto status = node::detail::get_dependents(handle_, node_handles.data(), &num_dependents_);
+		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + node::detail::identify(*this));
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));
@@ -161,7 +161,7 @@ public:
 #if CUDA_VERSION >= 13010
 	/// Get the 'local' ID of this node, corresponding to the ID one would find
 	/// in the output of DOT printing the graph.
-	id_t get_id() const { return node::detail_::get_id(handle_); }
+	id_t get_id() const { return node::detail::get_id(handle_); }
 
 	// Note: No method for the GetToolsId() API call - which is weird, and only
 	// exists for nodes, and whose use is unclear to me
@@ -198,7 +198,7 @@ inline node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept
 }
 
 #if CUDA_VERSION >= 13010
-namespace detail_ {
+namespace detail {
 
 /// Returns a node proxy class given only a node handle
 inline node_t from_handle(handle_t handle)
@@ -207,7 +207,7 @@ inline node_t from_handle(handle_t handle)
 	return wrap(graph_template_handle, handle);
 }
 
-} // namespace detail_
+} // namespace detail
 #endif // CUDA_VERSION >= 13010
 
 } // namespace node

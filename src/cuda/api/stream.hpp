@@ -107,7 +107,7 @@ enum synchronization_policy_t : typename std::underlying_type<CUsynchronizationP
 };
 #endif // CUDA_VERSION >= 11000
 
-namespace detail_ {
+namespace detail {
 
 std::string identify(const stream_t& stream);
 
@@ -120,7 +120,7 @@ inline handle_t create_raw_in_current_context(
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	throw_if_error_lazy(status, "Failed creating a new stream in " + detail_::identify(new_stream_handle));
+	throw_if_error_lazy(status, "Failed creating a new stream in " + detail::identify(new_stream_handle));
 	return new_stream_handle;
 }
 
@@ -141,7 +141,7 @@ inline context::handle_t context_handle_of(stream::handle_t stream_handle)
 {
 	context::handle_t handle;
 	auto result = cuStreamGetCtx(stream_handle, &handle);
-	throw_if_error_lazy(result, "Failed obtaining the context of " + cuda_::detail_::ptr_as_hex(stream_handle));
+	throw_if_error_lazy(result, "Failed obtaining the context of " + cuda_::detail::ptr_as_hex(stream_handle));
 	return handle;
 }
 #endif // CUDA_VERSION >= 9020
@@ -167,7 +167,7 @@ inline void record_event_in_current_context(
 template <typename Function>
 void enqueue_function_call(const stream_t& stream, Function function, void * argument);
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Wrap an existing stream in a @ref stream_t instance.
@@ -197,7 +197,7 @@ stream_t wrap(
 	bool               take_ownership = false,
 	bool               hold_pc_refcount_unit = false) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 // Providing the same signature to multiple CUDA driver calls, to allow
 // uniform templated use of all of them
@@ -209,7 +209,7 @@ CUresult wait_on_value(CUstream stream_handle, CUdeviceptr address, T value, uns
 template<typename T>
 CUresult write_value(CUstream stream_handle, CUdeviceptr address, T value, unsigned int flags);
 
-} // namespace detail_
+} // namespace detail
 
 #if CUDA_VERSION >= 10000
 namespace capture {
@@ -287,7 +287,7 @@ public: // other non-mutators
 			// Could have used the equivalent Driver API call,
 			// cuStreamGetFlags(handle_, &flags);
 		throw_if_error_lazy(status, "Failed obtaining flags for a stream in "
-				+ context::detail_::identify(context_handle_, device_id_));
+				+ context::detail::identify(context_handle_, device_id_));
 		return flags & CU_STREAM_NON_BLOCKING;
 	}
 
@@ -300,7 +300,7 @@ public: // other non-mutators
 			// Could have used the equivalent Runtime API call:
 			// cuStreamGetPriority(handle_, &the_priority);
 		throw_if_error_lazy(status, "Failed obtaining priority for a stream in "
-			+ context::detail_::identify(context_handle_, device_id_));
+			+ context::detail::identify(context_handle_, device_id_));
 		return the_priority;
 	}
 
@@ -327,7 +327,7 @@ public: // other non-mutators
 			return true;
 		default:
 			throw runtime_error(static_cast<status::named_t>(status),
-				"unexpected stream status for " + stream::detail_::identify(handle_, device_id_));
+				"unexpected stream status for " + stream::detail::identify(handle_, device_id_));
 		}
 	}
 
@@ -433,7 +433,7 @@ public: // mutators
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
 			// however, unfortunately, it does require us to be in _some_ context.
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::detail_::copy(destination, source, num_bytes, associated_stream.handle_);
+			memory::detail::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
 		/// @copybrief copy(void *, const void *, size_t) const
@@ -483,7 +483,7 @@ public: // mutators
 		{
 			// Is it necessary to set the device? I wonder.
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::detail_::set(start, byte_value, num_bytes, associated_stream.handle_);
+			memory::device::detail::set(start, byte_value, num_bytes, associated_stream.handle_);
 		}
 
 		/// @copydoc memset(void *, int, size_t) const
@@ -506,7 +506,7 @@ public: // mutators
 		void memzero(void *start, size_t num_bytes) const
 		{
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
-			memory::device::detail_::zero(start, num_bytes, associated_stream.handle_);
+			memory::device::detail::zero(start, num_bytes, associated_stream.handle_);
 		}
 
 		/**
@@ -560,7 +560,7 @@ public: // mutators
 		void host_function_call(void (*function)(Argument*), Argument* argument) const
 		{
 			// I hope you like function declaration punning :-)
-			stream::detail_::enqueue_function_call(
+			stream::detail::enqueue_function_call(
 				associated_stream, reinterpret_cast<stream::callback_t>(function), argument);
 		}
 #endif
@@ -578,7 +578,7 @@ public: // mutators
 		void host_invokable(Invokable& invokable) const
 		{
 			auto type_erased_invoker = reinterpret_cast<stream::callback_t>(stream_launched_invoker<Invokable>);
-			stream::detail_::enqueue_function_call(associated_stream, type_erased_invoker, &invokable);
+			stream::detail::enqueue_function_call(associated_stream, type_erased_invoker, &invokable);
 		}
 
 #if CUDA_VERSION >= 11020
@@ -652,7 +652,7 @@ public: // mutators
 				associated_stream.handle_,  memory::device::address(managed_region_start), length, flags);
 				// Could have used the equivalent Driver API call cuStreamAttachMemAsync
 			throw_if_error_lazy(status, "Failed scheduling an attachment of a managed memory region on "
-				+ stream::detail_::identify(associated_stream.handle_, associated_stream.context_handle_,
+				+ stream::detail::identify(associated_stream.handle_, associated_stream.context_handle_,
 				associated_stream.device_id_));
 		}
 
@@ -718,9 +718,9 @@ public: // mutators
 				CU_STREAM_WRITE_VALUE_DEFAULT :
 				CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER;
 			auto result = static_cast<status_t>(
-				stream::detail_::write_value(associated_stream.handle_, memory::device::address(ptr), value, flags));
+				stream::detail::write_value(associated_stream.handle_, memory::device::address(ptr), value, flags));
 			throw_if_error_lazy(result, "Failed scheduling a write to global memory on "
-				+ stream::detail_::identify(associated_stream.handle_,associated_stream.context_handle_,
+				+ stream::detail::identify(associated_stream.handle_,associated_stream.context_handle_,
 				+ associated_stream.device_id_));
 		}
 
@@ -748,10 +748,10 @@ public: // mutators
 			unsigned flags = static_cast<unsigned>(condition) |
 				(with_memory_barrier ? CU_STREAM_WAIT_VALUE_FLUSH : 0);
 			auto result = static_cast<status_t>(
-				stream::detail_::wait_on_value(associated_stream.handle_, address, value, flags));
+				stream::detail::wait_on_value(associated_stream.handle_, address, value, flags));
 			throw_if_error_lazy(result,
 				"Failed scheduling a wait on global memory address on "
-				+ stream::detail_::identify(
+				+ stream::detail::identify(
 					associated_stream.handle_,
 					associated_stream.context_handle_,
 					associated_stream.device_id_) );
@@ -847,7 +847,7 @@ public: // mutators
 		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
-		throw_if_error_lazy(status, std::string("Obtaining the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, std::string("Obtaining the synchronization policy of ") + stream::detail::identify(*this));
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
@@ -857,7 +857,7 @@ public: // mutators
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
-		throw_if_error_lazy(status, std::string("Setting the synchronization policy of ") + stream::detail_::identify(*this));
+		throw_if_error_lazy(status, std::string("Setting the synchronization policy of ") + stream::detail::identify(*this));
 	}
 #endif
 
@@ -931,12 +931,12 @@ public: // constructors and destructor
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		stream::detail_::destroy(handle_, context_handle_, device_id_);
+		stream::detail::destroy(handle_, context_handle_, device_id_);
 #else
-		stream::detail_::destroy_nothrow(handle_, context_handle_);
+		stream::detail::destroy_nothrow(handle_, context_handle_);
 #endif
 		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
+			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 public: // operators
@@ -1015,7 +1015,7 @@ inline stream_t wrap(
 	return { device_id, context_handle, stream_handle, take_ownership, hold_pc_refcount_unit };
 }
 
-namespace detail_ {
+namespace detail {
 
 inline stream_t create(
 	device::id_t       device_id,
@@ -1073,10 +1073,10 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
 	static constexpr unsigned fixed_flags { 0u };
 	auto status = cuStreamAddCallback(stream.handle(), function, argument, fixed_flags);
 #endif
-	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + stream::detail::identify(stream));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Create a new stream (= queue) in the primary execution context
@@ -1123,18 +1123,18 @@ namespace capture {
 
 inline state_t state(const stream_t& stream)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	CUstreamCaptureStatus capture_status;
 	auto op_status = cuStreamIsCapturing(stream.handle(), &capture_status);
-	throw_if_error_lazy(op_status, "Failed beginning to capture on " + stream::detail_::identify(stream));
+	throw_if_error_lazy(op_status, "Failed beginning to capture on " + stream::detail::identify(stream));
 	return static_cast<state_t>(capture_status);
 }
 
 inline void begin(const stream_t& stream, mode_t mode)
 {
-	context::current::detail_::scoped_override_t set_context_for_this_scope(stream.context_handle());
+	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	auto status = cuStreamBeginCapture(stream.handle(), static_cast<CUstreamCaptureMode>(mode));
-	throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail::identify(stream));
 }
 
 } // namespace capture
@@ -1158,7 +1158,7 @@ inline void begin(const stream_t& stream, mode_t mode)
 	// certain conditions, so we must place ourselves in the stream's context.
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	auto status = cuStreamSynchronize(stream.handle());
-	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail_::identify(stream));
+	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail::identify(stream));
 }
 
 #if CUDA_VERSION >= 11000

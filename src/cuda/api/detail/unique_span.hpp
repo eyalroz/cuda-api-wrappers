@@ -168,7 +168,7 @@ protected: // mutators
 	}
 }; // class unique_span
 
-namespace detail_ {
+namespace detail {
 
 // @note if a nullptr happens to be deleted - that's not a problem;
 // it is supported both by C++ delete operators and C's free(), and
@@ -193,7 +193,7 @@ void elementwise_destruct_then_delete(span<T> sp)
 }
 
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * A parallel of std::make_unique_for_overwrite, for @ref unique_span<T>'s, i.e. which maintains
@@ -210,10 +210,10 @@ unique_span<T> make_unique_span(size_t size) noexcept(false)
 {
 	// Note: It is acceptable pass 0 as the size here.
 	// See https://stackoverflow.com/q/1087042/1593077
-	return unique_span<T>(new T[size], size, detail_::operator_delete_array<T>);
+	return unique_span<T>(new T[size], size, detail::operator_delete_array<T>);
 }
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Construct the elements of a unique span in a pre-allocated storage area
@@ -245,7 +245,7 @@ unique_span <T> generate_unique_span(
     return unique_span<T>(allocated_space, size, operator_delete<T>);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * The alternative to `std::generate` and similar functions, for @ref unique_span, seeing
@@ -269,7 +269,7 @@ unique_span <T> generate_unique_span(
 {
 	auto data_ = static_cast<T*>(region.data());
 	auto size_in_elements = region.size() / sizeof(T);
-	return detail_::generate_unique_span<T>(data_, size_in_elements,
+	return detail::generate_unique_span<T>(data_, size_in_elements,
 		std::forward<Generator>(generator_by_index));
 }
 
@@ -278,7 +278,7 @@ unique_span<T> generate_unique_span(size_t size, Generator&& generator_by_index)
 {
 	// Q: Do I need to check the alignment here? Perhaps allocate more to ensure alignment?
 	auto data = static_cast<T*>(::operator new(size * sizeof(T)));
-	return detail_::generate_unique_span<T, Generator>(
+	return detail::generate_unique_span<T, Generator>(
 		data, size, std::forward<Generator>(generator_by_index));
 }
 

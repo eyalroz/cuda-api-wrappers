@@ -38,7 +38,7 @@ enum kind_t : std::underlying_type<CUexternalMemoryHandleType_enum>::type {
 /// Raw CUDA descriptor of an external memory resource
 using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
 
-namespace detail_ {
+namespace detail {
 
 // TODO: Isn't this contextualized? I wonder
 inline status_t destroy_nowthrow(handle_t handle)
@@ -61,7 +61,7 @@ inline std::string identify(subregion_spec_t subregion_spec)
 
 inline std::string identify(handle_t handle)
 {
-	return "external memory resource at " + cuda_::detail_::ptr_as_hex(handle);
+	return "external memory resource at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(descriptor_t descriptor)
@@ -72,7 +72,7 @@ inline std::string identify(descriptor_t descriptor)
 inline std::string identify(handle_t handle, descriptor_t descriptor)
 {
 	return "external memory resource of kind " + std::to_string(descriptor.type)
-		   + " at " + cuda_::detail_::ptr_as_hex(handle);
+		   + " at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline handle_t import(const descriptor_t& descriptor)
@@ -83,7 +83,7 @@ inline handle_t import(const descriptor_t& descriptor)
 	return handle;
 }
 
-} // namespace detail_
+} // namespace detail
 
 ///@cond
 class resource_t;
@@ -124,9 +124,9 @@ public:
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		detail_::destroy(handle_, descriptor_);
+		detail::destroy(handle_, descriptor_);
 #else
-		detail_::destroy(handle_, descriptor_);
+		detail::destroy(handle_, descriptor_);
 #endif
 	}
 
@@ -144,11 +144,11 @@ inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_owner
 /// Import an external memory resource to be recognized by CUDA
 inline resource_t import(descriptor_t descriptor)
 {
-	handle_t handle = detail_::import(descriptor);
+	handle_t handle = detail::import(descriptor);
 	return wrap(handle, descriptor, do_take_ownership);
 }
 
-namespace detail_ {
+namespace detail {
 
 inline region_t map(handle_t handle, subregion_spec_t subregion)
 {
@@ -158,16 +158,16 @@ inline region_t map(handle_t handle, subregion_spec_t subregion)
 	buffer_desc.offset = subregion.offset;
 	buffer_desc.size = subregion.size;
 	auto result = cuExternalMemoryGetMappedBuffer(&address, handle, &buffer_desc);
-	throw_if_error_lazy(result, "Failed mapping " + detail_::identify(subregion)
-								+ " within " + detail_::identify(handle) + " to a device buffer");
+	throw_if_error_lazy(result, "Failed mapping " + detail::identify(subregion)
+								+ " within " + detail::identify(handle) + " to a device buffer");
 	return region_t{as_pointer(address), subregion.size};
 }
 
-} // namespace detail_
+} // namespace detail
 
 /// A mapped external memory region is just like a 'regular' region of device-global
 /// memory, and can be handled, owned, and freed the same way
-using unique_region = memory::unique_region<device::detail_::deleter>;
+using unique_region = memory::unique_region<device::detail::deleter>;
 
 /// Construct a unique_region of already-mapped external memory
 inline unique_region wrap(region_t mapped_region)
@@ -178,7 +178,7 @@ inline unique_region wrap(region_t mapped_region)
 /// Map a sub-region of a memory resource into the CUDA-accessible address space
 inline unique_region map(const resource_t& resource, subregion_spec_t subregion_to_map)
 {
-	auto mapped_region = detail_::map(resource.handle(), subregion_to_map);
+	auto mapped_region = detail::map(resource.handle(), subregion_to_map);
 	return wrap(mapped_region);
 }
 

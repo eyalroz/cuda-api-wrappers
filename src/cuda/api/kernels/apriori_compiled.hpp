@@ -26,7 +26,7 @@ class apriori_compiled_t;
 
 namespace apriori_compiled {
 
-namespace detail_ {
+namespace detail {
 
 #if CUDA_VERSION < 11000
 inline handle_t get_handle(const void *, const char* = nullptr)
@@ -42,7 +42,7 @@ inline handle_t get_handle(const void *kernel_function_ptr, const char* name = n
 	auto status = cudaGetFuncBySymbol(&handle, kernel_function_ptr);
 	throw_if_error_lazy(status, "Failed obtaining a CUDA function handle for "
 		+ ((name == nullptr) ? std::string("a kernel function") : std::string("kernel function ") + name)
-		+ " at " + cuda_::detail_::ptr_as_hex(kernel_function_ptr));
+		+ " at " + cuda_::detail::ptr_as_hex(kernel_function_ptr));
 	return handle;
 }
 #endif
@@ -54,7 +54,7 @@ apriori_compiled_t wrap(
 	const void* ptr,
 	bool hold_primary_context_refcount_unit = false);
 
-} // namespace detail_
+} // namespace detail
 
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
@@ -78,7 +78,7 @@ struct attributes_t : cudaFuncAttributes {
 
 namespace occupancy {
 
-namespace detail_ {
+namespace detail {
 
 #if CUDA_VERSION < 11000
 
@@ -272,7 +272,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 		flags);
 
 	throw_if_error(result,
-		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_function_ptr, device_id)
+		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail::identify(kernel_function_ptr, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { (grid::dimension_t) min_grid_size_in_blocks, (grid::block_dimension_t) block_size };
 }
@@ -297,7 +297,7 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 
 #endif
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace occupancy
 
@@ -372,7 +372,7 @@ public: // non-mutators
 	{
 		auto shared_memory_size_determiner =
 			[dynamic_shared_memory_size](int) -> size_t { return dynamic_shared_memory_size; };
-		return kernel::apriori_compiled::occupancy::detail_::min_grid_params_for_max_occupancy(
+		return kernel::apriori_compiled::occupancy::detail::min_grid_params_for_max_occupancy(
 			ptr(), device_id(),
 			shared_memory_size_determiner,
 			block_size_limit, disable_caching_override);
@@ -383,7 +383,7 @@ public: // non-mutators
 		grid::block_dimension_t block_size_limit = 0,
 		bool disable_caching_override = false) const override
 	{
-		return kernel::apriori_compiled::occupancy::detail_::min_grid_params_for_max_occupancy(
+		return kernel::apriori_compiled::occupancy::detail::min_grid_params_for_max_occupancy(
 			ptr(), device_id(),
 			shared_memory_size_determiner,
 			block_size_limit, disable_caching_override);
@@ -413,7 +413,7 @@ public: // non-mutators
 		memory::shared::size_t dynamic_shared_memory_per_block,
 		bool disable_caching_override = false) const override
 	{
-		return apriori_compiled::occupancy::detail_::max_active_blocks_per_multiprocessor(
+		return apriori_compiled::occupancy::detail::max_active_blocks_per_multiprocessor(
 			ptr(),
 			block_size_in_threads,
 			dynamic_shared_memory_per_block,
@@ -438,7 +438,7 @@ protected: // ctors & dtor
 	: apriori_compiled_t(
 		device_id,
 		primary_context_handle,
-		apriori_compiled::detail_::get_handle(f),
+		apriori_compiled::detail::get_handle(f),
 		f,
 		hold_primary_context_refcount_unit)
 	{ }
@@ -448,7 +448,7 @@ public: // ctors & dtor
 	apriori_compiled_t(apriori_compiled_t&&) = default;
 
 public: // friends
-	friend apriori_compiled_t apriori_compiled::detail_::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
+	friend apriori_compiled_t apriori_compiled::detail::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
 
 protected: // data members
 	const void *const ptr_;
@@ -456,7 +456,7 @@ protected: // data members
 
 namespace apriori_compiled {
 
-namespace detail_ {
+namespace detail {
 
 inline apriori_compiled_t wrap(
 	device::id_t       device_id,
@@ -471,8 +471,8 @@ inline apriori_compiled_t wrap(
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 inline std::string identify(const apriori_compiled_t& kernel)
 {
-	return "apriori-compiled kernel " + cuda_::detail_::ptr_as_hex(kernel.ptr())
-		+ " in " + context::detail_::identify(kernel.context());
+	return "apriori-compiled kernel " + cuda_::detail::ptr_as_hex(kernel.ptr())
+		+ " in " + context::detail::identify(kernel.context());
 }
 #endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 
@@ -481,14 +481,14 @@ inline std::string identify(const apriori_compiled_t& kernel)
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 inline attribute_value_t get_attribute(const void* function_ptr, attribute_t attribute)
 {
-	auto handle = detail_::get_handle(function_ptr);
-	return kernel::detail_::get_attribute_in_current_context(handle, attribute);
+	auto handle = detail::get_handle(function_ptr);
+	return kernel::detail::get_attribute_in_current_context(handle, attribute);
 }
 
 inline void set_attribute(const void* function_ptr, attribute_t attribute, attribute_value_t value)
 {
-	auto handle = detail_::get_handle(function_ptr);
-	return kernel::detail_::set_attribute_in_current_context(handle, attribute, value);
+	auto handle = detail::get_handle(function_ptr);
+	return kernel::detail::set_attribute_in_current_context(handle, attribute, value);
 }
 
 inline attribute_value_t get_attribute(

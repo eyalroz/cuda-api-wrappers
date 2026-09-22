@@ -13,7 +13,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 template<typename T>
 struct optional_ref {
@@ -63,10 +63,10 @@ protected:
 	T* ptr_;
 };
 
-} // namespace detail_
+} // namespace detail
 
 template<typename T>
-using optional_ref = cuda_::detail_::optional_ref<T>;
+using optional_ref = cuda_::detail::optional_ref<T>;
 
 } // namespace cuda_
 

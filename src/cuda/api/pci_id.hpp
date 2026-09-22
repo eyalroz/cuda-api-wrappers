@@ -58,7 +58,7 @@ struct pci_location_t {
 	static pci_location_t parse(const char* id_str);
 };
 
-namespace detail_ {
+namespace detail {
 
 /**
  * Obtain a CUDA device id for a PCIe bus device
@@ -76,7 +76,7 @@ inline id_t resolve_id(pci_location_t pci_id)
 	return cuda_device_id;
 }
 
-} // namespace detail_
+} // namespace detail
 
 
 } // namespace device

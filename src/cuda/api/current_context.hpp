@@ -35,11 +35,11 @@ inline bool exists()
 		return false;
 	}
 	throw_if_error_lazy(status, "Failed obtaining the current context's handle");
-	return (handle != context::detail_::none);
+	return (handle != context::detail::none);
 }
 
 
-namespace detail_ {
+namespace detail {
 /**
  * Returns a raw handle for the current CUDA context
  *
@@ -80,7 +80,7 @@ inline status_and_handle_pair get_with_status()
 	handle_t handle;
 	auto status = cuCtxGetCurrent(&handle);
 	if (status == status::not_yet_initialized) {
-		handle = context::detail_::none;
+		handle = context::detail::none;
 	}
 	return { status, handle };
 }
@@ -128,7 +128,7 @@ inline void push(handle_t context_handle)
 {
 	auto status = cuCtxPushCurrent(context_handle);
 	throw_if_error_lazy(status, "Failed pushing to the top of the context stack: "
-		+ context::detail_::identify(context_handle));
+		+ context::detail::identify(context_handle));
 }
 
 /**
@@ -168,18 +168,18 @@ inline context::handle_t pop()
 inline void set(handle_t context_handle)
 {
 	// Thought about doing this:
-	// if (detail_::get_handle() == context_handle_) { return; }
+	// if (detail::get_handle() == context_handle_) { return; }
 	// ... but decided against it.
 	auto status = cuCtxSetCurrent(context_handle);
 	throw_if_error_lazy(status,
-		"Failed setting the current context to " + context::detail_::identify(context_handle));
+		"Failed setting the current context to " + context::detail::identify(context_handle));
 }
 
-} // namespace detail_
+} // namespace detail
 
-namespace detail_ {
+namespace detail {
 /**
- * @note See the out-of-`detail_::` version of this class.
+ * @note See the out-of-`detail::` version of this class.
  */
 class scoped_override_t {
 public:
@@ -206,7 +206,7 @@ public:
  * prefer @ref SET_CUDA_CONTEXT_FOR_THIS_SCOPE instead.
  */
 #define CAW_SET_SCOPE_CONTEXT(context_handle_expr_) \
-const ::cuda_::context::current::detail_::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
+const ::cuda_::context::current::detail::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
 ///@endcond
 
 /**
@@ -237,7 +237,7 @@ public:
 	~scoped_ensurer_t() { if (context_was_pushed_on_construction) { pop(); } }
 };
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * A RAII-based mechanism for pushing a context onto the context stack
@@ -252,9 +252,9 @@ public:
  * pushed.
  *
  */
-class scoped_override_t : private detail_::scoped_override_t {
+class scoped_override_t : private detail::scoped_override_t {
 protected:
-	using parent = detail_::scoped_override_t;
+	using parent = detail::scoped_override_t;
 public:
 
 	explicit scoped_override_t(device::primary_context_t&& primary_context);
@@ -288,7 +288,7 @@ inline void synchronize()
 	}
 }
 
-namespace detail_ {
+namespace detail {
 
 // Just like context::current::synchronize(), but with an argument
 // allowing for throwing a more informative exception on failure
@@ -297,7 +297,7 @@ inline void synchronize(context::handle_t current_context_handle)
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
 		throw cuda_::runtime_error(status,"Failed synchronizing "
-			+ context::detail_::identify(current_context_handle));
+			+ context::detail::identify(current_context_handle));
 	}
 }
 
@@ -310,7 +310,7 @@ inline void synchronize(
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
 		throw cuda_::runtime_error(status, "Failed synchronizing "
-			+ context::detail_::identify(current_context_handle, current_context_device_id));
+			+ context::detail::identify(current_context_handle, current_context_device_id));
 	}
 }
 

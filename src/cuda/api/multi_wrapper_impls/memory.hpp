@@ -39,7 +39,7 @@ void copy(array_t<T, NumDimensions>& destination, span<T const> source, optional
 			" elements into an array of " + std::to_string(destination.size()) + " elements");
 	}
 #endif
-	detail_::copy<T, NumDimensions>(destination, source.data(), stream->handle());
+	detail::copy<T, NumDimensions>(destination, source.data(), stream->handle());
 }
 
 // Note: Assumes the destination, source and stream are all usable on the same content
@@ -52,17 +52,17 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<
 	}
 	if (stream->context_handle() != source.context_handle()) {
 		throw std::invalid_argument("Attempt to copy an array in"
-									  + context::detail_::identify(source.context_handle()) + " via "
-									  + stream::detail_::identify(*stream));
+									  + context::detail::identify(source.context_handle()) + " via "
+									  + stream::detail::identify(*stream));
 	}
-	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
+	detail::copy<T, NumDimensions>(destination, source, stream->handle());
 }
 
 template<dimensionality_t NumDimensions>
 void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream)
 {
 	stream::handle_t stream_handle = stream ? stream->handle() : nullptr;
-	status_t status = detail_::multidim_copy(params, stream_handle);
+	status_t status = detail::multidim_copy(params, stream_handle);
 	throw_if_error_lazy(status, "Copying using a general copy parameters structure");
 }
 
@@ -81,27 +81,27 @@ void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<
 		memory::copy(destination, context_of(source), source);
 		return;
 	}
-	detail_::copy<T, NumDimensions>(destination, source, stream->handle());
+	detail::copy<T, NumDimensions>(destination, source, stream->handle());
 }
 
 inline void copy(void *destination, const void *source, size_t num_bytes, optional_ref<const stream_t> stream)
 {
 	if (not stream) {
-		context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
+		context::current::detail::scoped_existence_ensurer_t ensure_some_context{};
 		auto result = cuMemcpy(device::address(destination), device::address(source), num_bytes);
 		// TODO: Determine whether it was from host to device, device to host etc and
 		// add this information to the error string
 		throw_if_error_lazy(result, "Synchronously copying data");
 		return;
 	}
-	detail_::copy(destination, source, num_bytes, stream->handle());
+	detail::copy(destination, source, num_bytes, stream->handle());
 }
 
 namespace device {
 
 inline region_t allocate(const context_t& context, size_t size_in_bytes)
 {
-	return detail_::allocate(context.handle(), size_in_bytes);
+	return detail::allocate(context.handle(), size_in_bytes);
 }
 
 inline region_t allocate(const device_t& device, size_t size_in_bytes)
@@ -114,8 +114,8 @@ inline region_t allocate(const device_t& device, size_t size_in_bytes)
 inline region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream = {})
 {
 	return stream ?
-		detail_::allocate(stream->context().handle(), size_in_bytes, stream->handle()) :
-		detail_::allocate_in_current_context(size_in_bytes);
+		detail::allocate(stream->context().handle(), size_in_bytes, stream->handle()) :
+		detail::allocate_in_current_context(size_in_bytes);
 }
 
 #endif // CUDA_VERSION >= 11020
@@ -128,12 +128,12 @@ inline void free(void* region_start)
 {
 #if CUDA_VERSION >= 11020
 	if (stream) {
-		detail_::free_on_stream(region_start, stream->handle());
+		detail::free_on_stream(region_start, stream->handle());
 		return;
 	}
 #endif
-	context::current::detail_::scoped_existence_ensurer_t ensurer;
-	detail_::free_in_current_context(ensurer.context_handle,region_start);
+	context::current::detail::scoped_existence_ensurer_t ensurer;
+	detail::free_in_current_context(ensurer.context_handle,region_start);
 }
 
 } // namespace device
@@ -167,48 +167,48 @@ inline void copy(
 	// add this information to the error string
 	throw_if_error_lazy(status,
 		std::string("Failed copying data between devices: From address ")
-		+ cuda_::detail_::ptr_as_hex(source) + " in "
-		+ context::detail_::identify(source_context.handle()) + " to address "
-		+ cuda_::detail_::ptr_as_hex(destination) + " in "
-		+ context::detail_::identify(destination_context.handle()) +
-		(stream ? " on " + stream::detail_::identify(*stream) : ""));
+		+ cuda_::detail::ptr_as_hex(source) + " in "
+		+ context::detail::identify(source_context.handle()) + " to address "
+		+ cuda_::detail::ptr_as_hex(destination) + " in "
+		+ context::detail::identify(destination_context.handle()) +
+		(stream ? " on " + stream::detail::identify(*stream) : ""));
 }
 
 } // namespace inter_context
 
 namespace managed {
 #if  CUDA_VERSION >= 10020
-namespace detail_ {
+namespace detail {
 
 template <typename GenericRegion>
 device_t region_helper<GenericRegion>::preferred_location() const
 {
-	auto device_id = range::detail_::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	auto device_id = range::detail::get_scalar_attribute<bool>(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 	return cuda_::device::get(device_id);
 }
 
 template <typename GenericRegion>
 void region_helper<GenericRegion>::set_preferred_location(device_t& device) const
 {
-	range::detail_::set_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
+	range::detail::set_attribute(*this,CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION, device.id());
 }
 
 template <typename GenericRange>
 void region_helper<GenericRange>::clear_preferred_location() const
 {
-	range::detail_::unset_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
+	range::detail::unset_attribute(*this, CU_MEM_RANGE_ATTRIBUTE_PREFERRED_LOCATION);
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline void advise_expected_access_by(const_region_t region, device_t& device)
 {
-	range::detail_::advise(region, CU_MEM_ADVISE_SET_ACCESSED_BY, device.id());
+	range::detail::advise(region, CU_MEM_ADVISE_SET_ACCESSED_BY, device.id());
 }
 
 inline void advise_no_access_expected_by(const_region_t region, device_t& device)
 {
-	range::detail_::advise(region, CU_MEM_ADVISE_UNSET_ACCESSED_BY, device.id());
+	range::detail::advise(region, CU_MEM_ADVISE_UNSET_ACCESSED_BY, device.id());
 }
 #endif //  CUDA_VERSION >= 10020
 
@@ -223,7 +223,7 @@ std::vector<device_t, Allocator> expected_accessors(const_region_t region, const
 	device_ids, sizeof(device_t) * devices.size(),
 	CU_MEM_RANGE_ATTRIBUTE_ACCESSED_BY, device::address(region.start()), region.size());
 	throw_if_error_lazy(status, "Obtaining the IDs of devices with access to the managed memory range at "
-						   + cuda_::detail_::ptr_as_hex(region.start()));
+						   + cuda_::detail::ptr_as_hex(region.start()));
 	auto first_invalid_element = std::lower_bound(device_ids, device_ids + num_devices, cudaInvalidDeviceId);
 	// We may have gotten less results that the set of all devices, so let's whittle that down
 
@@ -240,12 +240,12 @@ inline void prefetch(
 	const cuda_::device_t&  destination,
 	const stream_t&        stream)
 {
-	detail_::prefetch(region, destination.id(), stream.handle());
+	detail::prefetch(region, destination.id(), stream.handle());
 }
 
 inline void prefetch_to_host(const_region_t region, const stream_t& stream)
 {
-	detail_::prefetch(region, CU_DEVICE_CPU, stream.handle());
+	detail::prefetch(region, CU_DEVICE_CPU, stream.handle());
 }
 #endif // CUDA_VERSION >= 10020
 
@@ -254,7 +254,7 @@ inline region_t allocate(
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
-	return detail_::allocate(context.handle(), num_bytes, initial_visibility);
+	return detail::allocate(context.handle(), num_bytes, initial_visibility);
 }
 
 inline region_t allocate(
@@ -268,7 +268,7 @@ inline region_t allocate(
 
 inline region_t allocate(size_t num_bytes)
 {
-	auto context_handle = context::current::detail_::get_with_fallback_push();
+	auto context_handle = context::current::detail::get_with_fallback_push();
 	return allocate(context_handle, num_bytes, initial_visibility_t::to_all_devices);
 }
 
@@ -282,7 +282,7 @@ inline region_pair_t allocate(
 	allocation_options     options)
 {
 	auto pc = device.primary_context();
-	return cuda_::memory::mapped::detail_::allocate(pc.handle(), size_in_bytes, options);
+	return cuda_::memory::mapped::detail::allocate(pc.handle(), size_in_bytes, options);
 }
 
 
@@ -291,14 +291,14 @@ inline region_pair_t allocate(
 	size_t                  size_in_bytes,
 	allocation_options      options)
 {
-	return cuda_::memory::mapped::detail_::allocate(context.handle(), size_in_bytes, options);
+	return cuda_::memory::mapped::detail::allocate(context.handle(), size_in_bytes, options);
 }
 
 } // namespace mapped
 
 namespace host {
 
-namespace detail_ {
+namespace detail {
 
 /**
  * @note The allocation does not keep any device context alive/active; that is
@@ -311,7 +311,7 @@ inline region_t allocate_in_current_context(
 	allocation_options  options)
 {
 	void* allocated = nullptr;
-	auto flags = memory::detail_::make_cuda_host_alloc_flags(options);
+	auto flags = memory::detail::make_cuda_host_alloc_flags(options);
 	auto result = cuMemHostAlloc(&allocated, size_in_bytes, flags);
 	if (is_success(result) && allocated == nullptr) {
 		// Can this even happen? hopefully not
@@ -330,7 +330,7 @@ inline region_t allocate(
 	return allocate_in_current_context(size_in_bytes, options);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @note The allocation does not keep any device context alive/active; that is
@@ -345,22 +345,22 @@ inline region_t allocate(
 	allocation_options  options)
 {
 	static constexpr bool dont_decrease_pc_refcount_on_destruct { false };
-	context::current::detail_::scoped_existence_ensurer_t context_ensurer{ dont_decrease_pc_refcount_on_destruct };
+	context::current::detail::scoped_existence_ensurer_t context_ensurer{ dont_decrease_pc_refcount_on_destruct };
 	// Note: We allow a PC to leak here, in case no other context existed, so as not to risk
 	// the allocation being invalidated by the only CUDA context getting destroyed when
 	// leaving this function
-	return detail_::allocate_in_current_context(size_in_bytes, options);
+	return detail::allocate_in_current_context(size_in_bytes, options);
 }
 
 } // namespace host
 
 namespace pointer {
-namespace detail_ {
+namespace detail {
 
 template<attribute_t attribute>
 status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr)
 {
-	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
+	context::current::detail::scoped_existence_ensurer_t ensure_we_have_some_context;
 	attribute_value_t <attribute> attribute_value;
 	auto status = cuPointerGetAttribute(&attribute_value, attribute, device::address(ptr));
 	return { status, attribute_value };
@@ -373,19 +373,19 @@ attribute_value_t<attribute> get_attribute(const void *ptr)
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(ptr);
 	throw_if_error_lazy(status_and_attribute_value.status,
 		"Obtaining attribute " + std::to_string(static_cast<int>(attribute))
-		+ " for pointer " + cuda_::detail_::ptr_as_hex(ptr) );
+		+ " for pointer " + cuda_::detail::ptr_as_hex(ptr) );
 	return status_and_attribute_value.value;
 }
 
 // TODO: Consider switching to a span with C++20
 inline void get_attributes(unsigned num_attributes, pointer::attribute_t* attributes, void** value_ptrs, const void* ptr)
 {
-	context::current::detail_::scoped_existence_ensurer_t ensure_we_have_some_context;
+	context::current::detail::scoped_existence_ensurer_t ensure_we_have_some_context;
 	auto status = cuPointerGetAttributes( num_attributes, attributes, value_ptrs, device::address(ptr) );
-	throw_if_error_lazy(status, "Obtaining multiple attributes for pointer " + cuda_::detail_::ptr_as_hex(ptr));
+	throw_if_error_lazy(status, "Obtaining multiple attributes for pointer " + cuda_::detail::ptr_as_hex(ptr));
 }
 
-} // namespace detail_
+} // namespace detail
 } // namespace pointer
 
 namespace device {
@@ -394,9 +394,9 @@ template <typename T>
 void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream)
 {
 	if (stream) {
-		detail_::set(start, value, num_elements, stream->handle());
+		detail::set(start, value, num_elements, stream->handle());
 	}
-	context::current::detail_::scoped_existence_ensurer_t ensure_some_context{};
+	context::current::detail::scoped_existence_ensurer_t ensure_some_context{};
 	static_assert(std::is_trivially_copyable<T>::value, "Non-trivially-copyable types cannot be used for setting memory");
 	static_assert(sizeof(T) == 1 or sizeof(T) == 2 or sizeof(T) == 4,
 		"Unsupported type size - only sizes 1, 2 and 4 are supported");
@@ -434,7 +434,7 @@ inline void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const 
 	default:
 		throw runtime_error(
 			cuda_::status::invalid_value,
-			"CUDA returned an invalid memory type for the pointer 0x" + cuda_::detail_::ptr_as_hex(ptr));
+			"CUDA returned an invalid memory type for the pointer 0x" + cuda_::detail::ptr_as_hex(ptr));
 	}
 }
 
@@ -444,7 +444,7 @@ namespace pool {
 template<shared_handle_kind_t SharedHandleKind>
 pool_t create(const cuda_::device_t& device)
 {
-	return detail_::create<SharedHandleKind>(device.id());
+	return detail::create<SharedHandleKind>(device.id());
 }
 
 
@@ -453,7 +453,7 @@ inline region_t allocate(const pool_t& pool, const stream_t &stream, size_t num_
 	CUdeviceptr dptr;
 	auto status = cuMemAllocFromPoolAsync(&dptr, num_bytes, pool.handle(), stream.handle());
 	throw_if_error_lazy(status, "Failed scheduling an allocation of " + std::to_string(num_bytes)
-		+ " bytes of memory from " + detail_::identify(pool) + ", on " + stream::detail_::identify(stream));
+		+ " bytes of memory from " + detail::identify(pool) + ", on " + stream::detail::identify(stream));
 	return {as_pointer(dptr), num_bytes };
 }
 
@@ -465,14 +465,14 @@ shared_handle_t<Kind> export_(const pool_t& pool)
 	shared_handle_t<Kind> result;
 	static constexpr unsigned long long flags { 0 };
 	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), static_cast<CUmemAllocationHandleType>(Kind), flags);
-	throw_if_error_lazy(status, "Exporting " + pool::detail_::identify(pool) +" for inter-process use");
+	throw_if_error_lazy(status, "Exporting " + pool::detail::identify(pool) +" for inter-process use");
 	return result;
 }
 
 template <shared_handle_kind_t Kind>
 pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle)
 {
-	auto handle = detail_::import<Kind>(shared_pool_handle);
+	auto handle = detail::import<Kind>(shared_pool_handle);
 	// TODO: MUST SUPPORT SAYING THIS POOL CAN'T ALLOCATE - NOT AN EXTRA FLAG IN THE POOL CLASS
 	return memory::pool::wrap(device.id(), handle, do_not_take_ownership);
 }
@@ -499,16 +499,16 @@ inline pool::ipc::imported_ptr_t pool_t::import(const memory::pool::ipc::ptr_han
 
 inline permissions_t get_permissions(const cuda_::device_t& device, const pool_t& pool)
 {
-	return cuda_::memory::detail_::get_permissions(device.id(), pool.handle());
+	return cuda_::memory::detail::get_permissions(device.id(), pool.handle());
 }
 
 inline void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions)
 {
 	if (pool.device_id() == device.id()) {
 		throw std::invalid_argument("Cannot change the access get_permissions to a pool of the device "
-			"on which the pool's memory is allocated (" + cuda_::device::detail_::identify(device.id()) + ')');
+			"on which the pool's memory is allocated (" + cuda_::device::detail::identify(device.id()) + ')');
 	}
-	cuda_::memory::detail_::set_permissions(device.id(), pool.handle(), permissions);
+	cuda_::memory::detail::set_permissions(device.id(), pool.handle(), permissions);
 }
 
 template <typename DeviceRange>
@@ -518,7 +518,7 @@ void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t perm
 	auto device_ids = std::unique_ptr<cuda_::device::id_t[]>(new cuda_::device::id_t[devices.size()]);
 	auto device_to_id = [](device_t const& device){ return device.id(); };
 	std::transform(std::begin(devices), std::end(devices), device_ids.get(), device_to_id);
-	cuda_::memory::detail_::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
+	cuda_::memory::detail::set_permissions( { device_ids.get(), devices.size() }, pool.handle(), permissions);
 }
 #endif // #if CUDA_VERSION >= 11020
 
@@ -529,7 +529,7 @@ void set_permissions(DeviceRange devices, const pool_t& pool, permissions_t perm
 template <memory::pool::shared_handle_kind_t Kind>
 memory::pool_t device_t::create_memory_pool() const
 {
-	return cuda_::memory::pool::detail_::create<Kind>(id_);
+	return cuda_::memory::pool::detail::create<Kind>(id_);
 }
 
 inline memory::region_t stream_t::enqueue_t::allocate(const memory::pool_t& pool, size_t num_bytes) const
@@ -541,7 +541,7 @@ inline memory::pool_t device_t::default_memory_pool() const
 {
 	memory::pool::handle_t handle;
 	auto status = cuDeviceGetDefaultMemPool(&handle, id_);
-	throw_if_error_lazy(status, "Failed obtaining the default memory pool for " + device::detail_::identify(id_));
+	throw_if_error_lazy(status, "Failed obtaining the default memory pool for " + device::detail::identify(id_));
 	return memory::pool::wrap(id_, handle, do_not_take_ownership);
 }
 

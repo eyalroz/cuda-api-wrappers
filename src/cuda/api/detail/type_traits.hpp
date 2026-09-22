@@ -13,7 +13,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 template <bool B>
 using bool_constant = std::integral_constant<bool, B>;
@@ -43,13 +43,13 @@ struct has_data_method : std::false_type { };
 
 // specialization recognizes types that do have a nested ::type member:
 template <typename T>
-struct has_data_method<T, cuda_::detail_::void_t<decltype(std::declval<T>().data())>> : std::true_type { };
+struct has_data_method<T, cuda_::detail::void_t<decltype(std::declval<T>().data())>> : std::true_type { };
 
 template <typename, typename = void>
 struct has_value_type_member : std::false_type { };
 
 template <typename T>
-struct has_value_type_member<T, cuda_::detail_::void_t<typename T::value_type>> : std::true_type { };
+struct has_value_type_member<T, cuda_::detail::void_t<typename T::value_type>> : std::true_type { };
 
 // TODO: Consider either beefing up this type trait or ditching it in favor of something simpler, or
 // in the standard library
@@ -60,7 +60,7 @@ struct is_kinda_like_contiguous_container :
 		and has_value_type_member<typename std::remove_reference<T>::type>::value
 	> {};
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda_
 
