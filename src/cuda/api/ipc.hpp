@@ -137,7 +137,7 @@ protected: // constructors & destructor
 public: // constructors & destructors
 	friend imported_ptr_t wrap(void * ptr, bool owning) noexcept;
 
-	~imported_ptr_t() DESTRUCTOR_EXCEPTION_SPEC
+	~imported_ptr_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

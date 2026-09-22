@@ -277,7 +277,7 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit_ = false;
 	};
 
-	~event_t() DESTRUCTOR_EXCEPTION_SPEC
+	~event_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
 #ifndef CAW_THROW_IN_DESTRUCTORS

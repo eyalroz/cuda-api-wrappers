@@ -120,7 +120,7 @@ public:
 		other.owning_ = false;
 	};
 
-	~resource_t() DESTRUCTOR_EXCEPTION_SPEC
+	~resource_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

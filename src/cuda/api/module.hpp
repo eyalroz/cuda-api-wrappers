@@ -235,7 +235,7 @@ public: // constructors and destructor
 	// Note: It is up to the user of this class to ensure that it is unloaded _before_ the context
 	// in which it was created; and one needs to be particularly careful about this point w.r.t.
 	// primary contexts
-	~module_t() DESTRUCTOR_EXCEPTION_SPEC
+	~module_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

@@ -269,7 +269,7 @@ public: // constructors & destructor
 	{
 		other.owning_ = false;
 	}
-	~instance_t() DESTRUCTOR_EXCEPTION_SPEC
+	~instance_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 		auto status = cuGraphExecDestroy(handle_);

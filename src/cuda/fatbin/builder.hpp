@@ -196,7 +196,7 @@ public: // constructors and destructor
 		other.owning = false;
 	};
 
-	~fatbin_builder_t() DESTRUCTOR_EXCEPTION_SPEC
+	~fatbin_builder_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning) { return; }
 

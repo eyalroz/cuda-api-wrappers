@@ -718,7 +718,7 @@ public: 	// constructors and destructor
 		std::swap(lhs.holds_pc_refcount_unit_, rhs.holds_pc_refcount_unit_);
 	}
 
-	~device_t() DESTRUCTOR_EXCEPTION_SPEC
+	~device_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (holds_pc_refcount_unit_) {
 			device::primary_context::detail_::decrease_refcount_in_dtor(id_);
