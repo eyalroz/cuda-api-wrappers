@@ -225,7 +225,7 @@ public:
 		other.handle_ = nullptr;
 	}
 
-	~array_t() DESTRUCTOR_EXCEPTION_SPEC
+	~array_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not handle_) { return; }
 #ifndef CAW_THROW_IN_DESTRUCTORS

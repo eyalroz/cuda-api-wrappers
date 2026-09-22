@@ -178,7 +178,7 @@ public: // constructors and destructor
 
 	primary_context_t(primary_context_t&& other) noexcept = default;
 
-	~primary_context_t() DESTRUCTOR_EXCEPTION_SPEC
+	~primary_context_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owns_refcount_unit_) {
 			primary_context::detail_::decrease_refcount_in_dtor(device_id_);

@@ -731,7 +731,7 @@ public: // constructors and destructor
 		other.owning_ = false;
 	};
 
-	~context_t() DESTRUCTOR_EXCEPTION_SPEC
+	~context_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

@@ -436,7 +436,7 @@ public: // ctors & dtor
 
 public: // ctors & dtor
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	~kernel_t() DESTRUCTOR_EXCEPTION_SPEC
+	~kernel_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {

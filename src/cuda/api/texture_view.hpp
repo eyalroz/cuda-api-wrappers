@@ -142,7 +142,7 @@ public: // constructors and destructors
 
 public: // operators
 
-	~texture_view() DESTRUCTOR_EXCEPTION_SPEC
+	~texture_view() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

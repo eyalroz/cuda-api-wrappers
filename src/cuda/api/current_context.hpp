@@ -194,7 +194,7 @@ public:
 	scoped_override_t(scoped_override_t&&) = delete;
 	scoped_override_t& operator=(const scoped_override_t&) = delete;
 	scoped_override_t& operator=(scoped_override_t&&) = delete;
-	~scoped_override_t() DESTRUCTOR_EXCEPTION_SPEC;
+	~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC;
 };
 
 ///@cond
