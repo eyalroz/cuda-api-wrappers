@@ -927,7 +927,7 @@ public: // constructors and destructor
 		other.holds_pc_refcount_unit_ = false;
 	}
 
-	~stream_t() DESTRUCTOR_EXCEPTION_SPEC
+	~stream_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS

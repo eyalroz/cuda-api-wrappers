@@ -762,7 +762,7 @@ public: // ctors & dtor
 		other.owning_ = false;
 	}
 
-	~template_t() DESTRUCTOR_EXCEPTION_SPEC
+	~template_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (owning_) {
 			auto status = cuGraphDestroy(handle_);

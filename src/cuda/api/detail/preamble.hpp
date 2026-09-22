@@ -28,6 +28,14 @@
 #endif
 #endif
 
+#ifndef CONSTEXPR_CPP17
+#if __cplusplus >= 201712L
+#define CONSTEXPR_CPP17 constexpr
+#else
+#define CONSTEXPR_CPP17
+#endif
+#endif
+
 #ifndef CAW_MAYBE_UNUSED
 #if __cplusplus >= 201703L
 #define CAW_MAYBE_UNUSED [[maybe_unused]]
@@ -49,9 +57,9 @@
 #endif // NOEXCEPT_IF_NDEBUG
 
 #ifdef CAW_THROW_IN_DESTRUCTORS
-#define DESTRUCTOR_EXCEPTION_SPEC noexcept(false)
+#define CAW_DESTRUCTOR_EXCEPTION_SPEC noexcept(false)
 #else
-#define DESTRUCTOR_EXCEPTION_SPEC noexcept
+#define CAW_DESTRUCTOR_EXCEPTION_SPEC noexcept
 #endif
 
 #endif //CUDA_API_WRAPPERS_PREAMBLE_HPP_

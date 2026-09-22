@@ -158,7 +158,7 @@ public:
 		other.owning_ = false;
 	}
 
-	~reserved_address_range_t() DESTRUCTOR_EXCEPTION_SPEC
+	~reserved_address_range_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
@@ -220,7 +220,7 @@ public: // constructors & destructor
 		other.holds_refcount_unit_ = false;
 	}
 
-	~physical_allocation_t() DESTRUCTOR_EXCEPTION_SPEC
+	~physical_allocation_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 	{
 		if (not holds_refcount_unit_) { return; }
 		auto status = cuMemRelease(handle_);

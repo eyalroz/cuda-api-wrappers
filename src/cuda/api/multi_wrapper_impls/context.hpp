@@ -84,7 +84,7 @@ inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, 
 	push(context_handle);
 }
 
-inline scoped_override_t::~scoped_override_t() DESTRUCTOR_EXCEPTION_SPEC
+inline scoped_override_t::~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 {
 #ifdef CAW_THROW_IN_DESTRUCTORS
 	pop();
