@@ -112,7 +112,7 @@ template <> struct caching<memory_operation_t::store> {
 template <memory_operation_t Op>
 using caching_mode_t = typename caching<Op>::mode;
 
-namespace detail_ {
+namespace detail {
 
 template <memory_operation_t Op>
 const char* name(caching_mode_t<Op> mode)
@@ -120,13 +120,13 @@ const char* name(caching_mode_t<Op> mode)
 	return caching<Op>::mode_names[static_cast<int>(mode)];
 }
 
-} // namespace detail_
+} // namespace detail
 
 ///@cond
 template <memory_operation_t Op>
 std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
 {
-	return os << detail_::name(lcm);
+	return os << detail::name(lcm);
 }
 ///@endcond
 

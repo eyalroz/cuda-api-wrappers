@@ -21,7 +21,7 @@ namespace cuda_ {
 
 namespace rtc {
 
-namespace detail_ {
+namespace detail {
 
 // We would _like_ to define the named status codes here. Unfortunately - we cannot, due to a
 // C++11 corner-case behavior issues in GCC and/or clang. See:
@@ -31,7 +31,7 @@ namespace detail_ {
 // template <> enum types<cuda_cpp>::named_status ...
 // template <> enum types<ptx>::named_status ...
 
-} // namespace detail_
+} // namespace detail
 
 namespace status {
 
@@ -39,7 +39,7 @@ namespace status {
  * @brief Aliases for NVRTC / PTX compilation library status codes
  */
 template <source_kind_t Kind>
-using named_t = typename rtc::detail_::types<Kind>::named_status;
+using named_t = typename rtc::detail::types<Kind>::named_status;
 
 ///@cond
 template <source_kind_t Kind>

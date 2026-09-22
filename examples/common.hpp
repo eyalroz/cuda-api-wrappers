@@ -107,7 +107,7 @@ std::ostream& operator<<(std::ostream& os, cuda_::context::host_thread_sync_sche
 
 std::ostream& operator<<(std::ostream& os, cuda_::context::handle_t handle)
 {
-	return (os << cuda_::detail_::ptr_as_hex(handle));
+	return (os << cuda_::detail::ptr_as_hex(handle));
 }
 
 std::ostream& operator<<(std::ostream& os, const cuda_::context_t& context)
@@ -117,12 +117,12 @@ std::ostream& operator<<(std::ostream& os, const cuda_::context_t& context)
 
 std::ostream& operator<<(std::ostream& os, const cuda_::device_t& device)
 {
-	return os << cuda_::device::detail_::identify(device.id());
+	return os << cuda_::device::detail::identify(device.id());
 }
 
 std::ostream& operator<<(std::ostream& os, const cuda_::stream_t& stream)
 {
-	return os << cuda_::stream::detail_::identify(stream.handle(), stream.device().id());
+	return os << cuda_::stream::detail::identify(stream.handle(), stream.device().id());
 }
 
 std::ostream& operator<<(std::ostream& os, const cuda_::launch_configuration_t& lc)
@@ -190,20 +190,20 @@ void print_context_stack()
 	}
 	std::vector<cuda_::context::handle_t> contexts;
 	while(cuda_::context::current::exists()) {
-		contexts.push_back(cuda_::context::current::detail_::pop());
+		contexts.push_back(cuda_::context::current::detail::pop());
 	}
 	for (auto handle : contexts) {
-		auto device_id = cuda_::context::detail_::get_device_id(handle);
+		auto device_id = cuda_::context::detail::get_device_id(handle);
 		std::cout << handle << " for device " << device_id;
-		if (cuda_::context::detail_::is_primary(handle)) {
+		if (cuda_::context::detail::is_primary(handle)) {
 			std::cout << " (primary, "
-				<< (cuda_::device::primary_context::detail_::is_active(device_id) ? "active" : "inactive")
+				<< (cuda_::device::primary_context::detail::is_active(device_id) ? "active" : "inactive")
 				<< ')';
 		}
 		std::cout << '\n';
 	}
 	for (auto it = contexts.rbegin(); it != contexts.rend(); ++it) {
-		cuda_::context::current::detail_::push(*it);
+		cuda_::context::current::detail::push(*it);
 	}
 }
 
@@ -213,7 +213,7 @@ void report_primary_context_activity(const std::string& prefix = "")
 	std::cout << "Device primary contexts activity: ";
 	for(auto device : cuda_::devices()) {
 		std::cout << device.id() << ": "
-				  << (cuda_::device::primary_context::detail_::is_active(device.id()) ? "ACTIVE" : "inactive")
+				  << (cuda_::device::primary_context::detail::is_active(device.id()) ? "ACTIVE" : "inactive")
 				  << "  ";
 	}
 	std::cout << '\n';
@@ -356,7 +356,7 @@ cuda_::device::id_t choose_device(int argc, char const** argv)
 		die_("CUDA device " +  std::to_string(device_id) + " was requested, but there are only "
 			+ std::to_string(num_devices) + " CUDA devices on this system");
 	}
-	std::cout << "Using CUDA device " << cuda_::device::detail_::get_name(device_id) << " (having device ID " << device_id << ")\n";
+	std::cout << "Using CUDA device " << cuda_::device::detail::get_name(device_id) << " (having device ID " << device_id << ")\n";
 	return device_id;
 }
 

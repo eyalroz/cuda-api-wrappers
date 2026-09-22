@@ -99,10 +99,10 @@ void current_context_manipulation(
 	cuda_::context_t context_1 = created_context;
 	cuda_::context::current::set(context_0);
 	assert_(cuda_::context::current::get() == context_0);
-	assert_(cuda_::context::current::detail_::get_handle() == context_0.handle());
+	assert_(cuda_::context::current::detail::get_handle() == context_0.handle());
 	cuda_::context::current::set(context_1);
 	assert_(cuda_::context::current::get() == context_1);
-	assert_(cuda_::context::current::detail_::get_handle() == context_1.handle());
+	assert_(cuda_::context::current::detail::get_handle() == context_1.handle());
 
 	auto context_2 = cuda_::context::create(device);
 	{
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 
 	auto original_pc = device.primary_context();
 
-	cuda_::device::primary_context::detail_::decrease_refcount(device.id());
+	cuda_::device::primary_context::detail::decrease_refcount(device.id());
 
 	if (cuda_::device::primary_context::is_active(device)) {
 		die_("The primary context is unexpectedly active after increasing, then decreasing, its refcount");
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
 	// std::cout << "New PC handle = " << pc.handle() << " ; old PC handle = " << original_pc.handle() << "\n";
 
-	cuda_::device::primary_context::detail_::increase_refcount(device.id());
+	cuda_::device::primary_context::detail::increase_refcount(device.id());
 
 	cuda_::context::current::push(pc);
 	constexpr bool is_primary = true;

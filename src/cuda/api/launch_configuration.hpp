@@ -25,7 +25,7 @@ class event_t;
 class kernel_t;
 ///@endcond
 
-namespace detail_ {
+namespace detail {
 
 inline void validate_block_dimensions(grid::block_dimensions_t block_dims)
 {
@@ -49,7 +49,7 @@ void validate_compatibility(const kernel_t &kernel, memory::shared::size_t share
 void validate_compatibility(const device_t &device, memory::shared::size_t shared_mem_size);
 
 void validate_num_parameters(const kernel_t &kernel, size_t num_parameters);
-} // namespace detail_
+} // namespace detail
 
 #if CUDA_VERSION >= 12000
 enum class cluster_scheduling_policy_t {
@@ -246,7 +246,7 @@ constexpr bool operator!=(const launch_configuration_t lhs, const launch_configu
 ///@endcond
 #endif
 
-namespace detail_ {
+namespace detail {
 
 // Note: This will not check anything related to the device or the kernel
 // with which the launch configuration is to be used
@@ -285,7 +285,7 @@ CUlaunchConfig marshal(
 	span<CUlaunchAttribute> attribute_storage) noexcept(true);
 #endif // CUDA_VERSION >= 12000
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda_
 

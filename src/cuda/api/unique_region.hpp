@@ -150,9 +150,9 @@ public:
 namespace device {
 
 /// A unique region of device-global memory
-using unique_region = memory::unique_region<detail_::deleter>;
+using unique_region = memory::unique_region<detail::deleter>;
 
-namespace detail_ {
+namespace detail {
 
 inline unique_region make_unique_region(const context::handle_t context_handle, size_t num_bytes)
 {
@@ -160,7 +160,7 @@ inline unique_region make_unique_region(const context::handle_t context_handle, 
     return unique_region{ allocate_in_current_context(num_bytes) };
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @brief Allocate a region in device-global memory
@@ -208,7 +208,7 @@ inline device::unique_region make_unique_region(const device_t& device, size_t n
 namespace host {
 
 /// A unique region of pinned host memory
-using unique_region = memory::unique_region<detail_::deleter>;
+using unique_region = memory::unique_region<detail::deleter>;
 
 /**
  * @brief Allocate a physical-address-pinned region of system memory
@@ -222,9 +222,9 @@ inline unique_region make_unique_region(size_t num_bytes);
 namespace managed {
 
 /// A unique region of managed memory, see @ref cuda_::memory::managed
-using unique_region = memory::unique_region<detail_::deleter>;
+using unique_region = memory::unique_region<detail::deleter>;
 
-namespace detail_ {
+namespace detail {
 
 inline unique_region make_unique_region(
     const context::handle_t  context_handle,
@@ -235,7 +235,7 @@ inline unique_region make_unique_region(
     return unique_region { allocate_in_current_context(num_bytes, initial_visibility) };
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * @copydoc make_unique_region(size_t num_bytes)

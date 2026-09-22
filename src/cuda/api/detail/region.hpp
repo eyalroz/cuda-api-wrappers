@@ -36,7 +36,7 @@ namespace cuda_ {
 
 namespace memory {
 
-namespace detail_ {
+namespace detail {
 
 // Note: T should be either void or void const, nothing else
 template <class T>
@@ -69,8 +69,8 @@ public:
 	 * A constructor from types such as `std::span`'s or `std::vector`'s, whose data is in
 	 * a contiguous region of memory
 	 */
-	template <typename ContiguousContainer, typename = cuda_::detail_::enable_if_t<
-		cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, void>>
+	template <typename ContiguousContainer, typename = cuda_::detail::enable_if_t<
+		cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, void>>
 	constexpr base_region_t(ContiguousContainer&& contiguous_container) noexcept
 	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
@@ -135,13 +135,13 @@ constexpr bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& r
 	return not (lhs == rhs);
 }
 
-}  // namespace detail_
+}  // namespace detail
 
 /**
  * An untyped, but sized, region in some memory space
  */
-struct region_t : detail_::base_region_t<void> {
-	using parent_type = detail_::base_region_t<void>;
+struct region_t : detail::base_region_t<void> {
+	using parent_type = detail::base_region_t<void>;
 	using parent_type::parent_type;
 	constexpr region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const noexcept
 	{
@@ -150,8 +150,8 @@ struct region_t : detail_::base_region_t<void> {
 };
 
 /// An untyped, but sized, region with const-constrained data in some memory space
-struct const_region_t : detail_::base_region_t<void const> {
-	using parent_type = detail_::base_region_t<void const>;
+struct const_region_t : detail::base_region_t<void const> {
+	using parent_type = detail::base_region_t<void const>;
 	using parent_type::parent_type;
 	const_region_t(region_t r) : base_region_t(r.start(), r.size()) {}
 	const_region_t subregion(size_t offset_in_bytes, size_t size_in_bytes) const

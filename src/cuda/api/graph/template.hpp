@@ -39,15 +39,15 @@ class instance_t;
 
 namespace node {
 
-namespace detail_ {
+namespace detail {
 
 // I'm not so sure about this...
 using edge_t = std::pair<node_t, node_t>;
 
 inline std::string identify(const edge_t &edge)
 {
-	return std::string("edge from " + node::detail_::identify(edge.first)
-					   + " to " + node::detail_::identify(edge.second));
+	return std::string("edge from " + node::detail::identify(edge.first)
+					   + " to " + node::detail::identify(edge.second));
 }
 
 template <typename NodeOrHandle>
@@ -102,7 +102,7 @@ as_handles(Container<NodeOrHandle>&& nodes_or_handles)
 		std::forward<Container<NodeOrHandle>>(nodes_or_handles));
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace node
 
@@ -110,7 +110,7 @@ namespace template_ {
 
 template_t wrap(handle_t handle, bool take_ownership = false) noexcept;
 
-namespace detail_ {
+namespace detail {
 
 std::string identify(const template_t& template_);
 
@@ -212,7 +212,7 @@ inline status_t insert_edges(
 
 inline status_t delete_edges(
 	template_::handle_t template_handle,
-	span<const node::detail_::edge_t> edges)
+	span<const node::detail::edge_t> edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};
@@ -232,7 +232,7 @@ inline status_t delete_edges(
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t               template_handle,
-	span<const node::detail_::edge_t> edges)
+	span<const node::detail::edge_t> edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};
@@ -251,17 +251,17 @@ inline status_t insert_edges(
 
 template <node::kind_t Kind>
 status_t invoke_inserter_possibly_with_context(
-	cuda_::detail_::bool_constant<false>,
+	cuda_::detail::bool_constant<false>,
 	node::handle_t&      new_node_handle,
 	template_::handle_t  graph_template_handle,
 	CUgraphNode*         dependency_handles,
 	size_t               num_dependency_handles,
-	typename node::detail_::kind_traits<Kind>::raw_parameters_type&
+	typename node::detail::kind_traits<Kind>::raw_parameters_type&
 	                     raw_params,
 	context::handle_t)
 {
-	auto raw_params_maybe_ptr = node::detail_::maybe_add_ptr<Kind>(raw_params);
-	return node::detail_::kind_traits<Kind>::inserter(
+	auto raw_params_maybe_ptr = node::detail::maybe_add_ptr<Kind>(raw_params);
+	return node::detail::kind_traits<Kind>::inserter(
 		&new_node_handle,
 		graph_template_handle,
 		dependency_handles,
@@ -271,17 +271,17 @@ status_t invoke_inserter_possibly_with_context(
 
 template <node::kind_t Kind>
 status_t invoke_inserter_possibly_with_context(
-	cuda_::detail_::bool_constant<true>,
+	cuda_::detail::bool_constant<true>,
 	node::handle_t&      new_node_handle,
 	template_::handle_t  graph_template_handle,
 	CUgraphNode*         dependency_handles,
 	size_t               num_dependency_handles,
-	typename node::detail_::kind_traits<Kind>::raw_parameters_type&
+	typename node::detail::kind_traits<Kind>::raw_parameters_type&
 	                     raw_params,
 	context::handle_t    context_handle)
 {
-	auto raw_params_maybe_ptr = node::detail_::maybe_add_ptr<Kind>(raw_params);
-	return node::detail_::kind_traits<Kind>::inserter(
+	auto raw_params_maybe_ptr = node::detail::maybe_add_ptr<Kind>(raw_params);
+	return node::detail::kind_traits<Kind>::inserter(
 		&new_node_handle,
 		graph_template_handle,
 		dependency_handles,
@@ -294,13 +294,13 @@ template <node::kind_t Kind>
 node::handle_t insert_node(
 	template_::handle_t graph_template_handle,
 	context::handle_t context_handle,
-	typename node::detail_::kind_traits<Kind>::raw_parameters_type raw_params)
+	typename node::detail::kind_traits<Kind>::raw_parameters_type raw_params)
 {
-	using traits_type = typename node::detail_::kind_traits<Kind>;
+	using traits_type = typename node::detail::kind_traits<Kind>;
 
 	// Defining a useless bool here to circumvent gratuitous warnings from MSVC
 	const bool context_needed_but_missing =
-		traits_type::inserter_takes_context and context_handle == context::detail_::none;
+		traits_type::inserter_takes_context and context_handle == context::detail::none;
 	if (context_needed_but_missing) {
 		throw std::invalid_argument(
 			"Attempt to insert a CUDA graph template " + std::string(traits_type::name)
@@ -311,7 +311,7 @@ node::handle_t insert_node(
 	auto no_dependency_handles = nullptr;
 	size_t no_dependencies_size = 0;
 	auto status = invoke_inserter_possibly_with_context<Kind>(
-		cuda_::detail_::bool_constant<traits_type::inserter_takes_context>{},
+		cuda_::detail::bool_constant<traits_type::inserter_takes_context>{},
 		new_node_handle,
 		graph_template_handle,
 		no_dependency_handles,
@@ -319,7 +319,7 @@ node::handle_t insert_node(
 		raw_params,
 		context_handle);
 	throw_if_error_lazy(status, "Inserting a " + std::string(traits_type::name) + " node into "
-								+ template_::detail_::identify(graph_template_handle));
+								+ template_::detail::identify(graph_template_handle));
 	return new_node_handle;
 }
 
@@ -330,7 +330,7 @@ node::typed_node_t<Kind> build_params_and_insert_node(
 	Ts&&...              params_ctor_args)
 {
 
-	using traits_type = typename node::detail_::kind_traits<Kind>;
+	using traits_type = typename node::detail::kind_traits<Kind>;
 	using parameters_t = typename traits_type::parameters_type;
 
 	// TODO: Why won't this work?
@@ -345,7 +345,7 @@ node::typed_node_t<Kind> build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
-	cuda_::detail_::true_type, // we've been given a context
+	cuda_::detail::true_type, // we've been given a context
 	template_::handle_t graph_template_handle,
 	const context_t& context,
 	Ts&&... params_ctor_args)
@@ -355,11 +355,11 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
-	cuda_::detail_::false_type, // We've not been given a context
+	cuda_::detail::false_type, // We've not been given a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
-	auto current_context_handle = context::current::detail_::get_handle();
+	auto current_context_handle = context::current::detail::get_handle();
 	// TODO: Consider handling the case of no current context, e.g. by using the default device' primary context
 	return build_params_and_insert_node<Kind>(
 		graph_template_handle, current_context_handle, std::forward<Ts>(params_ctor_args)...);
@@ -368,25 +368,25 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda_::detail_::false_type , // inserter doesn't takes a context
+	cuda_::detail::false_type , // inserter doesn't takes a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
-	return build_params_and_insert_node<Kind>(graph_template_handle, context::detail_::none, std::forward<Ts>(params_ctor_args)...);
+	return build_params_and_insert_node<Kind>(graph_template_handle, context::detail::none, std::forward<Ts>(params_ctor_args)...);
 }
 
 template <node::kind_t Kind, typename T, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda_::detail_::true_type, // inserter takes a context
+	cuda_::detail::true_type, // inserter takes a context
 	template_::handle_t graph_template_handle,
 	T&& first_arg, // still don't know of T is a context or something else
 	Ts&&... params_ctor_args)
 {
 	static constexpr bool first_arg_is_a_context =
-		std::is_same<typename cuda_::detail_::remove_reference_t<T>, cuda_::context_t>::value;
+		std::is_same<typename cuda_::detail::remove_reference_t<T>, cuda_::context_t>::value;
 	return get_context_handle_build_params_and_insert_node<Kind>(
 //return blah<Kind>(
-		cuda_::detail_::bool_constant<first_arg_is_a_context>{},
+		cuda_::detail::bool_constant<first_arg_is_a_context>{},
 		graph_template_handle, std::forward<T>(first_arg), std::forward<Ts>(params_ctor_args)...);
 }
 
@@ -404,7 +404,7 @@ inline status_t get_edges(
 #endif
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace template_
 
@@ -501,7 +501,7 @@ public: // non-mutators
 	{
 		handle_type clone_handle;
 		auto status = cuGraphClone(&clone_handle, handle_);
-		throw_if_error_lazy(status, "Cloning " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Cloning " + template_::detail::identify(*this));
 		return template_t{ clone_handle, do_take_ownership };
 	}
 
@@ -517,7 +517,7 @@ public: // non-mutators
 	void print_dot(const char* dot_filename, dot_printing_options_t printing_options = {}) const
 	{
 		auto status = cuGraphDebugDotPrint(handle_, dot_filename, printing_options.compose());
-		throw_if_error_lazy(status, "Printing " + template_::detail_::identify(*this) + " to file " + dot_filename);
+		throw_if_error_lazy(status, "Printing " + template_::detail::identify(*this) + " to file " + dot_filename);
 	}
 #endif // CUDA_VERSION >= 11030
 	/**
@@ -527,7 +527,7 @@ public: // non-mutators
 	{
 		std::size_t num_nodes_;
 		auto status = cuGraphGetNodes(handle_, nullptr, &num_nodes_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes in " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the number of nodes in " + template_::detail::identify(*this));
 		return num_nodes_;
 	}
 
@@ -543,7 +543,7 @@ public: // non-mutators
 		size_type num_nodes_ { num_nodes() } ;
 		std::vector<node::handle_t> node_handles { num_nodes_ };
 		auto status = cuGraphGetNodes(handle_, node_handles.data(), &num_nodes_);
-		throw_if_error_lazy(status, "Obtaining the set of nodes of " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the set of nodes of " + template_::detail::identify(*this));
 		node_ref_container_type node_refs;
 		for (const auto& node_handle : node_handles) {
 			node_refs.emplace_back(node::wrap(handle_, node_handle));
@@ -560,7 +560,7 @@ public: // non-mutators
 		// Note: Code duplication with num_nodes()
 		std::size_t num_roots_;
 		auto status = cuGraphGetRootNodes(handle_, nullptr, &num_roots_);
-		throw_if_error_lazy(status, "Obtaining the number of root nodes in " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the number of root nodes in " + template_::detail::identify(*this));
 		return num_roots_;
 	}
 
@@ -574,7 +574,7 @@ public: // non-mutators
 		size_type num_roots_ {num_roots() } ;
 		std::vector<node::handle_t> root_node_handles {num_roots_ };
 		auto status = cuGraphGetRootNodes(handle_, root_node_handles.data(), &num_roots_);
-		throw_if_error_lazy(status, "Obtaining the set of root nodes of " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the set of root nodes of " + template_::detail::identify(*this));
 		node_ref_container_type root_node_refs;
 		for (const auto& node_handle : root_node_handles) {
 			root_node_refs.emplace_back(node::wrap(handle_, node_handle));
@@ -586,8 +586,8 @@ public: // non-mutators
 	size_type num_edges() const
 	{
 		std::size_t num_edges;
-		auto status = template_::detail_::get_edges(handle_, nullptr, nullptr, &num_edges);
-		throw_if_error_lazy(status, "Obtaining the number of edges in " + template_::detail_::identify(*this));
+		auto status = template_::detail::get_edges(handle_, nullptr, nullptr, &num_edges);
+		throw_if_error_lazy(status, "Obtaining the number of edges in " + template_::detail::identify(*this));
 		return num_edges;
 	}
 
@@ -596,9 +596,9 @@ public: // non-mutators
 		size_type num_edges_ { num_edges() } ;
 		std::vector<node::handle_t> from_node_handles { num_edges_ };
 		std::vector<node::handle_t> to_node_handles { num_edges_ };
-		auto status = template_::detail_::get_edges(
+		auto status = template_::detail::get_edges(
 			handle_, from_node_handles.data(), to_node_handles.data(), &num_edges_);
-		throw_if_error_lazy(status, "Obtaining the set of edges in " + template_::detail_::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the set of edges in " + template_::detail::identify(*this));
 		edge_container_type edges;
 		// TODO: Use container/range zipping, and a ranged-for loop
 		{
@@ -640,10 +640,10 @@ public: // non-mutators
 				const node::handle_t dest;
 			} handles { source.handle(), dest.handle() };
 			static constexpr size_t remove_just_one = 1;
-			auto status = template_::detail_::insert_edges(
+			auto status = template_::detail::insert_edges(
 				handle(), &handles.source, &handles.dest, remove_just_one);
-			throw_if_error_lazy(status, "Inserting " + node::detail_::identify(edge_type{source, dest})
-				+ " into " + template_::detail_::identify(associated_template));
+			throw_if_error_lazy(status, "Inserting " + node::detail::identify(edge_type{source, dest})
+				+ " into " + template_::detail::identify(associated_template));
 		}
 
 		void edge(edge_type edge_) const
@@ -657,20 +657,20 @@ public: // non-mutators
 				throw std::invalid_argument(
 					"Differing number of source nodes and destination nodes ("
 					+ std::to_string(sources.size()) + " != " + std::to_string(destinations.size())
-					+ " in a request to insert edges into " + template_::detail_::identify(associated_template) );
+					+ " in a request to insert edges into " + template_::detail::identify(associated_template) );
 			}
-			auto status = template_::detail_::insert_edges(handle(), sources, destinations);
+			auto status = template_::detail::insert_edges(handle(), sources, destinations);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(sources.size()) + " edges in "
-				+ template_::detail_::identify(associated_template));
+				+ template_::detail::identify(associated_template));
 		}
 
 		void edges(span<const edge_type> edges) const
 		{
-			auto status = template_::detail_::insert_edges(handle(), edges);
+			auto status = template_::detail::insert_edges(handle(), edges);
 
 			throw_if_error_lazy(status, "Inserting " + std::to_string(edges.size()) + " edges into "
-				+ template_::detail_::identify(associated_template));
+				+ template_::detail::identify(associated_template));
 		}
 
 		template <node::kind_t Kind, typename T, typename... Ts>
@@ -680,9 +680,9 @@ public: // non-mutators
 			// Note: arg may be either the first parameters constructor argument, or a context passed
 			// before the constructor arguments; due to the lack of C++17's if constexpr, we can only act
 			// on this knowledge in another function.
-			static constexpr bool inserter_takes_context = node::detail_::kind_traits<Kind>::inserter_takes_context;
-			return template_::detail_::build_params_and_insert_node_wrapper<Kind>(
-				cuda_::detail_::bool_constant<inserter_takes_context>{}, handle(),
+			static constexpr bool inserter_takes_context = node::detail::kind_traits<Kind>::inserter_takes_context;
+			return template_::detail::build_params_and_insert_node_wrapper<Kind>(
+				cuda_::detail::bool_constant<inserter_takes_context>{}, handle(),
 				std::forward<T>(arg), std::forward<Ts>(node_params_ctor_arguments)...);
 		}
 	}; // insert_t
@@ -704,8 +704,8 @@ public: // non-mutators
 		void node(node_ref_type node) const
 		{
 			auto status = cuGraphDestroyNode(node.handle());
-			throw_if_error_lazy(status, "Deleting " + node::detail_::identify(node)
-				+ " in " + template_::detail_::identify(associated_template));
+			throw_if_error_lazy(status, "Deleting " + node::detail::identify(node)
+				+ " in " + template_::detail::identify(associated_template));
 		}
 
 		void edge(edge_type const& edge_) const
@@ -716,11 +716,11 @@ public: // non-mutators
 				const node::handle_t dest;
 			} handles { edge_.first.handle(), edge_.second.handle() };
 			static constexpr size_t remove_single_edge { 1 };
-			auto status = template_::detail_::delete_edges(
+			auto status = template_::detail::delete_edges(
 				handle(), &handles.source, &handles.dest, remove_single_edge);
 
-			throw_if_error_lazy(status, "Destroying " + node::detail_::identify(edge_)
-				+ " in " + template_::detail_::identify(associated_template));
+			throw_if_error_lazy(status, "Destroying " + node::detail::identify(edge_)
+				+ " in " + template_::detail::identify(associated_template));
 		}
 
 		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
@@ -729,20 +729,20 @@ public: // non-mutators
 				throw std::invalid_argument(
 					"Differing number of source nodes and destination nodes ("
 					+ std::to_string(sources.size()) + " != " + std::to_string(destinations.size())
-					+ " in a request to insert edges into " + template_::detail_::identify(associated_template) );
+					+ " in a request to insert edges into " + template_::detail::identify(associated_template) );
 			}
-			auto status = template_::detail_::delete_edges(handle(), sources, destinations);
+			auto status = template_::detail::delete_edges(handle(), sources, destinations);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(sources.size()) + " edges in "
-				+ template_::detail_::identify(associated_template));
+				+ template_::detail::identify(associated_template));
 		}
 
 		void edges(span<edge_type> edges) const
 		{
-			auto status = template_::detail_::delete_edges(handle(), edges);
+			auto status = template_::detail::delete_edges(handle(), edges);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(edges.size()) + " edges in "
-				+ template_::detail_::identify(associated_template));
+				+ template_::detail::identify(associated_template));
 		}
 	}; // delete_t
 
@@ -767,7 +767,7 @@ public: // ctors & dtor
 		if (owning_) {
 			auto status = cuGraphDestroy(handle_);
 #ifdef CAW_THROW_IN_DESTRUCTORS
-			throw_if_error_lazy(status, "Destroying " + template_::detail_::identify(*this));
+			throw_if_error_lazy(status, "Destroying " + template_::detail::identify(*this));
 #else
 			(void) status;
 #endif
@@ -802,7 +802,7 @@ public: // non-mutators
 	/// ID one would find in the output of DOT printing the template.
 	id_t get_id() const
 	{
-		return template_::detail_::get_id(handle_);
+		return template_::detail::get_id(handle_);
 	}
 #endif // CUDA_VERSION >= 13010
 
@@ -833,7 +833,7 @@ inline template_t create()
 
 inline std::string identify(const template_t& template_)
 {
-	return "CUDA execution graph template at " + cuda_::detail_::ptr_as_hex(template_.handle());
+	return "CUDA execution graph template at " + cuda_::detail::ptr_as_hex(template_.handle());
 }
 
 constexpr std::initializer_list<node_t> no_dependencies {};
@@ -844,10 +844,10 @@ node::typed_node_t<Kind> insert_node(
 	Container<NodeOrHandle> dependencies,
 	NodeParametersCtorParams... node_parameters_ctor_params)
 {
-	using traits_type = typename node::detail_::kind_traits<Kind>;
+	using traits_type = typename node::detail::kind_traits<Kind>;
 	node::parameters_t<Kind> params { std::forward<NodeParametersCtorParams>(node_parameters_ctor_params)... };
 	auto raw_params = traits_type::marshal(params);
-	auto untyped_node = template_::detail_::insert_node(graph.handle(), raw_params, dependencies);
+	auto untyped_node = template_::detail::insert_node(graph.handle(), raw_params, dependencies);
 	return node::wrap<Kind>(untyped_node.containing_graph(), untyped_node.handle(), params);
 	// Remember: untyped_node is not an owning object, so nothing is released (nor
 	// is ownership passed in the returned typed_node
@@ -884,7 +884,7 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 	if (status == cuda_::status::invalid_value and search_result != nullptr) {
 		return nullopt;
 	}
-	throw_if_error_lazy(status, "Searching for a copy of " + node::detail_::identify(node) + " in " + template_::detail_::identify(cloned_graph));
+	throw_if_error_lazy(status, "Searching for a copy of " + node::detail::identify(node) + " in " + template_::detail::identify(cloned_graph));
 	return node::wrap(cloned_graph.handle(), search_result);
 }
 

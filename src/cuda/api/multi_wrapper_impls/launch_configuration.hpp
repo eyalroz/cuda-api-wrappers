@@ -15,7 +15,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 inline void validate_compatibility(
 	const kernel_t& kernel,
@@ -35,7 +35,7 @@ inline void validate_num_parameters(const kernel_t& kernel, size_t num_parameter
 	auto expected_num_parameters = kernel.num_parameters();
 	if (expected_num_parameters != num_parameters) {
 		throw std::invalid_argument("Attempt to launch a kernel taking " + std::to_string(num_parameters)
-			+ " parameters with " + std::to_string(expected_num_parameters) + ": " + kernel::detail_::identify(kernel));
+			+ " parameters with " + std::to_string(expected_num_parameters) + ": " + kernel::detail::identify(kernel));
 	}
 }
 #endif
@@ -104,7 +104,7 @@ inline CUlaunchConfig marshal(
 }
 #endif // CUDA_VERSION >= 12000
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda_
 

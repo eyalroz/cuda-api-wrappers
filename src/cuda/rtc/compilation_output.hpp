@@ -64,19 +64,19 @@ namespace rtc {
 
 namespace program {
 
-namespace detail_ {
+namespace detail {
 
 template <source_kind_t Kind>
 std::string identify(const char *name)
 {
-	return std::string{detail_::kind_name(Kind)} + " program" +
+	return std::string{detail::kind_name(Kind)} + " program" +
 		((name == nullptr) ? "" : " '" + std::string{name} + "'");
 }
 
 template <source_kind_t Kind>
 std::string identify(program::handle_t<Kind> handle, const char *name = nullptr)
 {
-	return identify<Kind>(name) + " at " + cuda_::detail_::ptr_as_hex(handle);
+	return identify<Kind>(name) + " at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 template <source_kind_t Kind>
@@ -242,14 +242,14 @@ template <> inline status_t<cuda_cpp> destroy_and_return_status<cuda_cpp>(handle
 	return nvrtcDestroyProgram(&handle);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace program
 
 /// Definitions relating to and supporting the @ref compilation_output_t class
 namespace compilation_output {
 
-namespace detail_ {
+namespace detail {
 
 template <source_kind_t Kind>
 std::string identify(const compilation_output_t<Kind> &compilation_output);
@@ -309,14 +309,14 @@ public: // non-mutators
 	 */
 	span<char> log(span<char> buffer) const
 	{
-		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_log_size<source_kind>(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
 			throw std::invalid_argument(
 				"Provided buffer size is insufficient for the program compilation log ("
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
-				+ compilation_output::detail_::identify(*this));
+				+ compilation_output::detail::identify(*this));
 		}
-		program::detail_::get_log(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_log(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
@@ -329,13 +329,13 @@ public: // non-mutators
 	 */
 	unique_span<char> log() const
 	{
-		size_t size = program::detail_::get_log_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_log_size<source_kind>(program_handle_, program_name_.c_str());
 		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
 		if (size == 0) {
 			result[size] = '\0';
 			return result;
 		}
-		program::detail_::get_log<source_kind>(result.data(), program_handle_, program_name_.c_str());
+		program::detail::get_log<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		result[size] = '\0';
 		return result;
 	}
@@ -387,9 +387,9 @@ public: // constructors & destructor
 	~compilation_output_base_t() noexcept(false)
 	{
 		if (not owns_handle_) { return; }
-		auto status = program::detail_::destroy_and_return_status<Kind>(program_handle_);
+		auto status = program::detail::destroy_and_return_status<Kind>(program_handle_);
 #ifndef CAW_THROW_IN_DESTRUCTORS
-		throw_if_error<Kind>(status, "Destroying " + program::detail_::identify<Kind>(program_handle_, program_name_.c_str()));
+		throw_if_error<Kind>(status, "Destroying " + program::detail::identify<Kind>(program_handle_, program_name_.c_str()));
 #endif
 	}
 
@@ -413,7 +413,7 @@ public:
 	using parent = compilation_output_base_t<cuda_cpp>;
 	using parent::parent;
 
-	friend compilation_output_t compilation_output::detail_::wrap<source_kind>(
+	friend compilation_output_t compilation_output::detail::wrap<source_kind>(
 		handle_type    program_handle,
 		std::string  program_name,
 		bool           succeeded,
@@ -443,13 +443,13 @@ public: // non-mutators
 	 */
 	span<char> ptx(span<char> buffer) const
 	{
-		size_t size = program::detail_::get_ptx_size(parent::program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_ptx_size(parent::program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
 			throw std::invalid_argument("Provided buffer size is insufficient for the compiled program's PTX ("
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
-				+ compilation_output::detail_::identify(*this));
+				+ compilation_output::detail::identify(*this));
 		}
-		program::detail_::get_ptx(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_ptx(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
@@ -462,13 +462,13 @@ public: // non-mutators
 	 */
 	unique_span<char> ptx() const
 	{
-		size_t size = program::detail_::get_ptx_size(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_ptx_size(program_handle_, program_name_.c_str());
 		auto result = make_unique_span<char>(size+1);  // Let's append a trailing nul character, to be on the safe side
 		if (size == 0) {
 			result[size] = '\0';
 			return result;
 		}
-		program::detail_::get_ptx(result.data(), program_handle_, program_name_.c_str());
+		program::detail::get_ptx(result.data(), program_handle_, program_name_.c_str());
 		result[size] = '\0';
 		return result;
 	}
@@ -481,10 +481,10 @@ public: // non-mutators
 		status_type status = nvrtcGetPTXSize(program_handle_, &size);
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
 		throw_if_rtc_error_lazy(source_kind, status, "Failed determining whether compilation resulted in PTX code for "
-			+ compilation_output::detail_::identify<source_kind>(*this));
+			+ compilation_output::detail::identify<source_kind>(*this));
 		if (size == 0) {
 			throw std::logic_error("PTX size reported as 0 by "
-				+ compilation_output::detail_::identify<source_kind>(*this));
+				+ compilation_output::detail::identify<source_kind>(*this));
 		}
 		return true;
 	}
@@ -492,22 +492,22 @@ public: // non-mutators
 #if CUDA_VERSION >= 11010
 	span<char> cubin(span<char> buffer) const override
 	{
-		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
 			throw std::invalid_argument("Provided buffer size is insufficient for the compiled program's cubin ("
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
-				+ compilation_output::detail_::identify(*this));
+				+ compilation_output::detail::identify(*this));
 		}
-		program::detail_::get_cubin<source_kind>(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_cubin<source_kind>(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
 	unique_span<char> cubin() const override
 	{
-		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		auto result = make_unique_span<char>(size);
 		if (size == 0) { return result; }
-		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
+		program::detail::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		return result;
 	}
 
@@ -517,7 +517,7 @@ public: // non-mutators
 		auto status = nvrtcGetCUBINSize(program_handle_, &size);
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
 		throw_if_rtc_error_lazy(cuda_cpp, status, "Failed determining whether the program has a compiled CUBIN result: "
-			+ compilation_output::detail_::identify(*this));
+			+ compilation_output::detail::identify(*this));
 		return (size > 0);
 	}
 #endif
@@ -539,13 +539,13 @@ public: // non-mutators
 	 */
 	span<char> lto_ir(span<char> buffer) const
 	{
-		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_lto_ir_size(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
 			throw std::invalid_argument("Provided buffer size is insufficient for the compiled program's LTO IR ("
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
-				+ compilation_output::detail_::identify(*this));
+				+ compilation_output::detail::identify(*this));
 		}
-		program::detail_::get_lto_ir(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_lto_ir(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
@@ -560,13 +560,13 @@ public: // non-mutators
 	 */
 	unique_span<char> lto_ir() const
 	{
-		size_t size = program::detail_::get_lto_ir_size(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_lto_ir_size(program_handle_, program_name_.c_str());
 		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
 		if (size == 0) {
 			result[size] = '\0';
 			return result;
 		}
-		program::detail_::get_lto_ir(result.data(), program_handle_, program_name_.c_str());
+		program::detail::get_lto_ir(result.data(), program_handle_, program_name_.c_str());
 		result[size] = '\0';
 		return result;
 	}
@@ -583,10 +583,10 @@ public: // non-mutators
 #endif
 		if (status == NVRTC_ERROR_INVALID_PROGRAM) { return false; }
 		throw_if_rtc_error_lazy(cuda_cpp, status, "Failed determining whether the NVRTC program has a compiled LTO IR result: "
-			+ compilation_output::detail_::identify(*this));
+			+ compilation_output::detail::identify(*this));
 		if (size == 0) {
 			throw std::logic_error("LTO IR size reported as 0 by NVRTC for program: "
-				+ compilation_output::detail_::identify(*this));
+				+ compilation_output::detail::identify(*this));
 		}
 		return true;
 	}
@@ -625,7 +625,7 @@ public:
 	using parent = compilation_output_base_t<ptx>;
 	using parent::parent;
 
-	friend compilation_output_t compilation_output::detail_::wrap<source_kind>(
+	friend compilation_output_t compilation_output::detail::wrap<source_kind>(
 		handle_type    program_handle,
 		std::string  program_name,
 		bool           succeeded,
@@ -634,25 +634,25 @@ public:
 public: // non-mutators
 	span<char> cubin(span<char> buffer) const override
 	{
-		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		if (buffer.size() < size) {
 			throw std::invalid_argument("Provided buffer size is insufficient for the compiled program's cubin ("
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
-				+ compilation_output::detail_::identify<source_kind>(*this));
+				+ compilation_output::detail::identify<source_kind>(*this));
 		}
-		program::detail_::get_cubin<source_kind>(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_cubin<source_kind>(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
 	unique_span<char> cubin() const override
 	{
-		size_t size = program::detail_::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
+		size_t size = program::detail::get_cubin_size<source_kind>(program_handle_, program_name_.c_str());
 		auto result = make_unique_span<char>(size+1); // Let's append a trailing nul character, to be on the safe side
 		if (size == 0) {
 			result[size] = '\0';
  			return result;
 		}
-		program::detail_::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
+		program::detail::get_cubin<source_kind>(result.data(), program_handle_, program_name_.c_str());
 		result[size] = '\0';
 		return result;
 	}
@@ -663,7 +663,7 @@ public: // non-mutators
 		auto status = nvPTXCompilerGetCompiledProgramSize(program_handle_, &size);
 		if (status == NVPTXCOMPILE_ERROR_INVALID_INPUT) { return false; }
 		throw_if_error<source_kind>(status, "Failed determining whether the program has a compiled CUBIN result: "
-			+ compilation_output::detail_::identify(*this));
+			+ compilation_output::detail::identify(*this));
 		return (size > 0);
 	}
 }; // class compilation_output_t<ptx>
@@ -672,12 +672,12 @@ public: // non-mutators
 
 namespace compilation_output {
 
-namespace detail_ {
+namespace detail {
 
 template <source_kind_t Kind>
 std::string identify(const compilation_output_t<Kind> &compilation_output)
 {
-	return "Compilation output of " + program::detail_::identify<Kind>(
+	return "Compilation output of " + program::detail::identify<Kind>(
 		compilation_output.program_handle(),
 		compilation_output.program_name().c_str());
 }
@@ -692,7 +692,7 @@ compilation_output_t<Kind> wrap(
 	return compilation_output_t<Kind>{program_handle, std::move(program_name), succeeded, own_handle};
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace compilation_output
 
@@ -707,18 +707,18 @@ template<> inline module_t create<cuda_cpp>(
 {
 	if (not compilation_output.succeeded()) {
 		throw std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda_::rtc::program::detail_::identify<cuda_cpp>(compilation_output.program_handle()));
+			+ cuda_::rtc::program::detail::identify<cuda_cpp>(compilation_output.program_handle()));
 	}
 #if CUDA_VERSION >= 11010
 	auto program_handle = compilation_output.program_handle();
 	auto program_name = compilation_output.program_name().c_str();
 	static const bool dont_fail_on_missing_cubin { false };
-	auto cubin_size = rtc::program::detail_::get_cubin_size<cuda_cpp, dont_fail_on_missing_cubin>(program_handle, program_name);
+	auto cubin_size = rtc::program::detail::get_cubin_size<cuda_cpp, dont_fail_on_missing_cubin>(program_handle, program_name);
 	// Note: The above won't fail even if no CUBIN was produced
 	bool has_cubin = (cubin_size > 0);
 	if (has_cubin) {
 		auto cubin = make_unique_span<char>(cubin_size);
-		rtc::program::detail_::get_cubin<cuda_cpp>(cubin.data(), program_handle, program_name);
+		rtc::program::detail::get_cubin<cuda_cpp>(cubin.data(), program_handle, program_name);
 		return module::create(context, cubin.get(), options);
 	}
 	// Note: At this point, we must have PTX in the output, as otherwise the compilation could
@@ -736,7 +736,7 @@ template<> inline module_t create<source_kind_t::ptx>(
 {
 	if (not compilation_output.succeeded()) {
 		throw std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda_::rtc::program::detail_::identify<source_kind_t::ptx>(compilation_output.program_handle()));
+			+ cuda_::rtc::program::detail::identify<source_kind_t::ptx>(compilation_output.program_handle()));
 	}
 	auto cubin = compilation_output.cubin();
 	return module::create(context, cubin.get(), options);

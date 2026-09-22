@@ -63,7 +63,7 @@ kernel_t wrap(
 	kernel::handle_t   handle,
 	bool               hold_primary_context_refcount_unit = false);
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const kernel_t& kernel);
 
@@ -99,8 +99,8 @@ inline void set_attribute_in_current_context(handle_t handle, attribute_t attrib
 	auto result = cuFuncSetAttribute(handle, static_cast<CUfunction_attribute>(attribute), value);
 	throw_if_error_lazy(result,
 		"Setting CUDA device function attribute " +
-		std::string(kernel::detail_::attribute_name(attribute)) + " of function at "
-		+ cuda_::kernel::detail_::identify(handle) + " to value " + std::to_string(value));
+		std::string(kernel::detail::attribute_name(attribute)) + " of function at "
+		+ cuda_::kernel::detail::identify(handle) + " to value " + std::to_string(value));
 #else
 	throw(cuda_::runtime_error {cuda_::status::not_yet_implemented});
 #endif
@@ -153,7 +153,7 @@ inline module::handle_t get_module(context::handle_t context_handle, handle_t ke
 
 #endif // CUDA_VERSION >= 12300
 
-} // namespace detail_
+} // namespace detail
 
 inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute);
 
@@ -209,11 +209,11 @@ public: // getters
 #if CUDA_VERSION >= 12030
 	/// Return the mangled name of the kernel (representing the original name, and,
 	/// possibly, the parameter types)
-	const char *mangled_name() const { return cuda_::kernel::detail_::get_name(context_handle_, handle_); }
+	const char *mangled_name() const { return cuda_::kernel::detail::get_name(context_handle_, handle_); }
 	module_t module() const;
 #endif
 #if CUDA_VERSION >= 13020
-	size_t num_parameters() const { return cuda_::kernel::detail_::get_num_parameters(context_handle_, handle_); }
+	size_t num_parameters() const { return cuda_::kernel::detail::get_num_parameters(context_handle_, handle_); }
 #endif
 
 public: // operators
@@ -385,7 +385,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
 	void set_cache_preference(multiprocessor_cache_preference_t preference) const
 	{
-		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
+		context::current::detail::scoped_override_t set_context_for_this_context(context_handle_);
 		auto result = cuFuncSetCacheConfig(handle(), static_cast<CUfunc_cache>(preference));
 		throw_if_error_lazy(result,
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
@@ -402,7 +402,7 @@ public: // methods mutating the kernel-in-context, but not this reference object
 	void set_shared_memory_bank_size(multiprocessor_shared_memory_bank_size_option_t config) const
 	{
 		// TODO: Need to set a context, not a device
-		context::current::detail_::scoped_override_t set_context_for_this_context(context_handle_);
+		context::current::detail::scoped_override_t set_context_for_this_context(context_handle_);
 		auto result = cuFuncSetSharedMemConfig(handle(), static_cast<CUsharedconfig>(config) );
 		throw_if_error_lazy(result, "Failed setting the shared memory bank size");
 	}
@@ -440,7 +440,7 @@ public: // ctors & dtor
 	{
 		// TODO: DRY
 		if (holds_pc_refcount_unit) {
-			device::primary_context::detail_::decrease_refcount_in_dtor(device_id_);
+			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
 		}
 	}
 
@@ -465,18 +465,18 @@ inline kernel_t wrap(
 inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute)
 {
 	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
-	return detail_::get_attribute_in_current_context(kernel.handle(), attribute);
+	return detail::get_attribute_in_current_context(kernel.handle(), attribute);
 }
 
 inline void set_attribute(const kernel_t& kernel, attribute_t attribute, attribute_value_t value)
 {
 	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
-	return detail_::set_attribute_in_current_context(kernel.handle(), attribute, value);
+	return detail::set_attribute_in_current_context(kernel.handle(), attribute, value);
 }
 
 namespace occupancy {
 
-namespace detail_ {
+namespace detail {
 
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	handle_t                handle,
@@ -520,13 +520,13 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	);
 
 	throw_if_error_lazy(result,
-		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail_::identify(kernel_handle, device_id)
+		"Failed obtaining parameters for a minimum-size grid for " + kernel::detail::identify(kernel_handle, device_id)
 		+ " with maximum occupancy given dynamic shared memory and block size data");
 	return { static_cast<grid::dimension_t>(min_grid_size_in_blocks), static_cast<grid::block_dimension_t>(block_size) };
 }
 #endif // CUDA_VERSION >= 10000
 
-} // namespace detail_
+} // namespace detail
 
 #if CUDA_VERSION >= 11000
 /**
@@ -557,14 +557,14 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 
 } // namespace occupancy
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const kernel_t& kernel)
 {
-	return kernel::detail_::identify(kernel.handle()) + " in " + context::detail_::identify(kernel.context());
+	return kernel::detail::identify(kernel.handle()) + " in " + context::detail::identify(kernel.context());
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace kernel
 
@@ -575,7 +575,7 @@ inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	bool                     disable_caching_override) const
 {
 	kernel::shared_memory_size_determiner_t no_shared_memory_size_determiner { nullptr };
-	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+	return kernel::occupancy::detail::min_grid_params_for_max_occupancy(
 		handle(), device_id(), no_shared_memory_size_determiner,
 		dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
@@ -586,7 +586,7 @@ inline grid::composite_dimensions_t kernel_t::min_grid_params_for_max_occupancy(
 	bool                                     disable_caching_override) const
 {
 	memory::shared::size_t no_fixed_dynamic_shared_memory_size{ 0 };
-	return kernel::occupancy::detail_::min_grid_params_for_max_occupancy(
+	return kernel::occupancy::detail::min_grid_params_for_max_occupancy(
 		handle(), device_id(), shared_memory_size_determiner,
 		no_fixed_dynamic_shared_memory_size, block_size_limit, disable_caching_override);
 }
@@ -597,7 +597,7 @@ inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
 	memory::shared::size_t   dynamic_shared_memory_per_block,
 	bool                     disable_caching_override) const
 {
-	return kernel::occupancy::detail_::max_active_blocks_per_multiprocessor(
+	return kernel::occupancy::detail::max_active_blocks_per_multiprocessor(
 		handle(), block_size_in_threads,
 		dynamic_shared_memory_per_block, disable_caching_override);
 }

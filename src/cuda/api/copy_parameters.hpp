@@ -23,7 +23,7 @@ template<dimensionality_t NumDimensions>
 struct copy_parameters_t;
 ///@endcond
 
-namespace detail_ {
+namespace detail {
 
 /// Raw CUDA driver parameters structure for generalized, highly-configurable copy operations
 template<dimensionality_t NumDimensions>
@@ -49,7 +49,7 @@ template<size_t NumDimensions>
 array::dimensions_t<NumDimensions>
 non_array_endpoint_dimensions(endpoint_t endpoint, const copy_parameters_t<NumDimensions>& params);
 
-} //namespace detail_
+} //namespace detail
 
 /**
  * @brief A builder-ish subclass template around the basic 2D or 3D copy
@@ -65,14 +65,14 @@ non_array_endpoint_dimensions(endpoint_t endpoint, const copy_parameters_t<NumDi
  * executed_.}
  */
 template<dimensionality_t NumDimensions>
-struct copy_parameters_t : detail_::base_copy_params_t<NumDimensions> {
-	using parent = detail_::base_copy_params_t<NumDimensions>;
+struct copy_parameters_t : detail::base_copy_params_t<NumDimensions> {
+	using parent = detail::base_copy_params_t<NumDimensions>;
 	using this_type = copy_parameters_t<NumDimensions>;
 	// TODO: Perhaps use proxies?
 
 	/// A Raw CUDA Driver API type punning the general copy parameters, which
 	/// is used for copy operations within the same context
-	using intra_context_type = typename detail_::base_copy_params<NumDimensions>::intra_context_type;
+	using intra_context_type = typename detail::base_copy_params<NumDimensions>::intra_context_type;
 
 	using dimensions_type = array::dimensions_t<NumDimensions>;
 	using dimension_type = array::dimension_t;
@@ -435,9 +435,9 @@ copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 	array::dimensions_t<2>  dimensions)
 {
 	// We would have _liked_ to say:
-	// auto context_handle = context::current::detail_::get_handle();
+	// auto context_handle = context::current::detail::get_handle();
 	// ... here, but alas, 2D copy structures don't support contexts, so...
-	auto context_handle = context::detail_::none;
+	auto context_handle = context::detail::none;
 	return set_endpoint<T>(endpoint, context_handle, ptr, dimensions);
 }
 
@@ -452,7 +452,7 @@ copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, co
 	return *this;
 }
 
-namespace detail_ {
+namespace detail {
 
 template<>
 inline array::dimensions_t<2> non_array_endpoint_dimensions<2>(endpoint_t endpoint, const copy_parameters_t<2>& params)
@@ -515,7 +515,7 @@ copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(
 	T *ptr,
 	array::dimensions_t<3> dimensions)
 {
-	return set_endpoint<T>(endpoint, context::current::detail_::get_handle(), ptr, dimensions);
+	return set_endpoint<T>(endpoint, context::current::detail::get_handle(), ptr, dimensions);
 }
 
 template<>
@@ -578,7 +578,7 @@ inline copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
+		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{
@@ -617,7 +617,7 @@ inline copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint_ptr(
 {
 	auto memory_type = type_of(ptr);
 	if (memory_type == array) {
-		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail_::ptr_as_hex(ptr));
+		throw std::invalid_argument("Attempt to use the non-array endpoint setter with array memory at " + cuda_::detail::ptr_as_hex(ptr));
 	}
 	if (memory_type == unified_ or memory_type == device_)
 	{

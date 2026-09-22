@@ -20,7 +20,7 @@ template <>
 CONSTEXPR_SINCE_2014 string_view type_name<void>()
 { return "void"; }
 
-namespace detail_ {
+namespace detail {
 
 using type_name_prober = void;
 
@@ -52,9 +52,9 @@ CONSTEXPR_SINCE_2014 std::size_t wrapped_type_name_suffix_length() {
 
 template <typename T>
 CONSTEXPR_SINCE_2014 string_view type_name() {
-	constexpr auto wrapped_name = detail_::wrapped_type_name<T>();
-	CONSTEXPR_SINCE_2014 auto prefix_length = detail_::wrapped_type_name_prefix_length();
-	CONSTEXPR_SINCE_2014 auto suffix_length = detail_::wrapped_type_name_suffix_length();
+	constexpr auto wrapped_name = detail::wrapped_type_name<T>();
+	CONSTEXPR_SINCE_2014 auto prefix_length = detail::wrapped_type_name_prefix_length();
+	CONSTEXPR_SINCE_2014 auto suffix_length = detail::wrapped_type_name_suffix_length();
 	CONSTEXPR_SINCE_2014 auto type_name_length = wrapped_name.length() - prefix_length - suffix_length;
 	return wrapped_name.substr(prefix_length, type_name_length);
 }

@@ -28,12 +28,12 @@ class kernel_t;
 
 } // namespace library
 
-namespace detail_ {
+namespace detail {
 
 template <typename Kernel>
 struct is_library_kernel : std::is_same<typename std::decay<Kernel>::type, library::kernel_t> { };
 
-} // namespace detail_
+} // namespace detail
 
 // TODO: Avoid the copy?
 kernel_t contextualize(const library::kernel_t& kernel, const context_t& context);
@@ -47,7 +47,7 @@ using cuda_::kernel::attribute_t;
 using cuda_::kernel::attribute_value_t;
 // using cuda_::kernel::apriori_compiled::attributes_t;
 
-namespace detail_ {
+namespace detail {
 
 // Note: library kernels never hold a PC refcount unit, nor do they own anything;
 // only the library wrapper owns (and it's not associated with the kernel).
@@ -55,12 +55,12 @@ kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle);
 
 inline std::string identify(kernel::handle_t handle)
 {
-	return "library kernel at " + cuda_::detail_::ptr_as_hex(handle);
+	return "library kernel at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline std::string identify(library::handle_t library_handle, kernel::handle_t handle)
 {
-	return identify(handle) + " within " + library::detail_::identify(library_handle);
+	return identify(handle) + " within " + library::detail::identify(library_handle);
 }
 
 std::string identify(const kernel_t &kernel);
@@ -80,7 +80,7 @@ inline cuda_::kernel::handle_t contextualize(
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto handle_and_status = contextualize_in_current_context(kernel_handle);
 	throw_if_error_lazy(handle_and_status.second, "Failed placing " + identify(kernel_handle) + " in "
-		+ context::detail_::identify(context_handle));
+		+ context::detail::identify(context_handle));
 	return handle_and_status.first;
 }
 
@@ -89,7 +89,7 @@ inline size_t get_num_parameters(handle_t handle)
 {
 	size_t count;
 	auto status = cuKernelGetParamCount(handle, &count);
-	throw_if_error_lazy(status, "Retrieving the parameter count of " + kernel::detail_::identify(handle));
+	throw_if_error_lazy(status, "Retrieving the parameter count of " + kernel::detail::identify(handle));
 	return count;
 }
 #endif
@@ -102,8 +102,8 @@ inline attribute_value_t get_attribute(
 	attribute_value_t value;
 	auto status = cuKernelGetAttribute(&value, attribute, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, std::string("Failed getting attribute ")
-		+ cuda_::kernel::detail_::attribute_name(attribute) + " for " + identify(library_kernel_handle)
-		+ " on " + device::detail_::identify(device_id));
+		+ cuda_::kernel::detail::attribute_name(attribute) + " for " + identify(library_kernel_handle)
+		+ " on " + device::detail::identify(device_id));
 	return value;
 }
 
@@ -115,8 +115,8 @@ inline void set_attribute(
 {
 	auto status = cuKernelSetAttribute(attribute, value, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, std::string("Failed setting attribute ")
-								+ cuda_::kernel::detail_::attribute_name(attribute) + " value to " + std::to_string(value)
-								+ " for " + identify(library_kernel_handle) + " on " + device::detail_::identify(device_id));
+								+ cuda_::kernel::detail::attribute_name(attribute) + " value to " + std::to_string(value)
+								+ " for " + identify(library_kernel_handle) + " on " + device::detail::identify(device_id));
 }
 
 } // namespace detail
@@ -142,7 +142,7 @@ class kernel_t {
 public: // getters
 	kernel::handle_t handle() const noexcept { return handle_; }
 	library::handle_t library_handle() const noexcept { return library_handle_; }
-	library_t library() const noexcept { return library::detail_::wrap(library_handle_); }
+	library_t library() const noexcept { return library::detail::wrap(library_handle_); }
 
 public: // type_conversions
 
@@ -159,13 +159,13 @@ public: // non-mutators
 		if (name_ != nullptr) { return name_; }
 		const char* result;
 		auto status = cuKernelGetName(&result, handle_);
-		throw_if_error_lazy(status, "Retrieving the name of " + kernel::detail_::identify(*this));
+		throw_if_error_lazy(status, "Retrieving the name of " + kernel::detail::identify(*this));
 		name_ = result;
 		return name_;
 	}
 #endif
 #if CUDA_VERSION >= 13020
-	size_t num_parameters() const { return kernel::detail_::get_num_parameters(handle_); }
+	size_t num_parameters() const { return kernel::detail::get_num_parameters(handle_); }
 #endif
 	cuda_::kernel_t contextualize(const context_t& context) const;
 
@@ -179,7 +179,7 @@ public: // ctors & dtor
 	kernel_t(kernel_t&& other) = default;
 
 public: // friends
-	friend kernel_t kernel::detail_::wrap(library::handle_t, kernel::handle_t);
+	friend kernel_t kernel::detail::wrap(library::handle_t, kernel::handle_t);
 
 protected: // data members
 	library::handle_t library_handle_;
@@ -188,7 +188,7 @@ protected: // data members
 }; // kernel_t
 
 namespace kernel {
-namespace detail_ {
+namespace detail {
 
 inline kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle)
 {
@@ -200,12 +200,12 @@ inline std::string identify(const kernel_t& library_kernel)
 	return identify(library_kernel.library_handle(), library_kernel.handle());
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline kernel_t get(const library_t& library, const char* name)
 {
-	auto kernel_handle = cuda_::library::detail_::get_kernel_in_current_context(library.handle(), name);
-	return kernel::detail_::wrap(library.handle(), kernel_handle);
+	auto kernel_handle = cuda_::library::detail::get_kernel_in_current_context(library.handle(), name);
+	return kernel::detail::wrap(library.handle(), kernel_handle);
 }
 
 } // namespace kernel

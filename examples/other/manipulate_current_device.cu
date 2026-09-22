@@ -10,15 +10,15 @@
 void report_current_device()
 {
 	std::cout << "Runtime believes the current device index is: "
-		<< cuda_::device::current::detail_::get_id() << std::endl;
+		<< cuda_::device::current::detail::get_id() << std::endl;
 }
 
 int main()
 {
-	namespace context = cuda_::context::detail_;
-	namespace cur_dev = cuda_::device::current::detail_;
-	namespace pc = cuda_::device::primary_context::detail_;
-	namespace cur_ctx = cuda_::context::current::detail_;
+	namespace context = cuda_::context::detail;
+	namespace cur_dev = cuda_::device::current::detail;
+	namespace pc = cuda_::device::primary_context::detail;
+	namespace cur_ctx = cuda_::context::current::detail;
 
 	cuda_::device::id_t dev_idx[2];
 	cuda_::context::handle_t pc_handle[2];

@@ -33,7 +33,7 @@ namespace primary_context {
 
 inline bool is_active(const device_t& device)
 {
-	return detail_::is_active(device.id());
+	return detail::is_active(device.id());
 }
 
 inline void destroy(const device_t& device)
@@ -44,11 +44,11 @@ inline void destroy(const device_t& device)
 
 inline primary_context_t get(const device_t& device)
 {
-	auto pc_handle = detail_::get_handle(device.id(), true);
-	return detail_::wrap( device.id(), pc_handle, true);
+	auto pc_handle = detail::get_handle(device.id(), true);
+	return detail::wrap( device.id(), pc_handle, true);
 }
 
-namespace detail_ {
+namespace detail {
 
 // Use this when you need a PC, you don't have a device_t to hang it on,
 // and you don't want it to get deactivated/destroyed right after you use it.
@@ -59,7 +59,7 @@ inline primary_context_t leaky_get(id_t device_id)
 	return wrap(device_id, pc_handle, not need_to_activate_and_leak);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace primary_context
 
@@ -67,7 +67,7 @@ namespace peer_to_peer {
 
 inline bool can_access(const device_t& accessor, const device_t& peer)
 {
-	return detail_::can_access(accessor.id(), peer.id());
+	return detail::can_access(accessor.id(), peer.id());
 }
 
 inline void enable_access(const device_t& accessor, const device_t& peer)
@@ -117,7 +117,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, const device_t& fi
 		throw std::invalid_argument("A device cannot be used as its own peer");
 	}
 #endif
-	return detail_::get_attribute(attribute, first.id(), second.id());
+	return detail::get_attribute(attribute, first.id(), second.id());
 }
 
 } // namespace peer_to_peer
@@ -135,7 +135,7 @@ inline stream_t device_t::default_stream(bool hold_primary_context_refcount_unit
 {
 	auto pc = primary_context();
 	if (hold_primary_context_refcount_unit) {
-		device::primary_context::detail_::increase_refcount(id_);
+		device::primary_context::detail::increase_refcount(id_);
 	}
 	return stream::wrap(
 		id(), pc.handle(), stream::default_stream_handle,
@@ -153,21 +153,21 @@ inline device::primary_context_t device_t::primary_context(bool hold_pc_refcount
 {
 	auto pc_handle = primary_context_handle();
 	if (hold_pc_refcount_unit) {
-		device::primary_context::detail_::increase_refcount(id_);
+		device::primary_context::detail::increase_refcount(id_);
 		// Q: Why increase the refcount here, when `primary_context_handle()`
 		//    ensured this has already happened for this object?
 		// A: Because an unscoped primary_context_t needs its own refcount
 		//    unit (e.g. in case this object gets destructed but the
 		//    primary_context_t is still alive).
 	}
-	return device::primary_context::detail_::wrap(id_, pc_handle, hold_pc_refcount_unit);
+	return device::primary_context::detail::wrap(id_, pc_handle, hold_pc_refcount_unit);
 }
 
 inline void synchronize(const device_t& device)
 {
 	auto pc = device.primary_context();
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
-	context::current::detail_::synchronize(device.id(), pc.handle());
+	context::current::detail::synchronize(device.id(), pc.handle());
 }
 
 template <typename Kernel, typename ... KernelParameters>

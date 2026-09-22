@@ -35,7 +35,7 @@ enum class cpp_dialect_t {
 	last = cpp17
 };
 
-namespace detail_ {
+namespace detail {
 
 static constexpr size_t language_dialect_name_length { 5 };
 constexpr const char* cpp_dialect_names[] =  {
@@ -51,14 +51,14 @@ inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(fa
 		known_dialect <= static_cast<int>(cpp_dialect_t::last);
 		known_dialect++)
 	{
-		if (strcmp(detail_::cpp_dialect_names[known_dialect], dialect_name) == 0) {
+		if (strcmp(detail::cpp_dialect_names[known_dialect], dialect_name) == 0) {
 			return static_cast<cpp_dialect_t>(known_dialect);
 		}
 	}
 	throw std::invalid_argument(std::string("No C++ dialect named \"") + dialect_name + '"');
 }
 
-} // namespace detail_
+} // namespace detail
 
 namespace error {
 
@@ -69,7 +69,7 @@ enum handling_method_t { raise_error = 0, suppress = 1, warn = 2 };
 /// Errors, or problematic findings, by the compiler are identified by a number of this type
 using number_t = unsigned;
 
-namespace detail_ {
+namespace detail {
 
 inline const char* option_name_part(handling_method_t method)
 {
@@ -77,7 +77,7 @@ inline const char* option_name_part(handling_method_t method)
 	return parts[method];
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace error
 
@@ -515,7 +515,7 @@ public: // "shorthands" for more complex option setting
 	{
 		return (dialect_name == nullptr or *dialect_name == '\0') ?
 			clear_language_dialect() :
-			set_language_dialect(detail_::cpp_dialect_from_name(dialect_name));
+			set_language_dialect(detail::cpp_dialect_from_name(dialect_name));
 	}
 
 	/// @copydoc set_language_dialect(cpp_dialect_t)
@@ -561,7 +561,7 @@ std::string render(const CompilationOptions& opts)
 
 namespace marshalling {
 
-namespace detail_ {
+namespace detail {
 
 template <typename MarshalTarget, typename Delimiter>
 struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
@@ -691,7 +691,7 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 		}
 
 		if (opts.language_dialect) {
-			marshalled << opt_start << "--std=" << rtc::detail_::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect.value())];
+			marshalled << opt_start << "--std=" << rtc::detail::cpp_dialect_names[static_cast<unsigned>(opts.language_dialect.value())];
 		}
 
 		if (opts.maximum_register_count) {
@@ -733,7 +733,7 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 
 		for(const auto& override : opts.error_handling_overrides) {
 			marshalled
-				<< opt_start << "--diag-" << rtc::error::detail_::option_name_part(override.second)
+				<< opt_start << "--diag-" << rtc::error::detail::option_name_part(override.second)
 				<< '=' << override.first ;
 		}
 
@@ -747,7 +747,7 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 	}
 };
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace marshalling
 

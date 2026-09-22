@@ -104,7 +104,7 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 #ifdef NDEBUG
 					std::to_string(static_cast<std::underlying_type<attribute_t>::type>(attribute))
 #else
-					detail_::attribute_name(attribute)
+					detail::attribute_name(attribute)
 #endif
 				+ " cannot be obtained for apriori-compiled kernels before CUDA version 11.0"
 			);
@@ -116,7 +116,7 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 
 namespace apriori_compiled {
 
-namespace detail_ {
+namespace detail {
 
 template<typename KernelFunctionPtr>
 apriori_compiled_t get(
@@ -131,14 +131,14 @@ apriori_compiled_t get(
 
 	auto ptr_ = reinterpret_cast<const void *>(function_ptr);
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-	auto handle = detail_::get_handle(ptr_);
+	auto handle = detail::get_handle(ptr_);
 #else
 	auto handle = nullptr;
 #endif
 	return wrap(device_id, primary_context_handle, handle, ptr_, does_hold_primary_context_refcount_unit);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace apriori_compiled
 
@@ -155,13 +155,13 @@ apriori_compiled_t get(
 template<typename KernelFunctionPtr>
 apriori_compiled_t get(const device_t &device, KernelFunctionPtr function_ptr)
 {
-	auto primary_context_handle = device::primary_context::detail_::obtain_and_increase_refcount(device.id());
-	return apriori_compiled::detail_::get(device.id(), primary_context_handle, function_ptr);
+	auto primary_context_handle = device::primary_context::detail::obtain_and_increase_refcount(device.id());
+	return apriori_compiled::detail::get(device.id(), primary_context_handle, function_ptr);
 }
 
 } // namespace kernel
 
-namespace detail_ {
+namespace detail {
 
 template<>
 inline ::cuda_::device::primary_context_t
@@ -171,7 +171,7 @@ get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compile
 	return get_implicit_primary_context(kernel_);
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda_
 

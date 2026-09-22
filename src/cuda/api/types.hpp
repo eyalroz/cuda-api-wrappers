@@ -601,7 +601,7 @@ constexpr permissions_t read_only()      { return permissions_t{ true,  false };
 constexpr permissions_t write_only()     { return permissions_t{ false, true  }; }
 constexpr permissions_t read_and_write() { return permissions_t{ true,  true  }; }
 
-namespace detail_ {
+namespace detail {
 
 /// A named constructor idiom for access get_permissions
 inline permissions_t from_flags(CUmemAccess_flags access_flags)
@@ -611,7 +611,7 @@ inline permissions_t from_flags(CUmemAccess_flags access_flags)
 	return permissions_t{read, write};
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace permissions
 
@@ -629,7 +629,7 @@ enum class shared_handle_kind_t : std::underlying_type<CUmemAllocationHandleType
 	win32_kmt             = CU_MEM_HANDLE_TYPE_WIN32_KMT,
 };
 
-namespace detail_ {
+namespace detail {
 
 template<shared_handle_kind_t SharedHandleKind> struct shared_handle_type_helper;
 
@@ -639,11 +639,11 @@ template <> struct shared_handle_type_helper<shared_handle_kind_t::win32_handle>
 #endif
 // TODO: What about WIN32_KMT?
 
-} // namespace detail_
+} // namespace detail
 
 /// The raw handle for different kinds of shared memory the CUDA driver recognizes
 template<shared_handle_kind_t SharedHandleKind>
-using shared_handle_t = typename detail_::shared_handle_type_helper<SharedHandleKind>::type;
+using shared_handle_t = typename detail::shared_handle_type_helper<SharedHandleKind>::type;
 
 } // namespace physical_allocation
 #endif // CUDA_VERSION >= 10020
@@ -970,7 +970,7 @@ using host_thread_sync_scheduling_policy_t = context::host_thread_sync_schedulin
 
 } // namespace device
 
-namespace detail_ {
+namespace detail {
 
 template <typename T, typename U>
 T identity_cast(U&& x)
@@ -983,7 +983,7 @@ T identity_cast(U&& x)
 	return static_cast<T>(std::forward<U>(x));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /// The CUDA-driver-specific representation of a UUID value; see also {@ref device_t::uuid()}
 using uuid_t = CUuuid;

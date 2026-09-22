@@ -36,15 +36,15 @@ using handle_t = CUkernel; // Don't be confused; a context-associated kernel is 
 
 } // namespace kernel
 
-namespace detail_ {
+namespace detail {
 
 using option_t = CUlibraryOption;
 
-} // namespace detail_
+} // namespace detail
 
 class kernel_t; // A kernel stored within a library; strangely, a context-associated kernel is a CUfunction.
 
-namespace detail_ {
+namespace detail {
 
 inline library_t wrap(
 	handle_t                handle,
@@ -52,7 +52,7 @@ inline library_t wrap(
 
 inline std::string identify(const library::handle_t &handle)
 {
-	return std::string("library ") + cuda_::detail_::ptr_as_hex(handle);
+	return std::string("library ") + cuda_::detail::ptr_as_hex(handle);
 }
 
 std::string identify(const library_t &library);
@@ -66,10 +66,10 @@ inline void unload(handle_t handle)
 {
 	auto status = unload_nothrow(handle);
 	throw_if_error_lazy(status, std::string{"Failed unloading "}
-		+ library::detail_::identify(handle));
+		+ library::detail::identify(handle));
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Create a CUDA driver library of compiled code from raw image data.
@@ -79,7 +79,7 @@ inline void unload(handle_t handle)
  */
 ///@{
 template <typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
 library_t create(
 	ContiguousContainer        library_data,
 	optional<link::options_t>  link_options,
@@ -87,14 +87,14 @@ library_t create(
 ///@}
 
 
-namespace detail_ {
+namespace detail {
 
 inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, const char* name)
 {
 	library::kernel::handle_t kernel_handle;
 	auto status = cuLibraryGetKernel(&kernel_handle, library_handle, name);
 	throw_if_error_lazy(status, std::string{"Failed obtaining kernel "}
-		 + name + "' from " + library::detail_::identify(library_handle));
+		 + name + "' from " + library::detail::identify(library_handle));
 	return kernel_handle;
 }
 
@@ -104,7 +104,7 @@ inline kernel::handle_t get_kernel(context::handle_t context_handle, handle_t li
 	return get_kernel_in_current_context(library_handle, name);
 }
 
-} // namespace detail_
+} // namespace detail
 
 inline kernel_t get_kernel(const library_t& library, const char* name);
 inline kernel_t get_kernel(context_t& context, const library_t& library, const char* name);
@@ -177,7 +177,7 @@ protected: // constructors
 
 public: // friendship
 
-	friend library_t library::detail_::wrap(library::handle_t, bool) noexcept;
+	friend library_t library::detail::wrap(library::handle_t, bool) noexcept;
 
 public: // constructors and destructor
 
@@ -192,9 +192,9 @@ public: // constructors and destructor
 	{
 		if (not owning_) { return; }
 #ifdef CAW_THROW_IN_DESTRUCTORS
-		library::detail_::unload(handle_);
+		library::detail::unload(handle_);
 #else
-		library::detail_::unload_nothrow(handle_);
+		library::detail::unload_nothrow(handle_);
 #endif
 	}
 
@@ -222,7 +222,7 @@ inline memory::region_t get_global(const context_t& context, const library_t& li
 	auto result = cuLibraryGetGlobal(&dptr, &size, library.handle(), name);
 	throw_if_error_lazy(result,
 		std::string("Obtaining the memory address and size for the global object '") + name + "' from "
-		+ library::detail_::identify(library) + " in context " + context::detail_::identify(context));
+		+ library::detail::identify(library) + " in context " + context::detail::identify(context));
 	return { memory::as_pointer(dptr), size };
 	// Note: Nothing is holding a PC refcount unit here!
 }
@@ -238,7 +238,7 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 	size_t region_size;
 	auto status = cuLibraryGetManaged(&region_start, &region_size, library.handle(), name);
 	throw_if_error_lazy(status, std::string("Failed obtaining the managed memory region '") + name
-		+ "' from " + library::detail_::identify(library));
+		+ "' from " + library::detail::identify(library));
 	return { memory::as_pointer(region_start), region_size };
 }
 
@@ -253,9 +253,9 @@ inline module_t create(const context_t& context, const library_t& library)
 	module::handle_t new_handle;
 	auto status = cuLibraryGetModule(&new_handle, library.handle());
 	throw_if_error_lazy(status, std::string("Failed creating a module '") +
-		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
+		+ "' from " + library::detail::identify(library) + " in " + context::detail::identify(context));
 	constexpr bool is_owning { true };
-	return module::detail_::wrap(context.device_id(), context.handle(), new_handle,
+	return module::detail::wrap(context.device_id(), context.handle(), new_handle,
 		is_owning, does_not_hold_primary_context_refcount_unit);
 	// TODO: We could consider adding a variant of this function taking a context&&, and using that
 	// to decide whether or not to hold a PC refcount unit
@@ -270,13 +270,13 @@ inline void* get_unified_function(const context_t& context, const library_t& lib
 	void* function_ptr;
 	auto status = cuLibraryGetUnifiedFunction(&function_ptr, library.handle(), symbol);
 	throw_if_error_lazy(status, std::string("Failed obtaining a pointer for function '") + symbol
-		+ "' from " + library::detail_::identify(library) + " in " + context::detail_::identify(context));
+		+ "' from " + library::detail::identify(library) + " in " + context::detail::identify(context));
 	return function_ptr;
 }
 
 namespace library {
 
-namespace detail_ {
+namespace detail {
 
 template <typename Creator, typename DataSource, typename ErrorStringGenerator>
 library_t create(
@@ -287,25 +287,25 @@ library_t create(
 	bool                    code_is_preserved = false)
 {
 	handle_t new_lib_handle;
-	auto raw_link_opts = link::detail_::marshal(link_options);
+	auto raw_link_opts = link::detail::marshal(link_options);
 	struct {
-		detail_::option_t options[1];
+		detail::option_t options[1];
 		void* values[1];
 		unsigned count;
 	} raw_opts = { { CU_LIBRARY_BINARY_IS_PRESERVED }, { &code_is_preserved }, 1 };
 	auto status = creator(
 		&new_lib_handle, data_source,
-		const_cast<link::detail_::option_t*>(raw_link_opts.options()),
+		const_cast<link::detail::option_t*>(raw_link_opts.options()),
 		const_cast<void**>(raw_link_opts.values()), raw_link_opts.count(),
 		raw_opts.options, raw_opts.values, raw_opts.count
 	);
 	throw_if_error_lazy(status,
 		std::string("Failed loading a compiled CUDA code library from ") + error_string_generator());
 	bool do_take_ownership{true};
-	return detail_::wrap(new_lib_handle, do_take_ownership);
+	return detail::wrap(new_lib_handle, do_take_ownership);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Load a library from an appropriate compiled or semi-compiled file, allocating all
@@ -324,7 +324,7 @@ inline library_t load_from_file(
 	const link::options_t&     link_options = {},
 	bool                       code_is_preserved = false)
 {
-	return detail_::create(
+	return detail::create(
 		cuLibraryLoadFromFile, path,
 		[path]() { return std::string("file ") + path; },
 		link_options, code_is_preserved);
@@ -351,14 +351,14 @@ inline library_t load_from_file(
 #endif
 ///@}
 
-namespace detail_ {
+namespace detail {
 
 inline library_t wrap(handle_t handle, bool take_ownership) noexcept
 {
 	return library_t{handle, take_ownership};
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Creates a new module in a context using raw compiled code
@@ -372,9 +372,9 @@ inline library_t create(
 	const link::options_t&  link_options = {},
 	bool                    code_is_preserved = false)
 {
-	return detail_::create(
+	return detail::create(
 		cuLibraryLoadData, module_data,
-		[module_data]() { return std::string("data at ") + cuda_::detail_::ptr_as_hex(module_data); },
+		[module_data]() { return std::string("data at ") + cuda_::detail::ptr_as_hex(module_data); },
 		link_options, code_is_preserved);
 }
 
@@ -382,17 +382,17 @@ inline library_t create(
 // TODO: Use an optional to reduce the number of functions here... when the
 // library starts requiring C++14.
 
-namespace detail_ {
+namespace detail {
 
 inline std::string identify(const library_t& library)
 {
 	return identify(library.handle());
 }
 
-} // namespace detail_
+} // namespace detail
 
 template <typename ContiguousContainer,
-	cuda_::detail_::enable_if_t<cuda_::detail_::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> >
+	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> >
 library_t create(
 	ContiguousContainer        library_data,
 	optional<link::options_t>  link_options,

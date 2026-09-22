@@ -82,7 +82,7 @@ using handle_t = CUgraphConditionalHandle;
 using kind_t = CUgraphConditionalNodeType;
 using default_value_t = unsigned;
 
-namespace detail_ {
+namespace detail {
 
 using flags_t = unsigned;
 
@@ -98,7 +98,7 @@ inline handle_t create(
 	return result;
 }
 
-} // namespace detail_
+} // namespace detail
 
 struct parameters_t {
 	kind_t kind;
@@ -111,7 +111,7 @@ struct parameters_t {
 } // namespace conditional
 #endif // CUDA_VERSION >= 12030
 
-namespace detail_ {
+namespace detail {
 
 // Note: Eventually, when could drop support for CUDA graphs for versions
 // before 12.3 - and that would let us drop most of these structures and
@@ -280,7 +280,7 @@ struct kind_traits<kind_t::memory_allocation> {
 	{
 		static constexpr auto no_export_handle_kind = memory::pool::shared_handle_kind_t::no_export;
 		raw_parameters_type raw_params;
-		raw_params.poolProps = memory::pool::detail_::create_raw_properties<no_export_handle_kind>(params.first.id());
+		raw_params.poolProps = memory::pool::detail::create_raw_properties<no_export_handle_kind>(params.first.id());
 		// TODO: DO we need to specify the allocation location in an access descriptor?
 		raw_params.accessDescs = nullptr; // for now, assuming no peer access
 		raw_params.accessDescCount = 0; // for now, assuming no peer access
@@ -423,7 +423,7 @@ struct kind_traits<kind_t::conditional> {
 		raw_params.type = static_cast<CUgraphNodeType>(kind_t::conditional);
 		raw_params.conditional.type = params.kind;
 		raw_params.conditional.ctx = params.context_handle ?
-									 params.context_handle.value() : context::current::detail_::get_handle();
+									 params.context_handle.value() : context::current::detail::get_handle();
 		if (not params.handle and
 		   not (params.graph_template_handle and params.context_handle and params.default_value)) {
 			throw std::invalid_argument(
@@ -431,7 +431,7 @@ struct kind_traits<kind_t::conditional> {
 				"nor the arguments required for its creation");
 		}
 		raw_params.conditional.handle = params.handle ? params.handle.value() :
-			conditional::detail_::create(
+			conditional::detail::create(
 				params.graph_template_handle.value(), params.context_handle.value(), params.default_value.value());
 		raw_params.conditional.size = 1;
 		return raw_params;
@@ -450,9 +450,9 @@ template <kind_t Kind, typename = typename std::enable_if<not kind_traits<Kind>:
 const typename kind_traits<Kind>::raw_parameters_type&
 maybe_add_ptr(const typename kind_traits<Kind>::raw_parameters_type& raw_params) { return raw_params; }
 
-} // namespace detail_
+} // namespace detail
 
-template <kind_t Kind> using parameters_t = typename detail_::kind_traits<Kind>::parameters_type;
+template <kind_t Kind> using parameters_t = typename detail::kind_traits<Kind>::parameters_type;
 
 template <kind_t Kind>
 class typed_node_t;
@@ -464,7 +464,7 @@ template <kind_t Kind>
 class typed_node_t : public node_t {
 	using parameters_type = parameters_t<Kind>;
 protected:
-	using traits = detail_::kind_traits<Kind>;
+	using traits = detail::kind_traits<Kind>;
 	using raw_parameters_type = typename traits::raw_parameters_type;
 	static constexpr char const * const name = traits::name;
 
@@ -483,10 +483,10 @@ public:
 		typename traits::raw_parameters_type raw_params;
 		if (traits::param_getter == nullptr) {
 			throw cuda_::runtime_error(status::named_t::not_supported,
-				"Querying parameters is not supported for this kind of node: " + node::detail_::identify(*this));
+				"Querying parameters is not supported for this kind of node: " + node::detail::identify(*this));
 		}
 		auto status = traits::param_getter(handle(), &raw_params);
-		throw_if_error_lazy(status, "setting parameters for " + node::detail_::identify(*this));
+		throw_if_error_lazy(status, "setting parameters for " + node::detail::identify(*this));
 		params_ = traits::unmarshal(raw_params);
 		return params_;
 	}
@@ -496,7 +496,7 @@ public:
 		static_assert(Kind != kind_t::empty, "Empty CUDA graph nodes don't have parameters");
 		auto marshalled_params = traits::marshal(parameters);
 		auto status = traits::param_setter(handle(), &marshalled_params);
-		throw_if_error_lazy(status, "setting parameters for " + node::detail_::identify(*this));
+		throw_if_error_lazy(status, "setting parameters for " + node::detail::identify(*this));
 	}
 
 public: // friendship

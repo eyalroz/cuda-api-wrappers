@@ -14,7 +14,7 @@ namespace cuda_ {
 
 namespace marshalling {
 
-namespace detail_ {
+namespace detail {
 
 // These two structs are streamed to a marshalled options object (see below)
 // to indicate the start of a new option or the conclusion of all options,
@@ -62,7 +62,7 @@ public:
 		return oss.tellp() == 0;
 	}
 
-	template <typename T, typename = ::cuda_::detail_::enable_if_t<not detail_::is_marshalling_control<typename std::decay<T>::type>::value>>
+	template <typename T, typename = ::cuda_::detail::enable_if_t<not detail::is_marshalling_control<typename std::decay<T>::type>::value>>
 	marshalled_options_t& operator<<(T&& x)
 	{
 		oss << x;
@@ -107,7 +107,7 @@ struct opt_start_t {
 };
 
 template <typename MarshalTarget, typename Delimiter>
-MarshalTarget& operator<<(MarshalTarget& mt, detail_::opt_start_t<Delimiter>& opt_start)
+MarshalTarget& operator<<(MarshalTarget& mt, detail::opt_start_t<Delimiter>& opt_start)
 {
 	if (not opt_start.ever_used) {
 		opt_start.ever_used = true;
@@ -139,11 +139,11 @@ void process(
 	const CompilationOptions& opts, MarshalTarget& marshalled, Delimiter delimiter,
 	bool need_delimiter_after_last_option = false)
 {
-	return detail_::gadget<CompilationOptions, MarshalTarget, Delimiter>::process(
+	return detail::gadget<CompilationOptions, MarshalTarget, Delimiter>::process(
 		opts, marshalled, delimiter, need_delimiter_after_last_option);
 }
 
-} // namespace detail_
+} // namespace detail
 
 /**
  * Finalize a compilation options "building" object into a structure passable to some of the
@@ -155,13 +155,13 @@ void process(
  * easy to modify and manipulate.
  */
 template <typename CompilationOptions>
-detail_::marshalled_options_t marshal(const CompilationOptions& opts)
+detail::marshalled_options_t marshal(const CompilationOptions& opts)
 {
-	using detail_::marshalled_options_t;
+	using detail::marshalled_options_t;
 	marshalled_options_t marshalled;
 	// TODO: Can we easily determine the max number of options here?
 	enum : bool { need_delimiter_after_last_option = true };
-	marshalling::detail_::process(opts, marshalled, marshalled_options_t::advance_gadget{},
+	marshalling::detail::process(opts, marshalled, marshalled_options_t::advance_gadget{},
 		need_delimiter_after_last_option);
 	return marshalled;
 }
@@ -175,7 +175,7 @@ detail_::marshalled_options_t marshal(const CompilationOptions& opts)
  * designated by single or double dashes.
  *
  * @note An implementation of a processor/renderer of individual options must be
- * provided via detail_::process() for this function to be usable with any particular
+ * provided via detail::process() for this function to be usable with any particular
  * type of options.
  *
  */
@@ -183,7 +183,7 @@ template <typename CompilationOptions>
 std::string render(const CompilationOptions& opts)
 {
 	std::ostringstream oss;
-	detail_::process(opts, oss, ' ');
+	detail::process(opts, oss, ' ');
 	if (oss.tellp() > 0) {
 		// Remove the last, excessive, delimiter
 		oss.seekp(-1,oss.cur);

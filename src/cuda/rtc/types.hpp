@@ -59,18 +59,18 @@ using const_cstrings_span = span<const char* const>;
 /// Definitions relating to source-code programs to be compiled
 namespace program {
 
-namespace detail_ {
+namespace detail {
 
 constexpr char const *kind_name(source_kind_t kind)
 {
 	return (kind == cuda_cpp) ? "CUDA C++" : "PTX";
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace program
 
-namespace detail_ {
+namespace detail {
 
 template <source_kind_t Kind> struct types {};
 
@@ -114,21 +114,21 @@ template <> struct types<ptx> {
 };
 #endif // CUDA_VERSION >= 11010
 
-} // namespace detail_
+} // namespace detail
 
 namespace program {
 
 /// Raw program handle used by the NVIDIA run-time compilation libraries's API calls:
 ///// The NVRTC library for CUDA C++, and the PTX compiler library
 template <source_kind_t Kind>
-using handle_t = typename cuda_::rtc::detail_::types<Kind>::handle_type;
+using handle_t = typename cuda_::rtc::detail::types<Kind>::handle_type;
 
 } // namespace program
 
 /// Status values returned by the NVIDIA run-time compilation libraries's API calls:
 /// The NVRTC library for CUDA C++, and the PTX compiler library
 template <source_kind_t Kind>
-using status_t = typename detail_::types<Kind>::status_type;
+using status_t = typename detail::types<Kind>::status_type;
 
 } // namespace rtc
 

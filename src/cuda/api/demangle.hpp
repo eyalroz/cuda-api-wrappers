@@ -22,7 +22,7 @@ char* __cu_demangle(const char *id, char *output_buffer, size_t *length, int *st
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 using mangle_status_t = int;
 
@@ -59,24 +59,24 @@ inline unique_span<char> demangle(const char* mangled_identifier)
 }
 
 
-} // namespace detail_
+} // namespace detail
 
 inline unique_span<char> demangle(const char* mangled_identifier)
 {
-	return detail_::demangle(mangled_identifier);
+	return detail::demangle(mangled_identifier);
 }
 
 template<typename T>
 T demangle_as(const char* mangled_identifier)
 {
-	auto demangled = detail_::demangle(mangled_identifier);
+	auto demangled = detail::demangle(mangled_identifier);
 	return { demangled.data(), demangled.data() + demangled.size() };
 }
 
 template<>
 inline std::string demangle_as<std::string>(const char* mangled_identifier)
 {
-	auto demangled = detail_::demangle(mangled_identifier);
+	auto demangled = detail::demangle(mangled_identifier);
 	return { demangled.data(), demangled.size() };
 }
 

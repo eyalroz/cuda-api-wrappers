@@ -5,7 +5,7 @@
 
 namespace cuda_ {
 
-namespace detail_ {
+namespace detail {
 
 template <class F>
 void for_each_argument(F) { }
@@ -19,7 +19,7 @@ void for_each_argument(F f, Args&&... args) {
 // doesn't guarantee execution order
 }
 
-} // namespace detail_
+} // namespace detail
 
 } // namespace cuda
 
