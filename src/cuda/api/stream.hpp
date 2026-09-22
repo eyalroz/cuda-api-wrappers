@@ -120,16 +120,16 @@ inline handle_t create_raw_in_current_context(
 	throw_if_error_lazy(status, "Failed creating a new stream in " + detail::identify(new_stream_handle));
 	return new_stream_handle;
 }
-
-inline status_t destroy_nothrow(handle_t handle, context::handle_t context_handle)
-{
-	CAW_SET_SCOPE_CONTEXT(context_handle);
-	return cuStreamDestroy(handle);
-}
+//
+// inline status_t destroy_nothrow(handle_t handle, context::handle_t context_handle)
+// {
+// 	CAW_SET_SCOPE_CONTEXT(context_handle);
+// 	return cuStreamDestroy(handle);
+// }
 
 inline void destroy(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	auto status = destroy_nothrow(handle, context_handle);
+	auto status = cuStreamDestroy(handle);
 	throw_if_error_lazy(status, "Failed destroying " + identify(handle, context_handle, device_id));
 }
 
@@ -245,6 +245,7 @@ inline void synchronize(const stream_t& stream);
 class stream_t {
 
 public: // type definitions
+	using handle_type = stream::handle_t;
 
 	enum : bool {
 		doesnt_synchronizes_with_default_stream  = false,
@@ -268,7 +269,7 @@ public: // const getters
 	context_t          context()   const noexcept;
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the stream upon the wrapper's own destruction
-	bool               is_owning() const noexcept { return owning_; }
+	bool               is_owning() const noexcept { return ownership_.has_token(); }
 
 public: // other non-mutators
 
@@ -550,7 +551,7 @@ public: // mutators
 		 * Execute the specified function on the calling host thread, after all
 		 * hereto-scheduled work on this stream has been completed.
 		 *
-		 * @param invokable_ an object to call. It must be invokable/invokable with
+		 * @param function an object to call. It must be invokable/invokable with
 		 * a
 		 */
 		template <typename Argument>
@@ -903,49 +904,34 @@ protected: // constructor
 		device_id_(device_id),
 		context_handle_(context_handle),
 		handle_(stream_handle),
-		owning_(take_ownership),
-		holds_pc_refcount_unit_(hold_primary_context_refcount_unit)
+		ownership_(take_ownership, { context_handle_, stream_handle}),
+		pc_refcount_unit_(hold_primary_context_refcount_unit, device_id),
+		enqueue(*this)
 	{ }
 
-public: // constructors and destructor
+public: // constructors & operators
+	stream_t(const stream_t&) = delete;
+	stream_t& operator=(const stream_t&) = delete;
 
-	// Streams cannot be copied, despite our allowing non-owning class instances.
-	// The reason is that we might inadvertently copy of an owning stream, creating
-	// a non-owning stream and letting the original owning stream go out of scope -
-	// thus destructing the object, and destroying the underlying CUDA object.
-	// Essentially, that is like passing a reference to a local variable - which we
-	// may not do.
-	stream_t(const stream_t& other) = delete;
-
-	stream_t(stream_t&& other) noexcept :
-		stream_t(other.device_id_, other.context_handle_, other.handle_, other.owning_, other.holds_pc_refcount_unit_)
+	// We have to be explicit with the move ctor and assignment operator, to avoid
+	// the enqueue member being set wrong
+	friend void swap(stream_t&a, stream_t& b) noexcept
 	{
-		other.owning_ = false;
-		other.holds_pc_refcount_unit_ = false;
+		std::swap(a.device_id_, b.device_id_);
+		std::swap(a.context_handle_, b.context_handle_);
+		std::swap(a.handle_, b.handle_);
+		std::swap(a.ownership_, b.ownership_);
+		std::swap(a.pc_refcount_unit_, b.pc_refcount_unit_);
+		// not touching enqueue!
 	}
+	
+	stream_t(stream_t&& other) noexcept
+	: stream_t(0, nullptr, nullptr, do_not_take_ownership, dont_hold_primary_context_refcount_unit)
+	{ swap(*this, other); }
 
-	~stream_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		stream::detail::destroy(handle_, context_handle_, device_id_);
-#else
-		stream::detail::destroy_nothrow(handle_, context_handle_);
-#endif
-		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
-		}
-	}
-public: // operators
-
-	stream_t& operator=(const stream_t& other) = delete;
 	stream_t& operator=(stream_t&& other) noexcept
 	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
+		swap(*this, other);
 		return *this;
 	}
 
@@ -977,8 +963,8 @@ protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	stream::handle_t   handle_;
-	bool               owning_;
-	bool               holds_pc_refcount_unit_;
+	detail::handle_ownership_t<stream_t> ownership_;
+	detail::pc_refcount_unit_t pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction
@@ -1172,6 +1158,8 @@ inline void begin(const stream_t& stream, mode_t mode)
  */
 void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
+
+CAW_DEFINE_HANDLE_TRAITS(stream::handle_t, is_contextual, cuStreamDestroy, cuStreamDestroy, stream::detail::identify)
 
 } // namespace cuda_
 

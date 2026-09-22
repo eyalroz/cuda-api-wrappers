@@ -15,6 +15,7 @@ namespace cuda_ {
 using std::optional;
 using std::nullopt_t;
 using std::nullopt;
+using std::make_optional;
 } // namespace cuda_
 #else
 #include "optional_lite.hpp"
@@ -22,6 +23,7 @@ namespace cuda_ {
 using nonstd::optional;
 using nonstd::nullopt_t;
 using nonstd::nullopt;
+using nonstd::make_optional;
 } // namespace cuda_
 #endif // __cplusplus >= 201703L
 

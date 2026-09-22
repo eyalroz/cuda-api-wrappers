@@ -594,11 +594,13 @@ inline std::string identify(handle_t handle)
 
 namespace stream {
 namespace detail {
+
 inline std::string identify(handle_t handle)
 {
 	return (handle == nullptr) ? "default/null stream" :
-		"stream at" + cuda_::detail::ptr_as_hex(handle);
+		"stream at " + cuda_::detail::ptr_as_hex(handle);
 }
+
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
 	return identify(handle) + " on " + device::detail::identify(device_id);
@@ -634,6 +636,15 @@ inline std::string identify(handle_t handle, context::handle_t context_handle, d
 }
 } // namespace detail
 } // namespace event
+
+namespace array {
+namespace detail {
+inline std::string identify(handle_t handle)
+{
+	return "array at " + cuda_::detail::ptr_as_hex(handle);
+}
+} // namespace detail
+} // namespace array
 
 namespace kernel {
 namespace detail {
@@ -707,7 +718,71 @@ inline std::string identify(location_t location)
 
 } // namespace detail
 
+namespace ipc {
+namespace detail {
+
+inline std::string identify(const void* ptr)
+{
+	return "IPC-imported pointer " + cuda_::detail::ptr_as_hex(ptr);
+}
+
+} // namespace detail
+} // namespace ipc
+
 } // namespace memory
+
+namespace link {
+namespace detail {
+
+inline std::string identify(handle_t handle)
+{
+	return "link" + cuda_::detail::ptr_as_hex(handle);
+}
+
+} // namespace detail
+} // namespace link
+
+namespace texture {
+namespace detail {
+
+inline std::string identify(handle_t handle)
+{
+	return "texture " + std::to_string(handle);
+}
+
+} // namespace detail
+} // namespace texture
+
+namespace memory {
+namespace virtual_ {
+
+#if CUDA_VERSION >= 12000
+namespace reservation {
+
+namespace detail {
+inline std::string identify(cuda_::detail::tagged<reserved_address_range_t, region_t> region_)
+{
+	return identify(region_.value);
+}
+} // namespace detail
+} // namespace reservation
+#endif // CUDA_VERSION >= 12000
+
+namespace mapping {
+
+namespace detail {
+
+inline std::string identify(region_t address_range) {
+	return std::string("mapping of ") + memory::detail::identify(address_range);
+}
+
+} // namespace detail
+
+} // namespace mapping
+
+} // namespace virtual_
+} // namespace memory
+
 
 } // namespace cuda_
 

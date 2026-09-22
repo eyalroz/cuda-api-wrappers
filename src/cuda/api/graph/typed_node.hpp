@@ -228,7 +228,7 @@ struct kind_traits<kind_t::kernel_launch> {
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
 	struct parameters_type {
-		kernel_t kernel;
+		kernel_t const& kernel;
 		launch_configuration_t launch_config;
 		// Notes:
 		// 1. Does _not_ need a nullptr terminator value
@@ -532,27 +532,35 @@ typed_node_t<Kind> wrap(template_::handle_t graph_handle, handle_t handle, param
 
 inline node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
-	kernel_t kernel,
+	const kernel_t& kernel,
 	launch_configuration_t launch_config,
 	const std::vector<void*>& argument_pointers)
 {
-	return { std::move(kernel), std::move(launch_config), std::move(argument_pointers) };
+	return { kernel, std::move(launch_config), argument_pointers };
 }
 
 template <typename... KernelParameters>
 node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
-	kernel_t kernel,
+	const kernel_t& kernel,
 	launch_configuration_t launch_config,
 	const KernelParameters&... kernel_arguments)
 {
 	return {
-		std::move(kernel),
+		kernel,
 		std::move(launch_config),
-		make_kernel_arg_ptrs(kernel_arguments...)
+		make_kernel_argument_pointers(kernel_arguments...)
 	};
 }
 
+inline node::parameters_t<node::kind_t::kernel_launch>
+make_launch_primed_kernel(
+	kernel_t&& kernel,
+	launch_configuration_t launch_config,
+	const std::vector<void*>& argument_pointers)
+{
+	return { std::move(kernel), std::move(launch_config), std::move(argument_pointers) };
+}
 } // namespace graph
 
 } // namespace cuda_

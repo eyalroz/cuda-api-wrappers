@@ -61,7 +61,7 @@ kernel_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	kernel::handle_t   handle,
-	bool               hold_primary_context_refcount_unit = false);
+	bool               hold_primary_context_refcount_unit = false) noexcept;
 
 namespace detail {
 
@@ -215,19 +215,6 @@ public: // getters
 #if CUDA_VERSION >= 13020
 	size_t num_parameters() const { return cuda_::kernel::detail::get_num_parameters(context_handle_, handle_); }
 #endif
-
-public: // operators
-
-	kernel_t& operator=(const kernel_t&) = delete;
-	kernel_t& operator=(kernel_t&& other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(holds_pc_refcount_unit, holds_pc_refcount_unit);
-		return *this;
-	}
-
 
 public: // non-mutators
 
@@ -414,41 +401,33 @@ protected: // ctors & dtor
 		device::id_t       device_id,
 		context::handle_t  context_handle,
 		kernel::handle_t   handle,
-		bool               hold_primary_context_refcount_unit)
+		bool               hold_primary_context_refcount_unit) noexcept
 	 :
 		device_id_(device_id),
 		context_handle_(context_handle),
 		handle_(handle),
-		holds_pc_refcount_unit(hold_primary_context_refcount_unit)
+		pc_refcount_unit_(hold_primary_context_refcount_unit, device_id)
 	{ }
 
 public: // ctors & dtor
-	friend kernel_t kernel::wrap(device::id_t, context::handle_t, kernel::handle_t, bool);
+	friend kernel_t kernel::wrap(device::id_t, context::handle_t, kernel::handle_t, bool) noexcept;
 
-	kernel_t(const kernel_t& other) :
-		kernel_t(other.device_id_, other.context_handle_, other.handle_, false) { }
+	kernel_t(kernel_t const& other) = delete;
+	kernel_t(kernel_t&& other) noexcept = default;
+	kernel_t& operator=(const kernel_t& other) = delete;
+	kernel_t& operator=(kernel_t&& other) noexcept = default;
+	// Q: Why aren't kernels copyable when their handles don't require creation and destruction?
+	// A: Because they may carry a primary context refcount unit. And - we have not decided to
+	//    allow increasing refcount units implicitly (via copying wrapper classes around)
 
-	kernel_t(kernel_t&& other) :
-		kernel_t(other.device_id_, other.context_handle_, other.handle_, false)
-	{
-		std::swap(holds_pc_refcount_unit, other.holds_pc_refcount_unit);
-	}
-
-public: // ctors & dtor
 	VIRTUAL_UNLESS_CAN_GET_APRIORI_KERNEL_HANDLE
-	~kernel_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		// TODO: DRY
-		if (holds_pc_refcount_unit) {
-			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
-		}
-	}
+	~kernel_t() noexcept {}
 
 protected: // data members
 	device::id_t device_id_; // We don't _absolutely_ need the device ID, but - why not have it if we can?
 	context::handle_t context_handle_;
 	mutable kernel::handle_t handle_;
-	bool holds_pc_refcount_unit;
+	detail::pc_refcount_unit_t pc_refcount_unit_;
 }; // kernel_t
 
 namespace kernel {
@@ -457,9 +436,9 @@ inline kernel_t wrap(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	kernel::handle_t   handle,
-	bool hold_primary_context_refcount_unit)
+	bool hold_primary_context_refcount_unit) noexcept
 {
-	return kernel_t{device_id, context_handle, handle, hold_primary_context_refcount_unit };
+	return {device_id, context_handle, handle, hold_primary_context_refcount_unit };
 }
 
 inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute)

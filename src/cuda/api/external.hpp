@@ -14,6 +14,7 @@
 
 #include "memory.hpp"
 #include "unique_region.hpp"
+#include "detail/token_holder.hpp"
 
 namespace cuda_ {
 
@@ -40,16 +41,10 @@ using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
 
 namespace detail {
 
-// TODO: Isn't this contextualized? I wonder
-inline status_t destroy_nowthrow(handle_t handle)
-{
-	return cuDestroyExternalMemory(handle);
-}
 
-
-inline void destroy(handle_t handle, const descriptor_t &)
+inline void destroy(handle_t handle)
 {
-	auto status = destroy_nowthrow(handle);
+	auto status = cuDestroyExternalMemory(handle);
 	throw_if_error_lazy(status, std::string("Destroying a memory resource"));
 }
 
@@ -98,43 +93,30 @@ resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership = 
  */
 class resource_t {
 public:
+	using handle_type = handle_t;
 	friend resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership) noexcept;
 
 	handle_t handle() const noexcept { return handle_; }
 	descriptor_t descriptor() const noexcept{ return descriptor_; }
 	kind_t kind() const noexcept{ return static_cast<kind_t>(descriptor_.type); }
 	size_t size() const noexcept { return descriptor_.size; }
-	bool is_owning() const noexcept { return owning_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
-protected:
-
+protected: // constructors
 	resource_t(handle_t handle, descriptor_t descriptor, bool is_owning)
-		: handle_(handle), descriptor_(std::move(descriptor)), owning_(is_owning)
+		: handle_(handle), descriptor_(std::move(descriptor)), ownership_(is_owning, { context::detail::none, handle } )
 	{}
 
-public:
-	resource_t(const resource_t& other) = delete;
-
-	resource_t(resource_t&& other) noexcept : resource_t(
-		other.handle_, other.descriptor_, other.owning_)
-	{
-		other.owning_ = false;
-	};
-
-	~resource_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		detail::destroy(handle_, descriptor_);
-#else
-		detail::destroy(handle_, descriptor_);
-#endif
-	}
+public: // constructors & operators
+	resource_t(const resource_t&) = delete;
+	resource_t(resource_t&&) noexcept = default;
+	resource_t& operator=(const resource_t&) = delete;
+	resource_t& operator=(resource_t&&) noexcept = default;
 
 protected: // data members
 	handle_t handle_;
 	descriptor_t descriptor_;
-	bool owning_;
+	cuda_::detail::handle_ownership_t<resource_t> ownership_;
 };
 
 inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership) noexcept
@@ -192,6 +174,10 @@ inline unique_region map(const resource_t& resource)
 
 } // namespace external
 } // namespace memory
+
+CAW_DEFINE_HANDLE_TRAITS(memory::external::handle_t, isnt_contextual, cuDestroyExternalMemory,
+	cuDestroyExternalMemory, memory::external::detail::identify)
+
 } // namespace cuda_
 
 #endif // CUDA_VERSION >= 10000

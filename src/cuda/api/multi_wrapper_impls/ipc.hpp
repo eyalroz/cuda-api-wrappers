@@ -33,6 +33,48 @@ imported_ptr_t wrap(
 	bool free_using_stream,
 	bool owning) noexcept;
 
+namespace detail {
+
+
+// Note: We cannot use the vanilla handle ownership mechanism, because for this class,
+// destruction is possible either immediately or on a stream.
+//
+// TODO: Consider splitting the class according to the destruction method
+
+struct release_state_t {
+	handle_t handle;
+	optional<stream::handle_t> stream_handle;
+};
+
+struct releaser {
+	void operator()(release_state_t const& release_state) const CAW_DESTRUCTOR_EXCEPTION_SPEC
+	{
+		// TODO: Consider creating nothrow and optional-stream-handle versions of the free functions,
+		// to make our life here easier
+#ifndef CAW_THROW_IN_DESTRUCTORS
+		try
+#endif
+		{
+			if (release_state.stream_handle) {
+				memory::device::detail::free_on_stream(release_state.handle, *release_state.stream_handle);
+			}
+			else {
+				memory::device::free(release_state.handle);
+			}
+		}
+#ifndef CAW_THROW_IN_DESTRUCTORS
+		catch (std::exception&) { }
+#endif
+	}
+};
+
+inline void release(handle_t handle, optional<stream::handle_t> const& stream_handle)
+{
+	releaser{}({ handle, stream_handle });
+}
+
+} // namespace detail
+
 class imported_ptr_t {
 protected: // constructors & destructor
 	imported_ptr_t(
@@ -49,8 +91,7 @@ protected: // constructors & destructor
 		pool_handle_(pool_handle),
 		ptr_(ptr),
 		stream_handle_(stream_handle),
-		free_using_stream_(free_using_stream),
-		owning_(owning) { }
+		ownership_(owning, { ptr, free_using_stream ? nullopt : make_optional(stream_handle) }) { }
 
 public: // constructors & destructor
 	friend imported_ptr_t wrap(
@@ -62,40 +103,11 @@ public: // constructors & destructor
 		bool free_using_stream,
 		bool owning) noexcept;
 
-	~imported_ptr_t() noexcept(false)
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		try
-#endif
-		{
-			if (free_using_stream_) {
-				stream().enqueue.free(ptr_);
-			}
-			else {
-				device::free(ptr_);
-			}
-		}
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		catch (...) {}
-#endif
-	}
-
 public: // operators
 
 	imported_ptr_t(const imported_ptr_t& other) = delete;
 	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
-	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(pool_handle_, other.pool_handle_);
-		std::swap(ptr_, other.ptr_);
-		std::swap(stream_handle_, other.stream_handle_);
-		std::swap(free_using_stream_, other.free_using_stream_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
+	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept = default;
 	imported_ptr_t(imported_ptr_t&& other) noexcept = default;
 
 public: // getters
@@ -109,12 +121,12 @@ public: // getters
 	}
 	stream_t stream() const
 	{
-		if (not free_using_stream_) throw std::runtime_error(
+		if (not stream_handle_) throw std::runtime_error(
 			"Request of the freeing stream of an imported pointer"
 			"which is not to be freed on a stream.");
-		return stream::wrap(device_id_, context_handle_, stream_handle_);
+		return stream::wrap(device_id_, context_handle_, *stream_handle_);
 	}
-	pool_t pool() noexcept
+	pool_t pool() const noexcept
 	{
 		static constexpr bool non_owning { false };
 		return memory::pool::wrap(device_id_, pool_handle_, non_owning);
@@ -122,12 +134,11 @@ public: // getters
 
 protected: // data members
 	cuda_::device::id_t  device_id_;
-	context::handle_t   context_handle_;
-	pool::handle_t      pool_handle_;
-	void*               ptr_;
-	stream::handle_t    stream_handle_;
-	bool                free_using_stream_;
-	bool                owning_;
+	context::handle_t    context_handle_;
+	pool::handle_t       pool_handle_;
+	void*                ptr_;
+	optional<stream::handle_t> stream_handle_;
+	cuda_::detail::token_holder<detail::releaser, detail::release_state_t> ownership_;
 }; // class imported_ptr_t
 
 inline imported_ptr_t wrap(

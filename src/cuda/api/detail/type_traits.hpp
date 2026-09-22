@@ -10,6 +10,11 @@
 
 #include <type_traits>
 
+#ifndef CAW_COMMA
+#define CAW_COMMA ,
+#endif
+
+
 namespace cuda_ {
 
 namespace detail {
@@ -58,6 +63,17 @@ struct is_kinda_like_contiguous_container :
 		has_data_method<typename std::remove_reference<T>::type>::value
 		and has_value_type_member<typename std::remove_reference<T>::type>::value
 	> {};
+
+struct unit { };
+
+template <typename Tag, typename T = void>
+struct tagged {
+	using tag_type = Tag;
+	using type = T;
+	type value;
+	operator T const&() const noexcept { return value; }
+	operator T&() noexcept { return value; }
+};
 
 } // namespace detail
 

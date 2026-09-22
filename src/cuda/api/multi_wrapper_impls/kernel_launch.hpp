@@ -402,7 +402,7 @@ void launch(
 {
 	// Argument validation will occur within call to enqueue_launch
 
-	auto primary_context = detail::get_implicit_primary_context(std::forward<Kernel>(kernel));
+	auto primary_context = detail::get_implicit_primary_context(kernel);
 	auto stream = primary_context.default_stream();
 
 	// Note: If Kernel is a kernel_t, and its associated device is different

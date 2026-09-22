@@ -34,9 +34,6 @@ enum class input_kind_t {
 	library,  /// An archive of objects files with embedded device code; a `.a` file
 };
 
-/// A raw CUDA driver handle for a linking-process
-using handle_t = CUlinkState;
-
 /**
  * @brief Wrap an existing CUDA link-process in a @ref link_t wrapper class instance.
  *
@@ -90,7 +87,8 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
  * to the link is a const-respecting operation on this class.
  */
 class link_t {
-
+public: // types
+	using handle_type = link::handle_t;
 public: // getters
 	/// The raw CUDA ID for the device w.r.t. which the link is defined
 	device::id_t device_id() const noexcept
@@ -101,8 +99,7 @@ public: // getters
 	{ return context_handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the link upon the wrapper's own destruction
-	bool is_owning() const noexcept
-	{ return owning; }
+	bool is_owning() const noexcept	{ return ownership_.has_token(); }
 
 	/// The device w.r.t. which the link is defined
 	device_t device() const;
@@ -207,64 +204,35 @@ protected: // constructors
 
 	link_t(
 		device::id_t device_id,
-		context::handle_t context,
+		context::handle_t context_handle,
 		link::handle_t handle,
 		const link::options_t &options,
 		bool take_ownership) noexcept
-		: device_id_(device_id), context_handle_(context), handle_(handle), options_(options), owning(take_ownership)
+	:
+		device_id_(device_id), context_handle_(context_handle), handle_(handle),
+		options_(options), ownership_(take_ownership, { context_handle, handle })
 	{}
 
 public: // friendship
 
 	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, const link::options_t &, bool) noexcept;
 
-public: // constructors and destructor
+public: // constructors, operators
 
-	link_t(const link_t &) = delete;
-
-	link_t(link_t &&other) noexcept:
-		link_t(other.device_id_, other.context_handle_, other.handle_, other.options_, other.owning)
-	{
-		other.owning = false;
-	};
-
-	~link_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning) { return; }
-#ifndef CAW_THROW_IN_DESTRUCTORS
-		try
-#endif
-		{
-			link::detail::destroy(handle_, context_handle_, device_id_);
-		}
-#ifndef CAW_THROW_IN_DESTRUCTORS
-		catch (...) {}
-#endif
-	}
-
-public: // operators
-
-	link_t &operator=(const link_t &) = delete;
-
-	link_t &operator=(link_t &&other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(options_, other.options_);
-		std::swap(owning, owning);
-		return *this;
-	}
+	link_t(const link_t&) = delete;
+	link_t(link_t&&) noexcept = default;
+	link_t& operator=(const link_t&) = delete;
+	link_t& operator=(link_t&&) noexcept = default;
 
 protected: // data members
 	device::id_t device_id_;
 	context::handle_t context_handle_;
 	link::handle_t handle_;
 	link::options_t options_;
-	bool owning;
+	detail::handle_ownership_t<link_t> ownership_;
 	// this field is mutable only for enabling move construction; other
 	// than in that case it must not be altered
-};
+}; // class link_t
 
 namespace link {
 
@@ -302,6 +270,8 @@ inline link_t wrap(
 }
 
 } // namespace link
+
+CAW_DEFINE_HANDLE_TRAITS(link::handle_t, is_contextual, cuLinkDestroy, cuLinkDestroy, link::detail::identify)
 
 } // namespace cuda_
 

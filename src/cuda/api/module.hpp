@@ -42,17 +42,17 @@ inline module_t wrap(
 	bool                    take_ownership = false,
 	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
-inline std::string identify(const module::handle_t &handle)
+inline std::string identify(module::handle_t handle)
 {
 	return std::string("module ") + cuda_::detail::ptr_as_hex(handle);
 }
 
-inline std::string identify(const module::handle_t &handle, context::handle_t context_handle)
+inline std::string identify(module::handle_t handle, context::handle_t context_handle)
 {
 	return identify(handle) + " in " + context::detail::identify(context_handle);
 }
 
-inline std::string identify(const module::handle_t &handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(module::handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
 }
@@ -124,13 +124,16 @@ inline loading_mode_t loading_mode() {
  * to the module is a const-respecting operation on this class.
  */
 class module_t {
+public: // types
+	using handle_type = module::handle_t;
 
 public: // getters
 	/// Getters for the module object's raw constituent fields
 	///@{
-	module::handle_t handle() const { return handle_; }
-	context::handle_t context_handle() const { return context_handle_; }
-	device::id_t device_id() const { return device_id_; }
+	module::handle_t handle() const noexcept { return handle_; }
+	context::handle_t context_handle() const noexcept { return context_handle_; }
+	device::id_t device_id() const noexcept { return device_id_; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 	///@}
 
 	/// @returns the context in which this module exists
@@ -203,80 +206,35 @@ protected: // constructors
 
 	module_t(
 		device::id_t device_id,
-		context::handle_t context,
+		context::handle_t context_handle,
 		module::handle_t handle,
 		bool owning,
-		bool holds_primary_context_refcount_unit)
-	noexcept
-		: device_id_(device_id), context_handle_(context), handle_(handle), owning_(owning),
-		  holds_pc_refcount_unit_(holds_primary_context_refcount_unit)
+		bool holds_primary_context_refcount_unit) noexcept
+	: device_id_(device_id), context_handle_(context_handle), handle_(handle),
+	  ownership_(owning, { context_handle, handle }),
+	  pc_refcount_unit_(holds_primary_context_refcount_unit, device_id)
 	{ }
+
+public: // constructors & operators
+	module_t(const module_t&) = delete;
+	module_t(module_t&&) noexcept = default;
+	module_t& operator=(const module_t&) = delete;
+	module_t& operator=(module_t&&) noexcept = default;
 
 public: // friendship
 
 	friend module_t module::detail::wrap(device::id_t, context::handle_t, module::handle_t, bool, bool) noexcept;
 
-public: // constructors and destructor
-
-	module_t(const module_t&) = delete;
-
-	module_t(module_t&& other) noexcept :
-		module_t(
-			other.device_id_,
-			other.context_handle_,
-			other.handle_,
-			other.owning_,
-			other.holds_pc_refcount_unit_)
-	{
-		other.owning_ = false;
-		other.holds_pc_refcount_unit_ = false;
-	};
-
-	// Note: It is up to the user of this class to ensure that it is unloaded _before_ the context
-	// in which it was created; and one needs to be particularly careful about this point w.r.t.
-	// primary contexts
-	~module_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		try
-#endif
-		{
-			module::detail::unload(handle_, context_handle_, device_id_);
-		}
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		catch (...) {}
-#endif
-		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
-		}
-	}
-
-public: // operators
-
-	module_t& operator=(const module_t&) = delete;
-	module_t& operator=(module_t&& other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
-		return *this;
-	}
-
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	module::handle_t   handle_;
-	bool               owning_;
-		// this field is mutable only for enabling move construction; other
-		// than in that case it must not be altered
-	bool holds_pc_refcount_unit_;
+	detail::handle_ownership_t<module_t> ownership_;
+	detail::pc_refcount_unit_t pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this module
 		// may be "keeping that context alive" through the refcount - in which
 		// case it must release its refcount unit on destruction
-};
+}; // module_t
 
 namespace module {
 
@@ -426,7 +384,7 @@ inline std::string identify(const module_t& module)
 	return identify(module.handle(), module.context_handle(), module.device_id());
 }
 
-inline context_t get_context_for(const context_t& locus) { return locus; }
+inline context_t const& get_context_for(const context_t& locus) { return locus; }
 inline device::primary_context_t get_context_for(const device_t& locus);
 
 } // namespace detail
@@ -448,7 +406,7 @@ module_t create(
 	Locus&&             locus,
 	ContiguousContainer module_data)
 {
-	auto context = detail::get_context_for(locus);
+	auto const& context = detail::get_context_for(locus);
 	return detail::create(context, module_data.data());
 }
 
@@ -468,11 +426,13 @@ module_t create(
 	ContiguousContainer     module_data,
 	const link::options_t&  link_options)
 {
-	auto context = detail::get_context_for(locus);
+	auto&& context = detail::get_context_for(locus);
 	return detail::create(context, module_data.data(), link_options);
 }
 
 } // namespace module
+
+CAW_DEFINE_HANDLE_TRAITS(module::handle_t, is_contextual, cuModuleUnload, cuModuleUnload, module::detail::identify)
 
 } // namespace cuda_
 

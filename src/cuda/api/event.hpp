@@ -1,9 +1,7 @@
 /**
  * @file
  *
- * @brief A CUDA event wrapper class and some associated
- * free-standing functions.
- *
+ * @brief A CUDA event wrapper class and some associated freestanding functions.
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_EVENT_HPP_
@@ -15,6 +13,7 @@
 #include "current_device.hpp"
 #include "error.hpp"
 #include "ipc.hpp"
+#include "detail/token_holder.hpp"
 
 #include <chrono> // for duration types
 
@@ -140,12 +139,14 @@ inline void wait(const event_t& event);
  * Use this class - built around an event handle - to perform almost, if not all,
  * event-related operations the CUDA Runtime API is capable of.
  *
- * @note By default this class has RAII semantics, i.e. it has the runtime create
- * an event on construction and destroy it on destruction, and isn't merely
- * an ephemeral wrapper one could apply and discard; but this second kind of
- * semantics is also (sort of) supported, through the @ref event_t::owning_ field.
+ * @note By default this class has RAII/CADRe semantics, i.e. it has the runtime
+ * create an event on construction and destroy it on destruction, and isn't merely
+ * an ephemeral wrapper one could apply and discard using an existing event handle,
+ * without creating or destruction.
  */
 class event_t {
+public: // type definitions
+	using handle_type = event::handle_t;
 
 public: // data member non-mutator getters
 	/// The raw CUDA ID for the device w.r.t. which the event is defined
@@ -158,18 +159,16 @@ public: // data member non-mutator getters
 	event::handle_t   handle()          const noexcept { return handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy the event upon the wrapper's own destruction
-	bool              is_owning()       const noexcept { return owning_; }
+	bool              is_owning()       const noexcept { return ownership_.has_token(); }
 
 	/// True if this wrapper has been associated with an increase of the device's primary context's reference count
-	bool              holds_primary_context_reference() const noexcept { return holds_pc_refcount_unit_; }
+	bool              holds_primary_context_reference() const noexcept { return pc_refcount_unit_.has_token(); }
 
 	/// The device w.r.t. which the event is defined
 	device_t          device()          const;
 
 	/// The context in which this stream was defined.
 	context_t         context()         const;
-
-
 
 public: // other non-mutator methods
 
@@ -249,78 +248,37 @@ protected: // constructors
 		device_id_(device_id),
 		context_handle_(context_handle),
 		handle_(event_handle),
-		owning_(take_ownership),
-		holds_pc_refcount_unit_(hold_pc_refcount_unit) { }
+		ownership_(take_ownership, { context_handle, event_handle }),
+		pc_refcount_unit_(hold_pc_refcount_unit, device_id) { }
+
+public: // constructors & operators
+
+	event_t(const event_t&) = delete;
+	event_t(event_t&&) noexcept = default;
+	event_t& operator=(const event_t&) = delete;
+	event_t& operator=(event_t&&) noexcept = default;
 
 public: // friendship
 
 	friend event_t event::wrap(
-		device::id_t       device,
+		device::id_t       device_id,
 		context::handle_t  context_handle,
 		event::handle_t    event_handle,
 		bool               take_ownership,
 		bool               hold_pc_refcount_unit) noexcept;
 
-public: // constructors and destructor
-
-	// Events cannot be copied, despite our allowing non-owning class instances.
-	// The reason is that we might inadvertently copy an owning instance, creating
-	// a non-owning instance and letting the original owning instance go out of scope -
-	// thus destructing the C++ object, and destroying the underlying CUDA object.
-	// Essentially, that is like passing a reference to a local variable - which we
-	// may not do.
-	event_t(const event_t& other) = delete;
-
-	event_t(event_t&& other) noexcept : event_t(
-		other.device_id_, other.context_handle_, other.handle_, other.owning_, other.holds_pc_refcount_unit_)
-	{
-		other.owning_ = false;
-		other.holds_pc_refcount_unit_ = false;
-	};
-
-	~event_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (owning_) {
-#ifndef CAW_THROW_IN_DESTRUCTORS
-			try
-#endif
-			{
-				event::detail::destroy(handle_, context_handle_, device_id_);
-			}
-#ifndef CAW_THROW_IN_DESTRUCTORS
-			catch (...) {}
-#endif
-		}
-		if (holds_pc_refcount_unit_) {
-			device::primary_context::detail::decrease_refcount_in_dtor(device_id_);
-		}
-	}
-
-public: // operators
-
-	event_t& operator=(const event_t&) = delete;
-	event_t& operator=(event_t&& other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(context_handle_, other.context_handle_);
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		std::swap(holds_pc_refcount_unit_, holds_pc_refcount_unit_);
-		return *this;
-	}
-
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	event::handle_t    handle_;
-	bool               owning_;
-		// this field is mutable only for enabling move construction; other
-		// than in that case it must not be altered
-	bool               holds_pc_refcount_unit_;
+	detail::handle_ownership_t<event_t> ownership_;
+	detail::pc_refcount_unit_t pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction
 };
+
+CAW_DEFINE_HANDLE_TRAITS(event::handle_t, is_contextual, cuEventDestroy, cuEventDestroy, event::detail::identify)
 
 namespace event {
 

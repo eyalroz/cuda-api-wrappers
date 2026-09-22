@@ -12,6 +12,7 @@
 #include "error.hpp"
 #include "constants.hpp"
 #include "types.hpp"
+#include "detail/token_holder.hpp"
 
 #include <string>
 #include <utility>
@@ -237,14 +238,12 @@ inline void synchronize(const context_t& context);
  * Use this class - built around a context id - to perform all
  * context-related operations the CUDA Driver (or, in fact, Runtime) API is capable of.
  *
- * @note By default this class has RAII semantics, i.e. it creates a
- * context on construction and destroys it on destruction, and isn't merely
- * an ephemeral wrapper one could apply and discard; but this second kind of
- * semantics is also supported, through the @ref context_t::owning_ field.
+ * @note By default this class has RAII/CADRe semantics, i.e. it has the runtime
+ * create an event on construction and destroy it on destruction, and isn't merely
+ * an ephemeral wrapper one could apply and discard using an existing event handle,
+ * without creating or destruction.
  *
  * @note A context is a specific to a device; see, therefore, also {@ref cuda_::device_t}.
- * @note This class is a "reference type", not a "value type". Therefore, making changes
- * to properties of the context is a const-respecting operation on this class.
  */
 class context_t {
 protected: // types
@@ -252,6 +251,7 @@ protected: // types
 	using flags_type = context::flags_t;
 
 public: // types
+	using handle_type = context::handle_t;
 
 	static_assert(
 		std::is_same<std::underlying_type<CUsharedconfig>::type, std::underlying_type<cudaSharedMemConfig>::type>::value,
@@ -383,7 +383,7 @@ public: // data member non-mutator getters
 
 	/// @return True if this wrapper is the one responsible for having the wrapped CUDA
 	/// context destroyed eventually
-	bool is_owning() const noexcept { return owning_;  }
+	bool is_owning() const noexcept { return ownership_.has_token();  }
 
 	/**
 	 * The amount of total global device memory available to this context, including
@@ -413,7 +413,7 @@ public: // other non-mutator methods
 
 	template <typename Kernel, typename ... KernelParameters>
 	void launch(
-		Kernel                  kernel,
+		Kernel&&                kernel,
 		launch_configuration_t  launch_configuration,
 		KernelParameters...     arguments) const;
 
@@ -705,10 +705,16 @@ protected: // constructors
 
 	context_t(
 		device::id_t       device_id,
-		context::handle_t  context_id,
+		context::handle_t  context_handle,
 		bool               take_ownership) noexcept
-		: device_id_(device_id), handle_(context_id), owning_(take_ownership)
+		: device_id_(device_id), handle_(context_handle), ownership_(take_ownership, { context::detail::none, context_handle })
 	{ }
+
+public: // constructors & operators
+	context_t(const context_t&) = delete;
+	context_t(context_t&&) noexcept = default;
+	context_t& operator=(const context_t&) = delete;
+	context_t& operator=(context_t&&) noexcept = default;
 
 public: // friendship
 
@@ -719,50 +725,17 @@ public: // friendship
 		bool               take_ownership) noexcept;
 	///@endcond
 
-public: // constructors and destructor
-
-	context_t(const context_t& other) :
-		context_t(other.device_id_, other.handle_, false)
-	{ };
-
-	context_t(context_t&& other) noexcept:
-		context_t(other.device_id_, other.handle_, other.owning_)
-	{
-		other.owning_ = false;
-	};
-
-	~context_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning_) { return; }
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		context::detail::destroy(handle_, device_id_);
-#else
-		context::detail::destroy_nothrow(handle_);
-#endif
-	}
-
-public: // operators
-
-	context_t& operator=(const context_t&) = delete;
-	context_t& operator=(context_t&& other) noexcept
-	{
-		std::swap(device_id_, other.device_id_);
-		std::swap(handle_, other.handle_);
-		std::swap(owning_, other.owning_);
-		return *this;
-	}
-
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  handle_;
 	/// When true, the object is a valued type, and the context must be destroyed on destruction
-	bool               owning_;
-		// this field is mutable only for enabling move construction; other
-		// than in that case it must not be altered
+	detail::handle_ownership_t<context_t> ownership_;
 
 	// TODO: Should we hold a field indicating whether this context is
 	// primary or not?
-};
+}; // class context_t
+
+CAW_DEFINE_HANDLE_TRAITS(context::handle_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy, context::detail::identify)
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{
