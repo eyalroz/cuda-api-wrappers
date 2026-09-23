@@ -90,7 +90,7 @@ class resource_t;
 ///@endcond
 
 /// Construct an external memory resource class instance from its raw constituent fields
-resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership = false);
+resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership = false) noexcept;
 
 /**
  * A CUDA-recognized external memory resource - i.e. one that is not simply a region
@@ -98,17 +98,18 @@ resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership = 
  */
 class resource_t {
 public:
-	friend resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership);
+	friend resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership) noexcept;
 
-	handle_t handle() const { return handle_; }
-	descriptor_t descriptor() const { return descriptor_; }
-	kind_t kind() const { return static_cast<kind_t>(descriptor_.type); }
-	size_t size() const { return descriptor_.size; }
+	handle_t handle() const noexcept { return handle_; }
+	descriptor_t descriptor() const noexcept{ return descriptor_; }
+	kind_t kind() const noexcept{ return static_cast<kind_t>(descriptor_.type); }
+	size_t size() const noexcept { return descriptor_.size; }
+	bool is_owning() const noexcept { return owning_; }
 
 protected:
 
 	resource_t(handle_t handle, descriptor_t descriptor, bool is_owning)
-		: handle_(handle), descriptor_(descriptor), owning_(is_owning)
+		: handle_(handle), descriptor_(std::move(descriptor)), owning_(is_owning)
 	{}
 
 public:
@@ -136,7 +137,7 @@ protected: // data members
 	bool owning_;
 };
 
-inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership)
+inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership) noexcept
 {
 	return { handle, std::move(descriptor), take_ownership };
 }
@@ -145,7 +146,7 @@ inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_owner
 inline resource_t import(descriptor_t descriptor)
 {
 	handle_t handle = detail::import(descriptor);
-	return wrap(handle, descriptor, do_take_ownership);
+	return wrap(handle, std::move(descriptor), do_take_ownership);
 }
 
 namespace detail {
