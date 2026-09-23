@@ -25,8 +25,6 @@
 #include "current_context.hpp"
 #include "primary_context.hpp"
 
-#include <cuda_runtime_api.h>
-
 namespace cuda_ {
 
 ///@cond
