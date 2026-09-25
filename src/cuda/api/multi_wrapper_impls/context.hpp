@@ -210,29 +210,29 @@ inline context_t create(
 
 namespace peer_to_peer {
 
-inline bool can_access(context_t accessor, context_t peer)
+inline bool can_access(const context_t& accessor, const context_t& peer)
 {
 	return device::peer_to_peer::detail::can_access(accessor.device_id(), peer.device_id());
 }
 
-inline void enable_access(context_t accessor, context_t peer)
+inline void enable_access(const context_t& accessor, const context_t& peer)
 {
 	detail::enable_access(accessor.handle(), peer.handle());
 }
 
-inline void disable_access(context_t accessor, context_t peer)
+inline void disable_access(const context_t& accessor, const context_t& peer)
 {
 	detail::disable_access(accessor.handle(), peer.handle());
 }
 
-inline void enable_bidirectional_access(context_t first, context_t second)
+inline void enable_bidirectional_access(const context_t& first, const context_t& second)
 {
 	// Note: What happens when first and second are the same context? Or on the same device?
 	enable_access(first,  second);
 	enable_access(second, first );
 }
 
-inline void disable_bidirectional_access(context_t first, context_t second)
+inline void disable_bidirectional_access(const context_t& first, const context_t& second)
 {
 	// Note: What happens when first and second are the same context? Or on the same device?
 	disable_access(first,  second);
