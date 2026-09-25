@@ -1,13 +1,12 @@
 /**
  * @file
  *
- * @brief An implementation or an importation of a @ref cuda_::optional class and related definitions.
+ * @brief An importation of an C++-17-like @ref cuda_::optional class and related definitions.
  *
+ * @note When compiling with C++17 or later, the actual @ref std::optional class is used.
  */
-#ifndef CUDA_API_WRAPPERS_OPTIONAL_HPP
-#define CUDA_API_WRAPPERS_OPTIONAL_HPP
-
-#include <type_traits>
+#ifndef CAW_WRAPPERS_UTIL_OPTIONAL_HPP_
+#define CAW_WRAPPERS_UTIL_OPTIONAL_HPP_
 
 #if __cplusplus >= 201703L
 #include <optional>
@@ -17,116 +16,13 @@ using std::optional;
 using std::nullopt_t;
 using std::nullopt;
 } // namespace cuda_
-#elif __cplusplus >= 201402L
-#include <experimental/optional>
-#include <experimental/any>
-namespace cuda_ {
-using std::experimental::optional;
-using std::experimental::nullopt;
-using std::experimental::nullopt_t;
-} // namespace cuda_
 #else
-
-#include <type_traits>
-#include <utility>
-
+#include "optional_lite.hpp"
 namespace cuda_ {
-
-
-namespace detail {
-
-struct no_value_t { };
-
-} // namespace detail
-
-using nullopt_t = detail::no_value_t;
-constexpr nullopt_t nullopt{};
-
-namespace detail {
-
-template<typename T>
-struct poor_mans_optional {
-	static_assert(std::is_trivially_destructible<T>::value, "Use a simpler type");
-	union maybe_value_union_t {
-		no_value_t no_value;
-		T value;
-	};
-
-	poor_mans_optional &operator=(const poor_mans_optional &other) noexcept = default;
-
-	poor_mans_optional &operator=(poor_mans_optional &&other) noexcept = default;
-
-	poor_mans_optional &operator=(const T &value) noexcept(std::is_nothrow_assignable<T,T>::value)
-	{
-		has_value_ = true;
-		maybe_value.value = value;
-		return *this;
-	}
-
-	poor_mans_optional &operator=(no_value_t)
-	{
-		has_value_ = false;
-		return *this;
-	}
-
-	poor_mans_optional &operator=(T &&value) noexcept(std::is_nothrow_move_assignable<T>::value)
-	{ return *this = value; }
-
-	poor_mans_optional() noexcept: has_value_(false)
-	{}
-
-	poor_mans_optional(T v) noexcept(std::is_nothrow_assignable<T,T>::value) : has_value_(true)
-	{
-		maybe_value.value = v;
-	}
-
-	poor_mans_optional(const poor_mans_optional &other) noexcept
-	: has_value_(other.has_value_), maybe_value(other.maybe_value)
-	{ }
-
-	poor_mans_optional(poor_mans_optional &&other) noexcept
-	: has_value_(other.has_value_), maybe_value(other.maybe_value)
-	{
-		other.has_value_ = false;
-	}
-
-	poor_mans_optional(nullopt_t) noexcept : has_value_(false) { }
-
-	~poor_mans_optional() noexcept = default;
-
-	T value() const
-	{ return maybe_value.value; }
-
-	template<typename U>
-	T value_or(U&& fallback_value) const
-	{
-		return has_value_ ? maybe_value.value : static_cast<T>(std::forward<U>(fallback_value));
-	}
-
-	T& operator*() noexcept { return maybe_value.value; }
-	const T& operator*() const noexcept { return maybe_value.value; }
-
-	operator bool() const noexcept
-	{ return has_value_; }
-
-	bool has_value() const noexcept
-	{ return has_value_; }
-
-	void reset() noexcept
-	{ has_value_ = false; }
-
-protected:
-	bool has_value_;
-	maybe_value_union_t maybe_value { no_value_t{} };
-};
-
-} // namespace detail
-
-template<typename T>
-using optional = cuda_::detail::poor_mans_optional<T>;
-
+using nonstd::optional;
+using nonstd::nullopt_t;
+using nonstd::nullopt;
 } // namespace cuda_
+#endif // __cplusplus >= 201703L
 
-#endif // __cplusplus >= 201402L
-
-#endif //CUDA_API_WRAPPERS_OPTIONAL_HPP
+#endif // CAW_WRAPPERS_UTIL_OPTIONAL_HPP_
