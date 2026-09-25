@@ -59,16 +59,13 @@ protected:
 
 	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
 	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 public:
 	params_type& params() noexcept { return params_; }
 
 	this_type& template_(template_t subgraph) {
-		return do_([&] {
-			params_ = std::move(subgraph);
-			was_set.template_ = true;
-		});
+		params_ = std::move(subgraph);
+		was_set.template_ = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type build_within(const cuda_::graph::template_t& graph_template)
@@ -100,16 +97,14 @@ protected:
 
 	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
 	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
 
 public:
 	params_type& params() noexcept { return params_; }
 
 	this_type& event(event_t event) {
-		return do_([&] {
-			params_ = std::move(event);
-			was_set.event = true;
-		});
+		params_ = std::move(event);
+		was_set.event = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -137,18 +132,13 @@ protected:
 		bool event { false };
 	} was_set; // Yes, this is an ugly alternative to using optionals
 
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 public:
 	params_type& params() noexcept { return params_; }
 
 	this_type& event(event_t event) {
-		return do_([&] {
-			params_ = std::move(event);
-			was_set.event = true;
-		});
+		params_ = std::move(event);
+		was_set.event = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -179,27 +169,21 @@ protected:
 		bool user_argument_set {false };
 	} was_set; // Yes, this is an ugly alternative to using optionals
 
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 public:
 	params_type& params() noexcept { return params_; }
 
-	this_type function(stream::callback_t host_callback_function)
+	this_type& function(stream::callback_t host_callback_function)
 	{
-		return do_([&] {
-			params_.function_ptr = host_callback_function;
-			was_set.function_ptr_set = true;
-		});
+		params_.function_ptr = std::move(host_callback_function);
+		was_set.function_ptr_set = true;
+		return *this;
 	}
 
-	this_type argument(void* callback_argument)
+	this_type& argument(void* callback_argument)
 	{
-		return do_([&] {
-			params_.user_data = callback_argument;
-			was_set.user_argument_set = true;
-		});
+		params_.user_data = callback_argument;
+		was_set.user_argument_set = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -238,21 +222,16 @@ protected:
 	} was_set; // Yes, this is an ugly alternative to using optionals; but - have
 	           // you ever looked at the implementation of optional?...
 
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 public:
 	params_type& params() noexcept { return params_; }
 
-	this_type kernel(const kernel_t& kernel)
+	this_type& kernel(kernel_t kernel)
 	{
-		return do_([&] {
-			// we can't just make an assignment to the `kernel` field, we have to reassign
-			// the whole structure...
-			params_ = { kernel, params_.launch_config, std::move(params_.marshalled_arguments) };
-			was_set.kernel = true;
-		});
+		// we can't just make an assignment to the `kernel` field, we have to reassign
+		// the whole structure...
+		params_ = { std::move(kernel), params_.launch_config, std::move(params_.marshalled_arguments) };
+		was_set.kernel = true;
+		return *this;
 	}
 
 	// Note: There is _no_ member for passing an apriori compiled kernel
@@ -260,24 +239,22 @@ public:
 	// or actually holding on to one in this class, which doesn't make sense. The graph template
 	// can't hold a ref unit...
 
-	this_type launch_configuration(launch_configuration_t launch_config)
+	this_type& launch_configuration(launch_configuration_t launch_config)
 	{
-		return do_([&] {
-			params_.launch_config = launch_config;
-			was_set.launch_config = true;
-		});
+		params_.launch_config = std::move(launch_config);
+		was_set.launch_config = true;
+		return *this;
 	}
 
-	this_type marshalled_arguments(std::vector<void*> argument_ptrs)
+	this_type& marshalled_arguments(std::vector<void*> argument_ptrs)
 	{
-		return do_([&] {
-			params_.marshalled_arguments = std::move(argument_ptrs);
-			was_set.marshalled_arguments = true;
-		});
+		params_.marshalled_arguments = std::move(argument_ptrs);
+		was_set.marshalled_arguments = true;
+		return *this;
 	}
 
 	template <typename... Ts>
-	this_type arguments(Ts&&... args)
+	this_type& arguments(Ts&&... args)
 	{
 		return marshalled_arguments(make_kernel_argument_pointers(std::forward<Ts>(args)...));
 	}
@@ -317,13 +294,6 @@ protected:
 		bool size_in_bytes {false };
 	} was_set; // Yes, this is an ugly alternative to using optionals
 
-	template <typename F>
-	this_type& do_(F f)
-	{
-		f();
-		return *this;
-	}
-
 public:
 	params_type& params() { return params_; }
 
@@ -338,11 +308,15 @@ public:
 		return graph_template.insert.node<kind>(params_);
 	}
 
-	this_type& device(const device_t& device) {
-		return do_([&]{ params_.first = device; was_set.device = true; });
+	this_type& device(device_t device) {
+		params_.first = std::move(device);
+		was_set.device = true;
+		return *this;
 	}
-	this_type& size(const size_t size) {
-		return do_([&]{ params_.second = size; was_set.size_in_bytes = true; });
+	this_type& size(size_t size) {
+		params_.second = size;
+		was_set.size_in_bytes = true;
+		return *this;
 	}
 }; // typed_builder_t<kind_t::memory_allocation>
 
@@ -364,13 +338,6 @@ public:
 protected:
 	params_type params_;
 
-	template <typename F>
-	this_type& do_(F f)
-	{
-		f();
-		return *this;
-	}
-
 public:
 	params_type& params() { return params_; }
 //	built_type build();
@@ -385,12 +352,12 @@ public:
 
 //	this_type& context(endpoint_t endpoint, const context_t& context) noexcept
 //	{
-//		do_([&] { params_.set_context(endpoint, context); } );
+//		params_.set_context(endpoint, context); return *this;
 //	}
 //
 //	this_type& single_context(const context_t& context) noexcept
 //	{
-//		do_([&] { params_.set_single_context(context); } );
+//		params_.set_single_context(context); return *this;
 //	}
 
 	// Note: This next variadic method should not be necessary considering
@@ -398,42 +365,50 @@ public:
 	// only keep the forwarding-source-method, we get errors.
 //	template <typename... Ts>
 //	this_type& source(const Ts&... args) {
-//		return do_([&]{ params_.set_source(args...); });
+//		params_.set_source(args...);
+//		return *this;
 //	}
 
 	template <typename... Ts>
 	this_type& source(Ts&&... args) {
-		return do_([&]{ params_.set_source(std::forward<Ts>(args)...); });
+		params_.set_source(std::forward<Ts>(args)...);
+		return *this;
 	}
 //
 //	template <typename... Ts>
 //	this_type& destination(const Ts&... args) {
-//		return do_([&]{ params_.set_destination(args...); });
+//      params.set_destination(args...);
+//      return *this;
 //	}
 
 	template <typename... Ts>
 	this_type& destination(Ts&&... args) {
-		return do_([&]{ params_.set_destination(std::forward<Ts>(args)...); });
+		params_.set_destination(std::forward<Ts>(args)...);
+		return *this;
 	}
 
 	template <typename... Ts>
 	this_type& endpoint(endpoint_t endpoint, Ts&&... args) {
-		return do_([&]{ params_.set_endpoint(endpoint, std::forward<Ts>(args)...); });
+		params_.set_endpoint(endpoint, std::forward<Ts>(args)...);
+		return *this;
 	}
 
 //	this_type& source_untyped(context::handle_t context_handle, void *ptr, dimensions_type dimensions) noexcept
 //	{
-//		return do_([&] { params_.set_endpoint_untyped(endpoint_t::source, context_handle, ptr, dimensions); } );
+//		params_.set_endpoint_untyped(endpoint_t::source, context_handle, ptr, dimensions);
+//		return *this;
 //	}
 //
 //	this_type& destination_untyped(context::handle_t context_handle, void *ptr, dimensions_type dimensions) noexcept
 //	{
-//		return do_([&] { params_.set_destination_untyped(context_handle, ptr, dimensions); } );
+//		params_.set_destination_untyped(context_handle, ptr, dimensions);
+//		return *this;
 //	}
 //
 //	this_type& endpoint_untyped(endpoint_t endpoint, context::handle_t context_handle, void *ptr, dimensions_type dimensions) noexcept
 //	{
-//		return do_([&] { params_.set_endpoint_untyped(endpoint_t::source, context_handle, ptr, dimensions); } );
+//		params_.set_endpoint_untyped(endpoint_t::source, context_handle, ptr, dimensions);
+//		return *this;
 //	}
 
 	// TODO: Need a proper builder for copy parameters; otherwise we'll need to implement one here, when it's
@@ -464,10 +439,6 @@ protected:
 		bool value_and_width { false };
 	} was_set;
 
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 	template <typename T>
 	void set_width() {
 	}
@@ -475,28 +446,28 @@ protected:
 public:
 	const params_type& params() { return params_; }
 
-	this_type region(memory::region_t region) noexcept
+	this_type& region(memory::region_t region) noexcept
 	{
-		return do_([&] { params_.region = region; was_set.region = true;});
+		params_.region = region; was_set.region = true;
+		return *this;
 	}
 
 	template <typename T>
-	this_type value(uint32_t v) noexcept
+	this_type& value(uint32_t v) noexcept
 	{
 		static_assert(sizeof(T) <= 4, "Type of value to set is too wide; maximum size is 4");
 		static_assert(sizeof(T) != 3, "Size of type to set is not a power of 2");
 		static_assert(std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
-		return do_([&] {
-			params_.width_in_bytes = sizeof(T);
-			switch(sizeof(T)) {
-				// TODO: Maybe we should use uint_t<N> template? Maybe use if constexpr with C++17?
-			case 1:  params_.value = reinterpret_cast<uint8_t&>(v); break;
-			case 2:  params_.value = reinterpret_cast<uint16_t&>(v); break;
-			case 4:
-			default: params_.value = reinterpret_cast<uint32_t&>(v); break;
-			}
-			was_set.value_and_width = true;
-		});
+		params_.width_in_bytes = sizeof(T);
+		switch(sizeof(T)) {
+			// TODO: Maybe we should use uint_t<N> template? Maybe use if constexpr with C++17?
+		case 1:  params_.value = reinterpret_cast<uint8_t&>(v); break;
+		case 2:  params_.value = reinterpret_cast<uint16_t&>(v); break;
+		case 4:
+		default: params_.value = reinterpret_cast<uint32_t&>(v); break;
+		}
+		was_set.value_and_width = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -527,15 +498,16 @@ protected:
 		bool address { false };
 	} was_set;
 
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
-
 public:
 	const params_type& params() { return params_; }
 
-	this_type region(void* address) noexcept { return do_([&] { params_ = address; was_set.address = true;}); }
-	this_type region(memory::region_t allocated_region) noexcept { return this->region(allocated_region.data()); }
+	this_type& region(void* address) noexcept
+	{
+		params_ = address; was_set.address = true;
+		return *this;
+	}
+
+	this_type& region(memory::region_t allocated_region) noexcept { return this->region(allocated_region.data()); }
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
 	{
@@ -562,26 +534,23 @@ protected:
 	params_type params_;
 	struct {
 		bool context { false };
-		bool barrier_socpe { false };
+		bool barrier_scope { false };
 	} was_set;
-
-	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
-	// for further work via method invocation.
-	template <typename F> this_type& do_(F f) { f(); return *this; }
 
 public:
 	const params_type& params() { return params_; }
 
-	this_type context(context_t context) noexcept
+	this_type& context(context_t context) noexcept
 	{
-		return do_([&] {
-			params_.first = std::move(context);
-			was_set.context = true;});
+		params_.first = std::move(context);
+		was_set.context = true;
+		return *this;
 	}
 
-	this_type context(memory::barrier_scope_t barrier_socpe) noexcept
+	this_type& barrier_scope(memory::barrier_scope_t scope) noexcept
 	{
-		return do_([&] { params_.second = barrier_socpe; was_set.barrier_socpe = true;});
+		params_.second = scope; was_set.barrier_scope = true;
+		return *this;
 	}
 
 	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
@@ -589,7 +558,7 @@ public:
 		if (not was_set.context) {
 			throw detail::make_unspec_error("memory barrier", "CUDA context");
 		}
-		if (not was_set.barrier_socpe) {
+		if (not was_set.barrier_scope) {
 			throw detail::make_unspec_error("memory barrier", "barrier scope");
 		}
 		return graph_template.insert.node<kind>(params_);
