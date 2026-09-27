@@ -23,7 +23,7 @@ struct optional_ref {
 
 	optional_ref &operator=(const T &value) = delete;
 
-	optional_ref &operator=(const T &&value) = delete;
+	optional_ref &operator=(T &&value) = delete;
 
 	optional_ref() noexcept: ptr_(nullptr)
 	{ }
@@ -58,6 +58,9 @@ struct optional_ref {
 
 	void reset() noexcept
 	{ ptr_ = nullptr; }
+
+	void rebind(T& v) noexcept
+	{ ptr_ = &v; }
 
 protected:
 	T* ptr_;
