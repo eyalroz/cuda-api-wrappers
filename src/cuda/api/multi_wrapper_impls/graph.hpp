@@ -136,7 +136,7 @@ inline std::string identify(const node_t &node)
 
 inline auto kind_traits<kind_t::child_graph>::marshal(const parameters_type& params) -> raw_parameters_type
 {
-	return params.handle();
+	return params.template_.handle();
 }
 
 } // namespace detail
