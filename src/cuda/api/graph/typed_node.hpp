@@ -10,7 +10,6 @@
 #if CUDA_VERSION >= 10000
 
 #include "node.hpp"
-#include "../detail/for_each_argument.hpp"
 #include "../error.hpp"
 #include "../device.hpp"
 #include "../event.hpp"
@@ -148,7 +147,7 @@ struct kind_traits<kind_t::child_graph> {
 	using raw_parameters_type = template_::handle_t;
 	static constexpr bool inserter_takes_params_by_ptr = false;
 	static constexpr bool inserter_takes_context = false;
-	using parameters_type = template_t;
+	using parameters_type = struct { const template_t& template_; };
 	static constexpr auto inserter = cuGraphAddChildGraphNode; // 1 extra param
 	// no param setter!
 	static constexpr auto getter = cuGraphChildGraphNodeGetGraph;
@@ -166,7 +165,7 @@ struct kind_traits<kind_t::record_event> {
 	using raw_parameters_type = event::handle_t;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = false;
-	using parameters_type = event_t;
+	using parameters_type = struct { event_t const& event; };
 	static constexpr auto inserter = cuGraphAddEventRecordNode; // 1 extra param
 	static constexpr auto setter = cuGraphEventRecordNodeSetEvent;
 	static constexpr auto getter = cuGraphEventRecordNodeGetEvent;
@@ -174,7 +173,7 @@ struct kind_traits<kind_t::record_event> {
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
-		return params.handle();
+		return params.event.handle();
 	}
 };
 
@@ -184,7 +183,7 @@ struct kind_traits<kind_t::wait_on_event> {
 	using raw_parameters_type = event::handle_t;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = false;
-	using parameters_type = event_t;
+	using parameters_type = struct { const event_t& event; };
 	static constexpr auto inserter = cuGraphAddEventWaitNode; // 1 extra param
 	static constexpr auto setter = cuGraphEventWaitNodeSetEvent;
 	static constexpr auto getter = cuGraphEventWaitNodeGetEvent;
@@ -192,8 +191,7 @@ struct kind_traits<kind_t::wait_on_event> {
 
 	static raw_parameters_type marshal(const parameters_type& params)
 	{
-		return params.handle();
-
+		return params.event.handle();
 	}
 };
 #endif // CUDA_VERSION >= 11010
@@ -270,7 +268,7 @@ struct kind_traits<kind_t::memory_allocation> {
 	using raw_parameters_type = CUDA_MEM_ALLOC_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = std::pair<device_t, size_t>; // for now, assuming no peer access
+	using parameters_type = std::pair<const device_t&, size_t>; // for now, assuming no peer access
 	// no setter
 	static constexpr auto inserter = cuGraphAddMemAllocNode; // 1 extra param
 	// static constexpr auto setter;
@@ -357,7 +355,7 @@ struct kind_traits<kind_t::memory_barrier> {
 	using raw_parameters_type = CUDA_BATCH_MEM_OP_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = std::pair<context_t, cuda_::memory::barrier_scope_t>;
+	using parameters_type = std::pair<const context_t&, cuda_::memory::barrier_scope_t>;
 	static constexpr auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
 	static constexpr auto setter = cuGraphBatchMemOpNodeSetParams;
 	static constexpr auto getter = cuGraphBatchMemOpNodeGetParams;
