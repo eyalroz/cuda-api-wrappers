@@ -39,41 +39,38 @@ public:
 	typed_builder_t<Kind> kind() { return typed_builder_t<Kind>{}; }
 };
 
-// Note: Can't build empty vertices for now
+// TODO: Can we add empty nodes?
+// Note: Builders make (non-owning) _copies_ of wrapper classes.
 
 template <>
 class typed_builder_t<kind_t::child_graph> {
 public:
-	static constexpr kind_t kind = kind_t::child_graph;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::child_graph;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-
-	struct {
-		bool template_ { false };
-	} was_set; // Yes, this is an ugly alternative to using optionals
+	optional<template_t> template__;
 
 	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
 	// for further work via method invocation.
 public:
-	params_type& params() noexcept { return params_; }
+	params_type params() const noexcept { return { *template__ }; }
 
-	this_type& template_(template_t subgraph) {
-		params_ = std::move(subgraph);
-		was_set.template_ = true;
+	this_type& template_(template_t subgraph)
+	{
+		template__.emplace(std::move(subgraph));
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type build_within(const template_t& graph_template) const
 	{
-		if (not was_set.template_) {
+		if (not template__) {
 			throw detail::make_unspec_error("child graph", "child graph template");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::child_graph>
 
@@ -82,71 +79,61 @@ public:
 template <>
 class typed_builder_t<kind_t::record_event> {
 public:
-	static constexpr kind_t kind = kind_t::record_event;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::record_event;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-
-	struct {
-		bool event { false };
-	} was_set; // Yes, this is an ugly alternative to using optionals
+	optional_ref<event_t const> event_ {};
 
 	// This wrapper method ensures the builder-ish behavior, i.e. always returning the builder
 	// for further work via method invocation.
 
 public:
-	params_type& params() noexcept { return params_; }
+	params_type params() const noexcept { return { *event_ }; }
 
-	this_type& event(event_t event) {
-		params_ = std::move(event);
-		was_set.event = true;
+	this_type& event(const event_t& event) {
+		event_.rebind(event);
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.event) {
+		if (not event_) {
 			throw detail::make_unspec_error("record event", "event");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::record_event>
 
 template <>
 class typed_builder_t<kind_t::wait_on_event> {
 public:
-	static constexpr kind_t kind = kind_t::wait_on_event;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::wait_on_event;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-
-	struct {
-		bool event { false };
-	} was_set; // Yes, this is an ugly alternative to using optionals
+	optional_ref<const event_t> event_;
 
 public:
-	params_type& params() noexcept { return params_; }
+	params_type params() const noexcept { return { *event_ }; }
 
-	this_type& event(event_t event) {
-		params_ = std::move(event);
-		was_set.event = true;
+	this_type& event(const event_t& event) {
+		event_.rebind(event);
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.event) {
+		if (not event_) {
 			throw detail::make_unspec_error("wait on event", "event");
 		}
-		return graph_template.insert.node<kind>(std::move(params_));
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::wait_event>
 
@@ -155,82 +142,63 @@ public:
 template <>
 class typed_builder_t<kind_t::host_function_call> {
 public:
-	static constexpr kind_t kind = kind_t::host_function_call;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::host_function_call;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-
-	struct {
-		bool function_ptr_set { false };
-		bool user_argument_set {false };
-	} was_set; // Yes, this is an ugly alternative to using optionals
+	optional<stream::callback_t> function_ptr_;
+	optional<void*> user_data_;
 
 public:
-	params_type& params() noexcept { return params_; }
+	params_type params() const noexcept { return { *function_ptr_, *user_data_ }; }
 
 	this_type& function(stream::callback_t host_callback_function)
 	{
-		params_.function_ptr = std::move(host_callback_function);
-		was_set.function_ptr_set = true;
+		function_ptr_ = std::move(host_callback_function);
 		return *this;
 	}
 
 	this_type& argument(void* callback_argument)
 	{
-		params_.user_data = callback_argument;
-		was_set.user_argument_set = true;
+		user_data_ = callback_argument;
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.function_ptr_set) {
+		if (not function_ptr_) {
 			throw detail::make_unspec_error("kernel_launch", "host callback function pointer");
 		}
-		if (not was_set.user_argument_set) {
+		if (not user_data_) {
 			throw detail::make_unspec_error("kernel_launch", "user-specified callback function argument");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::host_function_call>
 
 template <>
 class typed_builder_t<kind_t::kernel_launch> {
 public:
-	static constexpr kind_t kind = kind_t::kernel_launch;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::kernel_launch;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_ {
-		kernel_t { kernel::wrap(cuda_::device::id_t(0), nullptr, nullptr) },
-		{ 0, 0 },
-		{ }
-	}; // An ugly way of constructing with invalid junk; see `was_set` below. We could
-	   // have possibly used some kind of optional
-
-	struct {
-		bool kernel { false };
-		bool launch_config { false };
-		bool marshalled_arguments { false };
-	} was_set; // Yes, this is an ugly alternative to using optionals; but - have
-	           // you ever looked at the implementation of optional?...
+	optional_ref<const kernel_t> kernel_;
+	optional<launch_configuration_t> launch_config_;
+	optional<std::vector<void*>> marshalled_arguments_;
 
 public:
-	params_type& params() noexcept { return params_; }
+	params_type params() const noexcept { return { *kernel_, *launch_config_, *marshalled_arguments_ }; }
 
-	this_type& kernel(kernel_t kernel)
+	this_type& kernel(const kernel_t& kernel)
 	{
-		// we can't just make an assignment to the `kernel` field, we have to reassign
-		// the whole structure...
-		params_ = { std::move(kernel), params_.launch_config, std::move(params_.marshalled_arguments) };
-		was_set.kernel = true;
+		kernel_.rebind(kernel);
 		return *this;
 	}
 
@@ -241,15 +209,13 @@ public:
 
 	this_type& launch_configuration(launch_configuration_t launch_config)
 	{
-		params_.launch_config = std::move(launch_config);
-		was_set.launch_config = true;
+		launch_config_ = std::move(launch_config);
 		return *this;
 	}
 
 	this_type& marshalled_arguments(std::vector<void*> argument_ptrs)
 	{
-		params_.marshalled_arguments = std::move(argument_ptrs);
-		was_set.marshalled_arguments = true;
+		marshalled_arguments_ = std::move(argument_ptrs);
 		return *this;
 	}
 
@@ -259,18 +225,18 @@ public:
 		return marshalled_arguments(make_kernel_argument_pointers(std::forward<Ts>(args)...));
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.kernel) {
+		if (not kernel_) {
 			throw detail::make_unspec_error("kernel_launch", "kernel");
 		}
-		if (not was_set.launch_config) {
+		if (not launch_config_) {
 			throw detail::make_unspec_error("kernel_launch", "launch configuration");
 		}
-		if (not was_set.marshalled_arguments) {
+		if (not marshalled_arguments_) {
 			throw detail::make_unspec_error("kernel_launch", "launch arguments");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::kernel_launch>
 
@@ -279,43 +245,37 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_allocation> {
 public:
-	static constexpr kind_t kind = kind_t::memory_allocation;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::memory_allocation;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
-	using endpoint_t = cuda_::memory::endpoint_t;
+	using endpoint_t = memory::endpoint_t;
 
 protected:
-	params_type params_;
-
-	struct {
-		bool device { false };
-		bool size_in_bytes {false };
-	} was_set; // Yes, this is an ugly alternative to using optionals
+	optional_ref<const device_t> device_;
+	optional<size_t> size_in_bytes_;
 
 public:
-	params_type& params() { return params_; }
+	params_type params() const noexcept { return { *device_, *size_in_bytes_ }; }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.device) {
+		if (not device_) {
 			throw detail::make_unspec_error("memory allocation", "device");
 		}
-		if (not was_set.size_in_bytes) {
+		if (not size_in_bytes_) {
 			throw detail::make_unspec_error("memory allocation", "allocation size in bytes");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 
-	this_type& device(device_t device) {
-		params_.first = std::move(device);
-		was_set.device = true;
+	this_type& device(const device_t& device) {
+		device_.rebind(device);
 		return *this;
 	}
 	this_type& size(size_t size) {
-		params_.second = size;
-		was_set.size_in_bytes = true;
+		size_in_bytes_ = size;
 		return *this;
 	}
 }; // typed_builder_t<kind_t::memory_allocation>
@@ -325,29 +285,30 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_copy> {
 public:
-	static constexpr kind_t kind = kind_t::memory_copy;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::memory_copy;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 	using dimensions_type = params_type::dimensions_type;
-	using endpoint_t = cuda_::memory::endpoint_t;
+	using endpoint_t = memory::endpoint_t;
 //	static constexpr dimensionality_t num_dimensions = traits::num_dimensions;
 
 
 protected:
-	params_type params_;
+	memory::copy_parameters_t<3> copy_params_ {};
 
 public:
-	params_type& params() { return params_; }
+	params_type const& params() const { return copy_params_; }
+
 //	built_type build();
 #if __cplusplus >= 201703L
 	CAW_MAYBE_UNUSED
 #endif
-	built_type	build_within(const cuda_::graph::template_t& graph_template)
+	built_type build_within(const template_t& graph_template) const
 	{
 		// TODO: What about the extent???!!!
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 
 //	this_type& context(endpoint_t endpoint, const context_t& context) noexcept
@@ -371,7 +332,7 @@ public:
 
 	template <typename... Ts>
 	this_type& source(Ts&&... args) {
-		params_.set_source(std::forward<Ts>(args)...);
+		copy_params_.set_source(std::forward<Ts>(args)...);
 		return *this;
 	}
 //
@@ -383,13 +344,13 @@ public:
 
 	template <typename... Ts>
 	this_type& destination(Ts&&... args) {
-		params_.set_destination(std::forward<Ts>(args)...);
+		copy_params_.set_destination(std::forward<Ts>(args)...);
 		return *this;
 	}
 
 	template <typename... Ts>
 	this_type& endpoint(endpoint_t endpoint, Ts&&... args) {
-		params_.set_endpoint(endpoint, std::forward<Ts>(args)...);
+		copy_params_.set_endpoint(endpoint, std::forward<Ts>(args)...);
 		return *this;
 	}
 
@@ -426,59 +387,56 @@ class typed_builder_t<kind_t::memory_set> {
 	// in non-graph context - here the only builder functionality is for graph vertex construction; so we don't
 	// do any forwarding to a rich parameters class or its own builder.
 public:
-	static constexpr kind_t kind = kind_t::memory_set;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::memory_set;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-	struct {
-		bool region { false };
-		bool value_and_width { false };
-	} was_set;
-
-	template <typename T>
-	void set_width() {
-	}
+	optional<memory::region_t> region_;
+	size_t width_ {};
+	optional<unsigned> value_;
 
 public:
-	const params_type& params() { return params_; }
+	params_type params() const { return { *region_, width_, *value_ }; }
 
 	this_type& region(memory::region_t region) noexcept
 	{
-		params_.region = region; was_set.region = true;
+		region_ = region;
 		return *this;
 	}
 
 	template <typename T>
-	this_type& value(uint32_t v) noexcept
+	this_type& value(uint32_t v) noexcept(sizeof(unsigned) < 4)
 	{
 		static_assert(sizeof(T) <= 4, "Type of value to set is too wide; maximum size is 4");
 		static_assert(sizeof(T) != 3, "Size of type to set is not a power of 2");
 		static_assert(std::is_trivially_copy_constructible<T>::value, "Only a trivially-constructible value can be used for memset'ing");
-		params_.width_in_bytes = sizeof(T);
+		width_ = sizeof(T);
 		switch(sizeof(T)) {
 			// TODO: Maybe we should use uint_t<N> template? Maybe use if constexpr with C++17?
-		case 1:  params_.value = reinterpret_cast<uint8_t&>(v); break;
-		case 2:  params_.value = reinterpret_cast<uint16_t&>(v); break;
+		case 1:  value_ = reinterpret_cast<uint8_t&>(v); break;
+		case 2:  value_ = reinterpret_cast<uint16_t&>(v); break;
 		case 4:
-		default: params_.value = reinterpret_cast<uint32_t&>(v); break;
+		default:
+			if(v > std::numeric_limits<unsigned>::max()) {
+				throw std::invalid_argument("value exceeds the representation ability of unsigned");
+			}
+			value_ = v; break;
 		}
-		was_set.value_and_width = true;
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.region) {
+		if (not region_) {
 			throw detail::make_unspec_error("memory set", "memory region");
 		}
-		if (not was_set.value_and_width) {
+		if (not value_) {
 			throw detail::make_unspec_error("memory set", "value to set");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::memory_set>
 
@@ -486,35 +444,32 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_free> {
 public:
-	static constexpr kind_t kind = kind_t::memory_free;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::memory_free;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-	struct {
-		bool address { false };
-	} was_set;
+	optional<void*> ptr_;
 
 public:
-	const params_type& params() { return params_; }
+	params_type params() { return *ptr_; }
 
-	this_type& region(void* address) noexcept
+	this_type& region(void* ptr) noexcept
 	{
-		params_ = address; was_set.address = true;
+		ptr_ = ptr;
 		return *this;
 	}
 
 	this_type& region(memory::region_t allocated_region) noexcept { return this->region(allocated_region.data()); }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template)
 	{
-		if (not was_set.address) {
-			throw detail::make_unspec_error("memory free", "allocated region starting address");
+		if (not ptr_) {
+			throw detail::make_unspec_error("memory free", "allocated region pointer");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::memory_free>
 
@@ -524,44 +479,40 @@ public:
 template <>
 class typed_builder_t<kind_t::memory_barrier> {
 public:
-	static constexpr kind_t kind = kind_t::memory_barrier;
-	using this_type = typed_builder_t<kind>;
+	static constexpr auto kind = kind_t::memory_barrier;
+	using this_type = typed_builder_t;
 	using built_type = typed_node_t<kind>;
-	using traits = cuda_::graph::node::detail::kind_traits<kind>;
+	using traits = detail::kind_traits<kind>;
 	using params_type = traits::parameters_type;
 
 protected:
-	params_type params_;
-	struct {
-		bool context { false };
-		bool barrier_scope { false };
-	} was_set;
+	optional_ref<const context_t> context_;
+	optional<memory::barrier_scope_t> barrier_scope_;
 
 public:
-	const params_type& params() { return params_; }
+	params_type params() const { return { *context_, *barrier_scope_ }; }
 
-	this_type& context(context_t context) noexcept
+	this_type& context(const context_t& context) noexcept
 	{
-		params_.first = std::move(context);
-		was_set.context = true;
+		context_.rebind(context);
 		return *this;
 	}
 
 	this_type& barrier_scope(memory::barrier_scope_t scope) noexcept
 	{
-		params_.second = scope; was_set.barrier_scope = true;
+		barrier_scope_ = scope;
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const cuda_::graph::template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
 	{
-		if (not was_set.context) {
+		if (not context_) {
 			throw detail::make_unspec_error("memory barrier", "CUDA context");
 		}
-		if (not was_set.barrier_scope) {
+		if (not barrier_scope_) {
 			throw detail::make_unspec_error("memory barrier", "barrier scope");
 		}
-		return graph_template.insert.node<kind>(params_);
+		return graph_template.insert.node<kind>(params());
 	}
 }; // typed_builder_t<kind_t::memory_barrier>
 
