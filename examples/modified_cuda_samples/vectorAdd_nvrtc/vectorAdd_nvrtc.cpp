@@ -20,7 +20,7 @@
 #include <cmath>
 #include <random>
 
-const char* vectorAdd_source = R"(
+static auto vectorAdd_source = R"(
 
 /**
  * Computes the vector addition of A and B into C. The 3 vectors have the same
@@ -35,9 +35,9 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 
 )";
 
-int main(void)
+int main()
 {
-	int numElements = 50000;
+	size_t numElements = 50000;
 	auto kernel_name = "vectorAdd";
 
 	std::cout << "[Vector addition of " << numElements << " elements]\n";
@@ -57,7 +57,7 @@ int main(void)
 	auto h_B = std::vector<float>(numElements);
 	auto h_C = std::vector<float>(numElements);
 
-	auto generator = []() {
+	auto generator = [] {
 		static std::random_device random_device;
 		static std::mt19937 randomness_generator { random_device() };
 		static std::uniform_real_distribution<float> distribution { 0.0, 1.0 };
@@ -90,8 +90,8 @@ int main(void)
 	cuda_::memory::copy(h_C, d_C);
 
 	// Verify that the result vector is correct
-	for (int i = 0; i < numElements; ++i) {
-		if (std::fabs(h_A[i] + h_B[i] - h_C[i]) > (float) 1e-5)  {
+	for (size_t i = 0; i < numElements; ++i) {
+		if (std::fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5f)  {
 			std::cerr << "Result verification failed at element " << i << "\n";
 			exit(EXIT_FAILURE);
 		}
