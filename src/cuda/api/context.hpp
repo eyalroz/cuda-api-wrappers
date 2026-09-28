@@ -415,7 +415,7 @@ public: // other non-mutator methods
 	void launch(
 		Kernel                  kernel,
 		launch_configuration_t  launch_configuration,
-		KernelParameters...     parameters) const;
+		KernelParameters...     arguments) const;
 
 	/**
 	 * Determines the balance between L1 space and shared memory space set

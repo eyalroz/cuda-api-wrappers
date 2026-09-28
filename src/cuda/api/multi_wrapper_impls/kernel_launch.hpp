@@ -26,7 +26,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 {
 	static_assert(
 		detail::all_true<is_valid_kernel_argument<detail::kernel_parameter_decay_t<KernelParameters>>::value...>::value,
@@ -52,7 +52,7 @@ void enqueue_launch(
 		detail::bool_constant<wrapped_contextual_kernel>{},
 		detail::bool_constant<library_kernel>{},
 		std::forward<Kernel>(kernel), stream, launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(arguments)...);
 }
 
 namespace detail {
@@ -213,7 +213,7 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 	const kernel::apriori_compiled_t&  wrapped_kernel,
 	const stream_t &                  stream,
 	launch_configuration_t            launch_configuration,
-	KernelParameters &&...            parameters) const
+	KernelParameters &&...            arguments) const
 {
 	using raw_kernel_t = typename kernel::detail::raw_kernel_typegen<KernelParameters ...>::type;
 	auto unwrapped_kernel_function = reinterpret_cast<raw_kernel_t>(const_cast<void *>(wrapped_kernel.ptr()));
@@ -234,14 +234,14 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 		stream.context_handle(),
 		stream.handle(),
 		launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(arguments)...);
 }
 
 template<typename... KernelParameters>
 std::array<const void*, sizeof...(KernelParameters)>
-marshal_dynamic_kernel_arguments(KernelParameters&&... parameters)
+marshal_dynamic_kernel_arguments(KernelParameters&&... arguments)
 {
-	return std::array<const void*, sizeof...(KernelParameters)> { &parameters... };
+	return std::array<const void*, sizeof...(KernelParameters)> { &arguments... };
 }
 
 // Note: The last (valid) element of marshalled_arguments must be null
@@ -333,7 +333,7 @@ void enqueue_launch(
 	RawKernelFunction&&       kernel_function,
 	const stream_t&           stream,
 	launch_configuration_t    launch_configuration,
-	KernelParameters&&...     parameters)
+	KernelParameters&&...     arguments)
 {
 	// It is assumed arguments were already been validated
 
@@ -343,7 +343,7 @@ void enqueue_launch(
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	detail::enqueue_raw_kernel_launch_in_current_context<RawKernelFunction, KernelParameters...>(
 		kernel_function, stream.device_id(), stream.context_handle(), stream.handle(), launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(arguments)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -353,7 +353,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 {
 	// It is assumed arguments were already been validated - except for:
 #ifndef NDEBUG
@@ -369,7 +369,7 @@ void enqueue_launch(
 
 	enqueue_launch_helper<typename std::decay<Kernel>::type, KernelParameters...>{}(
 		std::forward<Kernel>(kernel), stream, launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(arguments)...);
 }
 
 #if CUDA_VERSION >= 12000
@@ -380,7 +380,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 {
 	// Launch configuration is assumed to have been validated separately
 	// from the kernel, and their compatibility will be validated further
@@ -389,7 +389,7 @@ void enqueue_launch(
 	kernel_t contextualized = cuda_::contextualize(kernel, stream.context());
 	enqueue_launch_helper<kernel_t, KernelParameters...> {}(
 		contextualized, stream, launch_configuration,
-		std::forward<KernelParameters>(parameters)...);
+		std::forward<KernelParameters>(arguments)...);
 }
 #endif // CUDA_VERSION >= 12000
 
@@ -399,7 +399,7 @@ template<typename Kernel, typename... KernelParameters>
 void launch(
 	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 {
 	// Argument validation will occur within call to enqueue_launch
 
@@ -409,7 +409,7 @@ void launch(
 	// Note: If Kernel is a kernel_t, and its associated device is different
 	// than the current device, the next call will fail:
 
-	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(arguments)...);
 }
 
 template<typename Kernel, typename... KernelParameters>
@@ -417,14 +417,14 @@ void launch(
 	Kernel&&                kernel,
 	const device_t&         device,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 {
 	// Argument validation will occur within call to enqueue_launch
 	static_assert(not std::is_base_of<kernel_t, Kernel>::value,
 		"A wrapped kernel is already associated with a particular GPU device; drop the gratuitous device parameter");
 	auto primary_context = device.primary_context();
 	auto stream = primary_context.default_stream();
-	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(parameters)...);
+	enqueue_launch(kernel, stream, launch_configuration, std::forward<KernelParameters>(arguments)...);
 }
 
 template <typename SpanOfConstVoidPtrLike>

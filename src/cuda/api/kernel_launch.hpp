@@ -145,7 +145,7 @@ struct enqueue_launch_helper {
 		Kernel&&                kernel_function,
 		const stream_t &        stream,
 		launch_configuration_t  launch_configuration,
-		KernelParameters &&...  parameters) const;
+		KernelParameters &&...  arguments) const;
 };
 
 template<typename Kernel, typename... KernelParameters>
@@ -155,7 +155,7 @@ void enqueue_launch(
 	Kernel&&                kernel_function,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
@@ -164,7 +164,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
@@ -173,7 +173,7 @@ void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 
 inline void enqueue_kernel_launch_by_handle_in_current_context(
 	kernel::handle_t        kernel_function_handle,
@@ -190,7 +190,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 	context::handle_t       context_handle,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters)
+	KernelParameters&&...   arguments)
 #ifndef __CUDACC__
 // If we're not in CUDA's NVCC, this can't run properly anyway, so either we throw some
 // compilation error, or we just do nothing. For now it's option 2.
@@ -207,7 +207,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 			launch_configuration.dimensions.block,
 			launch_configuration.dynamic_shared_memory_size,
 			stream_handle
-		>>>(std::forward<KernelParameters>(parameters)...);
+		>>>(std::forward<KernelParameters>(arguments)...);
 		cuda_::outstanding_error::ensure_none("Kernel launch failed");
 	}
 	else {
@@ -226,7 +226,7 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// fill the argument array with our parameters. Yes, the use
 		// of the two terms is confusing here and depends on how you
 		// look at things.
-		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(parameters)...);
+		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(arguments)...);
 #if CUDA_VERSION >= 11000
 		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail::get_handle( (const void*) kernel_function);
 		enqueue_kernel_launch_by_handle_in_current_context(
@@ -309,7 +309,7 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
 		const kernel::apriori_compiled_t&  wrapped_kernel,
 		const stream_t &                  stream,
 		launch_configuration_t            launch_configuration,
-		KernelParameters &&...            parameters) const;
+		KernelParameters &&...            arguments) const;
 };
 
 } // namespace detail
@@ -341,14 +341,14 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
  * to use more of less blocks in the grid, to allow blocks dynamic memory, to control the block's dimensions
  * etc; this parameter defines that extra configuration outside the kernels' actual source. See also
  * @ref cuda_::launch_configuration_t.
- * @param parameters whatever parameters @p kernel_function takes
+ * @param arguments whatever parameters @p kernel_function takes
  */
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	Kernel&&                kernel,
 	const stream_t&         stream,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 
 /**
  * Variants of @ref enqueue_launch for use with the default stream
@@ -367,13 +367,13 @@ void launch(
 	Kernel&&                kernel,
 	const device_t&         device,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 
 template<typename Kernel, typename... KernelParameters>
 void launch(
 	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
-	KernelParameters&&...   parameters);
+	KernelParameters&&...   arguments);
 ///@}
 
 /**
