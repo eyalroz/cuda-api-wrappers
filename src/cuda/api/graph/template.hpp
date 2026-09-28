@@ -368,7 +368,7 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda_::detail::false_type , // inserter doesn't takes a context
+	cuda_::detail::false_type , // inserter doesn't take a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
