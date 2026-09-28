@@ -367,7 +367,7 @@ public: // mutators
 		 * @param kernel_function A wrapper around the kernel to launch
 		 * @param launch_configuration A description of how to launch the kernel (e.g.
 		 *     block and grid dimensions).
-		 * @param parameters to arguments to be passed to the kernel for this launch
+		 * @param arguments to arguments to be passed to the kernel for this launch
 		 *
 		 * @note This function is cognizant of the types of all arguments passed to it;
 		 * for a type-erased version, see @ref type_erased_kernel_launch()
@@ -376,13 +376,13 @@ public: // mutators
 		void kernel_launch(
 			const KernelFunction&       kernel_function,
 			launch_configuration_t      launch_configuration,
-			KernelParameters &&...      parameters) const
+			KernelParameters &&...      arguments) const
 		{
 			return cuda_::enqueue_launch(
 				kernel_function,
 				associated_stream,
 				launch_configuration,
-				std::forward<KernelParameters>(parameters)...);
+				std::forward<KernelParameters>(arguments)...);
 		}
 
 		/**

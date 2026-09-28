@@ -335,9 +335,9 @@ template <typename Kernel, typename ... KernelParameters>
 void context_t::launch(
 	Kernel&&                kernel,
 	launch_configuration_t  launch_configuration,
-	KernelParameters...     parameters) const
+	KernelParameters...     arguments) const
 {
-	default_stream().enqueue.kernel_launch(kernel, launch_configuration, parameters...);
+	default_stream().enqueue.kernel_launch(kernel, launch_configuration, arguments...);
 }
 
 } // namespace cuda_

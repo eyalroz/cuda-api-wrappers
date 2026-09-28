@@ -638,9 +638,8 @@ public:
 	 * @tparam Kernel May be either a plain function type (for a `__global__` function
 	 *     accessible to the translation unit, or (a reference to) any subclass of
 	 * `   `cuda_::kernel_t`.
-	 * @param kernel_function
-	 *     the kernel to launch; may be either a (`__global__`) function pointer,
-	 *     or a kernel proxy class.
+	 * @param kernel
+	*     the kernel to launch; see @tparam Kernel
 	 * @param launch_configuration
 	 *     the configuration with which to launch the kernel;
 	 * @param arguments
