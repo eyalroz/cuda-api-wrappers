@@ -174,10 +174,10 @@ template <typename Kernel, typename ... KernelParameters>
 void device_t::launch(
 	Kernel                  kernel,
 	launch_configuration_t  launch_configuration,
-	KernelParameters...     parameters) const
+	KernelParameters...     arguments) const
 {
 	auto pc = primary_context();
-	pc.launch(kernel, launch_configuration, parameters...);
+	pc.launch(kernel, launch_configuration, arguments...);
 }
 
 inline context_t device_t::create_context(
