@@ -257,7 +257,7 @@ std::string identify(const compilation_output_t<Kind> &compilation_output);
 template <source_kind_t Kind>
 compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
-	std::string            program_name,
+	std::string              program_name,
 	bool                     succeeded,
 	bool                     own_handle);
 
@@ -316,7 +316,7 @@ public: // non-mutators
 				+ std::to_string(buffer.size()) + " < " + std::to_string(size) + ": "
 				+ compilation_output::detail::identify(*this));
 		}
-		program::detail::get_log(buffer.data(), program_handle_, program_name_.c_str());
+		program::detail::get_log<Kind>(buffer.data(), program_handle_, program_name_.c_str());
 		return { buffer.data(), size };
 	}
 
@@ -400,7 +400,7 @@ public: // operators
 
 protected: // data members
 	program::handle_t<Kind>  program_handle_;
-	std::string            program_name_;
+	std::string              program_name_;
 	bool                     succeeded_;
 	bool                     owns_handle_;
 
@@ -408,16 +408,16 @@ protected: // data members
 
 /// Output of CUDA C++ code JIT-compilation
 template <>
-class compilation_output_t<cuda_cpp> : public compilation_output_base_t<cuda_cpp> {
+class compilation_output_t<cuda_cpp> final : public compilation_output_base_t<cuda_cpp> {
 public:
 	using parent = compilation_output_base_t<cuda_cpp>;
 	using parent::parent;
 
 	friend compilation_output_t compilation_output::detail::wrap<source_kind>(
-		handle_type    program_handle,
+		handle_type  program_handle,
 		std::string  program_name,
-		bool           succeeded,
-		bool           own_handle);
+		bool         succeeded,
+		bool         own_handle);
 
 public: // non-mutators
 	/**
@@ -620,14 +620,14 @@ public: // non-mutators
 #if CUDA_VERSION >= 11010
 
 template <>
-class compilation_output_t<ptx> : public compilation_output_base_t<ptx> {
+class compilation_output_t<ptx> final : public compilation_output_base_t<ptx> {
 public:
 	using parent = compilation_output_base_t<ptx>;
 	using parent::parent;
 
 	friend compilation_output_t compilation_output::detail::wrap<source_kind>(
 		handle_type    program_handle,
-		std::string  program_name,
+		std::string    program_name,
 		bool           succeeded,
 		bool           own_handle);
 
@@ -685,7 +685,7 @@ std::string identify(const compilation_output_t<Kind> &compilation_output)
 template <source_kind_t Kind>
 compilation_output_t<Kind> wrap(
 	program::handle_t<Kind>  program_handle,
-	std::string            program_name,
+	std::string              program_name,
 	bool                     succeeded,
 	bool                     own_handle)
 {
@@ -712,7 +712,7 @@ template<> inline module_t create<cuda_cpp>(
 #if CUDA_VERSION >= 11010
 	auto program_handle = compilation_output.program_handle();
 	auto program_name = compilation_output.program_name().c_str();
-	static const bool dont_fail_on_missing_cubin { false };
+	static constexpr bool dont_fail_on_missing_cubin { false };
 	auto cubin_size = rtc::program::detail::get_cubin_size<cuda_cpp, dont_fail_on_missing_cubin>(program_handle, program_name);
 	// Note: The above won't fail even if no CUBIN was produced
 	bool has_cubin = (cubin_size > 0);
@@ -729,14 +729,14 @@ template<> inline module_t create<cuda_cpp>(
 }
 
 #if CUDA_VERSION >= 11010
-template<> inline module_t create<source_kind_t::ptx>(
-	const context_t&                                      context,
-	const rtc::compilation_output_t<source_kind_t::ptx>&  compilation_output,
-	const link::options_t&                                options)
+template<> inline module_t create<ptx>(
+	const context_t&                       context,
+	const rtc::compilation_output_t<ptx>&  compilation_output,
+	const link::options_t&                 options)
 {
 	if (not compilation_output.succeeded()) {
 		throw std::invalid_argument("Attempt to create a module after compilation failure of "
-			+ cuda_::rtc::program::detail::identify<source_kind_t::ptx>(compilation_output.program_handle()));
+			+ cuda_::rtc::program::detail::identify<ptx>(compilation_output.program_handle()));
 	}
 	auto cubin = compilation_output.cubin();
 	return module::create(context, cubin.get(), options);

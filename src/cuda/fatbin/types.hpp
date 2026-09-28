@@ -1,7 +1,8 @@
 /**
  * @file
  *
- * @brief Type definitions used in CUDA real-time compilation work wrappers.
+ * @brief Type definitions used in relation to creating fatbin files using
+ * NVIDIA's fatbin creating library (nvFatbin).
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_FATBIN_BUILDER_TYPES_HPP_
