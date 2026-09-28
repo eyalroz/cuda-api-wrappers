@@ -416,8 +416,8 @@ public:
 		width_ = sizeof(T);
 		switch(sizeof(T)) {
 			// TODO: Maybe we should use uint_t<N> template? Maybe use if constexpr with C++17?
-		case 1:  value_ = reinterpret_cast<uint8_t&>(v); break;
-		case 2:  value_ = reinterpret_cast<uint16_t&>(v); break;
+		case 1:  value_ = v & ~uint8_t{0}; break;
+		case 2:  value_ = v & ~uint16_t{0}; break;
 		case 4:
 		default:
 			if(v > std::numeric_limits<unsigned>::max()) {
