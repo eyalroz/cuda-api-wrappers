@@ -365,7 +365,7 @@ node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 
 template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> build_params_and_insert_node_wrapper(
-	cuda_::detail::false_type , // inserter doesn't takes a context
+	cuda_::detail::false_type , // inserter doesn't take a context
 	template_::handle_t graph_template_handle,
 	Ts&&... params_ctor_args)
 {
@@ -844,7 +844,7 @@ node::typed_node_t<Kind> insert_node(
 	using traits_type = typename node::detail::kind_traits<Kind>;
 	node::parameters_t<Kind> params { std::forward<NodeParametersCtorParams>(node_parameters_ctor_params)... };
 	auto raw_params = traits_type::marshal(params);
-	auto untyped_node = template_::detail::insert_node(graph.handle(), raw_params, dependencies);
+	auto untyped_node = template_::detail::insert_node<Kind>(graph.handle(), raw_params, dependencies);
 	return node::wrap<Kind>(untyped_node.containing_graph(), untyped_node.handle(), params);
 	// Remember: untyped_node is not an owning object, so nothing is released (nor
 	// is ownership passed in the returned typed_node

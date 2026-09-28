@@ -11,9 +11,6 @@
 #include "types.hpp"
 #include "error.hpp"
 
-#include <ostream>
-#include <utility>
-
 namespace cuda_ {
 
 /**

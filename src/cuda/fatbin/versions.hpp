@@ -1,10 +1,8 @@
 /**
  * @file
  *
- * @brief Wrappers for Runtime API functions involving versions -
- * of the CUDA runtime and of the CUDA driver. Also defines a @ref cuda_::version_t
- * class for working with such versions (as they are not really single
- * numbers) - which is what the wrappers return.
+ * @brief A function for obtaining the version of the NVIDIA's
+ * fatbin creating library (nvFatbin).
  */
 #pragma once
 #ifndef CUDA_API_WRAPPERS_FATBIN_VERSIONS_HPP_

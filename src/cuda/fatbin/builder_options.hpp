@@ -23,22 +23,6 @@ class module_t;
 namespace fatbin_builder {
 
 
-/*
-
-Fatbin options (not including deprecated ones):
-
- -compress=<bool> Enable (true) / disable (false) compression (default: true).
-
- -compress-all Compress everything in the fatbin, even if it’s small.
-
- -cuda Specify CUDA (rather than OpenCL).
- -opencl Specify OpenCL (rather than CUDA).
- -host=<name>   Specify host operating system. Valid options are “linux”, “windows” (“mac”  is deprecated)
-
- -g Generate debug information.
-
-*/
-
 struct options_t final {
 
 	enum : bool {

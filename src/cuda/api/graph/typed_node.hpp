@@ -230,7 +230,10 @@ struct kind_traits<kind_t::kernel_launch> {
 	struct parameters_type {
 		kernel_t kernel;
 		launch_configuration_t launch_config;
-		std::vector<void*> marshalled_arguments; // Does _not_ need a nullptr "argument" terminator
+		// Notes:
+		// 1. Does _not_ need a nullptr terminator value
+		// 2. We _could_ have taken a dynarray, but... let's keep it like this for now
+		std::vector<void*> marshalled_arguments;
 	};
 	static constexpr auto inserter = cuGraphAddKernelNode; // 1 extra param
 	static constexpr auto setter = cuGraphKernelNodeSetParams;
@@ -257,6 +260,7 @@ struct kind_traits<kind_t::kernel_launch> {
 		raw_params.sharedMemBytes = params.launch_config.dynamic_shared_memory_size;
 		raw_params.kernelParams = const_cast<decltype(raw_params.kernelParams)>(params.marshalled_arguments.data());
 		raw_params.extra = nullptr; // we don't use "extra"
+		// Not setting kern and ctx - since we've set func
 		return raw_params;
 	}
 };

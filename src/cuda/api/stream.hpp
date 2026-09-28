@@ -11,11 +11,9 @@
 #define CUDA_API_WRAPPERS_STREAM_HPP_
 
 #include "current_context.hpp"
-#include "current_device.hpp"
 #include "error.hpp"
 #include "kernel_launch.hpp"
 #include "memory.hpp"
-#include "miscellany.hpp"
 #include "types.hpp"
 
 #if CUDA_VERSION >= 10000
@@ -25,7 +23,6 @@
 #include <string>
 #include <memory>
 #include <utility>
-#include <tuple>
 #include <algorithm>
 
 namespace cuda_ {
@@ -70,7 +67,7 @@ enum wait_condition_t : unsigned {
  * Possible synchronization behavior of a host thread when performing a synchronous action
  * on a stream (in particular, synchronizing with a stream).
  */
-enum synchronization_policy_t : typename std::underlying_type<CUsynchronizationPolicy>::type {
+enum synchronization_policy_t : std::underlying_type<CUsynchronizationPolicy>::type {
 	/**
 	 * @todo Figure out what this default actually is!
 	 */
@@ -113,7 +110,7 @@ std::string identify(const stream_t& stream);
 
 inline handle_t create_raw_in_current_context(
 	bool          synchronizes_with_default_stream,
-	priority_t    priority = stream::default_priority
+	priority_t    priority = default_priority
 )
 {
 	const unsigned int flags = (synchronizes_with_default_stream == sync) ?
@@ -366,7 +363,7 @@ public: // mutators
 		/**
 		 * Schedule a kernel launch on the associated stream
 		 *
-		 * @param kernel A wrapper around the kernel to launch
+		 * @param kernel_function A wrapper around the kernel to launch
 		 * @param launch_configuration A description of how to launch the kernel (e.g.
 		 *     block and grid dimensions).
 		 * @param parameters to arguments to be passed to the kernel for this launch
@@ -966,7 +963,7 @@ public: // friendship
 	 * and the other isn't, or if only one holds a primary context reference unit
 	 * and the other doesn't.
 	 */
-	friend inline bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
+	friend bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
 	{
 		return
 			lhs.context_handle_ == rhs.context_handle_
@@ -1021,7 +1018,7 @@ inline stream_t create(
 	device::id_t       device_id,
 	context::handle_t  context_handle,
 	bool               synchronizes_with_default_stream = async,
-	priority_t         priority = stream::default_priority,
+	priority_t         priority = default_priority,
 	bool               hold_pc_refcount_unit = false)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
@@ -1114,7 +1111,7 @@ stream_t create(
 stream_t create(
 	const context_t&  context,
 	bool              synchronizes_with_default_stream = async,
-	priority_t        priority = stream::default_priority,
+	priority_t        priority = default_priority,
 	bool              hold_pc_refcount_unit = false);
 ///@}
 
