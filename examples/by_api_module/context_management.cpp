@@ -116,12 +116,6 @@ void current_context_manipulation(
 
 	auto context_3 = cuda_::context::create_and_push(device);
 
-//	std::cout << "Contexts:\n";
-//	std::cout << "context_0: " << context_0 << '\n';
-//	std::cout << "context_1: " << context_1 << '\n';
-//	std::cout << "context_2: " << context_2 << '\n';
-//	std::cout << "context_3: " << context_3 << '\n';
-
 	{
 		cuda_::context::current::scoped_override_t context_for_this_block { context_3 };
 		assert_(context_3.handle() == cuda_::context::current::get().handle());
@@ -158,8 +152,6 @@ int main(int argc, char **argv)
 
 	auto pc = device.primary_context();
 
-	// std::cout << "New PC handle = " << pc.handle() << " ; old PC handle = " << original_pc.handle() << "\n";
-
 	cuda_::device::primary_context::detail::increase_refcount(device.id());
 
 	cuda_::context::current::push(pc);
@@ -179,14 +171,11 @@ int main(int argc, char **argv)
 	current_context_manipulation(device, pc, created_context);
 
 	std::cout << std::endl;
-//	report_context_stack("After current_context_manipulation");
 	cuda_::context::current::push(created_context);
 	cuda_::context::current::push(created_context);
 	// We should have 3 copies of created_context on the stack at this point, and nothing else
 	cudaSetDevice(device_id);
-//	report_context_stack("After cudaSetDevice " + std::to_string(device_id));
 	// We should have the primary context of the device
-
 
 	device.synchronize();
 	device.reset();
