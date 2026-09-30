@@ -13,10 +13,7 @@
 
 #include "../array.hpp"
 #include "../device.hpp"
-#include "../event.hpp"
 #include "../primary_context.hpp"
-#include "../current_context.hpp"
-#include "../current_device.hpp"
 #include "../texture_view.hpp"
 
 namespace cuda_ {

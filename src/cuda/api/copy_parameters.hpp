@@ -8,8 +8,6 @@
 
 #include "array.hpp"
 #include "pointer.hpp"
-#include "constants.hpp"
-#include "error.hpp"
 
 namespace cuda_ {
 

@@ -14,8 +14,6 @@
 // and kernel-attribute-related API functions
 #include <cuda_runtime.h>
 
-#include <type_traits>
-
 namespace cuda_ {
 
 namespace kernel {

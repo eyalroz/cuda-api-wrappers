@@ -18,7 +18,6 @@
 #include "../stream.hpp"
 #include "../primary_context.hpp"
 #include "../current_context.hpp"
-#include "../current_device.hpp"
 #include "../peer_to_peer.hpp"
 
 #include "../types.hpp"

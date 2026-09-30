@@ -11,9 +11,6 @@
 
 #include "types.hpp"
 
-#include <cuda_runtime_api.h>
-
-#include <type_traits>
 #include <string>
 #include <stdexcept>
 

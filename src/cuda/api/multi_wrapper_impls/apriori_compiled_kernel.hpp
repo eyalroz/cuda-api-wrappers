@@ -12,7 +12,7 @@
 #define MULTI_WRAPPER_IMPLS_APRIORI_COMPILED_KERNEL_HPP_
 
 #include "../kernels/apriori_compiled.hpp"
-#include "device.hpp"
+#include "../device.hpp"
 #include "kernel.hpp"
 
 namespace cuda_ {

@@ -13,11 +13,6 @@
 
 #include "types.hpp"
 
-#include <cuda_runtime_api.h>
-
-#include <stdexcept>
-
-
 // The following un-definitions avoid warnings about
 // the use of `major` and `minor` in certain versions
 // of the GNU C library

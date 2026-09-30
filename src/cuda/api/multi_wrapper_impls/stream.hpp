@@ -11,16 +11,11 @@
 #ifndef MULTI_WRAPPER_IMPLS_STREAM_HPP_
 #define MULTI_WRAPPER_IMPLS_STREAM_HPP_
 
-#include "../array.hpp"
 #include "../device.hpp"
 #include "../event.hpp"
-#include "../kernel_launch.hpp"
-#include "../pointer.hpp"
 #include "../stream.hpp"
 #include "../primary_context.hpp"
-#include "../kernel.hpp"
 #include "../current_context.hpp"
-#include "../current_device.hpp"
 
 namespace cuda_ {
 

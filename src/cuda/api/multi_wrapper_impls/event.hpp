@@ -15,13 +15,7 @@
 #include "../event.hpp"
 #include "../stream.hpp"
 #include "../primary_context.hpp"
-#include "../virtual_memory.hpp"
 #include "../current_context.hpp"
-#include "../current_device.hpp"
-
-#include <type_traits>
-#include <vector>
-#include <algorithm>
 
 namespace cuda_ {
 

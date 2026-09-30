@@ -13,7 +13,6 @@
 #include "../memory.hpp"
 #include "../stream.hpp"
 #include "../kernel_launch.hpp"
-#include "../pointer.hpp"
 #include "../device.hpp"
 
 // The following is needed for occupancy-related calculation convenience functions
