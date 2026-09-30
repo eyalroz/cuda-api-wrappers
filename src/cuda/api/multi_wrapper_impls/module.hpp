@@ -125,7 +125,7 @@ inline CUsurfref module_t::get_surface(const char* name) const
 	CUsurfref raw_surface_reference;
 	auto status = cuModuleGetSurfRef(&raw_surface_reference, handle_, name);
 	throw_if_error_lazy(status, std::string("Failed obtaining a reference to surface \"") + name + "\" from "
-		+ module::detail::identify(*this));
+		+ cuda_::module::detail::identify(*this));
 	return raw_surface_reference;
 }
 
@@ -135,11 +135,10 @@ inline CUtexref module_t::get_texture_reference(const char* name) const
 	CUtexref raw_texture_reference;
 	auto status = cuModuleGetTexRef(&raw_texture_reference, handle_, name);
 	throw_if_error_lazy(status, std::string("Failed obtaining a reference to texture \"") + name + "\" from "
-		+ module::detail::identify(*this));
+		+ cuda_::module::detail::identify(*this));
 	return raw_texture_reference;
 }
 #endif
-
 
 } // namespace cuda_
 

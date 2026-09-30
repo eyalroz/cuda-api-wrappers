@@ -480,8 +480,9 @@ inline instance_t instantiate(
 	auto log_buffer = make_unique_span<char>(log_buffer_size);
 	node::handle_t error_node;
 	auto status = cuGraphInstantiate(&instance_handle, template_.handle(), &error_node, log_buffer.data(), log_buffer_size);
-	throw_if_error_lazy(status, "Instantiating " + template_::detail::identify(template_) + ": error at "
-		+ node::detail::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
+	throw_if_error_lazy(status, "Instantiating " + cuda_::graph::template_::detail::identify(template_)
+		+ ": error at "		+ cuda_::graph::node::detail::identify(error_node)
+		+ " ; log buffer contents:\n" + log_buffer.data());
 #endif // CUDA_VERSION >= 11000
 	static constexpr bool is_owning { true };
 	return instance::wrap(template_.handle(), instance_handle, is_owning);

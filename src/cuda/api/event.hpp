@@ -113,8 +113,6 @@ event_t wrap(
 	bool               take_ownership = false,
 	bool               hold_pc_refcount_unit = false) noexcept;
 
-std::string identify(const event_t& event);
-
 } // namespace event
 
 /**
@@ -322,11 +320,6 @@ inline event_t wrap(
 }
 
 namespace detail {
-
-inline std::string identify(const event_t& event)
-{
-	return identify(event.handle(), event.context_handle(), event.device_id());
-}
 
 inline handle_t create_raw_in_current_context(flags_t flags = 0u)
 {

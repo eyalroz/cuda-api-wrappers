@@ -43,7 +43,6 @@ namespace library {
 
 namespace kernel {
 
-using handle_t = CUkernel;
 using cuda_::kernel::attribute_t;
 using cuda_::kernel::attribute_value_t;
 // using cuda_::kernel::apriori_compiled::attributes_t;
@@ -53,18 +52,6 @@ namespace detail {
 // Note: library kernels never hold a PC refcount unit, nor do they own anything;
 // only the library wrapper owns (and it's not associated with the kernel).
 kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle);
-
-inline std::string identify(kernel::handle_t handle)
-{
-	return "library kernel at " + cuda_::detail::ptr_as_hex(handle);
-}
-
-inline std::string identify(library::handle_t library_handle, kernel::handle_t handle)
-{
-	return identify(handle) + " within " + library::detail::identify(library_handle);
-}
-
-std::string identify(const kernel_t &kernel);
 
 inline std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_context(
 	const kernel::handle_t& library_kernel_handle)
@@ -160,7 +147,7 @@ public: // non-mutators
 		if (name_ != nullptr) { return name_; }
 		const char* result;
 		auto status = cuKernelGetName(&result, handle_);
-		throw_if_error_lazy(status, "Retrieving the name of " + kernel::detail::identify(*this));
+		throw_if_error_lazy(status, "Retrieving the name of " + library::kernel::detail::identify(*this));
 		name_ = result;
 		return name_;
 	}
@@ -194,11 +181,6 @@ namespace detail {
 inline kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle)
 {
 	return {library_handle, handle};
-}
-
-inline std::string identify(const kernel_t& library_kernel)
-{
-	return identify(library_kernel.library_handle(), library_kernel.handle());
 }
 
 } // namespace detail

@@ -65,8 +65,6 @@ kernel_t wrap(
 
 namespace detail {
 
-inline std::string identify(const kernel_t& kernel);
-
 static const char* attribute_name(int attribute_index)
 {
 	// Note: These correspond to the values of enum CUfunction_attribute_enum
@@ -535,15 +533,6 @@ inline grid::dimension_t max_active_blocks_per_multiprocessor(
 	bool disable_caching_override = false);
 
 } // namespace occupancy
-
-namespace detail {
-
-inline std::string identify(const kernel_t& kernel)
-{
-	return kernel::detail::identify(kernel.handle()) + " in " + context::detail::identify(kernel.context());
-}
-
-} // namespace detail
 
 } // namespace kernel
 

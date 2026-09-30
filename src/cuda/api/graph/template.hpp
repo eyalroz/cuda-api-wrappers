@@ -111,7 +111,7 @@ template_t wrap(handle_t handle, bool take_ownership = false) noexcept;
 
 namespace detail {
 
-std::string identify(const template_t& template_);
+std::string identify(const template_t& graph_template);
 
 #if CUDA_VERSION >= 13010
 inline id_t get_id(handle_t handle)

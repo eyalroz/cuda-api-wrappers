@@ -15,6 +15,25 @@
 
 namespace cuda_ {
 
+class context_t;
+class stream_t;
+class event_t;
+class module_t;
+#if CUDA_VERSION >= 12000
+class library_t;
+#endif
+class kernel_t;
+namespace graph { class node_t; }
+namespace memory {
+class pool_t;
+class physical_allocation_t;
+namespace virtual_ { class mapping_t; }
+} // namespace memory
+namespace kernel { class apriori_compiled_t; }
+#if CUDA_VERSION >= 12000
+namespace library { class kernel_t; }
+#endif
+
 namespace detail {
 
 template <typename I, bool UpperCase = false>
@@ -58,7 +77,10 @@ inline std::string identify(device::id_t device_id)
 } // namespace device
 
 namespace context {
+
 namespace detail {
+
+std::string identify(const context_t& context);
 
 inline std::string identify(handle_t handle)
 {
@@ -106,6 +128,8 @@ inline std::string identify(handle_t handle)
 namespace stream {
 namespace detail {
 
+std::string identify(const stream_t& stream);
+
 inline std::string identify(handle_t handle)
 {
 	return (handle == nullptr) ? "default/null stream" :
@@ -129,6 +153,9 @@ inline std::string identify(handle_t handle, context::handle_t context_handle, d
 
 namespace event {
 namespace detail {
+
+std::string identify(const event_t& event);
+
 inline std::string identify(handle_t handle)
 {
 	return "event " + cuda_::detail::ptr_as_hex(handle);
@@ -159,6 +186,8 @@ inline std::string identify(handle_t handle)
 
 namespace kernel {
 namespace detail {
+
+std::string identify(const kernel_t& kernel);
 
 inline std::string identify(const void* ptr)
 {
@@ -194,6 +223,17 @@ inline std::string identify(handle_t handle, context::handle_t context_handle, d
 }
 
 } // namespace detail
+
+namespace apriori_compiled {
+
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
+namespace detail {
+inline std::string identify(const apriori_compiled_t& kernel);
+} // namespace detail
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
+
+} // namespace apriori_compiled
+
 } // namespace kernel
 
 namespace memory {
@@ -240,6 +280,51 @@ inline std::string identify(const void* ptr)
 } // namespace detail
 } // namespace ipc
 
+#if CUDA_VERSION >= 10000
+namespace external {
+namespace detail {
+
+inline std::string identify(subregion_spec_t subregion_spec)
+{
+	return "subregion of size " + std::to_string(subregion_spec.size)
+		   + " at offset " + std::to_string(subregion_spec.offset);
+}
+
+inline std::string identify(handle_t handle)
+{
+	return "external memory resource at " + cuda_::detail::ptr_as_hex(handle);
+}
+
+std::string identify(descriptor_t descriptor);
+std::string identify(handle_t handle, descriptor_t descriptor);
+
+} // namespace detail
+
+} // namespace external
+#endif // CUDA_VERSION >= 10000
+
+#if CUDA_VERSION >= 11020
+namespace pool {
+
+namespace detail {
+
+inline std::string identify(pool::handle_t handle)
+{
+	return "memory pool at " + cuda_::detail::ptr_as_hex(handle);
+}
+
+inline std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
+{
+	return identify(handle) + " on " + cuda_::device::detail::identify(device_id);
+}
+
+std::string identify(const pool_t &pool);
+
+} // namespace detail
+
+} // namespace pool
+#endif // CUDA_VERSION >= 11020
+
 } // namespace memory
 
 namespace link {
@@ -265,6 +350,15 @@ inline std::string identify(handle_t handle)
 } // namespace texture
 
 namespace memory {
+
+namespace physical_allocation {
+namespace detail {
+
+std::string identify(physical_allocation_t const& physical_allocation);
+
+} // namespace detail
+} // namespace physical_allocation
+
 namespace virtual_ {
 
 #if CUDA_VERSION >= 10020
@@ -279,6 +373,7 @@ inline std::string identify(cuda_::detail::tagged<reserved_address_range_t, regi
 } // namespace reservation
 #endif // CUDA_VERSION >= 10020
 
+
 namespace mapping {
 
 namespace detail {
@@ -292,7 +387,113 @@ inline std::string identify(region_t address_range) {
 } // namespace mapping
 
 } // namespace virtual_
+
+#if CUDA_VERSION >= 10020
+namespace physical_allocation {
+
+namespace detail {
+
+inline std::string identify(handle_t handle, size_t size) {
+	return std::string("physical allocation with handle ") + std::to_string(handle)
+		+ " of size " + std::to_string(size);
+}
+
+} // namespace detail
+
+} // namespace physical_allocation
+#endif // CUDA_VERSION >= 10020
+
+namespace virtual_ {
+namespace detail {
+
+std::string identify(mapping_t const& mapping);
+
+} // namespace detail
+} // namespace virtual_
+
 } // namespace memory
+
+namespace graph {
+
+
+namespace node {
+
+namespace detail {
+
+std::string identify(const node_t &node);
+
+} // namespace detail
+} // namespace node
+} // namespace graph
+
+namespace module {
+
+namespace detail {
+
+inline std::string identify(module::handle_t handle)
+{
+	return std::string("module ") + cuda_::detail::ptr_as_hex(handle);
+}
+
+inline std::string identify(module::handle_t handle, context::handle_t context_handle)
+{
+	return identify(handle) + " in " + context::detail::identify(context_handle);
+}
+
+inline std::string identify(module::handle_t handle, context::handle_t context_handle, device::id_t device_id)
+{
+	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
+}
+
+std::string identify(const module_t &module);
+
+} // namespace detail
+
+} // namespace module
+
+#if CUDA_VERSION >= 12000
+namespace library {
+
+namespace detail {
+
+inline std::string identify(const handle_t &handle)
+{
+	return std::string("library ") + cuda_::detail::ptr_as_hex(handle);
+}
+
+std::string identify(const library_t& library);
+
+} // namespace detail
+
+namespace kernel {
+
+namespace detail {
+
+inline std::string identify(kernel::handle_t handle)
+{
+	return "library kernel at " + cuda_::detail::ptr_as_hex(handle);
+}
+
+inline std::string identify(library::handle_t library_handle, kernel::handle_t handle)
+{
+	return identify(handle) + " within " + library::detail::identify(library_handle);
+}
+
+std::string identify(const library::kernel_t &kernel);
+
+} // namespace detail
+
+} // namespace kernel
+
+} // namespace library
+#endif // CUDA_VERSION >= 12000
+
+namespace kernel {
+
+inline std::string identify(const kernel_t& kernel);
+
+} // namespace kernel
+
 
 } // namespace cuda_
 

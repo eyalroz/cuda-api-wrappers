@@ -624,8 +624,9 @@ inline permissions_t from_flags(CUmemAccess_flags access_flags)
 
 } // namespace permissions
 
-
 namespace physical_allocation {
+
+using handle_t = CUmemGenericAllocationHandle;
 
 /// The different kinds of memory handles the CUDA driver recognizes, and can possibly
 /// utilize
@@ -808,6 +809,9 @@ struct subregion_spec_t {
 	size_t offset;
 	size_t size;
 };
+
+/// Raw CUDA descriptor of an external memory resource
+using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
 
 } // namespace external
 
@@ -1094,6 +1098,15 @@ using handle_t = CUgraphExec;
 
 #endif // CUDA_VERSION >= 10000
 
-} // namespace cuda
+#if CUDA_VERSION >= 12000
+namespace library {
+using handle_t = CUlibrary;
+namespace kernel {
+using handle_t = CUkernel; // Don't be confused; a context-associated kernel is a CUfunction :-(
+} // namespace kernel
+} // namespace library
+#endif // CUDA_VERSION >= 12000
+
+} // namespace cuda_
 
 #endif // CUDA_API_WRAPPERS_COMMON_TYPES_HPP_

@@ -36,38 +36,12 @@ enum kind_t : std::underlying_type<CUexternalMemoryHandleType_enum>::type {
 #endif // CUDA_VERSION >= 10200
 };
 
-/// Raw CUDA descriptor of an external memory resource
-using descriptor_t = CUDA_EXTERNAL_MEMORY_HANDLE_DESC;
-
 namespace detail {
-
 
 inline void destroy(handle_t handle)
 {
 	auto status = cuDestroyExternalMemory(handle);
 	throw_if_error_lazy(status, std::string("Destroying a memory resource"));
-}
-
-inline std::string identify(subregion_spec_t subregion_spec)
-{
-	return "subregion of size " + std::to_string(subregion_spec.size)
-		   + " at offset " + std::to_string(subregion_spec.offset);
-}
-
-inline std::string identify(handle_t handle)
-{
-	return "external memory resource at " + cuda_::detail::ptr_as_hex(handle);
-}
-
-inline std::string identify(descriptor_t descriptor)
-{
-	return "external memory resource of kind " + std::to_string(descriptor.type);
-}
-
-inline std::string identify(handle_t handle, descriptor_t descriptor)
-{
-	return "external memory resource of kind " + std::to_string(descriptor.type)
-		   + " at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 inline handle_t import(const descriptor_t& descriptor)

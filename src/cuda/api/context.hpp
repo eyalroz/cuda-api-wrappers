@@ -9,6 +9,7 @@
 
 #include "current_context.hpp"
 #include "versions.hpp"
+#include "identify.hpp"
 #include "error.hpp"
 #include "constants.hpp"
 #include "types.hpp"
@@ -87,8 +88,6 @@ context_t wrap(
 	bool               take_ownership = false) noexcept;
 
 namespace detail {
-
-std::string identify(const context_t& context);
 
 inline limit_value_t get_limit(limit_t limit_id)
 {
@@ -929,15 +928,6 @@ inline context_t get_with_fallback_push()
 
 /// @return true if the context is the primary context of its device
 bool is_primary(const context_t& context);
-
-namespace detail {
-
-inline std::string identify(const context_t& context)
-{
-	return identify(context.handle(), context.device_id());
-}
-
-} // namespace detail
 
 } // namespace context
 

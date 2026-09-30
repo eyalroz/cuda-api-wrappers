@@ -70,6 +70,7 @@
 #include "api/graph/instance.hpp"
 #endif // CUDA_VERSION >= 10000
 
+#include "api/multi_wrapper_impls/identify.hpp"
 #include "api/multi_wrapper_impls/pointer.hpp"
 #include "api/multi_wrapper_impls/array.hpp"
 #include "api/multi_wrapper_impls/event.hpp"

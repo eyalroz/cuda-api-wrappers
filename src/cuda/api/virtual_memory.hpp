@@ -8,6 +8,9 @@
 // the CUDA_VERSION is...
 #include <cuda.h>
 
+#include "types.hpp"
+#include "identify.hpp"
+
 #if CUDA_VERSION >= 10020
 #include "types.hpp"
 #include "error.hpp"
@@ -26,8 +29,6 @@ class physical_allocation_t;
 ///@endcond
 
 namespace physical_allocation {
-
-using handle_t = CUmemGenericAllocationHandle;
 
 namespace detail {
 
@@ -132,7 +133,7 @@ inline status_t cancel_reservation_nothrow(
 inline void cancel_reservation(memory::region_t reserved)
 {
 	auto status = cancel_reservation_nothrow(reserved);
-	throw_if_error_lazy(status, "Failed freeing a reservation of " + memory::detail::identify(reserved));
+	throw_if_error_lazy(status, "Failed freeing a reservation of " + cuda_::memory::detail::identify(reserved));
 }
 
 } // namespace detail
@@ -286,11 +287,6 @@ physical_allocation_t create(size_t size, device_t device);
 
 namespace detail {
 
-inline std::string identify(handle_t handle, size_t size) {
-	return std::string("physical allocation with handle ") + std::to_string(handle)
-		+ " of size " + std::to_string(size);
-}
-
 inline physical_allocation_t wrap(handle_t handle, size_t size, bool holds_refcount_unit) noexcept
 {
 	return { handle, size, holds_refcount_unit };
@@ -327,14 +323,6 @@ physical_allocation_t import(shared_handle_t<SharedHandleKind> shared_handle, si
 	throw_if_error_lazy(result, "Failed importing a virtual memory physical_allocation from a shared handle ");
 	return physical_allocation::detail::wrap(result_handle, size, holds_refcount_unit);
 }
-
-namespace detail {
-
-inline std::string identify(const physical_allocation_t& physical_allocation) {
-	return identify(physical_allocation.handle(), physical_allocation.size());
-}
-
-} // namespace detail
 
 } // namespace physical_allocation
 
@@ -519,11 +507,6 @@ namespace detail {
 mapping_t wrap(region_t address_range, bool owning) noexcept
 {
 	return { address_range, owning };
-}
-
-inline std::string identify(mapping_t const& mapping)
-{
-	return detail::identify(mapping.address_range());
 }
 
 } // namespace detail
