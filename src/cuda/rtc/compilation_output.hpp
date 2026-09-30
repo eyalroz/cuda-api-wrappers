@@ -7,13 +7,9 @@
 #ifndef CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_
 #define CUDA_API_WRAPPERS_RTC_OUTPUT_HPP_
 
-#include "compilation_options.hpp"
 #include "error.hpp"
 #include "types.hpp"
 #include "../api.hpp"
-
-#include <vector>
-#include <iostream>
 
 namespace cuda_ {
 

@@ -8,15 +8,7 @@
 #ifndef MULTI_WRAPPER_IMPLS_GRAPHS_HPP_
 #define MULTI_WRAPPER_IMPLS_GRAPHS_HPP_
 
-#include "../device.hpp"
-#include "../pointer.hpp"
-#include "../memory.hpp"
-#include "../primary_context.hpp"
 #include "../stream.hpp"
-#include "../virtual_memory.hpp"
-#include "../kernel.hpp"
-#include "../event.hpp"
-#include "../kernels/apriori_compiled.hpp"
 #include "../current_context.hpp"
 #include "../graph/node.hpp"
 #include "../graph/template.hpp"

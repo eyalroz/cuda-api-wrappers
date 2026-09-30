@@ -11,7 +11,6 @@
 #include "types.hpp"
 #include "device.hpp"
 
-#include <array>
 
 namespace cuda_ {
 
@@ -126,7 +125,7 @@ const char* name(caching_mode_t<Op> mode)
 template <memory_operation_t Op>
 std::ostream& operator<< (std::ostream& os, caching_mode_t<Op> lcm)
 {
-	return os << detail::name(lcm);
+	return os << detail::name<Op>(lcm);
 }
 ///@endcond
 

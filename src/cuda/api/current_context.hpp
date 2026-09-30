@@ -6,8 +6,8 @@
 #define CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 
 #include "error.hpp"
-#include "constants.hpp"
 #include "types.hpp"
+#include "constants.hpp"
 
 namespace cuda_ {
 

@@ -8,7 +8,6 @@
 #ifndef CUDA_API_WRAPPERS_TYPE_TRAITS_HPP
 #define CUDA_API_WRAPPERS_TYPE_TRAITS_HPP
 
-#include "preamble.hpp"
 #include <type_traits>
 
 namespace cuda_ {
@@ -63,6 +62,5 @@ struct is_kinda_like_contiguous_container :
 } // namespace detail
 
 } // namespace cuda_
-
 
 #endif //CUDA_API_WRAPPERS_TYPE_TRAITS_HPP

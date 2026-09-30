@@ -12,7 +12,6 @@
 #define MULTI_WRAPPER_IMPLS_KERNEL_HPP_
 
 #include "../device.hpp"
-#include "../pointer.hpp"
 #include "../primary_context.hpp"
 #include "../kernel.hpp"
 #include "../module.hpp"

@@ -21,7 +21,6 @@
 
 #include <string>
 #include <cstring>
-#include <type_traits>
 
 namespace cuda_ {
 

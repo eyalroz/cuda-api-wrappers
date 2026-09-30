@@ -11,11 +11,12 @@
 
 #include "types.hpp"
 
-#include <chrono> // for duration types
 #include "constants.hpp"
 #include "current_device.hpp"
 #include "error.hpp"
 #include "ipc.hpp"
+
+#include <chrono> // for duration types
 
 namespace cuda_ {
 

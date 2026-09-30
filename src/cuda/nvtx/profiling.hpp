@@ -41,7 +41,6 @@
 #endif
 
 #include <mutex>
-#include <cstdint>
 #include <string>
 #include <cstdint>
 #include <thread>

@@ -16,12 +16,9 @@
 
 #include <unordered_map>
 #include <unordered_set>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <cstring>
-#include <limits>
-#include <iterator>
 
 namespace cuda_ {
 
