@@ -242,7 +242,7 @@ set_target_properties(chunks_in_streams PROPERTIES
 	CUDA_STANDARD_REQUIRED ON
 	CUDA_EXTENSIONS OFF)
 add_executable(inclusion_in_two_translation_units other/inclusion_in_two_translation_units/main.cpp other/inclusion_in_two_translation_units/second_tu.cpp)
-target_link_libraries(inclusion_in_two_translation_units ${rtc_lib_tgt} ${nvtx_lib_tgt})
+target_link_libraries(inclusion_in_two_translation_units ${rtc_lib_tgt} ${nvtx_lib_tgt} ${fatbin_lib_tgt})
 if( NOT MSVC )
 	foreach(std_version "14" "17" "20" "23")
 		if("cxx_std_${std_version}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
