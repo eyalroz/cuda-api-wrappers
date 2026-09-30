@@ -28,14 +28,6 @@ class kernel_t;
 
 namespace library {
 
-using handle_t = CUlibrary;
-
-namespace kernel {
-
-using handle_t = CUkernel; // Don't be confused; a context-associated kernel is a CUfunction :-(
-
-} // namespace kernel
-
 namespace detail {
 
 using option_t = CUlibraryOption;
@@ -49,13 +41,6 @@ namespace detail {
 inline library_t wrap(
 	handle_t                handle,
 	bool                    take_ownership = false) noexcept;
-
-inline std::string identify(const library::handle_t &handle)
-{
-	return std::string("library ") + cuda_::detail::ptr_as_hex(handle);
-}
-
-std::string identify(const library_t &library);
 
 inline void unload(handle_t handle)
 {
@@ -355,15 +340,6 @@ inline library_t create(
 
 // TODO: Use an optional to reduce the number of functions here... when the
 // library starts requiring C++14.
-
-namespace detail {
-
-inline std::string identify(const library_t& library)
-{
-	return identify(library.handle());
-}
-
-} // namespace detail
 
 template <typename ContiguousContainer,
 	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> >

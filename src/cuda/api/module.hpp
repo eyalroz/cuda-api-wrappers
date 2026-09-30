@@ -42,23 +42,6 @@ inline module_t wrap(
 	bool                    take_ownership = false,
 	bool                    holds_primary_context_refcount_unit = false) noexcept;
 
-inline std::string identify(module::handle_t handle)
-{
-	return std::string("module ") + cuda_::detail::ptr_as_hex(handle);
-}
-
-inline std::string identify(module::handle_t handle, context::handle_t context_handle)
-{
-	return identify(handle) + " in " + context::detail::identify(context_handle);
-}
-
-inline std::string identify(module::handle_t handle, context::handle_t context_handle, device::id_t device_id)
-{
-	return identify(handle) + " in " + context::detail::identify(context_handle, device_id);
-}
-
-std::string identify(const module_t &module);
-
 inline void unload(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
@@ -378,11 +361,6 @@ module_t create(const context_t& context, const void* module_data);
 // library starts requiring C++14.
 
 namespace detail {
-
-inline std::string identify(const module_t& module)
-{
-	return identify(module.handle(), module.context_handle(), module.device_id());
-}
 
 inline context_t const& get_context_for(const context_t& locus) { return locus; }
 inline device::primary_context_t get_context_for(const device_t& locus);

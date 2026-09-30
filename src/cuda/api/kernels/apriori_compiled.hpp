@@ -469,14 +469,6 @@ inline apriori_compiled_t wrap(
 	return { device_id, primary_context_handle, f, ptr, hold_primary_context_refcount_unit };
 }
 
-#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-inline std::string identify(const apriori_compiled_t& kernel)
-{
-	return "apriori-compiled kernel " + cuda_::detail::ptr_as_hex(kernel.ptr())
-		+ " in " + context::detail::identify(kernel.context());
-}
-#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-
 } // namespace detail
 
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE

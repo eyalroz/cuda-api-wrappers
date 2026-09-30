@@ -10,6 +10,7 @@
 
 #if CUDA_VERSION >= 11020
 
+#include "identify.hpp"
 #include "memory.hpp"
 
 namespace cuda_ {
@@ -59,18 +60,6 @@ CUmemPoolProps create_raw_properties(cuda_::device::id_t device_id) noexcept
 	result.win32SecurityAttributes = nullptr; // TODO: What about the case of win32_handle ?
 	return result;
 }
-
-inline std::string identify(pool::handle_t handle)
-{
-	return "memory pool at " + cuda_::detail::ptr_as_hex(handle);
-}
-
-inline std::string identify(pool::handle_t handle, cuda_::device::id_t device_id)
-{
-	return identify(handle) + " on " + cuda_::device::detail::identify(device_id);
-}
-
-std::string identify(const pool_t &pool);
 
 inline status_t destroy_nothrow(handle_t handle) noexcept
 {
@@ -457,11 +446,6 @@ pool_t create(cuda_::device::id_t device_id)
 	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda_::device::detail::identify(device_id));
 	constexpr const bool is_owning { true };
 	return wrap(device_id, handle, is_owning);
-}
-
-inline std::string identify(const pool_t& pool)
-{
-	return identify(pool.handle(), pool.device_id());
 }
 
 } // namespace detail

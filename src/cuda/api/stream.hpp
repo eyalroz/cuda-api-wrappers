@@ -106,8 +106,6 @@ enum synchronization_policy_t : std::underlying_type<CUsynchronizationPolicy>::t
 
 namespace detail {
 
-std::string identify(const stream_t& stream);
-
 inline handle_t create_raw_in_current_context(
 	bool          synchronizes_with_default_stream,
 	priority_t    priority = default_priority
