@@ -13,6 +13,7 @@
 #include "api/pci_id.hpp"
 #include "api/constants.hpp"
 #include "api/error.hpp"
+#include "api/identify.hpp"
 #include "api/versions.hpp"
 #include "api/miscellany.hpp"
 #include "api/pointer.hpp"

@@ -11,6 +11,7 @@
 #ifndef MULTI_WRAPPER_IMPLS_STREAM_HPP_
 #define MULTI_WRAPPER_IMPLS_STREAM_HPP_
 
+#include "../identify.hpp"
 #include "../device.hpp"
 #include "../event.hpp"
 #include "../stream.hpp"

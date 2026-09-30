@@ -14,6 +14,7 @@
 #include "../stream.hpp"
 #include "../kernel_launch.hpp"
 #include "../device.hpp"
+#include "../identify.hpp"
 
 // The following is needed for occupancy-related calculation convenience functions
 #include <cuda_runtime.h>

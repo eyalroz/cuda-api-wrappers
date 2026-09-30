@@ -10,6 +10,7 @@
 #if CUDA_VERSION >= 10000
 
 #include "node.hpp"
+#include "identify.hpp"
 #include "../error.hpp"
 #include "../device.hpp"
 #include "../event.hpp"

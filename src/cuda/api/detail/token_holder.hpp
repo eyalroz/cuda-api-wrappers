@@ -11,6 +11,7 @@
 #define CUDA_API_WRAPPERS_TOKEN_HOLDER_HPP_
 
 #include "../types.hpp"
+#include "../identify.hpp"
 #include "../error.hpp"
 
 #ifndef CAW_STRINGIFY

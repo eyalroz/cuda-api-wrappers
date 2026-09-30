@@ -10,6 +10,7 @@
 
 #include "../stream.hpp"
 #include "../current_context.hpp"
+#include "../graph/identify.hpp"
 #include "../graph/node.hpp"
 #include "../graph/template.hpp"
 #include "../graph/instance.hpp"

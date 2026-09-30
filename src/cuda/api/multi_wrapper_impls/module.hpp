@@ -12,6 +12,7 @@
 #ifndef MULTI_WRAPPER_IMPLS_MODULE_HPP_
 #define MULTI_WRAPPER_IMPLS_MODULE_HPP_
 
+#include "../identify.hpp"
 #include "../device.hpp"
 #include "../module.hpp"
 

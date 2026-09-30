@@ -8,6 +8,7 @@
 #ifndef CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_
 #define CUDA_API_WRAPPERS_KERNELS_APRIORI_COMPILED_HPP_
 
+#include "../identify.hpp"
 #include "../kernel.hpp"
 
 // The following is needed for occupancy-related calculation convenience
