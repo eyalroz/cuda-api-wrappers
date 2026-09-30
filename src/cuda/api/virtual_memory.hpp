@@ -321,7 +321,7 @@ physical_allocation_t import(shared_handle_t<SharedHandleKind> shared_handle, si
 
 namespace detail {
 
-inline std::string identify(physical_allocation_t physical_allocation) {
+inline std::string identify(const physical_allocation_t& physical_allocation) {
 	return identify(physical_allocation.handle(), physical_allocation.size());
 }
 
@@ -514,7 +514,7 @@ inline std::string identify(mapping_t mapping)
 
 } // namespace mapping
 
-inline mapping_t map(region_t region, physical_allocation_t physical_allocation)
+inline mapping_t map(region_t region, const physical_allocation_t& physical_allocation)
 {
 	size_t offset_into_allocation { 0 }; // not yet supported, but in the API
 	constexpr unsigned long long flags { 0 };
