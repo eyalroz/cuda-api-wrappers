@@ -11,6 +11,7 @@
 #include "context.hpp"
 #include "ipc.hpp"
 
+#include "../identify.hpp"
 #include "../memory.hpp"
 #include "../array.hpp"
 #include "../device.hpp"

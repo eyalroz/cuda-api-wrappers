@@ -8,6 +8,7 @@
 
 #if CUDA_VERSION >= 10000
 
+#include "../identify.hpp"
 #include "../types.hpp"
 
 namespace cuda_ {

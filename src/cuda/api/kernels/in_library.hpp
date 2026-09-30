@@ -9,6 +9,7 @@
 
 #if CUDA_VERSION >= 12000
 
+#include "../identify.hpp"
 #include "../library.hpp"
 
 #include <type_traits>

@@ -12,6 +12,7 @@
 #include "../kernel.hpp"
 #include "../device.hpp"
 #include "../event.hpp"
+#include "../identify.hpp"
 
 namespace cuda_ {
 

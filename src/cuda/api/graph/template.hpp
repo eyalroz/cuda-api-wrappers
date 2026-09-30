@@ -13,6 +13,8 @@
 
 #if CUDA_VERSION >= 10000
 
+#include "identify.hpp"
+
 #include <cuda/api/graph/typed_node.hpp>
 #include <cuda/api/graph/node.hpp>
 #include <cuda/api/types.hpp>
