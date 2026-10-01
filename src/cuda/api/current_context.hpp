@@ -5,6 +5,7 @@
 #ifndef CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 #define CUDA_API_WRAPPERS_CURRENT_CONTEXT_HPP_
 
+#include "detail/primary_context.hpp"
 #include "identify.hpp"
 #include "error.hpp"
 #include "types.hpp"
@@ -179,17 +180,16 @@ inline void set(handle_t context_handle)
 } // namespace detail
 
 namespace detail {
-/**
- * @note See the out-of-`detail::` version of this class.
- */
+
+/// @note See the out-of-`detail::` version of this class.
 class scoped_override_t {
 public:
-	bool hold_primary_context_ref_unit_;
-	device::id_t device_id_or_0_;
+	cuda_::detail::pc_refcount_unit_t refcount_unit_;
 
-	explicit scoped_override_t(handle_t context_handle)	: scoped_override_t(false, 0, context_handle) {}
+	explicit scoped_override_t(handle_t context_handle)
+	: scoped_override_t(dont_hold_primary_context_refcount_unit, {}, context_handle) {}
 	scoped_override_t(device::id_t device_for_which_context_is_primary, handle_t context_handle)
-		: scoped_override_t(true, device_for_which_context_is_primary, context_handle) {}
+		: scoped_override_t(do_hold_primary_context_refcount_unit, device_for_which_context_is_primary, context_handle) {}
 	explicit scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle);
 	scoped_override_t(const scoped_override_t&) = delete;
 	scoped_override_t(scoped_override_t&&) = delete;
