@@ -380,6 +380,7 @@ public: // constructors & destructor
 		other.owns_handle_ = false;
 	};
 
+protected: // destructor
 	~compilation_output_base_t() noexcept(false)
 	{
 		if (not owns_handle_) { return; }
