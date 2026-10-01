@@ -19,6 +19,7 @@
 #include "../peer_to_peer.hpp"
 #include "../memory.hpp"
 #include "../context.hpp"
+#include "../primary_context.hpp"
 
 namespace cuda_ {
 
@@ -77,9 +78,8 @@ inline bool is_primary()
 namespace detail {
 
 inline scoped_override_t::scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle)
-: hold_primary_context_ref_unit_(hold_primary_context_ref_unit), device_id_or_0_(device_id)
+: refcount_unit_(hold_primary_context_ref_unit, device_id)
 {
-	if (hold_primary_context_ref_unit) { device::primary_context::detail::increase_refcount(device_id); }
 	push(context_handle);
 }
 
@@ -90,13 +90,6 @@ inline scoped_override_t::~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
 #else
 	pop_and_discard_nothrow();
 #endif
-	if (hold_primary_context_ref_unit_) {
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		device::primary_context::detail::decrease_refcount(device_id_or_0_);
-#else
-		device::primary_context::detail::decrease_refcount_nothrow(device_id_or_0_);
-#endif
-	}
 }
 
 
