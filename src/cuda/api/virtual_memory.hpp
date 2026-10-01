@@ -205,32 +205,39 @@ inline reserved_address_range_t reserve(size_t requested_size, alignment_t align
 	return reserve(region_t{ nullptr, requested_size }, alignment);
 }
 
+} // namespace virtual
+
+namespace physical_allocation {
+namespace detail {
+
+struct release_helper {
+	void operator()(handle_t handle) const CAW_DESTRUCTOR_EXCEPTION_SPEC {
+		auto status = cuMemRelease(handle);
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		throw_if_error_lazy(status, "Failed releasing a physical allocation for virtual memory");
+#else
+		(void) status;
+#endif
+	}
+};
+
+class refcount_unit_t : public cuda_::detail::token_holder<release_helper, handle_t> {
+	using handle_type =  physical_allocation::handle_t;
+	using parent_type = token_holder;
+	using parent_type::token_holder;
+};
+
+} // namespace detail
 } // namespace physical_allocation
 
 class physical_allocation_t {
 protected: // constructors
 	physical_allocation_t(physical_allocation::handle_t handle, size_t size, bool holds_refcount_unit)
-		: handle_(handle), size_(size), holds_refcount_unit_(holds_refcount_unit) { }
+		: handle_(handle), size_(size), refcount_unit_({ holds_refcount_unit, handle }) { }
 
 public: // constructors & destructor
-	physical_allocation_t(const physical_allocation_t& other) noexcept : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(false)
-	{ }
-
-	physical_allocation_t(physical_allocation_t&& other) noexcept  : handle_(other.handle_), size_(other.size_), holds_refcount_unit_(other.holds_refcount_unit_)
-	{
-		other.holds_refcount_unit_ = false;
-	}
-
-	~physical_allocation_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not holds_refcount_unit_) { return; }
-		auto status = cuMemRelease(handle_);
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		throw_if_error_lazy(status, "Failed making a virtual memory physical_allocation of size " + std::to_string(size_));
-#else
-		(void) status;
-#endif
-	}
+	physical_allocation_t(const physical_allocation_t& other) = delete;
+	physical_allocation_t(physical_allocation_t&& other) noexcept = default;
 
 public: // non-mutators
 	friend physical_allocation_t physical_allocation::detail::wrap(
@@ -238,7 +245,7 @@ public: // non-mutators
 
 	size_t size() const noexcept { return size_; }
 	physical_allocation::handle_t handle() const noexcept { return handle_; }
-	bool holds_refcount_unit() const noexcept { return holds_refcount_unit_; }
+	bool holds_refcount_unit() const noexcept { return refcount_unit_.has_token(); }
 
 	physical_allocation::properties_t properties() const {
 		CUmemAllocationProp raw_properties;
@@ -260,7 +267,7 @@ public: // non-mutators
 protected: // data members
 	const   physical_allocation::handle_t handle_;
 	size_t  size_;
-	bool    holds_refcount_unit_;
+	physical_allocation::detail::refcount_unit_t refcount_unit_;
 };
 
 namespace physical_allocation {
