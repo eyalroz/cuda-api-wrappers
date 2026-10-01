@@ -58,17 +58,6 @@ inline void decrease_refcount(device::id_t device_id)
 	throw_if_error_lazy(status, "Failed releasing the reference to the primary context for " + device::detail::identify(device_id));
 }
 
-// Use this in destructors whose throwing behavior is controlled by the
-// preprocessor definition CAW_THROW_IN_DESTRUCTORS
-inline void decrease_refcount_in_dtor(device::id_t device_id) noexcept
-{
-#ifdef CAW_THROW_IN_DESTRUCTORS
-	decrease_refcount(device_id);
-#else
-	decrease_refcount_nothrow(device_id);
-#endif
-}
-
 inline handle_t obtain_and_increase_refcount(device::id_t device_id)
 {
 	handle_t primary_context_handle;
@@ -285,8 +274,12 @@ inline bool is_current()
 namespace detail {
 
 struct release_pc_refcount_helper {
-	void operator()(device::id_t device_id) const noexcept {
-		device::primary_context::detail::decrease_refcount_in_dtor(device_id);
+	void operator()(device::id_t device_id) const CAW_DESTRUCTOR_EXCEPTION_SPEC {
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		device::primary_context::detail::decrease_refcount_nothrow(device_id);
+#else
+		device::primary_context::detail::decrease_refcount(device_id);
+#endif
 	}
 };
 

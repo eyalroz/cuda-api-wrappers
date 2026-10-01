@@ -9,6 +9,7 @@
 
 #if CUDA_VERSION >= 12040
 
+#include "../api/detail/token_holder.hpp"
 #include "../api/detail/region.hpp"
 #include "builder_options.hpp"
 #include "types.hpp"
@@ -36,13 +37,23 @@ inline std::string identify(handle_t handle)
 
 inline std::string identify(const fatbin_builder_t&);
 
+inline cuda_::status_t destroy_nothrow(handle_t handle) noexcept
+{
+	auto fb_status = nvFatbinDestroy(&handle);
+	// TODO: Arrange it so that this can return its own status type
+	auto named =
+		((fb_status == status::success) ?
+		cuda_::status::success : cuda_::status::unknown);
+	return static_cast<cuda_::status_t>(named);
+}
+
 } // namespace detail
 
 } // namespace fatbin_builder
 
-
 class fatbin_builder_t {
 public: // type definitions
+	using handle_type = fatbin_builder::handle_t;
 	using size_type = ::size_t;
 
 	struct deleter_type {
@@ -51,13 +62,11 @@ public: // type definitions
 
 public: // getters
 
-	fatbin_builder::handle_t handle() const
-	{ return handle_; }
+	fatbin_builder::handle_t handle() const { return handle_; }
 
 	/// True if this wrapper is responsible for telling CUDA to destroy
 	/// the fatbin handle upon the wrapper's own destruction
-	bool is_owning() const noexcept
-	{ return owning; }
+	bool is_owning() const noexcept { return ownership_.has_token(); }
 
 protected: // unsafe actions
 
@@ -179,55 +188,28 @@ protected: // constructors
 		fatbin_builder::handle_t handle,
 		// no support for options, for now
 		bool take_ownership) noexcept
-		: handle_(handle), owning(take_ownership)
+		: handle_(handle), ownership_({take_ownership, { context::detail::none, handle} })
 	{}
 
 public: // friendship
 
 	friend fatbin_builder_t fatbin_builder::wrap(fatbin_builder::handle_t, bool) noexcept;
 
-public: // constructors and destructor
-
+public: // constructors and operators
 	fatbin_builder_t(const fatbin_builder_t &) = delete;
-
-	fatbin_builder_t(fatbin_builder_t &&other) noexcept:
-		fatbin_builder_t(other.handle_, other.owning)
-	{
-		other.owning = false;
-	};
-
-	~fatbin_builder_t() CAW_DESTRUCTOR_EXCEPTION_SPEC
-	{
-		if (not owning) { return; }
-
-		auto status = nvFatbinDestroy(&handle_); // this nullifies the handle :-O
-#ifdef CAW_THROW_IN_DESTRUCTORS
-		throw_if_error_lazy(status,
-			std::string("Failed destroying fatbin builder ") + detail::ptr_as_hex(handle_) +
-			" in " + fatbin_builder::detail::identify(handle_));
-#else
-		(void) status;
-#endif
-
-	}
-
-public: // operators
-
+	fatbin_builder_t(fatbin_builder_t &&other) noexcept = default;
 	fatbin_builder_t &operator=(const fatbin_builder_t &) = delete;
-
-	fatbin_builder_t &operator=(fatbin_builder_t &&other) noexcept
-	{
-		std::swap(handle_, other.handle_);
-		std::swap(owning, owning);
-		return *this;
-	}
+	fatbin_builder_t &operator=(fatbin_builder_t &&other) noexcept = default;
 
 protected: // data members
 	fatbin_builder::handle_t handle_;
-	bool owning;
+	detail::handle_ownership_t<fatbin_builder_t> ownership_;
 	// this field is mutable only for enabling move construction; other
 	// than in that case it must not be altered
-};
+}; // class fatbin_builder_t
+
+CAW_DEFINE_HANDLE_TRAITS(fatbin_builder_t::handle_type, isnt_contextual, fatbin_builder::detail::destroy_nothrow,
+	nvFatbinDestroy, fatbin_builder::detail::identify);
 
 namespace fatbin_builder {
 
