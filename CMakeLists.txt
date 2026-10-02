@@ -34,6 +34,11 @@ endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 
+option(CAW_THROW_IN_DESTRUCTORS "Allow destructors of library wrapper objects to throw exceptions on error" OFF)
+if (CAW_THROW_IN_DESTRUCTORS)
+	message(NOTICE  "Exceptions in CUDA wrapper object destructors will be enabled")
+endif()
+
 
 set(targets_base runtime-and-driver nvtx rtc fatbin)
 set(targets "")
@@ -56,6 +61,9 @@ foreach(wrapper_lib ${targets})
 		BASE_DIRS src
 		FILES ${headers}
 	)
+	if(CAW_THROW_IN_DESTRUCTORS)
+		target_compile_definitions(${caw_lib} INTERFACE CAW_THROW_IN_DESTRUCTORS)
+	endif()
 	target_link_libraries(${caw_lib} INTERFACE CUDA::cuda_driver)
 	string(REGEX MATCH "_static\$" static_suffix ${wrapper_lib})
 	target_link_libraries(${caw_lib} INTERFACE CUDA::cudart${static_suffix})
