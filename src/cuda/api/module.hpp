@@ -217,6 +217,8 @@ protected: // data members
 		// When context_handle_ is the handle of a primary context, this module
 		// may be "keeping that context alive" through the refcount - in which
 		// case it must release its refcount unit on destruction
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuModuleUnload, cuModuleUnload)
 }; // module_t
 
 namespace module {
@@ -409,8 +411,6 @@ module_t create(
 }
 
 } // namespace module
-
-CAW_DEFINE_HANDLE_TRAITS(module_t, cuModuleUnload, cuModuleUnload)
 
 } // namespace cuda_
 

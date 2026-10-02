@@ -14,7 +14,7 @@
 
 #include "memory.hpp"
 #include "unique_region.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 namespace cuda_ {
 
@@ -91,6 +91,8 @@ protected: // data members
 	handle_t handle_;
 	descriptor_t descriptor_;
 	cuda_::detail::handle_ownership_t<resource_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuDestroyExternalMemory, cuDestroyExternalMemory)
 };
 
 inline resource_t wrap(handle_t handle, descriptor_t descriptor, bool take_ownership) noexcept
@@ -148,8 +150,6 @@ inline unique_region map(const resource_t& resource)
 
 } // namespace external
 } // namespace memory
-
-CAW_DEFINE_HANDLE_TRAITS(memory::external::resource_t, cuDestroyExternalMemory, cuDestroyExternalMemory)
 
 } // namespace cuda_
 

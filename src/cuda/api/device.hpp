@@ -22,7 +22,7 @@
 #include <string>
 #include <cstring>
 
-#include "detail/token_holder.hpp"
+#include "detail/primary_context.hpp"
 
 namespace cuda_ {
 

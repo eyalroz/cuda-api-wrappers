@@ -142,11 +142,6 @@ void mapping_t::set_permissions(
 
 } // namespace memory
 
-#if CUDA_VERSION >= 10020
-CAW_DEFINE_HANDLE_TRAITS(memory::virtual_::reserved_address_range_t, memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree)
-CAW_DEFINE_HANDLE_TRAITS(memory::virtual_::mapping_t, memory::virtual_::detail::unmap_nothrow, cuMemUnmap)
-#endif // CUDA_VERSION >= 10020
-
 } // namespace cuda_
 
 #endif //CUDA_API_WRAPPERS_MULTI_WRAPPER_IMPLS_VIRTUAL_MEMORY_HPP_

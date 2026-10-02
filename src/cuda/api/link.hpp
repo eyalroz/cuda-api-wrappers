@@ -232,6 +232,8 @@ protected: // data members
 	detail::handle_ownership_t<link_t> ownership_;
 	// this field is mutable only for enabling move construction; other
 	// than in that case it must not be altered
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuLinkDestroy, cuLinkDestroy)
 }; // class link_t
 
 namespace link {
@@ -270,8 +272,6 @@ inline link_t wrap(
 }
 
 } // namespace link
-
-CAW_DEFINE_HANDLE_TRAITS(link_t, cuLinkDestroy, cuLinkDestroy)
 
 } // namespace cuda_
 

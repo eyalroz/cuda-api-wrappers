@@ -13,7 +13,7 @@
 #include "current_device.hpp"
 #include "error.hpp"
 #include "ipc.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 #include <chrono> // for duration types
 
@@ -274,9 +274,9 @@ protected: // data members
 		// When context_handle_ is the handle of a primary context, this event may
 		// be "keeping that context alive" through the refcount - in which case
 		// it must release its refcount unit on destruction
-};
 
-CAW_DEFINE_HANDLE_TRAITS(event_t, cuEventDestroy, cuEventDestroy)
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuEventDestroy, cuEventDestroy)
+};
 
 namespace event {
 
