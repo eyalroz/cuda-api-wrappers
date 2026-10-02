@@ -327,7 +327,7 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 } // namespace ipc
 } // namespace event
 
-CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t, isnt_contextual, memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle)
+CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t, memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle)
 
 } // namespace cuda_
 

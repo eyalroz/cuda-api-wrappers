@@ -149,7 +149,7 @@ inline unique_region map(const resource_t& resource)
 } // namespace external
 } // namespace memory
 
-CAW_DEFINE_HANDLE_TRAITS(memory::external::resource_t, isnt_contextual, cuDestroyExternalMemory, cuDestroyExternalMemory)
+CAW_DEFINE_HANDLE_TRAITS(memory::external::resource_t, cuDestroyExternalMemory, cuDestroyExternalMemory)
 
 } // namespace cuda_
 

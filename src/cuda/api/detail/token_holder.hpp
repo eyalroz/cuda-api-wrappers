@@ -84,11 +84,10 @@ struct handle_traits;
 // Note: This definition breaks older GCC compilers (e.g. GCC 6.5.0), as it qualifies the template specialization
 // in a namespace. To retain compatibility with such compilers, drop the cuda_::detail:: prefix, and place
 // invocations within the appropriate namespace
-#define CAW_DEFINE_HANDLE_TRAITS(_wrapper_type, _contextualized, _release_func, _raw_release_func) \
+#define CAW_DEFINE_HANDLE_TRAITS(_wrapper_type, _release_func, _raw_release_func) \
 template <> \
 struct cuda_::detail::handle_traits<_wrapper_type> { \
     using handle_type = typename _wrapper_type::handle_type; \
-    static constexpr bool contextualized = _contextualized; \
     static status_t release_nothrow(std::false_type, context::handle_t, handle_type handle) noexcept { \
         return _release_func(handle); \
     } \
@@ -112,7 +111,8 @@ struct handle_release_helper {
         using traits = handle_traits<Wrapper>;
         auto context_handle = handle_in_context.context_handle;
         auto handle = handle_in_context.handle;
-        auto status = traits::release_nothrow(bool_constant<traits::contextualized>{}, context_handle, handle);
+        static constexpr bool contextualized = has_context_method<Wrapper>::value;
+        auto status = traits::release_nothrow(bool_constant<contextualized>{}, context_handle, handle);
 #ifdef CAW_THROW_IN_DESTRUCTORS
         using handle_type = typename Wrapper::handle_type;
         static constexpr bool handle_type_is_not_unique =

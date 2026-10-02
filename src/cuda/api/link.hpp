@@ -271,7 +271,7 @@ inline link_t wrap(
 
 } // namespace link
 
-CAW_DEFINE_HANDLE_TRAITS(link_t, is_contextual, cuLinkDestroy, cuLinkDestroy)
+CAW_DEFINE_HANDLE_TRAITS(link_t, cuLinkDestroy, cuLinkDestroy)
 
 } // namespace cuda_
 

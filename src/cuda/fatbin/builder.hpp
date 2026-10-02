@@ -251,9 +251,7 @@ inline std::string identify(const fatbin_builder_t& builder)
 
 } // namespace detail
 
-CAW_DEFINE_HANDLE_TRAITS(fatbin_builder_t, isnt_contextual, fatbin_builder::detail::destroy_nothrow, nvFatbinDestroy);
-
-
+CAW_DEFINE_HANDLE_TRAITS(fatbin_builder_t, fatbin_builder::detail::destroy_nothrow, nvFatbinDestroy)
 
 } // namespace cuda_
 

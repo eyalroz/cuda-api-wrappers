@@ -1157,7 +1157,7 @@ inline void begin(const stream_t& stream, mode_t mode)
 void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
 
-CAW_DEFINE_HANDLE_TRAITS(stream_t, is_contextual, cuStreamDestroy, cuStreamDestroy)
+CAW_DEFINE_HANDLE_TRAITS(stream_t, cuStreamDestroy, cuStreamDestroy)
 
 } // namespace cuda_
 
