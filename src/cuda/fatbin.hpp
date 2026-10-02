@@ -14,6 +14,7 @@
 #include "fatbin/error.hpp"
 #include "fatbin/builder_options.hpp"
 #include "fatbin/builder.hpp"
+#include "fatbin/versions.hpp"
 
 #endif // CUDA_VERSION >= 12040
 

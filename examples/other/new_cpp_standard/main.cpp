@@ -13,6 +13,9 @@
 #include <cuda/nvtx.hpp>
 #endif
 #include <cuda/rtc.hpp>
+#if CUDA_VERSION >= 12040
+#include <cuda/fatbin.hpp>
+#endif
 
 #include <cstdlib>
 #include <iostream>
