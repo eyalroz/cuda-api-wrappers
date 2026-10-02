@@ -14,7 +14,7 @@
 
 #include "context.hpp"
 #include "error.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 #ifndef CUDA_NO_HALF
 #include <cuda_fp16.h>
@@ -166,8 +166,6 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
 	return dimensions_of_in_current_context<NumDimensions>(handle);
 }
 
-struct tag_for_handle { using handle_type = handle_t; };
-
 } // namespace detail
 
 } // namespace array
@@ -251,10 +249,10 @@ protected:
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	handle_type        handle_;
-	detail::handle_ownership_t<array::detail::tag_for_handle> ownership_;
-};
+	detail::handle_ownership_t<array_t> ownership_;
 
-CAW_DEFINE_HANDLE_TRAITS(array::detail::tag_for_handle, cuArrayDestroy, cuArrayDestroy)
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuArrayDestroy, cuArrayDestroy)
+};
 
 namespace array {
 

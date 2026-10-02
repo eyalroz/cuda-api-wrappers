@@ -14,7 +14,7 @@
 #if CUDA_VERSION >= 10020
 #include "types.hpp"
 #include "error.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 namespace cuda_ {
 ///@cond
@@ -122,14 +122,6 @@ inline status_t cancel_reservation_nothrow(memory::region_t reserved) noexcept
 	return cuMemAddressFree(memory::device::address(reserved.start()), reserved.size());
 }
 
-// I'm sorry, this is super-ugly. We should be able to get rid of this with C++17 -
-// replacing it with a constexpr lambda in the traits class
-inline status_t cancel_reservation_nothrow(
-	cuda_::detail::tagged<reserved_address_range_t, region_t> reserved_) noexcept
-{
-	return cancel_reservation_nothrow(reserved_.value);
-}
-
 inline void cancel_reservation(memory::region_t reserved)
 {
 	auto status = cancel_reservation_nothrow(reserved);
@@ -179,6 +171,9 @@ protected: // data members
 	const region_t     region_;
 	const alignment_t  alignment_;
 	cuda_::detail::handle_ownership_t<reserved_address_range_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuda_::memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree)
+
 }; // reserved_address_range_t
 
 namespace detail {
@@ -434,11 +429,6 @@ inline status_t unmap_nothrow(region_t address_range) noexcept
 	return cuMemUnmap(device::address(address_range.start()), address_range.size());
 }
 
-inline status_t unmap_nothrow(cuda_::detail::tagged<mapping_t, region_t> address_range_) noexcept
-{
-	return unmap_nothrow(address_range_.value);
-}
-
 inline void unmap_(region_t address_range)
 {
 	auto result = unmap_nothrow(address_range);
@@ -498,6 +488,8 @@ protected:
 
 	region_t address_range_;
 	cuda_::detail::handle_ownership_t<mapping_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(memory::virtual_::detail::unmap_nothrow, cuMemUnmap)
 }; // mapping_t
 
 namespace mapping {

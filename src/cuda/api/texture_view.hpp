@@ -164,6 +164,8 @@ protected:
 	context::handle_t context_handle_;
 	texture::handle_t handle;
 	detail::handle_ownership_t<texture_view> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuTexObjectDestroy, cuTexObjectDestroy)
 }; // texture_view
 
 ///@cond
@@ -189,8 +191,6 @@ inline texture_view wrap(
 }
 
 } // namespace texture
-
-CAW_DEFINE_HANDLE_TRAITS(texture_view, cuTexObjectDestroy, cuTexObjectDestroy)
 
 } // namespace cuda_
 

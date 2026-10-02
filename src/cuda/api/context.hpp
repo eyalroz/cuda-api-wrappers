@@ -13,7 +13,7 @@
 #include "error.hpp"
 #include "constants.hpp"
 #include "types.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 #include <string>
 #include <utility>
@@ -732,9 +732,9 @@ protected: // data members
 
 	// TODO: Should we hold a field indicating whether this context is
 	// primary or not?
-}; // class context_t
 
-CAW_DEFINE_HANDLE_TRAITS(context_t, cuCtxDestroy, cuCtxDestroy)
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuCtxDestroy, cuCtxDestroy)
+}; // class context_t
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{

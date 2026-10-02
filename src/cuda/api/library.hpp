@@ -172,6 +172,8 @@ protected: // data members
 	detail::handle_ownership_t<library_t> ownership_;
 		// this field is mutable only for enabling move construction; other
 		// than in that case it must not be altered
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuLibraryUnload, cuLibraryUnload)
 }; // library_t
 
 inline memory::region_t get_global(const context_t& context, const library_t& library, const char* name)
@@ -352,8 +354,6 @@ library_t create(
 }
 
 } // namespace library
-
-CAW_DEFINE_HANDLE_TRAITS(library_t, cuLibraryUnload, cuLibraryUnload)
 
 } // namespace cuda_
 
