@@ -733,7 +733,7 @@ protected: // data members
 	// primary or not?
 }; // class context_t
 
-CAW_DEFINE_HANDLE_TRAITS(context::handle_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy, identify);
+CAW_DEFINE_HANDLE_TRAITS(context_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy);
 
 // template<>
 // struct cuda_::detail::handle_traits<context::handle_t> {

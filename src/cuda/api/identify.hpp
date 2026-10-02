@@ -30,10 +30,12 @@ class template_t;
 namespace memory {
 class pool_t;
 class physical_allocation_t;
+namespace ipc { class imported_ptr_t; }
 namespace virtual_ { class mapping_t; }
 } // namespace memory
 namespace kernel { class apriori_compiled_t; }
 namespace library { class kernel_t; }
+// namespace fatbin_builder { class handle_t; }
 
 namespace detail {
 std::string identify(memory::region_t region);
@@ -95,6 +97,7 @@ inline std::string identify(event::handle_t handle) { return "event at " + ptr_a
 inline std::string identify(array::handle_t handle) { return "array at " + ptr_as_hex(handle); }
 inline std::string identify(kernel::handle_t handle) { return "kernel at " + ptr_as_hex(handle); }
 inline std::string identify(memory::external::handle_t handle) { return "external memory resource at " + ptr_as_hex(handle); }
+inline std::string identify(library::handle_t handle) { return "library at " + ptr_as_hex(handle); }
 inline std::string identify(library::kernel::handle_t handle) { return "library kernel at " + ptr_as_hex(handle); }
 inline std::string identify(memory::pool::handle_t handle) { return "memory pool at " + ptr_as_hex(handle); }
 inline std::string identify(link::handle_t handle) { return "link" + ptr_as_hex(handle); }
@@ -103,9 +106,11 @@ inline std::string identify(graph::template_::handle_t handle) { return "executi
 inline std::string identify(graph::instance::handle_t handle) { return "execution graph instance " + ptr_as_hex(handle); }
 inline std::string identify(graph::node::handle_t handle) { return std::string("node with handle ") + ptr_as_hex(handle); }
 inline std::string identify(module::handle_t handle) { return std::string("module ") + ptr_as_hex(handle); }
+inline std::string identify(tagged<context_t, context::handle_t> handle) { return identify(handle.untag()); }
 inline std::string identify(tagged<device::primary_context_t, context::handle_t> handle) { return "primary " + identify(handle.untag()); }
 inline std::string identify(tagged<memory::virtual_::mapping_t, memory::region_t> handle) {	return "mapping of " + identify(handle.value); }
 inline std::string identify(tagged<memory::virtual_::reserved_address_range_t, memory::region_t> region_) { return "reserved " + identify(region_.value); }
+inline std::string identify(tagged<memory::ipc::imported_ptr_t, void*> ptr_) { return "imported pointer " + ptr_as_hex(ptr_.value); }
 
 } // namespace detail
 

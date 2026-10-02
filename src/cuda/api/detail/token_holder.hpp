@@ -78,16 +78,12 @@ public: // constructors & operators
 };
 
 template <typename Handle>
-using handle_release = status_t (*)(Handle);
-
-template <typename Handle>
 struct handle_traits;
 
-#define CAW_DEFINE_HANDLE_TRAITS(_handle_type, _contextualized, _release_func, _raw_release_func, _identify_func) \
+#define CAW_DEFINE_HANDLE_TRAITS(_wrapper_type, _contextualized, _release_func, _raw_release_func) \
 template <> \
-struct cuda_::detail::handle_traits<_handle_type> { \
-    using handle_type = _handle_type; \
-    using release_type = handle_release<handle_type>; \
+struct cuda_::detail::handle_traits<_wrapper_type> { \
+    using handle_type = typename _wrapper_type::handle_type; \
     static constexpr bool contextualized = _contextualized; \
     static status_t release_nothrow(std::false_type, context::handle_t, handle_type handle) noexcept { \
         return _release_func(handle); \
@@ -96,7 +92,6 @@ struct cuda_::detail::handle_traits<_handle_type> { \
         CAW_SET_SCOPE_CONTEXT(context_handle); \
         return _release_func(handle); \
     } \
-    static std::string identify(_handle_type handle) { return _identify_func(handle); } \
     static constexpr auto raw_release_func_name = CAW_STRINGIFY(_raw_release_func); \
 };
 
@@ -108,17 +103,25 @@ struct contextualized_handle_t { context::handle_t context_handle; Handle handle
 //    functions. Example: a void pointer or a memory region.
 template <typename Wrapper>
 struct handle_release_helper {
-    void operator()(contextualized_handle_t<typename Wrapper::handle_type> handle_in_context) CAW_DESTRUCTOR_EXCEPTION_SPEC
+    void operator()(contextualized_handle_t<typename Wrapper::handle_type> handle_in_context) const CAW_DESTRUCTOR_EXCEPTION_SPEC
     {
-        using handle_type = typename Wrapper::handle_type;
-        using traits = handle_traits<handle_type>;
+        using traits = handle_traits<Wrapper>;
         auto context_handle = handle_in_context.context_handle;
         auto handle = handle_in_context.handle;
         auto status = traits::release_nothrow(bool_constant<traits::contextualized>{}, context_handle, handle);
 #ifdef CAW_THROW_IN_DESTRUCTORS
+        using handle_type = typename Wrapper::handle_type;
+        static constexpr bool handle_type_is_not_unique =
+            std::is_same<handle_type, void*>::value or
+            std::is_same<handle_type, const void*>::value or
+            std::is_same<handle_type, memory::region_t>::value or
+            std::is_same<handle_type, context::handle_t>::value;
+        using unique_handle_type = typename std::conditional<handle_type_is_not_unique,
+            tagged<Wrapper, handle_type>, handle_type>::type;
+        unique_handle_type unique_handle { handle };
         throw_if_error_lazy(status, std::string{traits::raw_release_func_name} + " failed for "
-            + traits::identify(handle) + (std::is_same<handle_type, context::handle_t>::value ? "" : " in "
-            + cuda_::detail::identify(context_handle)) );
+            + cuda_::detail::identify(unique_handle)
+            + (std::is_same<handle_type, context::handle_t>::value ? "" : " in " + cuda_::detail::identify(context_handle)) );
 #else
         (void) status;
 #endif

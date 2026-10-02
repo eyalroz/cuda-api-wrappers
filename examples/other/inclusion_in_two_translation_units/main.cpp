@@ -31,6 +31,8 @@ int main()
 	cuda_::context::current::detail::push_default_if_missing();
 	cuda_::profiling::start();
 	cuda_::profiling::stop();
+#if CUDA_VERSION >= 12040
 	auto fatbin_builder = cuda_::fatbin_builder::create({});
+#endif
 	std::cout << "SUCCESS\n";
 }

@@ -21,7 +21,6 @@
 #endif
 
 namespace cuda_ {
-
 ///@cond
 class device_t;
 ///@endcond
@@ -68,8 +67,8 @@ handle_t create_in_current_context(dimensions_t<3> dimensions)
 	descriptor.Depth = dimensions.depth;
 	descriptor.Format = format_specifier<T>::value;
 	descriptor.NumChannels = 1;
-		// We don't currently support an array of packed pairs or quadruplets; if you want this,
-		// file an issue.
+	// We don't currently support an array of packed pairs or quadruplets; if you want this,
+	// file an issue.
 	descriptor.Flags = 0;
 
 	auto status = cuArray3DCreate(&handle, &descriptor);
@@ -166,6 +165,8 @@ dimensions_t<NumDimensions> dimensions_of(context::handle_t context_handle, hand
 	return dimensions_of_in_current_context<NumDimensions>(handle);
 }
 
+struct tag_for_handle { using handle_type = handle_t; };
+
 } // namespace detail
 
 } // namespace array
@@ -227,7 +228,7 @@ public:
 
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, context::handle_t, handle_type, dimensions_type) noexcept;
 
- 	handle_type get() const noexcept { return handle_; }
+	handle_type get() const noexcept { return handle_; }
 	device::id_t device_id() const noexcept { return device_id_; }
 	context::handle_t context_handle() const noexcept { return context_handle_; }
 	dimensions_type dimensions() const noexcept { return dimensions_; }
@@ -249,10 +250,10 @@ protected:
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
 	handle_type        handle_;
-	detail::handle_ownership_t<array_t> ownership_;
+	detail::handle_ownership_t<array::detail::tag_for_handle> ownership_;
 };
 
-CAW_DEFINE_HANDLE_TRAITS(array::handle_t, is_contextual, cuArrayDestroy, cuArrayDestroy, identify)
+CAW_DEFINE_HANDLE_TRAITS(array::detail::tag_for_handle, is_contextual, cuArrayDestroy, cuArrayDestroy)
 
 namespace array {
 
