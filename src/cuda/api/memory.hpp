@@ -244,7 +244,7 @@ inline void free_on_stream(
 	throw_if_error_lazy(status,
 		"Failed scheduling an asynchronous freeing of the global memory region starting at "
 		+ cuda_::detail::ptr_as_hex(allocated_region_start) + " on "
-		+ stream::detail::identify(stream_handle));
+		+ cuda_::detail::identify(stream_handle));
 }
 #endif // CUDA_VERSION >= 11020
 
@@ -259,7 +259,7 @@ inline void free_in_current_context(
 #endif
 	throw runtime_error(result, "Freeing device memory at "
 		+ cuda_::detail::ptr_as_hex(allocated_region_start)
-		+ " in " + context::detail::identify(current_context_handle));
+		+ " in " + cuda_::detail::identify(current_context_handle));
 }
 
 } // namespace detail
@@ -469,7 +469,7 @@ inline void copy(void* destination, const void* source, size_t num_bytes, stream
 
 	// TODO: Determine whether it was from host to device, device to host etc and
 	// add this information to the error string
-	throw_if_error_lazy(result, "Scheduling a memory copy on " + stream::detail::identify(stream_handle));
+	throw_if_error_lazy(result, "Scheduling a memory copy on " + cuda_::detail::identify(stream_handle));
 }
 
 /**
@@ -1895,7 +1895,7 @@ inline void advise(const_region_t region, advice_t advice, location_t location)
 	auto result = cuMemAdvise(address, region.size(), advice, location.id);
 #endif
 	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
-		+ cuda_::detail::ptr_as_hex(region.start()) + " in " + cuda_::memory::detail::identify(location));
+		+ cuda_::detail::ptr_as_hex(region.start()) + " in " + memory::detail::identify(location));
 }
 
 inline void advise(const_region_t region, advice_t advice, cuda_::device::id_t device_id)
@@ -2151,7 +2151,7 @@ inline void prefetch(
 #endif
 	throw_if_error_lazy(result,
 		"Prefetching " + std::to_string(region.size()) + " bytes of managed memory at address "
-		 + cuda_::detail::ptr_as_hex(region.start()) + " to " + cuda_::memory::detail::identify(destination));
+		 + cuda_::detail::ptr_as_hex(region.start()) + " to " + memory::detail::identify(destination));
 }
 
 
@@ -2253,7 +2253,7 @@ inline region_pair_t allocate_in_current_context(
 	}
 	throw_if_error_lazy(status,
 		"Failed allocating a mapped pair of memory regions of size " + std::to_string(size_in_bytes)
-		+ " bytes of global memory in " + context::detail::identify(current_context_handle));
+		+ " bytes of global memory in " + cuda_::detail::identify(current_context_handle));
 	allocated.host_side = { allocated_ptr, size_in_bytes };
 	allocated.device_side = device_side_region_for(allocated.host_side);
 	return allocated;

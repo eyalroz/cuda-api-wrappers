@@ -69,7 +69,7 @@ inline status_t destroy_nothrow(handle_t handle) noexcept
 inline void destroy(handle_t handle)
 {
 	auto status = destroy_nothrow(handle);
-	throw_if_error_lazy(status, "Failed destroying " + identify(handle));
+	throw_if_error_lazy(status, "Failed destroying " + cuda_::detail::identify(handle));
 }
 
 
@@ -129,7 +129,7 @@ attribute_value_t<attribute> get_attribute(handle_t pool_handle)
 	auto status_and_attribute_value = get_attribute_with_status<attribute>(pool_handle);
 	throw_if_error_lazy(status_and_attribute_value.status,
 		"Obtaining attribute " + std::to_string(static_cast<int>(attribute))
-		+ " of " + detail::identify(pool_handle));
+		+ " of " + cuda_::detail::identify(pool_handle));
 	return status_and_attribute_value.value;
 }
 
@@ -141,7 +141,7 @@ void set_attribute(handle_t pool_handle, attribute_value_t<attribute> value)
 	inner_type value_ = static_cast<inner_type>(value);
 	auto status = cuMemPoolSetAttribute(pool_handle, attribute, &value_);
 	throw_if_error_lazy(status, "Setting attribute " + std::to_string(static_cast<int>(attribute))
-		+ " of " + detail::identify(pool_handle));
+		+ " of " + cuda_::detail::identify(pool_handle));
 }
 
 } // namespace detail
@@ -169,7 +169,7 @@ inline permissions_t get_permissions(cuda_::device::id_t device_id, pool::handle
 	auto status = cuMemPoolGetAccess(&access_flags, pool_handle, &mem_location);
 	throw_if_error_lazy(status,
 		"Determining access information for " + cuda_::device::detail::identify(device_id)
-		+ " to " + pool::detail::identify(pool_handle));
+		+ " to " + cuda_::detail::identify(pool_handle));
 	return permissions::detail::from_flags(access_flags);
 }
 
@@ -196,7 +196,7 @@ inline void set_permissions(span<cuda_::device::id_t> device_ids, pool::handle_t
 	auto status = cuMemPoolSetAccess(pool_handle, descriptors.data(), descriptors.size());
 	throw_if_error_lazy(status,
 		"Setting access get_permissions for " + std::to_string(descriptors.size())
-		+ " devices to " + pool::detail::identify(pool_handle));
+		+ " devices to " + cuda_::detail::identify(pool_handle));
 }
 
 inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_handle, permissions_t permissions)
@@ -216,7 +216,7 @@ inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_h
 	auto status = cuMemPoolSetAccess(pool_handle, &desc, 1);
 	throw_if_error_lazy(status,
 		"Setting access get_permissions for " + cuda_::device::detail::identify(device_id)
-		+ " to " + pool::detail::identify(pool_handle));
+		+ " to " + cuda_::detail::identify(pool_handle));
 }
 
 } // namespace detail
@@ -272,7 +272,7 @@ public:
 	void trim(size_t min_bytes_to_keep) const
 	{
 		auto status = cuMemPoolTrimTo(handle_, min_bytes_to_keep);
-		throw_if_error_lazy(status, "Attempting to trim " + pool::detail::identify(*this)
+		throw_if_error_lazy(status, "Attempting to trim " + cuda_::detail::identify(*this)
 			+ " down to " + std::to_string(min_bytes_to_keep));
 	}
 
@@ -281,7 +281,7 @@ public:
 	{
 		auto attribute_with_status = pool::detail::get_attribute_with_status<attribute>(handle_);
 		throw_if_error_lazy(attribute_with_status.status, "Failed obtaining attribute "
-			+ std::to_string(static_cast<int>(attribute)) + " of " + pool::detail::identify(*this));
+			+ std::to_string(static_cast<int>(attribute)) + " of " + cuda_::detail::identify(*this));
 		return attribute_with_status.value;
 	}
 
@@ -293,7 +293,7 @@ public:
 		auto inner_value = static_cast<inner_type>(value);
 		auto status = cuMemPoolSetAttribute(handle_, attribute, &inner_value);
 		throw_if_error_lazy(status, "Failed setting attribute " + std::to_string(static_cast<int>(attribute))
-			+ " of " + pool::detail::identify(*this));
+			+ " of " + cuda_::detail::identify(*this));
 	}
 
 	size_t release_threshold() const
@@ -457,7 +457,7 @@ pool_t create(const cuda_::device_t& device);
 
 } // namespace memory
 
-CAW_DEFINE_HANDLE_TRAITS(memory::pool::handle_t, isnt_contextual, cuMemPoolDestroy, cuMemPoolDestroy, memory::pool::detail::identify);
+CAW_DEFINE_HANDLE_TRAITS(memory::pool::handle_t, isnt_contextual, cuMemPoolDestroy, cuMemPoolDestroy, identify);
 
 } // namespace cuda_
 

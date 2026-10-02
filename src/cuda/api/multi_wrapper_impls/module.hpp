@@ -40,7 +40,7 @@ inline cuda_::kernel_t module_t::get_kernel(const char* name) const
 	kernel::handle_t kernel_function_handle;
 	auto result = cuModuleGetFunction(&kernel_function_handle, handle_, name);
 	throw_if_error_lazy(result, std::string("Failed obtaining function ") + name
-						   + " from " + module::detail::identify(*this));
+						   + " from " + detail::identify(*this));
 	return kernel::wrap(context::detail::get_device_id(context_handle_), context_handle_, kernel_function_handle);
 }
 
@@ -57,7 +57,7 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 	auto status = creator_function(new_module_handle, module_data);
 	throw_if_error_lazy(status, std::string("Failed loading a module from memory location ")
 		+ cuda_::detail::ptr_as_hex(module_data)
-		+ " within " + context::detail::identify(context));
+		+ " within " + cuda_::detail::identify(context));
 	bool do_take_ownership { true };
 	bool doesnt_hold_pc_refcount_unit { false };
 		// TODO: Do we want to allow holding a refcount unit here, if context is

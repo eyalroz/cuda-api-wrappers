@@ -99,7 +99,7 @@ inline id_t get_id(handle_t handle)
 {
 	id_t id;
 	auto status = cuGraphExecGetId(handle, &id);
-	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + cuda_::detail::identify(handle));
 	return id;
 }
 #endif // CUDA_VERSION >= 13010
@@ -237,7 +237,7 @@ inline void launch_graph_in_current_context(stream::handle_t stream_handle, inst
 {
 	auto status = cuGraphLaunch(graph_instance_handle, stream_handle);
 	throw_if_error_lazy(status, "Trying to launch "
-		+ instance::detail::identify(graph_instance_handle) + " on " + stream::detail::identify(stream_handle));
+		+ cuda_::detail::identify(graph_instance_handle) + " on " + cuda_::detail::identify(stream_handle));
 }
 
 inline void launch(context::handle_t context_handle, stream::handle_t stream_handle, instance::handle_t graph_instance_handle)
@@ -409,13 +409,13 @@ inline flags_t build_flags(
 
 inline std::string identify(const instance_t& instance)
 {
-	return identify(instance.handle()) + " instantiated from "
-		+ template_::detail::identify(instance.template_handle());
+	return cuda_::detail::identify(instance.handle()) + " instantiated from "
+		+ cuda_::detail::identify(instance.template_handle());
 }
 
 inline std::string identify(const instance_t& instance, const template_t& template_)
 {
-	return identify(instance.handle()) + " instantiated from "
+	return cuda_::detail::identify(instance.handle()) + " instantiated from "
 	   + template_::detail::identify(template_);
 }
 
@@ -429,7 +429,7 @@ void set_node_parameters(
 {
 	auto status = detail::set_node_parameters_nothrow<Kind>(
 		instance.handle(), node.handle(), node::detail::kind_traits<Kind>::marshal(parameters));
-	throw_if_error_lazy(status, "Setting parameters of " + node::detail::identify(node)
+	throw_if_error_lazy(status, "Setting parameters of " + cuda_::detail::identify(node)
 		+ " in " + instance::detail::identify(instance));
 }
 
@@ -474,14 +474,13 @@ inline instance_t instantiate(
 	instance::handle_t instance_handle;
 #if CUDA_VERSION >= 11040
 	auto status = cuGraphInstantiateWithFlags(&instance_handle, template_.handle(), flags);
-	throw_if_error_lazy(status, "Instantiating " + template_::detail::identify(template_) );
+	throw_if_error_lazy(status, "Instantiating " + cuda_::detail::identify(template_) );
 #else
 	static constexpr size_t log_buffer_size { 2048 };
 	auto log_buffer = make_unique_span<char>(log_buffer_size);
 	node::handle_t error_node;
 	auto status = cuGraphInstantiate(&instance_handle, template_.handle(), &error_node, log_buffer.data(), log_buffer_size);
-	throw_if_error_lazy(status, "Instantiating " + template_::detail::identify(template_) + ": error at "
-		+ node::detail::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
+	throw_if_error_lazy(status, "Instantiating " + cuda_::detail::identify(template_) + ": error at "		+ node::detail::identify(error_node) + " ; log buffer contents:\n" + log_buffer.data());
 #endif // CUDA_VERSION >= 11000
 	static constexpr bool is_owning { true };
 	return instance::wrap(template_.handle(), instance_handle, is_owning);
@@ -491,8 +490,7 @@ void launch(const cuda_::stream_t& stream, const instance_t& instance);
 
 } // namespace graph
 
-CAW_DEFINE_HANDLE_TRAITS(graph::instance::handle_t, isnt_contextual, cuGraphExecDestroy,
-	cuGraphExecDestroy, graph::instance::detail::identify);
+CAW_DEFINE_HANDLE_TRAITS(graph::instance::handle_t, isnt_contextual, cuGraphExecDestroy, cuGraphExecDestroy, identify);
 
 } // namespace cuda_
 

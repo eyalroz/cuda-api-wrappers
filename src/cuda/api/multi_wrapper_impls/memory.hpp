@@ -53,8 +53,8 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<
 	}
 	if (stream->context_handle() != source.context_handle()) {
 		throw std::invalid_argument("Attempt to copy an array in"
-									  + context::detail::identify(source.context_handle()) + " via "
-									  + stream::detail::identify(*stream));
+									  + cuda_::detail::identify(source.context_handle()) + " via "
+									  + cuda_::detail::identify(*stream));
 	}
 	detail::copy<T, NumDimensions>(destination, source, stream->handle());
 }
@@ -169,10 +169,10 @@ inline void copy(
 	throw_if_error_lazy(status,
 		std::string("Failed copying data between devices: From address ")
 		+ cuda_::detail::ptr_as_hex(source) + " in "
-		+ context::detail::identify(source_context.handle()) + " to address "
+		+ cuda_::detail::identify(source_context.handle()) + " to address "
 		+ cuda_::detail::ptr_as_hex(destination) + " in "
-		+ context::detail::identify(destination_context.handle()) +
-		(stream ? " on " + stream::detail::identify(*stream) : ""));
+		+ cuda_::detail::identify(destination_context.handle()) +
+		(stream ? " on " + cuda_::detail::identify(*stream) : ""));
 }
 
 } // namespace inter_context
@@ -451,7 +451,7 @@ inline region_t allocate(const pool_t& pool, const stream_t &stream, size_t num_
 	CUdeviceptr dptr;
 	auto status = cuMemAllocFromPoolAsync(&dptr, num_bytes, pool.handle(), stream.handle());
 	throw_if_error_lazy(status, "Failed scheduling an allocation of " + std::to_string(num_bytes)
-		+ " bytes of memory from " + detail::identify(pool) + ", on " + stream::detail::identify(stream));
+		+ " bytes of memory from " + cuda_::detail::identify(pool) + ", on " + cuda_::detail::identify(stream));
 	return {as_pointer(dptr), num_bytes };
 }
 
@@ -463,7 +463,7 @@ shared_handle_t<Kind> export_(const pool_t& pool)
 	shared_handle_t<Kind> result;
 	static constexpr unsigned long long flags { 0 };
 	auto status = cuMemPoolExportToShareableHandle(&result, pool.handle(), static_cast<CUmemAllocationHandleType>(Kind), flags);
-	throw_if_error_lazy(status, "Exporting " + pool::detail::identify(pool) +" for inter-process use");
+	throw_if_error_lazy(status, "Exporting " + cuda_::detail::identify(pool) +" for inter-process use");
 	return result;
 }
 

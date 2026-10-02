@@ -189,7 +189,7 @@ inline void validate_block_dimension_compatibility(
 		throw std::invalid_argument(
 			"specified block dimensions result in blocks of size " + std::to_string(volume)
 			+ ", exceeding the maximum possible block size of " + std::to_string(max_block_size)
-			+ " for " + kernel::detail::identify(kernel));
+			+ " for " + identify(kernel));
 	}
 }
 
@@ -202,11 +202,10 @@ inline void validate_dyanmic_shared_memory_size(
 	if (dynamic_shared_memory_size > max_dyn_shmem) {
 		throw std::invalid_argument(
 			"specified size of dynamic shared memory, " + std::to_string(dynamic_shared_memory_size)
-			+ "bytes, exceeds the maximum supported by  " + kernel::detail::identify(kernel)
+			+ "bytes, exceeds the maximum supported by  " + identify(kernel)
 			+ ", " + std::to_string(max_dyn_shmem) + " bytes");
 	}
 }
-
 
 template<typename... KernelParameters>
 void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::operator()(
@@ -311,8 +310,8 @@ struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 #ifndef NDEBUG
 		if (wrapped_kernel.context() != stream.context()) {
-			throw std::invalid_argument{"Attempt to launch " + kernel::detail::identify(wrapped_kernel)
-				+ " on " + stream::detail::identify(stream) + ": Different contexts"};
+			throw std::invalid_argument{"Attempt to launch " + identify(wrapped_kernel)
+				+ " on " + identify(stream) + ": Different contexts"};
 		}
 		validate_compatibility(wrapped_kernel, launch_config);
 #endif
@@ -358,8 +357,8 @@ void enqueue_launch(
 	// It is assumed arguments were already been validated - except for:
 #ifndef NDEBUG
 	if (kernel.context() != stream.context()) {
-		throw std::invalid_argument{"Attempt to launch " + kernel::detail::identify(kernel)
-			+ " on " + stream::detail::identify(stream) + ": Different contexts"};
+		throw std::invalid_argument{"Attempt to launch " + detail::identify(kernel)
+			+ " on " + identify(stream) + ": Different contexts"};
 	}
 	detail::validate_compatibility(kernel, launch_configuration);
 #if CUDA_VERSION >= 13020
@@ -441,8 +440,8 @@ void launch_type_erased(
 		"The element type of the marshalled arguments container type must be either void* or const void*");
 #ifndef NDEBUG
 	if (kernel.context() != stream.context()) {
-		throw std::invalid_argument{"Attempt to launch " + kernel::detail::identify(kernel)
-			+ " on " + stream::detail::identify(stream) + ": Different contexts"};
+		throw std::invalid_argument{"Attempt to launch " + detail::identify(kernel)
+			+ " on " + cuda_::detail::identify(stream) + ": Different contexts"};
 	}
 	detail::validate_compatibility(kernel, launch_configuration);
 	detail::validate(launch_configuration);

@@ -30,6 +30,8 @@
 
 #include <string>
 
+#include "device.hpp"
+
 namespace cuda_ {
 
 ///@cond
@@ -273,7 +275,7 @@ inline handle_t export_(event::handle_t event_handle)
 	handle_t ipc_handle;
 	auto status = cuIpcGetEventHandle(&ipc_handle, event_handle);
 	throw_if_error_lazy(status, "Failed obtaining an IPC event handle for " +
-		event::detail::identify(event_handle));
+		cuda_::detail::identify(event_handle));
 	return ipc_handle;
 }
 

@@ -252,7 +252,7 @@ protected:
 	detail::handle_ownership_t<array_t> ownership_;
 };
 
-CAW_DEFINE_HANDLE_TRAITS(array::handle_t, is_contextual, cuArrayDestroy, cuArrayDestroy, array::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(array::handle_t, is_contextual, cuArrayDestroy, cuArrayDestroy, identify)
 
 namespace array {
 

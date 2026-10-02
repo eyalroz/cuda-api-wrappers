@@ -181,7 +181,7 @@ inline memory::region_t get_global(const context_t& context, const library_t& li
 	auto result = cuLibraryGetGlobal(&dptr, &size, library.handle(), name);
 	throw_if_error_lazy(result,
 		std::string("Obtaining the memory address and size for the global object '") + name + "' from "
-		+ library::detail::identify(library) + " in context " + context::detail::identify(context));
+		+ detail::identify(library) + " in context " + detail::identify(context));
 	return { memory::as_pointer(dptr), size };
 	// Note: Nothing is holding a PC refcount unit here!
 }
@@ -197,7 +197,7 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 	size_t region_size;
 	auto status = cuLibraryGetManaged(&region_start, &region_size, library.handle(), name);
 	throw_if_error_lazy(status, std::string("Failed obtaining the managed memory region '") + name
-		+ "' from " + library::detail::identify(library));
+		+ "' from " + detail::identify(library));
 	return { memory::as_pointer(region_start), region_size };
 }
 
@@ -212,7 +212,7 @@ inline module_t create(const context_t& context, const library_t& library)
 	module::handle_t new_handle;
 	auto status = cuLibraryGetModule(&new_handle, library.handle());
 	throw_if_error_lazy(status, std::string("Failed creating a module '") +
-		+ "' from " + library::detail::identify(library) + " in " + context::detail::identify(context));
+		+ "' from " + cuda_::detail::identify(library) + " in " + cuda_::detail::identify(context));
 	constexpr bool is_owning { true };
 	return module::detail::wrap(context.device_id(), context.handle(), new_handle,
 		is_owning, does_not_hold_primary_context_refcount_unit);
@@ -229,7 +229,7 @@ inline void* get_unified_function(const context_t& context, const library_t& lib
 	void* function_ptr;
 	auto status = cuLibraryGetUnifiedFunction(&function_ptr, library.handle(), symbol);
 	throw_if_error_lazy(status, std::string("Failed obtaining a pointer for function '") + symbol
-		+ "' from " + library::detail::identify(library) + " in " + context::detail::identify(context));
+		+ "' from " + cuda_::detail::identify(library) + " in " + detail::identify(context));
 	return function_ptr;
 }
 
@@ -353,7 +353,7 @@ library_t create(
 
 } // namespace library
 
-CAW_DEFINE_HANDLE_TRAITS(library::handle_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload, library::detail::identify);
+CAW_DEFINE_HANDLE_TRAITS(library::handle_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload, identify);
 
 } // namespace cuda_
 

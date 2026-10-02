@@ -51,8 +51,8 @@ inline void enqueue_in_current_context(stream::handle_t stream_handle, handle_t 
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
 	throw_if_error_lazy(status,
-		"Failed recording " + event::detail::identify(event_handle)
-		+ " on " + stream::detail::identify(stream_handle));
+		"Failed recording " + cuda_::detail::identify(event_handle)
+		+ " on " + cuda_::detail::identify(stream_handle));
 }
 
 /**
@@ -187,7 +187,7 @@ public: // other non-mutator methods
 		if (status == status::success) return true;
 		if (status == status::async_dependency_ops_not_yet_completed) return false;
 		throw runtime_error(status,
-			"Could not determine whether " + event::detail::identify(handle_)
+			"Could not determine whether " + detail::identify(handle_)
 			+ "has already occurred or not");
 	}
 
@@ -276,7 +276,7 @@ protected: // data members
 		// it must release its refcount unit on destruction
 };
 
-CAW_DEFINE_HANDLE_TRAITS(event::handle_t, is_contextual, cuEventDestroy, cuEventDestroy, event::detail::identify);
+CAW_DEFINE_HANDLE_TRAITS(event::handle_t, is_contextual, cuEventDestroy, cuEventDestroy, identify);
 
 namespace event {
 
@@ -412,7 +412,7 @@ inline void wait(const event_t& event)
 	auto event_handle = event.handle();
 	context::current::detail::scoped_override_t context_for_this_scope(context_handle);
 	auto status = cuEventSynchronize(event_handle);
-	throw_if_error_lazy(status, "Failed synchronizing " + event::detail::identify(event));
+	throw_if_error_lazy(status, "Failed synchronizing " + detail::identify(event));
 }
 
 inline void synchronize(const event_t& event)

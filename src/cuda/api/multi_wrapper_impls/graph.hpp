@@ -28,14 +28,14 @@ inline bool is_enabled_in(const node_t& node, const instance_t& instance)
 {
 	unsigned result;
 	auto status = cuGraphNodeGetEnabled(instance.handle(), node.handle(), &result);
-	throw_if_error_lazy(status, "Determining whether " + node::detail::identify(node) + " is active in " + instance::detail::identify(instance));
+	throw_if_error_lazy(status, "Determining whether " + cuda_::detail::identify(node) + " is active in " + instance::detail::identify(instance));
 	return (result == 1);
 }
 
 inline void set_enabled_in(const node_t& node, const instance_t& instance, bool enabled)
 {
 	auto status = cuGraphNodeSetEnabled(instance.handle(), node.handle(), enabled);
-	throw_if_error_lazy(status, "Enabling " + node::detail::identify(node) + " in " + instance::detail::identify(instance));
+	throw_if_error_lazy(status, "Enabling " + cuda_::detail::identify(node) + " in " + instance::detail::identify(instance));
 }
 #endif // CUDA_VERSION >= 11060
 
@@ -43,7 +43,7 @@ inline void launch(const instance_t& instance, const stream_t& stream)
 {
 	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphLaunch(instance.handle(), stream.handle());
-	throw_if_error_lazy(status, "Launching " + instance::detail::identify(instance) + " on " + stream::detail::identify(stream));
+	throw_if_error_lazy(status, "Launching " + instance::detail::identify(instance) + " on " + cuda_::detail::identify(stream));
 }
 
 namespace instance {
@@ -53,7 +53,7 @@ inline void upload(const instance_t& instance, const stream_t& stream)
 {
 	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphUpload(instance.handle(), stream.handle());
-	throw_if_error_lazy(status, "Uploading " + instance::detail::identify(instance) + " on " + stream::detail::identify(stream));
+	throw_if_error_lazy(status, "Uploading " + instance::detail::identify(instance) + " on " + cuda_::detail::identify(stream));
 }
 #endif // CUDA_VERSION >= 11010
 
@@ -174,7 +174,7 @@ inline graph::template_t end(const cuda_::stream_t& stream)
 	graph::template_::handle_t new_graph;
 	auto status = cuStreamEndCapture(stream.handle(), &new_graph);
 	throw_if_error_lazy(status,
-		"Completing the capture of operations into a graph on " + stream::detail::identify(stream));
+		"Completing the capture of operations into a graph on " + cuda_::detail::identify(stream));
 	return graph::template_::wrap(new_graph, do_take_ownership);
 }
 

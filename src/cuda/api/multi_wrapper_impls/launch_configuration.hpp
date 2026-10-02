@@ -36,7 +36,7 @@ inline void validate_num_parameters(const kernel_t& kernel, size_t num_parameter
 	auto expected_num_parameters = kernel.num_parameters();
 	if (expected_num_parameters != num_parameters) {
 		throw std::invalid_argument("Attempt to launch a kernel taking " + std::to_string(num_parameters)
-			+ " parameters with " + std::to_string(expected_num_parameters) + ": " + kernel::detail::identify(kernel));
+			+ " parameters with " + std::to_string(expected_num_parameters) + ": " + identify(kernel));
 	}
 }
 #endif

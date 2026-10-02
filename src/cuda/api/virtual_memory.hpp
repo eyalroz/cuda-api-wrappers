@@ -133,7 +133,7 @@ inline status_t cancel_reservation_nothrow(
 inline void cancel_reservation(memory::region_t reserved)
 {
 	auto status = cancel_reservation_nothrow(reserved);
-	throw_if_error_lazy(status, "Failed freeing a reservation of " + cuda_::memory::detail::identify(reserved));
+	throw_if_error_lazy(status, "Failed freeing a reservation of " + cuda_::detail::identify(reserved));
 }
 
 } // namespace detail
@@ -195,7 +195,7 @@ inline reserved_address_range_t reserve(region_t requested_region, alignment_t a
 	unsigned long flags { 0 };
 	CUdeviceptr ptr;
 	auto status = cuMemAddressReserve(&ptr, requested_region.size(), alignment, device::address(requested_region), flags);
-	throw_if_error_lazy(status, "Failed making a reservation of " + cuda_::memory::detail::identify(requested_region)
+	throw_if_error_lazy(status, "Failed making a reservation of " + cuda_::detail::identify(requested_region)
 		+ " with alignment value " + std::to_string(alignment));
 	bool is_owning { true };
 	return detail::wrap(memory::region_t {as_pointer(ptr), requested_region.size() }, alignment, is_owning);
@@ -442,7 +442,7 @@ inline status_t unmap_nothrow(cuda_::detail::tagged<mapping_t, region_t> address
 inline void unmap_(region_t address_range)
 {
 	auto result = unmap_nothrow(address_range);
-	throw_if_error_lazy(result, "Failed unmapping " + mapping::detail::identify(address_range));
+	throw_if_error_lazy(result, "Failed unmapping " + cuda_::detail::identify(address_range));
 }
 
 } // namespace detail
@@ -520,7 +520,7 @@ inline mapping_t map(region_t region, const physical_allocation_t& physical_allo
 	auto handle = physical_allocation.handle();
 	auto status = cuMemMap(device::address(region), region.size(), offset_into_allocation, handle, flags);
 	throw_if_error_lazy(status, "Failed making a virtual memory mapping of "
-		+ physical_allocation::detail::identify(physical_allocation)
+		+ cuda_::detail::identify(physical_allocation)
 		+ " to the range of size " + std::to_string(region.size()) + " bytes at " +
 		cuda_::detail::ptr_as_hex(region.data()));
 	constexpr bool is_owning { true };

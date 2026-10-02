@@ -69,10 +69,11 @@ struct unit { };
 template <typename Tag, typename T = void>
 struct tagged {
 	using tag_type = Tag;
-	using type = T;
-	type value;
+	using value_type = T;
+	value_type value;
 	operator T const&() const noexcept { return value; }
 	operator T&() noexcept { return value; }
+	value_type untag() const noexcept { return value; }
 };
 
 } // namespace detail

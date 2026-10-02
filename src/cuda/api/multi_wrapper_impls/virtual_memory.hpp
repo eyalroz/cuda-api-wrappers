@@ -143,14 +143,12 @@ void mapping_t::set_permissions(
 } // namespace memory
 
 CAW_DEFINE_HANDLE_TRAITS(
-	memory::virtual_::reserved_address_range_t::handle_type,
-	isnt_contextual, memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree,
-	memory::virtual_::reservation::detail::identify);
+	memory::virtual_::reserved_address_range_t::handle_type, isnt_contextual,
+	memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree, identify);
 
 CAW_DEFINE_HANDLE_TRAITS(
-	memory::virtual_::mapping_t::handle_type,
-	isnt_contextual, memory::virtual_::detail::unmap_nothrow, cuMemUnmap,
-	memory::virtual_::mapping::detail::identify);
+	memory::virtual_::mapping_t::handle_type, isnt_contextual,
+	memory::virtual_::detail::unmap_nothrow, cuMemUnmap, identify);
 
 } // namespace cuda_
 

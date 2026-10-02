@@ -119,13 +119,13 @@ inline void enable_access_to(context::handle_t peer_context)
 	enum : unsigned {fixed_flags = 0 };
 	// No flags are supported as of CUDA 8.0
 	auto status = cuCtxEnablePeerAccess(peer_context, fixed_flags);
-	throw_if_error_lazy(status, "Failed enabling access to peer " + context::detail::identify(peer_context));
+	throw_if_error_lazy(status, "Failed enabling access to peer " + cuda_::detail::identify(peer_context));
 }
 
 inline void disable_access_to(context::handle_t peer_context)
 {
 	auto status = cuCtxDisablePeerAccess(peer_context);
-	throw_if_error_lazy(status, "Failed disabling access to peer " + context::detail::identify(peer_context));
+	throw_if_error_lazy(status, "Failed disabling access to peer " + cuda_::detail::identify(peer_context));
 }
 
 inline void enable_access(context::handle_t accessor, context::handle_t peer)

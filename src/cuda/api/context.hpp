@@ -132,7 +132,7 @@ inline size_t total_memory(handle_t handle)
 {
 	size_t total_mem_in_bytes;
 	auto status = cuMemGetInfo(nullptr, &total_mem_in_bytes);
-	throw_if_error_lazy(status, "Failed determining amount of total memory for " + identify(handle));
+	throw_if_error_lazy(status, "Failed determining amount of total memory for " + cuda_::detail::identify(handle));
 	return total_mem_in_bytes;
 
 }
@@ -141,7 +141,7 @@ inline size_t free_memory(handle_t handle)
 {
 	size_t free_mem_in_bytes;
 	auto status = cuMemGetInfo(&free_mem_in_bytes, nullptr);
-	throw_if_error_lazy(status, "Failed determining amount of free memory for " + identify(handle));
+	throw_if_error_lazy(status, "Failed determining amount of free memory for " + cuda_::detail::identify(handle));
 	return free_mem_in_bytes;
 }
 
@@ -150,7 +150,7 @@ inline void set_cache_preference(handle_t handle, multiprocessor_cache_preferenc
 	auto status = cuCtxSetCacheConfig(static_cast<CUfunc_cache>(preference));
 	throw_if_error_lazy(status,
 		"Setting the multiprocessor L1/Shared Memory cache distribution preference to " +
-		std::to_string(static_cast<unsigned>(preference)) + " for " + identify(handle));
+		std::to_string(static_cast<unsigned>(preference)) + " for " + cuda_::detail::identify(handle));
 }
 
 inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
@@ -158,7 +158,7 @@ inline multiprocessor_cache_preference_t cache_preference(handle_t handle)
 	CUfunc_cache preference;
 	auto status = cuCtxGetCacheConfig(&preference);
 	throw_if_error_lazy(status,
-		"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + identify(handle));
+		"Obtaining the multiprocessor L1/Shared Memory cache distribution preference for " + cuda_::detail::identify(handle));
 	return static_cast<multiprocessor_cache_preference_t>(preference);
 }
 
@@ -201,7 +201,7 @@ inline status_t destroy_nothrow(handle_t handle) noexcept
 inline void destroy(handle_t handle)
 {
 	auto status = destroy_nothrow(handle);
-	throw_if_error_lazy(status, "Failed destroying " + identify(handle));
+	throw_if_error_lazy(status, "Failed destroying " + cuda_::detail::identify(handle));
 }
 
 inline void destroy(handle_t handle, device::id_t device_index)
@@ -525,7 +525,7 @@ public: // other non-mutator methods
 		context::stream_priority_range_t result;
 		auto status = cuCtxGetStreamPriorityRange(&result.least, &result.greatest);
 		throw_if_error_lazy(status, "Obtaining the priority range for streams within " +
-			context::detail::identify(*this));
+			detail::identify(*this));
 		return result;
 	}
 
@@ -547,7 +547,7 @@ public: // other non-mutator methods
 	{
 		unsigned int raw_version;
 		auto status = cuCtxGetApiVersion(handle_, &raw_version);
-		throw_if_error_lazy(status, "Failed obtaining the API version for " + context::detail::identify(*this));
+		throw_if_error_lazy(status, "Failed obtaining the API version for " + detail::identify(*this));
 		return version_t::from_single_number(static_cast<combined_version_t>(raw_version));
 	}
 
@@ -733,7 +733,37 @@ protected: // data members
 	// primary or not?
 }; // class context_t
 
-CAW_DEFINE_HANDLE_TRAITS(context::handle_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy, context::detail::identify);
+CAW_DEFINE_HANDLE_TRAITS(context::handle_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy, identify);
+
+// template<>
+// struct cuda_::detail::handle_traits<context::handle_t> {
+// 	using handle_type = context::handle_t;
+// 	using release_type = handle_release<handle_type>;
+// 	static constexpr bool contextualized = isnt_contextual;
+//
+// 	static status_t release_nothrow(std::false_type, context::handle_t, handle_type handle) noexcept
+// 	{
+// 		return cuCtxDestroy_v2(handle);
+// 	}
+//
+// 	static status_t release_nothrow(std::true_type, context::handle_t context_handle, handle_type handle) noexcept
+// 	{
+// 		const ::cuda_::context::current::detail::scoped_override_t caw_context_for_this_scope_(context_handle);
+// 		return cuCtxDestroy_v2(handle);
+// 	}
+//
+// 	static std::string identify(context::handle_t handle)
+// 	{
+// 		using unique_handle_type = std::conditional<
+// 			std::is_same<handle_type, void*>::value or
+// 			std::is_same<handle_type, const void*>::value or
+// 			std::is_same<memory::region_t, handle_type>::value or
+// 			std::is_integral<handle_type>::value,
+// 			tagged<context_t, handle_type>, handle_type>::type;
+// 		return detail::identify(unique_handle_type{handle});
+// 	}
+// 	static constexpr auto raw_release_func_name = "cuCtxDestroy_v2";
+// };
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{

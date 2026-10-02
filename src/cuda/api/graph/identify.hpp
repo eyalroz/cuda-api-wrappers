@@ -19,20 +19,15 @@ namespace template_ {
 
 namespace detail {
 
-inline std::string identify(handle_t handle)
-{
-	return "execution graph template " + cuda_::detail::ptr_as_hex(handle);
-}
-
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail::identify(device_id);
+	return cuda_::detail::identify(handle) + " on " + device::detail::identify(device_id);
 }
 /*
 
 inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
-	return identify(handle) + " on " + context::detail::identify(context_handle);
+	return identify(handle) + " on " + cuda_::detail::identify(context_handle);
 }
 
 inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
@@ -49,24 +44,19 @@ namespace instance {
 
 namespace detail {
 
-inline std::string identify(handle_t handle)
-{
-	return "execution graph instance " + cuda_::detail::ptr_as_hex(handle);
-}
-
 inline std::string identify(handle_t handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + device::detail::identify(device_id);
+	return cuda_::detail::identify(handle) + " on " + device::detail::identify(device_id);
 }
 
 inline std::string identify(handle_t handle, context::handle_t context_handle)
 {
-	return identify(handle) + " on " + context::detail::identify(context_handle);
+	return cuda_::detail::identify(handle) + " on " + cuda_::detail::identify(context_handle);
 }
 
 inline std::string identify(handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
-	return identify(handle) + " on " + context::detail::identify(context_handle, device_id);
+	return cuda_::detail::identify(handle) + " on " + context::detail::identify(context_handle, device_id);
 }
 
 } // namespace detail
@@ -77,14 +67,9 @@ namespace node {
 
 namespace detail {
 
-inline std::string identify(handle_t handle)
-{
-	return std::string("node with handle ") + ::cuda_::detail::ptr_as_hex(handle);
-}
-
 inline std::string identify(handle_t node_handle, template_::handle_t graph_template_handle)
 {
-	return identify(node_handle) + " in " + template_::detail::identify(graph_template_handle);
+	return cuda_::detail::identify(node_handle) + " in " + cuda_::detail::identify(graph_template_handle);
 }
 
 } // namespace detail

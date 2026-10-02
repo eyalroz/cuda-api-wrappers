@@ -486,10 +486,10 @@ public:
 		typename traits::raw_parameters_type raw_params;
 		if (traits::param_getter == nullptr) {
 			throw cuda_::runtime_error(status::named_t::not_supported,
-				"Querying parameters is not supported for this kind of node: " + node::detail::identify(*this));
+				"Querying parameters is not supported for this kind of node: " + cuda_::detail::identify(*this));
 		}
 		auto status = traits::param_getter(handle(), &raw_params);
-		throw_if_error_lazy(status, "setting parameters for " + node::detail::identify(*this));
+		throw_if_error_lazy(status, "setting parameters for " + cuda_::detail::identify(*this));
 		params_ = traits::unmarshal(raw_params);
 		return params_;
 	}
@@ -499,7 +499,7 @@ public:
 		static_assert(Kind != kind_t::empty, "Empty CUDA graph nodes don't have parameters");
 		auto marshalled_params = traits::marshal(parameters);
 		auto status = traits::param_setter(handle(), &marshalled_params);
-		throw_if_error_lazy(status, "setting parameters for " + node::detail::identify(*this));
+		throw_if_error_lazy(status, "setting parameters for " + cuda_::detail::identify(*this));
 	}
 
 public: // friendship
