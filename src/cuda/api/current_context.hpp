@@ -130,7 +130,7 @@ inline void push(handle_t context_handle)
 {
 	auto status = cuCtxPushCurrent(context_handle);
 	throw_if_error_lazy(status, "Failed pushing to the top of the context stack: "
-		+ context::detail::identify(context_handle));
+		+ cuda_::detail::identify(context_handle));
 }
 
 /**
@@ -174,7 +174,7 @@ inline void set(handle_t context_handle)
 	// ... but decided against it.
 	auto status = cuCtxSetCurrent(context_handle);
 	throw_if_error_lazy(status,
-		"Failed setting the current context to " + context::detail::identify(context_handle));
+		"Failed setting the current context to " + cuda_::detail::identify(context_handle));
 }
 
 } // namespace detail
@@ -298,7 +298,7 @@ inline void synchronize(context::handle_t current_context_handle)
 	auto status = cuCtxSynchronize();
 	if (not is_success(status)) {
 		throw cuda_::runtime_error(status,"Failed synchronizing "
-			+ context::detail::identify(current_context_handle));
+			+ cuda_::detail::identify(current_context_handle));
 	}
 }
 

@@ -444,7 +444,7 @@ public:
 				throw std::invalid_argument("Specified (1-dimensional) block size " + std::to_string(size)
 					+ " exceeds " + std::to_string(max_threads_per_block)
 					+ " , the maximum number of threads per block supported by "
-					+ kernel::detail::identify(*kernel_));
+					+ detail::identify(*kernel_));
 			}
 		}
 		if (device_id_) {
@@ -663,7 +663,7 @@ public:
 		if (device_id_ and kernel_->device_id() != device_id_.value()) {
 			throw std::invalid_argument("Launch config builder already associated with "
 			+ device::detail::identify(*device_id_) + " and cannot further be associated "
-			"with " +kernel::detail::identify(*wrapped_kernel_ptr));
+			"with " + detail::identify(*wrapped_kernel_ptr));
 		}
 #ifndef NDEBUG
 		validate_kernel(wrapped_kernel_ptr);
@@ -685,7 +685,7 @@ public:
 	{
 		if (kernel_ and kernel_->device_id() != device_id) {
 			throw std::invalid_argument("Launch config builder already associated with "
-				+ kernel::detail::identify(*kernel_) + " and cannot further be associated "
+				+ detail::identify(*kernel_) + " and cannot further be associated "
 				"another device: " + device::detail::identify(device_id));
 		}
 		device_id_ = device_id;

@@ -26,7 +26,7 @@ namespace detail {
 inline void destroy_view(handle_t handle)
 {
 	auto status = cuTexObjectDestroy(handle);
-	throw_if_error_lazy(status, "Failed destroying texture object " + identify(handle));
+	throw_if_error_lazy(status, "Failed destroying texture object " + cuda_::detail::identify(handle));
 }
 
 }
@@ -190,7 +190,7 @@ inline texture_view wrap(
 
 } // namespace texture
 
-CAW_DEFINE_HANDLE_TRAITS(texture::handle_t, is_contextual, cuTexObjectDestroy, cuTexObjectDestroy, texture::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(texture::handle_t, is_contextual, cuTexObjectDestroy, cuTexObjectDestroy, cuda_::detail::identify)
 
 } // namespace cuda_
 

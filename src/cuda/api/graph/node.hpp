@@ -28,8 +28,6 @@ node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept;
 
 namespace detail {
 
-std::string identify(const node_t &node);
-
 inline status_t get_dependencies(
 	handle_t                     handle,
 	handle_t      * __restrict__ dependency_handles,
@@ -61,7 +59,7 @@ inline template_::handle_t graph_handle_of(handle_t handle)
 {
 	template_::handle_t graph_template_handle;
 	auto status = cuGraphNodeGetContainingGraph(handle, &graph_template_handle);
-	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + graph::node::detail::identify(handle));
+	throw_if_error_lazy(status, "Failed obtaining the graph template containing " + cuda_::detail::identify(handle));
 	return graph_template_handle;
 }
 
@@ -69,7 +67,7 @@ inline id_t get_id(handle_t handle)
 {
 	id_t id;
 	auto status = cuGraphNodeGetLocalId(handle, &id);
-	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + cuda_::detail::identify(handle));
 	return id;
 }
 #endif // CUDA_VERSION >= 13010
@@ -110,7 +108,7 @@ public:
 	{
 		type_type result;
 		auto status = cuGraphNodeGetType(handle_, &result);
-		throw_if_error_lazy(status, "Obtaining the type of " + node::detail::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the type of " + cuda_::detail::identify(*this));
 		return result;
 	}
 
@@ -119,7 +117,7 @@ public:
 		size_t num_dependencies_;
 		static constexpr auto no_returned_handles = nullptr;
 		auto status = node::detail::get_dependencies(handle_, no_returned_handles, &num_dependencies_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes on which " + node::detail::identify(*this) + " is dependent");
+		throw_if_error_lazy(status, "Obtaining the number of nodes on which " + cuda_::detail::identify(*this) + " is dependent");
 		return num_dependencies_;
 	}
 
@@ -128,7 +126,7 @@ public:
 		size_t num_dependents_;
 		static constexpr auto no_returned_handles = nullptr;
 		auto status = node::detail::get_dependents(handle_, no_returned_handles, &num_dependents_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes dependent on " + node::detail::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the number of nodes dependent on " + cuda_::detail::identify(*this));
 		return num_dependents_;
 	}
 
@@ -137,7 +135,7 @@ public:
 		size_type num_dependencies_ { num_dependencies() } ;
 		std::vector<node::handle_t> node_handles {num_dependencies_ };
 		auto status = node::detail::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
-		throw_if_error_lazy(status, "Obtaining the set nodes on which " + node::detail::identify(*this) + " is dependent");
+		throw_if_error_lazy(status, "Obtaining the set nodes on which " + cuda_::detail::identify(*this) + " is dependent");
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));
@@ -150,7 +148,7 @@ public:
 		size_type num_dependents_ { num_dependents() } ;
 		std::vector<node::handle_t> node_handles {num_dependents_ };
 		auto status = node::detail::get_dependents(handle_, node_handles.data(), &num_dependents_);
-		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + node::detail::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + cuda_::detail::identify(*this));
 		dependencies_type result;
 		for (const auto& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));

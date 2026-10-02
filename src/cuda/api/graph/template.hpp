@@ -45,8 +45,7 @@ namespace detail {
 
 inline std::string identify(const edge_t &edge)
 {
-	return std::string("edge from " + node::detail::identify(edge.first)
-					   + " to " + node::detail::identify(edge.second));
+	return std::string("edge from " + cuda_::detail::identify(edge.first) + " to " + cuda_::detail::identify(edge.second));
 }
 
 template <typename NodeOrHandle>
@@ -118,7 +117,7 @@ inline id_t get_id(handle_t handle)
 {
 	id_t id;
 	auto status = cuGraphGetId(handle, &id);
-	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + identify(handle));
+	throw_if_error_lazy(status, "Getting the local (DOT-printing) ID of " + cuda_::detail::identify(handle));
 	return id;
 }
 #endif // CUDA_VERSION >= 13010
@@ -318,7 +317,7 @@ node::handle_t insert_node(
 		raw_params,
 		context_handle);
 	throw_if_error_lazy(status, "Inserting a " + std::string(traits_type::name) + " node into "
-								+ template_::detail::identify(graph_template_handle));
+								+ cuda_::detail::identify(graph_template_handle));
 	return new_node_handle;
 }
 
@@ -500,7 +499,7 @@ public: // non-mutators
 	{
 		handle_type clone_handle;
 		auto status = cuGraphClone(&clone_handle, handle_);
-		throw_if_error_lazy(status, "Cloning " + template_::detail::identify(*this));
+		throw_if_error_lazy(status, "Cloning " + cuda_::detail::identify(*this));
 		return template_t{ clone_handle, do_take_ownership };
 	}
 
@@ -526,7 +525,7 @@ public: // non-mutators
 	{
 		std::size_t num_nodes_;
 		auto status = cuGraphGetNodes(handle_, nullptr, &num_nodes_);
-		throw_if_error_lazy(status, "Obtaining the number of nodes in " + template_::detail::identify(*this));
+		throw_if_error_lazy(status, "Obtaining the number of nodes in " + cuda_::detail::identify(*this));
 		return num_nodes_;
 	}
 
@@ -642,7 +641,7 @@ public: // non-mutators
 			auto status = template_::detail::insert_edges(
 				handle(), &handles.source, &handles.dest, remove_just_one);
 			throw_if_error_lazy(status, "Inserting " + node::detail::identify(edge_type{source, dest})
-				+ " into " + template_::detail::identify(associated_template));
+				+ " into " + cuda_::detail::identify(associated_template));
 		}
 
 		void edge(edge_type edge_) const
@@ -656,12 +655,12 @@ public: // non-mutators
 				throw std::invalid_argument(
 					"Differing number of source nodes and destination nodes ("
 					+ std::to_string(sources.size()) + " != " + std::to_string(destinations.size())
-					+ " in a request to insert edges into " + template_::detail::identify(associated_template) );
+					+ " in a request to insert edges into " + cuda_::detail::identify(associated_template) );
 			}
 			auto status = template_::detail::insert_edges(handle(), sources, destinations);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(sources.size()) + " edges in "
-				+ template_::detail::identify(associated_template));
+				+ cuda_::detail::identify(associated_template));
 		}
 
 		void edges(span<const edge_type> edges) const
@@ -669,7 +668,7 @@ public: // non-mutators
 			auto status = template_::detail::insert_edges(handle(), edges);
 
 			throw_if_error_lazy(status, "Inserting " + std::to_string(edges.size()) + " edges into "
-				+ template_::detail::identify(associated_template));
+				+ cuda_::detail::identify(associated_template));
 		}
 
 		template <node::kind_t Kind, typename T, typename... Ts>
@@ -703,8 +702,8 @@ public: // non-mutators
 		void node(node_ref_type node) const
 		{
 			auto status = cuGraphDestroyNode(node.handle());
-			throw_if_error_lazy(status, "Deleting " + node::detail::identify(node)
-				+ " in " + template_::detail::identify(associated_template));
+			throw_if_error_lazy(status, "Deleting " + cuda_::detail::identify(node)
+				+ " in " + cuda_::detail::identify(associated_template));
 		}
 
 		void edge(edge_type const& edge_) const
@@ -719,7 +718,7 @@ public: // non-mutators
 				handle(), &handles.source, &handles.dest, remove_single_edge);
 
 			throw_if_error_lazy(status, "Destroying " + node::detail::identify(edge_)
-				+ " in " + template_::detail::identify(associated_template));
+				+ " in " + cuda_::detail::identify(associated_template));
 		}
 
 		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
@@ -728,12 +727,12 @@ public: // non-mutators
 				throw std::invalid_argument(
 					"Differing number of source nodes and destination nodes ("
 					+ std::to_string(sources.size()) + " != " + std::to_string(destinations.size())
-					+ " in a request to insert edges into " + template_::detail::identify(associated_template) );
+					+ " in a request to insert edges into " + cuda_::detail::identify(associated_template) );
 			}
 			auto status = template_::detail::delete_edges(handle(), sources, destinations);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(sources.size()) + " edges in "
-				+ template_::detail::identify(associated_template));
+				+ cuda_::detail::identify(associated_template));
 		}
 
 		void edges(span<edge_type> edges) const
@@ -741,7 +740,7 @@ public: // non-mutators
 			auto status = template_::detail::delete_edges(handle(), edges);
 
 			throw_if_error_lazy(status, "Destroying " + std::to_string(edges.size()) + " edges in "
-				+ template_::detail::identify(associated_template));
+				+ cuda_::detail::identify(associated_template));
 		}
 	}; // delete_t
 
@@ -861,14 +860,13 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 	if (status == cuda_::status::invalid_value and search_result != nullptr) {
 		return nullopt;
 	}
-	throw_if_error_lazy(status, "Searching for a copy of " + node::detail::identify(node) + " in " + template_::detail::identify(cloned_graph));
+	throw_if_error_lazy(status, "Searching for a copy of " + cuda_::detail::identify(node) + " in " + template_::detail::identify(cloned_graph));
 	return node::wrap(cloned_graph.handle(), search_result);
 }
 
 } // namespace graph
 
-CAW_DEFINE_HANDLE_TRAITS(graph::template_::handle_t, isnt_contextual, cuGraphDestroy,
-	cuDestroyExternalMemory, graph::template_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(graph::template_::handle_t, isnt_contextual, cuGraphDestroy, cuDestroyExternalMemory, cuda_::detail::identify)
 
 } // namespace cuda_
 

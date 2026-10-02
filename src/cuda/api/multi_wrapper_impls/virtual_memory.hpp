@@ -144,14 +144,12 @@ void mapping_t::set_permissions(
 
 #if CUDA_VERSION >= 10020
 CAW_DEFINE_HANDLE_TRAITS(
-	memory::virtual_::reserved_address_range_t::handle_type,
-	isnt_contextual, memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree,
-	memory::virtual_::reservation::detail::identify)
+	memory::virtual_::reserved_address_range_t::handle_type, isnt_contextual,
+	memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree, cuda_::detail::identify)
 
 CAW_DEFINE_HANDLE_TRAITS(
-	memory::virtual_::mapping_t::handle_type,
-	isnt_contextual, memory::virtual_::detail::unmap_nothrow, cuMemUnmap,
-	memory::virtual_::mapping::detail::identify)
+	memory::virtual_::mapping_t::handle_type, isnt_contextual,
+	memory::virtual_::detail::unmap_nothrow, cuMemUnmap, cuda_::detail::identify)
 #endif // CUDA_VERSION >= 10020
 
 } // namespace cuda_

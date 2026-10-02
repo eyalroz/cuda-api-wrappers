@@ -115,7 +115,7 @@ inline handle_t create_raw_in_current_context(
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
-	throw_if_error_lazy(status, "Failed creating a new stream in " + detail::identify(new_stream_handle));
+	throw_if_error_lazy(status, "Failed creating a new stream in " + cuda_::detail::identify(new_stream_handle));
 	return new_stream_handle;
 }
 //
@@ -843,7 +843,7 @@ public: // mutators
 		CAW_SET_SCOPE_CONTEXT(context_handle_);
 		CUstreamAttrValue wrapped_result{};
 		auto status = cuStreamGetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_result);
-		throw_if_error_lazy(status, std::string("Obtaining the synchronization policy of ") + stream::detail::identify(*this));
+		throw_if_error_lazy(status, std::string("Obtaining the synchronization policy of ") + detail::identify(*this));
 		return static_cast<stream::synchronization_policy_t>(wrapped_result.syncPolicy);
 	}
 
@@ -853,7 +853,7 @@ public: // mutators
 		CUstreamAttrValue wrapped_value{};
 		wrapped_value.syncPolicy = static_cast<CUsynchronizationPolicy>(policy);
 		auto status = cuStreamSetAttribute(handle_, CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY, &wrapped_value);
-		throw_if_error_lazy(status, std::string("Setting the synchronization policy of ") + stream::detail::identify(*this));
+		throw_if_error_lazy(status, std::string("Setting the synchronization policy of ") + detail::identify(*this));
 	}
 #endif
 
@@ -1054,7 +1054,7 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
 	static constexpr unsigned fixed_flags { 0u };
 	auto status = cuStreamAddCallback(stream.handle(), function, argument, fixed_flags);
 #endif
-	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + stream::detail::identify(stream));
+	throw_if_error_lazy(status,	"Failed enqueuing a host function/invokable to be launched on " + cuda_::detail::identify(stream));
 }
 
 } // namespace detail
@@ -1107,7 +1107,7 @@ inline state_t state(const stream_t& stream)
 	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	CUstreamCaptureStatus capture_status;
 	auto op_status = cuStreamIsCapturing(stream.handle(), &capture_status);
-	throw_if_error_lazy(op_status, "Failed beginning to capture on " + stream::detail::identify(stream));
+	throw_if_error_lazy(op_status, "Failed beginning to capture on " + cuda_::detail::identify(stream));
 	return static_cast<state_t>(capture_status);
 }
 
@@ -1115,7 +1115,7 @@ inline void begin(const stream_t& stream, mode_t mode)
 {
 	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	auto status = cuStreamBeginCapture(stream.handle(), static_cast<CUstreamCaptureMode>(mode));
-	throw_if_error_lazy(status, "Failed beginning to capture on " + stream::detail::identify(stream));
+	throw_if_error_lazy(status, "Failed beginning to capture on " + cuda_::detail::identify(stream));
 }
 
 } // namespace capture
@@ -1139,7 +1139,7 @@ inline void begin(const stream_t& stream, mode_t mode)
 	// certain conditions, so we must place ourselves in the stream's context.
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 	auto status = cuStreamSynchronize(stream.handle());
-	throw_if_error_lazy(status, "Failed synchronizing " + stream::detail::identify(stream));
+	throw_if_error_lazy(status, "Failed synchronizing " + cuda_::detail::identify(stream));
 }
 
 #if CUDA_VERSION >= 11000
@@ -1157,7 +1157,7 @@ inline void begin(const stream_t& stream, mode_t mode)
 void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
 
-CAW_DEFINE_HANDLE_TRAITS(stream::handle_t, is_contextual, cuStreamDestroy, cuStreamDestroy, stream::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(stream::handle_t, is_contextual, cuStreamDestroy, cuStreamDestroy, cuda_::detail::identify)
 
 } // namespace cuda_
 

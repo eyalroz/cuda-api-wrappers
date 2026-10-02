@@ -67,8 +67,8 @@ inline cuda_::kernel::handle_t contextualize(
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto handle_and_status = contextualize_in_current_context(kernel_handle);
-	throw_if_error_lazy(handle_and_status.second, "Failed placing " + identify(kernel_handle) + " in "
-		+ context::detail::identify(context_handle));
+	throw_if_error_lazy(handle_and_status.second, "Failed placing " + cuda_::detail::identify(kernel_handle) + " in "
+		+ cuda_::detail::identify(context_handle));
 	return handle_and_status.first;
 }
 
@@ -77,7 +77,7 @@ inline size_t get_num_parameters(handle_t handle)
 {
 	size_t count;
 	auto status = cuKernelGetParamCount(handle, &count);
-	throw_if_error_lazy(status, "Retrieving the parameter count of " + kernel::detail::identify(handle));
+	throw_if_error_lazy(status, "Retrieving the parameter count of " + cuda_::detail::identify(handle));
 	return count;
 }
 #endif
@@ -90,7 +90,7 @@ inline attribute_value_t get_attribute(
 	attribute_value_t value;
 	auto status = cuKernelGetAttribute(&value, attribute, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, std::string("Failed getting attribute ")
-		+ cuda_::kernel::detail::attribute_name(attribute) + " for " + identify(library_kernel_handle)
+		+ cuda_::kernel::detail::attribute_name(attribute) + " for " + cuda_::detail::identify(library_kernel_handle)
 		+ " on " + device::detail::identify(device_id));
 	return value;
 }
@@ -104,7 +104,7 @@ inline void set_attribute(
 	auto status = cuKernelSetAttribute(attribute, value, library_kernel_handle, device_id);
 	throw_if_error_lazy(status, std::string("Failed setting attribute ")
 								+ cuda_::kernel::detail::attribute_name(attribute) + " value to " + std::to_string(value)
-								+ " for " + identify(library_kernel_handle) + " on " + device::detail::identify(device_id));
+								+ " for " + cuda_::detail::identify(library_kernel_handle) + " on " + device::detail::identify(device_id));
 }
 
 } // namespace detail
@@ -147,7 +147,7 @@ public: // non-mutators
 		if (name_ != nullptr) { return name_; }
 		const char* result;
 		auto status = cuKernelGetName(&result, handle_);
-		throw_if_error_lazy(status, "Retrieving the name of " + library::kernel::detail::identify(*this));
+		throw_if_error_lazy(status, "Retrieving the name of " + cuda_::detail::identify(*this));
 		name_ = result;
 		return name_;
 	}

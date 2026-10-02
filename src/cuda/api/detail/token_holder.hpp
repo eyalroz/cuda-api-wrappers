@@ -122,7 +122,7 @@ struct handle_release_helper {
 #ifdef CAW_THROW_IN_DESTRUCTORS
         throw_if_error_lazy(status, std::string{traits::raw_release_func_name} + " failed for "
             + traits::identify(handle) + (std::is_same<handle_type, context::handle_t>::value ? "" : " in "
-            + context::detail::identify(context_handle)) );
+            + cuda_::detail::identify(context_handle)) );
 #else
         (void) status;
 #endif

@@ -39,7 +39,7 @@ inline void record_event_in_current_context(
 {
 	auto status = cuEventRecord(event_handle, stream_handle);
 	throw_if_error_lazy(status,
-		"Failed scheduling " + event::detail::identify(event_handle)
+		"Failed scheduling " + cuda_::detail::identify(event_handle)
 		+ " on " + stream::detail::identify(stream_handle, current_context_handle_, current_device_id));
 }
 
@@ -77,8 +77,8 @@ inline void stream_t::enqueue_t::wait(const event_t& event_) const
 
 	auto status = cuStreamWaitEvent(associated_stream.handle_, event_.handle(), flags);
 	throw_if_error_lazy(status,
-		"Failed scheduling a wait for " + event::detail::identify(event_.handle())
-		+ " on " + stream::detail::identify(associated_stream));
+		"Failed scheduling a wait for " + cuda_::detail::identify(event_.handle())
+		+ " on " + detail::identify(associated_stream));
 
 }
 
@@ -89,8 +89,8 @@ inline event_t& stream_t::enqueue_t::event(event_t& existing_event) const
 	auto stream_context_handle_ = associated_stream.context_handle_;
 	if (existing_event.context_handle() != stream_context_handle_) {
 		throw std::invalid_argument(
-			"Attempt to enqueue " + event::detail::identify(existing_event)
-			+ " on a stream in a different context: " + stream::detail::identify(associated_stream));
+			"Attempt to enqueue " + detail::identify(existing_event)
+			+ " on a stream in a different context: " + detail::identify(associated_stream));
 	}
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	stream::detail::record_event_in_current_context(
@@ -143,8 +143,8 @@ inline void copy_attributes(const stream_t &dest, const stream_t &src)
 #endif
 	CAW_SET_SCOPE_CONTEXT(dest.context_handle());
 	auto status = cuStreamCopyAttributes(dest.handle(), src.handle());
-	throw_if_error_lazy(status, "Copying attributes from " + stream::detail::identify(src)
-		+ " to " + stream::detail::identify(src));
+	throw_if_error_lazy(status, "Copying attributes from " + detail::identify(src)
+		+ " to " + detail::identify(src));
 }
 
 #endif // CUDA_VERSION >= 11000

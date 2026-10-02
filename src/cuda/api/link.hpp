@@ -71,7 +71,7 @@ inline void destroy(handle_t handle, context::handle_t context_handle, device::i
 	auto status = cuLinkDestroy(handle);
 	throw_if_error_lazy(status,
 		std::string("Failed destroying the link ") + cuda_::detail::ptr_as_hex(handle)
-		+ " in " + context::detail::identify(context_handle)
+		+ " in " + cuda_::detail::identify(context_handle)
 		+ " on " + device::detail::identify(device_id));
 }
 
@@ -271,7 +271,7 @@ inline link_t wrap(
 
 } // namespace link
 
-CAW_DEFINE_HANDLE_TRAITS(link::handle_t, is_contextual, cuLinkDestroy, cuLinkDestroy, link::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(link::handle_t, is_contextual, cuLinkDestroy, cuLinkDestroy, cuda_::detail::identify)
 
 } // namespace cuda_
 

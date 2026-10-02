@@ -116,7 +116,7 @@ inline region_t map(handle_t handle, subregion_spec_t subregion)
 	buffer_desc.size = subregion.size;
 	auto result = cuExternalMemoryGetMappedBuffer(&address, handle, &buffer_desc);
 	throw_if_error_lazy(result, "Failed mapping " + detail::identify(subregion)
-								+ " within " + detail::identify(handle) + " to a device buffer");
+								+ " within " + cuda_::detail::identify(handle) + " to a device buffer");
 	return region_t{as_pointer(address), subregion.size};
 }
 
@@ -149,8 +149,7 @@ inline unique_region map(const resource_t& resource)
 } // namespace external
 } // namespace memory
 
-CAW_DEFINE_HANDLE_TRAITS(memory::external::handle_t, isnt_contextual, cuDestroyExternalMemory,
-	cuDestroyExternalMemory, memory::external::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(memory::external::handle_t, isnt_contextual, cuDestroyExternalMemory, cuDestroyExternalMemory, cuda_::detail::identify)
 
 } // namespace cuda_
 

@@ -54,7 +54,7 @@ inline unique_span<kernel::handle_t> get_kernel_handles(handle_t module_handle, 
 {
 	auto result = make_unique_span<kernel::handle_t>(num_kernels);
 	auto status = cuModuleEnumerateFunctions(result.data(), (unsigned int) num_kernels, module_handle);
-	throw_if_error_lazy(status, "Failed enumerating the kernels in " + module::detail::identify(module_handle));
+	throw_if_error_lazy(status, "Failed enumerating the kernels in " + cuda_::detail::identify(module_handle));
 	return result;
 }
 #endif
@@ -157,7 +157,7 @@ public: // getters
 	{
 		unsigned result;
 		auto status = cuModuleGetFunctionCount(&result, handle_);
-		throw_if_error_lazy(status, "Failed determining function count for " + module::detail::identify(*this));
+		throw_if_error_lazy(status, "Failed determining function count for " + detail::identify(*this));
 		return result;
 	}
 
@@ -410,7 +410,7 @@ module_t create(
 
 } // namespace module
 
-CAW_DEFINE_HANDLE_TRAITS(module::handle_t, is_contextual, cuModuleUnload, cuModuleUnload, module::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(module::handle_t, is_contextual, cuModuleUnload, cuModuleUnload, cuda_::detail::identify)
 
 } // namespace cuda_
 
