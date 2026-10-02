@@ -353,7 +353,7 @@ library_t create(
 
 } // namespace library
 
-CAW_DEFINE_HANDLE_TRAITS(library_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload);
+CAW_DEFINE_HANDLE_TRAITS(library_t, cuLibraryUnload, cuLibraryUnload);
 
 } // namespace cuda_
 

@@ -410,7 +410,7 @@ module_t create(
 
 } // namespace module
 
-CAW_DEFINE_HANDLE_TRAITS(module_t, is_contextual, cuModuleUnload, cuModuleUnload);
+CAW_DEFINE_HANDLE_TRAITS(module_t, cuModuleUnload, cuModuleUnload);
 
 } // namespace cuda_
 

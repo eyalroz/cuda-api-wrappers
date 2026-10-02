@@ -866,7 +866,7 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 
 } // namespace graph
 
-CAW_DEFINE_HANDLE_TRAITS(graph::template_t, isnt_contextual, cuGraphDestroy, cuDestroyExternalMemory);
+CAW_DEFINE_HANDLE_TRAITS(graph::template_t, cuGraphDestroy, cuDestroyExternalMemory);
 
 } // namespace cuda_
 

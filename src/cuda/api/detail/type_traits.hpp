@@ -47,7 +47,13 @@ struct has_data_method : std::false_type { };
 
 // specialization recognizes types that do have a nested ::type member:
 template <typename T>
-struct has_data_method<T, cuda_::detail::void_t<decltype(std::declval<T>().data())>> : std::true_type { };
+struct has_data_method<T, void_t<decltype(std::declval<T>().data())>> : std::true_type { };
+
+template <typename, typename = void>
+struct has_context_method : std::false_type { };
+
+template <typename T>
+struct has_context_method<T, void_t<decltype(std::declval<T>().context())>> : std::true_type { };
 
 template <typename, typename = void>
 struct has_value_type_member : std::false_type { };

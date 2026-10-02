@@ -190,7 +190,7 @@ inline texture_view wrap(
 
 } // namespace texture
 
-CAW_DEFINE_HANDLE_TRAITS(texture_view, is_contextual, cuTexObjectDestroy, cuTexObjectDestroy);
+CAW_DEFINE_HANDLE_TRAITS(texture_view, cuTexObjectDestroy, cuTexObjectDestroy);
 // texture::detail::destroy_view
 
 } // namespace cuda_
