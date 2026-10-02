@@ -50,7 +50,7 @@ int main()
 	auto mangled_kernel_name = compilation_output.get_mangling_of(kernel_name);
 
 	auto context = cuda_::device::current::get().primary_context();
-	auto module = cuda_::module::create(context, compilation_output);
+	auto module = cuda_::module_::create(context, compilation_output);
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 
 	auto h_A = std::vector<float>(numElements);

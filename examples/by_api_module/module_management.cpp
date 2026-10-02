@@ -227,7 +227,7 @@ int main(int, char**)
 		compilation_result.get_mangling_of(kernel_names[1])
 	};
 
-	auto module = cuda_::module::create(device, compilation_result);
+	auto module = cuda_::module_::create(device, compilation_result);
 #if CUDA_VERSION >= 12040
 	cuda_::unique_span<cuda_::kernel_t> module_kernels;
 #endif
@@ -242,7 +242,7 @@ int main(int, char**)
 	cuda_::link::options_t link_opts;
 	link_opts.default_load_caching_mode() =  cuda_::caching_mode_t<cuda_::memory_operation_t::load>::dont_cache;
 	link_opts.generate_source_line_info = true;
-	auto module2 = cuda_::module::create(device, compilation_result, link_opts);
+	auto module2 = cuda_::module_::create(device, compilation_result, link_opts);
 #if CUDA_VERSION >= 12040
 	auto module_2_kernels = module2.get_kernels();
 	test_result = test_result and module_2_kernels.size() == module_kernels.size();

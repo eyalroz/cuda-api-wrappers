@@ -26,7 +26,7 @@ class module_t;
 class kernel_t;
 ///@endcond
 
-namespace module {
+namespace module_ {
 
 // The CUDA driver's raw handle for modules
 using handle_t = CUmodule;
@@ -98,7 +98,7 @@ inline loading_mode_t loading_mode() {
 }
 #endif
 
-} // namespace module
+} // namespace module_
 
 /**
  * Wrapper class for a CUDA code module
@@ -108,12 +108,12 @@ inline loading_mode_t loading_mode() {
  */
 class module_t {
 public: // types
-	using handle_type = module::handle_t;
+	using handle_type = module_::handle_t;
 
 public: // getters
 	/// Getters for the module object's raw constituent fields
 	///@{
-	module::handle_t handle() const noexcept { return handle_; }
+	module_::handle_t handle() const noexcept { return handle_; }
 	context::handle_t context_handle() const noexcept { return context_handle_; }
 	device::id_t device_id() const noexcept { return device_id_; }
 	bool is_owning() const noexcept { return ownership_.has_token(); }
@@ -165,7 +165,7 @@ public: // getters
 	{
 		auto num_kernels = get_num_kernels();
 		// It's ok if the number is 0!
-		auto handles = module::detail::get_kernel_handles(handle_, num_kernels);
+		auto handles = module_::detail::get_kernel_handles(handle_, num_kernels);
 		auto gen = [&](size_t i) { return kernel::wrap(device_id_, context_handle_, handles[i]); };
 		return generate_unique_span<kernel_t>(handles.size(), gen);
 	}
@@ -190,7 +190,7 @@ protected: // constructors
 	module_t(
 		device::id_t device_id,
 		context::handle_t context_handle,
-		module::handle_t handle,
+		module_::handle_t handle,
 		bool owning,
 		bool holds_primary_context_refcount_unit) noexcept
 	: device_id_(device_id), context_handle_(context_handle), handle_(handle),
@@ -206,12 +206,12 @@ public: // constructors & operators
 
 public: // friendship
 
-	friend module_t module::detail::wrap(device::id_t, context::handle_t, module::handle_t, bool, bool) noexcept;
+	friend module_t module_::detail::wrap(device::id_t, context::handle_t, module_::handle_t, bool, bool) noexcept;
 
 protected: // data members
 	device::id_t       device_id_;
 	context::handle_t  context_handle_;
-	module::handle_t   handle_;
+	module_::handle_t   handle_;
 	detail::handle_ownership_t<module_t> ownership_;
 	detail::pc_refcount_unit_t pc_refcount_unit_;
 		// When context_handle_ is the handle of a primary context, this module
@@ -221,7 +221,7 @@ protected: // data members
 	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuModuleUnload, cuModuleUnload)
 }; // module_t
 
-namespace module {
+namespace module_ {
 
 namespace detail {
 
@@ -410,7 +410,7 @@ module_t create(
 	return detail::create(context, module_data.data(), link_options);
 }
 
-} // namespace module
+} // namespace module_
 
 } // namespace cuda_
 

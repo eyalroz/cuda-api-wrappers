@@ -94,12 +94,12 @@ inline kernel_t get_kernel(context_t& context, const library_t& library, const c
 memory::region_t get_global(const context_t& context, const library_t& library, const char* name);
 memory::region_t get_managed_region(const library_t& library, const char* name);
 
-namespace module {
+namespace module_ {
 
 module_t create(const context_t& context, const library_t& library);
 module_t create(const library_t& library);
 
-} // namespace module
+} // namespace module_
 
 void* get_unified_function(const context_t& context, const library_t& library, const char* symbol);
 
@@ -203,7 +203,7 @@ inline memory::region_t get_managed_region(const library_t& library, const char*
 	return { memory::as_pointer(region_start), region_size };
 }
 
-namespace module {
+namespace module_ {
 
 /**
  * Create an in-context module from the compiled code within a loaded library
@@ -211,18 +211,18 @@ namespace module {
 inline module_t create(const context_t& context, const library_t& library)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
-	module::handle_t new_handle;
+	module_::handle_t new_handle;
 	auto status = cuLibraryGetModule(&new_handle, library.handle());
 	throw_if_error_lazy(status, std::string("Failed creating a module '") +
 		+ "' from " + cuda_::detail::identify(library) + " in " + cuda_::detail::identify(context));
 	constexpr bool is_owning { true };
-	return module::detail::wrap(context.device_id(), context.handle(), new_handle,
+	return module_::detail::wrap(context.device_id(), context.handle(), new_handle,
 		is_owning, does_not_hold_primary_context_refcount_unit);
 	// TODO: We could consider adding a variant of this function taking a context&&, and using that
 	// to decide whether or not to hold a PC refcount unit
 }
 
-} // namespace module
+} // namespace module_
 
 // I really have no idea what this does!
 inline void* get_unified_function(const context_t& context, const library_t& library, const char* symbol)

@@ -38,7 +38,7 @@ inline void kernel_t::set_attribute(kernel::attribute_t attribute, kernel::attri
 inline module_t kernel_t::module() const
 {
 	auto module_handle = kernel::detail::get_module(context_handle_, handle_);
-	return module::detail::wrap(device_id_, context_handle_, module_handle, do_not_take_ownership);
+	return module_::detail::wrap(device_id_, context_handle_, module_handle, do_not_take_ownership);
 }
 #endif
 

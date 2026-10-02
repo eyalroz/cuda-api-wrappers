@@ -23,14 +23,14 @@ template <typename ContiguousContainer,
 cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data) const
 {
-	return module::create<context_t const &>(*this, module_data);
+	return module_::create<context_t const &>(*this, module_data);
 }
 
 template <typename ContiguousContainer,
 cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
 module_t context_t::create_module(ContiguousContainer module_data, const link::options_t& link_options) const
 {
-	return module::create<context_t const &>(*this, module_data, link_options);
+	return module_::create<context_t const &>(*this, module_data, link_options);
 }
 
 // These API calls are not really the way you want to work.
@@ -45,7 +45,7 @@ inline cuda_::kernel_t module_t::get_kernel(const char* name) const
 }
 
 
-namespace module {
+namespace module_ {
 
 namespace detail {
 
@@ -113,7 +113,7 @@ inline module_t load_from_file(const char* path)
 	return load_from_file(device::current::get(), path);
 }
 
-} // namespace module
+} // namespace module_
 
 inline context_t module_t::context() const { return context::detail::from_handle(context_handle_); }
 inline device_t module_t::device() const { return device::get(context::detail::get_device_id(context_handle_)); }

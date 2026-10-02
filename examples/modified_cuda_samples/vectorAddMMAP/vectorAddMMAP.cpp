@@ -243,7 +243,7 @@ int main()
 	}
 
 	auto fatbin = get_file_contents(kernel::fatbin_filename);
-	auto module = cuda_::module::create(device, fatbin);
+	auto module = cuda_::module_::create(device, fatbin);
 	auto kernel = module.get_kernel(kernel::name);
 
 //	std::cout << "Kernel \"" << kernel::name << "\" obtained from fatbin file and ready for use." << std::endl;

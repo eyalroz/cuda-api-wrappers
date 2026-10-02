@@ -165,7 +165,7 @@ void childProcess(int devId, int id_of_this_child, char **)
 	auto stream = context.create_stream(cuda_::stream::nonblocking);
 
 	auto fatbin = get_file_contents(kernel::fatbin_filename);
-	auto module = cuda_::module::create(device, fatbin);
+	auto module = cuda_::module_::create(device, fatbin);
 
 	auto kernel = module.get_kernel(kernel::name);
 	auto launch_config = cuda_::launch_config_builder()

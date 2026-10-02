@@ -45,7 +45,7 @@ class primary_context_t;
 class module_t;
 ///@endcond
 
-namespace module {
+namespace module_ {
 
 /// Build a contextualized module from the results of a successful compilation
 template <source_kind_t Kind>
@@ -54,7 +54,7 @@ module_t create(
 	const rtc::compilation_output_t<Kind>&  compilation_output,
 	const link::options_t&                  options = {});
 
-} // namespace module
+} // namespace module_
 
 namespace rtc {
 
@@ -697,7 +697,7 @@ compilation_output_t<Kind> wrap(
 
 } // namespace rtc
 
-namespace module {
+namespace module_ {
 
 template<> inline module_t create<cuda_cpp>(
 	const context_t&                            context,
@@ -718,13 +718,13 @@ template<> inline module_t create<cuda_cpp>(
 	if (has_cubin) {
 		auto cubin = make_unique_span<char>(cubin_size);
 		rtc::program::detail::get_cubin<cuda_cpp>(cubin.data(), program_handle, program_name);
-		return module::create(context, cubin.get(), options);
+		return module_::create(context, cubin.get(), options);
 	}
 	// Note: At this point, we must have PTX in the output, as otherwise the compilation could
 	// not have succeeded
 #endif
 	auto ptx = compilation_output.ptx();
-	return module::create(context, ptx.get(), options);
+	return module_::create(context, ptx.get(), options);
 }
 
 #if CUDA_VERSION >= 11010
@@ -738,7 +738,7 @@ template<> inline module_t create<ptx>(
 			+ cuda_::rtc::program::detail::identify<ptx>(compilation_output.program_handle()));
 	}
 	auto cubin = compilation_output.cubin();
-	return module::create(context, cubin.get(), options);
+	return module_::create(context, cubin.get(), options);
 }
 #endif // CUDA_VERSION >= 11010
 
@@ -754,7 +754,7 @@ module_t create(
 	return create(device.primary_context(), compilation_output, options);
 }
 
-} // namespace module
+} // namespace module_
 
 } // namespace cuda_
 

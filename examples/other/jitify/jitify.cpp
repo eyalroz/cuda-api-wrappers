@@ -151,7 +151,7 @@ void my_kernel(T* data) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
 	auto mangled_kernel_name = compilation_result.get_mangling_of(instantiation_name);
-	auto module = cuda_::module::create(device, compilation_result);
+	auto module = cuda_::module_::create(device, compilation_result);
 	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
@@ -237,7 +237,7 @@ void my_kernel2(float const* indata, float* outdata) {
 		compilation_result.get_mangling_of(kernel_names[0]),
 		compilation_result.get_mangling_of(my_kernel2_instantiation_name)
 	};
-	auto module = cuda_::module::create(device, compilation_result);
+	auto module = cuda_::module_::create(device, compilation_result);
 	auto my_kernel1 = module.get_kernel(mangled_kernel_names[0]);
 	auto my_kernel2 = module.get_kernel(mangled_kernel_names[1]);
 
@@ -296,7 +296,7 @@ __global__ void constant_test(int *x) {
 	if (not compilation_result.succeeded()) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
-	auto module = cuda_::module::create(device, compilation_result);
+	auto module = cuda_::module_::create(device, compilation_result);
 
 	auto mangled_kernel_name = compilation_result.get_mangling_of(names.kernel);
 	auto kernel = module.get_kernel(mangled_kernel_name);
@@ -335,7 +335,7 @@ bool test_constant_2()
 	if (not compilation_result.succeeded()) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
-	auto module = cuda_::module::create(device, compilation_result);
+	auto module = cuda_::module_::create(device, compilation_result);
 	auto anon_b_a = module.get_global_region(compilation_result.get_mangling_of(name_of_anon_b_a));
 	auto kernel = module.get_kernel(compilation_result.get_mangling_of(second_kernel_name));
 	int inval[] = {3, 5, 9};
