@@ -46,7 +46,7 @@ inline std::string identify(const library_t& library)
 
 inline std::string identify(const module_t& module)
 {
-	return module::detail::identify(module.handle(), module.context_handle(), module.device_id());
+	return module_::detail::identify(module.handle(), module.context_handle(), module.device_id());
 }
 
 inline std::string identify(const graph::node_t &node)

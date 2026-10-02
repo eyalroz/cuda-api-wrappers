@@ -1018,12 +1018,12 @@ T identity_cast(U&& x)
 /// The CUDA-driver-specific representation of a UUID value; see also {@ref device_t::uuid()}
 using uuid_t = CUuuid;
 
-namespace module {
+namespace module_ {
 
 /// Raw CUDA driver handle of a module of compiled code; see @ref module_t
 using handle_t = CUmodule;
 
-} // namespace module
+} // namespace module_
 
 namespace kernel {
 

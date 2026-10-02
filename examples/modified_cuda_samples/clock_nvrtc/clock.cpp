@@ -132,7 +132,7 @@ int main()
 	auto device_id { 0 }; // Not bothering with supporting a command-line argument here
 	auto device = cuda_::device::get(device_id);
 	auto cubin = compile_to_cubin(clock_kernel::source, clock_kernel::name, device);
-	auto module = cuda_::module::create(device, cubin.get());
+	auto module = cuda_::module_::create(device, cubin.get());
 	auto kernel_in_module = module.get_kernel(clock_kernel::name);
 
 	cuda_::grid::dimension_t num_blocks { 64 };
