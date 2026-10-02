@@ -89,7 +89,7 @@ int main(void)
 	}
 
 	auto context = cuda_::device::current::get().primary_context();
-	auto module = cuda_::module::create(context, compilation_output);
+	auto module = cuda_::module_::create(context, compilation_output);
 	constexpr auto mangled_kernel_name = "_Z9vectorAddPKfS0_Pfi";
 	auto vectorAdd = module.get_kernel(mangled_kernel_name);
 

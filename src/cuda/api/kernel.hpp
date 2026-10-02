@@ -135,15 +135,15 @@ inline size_t get_num_parameters(context::handle_t context_handle, handle_t kern
 }
 #endif
 
-inline module::handle_t get_module_in_current_context(handle_t handle)
+inline module_::handle_t get_module_in_current_context(handle_t handle)
 {
-	module::handle_t result;
+	module_::handle_t result;
 	auto status = cuFuncGetModule(&result, handle);
 	throw_if_error_lazy(status, "Failed obtaining the module containing " + identify(handle));
 	return result;
 }
 
-inline module::handle_t get_module(context::handle_t context_handle, handle_t kernel_handle)
+inline module_::handle_t get_module(context::handle_t context_handle, handle_t kernel_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return get_module_in_current_context(kernel_handle);

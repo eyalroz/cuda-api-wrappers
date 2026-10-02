@@ -124,7 +124,7 @@ inline std::string identify(graph::template_::handle_t handle) { return "executi
 inline std::string identify(graph::instance::handle_t handle) { return "execution graph instance " + ptr_as_hex(handle); }
 inline std::string identify(graph::node::handle_t handle) { return std::string("node with handle ") + ptr_as_hex(handle); }
 #endif // CUDA_VERSION >= 10000
-inline std::string identify(module::handle_t handle) { return std::string("module ") + ptr_as_hex(handle); }
+inline std::string identify(module_::handle_t handle) { return std::string("module ") + ptr_as_hex(handle); }
 inline std::string identify(tagged<context_t, context::handle_t> handle) { return identify(handle.untag()); }
 inline std::string identify(tagged<device::primary_context_t, context::handle_t> handle) { return "primary " + identify(handle.untag()); }
 inline std::string identify(tagged<memory::virtual_::mapping_t, memory::region_t> handle) {	return "mapping of " + identify(handle.value); }
@@ -361,23 +361,23 @@ inline std::string identify(handle_t handle, size_t size) {
 
 } // namespace memory
 
-namespace module {
+namespace module_ {
 
 namespace detail {
 
-inline std::string identify(module::handle_t handle, context::handle_t context_handle)
+inline std::string identify(module_::handle_t handle, context::handle_t context_handle)
 {
 	return cuda_::detail::identify(handle) + " in " + cuda_::detail::identify(context_handle);
 }
 
-inline std::string identify(module::handle_t handle, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(module_::handle_t handle, context::handle_t context_handle, device::id_t device_id)
 {
 	return cuda_::detail::identify(handle) + " in " + context::detail::identify(context_handle, device_id);
 }
 
 } // namespace detail
 
-} // namespace module
+} // namespace module_
 
 #if CUDA_VERSION >= 12000
 namespace library {
