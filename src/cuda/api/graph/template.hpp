@@ -41,9 +41,6 @@ namespace node {
 
 namespace detail {
 
-// I'm not so sure about this...
-using edge_t = std::pair<node_t, node_t>;
-
 inline std::string identify(const edge_t &edge)
 {
 	return std::string("edge from " + node::detail::identify(edge.first)
@@ -211,8 +208,8 @@ inline status_t insert_edges(
 }
 
 inline status_t delete_edges(
-	template_::handle_t template_handle,
-	span<const node::detail::edge_t> edges)
+	template_::handle_t  template_handle,
+	span<const edge_t>   edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};
@@ -231,8 +228,8 @@ inline status_t delete_edges(
 
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
-	template_::handle_t               template_handle,
-	span<const node::detail::edge_t> edges)
+	template_::handle_t template_handle,
+	span<const edge_t>  edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};

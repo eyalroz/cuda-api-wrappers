@@ -190,6 +190,8 @@ protected:
 	handle_type handle_;
 };
 
+using edge_t = std::pair<node_t, node_t>;
+
 namespace node {
 
 inline node_t wrap(template_::handle_t graph_handle, handle_t handle) noexcept
