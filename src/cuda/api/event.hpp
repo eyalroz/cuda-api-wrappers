@@ -276,7 +276,7 @@ protected: // data members
 		// it must release its refcount unit on destruction
 };
 
-CAW_DEFINE_HANDLE_TRAITS(event::handle_t, is_contextual, cuEventDestroy, cuEventDestroy, cuda_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(event_t, is_contextual, cuEventDestroy, cuEventDestroy)
 
 namespace event {
 

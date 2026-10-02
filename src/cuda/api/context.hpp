@@ -734,7 +734,7 @@ protected: // data members
 	// primary or not?
 }; // class context_t
 
-CAW_DEFINE_HANDLE_TRAITS(context::handle_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy, cuda_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(context_t, isnt_contextual, cuCtxDestroy, cuCtxDestroy)
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{

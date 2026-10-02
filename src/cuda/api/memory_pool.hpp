@@ -457,7 +457,7 @@ pool_t create(const cuda_::device_t& device);
 
 } // namespace memory
 
-CAW_DEFINE_HANDLE_TRAITS(memory::pool::handle_t, isnt_contextual, cuMemPoolDestroy, cuMemPoolDestroy, cuda_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(memory::pool_t, isnt_contextual, cuMemPoolDestroy, cuMemPoolDestroy)
 
 } // namespace cuda_
 

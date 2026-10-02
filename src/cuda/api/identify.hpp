@@ -111,8 +111,8 @@ inline std::string identify(kernel::handle_t handle) { return "kernel at " + ptr
 inline std::string identify(memory::external::handle_t handle) { return "external memory resource at " + ptr_as_hex(handle); }
 #endif
 #if CUDA_VERSION >= 12000
+inline std::string identify(library::handle_t handle) { return "library at " + ptr_as_hex(handle); }
 inline std::string identify(library::kernel::handle_t handle) { return "library kernel at " + ptr_as_hex(handle); }
-inline std::string identify(library::handle_t handle) { return "library kernel at " + ptr_as_hex(handle); }
 #endif
 #if CUDA_VERSION >= 11020
 inline std::string identify(memory::pool::handle_t handle) { return "memory pool at " + ptr_as_hex(handle); }

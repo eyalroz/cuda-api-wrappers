@@ -22,6 +22,13 @@ namespace cuda_ {
 class fatbin_builder_t;
 ///@endcond
 
+namespace detail {
+
+inline std::string identify(fatbin_builder::handle_t handle) { return "Fatbin builder at " + ptr_as_hex(handle); }
+std::string identify(const fatbin_builder_t&);
+
+} // namespace detail
+
 namespace fatbin_builder {
 
 inline fatbin_builder_t wrap(handle_t handle, bool take_ownership = false) noexcept;
@@ -29,13 +36,6 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership = false) noexc
 inline fatbin_builder_t create(const options_t & options);
 
 namespace detail {
-
-inline std::string identify(handle_t handle)
-{
-	return "Fatbin builder with handle " + cuda_::detail::ptr_as_hex(handle);
-}
-
-inline std::string identify(const fatbin_builder_t&);
 
 inline cuda_::status_t destroy_nothrow(handle_t handle) noexcept
 {
@@ -50,6 +50,19 @@ inline cuda_::status_t destroy_nothrow(handle_t handle) noexcept
 } // namespace detail
 
 } // namespace fatbin_builder
+
+template <>
+struct detail::handle_release_helper<fatbin_builder_t> {
+	void operator()(contextualized_handle_t<fatbin_builder::handle_t> handle_in_context) const CAW_DESTRUCTOR_EXCEPTION_SPEC
+	{
+		auto status = fatbin_builder::detail::destroy_nothrow(handle_in_context.handle);
+#ifdef CAW_THROW_IN_DESTRUCTORS
+		throw_if_error_lazy(status, std::string{"nvFatbinDestroy"} + " failed for " + cuda_::detail::identify(handle_in_context.handle));
+#else
+		(void) status;
+#endif
+	}
+};
 
 class fatbin_builder_t {
 public: // type definitions
@@ -82,7 +95,7 @@ public:
 	{
 		size_type result;
 		auto status = nvFatbinSize(handle_, &result);
-		throw_if_error_lazy(status, "Failed determining prospective fatbin size for " + fatbin_builder::detail::identify(*this));
+		throw_if_error_lazy(status, "Failed determining prospective fatbin size for " + detail::identify(*this));
 		return result;
 	}
 
@@ -170,7 +183,7 @@ public:
 	{
 		auto status = nvFatbinAddReloc(handle_, ptx_code.data(), ptx_code.size());
 		throw_if_error_lazy(status, "Failed adding relocatable PTX code at " + detail::ptr_as_hex(ptx_code.data())
-									+ "to fatbin builder " + fatbin_builder::detail::identify(*this) );
+									+ "to fatbin builder " + detail::identify(*this) );
 	}
 
 	// TODO: WTF is an index?
@@ -208,9 +221,6 @@ protected: // data members
 	// than in that case it must not be altered
 }; // class fatbin_builder_t
 
-CAW_DEFINE_HANDLE_TRAITS(fatbin_builder_t::handle_type, isnt_contextual, fatbin_builder::detail::destroy_nothrow,
-	nvFatbinDestroy, fatbin_builder::detail::identify);
-
 namespace fatbin_builder {
 
 /// Create a new link-process (before adding any compiled images or or image-files)
@@ -230,6 +240,8 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership) noexcept
 	return fatbin_builder_t{handle, take_ownership};
 }
 
+} // namespace fatbin_builder
+
 namespace detail {
 
 inline std::string identify(const fatbin_builder_t& builder)
@@ -239,7 +251,8 @@ inline std::string identify(const fatbin_builder_t& builder)
 
 } // namespace detail
 
-} // namespace fatbin_builder
+CAW_DEFINE_HANDLE_TRAITS(fatbin_builder_t, isnt_contextual, fatbin_builder::detail::destroy_nothrow, nvFatbinDestroy);
+
 
 
 } // namespace cuda_

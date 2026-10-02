@@ -353,7 +353,7 @@ library_t create(
 
 } // namespace library
 
-CAW_DEFINE_HANDLE_TRAITS(library::handle_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload, cuda_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(library_t, isnt_contextual, cuLibraryUnload, cuLibraryUnload)
 
 } // namespace cuda_
 

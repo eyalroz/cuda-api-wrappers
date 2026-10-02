@@ -154,12 +154,12 @@ reserved_address_range_t wrap(region_t address_range, alignment_t alignment, boo
 
 class reserved_address_range_t {
 public: // types
-	using handle_type = cuda_::detail::tagged<reserved_address_range_t, region_t>;
+	using handle_type = memory::region_t;
 
 protected:
 
 	reserved_address_range_t(region_t region, alignment_t alignment, bool owning) noexcept
-		: region_(region), alignment_(alignment), ownership_(owning, { cuda_::context::detail::none, handle_type {region } })
+		: region_(region), alignment_(alignment), ownership_(owning, { cuda_::context::detail::none, region })
 	{ }
 
 public:
@@ -449,11 +449,11 @@ inline void unmap_(region_t address_range)
 
 class mapping_t {
 public: // types
-	using handle_type = cuda_::detail::tagged<mapping_t, region_t>;
+	using handle_type = region_t;
 
 protected:  // constructors
 	mapping_t(region_t address_range, bool owning)
-	: address_range_(address_range), ownership_(owning, { cuda_::context::detail::none, address_range }) { }
+	: address_range_(address_range), ownership_(owning, { context::detail::none, address_range }) { }
 
 public: // constructors & destructors
 	mapping_t(const mapping_t&) = delete;

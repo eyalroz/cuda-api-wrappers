@@ -490,7 +490,7 @@ void launch(const cuda_::stream_t& stream, const instance_t& instance);
 
 } // namespace graph
 
-CAW_DEFINE_HANDLE_TRAITS(graph::instance::handle_t, isnt_contextual, cuGraphExecDestroy, cuGraphExecDestroy, cuda_::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(graph::instance_t, isnt_contextual, cuGraphExecDestroy, cuGraphExecDestroy)
 
 } // namespace cuda_
 

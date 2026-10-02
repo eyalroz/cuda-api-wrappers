@@ -134,7 +134,7 @@ inline ptr_handle_t export_(void* device_ptr)
  */
 class imported_ptr_t {
 public:
-	using handle_type = cuda_::detail::tagged<imported_ptr_t, void*>;
+	using handle_type = void*;
 protected: // constructors & destructor
 	imported_ptr_t(void* ptr, bool owning) : ptr_(ptr), ownership_(owning, { context::detail::none, ptr })
 	{
@@ -327,8 +327,7 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 } // namespace ipc
 } // namespace event
 
-CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t::handle_type, isnt_contextual,
-	memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle, memory::ipc::detail::identify)
+CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t, isnt_contextual, memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle)
 
 } // namespace cuda_
 

@@ -13,10 +13,12 @@ cuda_::device::id_t get_current_device_id()
 	return device.id();
 }
 
+#if CUDA_VERSION >= 12040
 cuda_::fatbin_builder_t make_fatbin_builder	()
 {
 	return cuda_::fatbin_builder::create({});
 }
+#endif
 
 cuda_::rtc::compilation_options_t<cuda_::cuda_cpp> make_cpp_compilation_options()
 {
