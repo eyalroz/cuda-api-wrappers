@@ -415,6 +415,8 @@ protected: // data members
 	cuda_::device::id_t device_id_;
 	pool::handle_t handle_;
 	cuda_::detail::handle_ownership_t<pool_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuMemPoolDestroy, cuMemPoolDestroy)
 }; // class pool_t
 
 inline bool operator==(const pool_t& lhs, const pool_t& rhs)
@@ -456,8 +458,6 @@ pool_t create(const cuda_::device_t& device);
 } // namespace pool
 
 } // namespace memory
-
-CAW_DEFINE_HANDLE_TRAITS(memory::pool_t, cuMemPoolDestroy, cuMemPoolDestroy);
 
 } // namespace cuda_
 

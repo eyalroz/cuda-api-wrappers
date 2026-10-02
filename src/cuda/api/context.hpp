@@ -13,7 +13,7 @@
 #include "error.hpp"
 #include "constants.hpp"
 #include "types.hpp"
-#include "detail/token_holder.hpp"
+#include "detail/handle_ownership.hpp"
 
 #include <string>
 #include <utility>
@@ -731,39 +731,9 @@ protected: // data members
 
 	// TODO: Should we hold a field indicating whether this context is
 	// primary or not?
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuCtxDestroy, cuCtxDestroy)
 }; // class context_t
-
-CAW_DEFINE_HANDLE_TRAITS(context_t, cuCtxDestroy, cuCtxDestroy);
-
-// template<>
-// struct cuda_::detail::handle_traits<context::handle_t> {
-// 	using handle_type = context::handle_t;
-// 	using release_type = handle_release<handle_type>;
-// 	static constexpr bool contextualized = isnt_contextual;
-//
-// 	static status_t release_nothrow(std::false_type, context::handle_t, handle_type handle) noexcept
-// 	{
-// 		return cuCtxDestroy_v2(handle);
-// 	}
-//
-// 	static status_t release_nothrow(std::true_type, context::handle_t context_handle, handle_type handle) noexcept
-// 	{
-// 		const ::cuda_::context::current::detail::scoped_override_t caw_context_for_this_scope_(context_handle);
-// 		return cuCtxDestroy_v2(handle);
-// 	}
-//
-// 	static std::string identify(context::handle_t handle)
-// 	{
-// 		using unique_handle_type = std::conditional<
-// 			std::is_same<handle_type, void*>::value or
-// 			std::is_same<handle_type, const void*>::value or
-// 			std::is_same<memory::region_t, handle_type>::value or
-// 			std::is_integral<handle_type>::value,
-// 			tagged<context_t, handle_type>, handle_type>::type;
-// 		return detail::identify(unique_handle_type{handle});
-// 	}
-// 	static constexpr auto raw_release_func_name = "cuCtxDestroy_v2";
-// };
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{

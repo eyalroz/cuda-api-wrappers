@@ -975,6 +975,8 @@ public: // data members - which only exist in lieu of namespaces
 		// The use of *this here is safe, since enqueue_t doesn't do anything with it
 		// on its own. Any use of enqueue only happens through, well, *this - and
 		// after construction.
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuStreamDestroy, cuStreamDestroy)
 };
 
 ///@cond
@@ -1156,8 +1158,6 @@ inline void begin(const stream_t& stream, mode_t mode)
  */
 void copy_attributes(const stream_t& dest, const stream_t& src);
 #endif // CUDA_VERSION >= 11000
-
-CAW_DEFINE_HANDLE_TRAITS(stream_t, cuStreamDestroy, cuStreamDestroy);
 
 } // namespace cuda_
 

@@ -329,6 +329,8 @@ protected:
 	template_::handle_t template_handle_;
 	handle_type handle_;
 	cuda_::detail::handle_ownership_t<instance_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuGraphExecDestroy, cuGraphExecDestroy)
 }; // class instance_t
 
 /**
@@ -489,8 +491,6 @@ inline instance_t instantiate(
 void launch(const cuda_::stream_t& stream, const instance_t& instance);
 
 } // namespace graph
-
-CAW_DEFINE_HANDLE_TRAITS(graph::instance_t, cuGraphExecDestroy, cuGraphExecDestroy);
 
 } // namespace cuda_
 

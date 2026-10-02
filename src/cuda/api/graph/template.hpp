@@ -789,6 +789,8 @@ private: // data members
 	// Note: A CUDA graph template is not specific to a context, nor a device!
 	template_::handle_t handle_;
 	detail::handle_ownership_t<template_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuGraphDestroy, cuGraphDestroy)
 }; // class template_t
 
 namespace template_ {
@@ -866,7 +868,7 @@ inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_grap
 
 } // namespace graph
 
-CAW_DEFINE_HANDLE_TRAITS(graph::template_t, cuGraphDestroy, cuDestroyExternalMemory);
+// CAW_DEFINE_HANDLE_TRAITS(graph::template_t, cuGraphDestroy, cuGraphDestroy);
 
 } // namespace cuda_
 

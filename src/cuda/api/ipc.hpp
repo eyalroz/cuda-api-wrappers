@@ -85,11 +85,6 @@ inline status_t unmap_nothrow(void* ipc_mapped_ptr) noexcept
 	return cuIpcCloseMemHandle(device::address(ipc_mapped_ptr));
 }
 
-inline status_t unmap_nothrow(cuda_::detail::tagged<imported_ptr_t, void*> ipc_mapped_ptr) noexcept
-{
-	return unmap_nothrow(ipc_mapped_ptr.value);
-}
-
 /**
  * @brief Unmap CUDA host-side memory shared by another process
  *
@@ -169,6 +164,8 @@ public: // getters
 protected: // data members
 	void*  ptr_;
 	cuda_::detail::handle_ownership_t<imported_ptr_t> ownership_;
+
+	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle)
 }; // class imported_ptr_t
 
 /// Construct an instance of our wrapper class for IPC-imported memory from a raw pointer to the mapping
@@ -326,8 +323,6 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 
 } // namespace ipc
 } // namespace event
-
-CAW_DEFINE_HANDLE_TRAITS(memory::ipc::imported_ptr_t, memory::ipc::detail::unmap_nothrow, cuIpcCloseMemHandle);
 
 } // namespace cuda_
 
