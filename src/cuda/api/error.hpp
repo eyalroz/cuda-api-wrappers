@@ -627,7 +627,7 @@ inline ::std::string identify(region_t region)
 	return ::std::string("memory region at ") + cuda::detail_::ptr_as_hex(region.data())
 		+ " of size " + ::std::to_string(region.size());
 }
-
+#if CUDA_VERSION >= 10020
 inline ::std::string identify(location_t location)
 {
 	switch (location.type) {
@@ -636,16 +636,19 @@ inline ::std::string identify(location_t location)
 			return "global memory of " + cuda::device::detail_::identify(location.id);
 		}
 		// fallthrough
+#if CUDA_VERSION >= 12020
 	case CU_MEM_LOCATION_TYPE_HOST:
 		return "host (system) memory";
 	case CU_MEM_LOCATION_TYPE_HOST_NUMA:
 		return "host (system) NUMA node " + ::std::to_string(location.id);
 	case CU_MEM_LOCATION_TYPE_HOST_NUMA_CURRENT:
 		return "current host (system) NUMA node ";
+#endif
 	default:
 		return "(invalid)";
 	}
 }
+#endif // CUDA_VERSION >= 10020
 
 } // namespace detail_
 

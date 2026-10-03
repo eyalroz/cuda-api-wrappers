@@ -177,7 +177,7 @@ inline void copy(
 } // namespace inter_context
 
 namespace managed {
-
+#if  CUDA_VERSION >= 10020
 namespace detail_ {
 
 template <typename GenericRegion>
@@ -210,6 +210,7 @@ inline void advise_no_access_expected_by(const_region_t region, device_t& device
 {
 	range::detail_::advise(region, CU_MEM_ADVISE_UNSET_ACCESSED_BY, device.id());
 }
+#endif //  CUDA_VERSION >= 10020
 
 template <typename Allocator>
 ::std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator)
@@ -233,6 +234,7 @@ template <typename Allocator>
 	return devices;
 }
 
+#if CUDA_VERSION >= 10020
 inline void prefetch(
 	const_region_t         region,
 	const cuda::device_t&  destination,
@@ -245,6 +247,7 @@ inline void prefetch_to_host(const_region_t region, const stream_t& stream)
 {
 	detail_::prefetch(region, CU_DEVICE_CPU, stream.handle());
 }
+#endif // CUDA_VERSION >= 10020
 
 inline region_t allocate(
 	const context_t&      context,

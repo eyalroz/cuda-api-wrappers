@@ -1880,6 +1880,7 @@ inline T get_scalar_attribute(const_region_t region, attribute_t attribute)
 	return static_cast<T>(attribute_value);
 }
 
+#if CUDA_VERSION >= 10020
 // CUDA's range "advice" is simply a way to set the attributes of a range; unfortunately that's
 // not called cuMemRangeSetAttribute, and uses a different enum.
 inline void advise(const_region_t region, advice_t advice, location_t location)
@@ -1897,11 +1898,21 @@ inline void advise(const_region_t region, advice_t advice, location_t location)
 	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
 		+ cuda::detail_::ptr_as_hex(region.start()) + " in " + cuda::memory::detail_::identify(location));
 }
+#endif // CUDA_VERSION >= 10020
 
+#if CUDA_VERSION >= 11020
 inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
 {
 	advise(region, advice, pool::detail_::create_mem_location(device_id));
 }
+#elif CUDA_VERSION >= 10020
+inline void advise(const_region_t region, advice_t advice, cuda::device::id_t device_id)
+{
+	auto result = cuMemAdvise(device::address(region.start()), region.size(), advice, device_id);
+	throw_if_error_lazy(result, "Setting an attribute for a managed memory range at "
+		+ cuda::detail_::ptr_as_hex(region.start()));
+}
+#endif // CUDA_VERSION >= 10020
 
 inline advice_t as_advice(attribute_t attribute, bool set)
 {
@@ -1918,6 +1929,7 @@ inline advice_t as_advice(attribute_t attribute, bool set)
 	}
 }
 
+#if CUDA_VERSION >= 10020
 inline void set_attribute(const_region_t region, attribute_t settable_attribute, cuda::device::id_t device_id)
 {
 	static constexpr const bool set { true };
@@ -1937,6 +1949,7 @@ inline void unset_attribute(const_region_t region, attribute_t settable_attribut
 	static constexpr const cuda::device::id_t dummy_device_id { 0 };
 	advise(region, as_advice(settable_attribute, unset), dummy_device_id);
 }
+#endif //  CUDA_VERSION >= 10020
 
 } // namespace detail_
 
@@ -1947,6 +1960,7 @@ namespace detail_ {
 template <typename GenericRegion>
 struct region_helper : public GenericRegion {
 	using GenericRegion::GenericRegion;
+#if CUDA_VERSION >= 10020
 
 	bool is_read_mostly() const
 	{
@@ -1966,6 +1980,7 @@ struct region_helper : public GenericRegion {
 	device_t preferred_location() const;
 	void set_preferred_location(device_t& device) const;
 	void clear_preferred_location() const;
+#endif //  CUDA_VERSION >= 10020
 };
 
 } // namespace detail_
@@ -2129,7 +2144,7 @@ inline void free(region_t region)
 }
 
 namespace detail_ {
-
+#if  CUDA_VERSION >= 12020
 inline void prefetch(
 	const_region_t           region,
 	cuda::memory::location_t destination,
@@ -2140,21 +2155,37 @@ inline void prefetch(
 	static constexpr unsigned flags { 0 };
 	auto result = cuMemPrefetchAsync(address, region.size(), destination, flags, source_stream_handle);
 #else
+#if CUDA_VERSION >= 12020
 	if (destination.type == CU_MEM_LOCATION_TYPE_HOST) {
 		destination = { CU_MEM_LOCATION_TYPE_DEVICE, CU_DEVICE_CPU };
 	}
+#endif // CUDA_VERSION >= 12020
 	if (destination.type != CU_MEM_LOCATION_TYPE_DEVICE) {
 		throw runtime_error(status::named_t::not_supported,
 			"Prefetching to destination types other than CUDA devices is not supported before CUDA 13.0");
 	}
 	auto result = cuMemPrefetchAsync(address, region.size(), destination.id, source_stream_handle);
-#endif
+#endif // CUDA_VERSION >= 13000
 	throw_if_error_lazy(result,
 		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
 		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + cuda::memory::detail_::identify(destination));
 }
+#elif CUDA_VERSION >= 10020
+inline void prefetch(
+	const_region_t      region,
+	cuda::device::id_t  destination,
+	stream::handle_t    source_stream_handle)
+{
+	auto result = cuMemPrefetchAsync(device::address(region.start()), region.size(), destination, source_stream_handle);
+	throw_if_error_lazy(result,
+		"Prefetching " + ::std::to_string(region.size()) + " bytes of managed memory at address "
+		 + cuda::detail_::ptr_as_hex(region.start()) + " to " + (
+			 (destination == CU_DEVICE_CPU) ? "the host" : cuda::device::detail_::identify(destination))  );
+}
+#endif //  CUDA_VERSION >= 12020
 
 
+#if CUDA_VERSION >= 11020
 inline void prefetch(
 	const_region_t      region,
 	cuda::device::id_t  destination,
@@ -2162,6 +2193,7 @@ inline void prefetch(
 {
 	prefetch(region, pool::detail_::create_mem_location(destination), source_stream_handle);
 }
+#endif //  CUDA_VERSION >= 11020
 
 } // namespace detail_
 
