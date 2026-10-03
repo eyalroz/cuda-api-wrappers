@@ -52,7 +52,7 @@ struct square_matrix {
 
 // template square_matrix<double>;
 
-void print(const square_matrix<double> &bandwidthMatrix, const char* axis_cross_label);
+void print(square_matrix<double> const& bandwidthMatrix, const char* axis_cross_label);
 
 constexpr unsigned long long default_timeout_clocks = 10000000ull;
 
@@ -252,7 +252,7 @@ void outputBandwidthMatrix(P2PEngine mechanism, bool test_p2p, P2PDataTransfer p
 
 }
 
-void print(const square_matrix<double> &bandwidthMatrix, const char* axis_cross_label)
+void print(square_matrix<double> const& bandwidthMatrix, const char* axis_cross_label)
 {
 	constexpr std::size_t width = bandwidth::field_width;
 	cout << std::setw(width) << axis_cross_label;

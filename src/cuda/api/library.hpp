@@ -69,7 +69,7 @@ library_t create(
 
 namespace detail {
 
-inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, const char* name)
+inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, char const* name)
 {
 	library::kernel::handle_t kernel_handle;
 	auto status = cuLibraryGetKernel(&kernel_handle, library_handle, name);
@@ -78,7 +78,7 @@ inline kernel::handle_t get_kernel_in_current_context(handle_t library_handle, c
 	return kernel_handle;
 }
 
-inline kernel::handle_t get_kernel(context::handle_t context_handle, handle_t library_handle, const char* name)
+inline kernel::handle_t get_kernel(context::handle_t context_handle, handle_t library_handle, char const* name)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return get_kernel_in_current_context(library_handle, name);
@@ -86,22 +86,22 @@ inline kernel::handle_t get_kernel(context::handle_t context_handle, handle_t li
 
 } // namespace detail
 
-inline kernel_t get_kernel(const library_t& library, const char* name);
-inline kernel_t get_kernel(context_t& context, const library_t& library, const char* name);
+inline kernel_t get_kernel(library_t const& library, char const* name);
+inline kernel_t get_kernel(context_t& context, library_t const& library, char const* name);
 
 } // namespace library
 
-memory::region_t get_global(const context_t& context, const library_t& library, const char* name);
-memory::region_t get_managed_region(const library_t& library, const char* name);
+memory::region_t get_global(context_t const& context, library_t const& library, char const* name);
+memory::region_t get_managed_region(library_t const& library, char const* name);
 
 namespace module_ {
 
-module_t create(const context_t& context, const library_t& library);
-module_t create(const library_t& library);
+module_t create(context_t const& context, library_t const& library);
+module_t create(library_t const& library);
 
 } // namespace module_
 
-void* get_unified_function(const context_t& context, const library_t& library, const char* symbol);
+void* get_unified_function(context_t const& context, library_t const& library, char const* symbol);
 
 /**
  * Wrapper class for a CUDA compiled code library (like a @ref module_t , but not associated
@@ -126,27 +126,27 @@ public: // getters
 	 * @return An enqueable kernel proxy object for the requested kernel,
 	 * in the current context.
 	 */
-	library::kernel_t get_kernel(const context_t& context, const char* name) const;
-	library::kernel_t get_kernel(const context_t& context, const std::string& name) const;
-	library::kernel_t get_kernel(const char* name) const;
-	library::kernel_t get_kernel(const std::string& name) const;
+	library::kernel_t get_kernel(context_t const& context, char const* name) const;
+	library::kernel_t get_kernel(context_t const& context, std::string const& name) const;
+	library::kernel_t get_kernel(char const* name) const;
+	library::kernel_t get_kernel(std::string const& name) const;
 
-	memory::region_t get_global(const char* name) const
+	memory::region_t get_global(char const* name) const
 	{
 		return cuda_::get_global(context::current::get(), *this, name);
 	}
 
-	memory::region_t get_global(const std::string& name) const
+	memory::region_t get_global(std::string const& name) const
 	{
 		return get_global(name.c_str());
 	}
 
-	memory::region_t get_managed(const char* name) const
+	memory::region_t get_managed(char const* name) const
 	{
 		return cuda_::get_managed_region(*this, name);
 	}
 
-	memory::region_t get_managed(const std::string& name) const
+	memory::region_t get_managed(std::string const& name) const
 	{
 		return get_managed(name.c_str());
 	}
@@ -158,9 +158,9 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	library_t(const library_t&) = delete;
+	library_t(library_t const&) = delete;
 	library_t(library_t&&) noexcept = default;
-	library_t& operator=(const library_t&) = delete;
+	library_t& operator=(library_t const&) = delete;
 	library_t& operator=(library_t&&) noexcept = default;
 
 public: // friendship
@@ -176,7 +176,7 @@ protected: // data members
 	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuLibraryUnload, cuLibraryUnload)
 }; // library_t
 
-inline memory::region_t get_global(const context_t& context, const library_t& library, const char* name)
+inline memory::region_t get_global(context_t const& context, library_t const& library, char const* name)
 {
 	CUdeviceptr dptr;
 	size_t size;
@@ -193,7 +193,7 @@ namespace library {
 
 } // namespace library
 
-inline memory::region_t get_managed_region(const library_t& library, const char* name)
+inline memory::region_t get_managed_region(library_t const& library, char const* name)
 {
 	memory::device::address_t region_start;
 	size_t region_size;
@@ -208,7 +208,7 @@ namespace module_ {
 /**
  * Create an in-context module from the compiled code within a loaded library
  */
-inline module_t create(const context_t& context, const library_t& library)
+inline module_t create(context_t const& context, library_t const& library)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	module_::handle_t new_handle;
@@ -225,7 +225,7 @@ inline module_t create(const context_t& context, const library_t& library)
 } // namespace module_
 
 // I really have no idea what this does!
-inline void* get_unified_function(const context_t& context, const library_t& library, const char* symbol)
+inline void* get_unified_function(context_t const& context, library_t const& library, char const* symbol)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	void* function_ptr;
@@ -244,7 +244,7 @@ library_t create(
 	Creator                 creator,
 	DataSource              data_source,
 	ErrorStringGenerator    error_string_generator,
-	const link::options_t&  link_options = {},
+	link::options_t const&  link_options = {},
 	bool                    code_is_preserved = false)
 {
 	handle_t new_lib_handle;
@@ -277,12 +277,12 @@ library_t create(
  *
  * @note this covers cuModuleLoadFatBinary() even though that's not directly used
  *
- * @todo: When switching to the C++17 standard, use string_view's instead of the const char*
+ * @todo: When switching to the C++17 standard, use string_view's instead of the char const*
  */
 ///@{
 inline library_t load_from_file(
-	const char*                path,
-	const link::options_t&     link_options = {},
+	char const*                path,
+	link::options_t const&     link_options = {},
 	bool                       code_is_preserved = false)
 {
 	return detail::create(
@@ -292,8 +292,8 @@ inline library_t load_from_file(
 }
 
 inline library_t load_from_file(
-	const std::string&    path,
-	const link::options_t&  link_options = {},
+	std::string const&    path,
+	link::options_t const&  link_options = {},
 	bool                    code_is_preserved = false)
 {
 	return load_from_file(path.c_str(), link_options, code_is_preserved);
@@ -302,8 +302,8 @@ inline library_t load_from_file(
 #if __cplusplus >= 201703L
 
 inline library_t load_from_file(
-	const std::filesystem::path&  path,
-	const link::options_t&          link_options = {},
+	std::filesystem::path const&  path,
+	link::options_t const&          link_options = {},
 	bool                            code_is_preserved = false)
 {
 	return load_from_file(path.c_str(), link_options, code_is_preserved);
@@ -329,8 +329,8 @@ inline library_t wrap(handle_t handle, bool take_ownership) noexcept
  * @param code_is_preserved See @ref
  */
 inline library_t create(
-	const void*             module_data,
-	const link::options_t&  link_options = {},
+	void const*             module_data,
+	link::options_t const&  link_options = {},
 	bool                    code_is_preserved = false)
 {
 	return detail::create(

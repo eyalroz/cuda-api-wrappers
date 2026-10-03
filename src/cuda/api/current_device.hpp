@@ -141,7 +141,7 @@ inline void set(id_t device_id)
  * @note this will replace the top of the context stack, if the stack isn't empty;
  * and will create/activate the device's primary context if it isn't already active.
  */
-void set(const device_t& device);
+void set(device_t const& device);
 
 /**
  * Reset the CUDA Runtime API's current device to its default value - the default device

@@ -35,14 +35,14 @@ enum class cpp_dialect_t {
 namespace detail {
 
 static constexpr size_t language_dialect_name_length { 5 };
-constexpr const char* cpp_dialect_names[] =  {
+constexpr char const* cpp_dialect_names[] =  {
 	"c++03",
 	"c++11",
 	"c++14",
 	"c++17",
 };
 
-inline cpp_dialect_t cpp_dialect_from_name(const char* dialect_name) noexcept(false)
+inline cpp_dialect_t cpp_dialect_from_name(char const* dialect_name) noexcept(false)
 {
 	for(auto known_dialect = static_cast<int>(cpp_dialect_t::cpp03);
 		known_dialect <= static_cast<int>(cpp_dialect_t::last);
@@ -68,9 +68,9 @@ using number_t = unsigned;
 
 namespace detail {
 
-inline const char* option_name_part(handling_method_t method)
+inline char const* option_name_part(handling_method_t method)
 {
-	static constexpr const char* parts[] = { "error", "suppress", "warn" };
+	static constexpr char const* parts[] = { "error", "suppress", "warn" };
 	return parts[method];
 }
 
@@ -434,7 +434,7 @@ public:
 	 * A sequence of directories to be searched for headers. These paths are searched _after_ the
 	 * list of headers given to nvrtcCreateProgram.
 	 *
-	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+	 * @note The members here are `std::string`'s rather than `char const*` or `std::string_view`'s,
 	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
 	 *
 	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
@@ -444,7 +444,7 @@ public:
 	/**
 	 * Header files to preinclude during preprocessing of the source.
 	 *
-	 * @note The members here are `std::string`'s rather than `const char*` or `std::string_view`'s,
+	 * @note The members here are `std::string`'s rather than `char const*` or `std::string_view`'s,
 	 * since this class is a value-type, and cannot rely someone else keeping these strings alive.
 	 *
 	 * @todo In C++17, consider making the elements `std::filesystem::path`'s.
@@ -508,7 +508,7 @@ public: // "shorthands" for more complex option setting
 	}
 
 	/// @copydoc set_language_dialect(cpp_dialect_t)
-	compilation_options_t& set_language_dialect(const char* dialect_name)
+	compilation_options_t& set_language_dialect(char const* dialect_name)
 	{
 		return (dialect_name == nullptr or *dialect_name == '\0') ?
 			clear_language_dialect() :
@@ -516,7 +516,7 @@ public: // "shorthands" for more complex option setting
 	}
 
 	/// @copydoc set_language_dialect(cpp_dialect_t)
-	compilation_options_t& set_language_dialect(const std::string& dialect_name)
+	compilation_options_t& set_language_dialect(std::string const& dialect_name)
 	{
 		return dialect_name.empty() ?
 			clear_language_dialect() :
@@ -549,7 +549,7 @@ public: // "shorthands" for more complex option setting
 }; // compilation_options_t<cuda_cpp>
 
 template <typename CompilationOptions>
-std::string render(const CompilationOptions& opts)
+std::string render(CompilationOptions const& opts)
 {
 	return marshalling::render(opts);
 }
@@ -563,8 +563,8 @@ namespace detail {
 template <typename MarshalTarget, typename Delimiter>
 struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 	static void process(
-		const rtc::compilation_options_t<ptx> &opts,
-		MarshalTarget &marshalled, Delimiter delimiter,
+		rtc::compilation_options_t<ptx> const& opts,
+		MarshalTarget& marshalled, Delimiter delimiter,
 		bool need_delimiter_after_last_option)
 	{
 		opt_start_t<Delimiter> opt_start { delimiter };
@@ -581,7 +581,7 @@ struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 		if (opts.verbose)                           { marshalled << opt_start << "--verbose";                       }
 		if (opts.dont_merge_basicblocks)            { marshalled << opt_start << "--dont-merge-basicblocks";        }
 		{
-			const auto& osw = opts.situation_warnings;
+			auto const& osw = opts.situation_warnings;
 			if (osw.double_precision_ops)            { marshalled << opt_start << "--warn-on-double-precision-use";   }
 			if (osw.local_memory_use)                { marshalled << opt_start << "--warn-on-local-memory-usage";     }
 			if (osw.registers_spill_to_local_memory) { marshalled << opt_start << "--warn-on-spills";                 }
@@ -614,7 +614,7 @@ struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 		}
 
 		{
-			const auto& ocm = opts.caching_modes;
+			auto const& ocm = opts.caching_modes;
 			if (ocm.default_.load)  { marshalled << opt_start << "--def-load-cache "    << ocm.default_.load.value();  }
 			if (ocm.default_.store) { marshalled << opt_start << "--def-store-cache "   << ocm.default_.store.value(); }
 			if (ocm.forced.load)    { marshalled << opt_start << "--force-load-cache "  << ocm.forced.load.value();    }
@@ -623,7 +623,7 @@ struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 
 		// Multi-value options
 
-		for(const auto& target : opts.targets_) {
+		for(auto const& target : opts.targets_) {
 			auto prefix = opts.parse_without_code_generation ? "compute" : "sm";
 			marshalled << opt_start << "--gpu-name=" << prefix << '_'  << target.as_combined_number();
 		}
@@ -631,7 +631,7 @@ struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 		if (not opts.mangled_entry_function_names.empty()) {
 			marshalled << opt_start << "--entry";
 			bool first = true;
-			for (const auto &entry: opts.mangled_entry_function_names) {
+			for (auto const& entry: opts.mangled_entry_function_names) {
 				if (first) { first = false; }
 				else { marshalled << ','; }
 				marshalled << entry;
@@ -647,7 +647,7 @@ struct gadget<rtc::compilation_options_t<ptx>, MarshalTarget, Delimiter> {
 template <typename MarshalTarget, typename Delimiter>
 struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 	static void process(
-		const rtc::compilation_options_t<cuda_cpp>& opts, MarshalTarget& marshalled, Delimiter delimiter,
+		rtc::compilation_options_t<cuda_cpp> const& opts, MarshalTarget& marshalled, Delimiter delimiter,
 		bool need_delimiter_after_last_option)
 	{
 		opt_start_t<Delimiter> opt_start { delimiter };
@@ -697,7 +697,7 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 
 		// Multi-value options
 
-		for(const auto& target : opts.targets_) {
+		for(auto const& target : opts.targets_) {
 	#if CUDA_VERSION < 11000
 			marshalled << opt_start << "--gpu-architecture=compute_" << target.as_combined_number();
 	#else
@@ -705,36 +705,36 @@ struct gadget<rtc::compilation_options_t<cuda_cpp>, MarshalTarget, Delimiter> {
 	#endif
 		}
 
-		for(const auto& def : opts.undefines) {
+		for(auto const& def : opts.undefines) {
 			marshalled << opt_start << "-U" << def;
 			// Note: Could alternatively use "--undefine-macro=" instead of "-D"
 		}
 
 
-		for(const auto& def : opts.no_value_defines) {
+		for(auto const& def : opts.no_value_defines) {
 			marshalled << opt_start << "-D" << def;
 			// Note: Could alternatively use "--define-macro=" instead of "-D"
 		}
 
-		for(const auto& def : opts.valued_defines) {
+		for(auto const& def : opts.valued_defines) {
 			marshalled << opt_start << "-D" << def.first << '=' << def.second;
 		}
 
-		for(const auto& path : opts.additional_include_paths) {
+		for(auto const& path : opts.additional_include_paths) {
 			marshalled << opt_start << "--include-path=" << path;
 		}
 
-		for(const auto& preinclude_file : opts.preinclude_files) {
+		for(auto const& preinclude_file : opts.preinclude_files) {
 			marshalled << opt_start << "--pre-include=" << preinclude_file;
 		}
 
-		for(const auto& override : opts.error_handling_overrides) {
+		for(auto const& override : opts.error_handling_overrides) {
 			marshalled
 				<< opt_start << "--diag-" << rtc::error::detail::option_name_part(override.second)
 				<< '=' << override.first ;
 		}
 
-		for(const auto& extra_opt : opts.extra_options) {
+		for(auto const& extra_opt : opts.extra_options) {
 			marshalled << opt_start << extra_opt;
 		}
 

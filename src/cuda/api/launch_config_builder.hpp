@@ -29,10 +29,10 @@ namespace cuda_ {
 
 namespace detail {
 
-void validate_shared_mem_size_compatibility(const kernel_t& kernel_ptr, memory::shared::size_t shared_mem_size) noexcept(false);
-void validate_shared_mem_compatibility(const device_t &device, memory::shared::size_t shared_mem_size) noexcept(false);
-void validate_grid_dimension_compatibility(const device_t &device, grid::block_dimensions_t block_dims) noexcept(false);
-void validate_compatibility(const kernel_t& kernel, launch_configuration_t launch_config) noexcept(false);
+void validate_shared_mem_size_compatibility(kernel_t const& kernel_ptr, memory::shared::size_t shared_mem_size) noexcept(false);
+void validate_shared_mem_compatibility(device_t const& device, memory::shared::size_t shared_mem_size) noexcept(false);
+void validate_grid_dimension_compatibility(device_t const& device, grid::block_dimensions_t block_dims) noexcept(false);
+void validate_compatibility(kernel_t const& kernel, launch_configuration_t launch_config) noexcept(false);
 void validate_compatibility(device::id_t, memory::shared::size_t, bool, optional<grid::dimensions_t>) noexcept(false);
 
 } // namespace detail
@@ -239,7 +239,7 @@ protected:
 	kernel::shared_memory_size_determiner_t dynamic_shared_memory_size_determiner_ { nullptr };
 	memory::shared::size_t dynamic_shared_memory_size_ { 0 };
 
-	const kernel_t* kernel_ { nullptr };
+	kernel_t const* kernel_ { nullptr };
 	optional<device::id_t> device_id_;
 	bool saturate_with_active_blocks_ { false };
 #if CUDA_VERSION >= 10000
@@ -268,7 +268,7 @@ protected:
 
 #ifndef NDEBUG
 	static void validate_compatibility(
-		const kernel_t*         kernel_ptr,
+		kernel_t const*         kernel_ptr,
 		memory::shared::size_t  shared_mem_size)
 	{
 		if (kernel_ptr == nullptr) { return; }
@@ -290,7 +290,7 @@ protected:
 	}
 
 	static void validate_block_dimension_compatibility(
-		const kernel_t*          kernel_ptr,
+		kernel_t const*          kernel_ptr,
 		grid::block_dimensions_t block_dims)
 	{
 		if (kernel_ptr == nullptr) { return; }
@@ -357,7 +357,7 @@ protected:
 		}
 	}
 
-	void validate_kernel(const kernel_t* kernel_ptr) const
+	void validate_kernel(kernel_t const* kernel_ptr) const
 	{
 		if (dimensions_.block or (dimensions_.grid and dimensions_.overall)) {
 			auto block_dims = dimensions_.block ?
@@ -658,7 +658,7 @@ public:
 	 *
 	 * @note Calling this method obviates a call to the @ref device() method.
 	 */
-	launch_config_builder_t& kernel(const kernel_t* wrapped_kernel_ptr)
+	launch_config_builder_t& kernel(kernel_t const* wrapped_kernel_ptr)
 	{
 		if (device_id_ and kernel_->device_id() != device_id_.value()) {
 			throw std::invalid_argument("Launch config builder already associated with "
@@ -681,7 +681,7 @@ public:
 	 * @note Do not call both this and the @ref kernel() method; prefer just that one.
 	 */
 	///@{
-	launch_config_builder_t& device(const device::id_t device_id)
+	launch_config_builder_t& device(device::id_t const device_id)
 	{
 		if (kernel_ and kernel_->device_id() != device_id) {
 			throw std::invalid_argument("Launch config builder already associated with "
@@ -692,7 +692,7 @@ public:
 		return *this;
 	}
 
-	launch_config_builder_t& device(const device_t& device)
+	launch_config_builder_t& device(device_t const& device)
 	{
 		return this->device(device.id());
 	}

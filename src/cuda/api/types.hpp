@@ -130,14 +130,14 @@ struct dimensions_t<3> // this almost-inherits cudaExtent
 		: width(width_), height(height_), depth(depth_) { }
 	constexpr __host__ __device__ dimensions_t(cudaExtent e)
 		: dimensions_t(e.width, e.height, e.depth) { }
-	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+	constexpr __host__ __device__ dimensions_t(dimensions_t const& other)
 		: dimensions_t(other.width, other.height, other.depth) { }
 	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
 		: dimensions_t(other.width, other.height, other.depth) { }
 	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
 		: dimensions_t(linear_size, 1, 1) { }
 
-	CONSTEXPR_CPP14 dimensions_t& operator=(const dimensions_t& other) = default;
+	CONSTEXPR_CPP14 dimensions_t& operator=(dimensions_t const& other) = default;
 	CONSTEXPR_CPP14 dimensions_t& operator=(dimensions_t&& other) = default;
 
 	constexpr __host__ __device__ operator cudaExtent() const
@@ -178,14 +178,14 @@ struct dimensions_t<2>
 
 	constexpr __host__ __device__ dimensions_t(dimension_t width_, dimension_t height_)
 		: width(width_), height(height_) { }
-	constexpr __host__ __device__ dimensions_t(const dimensions_t& other)
+	constexpr __host__ __device__ dimensions_t(dimensions_t const& other)
 		: dimensions_t(other.width, other.height) { }
 	constexpr __host__ __device__ dimensions_t(dimensions_t&& other)
 		: dimensions_t(other.width, other.height) { }
 	constexpr __host__ __device__ dimensions_t(dimension_t linear_size)
 		: dimensions_t(linear_size, 1) { }
 
-	CONSTEXPR_CPP14 __host__ __device__ dimensions_t& operator=(const dimensions_t& other)
+	CONSTEXPR_CPP14 __host__ __device__ dimensions_t& operator=(dimensions_t const& other)
 	{
 		width = other.width; height = other.height;
 		return *this;
@@ -350,8 +350,8 @@ struct dimensions_t // this almost-inherits dim3
 	constexpr __host__ __device__ dimensions_t(dimension_t x_ = 1, dimension_t y_ = 1, dimension_t z_ = 1) noexcept
         : x(x_), y(y_), z(z_) { }
 
-	constexpr __host__ __device__ dimensions_t(const uint3& v) noexcept : dimensions_t(v.x, v.y, v.z) { }
-	constexpr __host__ __device__ dimensions_t(const dim3& dims) noexcept : dimensions_t(dims.x, dims.y, dims.z) { }
+	constexpr __host__ __device__ dimensions_t(uint3 const& v) noexcept : dimensions_t(v.x, v.y, v.z) { }
+	constexpr __host__ __device__ dimensions_t(dim3 const& dims) noexcept : dimensions_t(dims.x, dims.y, dims.z) { }
 	constexpr __host__ __device__ dimensions_t(dim3&& dims) noexcept : dimensions_t(dims.x, dims.y, dims.z) { }
 
 	constexpr __host__ __device__ operator uint3(void) const { return { x, y, z }; }
@@ -412,19 +412,19 @@ struct dimensions_t // this almost-inherits dim3
 };
 
 ///@cond
-constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+constexpr bool operator==(dim3 const& lhs, dim3 const& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr bool operator!=(const dim3& lhs, const dim3& rhs) noexcept
+constexpr bool operator!=(dim3 const& lhs, dim3 const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
-constexpr bool operator==(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr bool operator==(dimensions_t const& lhs, dimensions_t const& rhs) noexcept
 {
 	return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z;
 }
-constexpr bool operator!=(const dimensions_t& lhs, const dimensions_t& rhs) noexcept
+constexpr bool operator!=(dimensions_t const& lhs, dimensions_t const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -460,13 +460,13 @@ struct overall_dimensions_t
 		dimension_type width_, dimension_type height_, dimension_type depth_) noexcept
 		: x(width_), y(height_), z(depth_) { }
 
-	constexpr __host__ __device__ overall_dimensions_t(const dim3& dims) noexcept
+	constexpr __host__ __device__ overall_dimensions_t(dim3 const& dims) noexcept
 		: x(dims.x), y(dims.y), z(dims.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(dim3&& dims) noexcept
 		: x(dims.x), y(dims.y), z(dims.z) { }
 
-	constexpr __host__ __device__ overall_dimensions_t(const overall_dimensions_t& other) noexcept
+	constexpr __host__ __device__ overall_dimensions_t(overall_dimensions_t const& other) noexcept
 		: overall_dimensions_t(other.x, other.y, other.z) { }
 
 	constexpr __host__ __device__ overall_dimensions_t(overall_dimensions_t&& other) noexcept
@@ -475,7 +475,7 @@ struct overall_dimensions_t
 	explicit constexpr __host__ __device__ overall_dimensions_t(dimensions_t dims) noexcept
 		: overall_dimensions_t(dims.x, dims.y, dims.z) { }
 
-	CONSTEXPR_CPP14 overall_dimensions_t& operator=(const overall_dimensions_t& other) noexcept = default;
+	CONSTEXPR_CPP14 overall_dimensions_t& operator=(overall_dimensions_t const& other) noexcept = default;
 	CONSTEXPR_CPP14 overall_dimensions_t& operator=(overall_dimensions_t&& other) noexcept = default;
 
 	constexpr __host__ __device__ size_t volume() const noexcept { return x * y * z; }
@@ -549,8 +549,8 @@ struct composite_dimensions_t {
 
 ///@cond
 #if __cplusplus >= 202002L
-	constexpr bool operator==(const composite_dimensions_t&) const noexcept = default;
-	constexpr bool operator!=(const composite_dimensions_t&) const noexcept = default;
+	constexpr bool operator==(composite_dimensions_t const&) const noexcept = default;
+	constexpr bool operator!=(composite_dimensions_t const&) const noexcept = default;
 #endif
 ///@endcond
 };
@@ -707,7 +707,7 @@ static_assert(sizeof(void *) == sizeof(device::address_t), "Unexpected address s
  *
  * @note Typically, this is just a reinterpretation of the same value.
  */
-inline address_t address(const void* device_ptr) noexcept
+inline address_t address(void const* device_ptr) noexcept
 {
 	static_assert(sizeof(void*) == sizeof(address_t), "Incompatible sizes for a void pointer and memory::device::address_t");
 	return reinterpret_cast<address_t>(device_ptr);

@@ -104,7 +104,7 @@ void array_3d_example(cuda_::device_t& device, size_t w, size_t h, size_t d) {
 }
 
 template <typename T>
-void print_2d_array(const char* title, cuda_::span<T> a, size_t width, size_t height)
+void print_2d_array(char const* title, cuda_::span<T> a, size_t width, size_t height)
 {
     std::cout << title << ":\n";
 	for (size_t i = 0; i < height; ++i) {

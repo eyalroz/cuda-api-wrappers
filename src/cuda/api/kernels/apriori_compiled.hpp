@@ -28,14 +28,14 @@ namespace apriori_compiled {
 namespace detail {
 
 #if CUDA_VERSION < 11000
-inline handle_t get_handle(const void *, const char* = nullptr)
+inline handle_t get_handle(void const *, char const* = nullptr)
 {
 	throw cuda_::runtime_error(status::not_supported,
 		"Only CUDA versions 11.0 and later support obtaining CUDA driver handles "
 		"for kernels compiled alongside the program source");
 }
 #else
-inline handle_t get_handle(const void *kernel_function_ptr, const char* name = nullptr)
+inline handle_t get_handle(void const *kernel_function_ptr, char const* name = nullptr)
 {
 	handle_t handle;
 	auto status = cudaGetFuncBySymbol(&handle, kernel_function_ptr);
@@ -50,7 +50,7 @@ apriori_compiled_t wrap(
 	device::id_t device_id,
 	context::handle_t primary_context_handle,
 	kernel::handle_t f,
-	const void* ptr,
+	void const* ptr,
 	bool hold_primary_context_refcount_unit = false);
 
 } // namespace detail
@@ -250,7 +250,7 @@ static __inline__ cudaError_t cudaOccupancyMaxPotentialBlockSizeVariableSMemWith
 // if block_size_limit is 0, it is ignored.
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const void*                    kernel_function_ptr,
+	void const*                    kernel_function_ptr,
 	cuda_::device::id_t             device_id,
 	UnaryFunction                  determine_shared_mem_by_block_size,
 	cuda_::grid::block_dimension_t  block_size_limit,
@@ -262,7 +262,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 	// spurious (?) compiler warning about potential uninitialized use.
 
 	unsigned flags = disable_caching_override ? cudaOccupancyDisableCachingOverride : cudaOccupancyDefault;
-	auto result = (cuda_::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, const void*>(
+	auto result = (cuda_::status_t) cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags_<UnaryFunction, void const*>(
 		&min_grid_size_in_blocks,
 		&block_size,
 		kernel_function_ptr,
@@ -278,7 +278,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 #endif // CUDA_VERSION > 10000
 
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
-	const void*              kernel_function_ptr,
+	void const*              kernel_function_ptr,
 	grid::block_dimension_t  block_size_in_threads,
 	memory::shared::size_t   dynamic_shared_memory_per_block,
 	bool                     disable_caching_override)
@@ -315,11 +315,11 @@ public: // getters
 	 * function instead.
 	 */
 	///@{
-	const void *ptr() const noexcept { return ptr_; }
-	const void *get() const noexcept { return ptr_; }
+	void const *ptr() const noexcept { return ptr_; }
+	void const *get() const noexcept { return ptr_; }
 
 public: // type_conversions
-	explicit operator const void *() const noexcept { return ptr_; }
+	explicit operator void const *() const noexcept { return ptr_; }
 	///@}
 
 public: // non-mutators
@@ -422,7 +422,7 @@ public: // non-mutators
 
 protected: // ctors & dtor
 	apriori_compiled_t(device::id_t device_id, context::handle_t primary_context_handle,
-		kernel::handle_t handle, const void *f, bool hold_pc_refcount_unit)
+		kernel::handle_t handle, void const *f, bool hold_pc_refcount_unit)
 	: kernel_t(device_id, primary_context_handle, handle, hold_pc_refcount_unit), ptr_(f) {
 		// TODO: Consider checking whether this actually is a device function, at all and in this context
 #ifndef NDEBUG
@@ -432,7 +432,7 @@ protected: // ctors & dtor
 	apriori_compiled_t(
 		device::id_t device_id,
 		context::handle_t primary_context_handle,
-		const void *f,
+		void const *f,
 		bool hold_primary_context_refcount_unit)
 	: apriori_compiled_t(
 		device_id,
@@ -443,16 +443,16 @@ protected: // ctors & dtor
 	{ }
 
 public: // constructors & operators
-	apriori_compiled_t(const apriori_compiled_t&) = delete;
+	apriori_compiled_t(apriori_compiled_t const&) = delete;
 	apriori_compiled_t(apriori_compiled_t&&) = default;
-	apriori_compiled_t& operator=(const apriori_compiled_t&) = delete;
+	apriori_compiled_t& operator=(apriori_compiled_t const&) = delete;
 	apriori_compiled_t& operator=(apriori_compiled_t&&) = default;
 
 public: // friends
-	friend apriori_compiled_t apriori_compiled::detail::wrap(device::id_t, context::handle_t, kernel::handle_t, const void*, bool);
+	friend apriori_compiled_t apriori_compiled::detail::wrap(device::id_t, context::handle_t, kernel::handle_t, void const*, bool);
 
 protected: // data members
-	const void *const ptr_;
+	void const * const ptr_;
 }; // class apriori_compiled_t
 
 namespace apriori_compiled {
@@ -463,7 +463,7 @@ inline apriori_compiled_t wrap(
 	device::id_t       device_id,
 	context::handle_t  primary_context_handle,
 	kernel::handle_t   f,
-	const void *       ptr,
+	void const *       ptr,
 	bool               hold_primary_context_refcount_unit)
 {
 	return { device_id, primary_context_handle, f, ptr, hold_primary_context_refcount_unit };
@@ -472,21 +472,21 @@ inline apriori_compiled_t wrap(
 } // namespace detail
 
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-inline attribute_value_t get_attribute(const void* function_ptr, attribute_t attribute)
+inline attribute_value_t get_attribute(void const* function_ptr, attribute_t attribute)
 {
 	auto handle = detail::get_handle(function_ptr);
 	return kernel::detail::get_attribute_in_current_context(handle, attribute);
 }
 
-inline void set_attribute(const void* function_ptr, attribute_t attribute, attribute_value_t value)
+inline void set_attribute(void const* function_ptr, attribute_t attribute, attribute_value_t value)
 {
 	auto handle = detail::get_handle(function_ptr);
 	return kernel::detail::set_attribute_in_current_context(handle, attribute, value);
 }
 
 inline attribute_value_t get_attribute(
-	const context_t&  context,
-	const void*       function_ptr,
+	context_t const&  context,
+	void const*       function_ptr,
 	attribute_t       attribute)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
@@ -494,8 +494,8 @@ inline attribute_value_t get_attribute(
 }
 
 inline void set_attribute(
-	const context_t&   context,
-	const void*        function_ptr,
+	context_t const&   context,
+	void const*        function_ptr,
 	attribute_t        attribute,
 	attribute_value_t  value)
 {
@@ -520,7 +520,7 @@ inline void set_attribute(
  * kernel object
  */
 template<typename KernelFunctionPtr>
-apriori_compiled_t get(const device_t& device, KernelFunctionPtr function_ptr);
+apriori_compiled_t get(device_t const& device, KernelFunctionPtr function_ptr);
 
 /// @param context The context for which to construct an associated kernel object
 template<typename KernelFunctionPtr>

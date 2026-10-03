@@ -67,7 +67,7 @@ inline attribute_value_t get_attribute(attribute_t attribute, id_t source, id_t 
  * _enabled_, i.e. accesses might still fail when this is true if access has not been
  * enabled.
  */
-inline bool can_access(const device::id_t accessor, const device::id_t peer)
+inline bool can_access(device::id_t const accessor, device::id_t const peer)
 {
 	int result;
 	auto status = cuDeviceCanAccessPeer(&result, accessor, peer);
@@ -93,14 +93,14 @@ namespace peer_to_peer {
  * associated with the specified peer context - if peer-to-peer access is supported
  * between the two devices.
  */
-void enable_access_to(const context_t &peer_context);
+void enable_access_to(context_t const& peer_context);
 
 /**
  * Prevents subsequently-executed memory operations and kernels from accessing the
  * memory associated with the specified peer context - if peer-to-peer access is
  * supported between the two devices.
  */
-void disable_access_to(const context_t &peer_context);
+void disable_access_to(context_t const& peer_context);
 
 } // namespace peer_to_peer
 
@@ -145,7 +145,7 @@ inline void disable_access(context::handle_t accessor, context::handle_t peer)
 /**
  * @brief Check if a CUDA context can access the global memory of another CUDA context
  */
-bool can_access(const context_t& accessor, const context_t& peer);
+bool can_access(context_t const& accessor, context_t const& peer);
 
 /**
  * @brief Enable access by one CUDA device to the global memory of another
@@ -153,7 +153,7 @@ bool can_access(const context_t& accessor, const context_t& peer);
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-void enable_access(const context_t& accessor, const context_t& peer);
+void enable_access(context_t const& accessor, context_t const& peer);
 
 /**
  * @brief Disable access by one CUDA device to the global memory of another
@@ -161,17 +161,17 @@ void enable_access(const context_t& accessor, const context_t& peer);
  * @param accessor device interested in making a remote access
  * @param peer device to be accessed
  */
-void disable_access(const context_t& accessor, const context_t& peer);
+void disable_access(context_t const& accessor, context_t const& peer);
 
 /**
  * @brief Enable access both by the @p first to the @p second context and the other way around.
  */
-void enable_bidirectional_access(const context_t& first, const context_t& second);
+void enable_bidirectional_access(context_t const& first, context_t const& second);
 
 /**
  * @brief Disable access both by the @p first to the @p second context and the other way around.
  */
-void disable_bidirectional_access(const context_t& first, const context_t& second);
+void disable_bidirectional_access(context_t const& first, context_t const& second);
 
 } // namespace peer_to_peer
 } // namespace context
@@ -188,7 +188,7 @@ namespace peer_to_peer {
  * @param peer device to be accessed
  * @return true iff acess is possible
  */
-inline bool can_access(const device_t& accessor, const device_t& peer);
+inline bool can_access(device_t const& accessor, device_t const& peer);
 
 /**
  * @brief Enable access by one CUDA device to the global memory of another
@@ -198,7 +198,7 @@ inline bool can_access(const device_t& accessor, const device_t& peer);
  *
  * @todo Consider disabling this, given that access is context-specific
  */
-inline void enable_access(const device_t& accessor, const device_t& peer);
+inline void enable_access(device_t const& accessor, device_t const& peer);
 
 /**
  * @brief Disable access by one CUDA device to the global memory of another
@@ -208,22 +208,22 @@ inline void enable_access(const device_t& accessor, const device_t& peer);
  *
  * @todo Consider disabling this, given that access is context-specific
  */
-inline void disable_access(const device_t& accessor, const device_t& peer);
+inline void disable_access(device_t const& accessor, device_t const& peer);
 
 /**
  * @brief Determine whether two CUDA devices can currently access each other.
  */
-inline bool can_access_each_other(const device_t& first, const device_t& second);
+inline bool can_access_each_other(device_t const& first, device_t const& second);
 
 /**
  * @brief Enable access both by the @p first to the @p second device and the other way around.
  */
-inline void enable_bidirectional_access(const device_t& first, const device_t& second);
+inline void enable_bidirectional_access(device_t const& first, device_t const& second);
 
 /**
  * @brief Disable access both by the @p first to the @p second device and the other way around.
  */
-inline void disable_bidirectional_access(const device_t& first, const device_t& second);
+inline void disable_bidirectional_access(device_t const& first, device_t const& second);
 
 /**
  * @brief Get one of the numeric attributes for a(n ordered) pair of devices,
@@ -236,7 +236,7 @@ inline void disable_bidirectional_access(const device_t& first, const device_t& 
  * @param second destination device
  * @return the numeric attribute value
  */
-inline attribute_value_t get_attribute(attribute_t attribute, const device_t& first, const device_t& second);
+inline attribute_value_t get_attribute(attribute_t attribute, device_t const& first, device_t const& second);
 
 } // namespace peer_to_peer
 } // namespace device

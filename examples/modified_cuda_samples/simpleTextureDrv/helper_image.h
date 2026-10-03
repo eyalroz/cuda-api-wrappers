@@ -69,7 +69,7 @@ struct ConverterFromUByte<unsigned char> {
   //! Conversion operator
   //! @return converted value
   //! @param  val  value to convert
-  float operator()(const unsigned char &val) {
+  float operator()(const unsigned char& val) {
     return static_cast<unsigned char>(val);
   }
 };
@@ -80,7 +80,7 @@ struct ConverterFromUByte<float> {
   //! Conversion operator
   //! @return converted value
   //! @param  val  value to convert
-  float operator()(const unsigned char &val) {
+  float operator()(const unsigned char& val) {
     return static_cast<float>(val) / 255.0f;
   }
 };
@@ -95,7 +95,7 @@ struct ConverterToUByte<unsigned char> {
   //! Conversion operator (essentially a passthru
   //! @return converted value
   //! @param  val  value to convert
-  unsigned char operator()(const unsigned char &val) { return val; }
+  unsigned char operator()(const unsigned char& val) { return val; }
 };
 
 //! Data converter from unsigned char / unsigned byte to unsigned int
@@ -104,7 +104,7 @@ struct ConverterToUByte<float> {
   //! Conversion operator
   //! @return converted value
   //! @param  val  value to convert
-  unsigned char operator()(const float &val) {
+  unsigned char operator()(float const& val) {
     return static_cast<unsigned char>(val * 255.0f);
   }
 };

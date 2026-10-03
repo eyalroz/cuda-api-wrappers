@@ -22,7 +22,7 @@ public:
 	using pointer = void; // No pointers, since we don't have any elements in actual memory
 	using const_pointer = void; // ditto
 	using reference = value_type; // device_t is already a reference type; and there is no instance-of-device_t here to reference
-	using const_reference = const value_type; // ditto
+	using const_reference = value_type const; // ditto
 	using size_type = decltype(device::count());
 	using difference_type = typename std::make_signed<size_type>::type;
 
@@ -45,7 +45,7 @@ public:
 			if (index_ > num_devices_) { throw std::logic_error("Out of range"); }
 		}
 
-		index_based_iterator(const index_based_iterator& it)
+		index_based_iterator(index_based_iterator const& it)
 			: index_based_iterator(it.num_devices_, it.index_) { }
 
 		// Forward iterator requirements
@@ -121,7 +121,7 @@ public:
 			return index_based_iterator(num_devices_, index_ - n);
 		}
 
-		difference_type operator-(const index_based_iterator& other) const
+		difference_type operator-(index_based_iterator const& other) const
 		{
 			return this->index_ - other.index_;
 		}
@@ -142,12 +142,12 @@ public:
 
 	all_devices() : num_devices_(device::count()) { }
 	~all_devices() = default;
-	all_devices(const all_devices&) = default;
+	all_devices(all_devices const&) = default;
 	all_devices(all_devices&&) = default;
-	all_devices& operator=(const all_devices&) { return *this; };
+	all_devices& operator=(all_devices const&) { return *this; };
 	all_devices& operator=(all_devices&&) { return *this; };
 
-	// void fill(const value_type& u);
+	// void fill(value_type const& u);
 	void swap(all_devices&) noexcept { } // all instances are basically the same
 
 	// Iterators
@@ -195,8 +195,8 @@ protected:
 };
 
 inline bool operator== (
-	const all_devices::index_based_iterator& lhs,
-	const all_devices::index_based_iterator& rhs)
+	all_devices::index_based_iterator const& lhs,
+	all_devices::index_based_iterator const& rhs)
 {
 #ifndef NDEBUG
 	return lhs.num_devices() == rhs.num_devices() and lhs.index() == rhs.index();
@@ -206,8 +206,8 @@ inline bool operator== (
 }
 
 inline bool operator!= (
-	const all_devices::index_based_iterator& lhs,
-	const all_devices::index_based_iterator& rhs)
+	all_devices::index_based_iterator const& lhs,
+	all_devices::index_based_iterator const& rhs)
 {
 	return not (lhs == rhs);
 }

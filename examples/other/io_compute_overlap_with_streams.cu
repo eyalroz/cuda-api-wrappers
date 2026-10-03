@@ -27,10 +27,10 @@ __device__ void gpu_sleep(clock_value_t sleep_cycles)
 
 template <typename T>
 __global__ void add(
-    const T* __restrict__  lhs,
-    const T* __restrict__  rhs,
-    T* __restrict__        result,
-    size_t                 length)
+    T const * __restrict__  lhs,
+    T const * __restrict__  rhs,
+    T       * __restrict__  result,
+    size_t                  length)
 {
     auto global_index = threadIdx.x + blockIdx.x * blockDim.x;
     if (global_index < length) {

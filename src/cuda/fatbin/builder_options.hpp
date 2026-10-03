@@ -69,8 +69,8 @@ namespace detail {
 template <typename MarshalTarget, typename Delimiter>
 struct gadget<fatbin_builder::options_t, MarshalTarget, Delimiter> {
 	static void process(
-		const fatbin_builder::options_t &opts,
-		MarshalTarget &marshalled, Delimiter delimiter,
+		fatbin_builder::options_t const& opts,
+		MarshalTarget& marshalled, Delimiter delimiter,
 		bool need_delimiter_after_last_option)
 	{
 		using fatbin_builder::options_t;

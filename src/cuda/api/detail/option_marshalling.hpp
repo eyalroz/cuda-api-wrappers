@@ -45,7 +45,7 @@ public:
 		option_positions.push_back(0);
 	}
 
-	marshalled_options_t(const marshalled_options_t&) = delete;
+	marshalled_options_t(marshalled_options_t const&) = delete;
 	marshalled_options_t(marshalled_options_t&&) = default;
 
 protected:
@@ -74,11 +74,11 @@ public:
 		return *this;
 	}
 
-	std::vector<const char*> option_ptrs() const {
+	std::vector<char const*> option_ptrs() const {
 		finalized = oss.str();
-		auto ptrs = std::vector<const char*>();
+		auto ptrs = std::vector<char const*>();
 		ptrs.reserve(option_positions.size()-1);
-		const char* start = finalized.data();
+		char const* start = finalized.data();
 		std::transform(option_positions.cbegin(), option_positions.cend() - 1, std::back_inserter(ptrs),
 			[start] (size_type pos){ return start + pos; });
 		return ptrs;
@@ -127,14 +127,14 @@ struct gadget {
 	 * structure like @ref marshalled_options_t.
 	 */
 	static void process(
-		const CompilationOptions &opts, MarshalTarget &marshalled, Delimiter delimiter,
+		CompilationOptions const& opts, MarshalTarget& marshalled, Delimiter delimiter,
 		bool need_delimiter_after_last_option);
 };
 
 
 template <typename CompilationOptions, typename MarshalTarget, typename Delimiter>
 void process(
-	const CompilationOptions& opts, MarshalTarget& marshalled, Delimiter delimiter,
+	CompilationOptions const& opts, MarshalTarget& marshalled, Delimiter delimiter,
 	bool need_delimiter_after_last_option = false)
 {
 	return detail::gadget<CompilationOptions, MarshalTarget, Delimiter>::process(
@@ -153,7 +153,7 @@ void process(
  * easy to modify and manipulate.
  */
 template <typename CompilationOptions>
-detail::marshalled_options_t marshal(const CompilationOptions& opts)
+detail::marshalled_options_t marshal(CompilationOptions const& opts)
 {
 	using detail::marshalled_options_t;
 	marshalled_options_t marshalled;
@@ -178,7 +178,7 @@ detail::marshalled_options_t marshal(const CompilationOptions& opts)
  *
  */
 template <typename CompilationOptions>
-std::string render(const CompilationOptions& opts)
+std::string render(CompilationOptions const& opts)
 {
 	std::ostringstream oss;
 	detail::process(opts, oss, ' ');

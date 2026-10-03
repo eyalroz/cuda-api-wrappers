@@ -19,7 +19,7 @@ namespace node {
 
 namespace detail {
 
-inline std::logic_error make_unspec_error(const char *node_type, const char *missing_arg_name)
+inline std::logic_error make_unspec_error(char const *node_type, char const *missing_arg_name)
 {
 	// Yes, returning it, not throwing it. This is an exception builder function
 	return std::logic_error(
@@ -65,7 +65,7 @@ public:
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type build_within(template_t const& graph_template) const
 	{
 		if (not template__) {
 			throw detail::make_unspec_error("child graph", "child graph template");
@@ -94,12 +94,12 @@ protected:
 public:
 	params_type params() const noexcept { return { *event_ }; }
 
-	this_type& event(const event_t& event) {
+	this_type& event(event_t const& event) {
 		event_.rebind(event);
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not event_) {
 			throw detail::make_unspec_error("record event", "event");
@@ -118,17 +118,17 @@ public:
 	using params_type = traits::parameters_type;
 
 protected:
-	optional_ref<const event_t> event_;
+	optional_ref<event_t const> event_;
 
 public:
 	params_type params() const noexcept { return { *event_ }; }
 
-	this_type& event(const event_t& event) {
+	this_type& event(event_t const& event) {
 		event_.rebind(event);
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not event_) {
 			throw detail::make_unspec_error("wait on event", "event");
@@ -167,7 +167,7 @@ public:
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not function_ptr_) {
 			throw detail::make_unspec_error("kernel_launch", "host callback function pointer");
@@ -189,14 +189,14 @@ public:
 	using params_type = traits::parameters_type;
 
 protected:
-	optional_ref<const kernel_t> kernel_;
+	optional_ref<kernel_t const> kernel_;
 	optional<launch_configuration_t> launch_config_;
 	optional<std::vector<void*>> marshalled_arguments_;
 
 public:
 	params_type params() const noexcept { return { *kernel_, *launch_config_, *marshalled_arguments_ }; }
 
-	this_type& kernel(const kernel_t& kernel)
+	this_type& kernel(kernel_t const& kernel)
 	{
 		kernel_.rebind(kernel);
 		return *this;
@@ -225,7 +225,7 @@ public:
 		return marshalled_arguments(make_kernel_argument_pointers(std::forward<Ts>(args)...));
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not kernel_) {
 			throw detail::make_unspec_error("kernel_launch", "kernel");
@@ -253,13 +253,13 @@ public:
 	using endpoint_t = memory::endpoint_t;
 
 protected:
-	optional_ref<const device_t> device_;
+	optional_ref<device_t const> device_;
 	optional<size_t> size_in_bytes_;
 
 public:
 	params_type params() const noexcept { return { *device_, *size_in_bytes_ }; }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not device_) {
 			throw detail::make_unspec_error("memory allocation", "device");
@@ -270,7 +270,7 @@ public:
 		return graph_template.insert.node<kind>(params());
 	}
 
-	this_type& device(const device_t& device) {
+	this_type& device(device_t const& device) {
 		device_.rebind(device);
 		return *this;
 	}
@@ -305,18 +305,18 @@ public:
 #if __cplusplus >= 201703L
 	CAW_MAYBE_UNUSED
 #endif
-	built_type build_within(const template_t& graph_template) const
+	built_type build_within(template_t const& graph_template) const
 	{
 		// TODO: What about the extent???!!!
 		return graph_template.insert.node<kind>(params());
 	}
 
-//	this_type& context(endpoint_t endpoint, const context_t& context) noexcept
+//	this_type& context(endpoint_t endpoint, context_t const& context) noexcept
 //	{
 //		params_.set_context(endpoint, context); return *this;
 //	}
 //
-//	this_type& single_context(const context_t& context) noexcept
+//	this_type& single_context(context_t const& context) noexcept
 //	{
 //		params_.set_single_context(context); return *this;
 //	}
@@ -325,7 +325,7 @@ public:
 	// the one right after it which uses the forwarding idiom; and yet - if we
 	// only keep the forwarding-source-method, we get errors.
 //	template <typename... Ts>
-//	this_type& source(const Ts&... args) {
+//	this_type& source(Ts const&... args) {
 //		params_.set_source(args...);
 //		return *this;
 //	}
@@ -337,7 +337,7 @@ public:
 	}
 //
 //	template <typename... Ts>
-//	this_type& destination(const Ts&... args) {
+//	this_type& destination(Ts const&... args) {
 //      params.set_destination(args...);
 //      return *this;
 //	}
@@ -428,7 +428,7 @@ public:
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not region_) {
 			throw detail::make_unspec_error("memory set", "memory region");
@@ -464,7 +464,7 @@ public:
 
 	this_type& region(memory::region_t allocated_region) noexcept { return this->region(allocated_region.data()); }
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template)
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template)
 	{
 		if (not ptr_) {
 			throw detail::make_unspec_error("memory free", "allocated region pointer");
@@ -486,13 +486,13 @@ public:
 	using params_type = traits::parameters_type;
 
 protected:
-	optional_ref<const context_t> context_;
+	optional_ref<context_t const> context_;
 	optional<memory::barrier_scope_t> barrier_scope_;
 
 public:
 	params_type params() const { return { *context_, *barrier_scope_ }; }
 
-	this_type& context(const context_t& context) noexcept
+	this_type& context(context_t const& context) noexcept
 	{
 		context_.rebind(context);
 		return *this;
@@ -504,7 +504,7 @@ public:
 		return *this;
 	}
 
-	CAW_MAYBE_UNUSED built_type	build_within(const template_t& graph_template) const
+	CAW_MAYBE_UNUSED built_type	build_within(template_t const& graph_template) const
 	{
 		if (not context_) {
 			throw detail::make_unspec_error("memory barrier", "CUDA context");

@@ -65,10 +65,10 @@ kernel_t wrap(
 
 namespace detail {
 
-static const char* attribute_name(int attribute_index)
+static char const* attribute_name(int attribute_index)
 {
 	// Note: These correspond to the values of enum CUfunction_attribute_enum
-	static const char* names[] = {
+	static char const* names[] = {
 		"Maximum number of threads per block",
 		"Statically-allocated shared memory size in bytes",
 		"Required constant memory size in bytes",
@@ -105,15 +105,15 @@ inline void set_attribute_in_current_context(handle_t handle, attribute_t attrib
 }
 
 #if CUDA_VERSION >= 12030
-inline const char * get_name_in_current_context(handle_t handle)
+inline char const * get_name_in_current_context(handle_t handle)
 {
-	const char* result;
+	char const* result;
 	auto status = cuFuncGetName(&result, handle);
 	throw_if_error_lazy(status, "Failed obtaining the name for " + identify(handle));
 	return result;
 }
 
-inline const char * get_name(context::handle_t context_handle, handle_t kernel_handle)
+inline char const * get_name(context::handle_t context_handle, handle_t kernel_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	return get_name_in_current_context(kernel_handle);
@@ -153,7 +153,7 @@ inline module_::handle_t get_module(context::handle_t context_handle, handle_t k
 
 } // namespace detail
 
-inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute);
+inline attribute_value_t get_attribute(kernel_t const& kernel, attribute_t attribute);
 
 } // namespace kernel
 
@@ -207,7 +207,7 @@ public: // getters
 #if CUDA_VERSION >= 12030
 	/// Return the mangled name of the kernel (representing the original name, and,
 	/// possibly, the parameter types)
-	const char *mangled_name() const { return cuda_::kernel::detail::get_name(context_handle_, handle_); }
+	char const *mangled_name() const { return cuda_::kernel::detail::get_name(context_handle_, handle_); }
 	module_t module() const;
 #endif
 #if CUDA_VERSION >= 13020
@@ -412,7 +412,7 @@ public: // ctors & dtor
 
 	kernel_t(kernel_t const& other) = delete;
 	kernel_t(kernel_t&& other) noexcept = default;
-	kernel_t& operator=(const kernel_t& other) = delete;
+	kernel_t& operator=(kernel_t const& other) = delete;
 	kernel_t& operator=(kernel_t&& other) noexcept = default;
 	// Q: Why aren't kernels copyable when their handles don't require creation and destruction?
 	// A: Because they may carry a primary context refcount unit. And - we have not decided to
@@ -439,13 +439,13 @@ inline kernel_t wrap(
 	return {device_id, context_handle, handle, hold_primary_context_refcount_unit };
 }
 
-inline attribute_value_t get_attribute(const kernel_t& kernel, attribute_t attribute)
+inline attribute_value_t get_attribute(kernel_t const& kernel, attribute_t attribute)
 {
 	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
 	return detail::get_attribute_in_current_context(kernel.handle(), attribute);
 }
 
-inline void set_attribute(const kernel_t& kernel, attribute_t attribute, attribute_value_t value)
+inline void set_attribute(kernel_t const& kernel, attribute_t attribute, attribute_value_t value)
 {
 	CAW_SET_SCOPE_CONTEXT(kernel.context_handle());
 	return detail::set_attribute_in_current_context(kernel.handle(), attribute, value);
@@ -510,7 +510,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 * @brief See the Driver API documentation for @ref cuOccupancyAvailableDynamicSMemPerBlock
 */
 inline memory::shared::size_t max_dynamic_shared_memory_per_block(
-	const kernel_t &kernel,
+	kernel_t const& kernel,
 	grid::dimension_t blocks_on_multiprocessor,
 	grid::block_dimension_t block_size_in_threads)
 {
@@ -527,7 +527,7 @@ inline memory::shared::size_t max_dynamic_shared_memory_per_block(
 * @brief See the Driver API documentation for @ref cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
 */
 inline grid::dimension_t max_active_blocks_per_multiprocessor(
-	const kernel_t &kernel,
+	kernel_t const& kernel,
 	grid::block_dimension_t block_size_in_threads,
 	memory::shared::size_t dynamic_shared_memory_per_block,
 	bool disable_caching_override = false);
@@ -570,7 +570,7 @@ inline grid::dimension_t kernel_t::max_active_blocks_per_multiprocessor(
 		dynamic_shared_memory_per_block, disable_caching_override);
 }
 
-inline bool operator==(const kernel_t& lhs, const kernel_t& rhs) noexcept
+inline bool operator==(kernel_t const& lhs, kernel_t const& rhs) noexcept
 {
 	return
 		    lhs.device_id()      == rhs.device_id()
@@ -578,7 +578,7 @@ inline bool operator==(const kernel_t& lhs, const kernel_t& rhs) noexcept
 		and lhs.handle()         == rhs.handle();
 }
 
-inline bool operator!=(const kernel_t& lhs, const kernel_t& rhs) noexcept
+inline bool operator!=(kernel_t const& lhs, kernel_t const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }

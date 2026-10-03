@@ -111,7 +111,7 @@ public: // getters
 public: // constructors and destructors
 	template <typename T, dimensionality_t NumDimensions>
 	texture_view(
-		const cuda_::array_t<T, NumDimensions>& arr,
+		cuda_::array_t<T, NumDimensions> const& arr,
 		texture::descriptor_t descriptor = texture::descriptor_t()) :
 		device_id_(arr.device_id()),
 		context_handle_(arr.context_handle())
@@ -142,9 +142,9 @@ protected: // constructor
 		ownership_(take_ownership,  { context_handle_, handle }) { }
 
 public: // constructors & operators
-	texture_view(const texture_view&) = delete;
+	texture_view(texture_view const&) = delete;
 	texture_view(texture_view&&) noexcept = default;
-	texture_view& operator=(const texture_view&) = delete;
+	texture_view& operator=(texture_view const&) = delete;
 	texture_view& operator=(texture_view&&) noexcept = default;
 
 public: // non-mutating getters
@@ -169,12 +169,12 @@ protected:
 }; // texture_view
 
 ///@cond
-inline bool operator==(const texture_view& lhs, const texture_view& rhs) noexcept
+inline bool operator==(texture_view const& lhs, texture_view const& rhs) noexcept
 {
 	return lhs.raw_handle() == rhs.raw_handle();
 }
 
-inline bool operator!=(const texture_view& lhs, const texture_view& rhs) noexcept
+inline bool operator!=(texture_view const& lhs, texture_view const& rhs) noexcept
 {
 	return lhs.raw_handle() != rhs.raw_handle();
 }

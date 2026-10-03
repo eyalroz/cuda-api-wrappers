@@ -256,10 +256,10 @@ enum named_t : std::underlying_type<status_t>::type {
 };
 
 ///@cond
-constexpr bool operator==(const status_t& lhs, const named_t& rhs) noexcept { return lhs == static_cast<status_t>(rhs); }
-constexpr bool operator!=(const status_t& lhs, const named_t& rhs) noexcept { return lhs != static_cast<status_t>(rhs); }
-constexpr bool operator==(const named_t& lhs, const status_t& rhs) noexcept { return static_cast<status_t>(lhs) == rhs; }
-constexpr bool operator!=(const named_t& lhs, const status_t& rhs) noexcept { return static_cast<status_t>(lhs) != rhs; }
+constexpr bool operator==(status_t const& lhs, named_t const& rhs) noexcept { return lhs == static_cast<status_t>(rhs); }
+constexpr bool operator!=(status_t const& lhs, named_t const& rhs) noexcept { return lhs != static_cast<status_t>(rhs); }
+constexpr bool operator==(named_t const& lhs, status_t const& rhs) noexcept { return static_cast<status_t>(lhs) == rhs; }
+constexpr bool operator!=(named_t const& lhs, status_t const& rhs) noexcept { return static_cast<status_t>(lhs) != rhs; }
 ///@endcond
 
 } // namespace status
@@ -284,7 +284,7 @@ inline std::string describe(status_t status)
 	// runtime error codes. The driver will fail to identify them (they're luckily distinct),
 	// and we can't distinguish proper failure from the case of a Runtime-API-only error
 	// code - so we also try the runtime API.
-	const char* description;
+	char const* description;
 	auto description_lookup_status = cuGetErrorString(status, &description);
 	return (description_lookup_status == CUDA_SUCCESS) ?
 		description : cudaGetErrorString(static_cast<cudaError_t>(status));
@@ -308,7 +308,7 @@ public:
 		std::runtime_error(describe(error_code)), code_(error_code)
 	{ }
 	// I wonder if I should do this the other way around
-	runtime_error(status_t error_code, const std::string& what_arg) :
+	runtime_error(status_t error_code, std::string const& what_arg) :
 		std::runtime_error(what_arg + ": " + describe(error_code)),
 		code_(error_code)
 	{ }
@@ -319,7 +319,7 @@ public:
 	///@endcond
 	explicit runtime_error(status::named_t error_code) :
 		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(status::named_t error_code, const std::string& what_arg) :
+	runtime_error(status::named_t error_code, std::string const& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 	runtime_error(status::named_t error_code, std::string&& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
@@ -348,7 +348,7 @@ private:
 /// is constructed unless we actually need to throw
 #define throw_if_error_lazy(status__, ... ) \
 do { \
-	const ::cuda_::status_t tie_status__ = static_cast<::cuda_::status_t>(status__); \
+	::cuda_::status_t const tie_status__ = static_cast<::cuda_::status_t>(status__); \
 	if (::cuda_::is_failure(tie_status__)) { \
 		throw ::cuda_::runtime_error(tie_status__, (__VA_ARGS__)); \
 	} \
@@ -365,12 +365,12 @@ do { \
  * @param message An extra description message to add to the exception
  */
 ///@{
-inline void throw_if_error(status_t status, const std::string& message) noexcept(false)
+inline void throw_if_error(status_t status, std::string const& message) noexcept(false)
 {
 	if (is_failure(status)) { throw runtime_error(status, message); }
 }
 
-inline void throw_if_error(cudaError_t status, const std::string& message) noexcept(false)
+inline void throw_if_error(cudaError_t status, std::string const& message) noexcept(false)
 {
 	throw_if_error(static_cast<status_t>(status), message);
 }
@@ -468,7 +468,7 @@ inline status_t get(bool try_clearing = false) noexcept(true)
  * @note similar to @ref cuda_::throw_if_error, but uses the CUDA driver's
  * own state regarding whether or not a sticky error has occurred
  */
-inline void ensure_none(const std::string &message) noexcept(false)
+inline void ensure_none(std::string const& message) noexcept(false)
 {
 	auto status = get();
 	throw_if_error(status, message);
@@ -480,7 +480,7 @@ inline void ensure_none(const std::string &message) noexcept(false)
  * @note exists so as to avoid incorrect overload resolution of
  * `ensure_none(my_c_string)` calls.
  */
-inline void ensure_none(const char *message) noexcept(false)
+inline void ensure_none(char const *message) noexcept(false)
 {
 	return ensure_none(std::string{message});
 }

@@ -22,7 +22,7 @@ namespace memory {
 namespace device {
 
 template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
+unique_span<T> make_unique_span(context_t const& context, size_t num_elements)
 {
 	return detail::make_unique_span<T>(context.handle(), num_elements);
 }
@@ -38,7 +38,7 @@ unique_span<T> make_unique_span(const context_t& context, size_t num_elements)
  * @return an std::unique_ptr pointing to the constructed T array
  */
 template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t num_elements)
+unique_span<T> make_unique_span(device_t const& device, size_t num_elements)
 {
 	auto pc = device.primary_context();
 	CAW_SET_SCOPE_CONTEXT(pc.handle());
@@ -72,7 +72,7 @@ namespace managed {
 
 template <typename T>
 unique_span<T> make_unique_span(
-	const context_t&      context,
+	context_t const&      context,
 	size_t                size,
     initial_visibility_t  initial_visibility)
 {
@@ -89,7 +89,7 @@ unique_span<T> make_unique_span(
 
 template <typename T>
 unique_span<T> make_unique_span(
-	const device_t&       device,
+	device_t const&       device,
 	size_t                size,
     initial_visibility_t  initial_visibility)
 {

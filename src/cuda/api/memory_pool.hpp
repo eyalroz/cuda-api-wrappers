@@ -221,10 +221,10 @@ inline void set_permissions(cuda_::device::id_t device_id, pool::handle_t pool_h
 
 } // namespace detail
 
-permissions_t get_permissions(const cuda_::device_t& device, const pool_t& pool);
-void set_permissions(const cuda_::device_t& device, const pool_t& pool, permissions_t permissions);
+permissions_t get_permissions(cuda_::device_t const& device, pool_t const& pool);
+void set_permissions(cuda_::device_t const& device, pool_t const& pool, permissions_t permissions);
 template <typename DeviceRange>
-void get_permissions(DeviceRange devices, const pool_t& pool_handle, permissions_t permissions);
+void get_permissions(DeviceRange devices, pool_t const& pool_handle, permissions_t permissions);
 
 namespace pool {
 
@@ -265,9 +265,9 @@ class pool_t {
 public: // types
 	using handle_type = pool::handle_t;
 public:
-	region_t allocate(const stream_t& stream, size_t num_bytes) const;
+	region_t allocate(stream_t const& stream, size_t num_bytes) const;
 
-	pool::ipc::imported_ptr_t import(const memory::pool::ipc::ptr_handle_t& exported_handle) const;
+	pool::ipc::imported_ptr_t import(memory::pool::ipc::ptr_handle_t const& exported_handle) const;
 
 	void trim(size_t min_bytes_to_keep) const
 	{
@@ -286,7 +286,7 @@ public:
 	}
 
 	template<pool::attribute_t attribute>
-	void set_attribute(const pool::attribute_value_t<attribute>& value) const
+	void set_attribute(pool::attribute_value_t<attribute> const& value) const
 	{
 		using outer_type = pool::attribute_value_t <attribute>;
 		using inner_type = typename pool::detail::attribute_value_inner_type<outer_type>::type;
@@ -306,7 +306,7 @@ public:
 		set_attribute<CU_MEMPOOL_ATTR_RELEASE_THRESHOLD>(threshold);
 	}
 
-	permissions_t permissions(const cuda_::device_t& device)
+	permissions_t permissions(cuda_::device_t const& device)
 	{
 		return memory::get_permissions(device, *this);
 	}
@@ -325,7 +325,7 @@ public:
 	 * @param device the device the kernels running on which are governed by this new setting
 	 * @param permissions new read and write get_permissions to use
 	 */
-	void set_permissions(const cuda_::device_t& device, permissions_t permissions)
+	void set_permissions(cuda_::device_t const& device, permissions_t permissions)
 	{
 		return memory::set_permissions(device, *this, permissions);
 	}
@@ -406,9 +406,9 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	pool_t(const pool_t&) = delete;
+	pool_t(pool_t const&) = delete;
 	pool_t(pool_t&&) noexcept = default;
-	pool_t& operator=(const pool_t&) = delete;
+	pool_t& operator=(pool_t const&) = delete;
 	pool_t& operator=(pool_t&&) noexcept = default;
 
 protected: // data members
@@ -419,13 +419,13 @@ protected: // data members
 	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuMemPoolDestroy, cuMemPoolDestroy)
 }; // class pool_t
 
-inline bool operator==(const pool_t& lhs, const pool_t& rhs)
+inline bool operator==(pool_t const& lhs, pool_t const& rhs)
 {
 	// Note: Not comparing the ownership status
 	return lhs.device_id() == rhs.device_id() and lhs.handle() == rhs.handle();
 }
 
-inline bool operator!=(const pool_t& lhs, const pool_t& rhs)
+inline bool operator!=(pool_t const& lhs, pool_t const& rhs)
 {
 	return not (lhs == rhs);
 }
@@ -446,14 +446,14 @@ pool_t create(cuda_::device::id_t device_id)
 	handle_t handle;
 	auto status = cuMemPoolCreate(&handle, &props);
 	throw_if_error_lazy(status, "Failed creating a memory pool on device " + cuda_::device::detail::identify(device_id));
-	constexpr const bool is_owning { true };
+	constexpr bool const is_owning { true };
 	return wrap(device_id, handle, is_owning);
 }
 
 } // namespace detail
 
 template<shared_handle_kind_t SharedHandleKind>
-pool_t create(const cuda_::device_t& device);
+pool_t create(cuda_::device_t const& device);
 
 } // namespace pool
 

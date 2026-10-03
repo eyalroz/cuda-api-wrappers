@@ -105,8 +105,8 @@ public: // constructors & destructor
 
 public: // operators
 
-	imported_ptr_t(const imported_ptr_t& other) = delete;
-	imported_ptr_t& operator=(const imported_ptr_t& other) = delete;
+	imported_ptr_t(imported_ptr_t const& other) = delete;
+	imported_ptr_t& operator=(imported_ptr_t const& other) = delete;
 	imported_ptr_t& operator=(imported_ptr_t&& other) noexcept = default;
 	imported_ptr_t(imported_ptr_t&& other) noexcept = default;
 
@@ -116,7 +116,7 @@ public: // getters
 	T* get() const noexcept
 	{
 		// If you're wondering why this cast is necessary - some IDEs/compilers
-		// have the notion that if the method is const, `ptr_` is a const void* within it
+		// have the notion that if the method is const, `ptr_` is a void const* within it
 		return static_cast<T*>(const_cast<void*>(ptr_));
 	}
 	stream_t stream() const
@@ -153,7 +153,7 @@ inline imported_ptr_t wrap(
 	return imported_ptr_t { device_id, context_handle, pool_handle, ptr, stream_handle, free_using_stream, owning };
 }
 
-inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle, const stream_t& freeing_stream)
+inline imported_ptr_t import_ptr(pool_t const& shared_pool, ptr_handle_t const& ptr_handle, stream_t const& freeing_stream)
 {
 	constexpr auto free_using_stream { true };
 	assert(shared_pool.device_id() == freeing_stream.device_id());
@@ -169,7 +169,7 @@ inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& 
 		is_owning);
 }
 
-inline imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle)
+inline imported_ptr_t import_ptr(pool_t const& shared_pool, ptr_handle_t const& ptr_handle)
 {
 	constexpr auto free_using_stream { false };
 	auto free_without_using_stream = static_cast<bool>(free_using_stream);

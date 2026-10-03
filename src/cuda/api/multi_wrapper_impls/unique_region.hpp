@@ -18,7 +18,7 @@ namespace memory {
 
 namespace device {
 
-inline unique_region make_unique_region(const context_t& context, cuda_::size_t num_bytes)
+inline unique_region make_unique_region(context_t const& context, cuda_::size_t num_bytes)
 {
 	return detail::make_unique_region(context.handle(), num_bytes);
 }
@@ -33,7 +33,7 @@ inline unique_region make_unique_region(const context_t& context, cuda_::size_t 
  * @param num_bytes  the number of elements to allocate
  * @return an std::unique_ptr pointing to the constructed T array
  */
-inline unique_region make_unique_region(const device_t& device, size_t num_bytes)
+inline unique_region make_unique_region(device_t const& device, size_t num_bytes)
 {
 	auto pc = device.primary_context();
 	return make_unique_region(pc, num_bytes);
@@ -81,7 +81,7 @@ namespace managed {
 ///@{
 /// @param context A context of possible single-device-visibility
 inline unique_region make_unique_region(
-	const context_t&      context,
+	context_t const&      context,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {
@@ -91,7 +91,7 @@ inline unique_region make_unique_region(
 
 /// @param[in] device  whose primary context's memory the unique reqion is to be allocated in.
 inline unique_region make_unique_region(
-	const device_t&       device,
+	device_t const&       device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility)
 {

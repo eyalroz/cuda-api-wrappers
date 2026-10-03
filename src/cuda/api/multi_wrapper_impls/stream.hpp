@@ -46,7 +46,7 @@ inline void record_event_in_current_context(
 } // namespace detail
 
 inline stream_t create(
-	const device_t&  device,
+	device_t const&  device,
 	bool             synchronizes_with_default_stream,
 	priority_t       priority)
 {
@@ -56,7 +56,7 @@ inline stream_t create(
 }
 
 inline stream_t create(
-	const context_t&  context,
+	context_t const&  context,
 	bool              synchronizes_with_default_stream,
 	priority_t        priority,
 	bool              hold_pc_refcount_unit)
@@ -68,7 +68,7 @@ inline stream_t create(
 
 } // namespace stream
 
-inline void stream_t::enqueue_t::wait(const event_t& event_) const
+inline void stream_t::enqueue_t::wait(event_t const& event_) const
 {
 	CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
 
@@ -131,7 +131,7 @@ inline context_t stream_t::context() const noexcept
 
 #if CUDA_VERSION >= 11000
 
-inline void copy_attributes(const stream_t &dest, const stream_t &src)
+inline void copy_attributes(stream_t const& dest, stream_t const& src)
 {
 #ifndef NDEBUG
 	if (dest.device() != src.device()) {

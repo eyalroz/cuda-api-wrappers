@@ -24,7 +24,7 @@ inline device_t properties_t::device() const
 }
 
 template<shared_handle_kind_t SharedHandleKind>
-properties_t create_properties_for(const device_t& device)
+properties_t create_properties_for(device_t const& device)
 {
 	return detail::create_properties<SharedHandleKind>(device.id());
 }
@@ -42,7 +42,7 @@ namespace virtual_ {
 
 inline void set_permissions(
 	region_t              fully_mapped_region,
-	const device_t&       device,
+	device_t const&       device,
 	permissions_t         permissions)
 {
 	CUmemAccessDesc desc { { CU_MEM_LOCATION_TYPE_DEVICE, device.id() }, CUmemAccess_flags(permissions) };
@@ -52,7 +52,7 @@ inline void set_permissions(
 						   + std::to_string(fully_mapped_region.size()) + " bytes at " + cuda_::detail::ptr_as_hex(fully_mapped_region.data()));
 }
 
-inline void set_permissions(const mapping_t& mapping, const device_t& device, permissions_t permissions)
+inline void set_permissions(mapping_t const& mapping, device_t const& device, permissions_t permissions)
 {
 	set_permissions(mapping.address_range(), device, permissions);
 }
@@ -60,7 +60,7 @@ inline void set_permissions(const mapping_t& mapping, const device_t& device, pe
 template <template <typename...> class Container>
 void set_permissions(
 	region_t                     fully_mapped_region,
-	const Container<device_t>&   devices,
+	Container<device_t> const&   devices,
 	permissions_t                permissions)
 {
 	auto descriptors = std::unique_ptr<CUmemAccessDesc[]>(new CUmemAccessDesc[devices.size()]);
@@ -85,7 +85,7 @@ void set_permissions(
 template <template <typename...> class Container>
 void set_permissions(
 	mapping_t                    mapping,
-	const Container<device_t>&   devices,
+	Container<device_t> const&   devices,
 	permissions_t                permissions)
 {
 	set_permissions(mapping.address_range(), devices, permissions);
@@ -100,29 +100,29 @@ void set_permissions(
 	set_permissions(mapping, devices, permissions);
 }
 
-inline permissions_t get_permissions(region_t fully_mapped_region, const device_t& device)
+inline permissions_t get_permissions(region_t fully_mapped_region, device_t const& device)
 {
 	return detail::get_permissions(fully_mapped_region, device.id());
 }
 
-inline permissions_t get_permissions(const mapping_t& fully_mapped_region, const device_t& device)
+inline permissions_t get_permissions(mapping_t const& fully_mapped_region, device_t const& device)
 {
 	return get_permissions(fully_mapped_region.address_range(), device);
 }
 
-inline permissions_t mapping_t::get_permissions(const device_t& device) const
+inline permissions_t mapping_t::get_permissions(device_t const& device) const
 {
 	return virtual_::get_permissions(*this, device);
 }
 
-inline void mapping_t::set_permissions(const device_t& device, permissions_t permissions) const
+inline void mapping_t::set_permissions(device_t const& device, permissions_t permissions) const
 {
 	virtual_::set_permissions(*this, device, permissions);
 }
 
 template <template <typename...> class ContiguousContainer>
 void mapping_t::set_permissions(
-	const ContiguousContainer<device_t>&  devices,
+	ContiguousContainer<device_t> const&  devices,
 	permissions_t                         permissions) const
 {
 	virtual_::set_permissions(*this, devices, permissions);

@@ -42,7 +42,7 @@ struct span {
 	using pointer = T*;
 	using const_pointer = T const *;
 	using reference = T&;
-	using const_reference = const T&;
+	using const_reference = T const &;
 
 	pointer data_;
 	size_type size_;
@@ -62,10 +62,10 @@ struct span {
 	reference operator[](size_type idx) const noexcept { return data_[idx]; }
 
 	// Allows a non-const-element span to be used as its const-element equivalent. With pointers,
-	// we get a T* to const T* casting for free, but the span has to take care of this for itself.
+	// we get a T* to T const * casting for free, but the span has to take care of this for itself.
 	template<
 		typename U = value_type,
-		typename = typename std::enable_if<! std::is_const<U>::value>::type
+		typename = typename std::enable_if<!std::is_const<U>::value>::type
 	>
 	operator span<const U>()
 	{

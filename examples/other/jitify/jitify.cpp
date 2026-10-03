@@ -127,7 +127,7 @@ void handle_compilation_failure(
 template <typename T>
 bool test_simple() {
 	const auto kernel_name = "my_kernel";
-  	const char* program_source =
+	char const* program_source =
 R"(template<int N, typename T>
 __global__
 void my_kernel(T* data) {
@@ -152,7 +152,7 @@ void my_kernel(T* data) {
 	}
 	auto mangled_kernel_name = compilation_result.get_mangling_of(instantiation_name);
 	auto module = cuda_::module_::create(device, compilation_result);
-	// TODO: A kernel::get(const module_t& module, const char* mangled_name function)
+	// TODO: A kernel::get(const module_t& module, char const* mangled_name function)
 	auto kernel = module.get_kernel(mangled_kernel_name);
 
 	auto d_data = cuda_::make_unique_span<T>(device, 1);
@@ -167,7 +167,7 @@ void my_kernel(T* data) {
 
 template <typename T>
 bool test_kernels() {
-	const char* my_header4_cuh_contents =
+	char const* my_header4_cuh_contents =
 R"(#pragma once
 template<typename T>
 T pointless_func(T x) {
@@ -176,7 +176,7 @@ T pointless_func(T x) {
 #warning "Here!"
 )";
 
-  	const char* program_source =
+  	char const* program_source =
 R"(
 #include "example_headers/my_header1.cuh"
 #include "example_headers/my_header2.cuh"
@@ -197,7 +197,7 @@ void my_kernel2(float const* indata, float* outdata) {
     }
 };
 )";
-  	const char* kernel_names[2] = { "my_kernel1", "my_kernel2" };
+	char const* kernel_names[2] = { "my_kernel1", "my_kernel2" };
 
 	enum { C = 123 };
 	auto my_kernel2_instantiation_name = make_instantiation_name(kernel_names[1], std::to_string(C), type_name<T>());
@@ -206,7 +206,7 @@ void my_kernel2(float const* indata, float* outdata) {
 		// instantiate by simply printing whatever is passed to the instantiation function (which is not
 		// part of the CUDA API wgetrappers, but is actually both straightforward and flexible).
 	std::string source_with_instantiation = append_kernel_instantiation(program_source, my_kernel2_instantiation_name);
-	std::vector<std::pair<const char*, const char*>> headers = {
+	std::vector<std::pair<char const*, char const*>> headers = {
 		{"example_headers/my_header4.cuh", my_header4_cuh_contents }
 	};
 
@@ -233,7 +233,7 @@ void my_kernel2(float const* indata, float* outdata) {
 		handle_compilation_failure(compilation_result, program.options());
 	}
 
-	const char* mangled_kernel_names[2] = {
+	char const* mangled_kernel_names[2] = {
 		compilation_result.get_mangling_of(kernel_names[0]),
 		compilation_result.get_mangling_of(my_kernel2_instantiation_name)
 	};
@@ -260,7 +260,7 @@ bool test_constant()
 {
 	constexpr int n_const = 3;
 
-	const char *const_program_source =
+	char const *const_program_source =
 R"(#pragma once
 
 __constant__ int a;
@@ -274,10 +274,10 @@ __global__ void constant_test(int *x) {
 }
 )";
 	struct {
-		const char *kernel = "constant_test";
-		const char *a = "&a";
-		const char *b_a = "&b::a";
-		const char *c_b_a = "&c::b::a";
+		char const *kernel = "constant_test";
+		char const *a = "&a";
+		char const *b_a = "&b::a";
+		char const *c_b_a = "&c::b::a";
 	} names;
 
 	auto device = cuda_::device::current::get();
@@ -321,9 +321,9 @@ bool test_constant_2()
 {
 	// test __constant__ array look up in header nested in both anonymous and explicit namespace
 	constexpr int n_const = 3;
-	const char* second_kernel_name = "constant_test2";
+	char const* second_kernel_name = "constant_test2";
 	auto device = cuda_::device::current::get();
-	const char* name_of_anon_b_a = "&b::a";
+	char const* name_of_anon_b_a = "&b::a";
 	auto program = cuda_::rtc::program::create<cuda_::cuda_cpp>("const_program_2")
 		.add_registered_global(second_kernel_name)
 		.add_registered_global(name_of_anon_b_a)

@@ -22,7 +22,7 @@ namespace array {
 
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	const context_t&             context,
+	context_t const&             context,
 	dimensions_t<NumDimensions>  dimensions)
 {
 	handle_t handle = detail::create<T, NumDimensions>(context.handle(), dimensions);
@@ -31,7 +31,7 @@ array_t<T,NumDimensions> create(
 
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	const device_t&              device,
+	device_t const&              device,
 	dimensions_t<NumDimensions>  dimensions)
 {
 	auto pc = device.primary_context(does_not_hold_primary_context_refcount_unit);

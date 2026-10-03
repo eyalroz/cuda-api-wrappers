@@ -24,8 +24,8 @@ static void finalize_error(
 
 template<>
 double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
-	const cuda_::device_t &device,
-	const cuda_::stream_t &stream,
+	cuda_::device_t const& device,
+	cuda_::stream_t const& stream,
 	span<float  const> A,
 	span<double const> b,
 	float convergence_threshold,
@@ -96,8 +96,8 @@ double do_jacobi_inner<computation_method_t::graph_with_set_kernel_params>(
 
 template<>
 double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
-	const cuda_::device_t &,
-	const cuda_::stream_t &stream,
+	cuda_::device_t const& ,
+	cuda_::stream_t const& stream,
 	span<float  const> A,
 	span<double const> b,
 	float convergence_threshold,
@@ -147,8 +147,8 @@ double do_jacobi_inner<computation_method_t::graph_with_exec_update>(
 
 template<>
 double do_jacobi_inner<computation_method_t::non_graph_gpu>(
-	const cuda_::device_t &,
-	const cuda_::stream_t &stream,
+	cuda_::device_t const& ,
+	cuda_::stream_t const& stream,
 	span<float const> A,
 	span<double const> b,
 	float convergence_threshold,

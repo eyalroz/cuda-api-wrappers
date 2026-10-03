@@ -43,18 +43,18 @@ namespace node {
 
 namespace detail {
 
-inline std::string identify(const edge_t &edge)
+inline std::string identify(edge_t const& edge)
 {
 	return std::string("edge from " + cuda_::detail::identify(edge.first) + " to " + cuda_::detail::identify(edge.second));
 }
 
 template <typename NodeOrHandle>
-handle_t as_handle(const NodeOrHandle& node_or_handle) noexcept
+handle_t as_handle(NodeOrHandle const& node_or_handle) noexcept
 {
 	return node_or_handle.handle();
 }
 
-template <> inline handle_t as_handle(const handle_t& handle) noexcept { return handle; }
+template <> inline handle_t as_handle(handle_t const& handle) noexcept { return handle; }
 
 template <template <typename> class Container, typename NodeOrHandle>
 struct as_handles_partial_specialization_helper{
@@ -110,7 +110,7 @@ template_t wrap(handle_t handle, bool take_ownership = false) noexcept;
 
 namespace detail {
 
-std::string identify(const template_t& graph_template);
+std::string identify(template_t const& graph_template);
 
 #if CUDA_VERSION >= 13010
 inline id_t get_id(handle_t handle)
@@ -138,8 +138,8 @@ inline CUresult delete_edges(
 
 inline status_t delete_edges(
 	template_::handle_t         template_handle,
-	span<const node::handle_t>  edge_source_handles,
-	span<const node::handle_t>  edge_destination_handles)
+	span<node::handle_t const>  edge_source_handles,
+	span<node::handle_t const>  edge_destination_handles)
 {
 	auto num_edges = edge_source_handles.size();
 	assert(edge_source_handles.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -149,8 +149,8 @@ inline status_t delete_edges(
 
 inline status_t delete_edges(
 	template_::handle_t  template_handle,
-	span<const node_t>   edge_sources,
-	span<const node_t>   edge_destinations)
+	span<node_t const>   edge_sources,
+	span<node_t const>   edge_destinations)
 {
 	auto num_edges = edge_sources.size();
 	assert(edge_destinations.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -160,12 +160,12 @@ inline status_t delete_edges(
 	{
 		auto handles_iter = handles_buffer;
 		std::transform(edge_sources.begin(), edge_sources.end(), handles_buffer.data(),
-			[](const node_t &node) { return node.handle(); });
+			[](node_t const& node) { return node.handle(); });
 		std::transform(edge_destinations.begin(), edge_destinations.end(), handles_buffer.data() + num_edges,
-			[](const node_t &node) { return node.handle(); });
+			[](node_t const& node) { return node.handle(); });
 	}
-	span<const node::handle_t> edge_source_handles { handles_buffer.data(), num_edges };
-	span<const node::handle_t> edge_destination_handles { handles_buffer.data() + num_edges, num_edges };
+	span<node::handle_t const> edge_source_handles { handles_buffer.data(), num_edges };
+	span<node::handle_t const> edge_destination_handles { handles_buffer.data() + num_edges, num_edges };
 	return delete_edges(template_handle, edge_source_handles, edge_destination_handles);
 }
 
@@ -186,8 +186,8 @@ inline status_t insert_edges(
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t  template_handle,
-	span<const node_t>   edge_sources,
-	span<const node_t>   edge_destinations)
+	span<node_t const>   edge_sources,
+	span<node_t const>   edge_destinations)
 {
 	auto num_edges = edge_sources.size();
 	assert(edge_destinations.size() == num_edges && "Mismatched sizes of sources and destinations");
@@ -197,12 +197,12 @@ inline status_t insert_edges(
 	{
 		auto handles_iter = handles_buffer;
 		std::transform(edge_sources.begin(), edge_sources.end(), handles_buffer.data(),
-			[](const node_t &node) { return node.handle(); });
+			[](node_t const& node) { return node.handle(); });
 		std::transform(edge_destinations.begin(), edge_destinations.end(), handles_buffer.data() + num_edges,
-			[](const node_t &node) { return node.handle(); });
+			[](node_t const& node) { return node.handle(); });
 	}
-	const node::handle_t* sources_handles = handles_buffer.data();
-	const node::handle_t* destinations_handles = handles_buffer.data() + num_edges;
+	node::handle_t const* sources_handles = handles_buffer.data();
+	node::handle_t const* destinations_handles = handles_buffer.data() + num_edges;
 	auto result = insert_edges(
 		template_handle,sources_handles, destinations_handles, edge_sources.size());
 	return result;
@@ -210,18 +210,18 @@ inline status_t insert_edges(
 
 inline status_t delete_edges(
 	template_::handle_t  template_handle,
-	span<const edge_t>   edges)
+	span<edge_t const>   edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};
 	auto sources_iterator = handles_buffer.begin();
 	auto  destinations_iterator = handles_buffer.begin() + edges.size();
-	for(const auto& edge : edges) {
+	for(auto const& edge : edges) {
 		*(sources_iterator++)      = edge.first.handle();
 		*(destinations_iterator++) = edge.second.handle();
 	}
-	const node::handle_t* sources_handles = handles_buffer.data();
-	const node::handle_t* destinations_handles = handles_buffer.data() + edges.size();
+	node::handle_t const* sources_handles = handles_buffer.data();
+	node::handle_t const* destinations_handles = handles_buffer.data() + edges.size();
 	auto result = delete_edges(
 		template_handle,sources_handles, destinations_handles, edges.size());
 	return result;
@@ -230,18 +230,18 @@ inline status_t delete_edges(
 // Note: duplication of code with delete_edges
 inline status_t insert_edges(
 	template_::handle_t template_handle,
-	span<const edge_t>  edges)
+	span<edge_t const>  edges)
 {
 	// TODO: With C++14, consider make_unique here
 	auto handles_buffer = std::vector<node::handle_t>{edges.size() * 2};
 	auto sources_iterator = handles_buffer.begin();
 	auto  destinations_iterator = handles_buffer.begin() + edges.size();
-	for(const auto& edge : edges) {
+	for(auto const& edge : edges) {
 		*(sources_iterator++)      = edge.first.handle();
 		*(destinations_iterator++) = edge.second.handle();
 	}
-	const node::handle_t* sources_handles = handles_buffer.data();
-	const node::handle_t* destinations_handles = handles_buffer.data() + edges.size();
+	node::handle_t const* sources_handles = handles_buffer.data();
+	node::handle_t const* destinations_handles = handles_buffer.data() + edges.size();
 	auto result = insert_edges(
 		template_handle,sources_handles, destinations_handles, edges.size());
 	return result;
@@ -297,7 +297,7 @@ node::handle_t insert_node(
 	using traits_type = typename node::detail::kind_traits<Kind>;
 
 	// Defining a useless bool here to circumvent gratuitous warnings from MSVC
-	const bool context_needed_but_missing =
+	bool const context_needed_but_missing =
 		traits_type::inserter_takes_context and context_handle == context::detail::none;
 	if (context_needed_but_missing) {
 		throw std::invalid_argument(
@@ -345,7 +345,7 @@ template <node::kind_t Kind, typename... Ts>
 node::typed_node_t<Kind> get_context_handle_build_params_and_insert_node(
 	cuda_::detail::true_type, // we've been given a context
 	template_::handle_t graph_template_handle,
-	const context_t& context,
+	context_t const& context,
 	Ts&&... params_ctor_args)
 {
 	return build_params_and_insert_node<Kind>(graph_template_handle, context.handle(), std::forward<Ts>(params_ctor_args)...);
@@ -512,7 +512,7 @@ public: // non-mutators
 	 * @param[in] printing_options Options passed to the CUDA driver, controlling which aspects of
 	 * the graph template representation to include in the DOT and which to skip/suppress.
 	 */
-	void print_dot(const char* dot_filename, dot_printing_options_t printing_options = {}) const
+	void print_dot(char const* dot_filename, dot_printing_options_t printing_options = {}) const
 	{
 		auto status = cuGraphDebugDotPrint(handle_, dot_filename, printing_options.compose());
 		throw_if_error_lazy(status, "Printing " + template_::detail::identify(*this) + " to file " + dot_filename);
@@ -543,7 +543,7 @@ public: // non-mutators
 		auto status = cuGraphGetNodes(handle_, node_handles.data(), &num_nodes_);
 		throw_if_error_lazy(status, "Obtaining the set of nodes of " + template_::detail::identify(*this));
 		node_ref_container_type node_refs;
-		for (const auto& node_handle : node_handles) {
+		for (auto const& node_handle : node_handles) {
 			node_refs.emplace_back(node::wrap(handle_, node_handle));
 		}
 		return node_refs;
@@ -574,7 +574,7 @@ public: // non-mutators
 		auto status = cuGraphGetRootNodes(handle_, root_node_handles.data(), &num_roots_);
 		throw_if_error_lazy(status, "Obtaining the set of root nodes of " + template_::detail::identify(*this));
 		node_ref_container_type root_node_refs;
-		for (const auto& node_handle : root_node_handles) {
+		for (auto const& node_handle : root_node_handles) {
 			root_node_refs.emplace_back(node::wrap(handle_, node_handle));
 		}
 		return root_node_refs;
@@ -624,18 +624,18 @@ public: // non-mutators
 	 */
 	class insert_t {
 	protected:
-		const template_t& associated_template;
+		template_t const& associated_template;
 
 		template_::handle_t handle() const noexcept { return associated_template.handle(); }
 
 	public:
-		insert_t(const template_t& template_) : associated_template(template_) {}
+		insert_t(template_t const& template_) : associated_template(template_) {}
 
 		void edge(node_ref_type source, node_ref_type dest) const
 		{
 			struct {
-				const node::handle_t source;
-				const node::handle_t dest;
+				node::handle_t const source;
+				node::handle_t const dest;
 			} handles { source.handle(), dest.handle() };
 			static constexpr size_t remove_just_one = 1;
 			auto status = template_::detail::insert_edges(
@@ -649,7 +649,7 @@ public: // non-mutators
 			return edge(edge_.first, edge_.second);
 		}
 
-		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
+		void edges(span<node_ref_type const> sources, span<node_ref_type const> destinations) const
 		{
 			if (sources.size() != destinations.size()) {
 				throw std::invalid_argument(
@@ -663,7 +663,7 @@ public: // non-mutators
 				+ cuda_::detail::identify(associated_template));
 		}
 
-		void edges(span<const edge_type> edges) const
+		void edges(span<edge_type const> edges) const
 		{
 			auto status = template_::detail::insert_edges(handle(), edges);
 
@@ -693,11 +693,11 @@ public: // non-mutators
 	 */
 	class delete_t {
 	protected:
-		const template_t &associated_template;
+		template_t const& associated_template;
 		handle_type handle() const noexcept { return associated_template.handle(); }
 
 	public:
-		delete_t(const template_t &template_) : associated_template(template_) {}
+		delete_t(template_t const& template_) : associated_template(template_) {}
 
 		void node(node_ref_type node) const
 		{
@@ -710,8 +710,8 @@ public: // non-mutators
 		{
 			// TODO: Perhaps factor this out into an independent function under template_::detail?
 			struct {
-				const node::handle_t source;
-				const node::handle_t dest;
+				node::handle_t const source;
+				node::handle_t const dest;
 			} handles { edge_.first.handle(), edge_.second.handle() };
 			static constexpr size_t remove_single_edge { 1 };
 			auto status = template_::detail::delete_edges(
@@ -721,7 +721,7 @@ public: // non-mutators
 				+ " in " + cuda_::detail::identify(associated_template));
 		}
 
-		void edges(span<const node_ref_type> sources, span<const node_ref_type> destinations) const
+		void edges(span<node_ref_type const> sources, span<node_ref_type const> destinations) const
 		{
 			if (sources.size() != destinations.size()) {
 				throw std::invalid_argument(
@@ -754,9 +754,9 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	template_t(const template_t& other) = delete;
+	template_t(template_t const& other) = delete;
 	template_t(template_t&& other) noexcept = default;
-	template_t& operator=(const template_t&) = delete;
+	template_t& operator=(template_t const&) = delete;
 	template_t& operator=(template_t&& other) noexcept = default;
 
 public: // non-mutators
@@ -783,8 +783,8 @@ public: // non-mutators
 #endif // CUDA_VERSION >= 13010
 
 public: // data members
-	const insert_t insert { *this };
-	const delete_t delete_ { *this };
+	insert_t const insert { *this };
+	delete_t const delete_ { *this };
 private: // data members
 	// Note: A CUDA graph template is not specific to a context, nor a device!
 	template_::handle_t handle_;
@@ -809,7 +809,7 @@ inline template_t create()
 	return wrap(handle, do_take_ownership);
 }
 
-inline std::string identify(const template_t& template_)
+inline std::string identify(template_t const& template_)
 {
 	return "CUDA execution graph template at " + cuda_::detail::ptr_as_hex(template_.handle());
 }
@@ -818,7 +818,7 @@ constexpr std::initializer_list<node_t> no_dependencies {};
 
 template <node::kind_t Kind, template <typename> class Container, typename NodeOrHandle, typename... NodeParametersCtorParams>
 node::typed_node_t<Kind> insert_node(
-	const template_t& graph,
+	template_t const& graph,
 	Container<NodeOrHandle> dependencies,
 	NodeParametersCtorParams... node_parameters_ctor_params)
 {
@@ -853,7 +853,7 @@ inline template_t create()
  * TODO: Implement this in the multi-wrapper impls directory, or just in
  * the dire
  */
-inline optional<node_t> find_in_clone(node_t node, const template_t& cloned_graph)
+inline optional<node_t> find_in_clone(node_t node, template_t const& cloned_graph)
 {
 	// The find function sets the result to 0 (nullptr) if the input
 	// parameters were valid, but the node was not found

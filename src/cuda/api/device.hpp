@@ -44,7 +44,7 @@ class pool_t;
  * until all tasks scheduled previously scheduled on this device have been
  * concluded.
  */
-void synchronize(const device_t& device);
+void synchronize(device_t const& device);
 
 namespace device {
 
@@ -108,7 +108,7 @@ inline std::string get_name(id_t id)
 	std::string result;
 	result.reserve(prospective_name_length);
 	prospective_name_length = try_getting_name(&result[0], buffer_size);
-		// We can't use result.data() since it's const until C++20ץץץ
+		// We can't use result.data() since it's until const C++20ץץץ
 	if (prospective_name_length >= buffer_size - 1) {
 		throw std::runtime_error("CUDA device name longer than expected maximum size " + std::to_string(larger_size));
 	}
@@ -229,7 +229,7 @@ public:
 	 * @param peer the device which is to be accessed
 	 * @return true iff acesss is possible
 	 */
-	bool can_access(const device_t& peer) const
+	bool can_access(device_t const& peer) const
 	{
 		CAW_SET_SCOPE_CONTEXT(primary_context_handle());
 		int result;
@@ -245,7 +245,7 @@ public:
 	 *
 	 * @param peer the device to which to enable access
 	 */
-	void enable_access_to(const device_t& peer) const
+	void enable_access_to(device_t const& peer) const
 	{
 		primary_context().enable_access_to(peer.primary_context());
 	}
@@ -255,7 +255,7 @@ public:
 	 *
 	 * @param peer the device to which to disable access
 	 */
-	void disable_access_to(const device_t& peer) const
+	void disable_access_to(device_t const& peer) const
 	{
 		primary_context().disable_access_to(peer.primary_context());
 	}
@@ -330,7 +330,7 @@ public:
 		return properties;
 	}
 
-	static device_t choose_best_match(const properties_t& properties) {
+	static device_t choose_best_match(properties_t const& properties) {
 		device::id_t id;
 		auto status = cudaChooseDevice(&id, &properties);
 		throw_if_error_lazy(status, "Failed choosing a best matching device by a a property set.");
@@ -490,7 +490,7 @@ public:
 	 * until all tasks scheduled previously scheduled on this device have been
 	 * concluded.
 	 */
-	const device_t& synchronize() const
+	device_t const& synchronize() const
 	{
 		cuda_::synchronize(*this);
 		return *this;
@@ -502,7 +502,7 @@ public:
 		return *this;
 	}
 
-	const device_t& make_current() const
+	device_t const& make_current() const
 	{
 		device::current::set(*this);
 		return *this;
@@ -586,7 +586,7 @@ public:
 	//
 	// template <typename KernelFunction>
 	// inline multiprocessor_cache_preference_t kernel_cache_preference(
-	// 	const KernelFunction* kernel, multiprocessor_cache_preference_t preference);
+	// 	KernelFunction const* kernel, multiprocessor_cache_preference_t preference);
 
 	/**
 	 * Return the proxied device's ID
@@ -713,7 +713,7 @@ public: 	// constructors and destructor
 
 	device_t(device_t&& other) noexcept = default;
 
-	device_t(const device_t& other) noexcept : id_(other.id_) { }
+	device_t(device_t const& other) noexcept : id_(other.id_) { }
 		// Device proxies are not owning - as devices aren't allocated nor de-allocated.
 		// Also, the proxies don't hold any state (except for one bit regarding whether
 		// or not the device proxy has increased the primary context refcount); so
@@ -724,7 +724,7 @@ public: 	// constructors and destructor
 		// and assignment operator from this class as well; references should be
 		// sufficient
 
-	device_t& operator=(const device_t& other)
+	device_t& operator=(device_t const& other)
 	{
 		maybe_decrease_primary_context_refcount();
 		pc_refcount_unit_.drop();
@@ -776,12 +776,12 @@ protected: // data members
 };
 
 ///@cond
-inline bool operator==(const device_t& lhs, const device_t& rhs)
+inline bool operator==(device_t const& lhs, device_t const& rhs)
 {
 	return lhs.id() == rhs.id();
 }
 
-inline bool operator!=(const device_t& lhs, const device_t& rhs)
+inline bool operator!=(device_t const& lhs, device_t const& rhs)
 {
 	return lhs.id() != rhs.id();
 }
@@ -854,7 +854,7 @@ inline device_t get()
 	return device::detail::wrap(id, pc_handle, does_hold_primary_context_refcount_unit);
 }
 
-inline void set(const device_t& device)
+inline void set(device_t const& device)
 {
 	auto pc = device.primary_context();
 	context::current::detail::set(pc.handle());
@@ -885,7 +885,7 @@ inline device_t get(pci_location_t pci_id)
  * make IMHO. But - it's convenient for now and there's no immediate risk
  * from some other obvious source of CUDA-device-identifying strings.
  */
-inline device_t get(const std::string& pci_id_str)
+inline device_t get(std::string const& pci_id_str)
 {
 	auto parsed_pci_id = pci_location_t::parse(pci_id_str);
 	return get(parsed_pci_id);

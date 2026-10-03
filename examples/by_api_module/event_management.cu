@@ -11,13 +11,13 @@ template <typename T, size_t N>
 struct poor_mans_array {
 	T data[N];
 	__host__ __device__ operator T*() { return data; }
-	__host__ __device__ operator const T*() const { return data; }
+	__host__ __device__ operator T const*() const { return data; }
 	__host__ __device__ T& operator [](off_t offset) { return data[offset]; }
 	__host__ __device__ const T& operator [](off_t offset) const { return data[offset]; }
 };
 
 template <size_t N>
-poor_mans_array<char, N> message(const char* message_str)
+poor_mans_array<char, N> message(char const* message_str)
 {
 	poor_mans_array<char, N> a;
 	assert(std::strlen(message_str) < N);
@@ -35,7 +35,7 @@ template <size_t N, unsigned Index>
 __global__ void print_message(poor_mans_array<char, N> message)
 {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
-		printf("Kernel no. %u says: %s\n", Index, (const char*) message);
+		printf("Kernel no. %u says: %s\n", Index, (char const*) message);
 	}
 }
 

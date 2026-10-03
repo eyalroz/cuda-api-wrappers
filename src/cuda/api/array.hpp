@@ -138,16 +138,16 @@ descriptor_t<NumDimensions> get_descriptor(context::handle_t context_handle, han
 }
 
 template <dimensionality_t NumDimensions>
-dimensions_t<NumDimensions> dimensions_of(const descriptor_t<NumDimensions>& descriptor);
+dimensions_t<NumDimensions> dimensions_of(descriptor_t<NumDimensions> const& descriptor);
 
 template <>
-inline dimensions_t<3> dimensions_of(const descriptor_t<3>& descriptor)
+inline dimensions_t<3> dimensions_of(descriptor_t<3> const& descriptor)
 {
 	return { descriptor.Width, descriptor.Height, descriptor.Depth };
 }
 
 template <>
-inline dimensions_t<2> dimensions_of(const descriptor_t<2>& descriptor)
+inline dimensions_t<2> dimensions_of(descriptor_t<2> const& descriptor)
 {
 	return { descriptor.Width, descriptor.Height };
 }
@@ -220,9 +220,9 @@ public:
 	{
 		assert(handle != nullptr);
 	}
-	array_t(const array_t&) = delete;
+	array_t(array_t const&) = delete;
 	array_t(array_t&&) noexcept = default;
-	array_t& operator=(const array_t&) = delete;
+	array_t& operator=(array_t const&) = delete;
 	array_t& operator=(array_t&&) noexcept = default;
 
 	friend array_t array::wrap<T, NumDimensions>(device::id_t, context::handle_t, handle_type, dimensions_type) noexcept;
@@ -271,13 +271,13 @@ array_t<T, NumDimensions> wrap(
 /// @param context ... in which the array is to be created
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	const context_t&             context,
+	context_t const&             context,
 	dimensions_t<NumDimensions>  dimensions);
 
 /// @param device ... in whose primary context the array is to be created
 template <typename T, dimensionality_t NumDimensions>
 array_t<T,NumDimensions> create(
-	const device_t&              device,
+	device_t const&              device,
 	dimensions_t<NumDimensions>  dimensions);
 ///@}
 

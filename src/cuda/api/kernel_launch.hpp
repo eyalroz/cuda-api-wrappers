@@ -135,7 +135,7 @@ inline void collect_argument_addresses(void**) { }
 template <typename Arg, typename... Args>
 void collect_argument_addresses(void** collected_addresses, Arg&& arg, Args&&... args)
 {
-	collected_addresses[0] = const_cast<void*>(static_cast<const void*>(&arg));
+	collected_addresses[0] = const_cast<void*>(static_cast<void const*>(&arg));
 	collect_argument_addresses(collected_addresses + 1, std::forward<Args>(args)...);
 }
 
@@ -143,7 +143,7 @@ template<typename Kernel, typename... KernelParameters>
 struct enqueue_launch_helper {
 	void operator()(
 		Kernel&&                kernel_function,
-		const stream_t &        stream,
+		stream_t const &        stream,
 		launch_configuration_t  launch_configuration,
 		KernelParameters &&...  arguments) const;
 };
@@ -153,7 +153,7 @@ void enqueue_launch(
 	bool_constant<false>,
 	bool_constant<false>,
 	Kernel&&                kernel_function,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments);
 
@@ -162,7 +162,7 @@ void enqueue_launch(
 	bool_constant<true>,
 	bool_constant<false>,
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments);
 
@@ -171,7 +171,7 @@ void enqueue_launch(
 	bool_constant<false>,
 	bool_constant<true>,
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments);
 
@@ -181,7 +181,7 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 	context::handle_t       context_handle,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_config,
-	const void**            marshalled_arguments);
+	void const**            marshalled_arguments);
 
 template<typename KernelFunction, typename... KernelParameters>
 void enqueue_raw_kernel_launch_in_current_context(
@@ -228,20 +228,20 @@ void enqueue_raw_kernel_launch_in_current_context(
 		// look at things.
 		detail::collect_argument_addresses(argument_ptrs, std::forward<KernelParameters>(arguments)...);
 #if CUDA_VERSION >= 11000
-		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail::get_handle( (const void*) kernel_function);
+		kernel::handle_t kernel_function_handle = kernel::apriori_compiled::detail::get_handle( (void const*) kernel_function);
 		enqueue_kernel_launch_by_handle_in_current_context(
 			kernel_function_handle,
 			device_id,
 			context_handle,
 			stream_handle,
 			launch_configuration,
-			const_cast<const void**>(argument_ptrs));
+			const_cast<void const**>(argument_ptrs));
 
 #else // CUDA_VERSION is at least 9000 but under 11000
 		(void) device_id;
 		(void) context_handle;
 		auto status = cudaLaunchCooperativeKernel(
-			(const void *) kernel_function,
+			(void const *) kernel_function,
 			(dim3)(uint3)launch_configuration.dimensions.grid,
 			(dim3)(uint3)launch_configuration.dimensions.block,
 			&argument_ptrs[0],
@@ -265,7 +265,7 @@ namespace detail {
 // of the kernel parameters. This is necessary since kernel wrappers may be type-erased
 // (which makes it much easier to work with them and avoids a bunch of code duplication).
 //
-// Note: The type-unerased kernel must be a non-const function pointer. Why? Not sure.
+// Note: The type-unerased kernel must be a non-function const pointer. Why? Not sure.
 // even though function pointers can't get written through, for some reason they are
 // expected not to be const.
 
@@ -293,7 +293,7 @@ struct raw_kernel_typegen {
  */
 template<typename... KernelParameters>
 typename detail::raw_kernel_typegen<KernelParameters...>::type
-unwrap(const kernel::apriori_compiled_t& kernel)
+unwrap(kernel::apriori_compiled_t const& kernel)
 {
 	using raw_kernel_t = typename detail::raw_kernel_typegen<KernelParameters ...>::type;
 	return reinterpret_cast<raw_kernel_t>(const_cast<void *>(kernel.ptr()));
@@ -306,8 +306,8 @@ namespace detail {
 template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
 	void operator()(
-		const kernel::apriori_compiled_t&  wrapped_kernel,
-		const stream_t &                  stream,
+		kernel::apriori_compiled_t const&  wrapped_kernel,
+		stream_t const &                  stream,
 		launch_configuration_t            launch_configuration,
 		KernelParameters &&...            arguments) const;
 };
@@ -346,7 +346,7 @@ struct enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...> {
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments);
 
@@ -365,7 +365,7 @@ void enqueue_launch(
 template<typename Kernel, typename... KernelParameters>
 void launch(
 	Kernel&&                kernel,
-	const device_t&         device,
+	device_t const&         device,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments);
 
@@ -383,7 +383,7 @@ void launch(
  *
  * @tparam SpanOfConstVoidPtrLike
  *     Type of the container for the marshalled arguments; typically, this
- *     would be `span<const void*>` - but it can be an `std::vector`, or
+ *     would be `span<void const*>` - but it can be an `std::vector`, or
  *     have non-const `void*` elements etc.
  * @param kernel
  *     A wrapped GPU kernel
@@ -394,21 +394,21 @@ void launch(
  *     The configuration information for the grid of blocks of threads and
  *     other configuration with which to configure the launch
  * @param marshalled_arguments
- *     A container of `void` or `const void` pointers to the argument values
+ *     A container of `void` or `void const` pointers to the argument values
  */
 ///@{
 template <typename SpanOfConstVoidPtrLike>
 void launch_type_erased(
-	const kernel_t&         kernel,
-	const stream_t&         stream,
+	kernel_t const&         kernel,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	SpanOfConstVoidPtrLike  marshalled_arguments);
 
 #if CUDA_VERSION >= 12000
 template <typename SpanOfConstVoidPtrLike>
 void launch_type_erased(
-	const library::kernel_t&  kernel,
-	const stream_t&           stream,
+	library::kernel_t const&  kernel,
+	stream_t const&           stream,
 	launch_configuration_t    launch_configuration,
 	SpanOfConstVoidPtrLike    marshalled_arguments);
 ///@}

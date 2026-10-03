@@ -24,7 +24,7 @@ namespace graph {
 
 #if CUDA_VERSION >= 11060
 
-inline bool is_enabled_in(const node_t& node, const instance_t& instance)
+inline bool is_enabled_in(node_t const& node, instance_t const& instance)
 {
 	unsigned result;
 	auto status = cuGraphNodeGetEnabled(instance.handle(), node.handle(), &result);
@@ -32,14 +32,14 @@ inline bool is_enabled_in(const node_t& node, const instance_t& instance)
 	return (result == 1);
 }
 
-inline void set_enabled_in(const node_t& node, const instance_t& instance, bool enabled)
+inline void set_enabled_in(node_t const& node, instance_t const& instance, bool enabled)
 {
 	auto status = cuGraphNodeSetEnabled(instance.handle(), node.handle(), enabled);
 	throw_if_error_lazy(status, "Enabling " + cuda_::detail::identify(node) + " in " + instance::detail::identify(instance));
 }
 #endif // CUDA_VERSION >= 11060
 
-inline void launch(const instance_t& instance, const stream_t& stream)
+inline void launch(instance_t const& instance, stream_t const& stream)
 {
 	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphLaunch(instance.handle(), stream.handle());
@@ -49,7 +49,7 @@ inline void launch(const instance_t& instance, const stream_t& stream)
 namespace instance {
 
 #if CUDA_VERSION >= 11010
-inline void upload(const instance_t& instance, const stream_t& stream)
+inline void upload(instance_t const& instance, stream_t const& stream)
 {
 	context::current::detail::scoped_override_t set_context_for_current_scope(stream.context_handle());
 	auto status = cuGraphUpload(instance.handle(), stream.handle());
@@ -57,7 +57,7 @@ inline void upload(const instance_t& instance, const stream_t& stream)
 }
 #endif // CUDA_VERSION >= 11010
 
-inline void update(const instance_t& destination, const template_t& source)
+inline void update(instance_t const& destination, template_t const& source)
 {
 #if CUDA_VERSION < 12000
 	node::handle_t impermissible_node_handle{};
@@ -78,13 +78,13 @@ inline void update(const instance_t& destination, const template_t& source)
 
 } // namespace instance
 
-//inline void instance_t::launch(const stream_t& stream) const
+//inline void instance_t::launch(stream_t const& stream) const
 //{
 //	instance::launch(*this, stream);
 //}
 
 #if CUDA_VERSION >= 11010
-inline void instance_t::upload(const stream_t& stream) const
+inline void instance_t::upload(stream_t const& stream) const
 {
 	instance::upload(*this, stream);
 }
@@ -122,7 +122,7 @@ namespace node {
 
 namespace detail {
 
-inline auto kind_traits<kind_t::child_graph>::marshal(const parameters_type& params) -> raw_parameters_type
+inline auto kind_traits<kind_t::child_graph>::marshal(parameters_type const& params) -> raw_parameters_type
 {
 	return params.template_.handle();
 }
@@ -169,7 +169,7 @@ inline std::string describe(graph::instance::update_status_t update_status, opti
 namespace stream {
 namespace capture {
 
-inline graph::template_t end(const cuda_::stream_t& stream)
+inline graph::template_t end(cuda_::stream_t const& stream)
 {
 	graph::template_::handle_t new_graph;
 	auto status = cuStreamEndCapture(stream.handle(), &new_graph);
@@ -181,7 +181,7 @@ inline graph::template_t end(const cuda_::stream_t& stream)
 } // namespace capture
 } // namespace stream
 
-inline void stream_t::enqueue_t::graph_launch(const graph::instance_t& graph_instance) const
+inline void stream_t::enqueue_t::graph_launch(graph::instance_t const& graph_instance) const
 {
 	graph::launch(graph_instance, associated_stream);
 }

@@ -37,7 +37,7 @@ struct is_library_kernel : std::is_same<typename std::decay<Kernel>::type, libra
 } // namespace detail
 
 // TODO: Avoid the copy?
-kernel_t contextualize(const library::kernel_t& kernel, const context_t& context);
+kernel_t contextualize(library::kernel_t const& kernel, context_t const& context);
 
 namespace library {
 
@@ -54,7 +54,7 @@ namespace detail {
 kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle);
 
 inline std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_context(
-	const kernel::handle_t& library_kernel_handle)
+	kernel::handle_t const& library_kernel_handle)
 {
 	cuda_::kernel::handle_t contextualized_kernel_handle;
 	auto status = cuKernelGetFunction(&contextualized_kernel_handle, library_kernel_handle);
@@ -62,8 +62,8 @@ inline std::pair<cuda_::kernel::handle_t, status_t> contextualize_in_current_con
 }
 
 inline cuda_::kernel::handle_t contextualize(
-	const handle_t& kernel_handle,
-	const context::handle_t context_handle)
+	handle_t const& kernel_handle,
+	context::handle_t const context_handle)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
 	auto handle_and_status = contextualize_in_current_context(kernel_handle);
@@ -110,14 +110,14 @@ inline void set_attribute(
 } // namespace detail
 
 attribute_value_t get_attribute(
-	const library::kernel_t&  library_kernel,
+	library::kernel_t const&  library_kernel,
 	kernel::attribute_t       attribute,
-	const device_t&           device);
+	device_t const&           device);
 
 inline void set_attribute(
-	const library::kernel_t&  library_kernel,
+	library::kernel_t const&  library_kernel,
 	kernel::attribute_t       attribute,
-	const device_t&           device,
+	device_t const&           device,
 	attribute_value_t         value);
 
 } // namespace kernel
@@ -142,10 +142,10 @@ public: // non-mutators
 	 *
 	 * @note This may return a mangled name if the kernel function was not declared as having C linkage.
 	 */
-	const char* name() const
+	char const* name() const
 	{
 		if (name_ != nullptr) { return name_; }
-		const char* result;
+		char const* result;
 		auto status = cuKernelGetName(&result, handle_);
 		throw_if_error_lazy(status, "Retrieving the name of " + cuda_::detail::identify(*this));
 		name_ = result;
@@ -155,7 +155,7 @@ public: // non-mutators
 #if CUDA_VERSION >= 13020
 	size_t num_parameters() const { return kernel::detail::get_num_parameters(handle_); }
 #endif
-	cuda_::kernel_t contextualize(const context_t& context) const;
+	cuda_::kernel_t contextualize(context_t const& context) const;
 
 protected: // ctors & dtor
 	kernel_t(library::handle_t library_handle, kernel::handle_t handle)
@@ -163,7 +163,7 @@ protected: // ctors & dtor
 	library_handle_(library_handle), handle_(handle) {}
 
 public: // ctors & dtor
-	kernel_t(const kernel_t &) = default;
+	kernel_t(kernel_t const &) = default;
 	kernel_t(kernel_t&& other) = default;
 
 public: // friends
@@ -172,7 +172,7 @@ public: // friends
 protected: // data members
 	library::handle_t library_handle_;
 	kernel::handle_t handle_;
-	mutable const char* name_ { nullptr }; // The name is cached after having been retrieved for the first time
+	mutable char const* name_ { nullptr }; // The name is cached after having been retrieved for the first time
 }; // kernel_t
 
 namespace kernel {
@@ -185,7 +185,7 @@ inline kernel_t wrap(library::handle_t library_handle, kernel::handle_t handle)
 
 } // namespace detail
 
-inline kernel_t get(const library_t& library, const char* name)
+inline kernel_t get(library_t const& library, char const* name)
 {
 	auto kernel_handle = cuda_::library::detail::get_kernel_in_current_context(library.handle(), name);
 	return kernel::detail::wrap(library.handle(), kernel_handle);
@@ -195,23 +195,23 @@ inline kernel_t get(const library_t& library, const char* name)
 
 } // namespace library
 
-inline library::kernel_t library_t::get_kernel(const char* name) const
+inline library::kernel_t library_t::get_kernel(char const* name) const
 {
 	return library::kernel::get(*this, name);
 }
 
-inline library::kernel_t library_t::get_kernel(const std::string& name) const
+inline library::kernel_t library_t::get_kernel(std::string const& name) const
 {
 	return get_kernel(name.c_str());
 }
 
-inline library::kernel_t library_t::get_kernel(const context_t& context, const char* name) const
+inline library::kernel_t library_t::get_kernel(context_t const& context, char const* name) const
 {
 	CUDA_CONTEXT_FOR_THIS_SCOPE(context);
 	return library::kernel::get(*this, name);
 }
 
-inline library::kernel_t library_t::get_kernel(const context_t& context, const std::string& name) const
+inline library::kernel_t library_t::get_kernel(context_t const& context, std::string const& name) const
 {
 	return get_kernel(context, name.c_str());
 }

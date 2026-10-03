@@ -85,9 +85,9 @@ __global__ void kernel(count_t *finity_counts)
     finity_counts[tid] = res;
 }
 
-const char* name_of(FinityCheckMethod FCM)
+char const* name_of(FinityCheckMethod FCM)
 {
-    static constexpr const char* names[] = {
+    static constexpr char const* names[] = {
         "smaller then infinity literal",
         "using cuda intrinsic for float type",
         "less than ushort threshold value for non-finite",

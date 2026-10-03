@@ -88,7 +88,7 @@ template <> struct caching<memory_operation_t::load> {
 		 */
 		cv = 4, dont_cache = cv, fetch_again_and_dont_cache = cv,
 	};
-	static constexpr const char* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
+	static constexpr char const* mode_names[] = { "ca", "cg", "cs", "lu", "cv" };
 };
 
 /// Store operation caching settings
@@ -104,7 +104,7 @@ template <> struct caching<memory_operation_t::store> {
 	};
 
 	/// @cond
-	static constexpr const char* mode_names[] = { "wb", "cg", "cs", "wt" };
+	static constexpr char const* mode_names[] = { "wb", "cg", "cs", "wt" };
 	/// @endcond
 };
 
@@ -114,7 +114,7 @@ using caching_mode_t = typename caching<Op>::mode;
 namespace detail {
 
 template <memory_operation_t Op>
-const char* name(caching_mode_t<Op> mode)
+char const* name(caching_mode_t<Op> mode)
 {
 	return caching<Op>::mode_names[static_cast<int>(mode)];
 }

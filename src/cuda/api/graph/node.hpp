@@ -137,7 +137,7 @@ public:
 		auto status = node::detail::get_dependencies(handle_, node_handles.data(), &num_dependencies_);
 		throw_if_error_lazy(status, "Obtaining the set nodes on which " + cuda_::detail::identify(*this) + " is dependent");
 		dependencies_type result;
-		for (const auto& node_handle : node_handles) {
+		for (auto const& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));
 		}
 		return result;
@@ -150,7 +150,7 @@ public:
 		auto status = node::detail::get_dependents(handle_, node_handles.data(), &num_dependents_);
 		throw_if_error_lazy(status, "Obtaining the set nodes dependent on " + cuda_::detail::identify(*this));
 		dependencies_type result;
-		for (const auto& node_handle : node_handles) {
+		for (auto const& node_handle : node_handles) {
 			result.emplace_back(node::wrap(graph_template_handle_, node_handle));
 		}
 		return result;
@@ -173,7 +173,7 @@ public: // friendship
 	friend node_t node::wrap(template_::handle_t graph_handle, node::handle_t handle) noexcept;
 
 public:  // constructors and destructors
-	node_t(const node_t&) noexcept = default; // It's a reference type, so copying is not a problem
+	node_t(node_t const&) noexcept = default; // It's a reference type, so copying is not a problem
 	node_t(node_t&&) noexcept = default; // It's a reference type, so copying is not a problem
 
 	node_t& operator=(node_t other) noexcept

@@ -12,7 +12,7 @@ using std::printf;
 class NonTriviallyCopyable {
 public:
 	NonTriviallyCopyable() = default;
-	NonTriviallyCopyable(const char *name) {
+	NonTriviallyCopyable(char const *name) {
 		printf("NonTriviallyCopyable constructor called\n");
 		std::strncpy(name_, name, sizeof(name_));
 		name_[sizeof(name_) - 1] = '\0';
@@ -20,7 +20,7 @@ public:
 
 	NonTriviallyCopyable(NonTriviallyCopyable &&) = default;
 
-	NonTriviallyCopyable(const NonTriviallyCopyable &other) {
+	NonTriviallyCopyable(NonTriviallyCopyable const& other) {
 		printf("NonTriviallyCopyable copy constructor called\n");
 		std::strncpy(name_, other.name_, sizeof(name_));
 		name_[sizeof(name_) - 1] = '\0';
@@ -30,11 +30,11 @@ public:
 		printf("NonTriviallyCopyable destructor called\n");
 	}
 
-	NonTriviallyCopyable & operator=(const NonTriviallyCopyable &) = default;
+	NonTriviallyCopyable & operator=(NonTriviallyCopyable const& ) = default;
 	NonTriviallyCopyable & operator=(NonTriviallyCopyable &&) = default;
 	// Non-trivial destructor
 
-	__host__ __device__ const char *name() const noexcept { return name_; }
+	__host__ __device__ char const *name() const noexcept { return name_; }
 
 private:
 	char name_[10];
@@ -48,14 +48,14 @@ struct cuda_::is_valid_kernel_argument<NonTriviallyCopyable> : std::true_type {}
 
 __global__ void print_message(NonTriviallyCopyable message) {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
-		printf("Kernel says: %s\n", (const char *)message.name());
+		printf("Kernel says: %s\n", (char const *)message.name());
 	}
 }
 
 __global__ void copy_me(NonTriviallyCopyable in, NonTriviallyCopyable *out) {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
 		*out = in;
-		printf("Kernel copied me: %s\n", (const char *)out->name());
+		printf("Kernel copied me: %s\n", (char const *)out->name());
 	}
 }
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 	stream.enqueue.copy(&dest, dest_span);
 	stream.synchronize();
 	assert(strcmp(dest.name(), src.name()) == 0);
-	printf("Host says: %s\n", (const char *)dest.name());
+	printf("Host says: %s\n", (char const *)dest.name());
 
 	std::cout << "\nSUCCESS\n";
 }

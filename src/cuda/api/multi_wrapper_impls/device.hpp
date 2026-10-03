@@ -30,18 +30,18 @@ namespace device {
 
 namespace primary_context {
 
-inline bool is_active(const device_t& device)
+inline bool is_active(device_t const& device)
 {
 	return detail::is_active(device.id());
 }
 
-inline void destroy(const device_t& device)
+inline void destroy(device_t const& device)
 {
 	auto status = cuDevicePrimaryCtxReset(device.id());
 	throw_if_error_lazy(status, "Failed destroying/resetting the primary context of device " + std::to_string(device.id()));
 }
 
-inline primary_context_t get(const device_t& device)
+inline primary_context_t get(device_t const& device)
 {
 	auto pc_handle = detail::get_handle(device.id(), true);
 	return detail::wrap( device.id(), pc_handle, true);
@@ -64,17 +64,17 @@ inline primary_context_t leaky_get(id_t device_id)
 
 namespace peer_to_peer {
 
-inline bool can_access(const device_t& accessor, const device_t& peer)
+inline bool can_access(device_t const& accessor, device_t const& peer)
 {
 	return detail::can_access(accessor.id(), peer.id());
 }
 
-inline void enable_access(const device_t& accessor, const device_t& peer)
+inline void enable_access(device_t const& accessor, device_t const& peer)
 {
 	return context::peer_to_peer::enable_access(accessor.primary_context(), peer.primary_context());
 }
 
-inline void disable_access(const device_t& accessor, const device_t& peer)
+inline void disable_access(device_t const& accessor, device_t const& peer)
 {
 #ifndef NDEBUG
 	if (accessor == peer) {
@@ -84,12 +84,12 @@ inline void disable_access(const device_t& accessor, const device_t& peer)
 	context::peer_to_peer::disable_access(accessor.primary_context(), peer.primary_context());
 }
 
-inline bool can_access_each_other(const device_t& first, const device_t& second)
+inline bool can_access_each_other(device_t const& first, device_t const& second)
 {
 	return can_access(first, second) and can_access(second, first);
 }
 
-inline void enable_bidirectional_access(const device_t& first, const device_t& second)
+inline void enable_bidirectional_access(device_t const& first, device_t const& second)
 {
 #ifndef NDEBUG
 	if (first == second) {
@@ -99,7 +99,7 @@ inline void enable_bidirectional_access(const device_t& first, const device_t& s
 	context::peer_to_peer::enable_bidirectional_access(first.primary_context(), second.primary_context());
 }
 
-inline void disable_bidirectional_access(const device_t& first, const device_t& second)
+inline void disable_bidirectional_access(device_t const& first, device_t const& second)
 {
 #ifndef NDEBUG
 	if (first == second) {
@@ -109,7 +109,7 @@ inline void disable_bidirectional_access(const device_t& first, const device_t& 
 	context::peer_to_peer::disable_bidirectional_access(first.primary_context(), second.primary_context());
 }
 
-inline attribute_value_t get_attribute(attribute_t attribute, const device_t& first, const device_t& second)
+inline attribute_value_t get_attribute(attribute_t attribute, device_t const& first, device_t const& second)
 {
 #ifndef NDEBUG
 	if (first == second) {
@@ -162,7 +162,7 @@ inline device::primary_context_t device_t::primary_context(bool hold_pc_refcount
 	return device::primary_context::detail::wrap(id_, pc_handle, hold_pc_refcount_unit);
 }
 
-inline void synchronize(const device_t& device)
+inline void synchronize(device_t const& device)
 {
 	auto pc = device.primary_context();
 	CAW_SET_SCOPE_CONTEXT(pc.handle());

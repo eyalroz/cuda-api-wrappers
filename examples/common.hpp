@@ -38,7 +38,7 @@ bool your_type_was_() { return true; }
 #define print_type_of(_x) your_type_was_<decltype(_x)>()
 #endif
 
-inline const char* ordinal_suffix(int n)
+inline char const* ordinal_suffix(int n)
 {
 	static constexpr char suffixes [4][5] = {"th", "st", "nd", "rd"};
 	auto ord = n % 100;
@@ -50,9 +50,9 @@ inline const char* ordinal_suffix(int n)
 template <typename N = int>
 std::string xth(N n) { return std::to_string(n) + ordinal_suffix(n); }
 
-const char* cache_preference_name(cuda_::multiprocessor_cache_preference_t pref)
+char const* cache_preference_name(cuda_::multiprocessor_cache_preference_t pref)
 {
-	static const char* cache_preference_names[] = {
+	static char const* cache_preference_names[] = {
 		"No preference",
 		"Equal L1 and shared memory",
 		"Prefer shared memory over L1",
@@ -61,9 +61,9 @@ const char* cache_preference_name(cuda_::multiprocessor_cache_preference_t pref)
 	return cache_preference_names[static_cast<off_t>(pref)];
 }
 
-const char* host_thread_sync_scheduling_policy_name(cuda_::context::host_thread_sync_scheduling_policy_t policy)
+char const* host_thread_sync_scheduling_policy_name(cuda_::context::host_thread_sync_scheduling_policy_t policy)
 {
-	static const char *names[] = {
+	static char const *names[] = {
 		"heuristic",
 		"spin",
 		"yield",
@@ -74,16 +74,16 @@ const char* host_thread_sync_scheduling_policy_name(cuda_::context::host_thread_
 	return names[static_cast<off_t>(policy)];
 }
 
-const char* memory_type_name(cuda_::memory::type_t mem_type)
+char const* memory_type_name(cuda_::memory::type_t mem_type)
 {
-	static const char* memory_type_names[] = {
+	static char const* memory_type_names[] = {
 		"N/A",
 		"host",
 		"device",
 		"array",
 		"unified"
 	};
-	return (mem_type <= 0 or mem_type > sizeof(memory_type_names)/sizeof(const char*)) ?
+	return (mem_type <= 0 or mem_type > sizeof(memory_type_names)/sizeof(char const*)) ?
 		 "invalid memory type": // or maybe we should die?
 		 memory_type_names[mem_type];
 }
@@ -232,14 +232,14 @@ void report_context_stack(const std::string& prefix = "")
 template <cuda_::dimensionality_t Dimensionality>
 std::ostream& operator<<(std::ostream& os, cuda_::memory::copy_parameters_t<Dimensionality>& params);
 
-std::ostream &stream_endpoint(
-	std::ostream &os,
-	const char* name,
+std::ostream& stream_endpoint(
+	std::ostream& os,
+	char const* name,
 	cuda_::optional<cuda_::context::handle_t > context,
 	size_t xInBytes, size_t y, cuda_::optional<size_t> z,
 	CUmemorytype memoryType,
 	CUarray array,
-	const void* host,
+	void const* host,
 	cuda_::memory::device::address_t device,
 	size_t pitch,
 	cuda_::optional<size_t> height)
@@ -257,7 +257,7 @@ std::ostream &stream_endpoint(
 	}
 	os << "; ";
 
-	static const char* memory_type_names[] = { "(invalid type)", "host", "device", "array", "unified or host" };
+	static char const* memory_type_names[] = { "(invalid type)", "host", "device", "array", "unified or host" };
 
 	if (memoryType < (sizeof(memory_type_names) / sizeof(memory_type_names[0]))) {
 		os << memory_type_names[memoryType] << " memory: ";
@@ -379,7 +379,7 @@ inline char const* describe_demangling_status(int status)
 }
 
 // Inefficient, but simple
-inline std::string demangle(const char *mangled_name)
+inline std::string demangle(char const *mangled_name)
 {
 	if (mangled_name == nullptr) { return nullptr; }
 	int status;

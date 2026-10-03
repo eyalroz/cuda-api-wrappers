@@ -46,12 +46,12 @@ inline bool is_primary_for_device(handle_t handle, device::id_t device_id)
 
 } // namespace detail
 
-inline bool is_primary(const context_t& context)
+inline bool is_primary(context_t const& context)
 {
 	return context::detail::is_primary_for_device(context.handle(), context.device_id());
 }
 
-inline void synchronize(const context_t& context)
+inline void synchronize(context_t const& context)
 {
 	return detail::synchronize(context.device_id(), context.handle());
 }
@@ -175,13 +175,13 @@ public:
 
 inline scoped_override_t::scoped_override_t(device::primary_context_t&& primary_context)
 		: parent(primary_context.is_owning(), primary_context.device_id(), primary_context.handle()) {}
-inline scoped_override_t::scoped_override_t(const context_t& context) : parent(context.handle()) {}
+inline scoped_override_t::scoped_override_t(context_t const& context) : parent(context.handle()) {}
 inline scoped_override_t::scoped_override_t(context_t&& context) : parent(context.handle()) {}
 
 } // namespace current
 
 inline context_t create_and_push(
-	const device_t&                       device,
+	device_t const&                       device,
 	host_thread_sync_scheduling_policy_t  sync_scheduling_policy,
 	bool                                  keep_larger_local_mem_after_resize)
 {
@@ -191,7 +191,7 @@ inline context_t create_and_push(
 }
 
 inline context_t create(
-	const device_t&                        device,
+	device_t const&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy,
 	bool                                   keep_larger_local_mem_after_resize)
 {
@@ -202,29 +202,29 @@ inline context_t create(
 
 namespace peer_to_peer {
 
-inline bool can_access(const context_t& accessor, const context_t& peer)
+inline bool can_access(context_t const& accessor, context_t const& peer)
 {
 	return device::peer_to_peer::detail::can_access(accessor.device_id(), peer.device_id());
 }
 
-inline void enable_access(const context_t& accessor, const context_t& peer)
+inline void enable_access(context_t const& accessor, context_t const& peer)
 {
 	detail::enable_access(accessor.handle(), peer.handle());
 }
 
-inline void disable_access(const context_t& accessor, const context_t& peer)
+inline void disable_access(context_t const& accessor, context_t const& peer)
 {
 	detail::disable_access(accessor.handle(), peer.handle());
 }
 
-inline void enable_bidirectional_access(const context_t& first, const context_t& second)
+inline void enable_bidirectional_access(context_t const& first, context_t const& second)
 {
 	// Note: What happens when first and second are the same context? Or on the same device?
 	enable_access(first,  second);
 	enable_access(second, first );
 }
 
-inline void disable_bidirectional_access(const context_t& first, const context_t& second)
+inline void disable_bidirectional_access(context_t const& first, context_t const& second)
 {
 	// Note: What happens when first and second are the same context? Or on the same device?
 	disable_access(first,  second);
@@ -238,12 +238,12 @@ namespace current {
 
 namespace peer_to_peer {
 
-inline void enable_access_to(const context_t &peer_context)
+inline void enable_access_to(context_t const& peer_context)
 {
 	context::peer_to_peer::detail::enable_access_to(peer_context.handle());
 }
 
-inline void disable_access_to(const context_t &peer_context)
+inline void disable_access_to(context_t const& peer_context)
 {
 	context::peer_to_peer::detail::disable_access_to(peer_context.handle());
 }
@@ -286,12 +286,12 @@ inline bool context_t::is_primary() const
 // for better separation of runtime-origination and driver-originating headers; see
 // issue #320 on the issue tracker.
 
-inline void context_t::enable_access_to(const context_t& peer) const
+inline void context_t::enable_access_to(context_t const& peer) const
 {
 	context::peer_to_peer::enable_access(*this, peer);
 }
 
-inline void context_t::disable_access_to(const context_t& peer) const
+inline void context_t::disable_access_to(context_t const& peer) const
 {
 	context::peer_to_peer::disable_access(*this, peer);
 }

@@ -45,7 +45,7 @@ using base_copy_params_t = typename base_copy_params<NumDimensions>::type;
 
 template<size_t NumDimensions>
 array::dimensions_t<NumDimensions>
-non_array_endpoint_dimensions(endpoint_t endpoint, const copy_parameters_t<NumDimensions>& params);
+non_array_endpoint_dimensions(endpoint_t endpoint,copy_parameters_t<NumDimensions> const& params);
 
 } //namespace detail
 
@@ -80,10 +80,10 @@ struct copy_parameters_t : detail::base_copy_params_t<NumDimensions> {
 	bool is_intra_context() const noexcept { return parent::srcContext == parent::dstContext; }
 
 	/// Set the context for one end of the copy operation
-	this_type& set_context(endpoint_t endpoint, const context_t& context) noexcept;
+	this_type& set_context(endpoint_t endpoint, context_t const& context) noexcept;
 
 	/// Set the same context for both endpoints of the copy operation
-	this_type& set_single_context(const context_t& context) noexcept
+	this_type& set_single_context(context_t const& context) noexcept
 	{
 		set_context(endpoint_t::source, context);
 		set_context(endpoint_t::destination, context);
@@ -96,7 +96,7 @@ struct copy_parameters_t : detail::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, NumDimensions> &array) noexcept;
+	this_type& set_endpoint(endpoint_t endpoint,cuda_::array_t<T, NumDimensions> const& array) noexcept;
 
 	this_type& set_endpoint_ptr(endpoint_t endpoint, context::handle_t context_handle, void *ptr);
 
@@ -148,7 +148,7 @@ struct copy_parameters_t : detail::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_source(const cuda_::array_t<T, NumDimensions> &array) noexcept
+	this_type& set_source(cuda_::array_t<T, NumDimensions> const& array) noexcept
 	{
 		return set_endpoint(endpoint_t::source, array);
 	}
@@ -208,7 +208,7 @@ struct copy_parameters_t : detail::base_copy_params_t<NumDimensions> {
 	 * @note: This assumes default pitch.
 	 */
 	template<typename T>
-	this_type& set_destination(const cuda_::array_t<T, NumDimensions> &array) noexcept
+	this_type& set_destination(cuda_::array_t<T, NumDimensions> const& array) noexcept
 	{
 		return set_endpoint(endpoint_t::destination, array);
 	}
@@ -441,7 +441,7 @@ copy_parameters_t<2>& copy_parameters_t<2>::set_endpoint(
 
 template<>
 template<typename T>
-copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, 2> &array) noexcept
+copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint,cuda_::array_t<T, 2> const& array) noexcept
 {
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
 	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
@@ -453,7 +453,7 @@ copy_parameters_t<2> &copy_parameters_t<2>::set_endpoint(endpoint_t endpoint, co
 namespace detail {
 
 template<>
-inline array::dimensions_t<2> non_array_endpoint_dimensions<2>(endpoint_t endpoint, const copy_parameters_t<2>& params)
+inline array::dimensions_t<2> non_array_endpoint_dimensions<2>(endpoint_t endpoint,copy_parameters_t<2> const& params)
 {
 	using dims_type = copy_parameters_t<2>::dimensions_type;
 	return (endpoint == endpoint_t::source) ?
@@ -462,7 +462,7 @@ inline array::dimensions_t<2> non_array_endpoint_dimensions<2>(endpoint_t endpoi
 }
 
 template<>
-inline array::dimensions_t<3> non_array_endpoint_dimensions<3>(endpoint_t endpoint, const copy_parameters_t<3>& params)
+inline array::dimensions_t<3> non_array_endpoint_dimensions<3>(endpoint_t endpoint,copy_parameters_t<3> const& params)
 {
 	using dims_type = copy_parameters_t<3>::dimensions_type;
 	return (endpoint == endpoint_t::source) ?
@@ -474,7 +474,7 @@ inline array::dimensions_t<3> non_array_endpoint_dimensions<3>(endpoint_t endpoi
 
 template<>
 template<typename T>
-copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, const cuda_::array_t<T, 3> &array) noexcept
+copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(endpoint_t endpoint,cuda_::array_t<T, 3> const& array) noexcept
 {
 	(endpoint == endpoint_t::source ? srcMemoryType : dstMemoryType) = CU_MEMORYTYPE_ARRAY;
 	(endpoint == endpoint_t::source ? srcArray : dstArray) = array.get();
@@ -485,10 +485,10 @@ copy_parameters_t<3>& copy_parameters_t<3>::set_endpoint(endpoint_t endpoint, co
 // 2D copy parameters only have an intra-context variant; should we silently assume the context
 // is the same for both ends?
 template<>
-inline copy_parameters_t<2>& copy_parameters_t<2>::set_context(endpoint_t endpoint, const context_t& context) noexcept = delete;
+inline copy_parameters_t<2>& copy_parameters_t<2>::set_context(endpoint_t endpoint, context_t const& context) noexcept = delete;
 
 template<>
-inline copy_parameters_t<3>& copy_parameters_t<3>::set_context(endpoint_t endpoint, const context_t& context) noexcept
+inline copy_parameters_t<3>& copy_parameters_t<3>::set_context(endpoint_t endpoint, context_t const& context) noexcept
 {
 	(endpoint == endpoint_t::source ? srcContext : dstContext) = context.handle();
 	return *this;
@@ -694,7 +694,7 @@ copy_parameters_t<2> &copy_parameters_t<2>::set_offset(endpoint_t endpoint, dime
 }
 
 copy_parameters_t<3>::intra_context_type
-inline as_intra_context_parameters(const copy_parameters_t<3>& params)
+inline as_intra_context_parameters(copy_parameters_t<3> const& params)
 {
 	if (params.srcDevice != params.dstDevice) {
 		throw std::invalid_argument("Attempt to use inter-device copy parameters for an intra-context copy");

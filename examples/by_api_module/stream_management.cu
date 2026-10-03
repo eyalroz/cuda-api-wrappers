@@ -13,13 +13,13 @@ template <typename T, size_t N>
 struct poor_mans_array {
 	T data[N];
 	__host__ __device__ operator T*() { return data; }
-	__host__ __device__ operator const T*() const { return data; }
+	__host__ __device__ operator T const*() const { return data; }
 	__host__ __device__ T& operator [](off_t offset) { return data[offset]; }
 	__host__ __device__ const T& operator [](off_t offset) const { return data[offset]; }
 };
 
 template <size_t N>
-poor_mans_array<char, N> message(const char* message_str)
+poor_mans_array<char, N> message(char const* message_str)
 {
 	poor_mans_array<char, N> a;
 	assert(std::strlen(message_str) < N);
@@ -37,16 +37,16 @@ template <size_t N, unsigned Index>
 __global__ void print_message(poor_mans_array<char, N> message)
 {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
-		printf("Kernel no. %u says: %s\n", Index, (const char*) message);
+		printf("Kernel no. %u says: %s\n", Index, (char const*) message);
 	}
 }
 
-__host__ __device__ void print_first_char(const char* __restrict__ data)
+__host__ __device__ void print_first_char(char const* __restrict__ data)
 {
 	printf("data[0] = '%c' (0x%02x)\n", data[0], (unsigned) data[0]);
 }
 
-__global__ void print_first_char_kernel(const char* __restrict__ data)
+__global__ void print_first_char_kernel(char const* __restrict__ data)
 {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
 		print_first_char(data);
@@ -61,7 +61,7 @@ __global__ void increment(char* data, size_t length)
 }
 
 #if CUDA_VERSION >= 11000
-const char* get_policy_name(cuda_::stream::synchronization_policy_t policy)
+char const* get_policy_name(cuda_::stream::synchronization_policy_t policy)
 {
 	switch(policy) {
 		case cuda_::stream::automatic: return "automatic";

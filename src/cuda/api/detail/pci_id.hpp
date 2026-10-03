@@ -87,7 +87,7 @@ inline std::istream& operator>>(std::istream& is, cuda_::device::pci_location_t&
 	throw std::invalid_argument("Failed parsing PCI location ID for a CUDA device");
 }
 
-inline std::ostream& operator<<(std::ostream& os, const cuda_::device::pci_location_t& pci_id)
+inline std::ostream& operator<<(std::ostream& os, cuda_::device::pci_location_t const& pci_id)
 {
 	auto format_flags(os.flags());
 	os << std::hex;
@@ -105,7 +105,7 @@ inline pci_location_t::operator std::string() const
 	return oss.str();
 }
 
-inline pci_location_t pci_location_t::parse(const std::string& id_str)
+inline pci_location_t pci_location_t::parse(std::string const& id_str)
 {
 	std::istringstream iss(id_str);
 	pci_location_t id;
@@ -113,7 +113,7 @@ inline pci_location_t pci_location_t::parse(const std::string& id_str)
 	return id;
 }
 
-inline pci_location_t pci_location_t::parse(const char* id_str)
+inline pci_location_t pci_location_t::parse(char const* id_str)
 {
 	std::istringstream iss(id_str);
 	pci_location_t id;
