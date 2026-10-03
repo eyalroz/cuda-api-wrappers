@@ -54,7 +54,7 @@ enum source_kind_t {
 namespace rtc {
 
 /// A span of C-style strings the contents of which must not be modified
-using const_cstrings_span = span<const char* const>;
+using const_cstrings_span = span<char const* const>;
 
 /// Definitions relating to source-code programs to be compiled
 namespace program {

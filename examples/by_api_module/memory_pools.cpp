@@ -9,7 +9,7 @@
 
 static constexpr size_t region_size { 1024UL }; // 64 MiB
 
-void check_getters_and_rewrapping(const cuda_::memory::pool_t &pool);
+void check_getters_and_rewrapping(cuda_::memory::pool_t const& pool);
 
 cuda_::optional<cuda_::device::id_t> maybe_get_p2p_peer_id(cuda_::device::id_t device_id)
 {
@@ -23,7 +23,7 @@ cuda_::optional<cuda_::device::id_t> maybe_get_p2p_peer_id(cuda_::device::id_t d
 	return cuda_::nullopt;
 }
 
-void play_with_attributes(const cuda_::memory::pool_t &pool, const cuda_::stream_t& stream)
+void play_with_attributes(cuda_::memory::pool_t const& pool, const cuda_::stream_t& stream)
 {
 #if CUDA_VERSION < 11300
 	(void) stream;
@@ -131,7 +131,7 @@ void copy_through_pool_allocation(
 }
 
 cuda_::memory::permissions_t
-try_forbidding_same_device_access(int device_id, cuda_::memory::pool_t &pool)
+try_forbidding_same_device_access(int device_id, cuda_::memory::pool_t& pool)
 {
 	cuda_::memory::permissions_t permissions;
 	permissions.read = true;
@@ -169,7 +169,7 @@ void try_writing_to_pool_allocation_without_permission(
 		stream_on_peer.enqueue.copy(pool_allocated_region, {str.data(), str.size()});
 		stream_on_peer.synchronize();
 	}
-	catch (cuda_::runtime_error &ex) {
+	catch (cuda_::runtime_error& ex) {
 		if (ex.code() != cuda_::status::invalid_value) {
 			throw (ex);
 		}
@@ -200,7 +200,7 @@ void try_reading_from_pool_allocation_without_permission(
 		stream_on_peer.enqueue.copy(host_buffer, pool_allocated_region);
 		stream_on_peer.synchronize();
 	}
-	catch (cuda_::runtime_error &ex) {
+	catch (cuda_::runtime_error& ex) {
 		if (ex.code() != cuda_::status::invalid_value) {
 			throw (ex);
 		}
@@ -244,7 +244,7 @@ int main(int argc, char** argv)
 	std::cout << "\nSUCCESS\n\n";
 }
 
-void check_getters_and_rewrapping(const cuda_::memory::pool_t &pool)
+void check_getters_and_rewrapping(cuda_::memory::pool_t const& pool)
 {
 	auto device_id = pool.device_id();
 	auto handle = pool.handle();

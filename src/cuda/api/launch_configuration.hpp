@@ -38,13 +38,13 @@ inline void validate_grid_dimensions(grid::dimensions_t grid_dims)
 }
 
 // Note: The reason for the verbose name is the identity of the block and grid dimension types
-void validate_block_dimension_compatibility(const device_t &device, grid::block_dimensions_t block_dims);
-void validate_block_dimension_compatibility(const kernel_t &kernel, grid::block_dimensions_t block_dims);
+void validate_block_dimension_compatibility(device_t const& device, grid::block_dimensions_t block_dims);
+void validate_block_dimension_compatibility(kernel_t const& kernel, grid::block_dimensions_t block_dims);
 
-void validate_compatibility(const kernel_t &kernel, memory::shared::size_t shared_mem_size);
-void validate_compatibility(const device_t &device, memory::shared::size_t shared_mem_size);
+void validate_compatibility(kernel_t const& kernel, memory::shared::size_t shared_mem_size);
+void validate_compatibility(device_t const& device, memory::shared::size_t shared_mem_size);
 
-void validate_num_parameters(const kernel_t &kernel, size_t num_parameters);
+void validate_num_parameters(kernel_t const& kernel, size_t num_parameters);
 } // namespace detail
 
 #if CUDA_VERSION >= 12000
@@ -113,7 +113,7 @@ struct launch_configuration_t {
 		// unsigned flags; WHAT ABOUT THE FLAGS?
 		bool trigger_event_at_block_start { true };
 #if __cplusplus >= 202002L
-        constexpr bool operator==(const programmatic_completion_t&) const noexcept = default;
+        constexpr bool operator==(programmatic_completion_t const&) const noexcept = default;
 #endif
 	} programmatic_completion;
 
@@ -133,13 +133,13 @@ struct launch_configuration_t {
 		grid::dimensions_t cluster_dimensions { 1, 1, 1 };
 		cluster_scheduling_policy_t scheduling_policy { cluster_scheduling_policy_t::default_ };
 #if __cplusplus >= 202002L
-        constexpr bool operator==(const clustering_t &) const noexcept = default;
+        constexpr bool operator==(clustering_t const &) const noexcept = default;
 #endif
 	} clustering;
 #endif // CUDA_VERSION >= 12000
 
 #if __cplusplus >= 202002L
-	constexpr bool operator==(const launch_configuration_t&) const noexcept = default;
+	constexpr bool operator==(launch_configuration_t const&) const noexcept = default;
 #endif
 public: // non-mutators
 
@@ -169,7 +169,7 @@ public: // non-mutators
 	// we do have the inline initializers above regardless of the language
 	// standard version, and we just have to "pay the price" of spelling things out:
 	launch_configuration_t() = delete;
-	constexpr launch_configuration_t(const launch_configuration_t&) = default;
+	constexpr launch_configuration_t(launch_configuration_t const&) = default;
 	constexpr launch_configuration_t(launch_configuration_t&&) = default;
 
 	/**
@@ -212,13 +212,13 @@ public: // non-mutators
 	{ }
 	///@}
 
-	CONSTEXPR_CPP14 launch_configuration_t& operator=(const launch_configuration_t& other) = default;
+	CONSTEXPR_CPP14 launch_configuration_t& operator=(launch_configuration_t const& other) = default;
 	CONSTEXPR_CPP14 launch_configuration_t& operator=(launch_configuration_t&&) = default;
 };
 
 #if __cplusplus < 202002L
 ///@cond
-constexpr bool operator==(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+constexpr bool operator==(launch_configuration_t const lhs, launch_configuration_t const& rhs) noexcept
 {
 	return
 		lhs.dimensions == rhs.dimensions
@@ -235,7 +235,7 @@ constexpr bool operator==(const launch_configuration_t lhs, const launch_configu
 		;
 }
 
-constexpr bool operator!=(const launch_configuration_t lhs, const launch_configuration_t& rhs) noexcept
+constexpr bool operator!=(launch_configuration_t const lhs, launch_configuration_t const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -246,14 +246,14 @@ namespace detail {
 
 // Note: This will not check anything related to the device or the kernel
 // with which the launch configuration is to be used
-inline void validate(const launch_configuration_t& launch_config) noexcept(false)
+inline void validate(launch_configuration_t const& launch_config) noexcept(false)
 {
 	validate_block_dimensions(launch_config.dimensions.block);
 	validate_grid_dimensions(launch_config.dimensions.grid);
 }
 
 inline void validate_compatibility(
-	const device_t& device,
+	device_t const& device,
 	launch_configuration_t launch_config) noexcept(false)
 {
 	validate(launch_config);
@@ -263,10 +263,10 @@ inline void validate_compatibility(
 }
 
 void validate_compatibility(
-	const kernel_t& kernel,
+	kernel_t const& kernel,
 	launch_configuration_t launch_config) noexcept(false);
 
-void validate_num_parameters(const kernel_t& kernel, size_t num_parameters);
+void validate_num_parameters(kernel_t const& kernel, size_t num_parameters);
 
 using launch_attribute_index_t = unsigned int;
 
@@ -276,8 +276,8 @@ constexpr launch_attribute_index_t maximum_possible_kernel_launch_attributes = 7
 #if CUDA_VERSION >= 12000
 // Note: The attribute_storage must have a capacity of maximum_possible_kernel_launch_attributes+1 at least
 CUlaunchConfig marshal(
-	const launch_configuration_t& config,
-	const stream::handle_t stream_handle,
+	launch_configuration_t const& config,
+	stream::handle_t const stream_handle,
 	span<CUlaunchAttribute> attribute_storage) noexcept(true);
 #endif // CUDA_VERSION >= 12000
 

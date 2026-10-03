@@ -17,13 +17,13 @@ namespace detail {
 
 template<typename T>
 struct optional_ref {
-	optional_ref &operator=(const optional_ref &other) = default;
+	optional_ref& operator=(optional_ref const & other) = default;
 
-	optional_ref &operator=(optional_ref &&other) = default;
+	optional_ref& operator=(optional_ref&& other) = default;
 
-	optional_ref &operator=(const T &value) = delete;
+	optional_ref& operator=(T const& value) = delete;
 
-	optional_ref &operator=(T &&value) = delete;
+	optional_ref& operator=(T&& value) = delete;
 
 	optional_ref() noexcept: ptr_(nullptr)
 	{ }
@@ -31,7 +31,7 @@ struct optional_ref {
 	optional_ref(T& v) noexcept : ptr_(&v) 
 	{ }
 
-	optional_ref(const optional_ref &other) = default;
+	optional_ref(optional_ref const& other) = default;
 
 	optional_ref(nullopt_t) noexcept : ptr_(nullptr) { }
 

@@ -75,14 +75,14 @@ size_t div_rounding_up(size_t dividend, size_t divisor)
 // and also the devices have allocation granularity requirements
 cuda_::size_t determine_reservation_size(
 	cuda_::size_t desired_region_size,
-	const vector<cuda_::device_t> &backing_devices,
-	const vector<cuda_::device_t> &mapping_devices)
+	vector<cuda_::device_t> const& backing_devices,
+	vector<cuda_::device_t> const& mapping_devices)
 {
 	vector<cuda_::size_t> allocation_granularities; // for both mapping and backing devices
 	cuda_::size_t min_overall_granularity{0};
 
-	for (const auto &vec: {backing_devices, mapping_devices}) {
-		for (const auto &device: vec) {
+	for (auto const& vec: {backing_devices, mapping_devices}) {
+		for (auto const& device: vec) {
 			auto props = cuda_::memory::physical_allocation::create_properties_for<shared_mem_handle_kind>(device);
 			min_overall_granularity = std::max(min_overall_granularity, props.minimum_granularity());
 		}
@@ -137,8 +137,8 @@ struct reserved_range_and_mappings {
 reserved_range_and_mappings<std::vector>
 setup_virtual_memory(
 	cuda_::size_t requested_region_size,
-	const vector<cuda_::device_t> &backing_devices,
-	const vector<cuda_::device_t> &mapping_devices,
+	vector<cuda_::device_t> const& backing_devices,
+	vector<cuda_::device_t> const& mapping_devices,
 	virtual_mem::alignment_t alignment = virtual_mem::alignment::default_)
 {
 	auto size_to_reserve = determine_reservation_size(requested_region_size, backing_devices, mapping_devices);

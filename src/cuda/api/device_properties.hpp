@@ -50,7 +50,7 @@ struct compute_architecture_t {
 	 *
 	 * @note NVIDIA names their microarchitecture after famous scientists  like "Tesla", "Pascal" etc.
 	 */
-	const char* name() const;
+	char const* name() const;
 
 	/// @return true if @ref major is indeed a number of a known/recognized NVIDIA GPU
 	/// microarchitecture.
@@ -147,7 +147,7 @@ constexpr compute_capability_t make_compute_capability(unsigned major, unsigned 
 struct properties_t : public cudaDeviceProp {
 
 	properties_t() = default;
-	properties_t(const cudaDeviceProp& cdp) noexcept : cudaDeviceProp(cdp) { };
+	properties_t(cudaDeviceProp const& cdp) noexcept : cudaDeviceProp(cdp) { };
 	properties_t(cudaDeviceProp&& cdp) noexcept : cudaDeviceProp(cdp) { };
 
 	/// Convenience methods for accessing fields in the raw parent class, or combining or converting

@@ -191,9 +191,9 @@ public:
 	scoped_override_t(device::id_t device_for_which_context_is_primary, handle_t context_handle)
 		: scoped_override_t(do_hold_primary_context_refcount_unit, device_for_which_context_is_primary, context_handle) {}
 	explicit scoped_override_t(bool hold_primary_context_ref_unit, device::id_t device_id, handle_t context_handle);
-	scoped_override_t(const scoped_override_t&) = delete;
+	scoped_override_t(scoped_override_t const&) = delete;
 	scoped_override_t(scoped_override_t&&) = delete;
-	scoped_override_t& operator=(const scoped_override_t&) = delete;
+	scoped_override_t& operator=(scoped_override_t const&) = delete;
 	scoped_override_t& operator=(scoped_override_t&&) = delete;
 	~scoped_override_t() CAW_DESTRUCTOR_EXCEPTION_SPEC;
 };
@@ -207,7 +207,7 @@ public:
  * prefer @ref SET_CUDA_CONTEXT_FOR_THIS_SCOPE instead.
  */
 #define CAW_SET_SCOPE_CONTEXT(context_handle_expr_) \
-const ::cuda_::context::current::detail::scoped_override_t caw_context_for_this_scope_(context_handle_expr_)
+::cuda_::context::current::detail::scoped_override_t const caw_context_for_this_scope_(context_handle_expr_)
 ///@endcond
 
 /**
@@ -229,11 +229,11 @@ public:
 		: scoped_ensurer_t(not exists(), fallback_context_handle)
 	{}
 
-	scoped_ensurer_t(const scoped_ensurer_t&) = delete;
+	scoped_ensurer_t(scoped_ensurer_t const&) = delete;
 	scoped_ensurer_t(scoped_ensurer_t&&) = delete;
 
 	scoped_ensurer_t& operator=(scoped_ensurer_t&&) = delete;
-	scoped_ensurer_t& operator=(const scoped_ensurer_t&) = delete;
+	scoped_ensurer_t& operator=(scoped_ensurer_t const&) = delete;
 
 	~scoped_ensurer_t() { if (context_was_pushed_on_construction) { pop(); } }
 };
@@ -259,7 +259,7 @@ protected:
 public:
 
 	explicit scoped_override_t(device::primary_context_t&& primary_context);
-	explicit scoped_override_t(const context_t& context);
+	explicit scoped_override_t(context_t const& context);
 	explicit scoped_override_t(context_t&& context);
 	~scoped_override_t() = default;
 };

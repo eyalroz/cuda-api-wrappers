@@ -14,7 +14,7 @@
 #include <nv_decode.h>
 #else
 /// @private
-char* __cu_demangle(const char *id, char *output_buffer, size_t *length, int *status);
+char* __cu_demangle(char const *id, char *output_buffer, size_t *length, int *status);
 #endif
 
 #include "detail/span.hpp"
@@ -38,7 +38,7 @@ inline void validate_mangling_status(int status)
 }
 
 // TODO: Assuming the length _does_ include the trailing '\0'
-inline char* demangle(const char* mangled_identifier, char* buffer, size_t& allocated_size)
+inline char* demangle(char const* mangled_identifier, char* buffer, size_t& allocated_size)
 {
 	int status;
 	char* result = __cu_demangle(mangled_identifier, buffer, &allocated_size, &status);
@@ -46,7 +46,7 @@ inline char* demangle(const char* mangled_identifier, char* buffer, size_t& allo
 	return result;
 }
 
-inline unique_span<char> demangle(const char* mangled_identifier)
+inline unique_span<char> demangle(char const* mangled_identifier)
 {
 	size_t allocated_size { 0 };
 	auto demangled = demangle(mangled_identifier, nullptr, allocated_size);
@@ -61,20 +61,20 @@ inline unique_span<char> demangle(const char* mangled_identifier)
 
 } // namespace detail
 
-inline unique_span<char> demangle(const char* mangled_identifier)
+inline unique_span<char> demangle(char const* mangled_identifier)
 {
 	return detail::demangle(mangled_identifier);
 }
 
 template<typename T>
-T demangle_as(const char* mangled_identifier)
+T demangle_as(char const* mangled_identifier)
 {
 	auto demangled = detail::demangle(mangled_identifier);
 	return { demangled.data(), demangled.data() + demangled.size() };
 }
 
 template<>
-inline std::string demangle_as<std::string>(const char* mangled_identifier)
+inline std::string demangle_as<std::string>(char const* mangled_identifier)
 {
 	auto demangled = detail::demangle(mangled_identifier);
 	return { demangled.data(), demangled.size() };

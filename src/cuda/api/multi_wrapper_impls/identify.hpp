@@ -13,57 +13,57 @@
 
 namespace cuda_ {
 namespace detail {
-inline std::string identify(const context_t& context)
+inline std::string identify(context_t const& context)
 {
 	return context::detail::identify(context.handle(), context.device_id());
 }
 
-inline std::string identify(const stream_t& stream)
+inline std::string identify(stream_t const& stream)
 {
 	return stream::detail::identify(stream.handle(), stream.context().handle(), stream.device().id());
 }
 
-inline std::string identify(const event_t& event)
+inline std::string identify(event_t const& event)
 {
 	return event::detail::identify(event.handle(), event.context_handle(), event.device_id());
 }
 
-inline std::string identify(const kernel_t& kernel)
+inline std::string identify(kernel_t const& kernel)
 {
 	return kernel::detail::identify(kernel.handle()) + " in " + identify(kernel.context());
 }
 
 #if CUDA_VERSION >= 12000
-inline std::string identify(const library::kernel_t& library_kernel)
+inline std::string identify(library::kernel_t const& library_kernel)
 {
 	return library::kernel::detail::identify(library_kernel.library_handle(), library_kernel.handle());
 }
 
-inline std::string identify(const library_t& library)
+inline std::string identify(library_t const& library)
 {
 	return library::detail::identify(library.handle());
 }
 #endif // CUDA_VERSION >= 12000
 
-inline std::string identify(const module_t& module)
+inline std::string identify(module_t const& module)
 {
 	return module_::detail::identify(module.handle(), module.context_handle(), module.device_id());
 }
 
 #if CUDA_VERSION >= 10000
-inline std::string identify(const graph::node_t &node)
+inline std::string identify(graph::node_t const& node)
 {
 	return graph::node::detail::identify(node.handle(), node.containing_graph_handle());
 }
 
-inline std::string identify(const graph::template_t& graph_template)
+inline std::string identify(graph::template_t const& graph_template)
 {
 	return cuda_::detail::identify(graph_template.handle());
 }
 #endif // CUDA_VERSION >= 10000
 
 #if CUDA_VERSION >= 11020
-inline std::string identify(const memory::pool_t& pool)
+inline std::string identify(memory::pool_t const& pool)
 {
 	return cuda_::memory::pool::detail::identify(pool.handle(), pool.device_id());
 }
@@ -82,7 +82,7 @@ inline std::string identify(memory::virtual_::mapping_t const& mapping)
 #endif // CUDA_VERSION >= 10020
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-inline std::string identify(const kernel::apriori_compiled_t& kernel)
+inline std::string identify(kernel::apriori_compiled_t const& kernel)
 {
 	return "apriori-compiled kernel " + cuda_::detail::ptr_as_hex(kernel.ptr())
 		+ " in " + cuda_::detail::identify(kernel.context());

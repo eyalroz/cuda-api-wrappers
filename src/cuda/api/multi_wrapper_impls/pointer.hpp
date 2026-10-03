@@ -20,7 +20,7 @@ namespace pointer {
 
 namespace detail {
 
-inline cuda_::device::id_t device_id_of(const void *ptr)
+inline cuda_::device::id_t device_id_of(void const *ptr)
 {
 #if CUDA_VERSION >= 9020
 	return pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(ptr);
@@ -47,7 +47,7 @@ context_t pointer_t<T>::context() const
 	return context_of(ptr_);
 }
 
-inline context_t context_of(const void* ptr)
+inline context_t context_of(void const* ptr)
 {
 #if CUDA_VERSION >= 9020
 	pointer::attribute_t attributes[] = {

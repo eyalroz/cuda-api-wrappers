@@ -52,10 +52,10 @@ enum named_t : std::underlying_type<status_t>::type {
 };
 
 ///@cond
-constexpr bool operator==(const status_t& lhs, const named_t& rhs) { return lhs == static_cast<status_t>(rhs); }
-constexpr bool operator!=(const status_t& lhs, const named_t& rhs) { return lhs != static_cast<status_t>(rhs); }
-constexpr bool operator==(const named_t& lhs, const status_t& rhs) { return static_cast<status_t>(lhs) == rhs; }
-constexpr bool operator!=(const named_t& lhs, const status_t& rhs) { return static_cast<status_t>(lhs) != rhs; }
+constexpr bool operator==(status_t const& lhs, named_t const& rhs) { return lhs == static_cast<status_t>(rhs); }
+constexpr bool operator!=(status_t const& lhs, named_t const& rhs) { return lhs != static_cast<status_t>(rhs); }
+constexpr bool operator==(named_t const& lhs, status_t const& rhs) { return static_cast<status_t>(lhs) == rhs; }
+constexpr bool operator!=(named_t const& lhs, status_t const& rhs) { return static_cast<status_t>(lhs) != rhs; }
 ///@endcond
 
 } // namespace status
@@ -113,7 +113,7 @@ public:
 	{ }
 	runtime_error(status::named_t error_code) :
 		runtime_error(static_cast<status_t>(error_code)) { }
-	runtime_error(status::named_t error_code, const std::string& what_arg) :
+	runtime_error(status::named_t error_code, std::string const& what_arg) :
 		runtime_error(static_cast<status_t>(error_code), what_arg) { }
 
 protected:
@@ -150,7 +150,7 @@ private:
  * @param status should be @ref cuda_::status::success - otherwise an exception is thrown
  * @param message An extra description message to add to the exception
  */
-inline void throw_if_error(fatbin_builder::status_t status, const std::string& message) noexcept(false)
+inline void throw_if_error(fatbin_builder::status_t status, std::string const& message) noexcept(false)
 {
 	if (is_failure(status)) { throw fatbin_builder::runtime_error(status, message); }
 }

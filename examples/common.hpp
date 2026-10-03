@@ -232,8 +232,8 @@ void report_context_stack(const std::string& prefix = "")
 template <cuda_::dimensionality_t Dimensionality>
 std::ostream& operator<<(std::ostream& os, cuda_::memory::copy_parameters_t<Dimensionality>& params);
 
-std::ostream &stream_endpoint(
-	std::ostream &os,
+std::ostream& stream_endpoint(
+	std::ostream& os,
 	const char* name,
 	cuda_::optional<cuda_::context::handle_t > context,
 	size_t xInBytes, size_t y, cuda_::optional<size_t> z,

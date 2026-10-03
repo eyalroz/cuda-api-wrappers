@@ -162,7 +162,7 @@ void report_mode(const char* mode)
 		<< "---------------------------" << std::string(std::strlen(mode), '-') << '\n';
 }
 
-void use(const cuda_::device_t &device, const cuda_::graph::template_t &graph, const char* how_created)
+void use(cuda_::device_t const& device, cuda_::graph::template_t const& graph, const char* how_created)
 {
 	report_attempt("use", how_created);
 	std::cout << "Number of graph nodes = " << graph.num_nodes() << '\n';

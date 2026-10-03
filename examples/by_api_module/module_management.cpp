@@ -84,8 +84,8 @@ std::string make_instantiation_name(string_view base_name, Ts&&... args)
 }
 
 void handle_compilation_failure(
-	const cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> & compilation_output,
-	const cuda_::rtc::compilation_options_t<cuda_::cuda_cpp> & compilation_options = {})
+	cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> const& compilation_output,
+	cuda_::rtc::compilation_options_t<cuda_::cuda_cpp> const& compilation_options = {})
 {
 	std::cerr << "Program compilation failed:\n";
 	auto compilation_log = compilation_output.log();
@@ -100,7 +100,7 @@ void handle_compilation_failure(
 
 
 std::pair<cuda_::rtc::compilation_output_t<cuda_::cuda_cpp>, std::vector<std::string>>
-get_compiled_program(const cuda_::device_t &device)
+get_compiled_program(cuda_::device_t const& device)
 {
 	const char* program_source =R"(
 
@@ -149,10 +149,10 @@ void my_kernel2(float const* in_data, float* out_data) {
 
 bool basic_module_tests(
 	const char* title,
-	const cuda_::device_t &device,
-	const cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> &compilation_result,
+	cuda_::device_t const& device,
+	cuda_::rtc::compilation_output_t<cuda_::cuda_cpp> const& compilation_result,
 	const char *const *mangled_kernel_names,
-	const cuda_::module_t &module
+	cuda_::module_t const& module
 #if CUDA_VERSION >= 12040
 	, cuda_::unique_span<cuda_::kernel_t> &module_kernels
 #endif

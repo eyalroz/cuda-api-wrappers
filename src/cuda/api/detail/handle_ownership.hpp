@@ -37,7 +37,7 @@ struct handle_release_helper {
 #ifdef CAW_THROW_IN_DESTRUCTORS
         static constexpr bool handle_type_is_not_unique =
             std::is_same<handle_type, void*>::value or
-            std::is_same<handle_type, const void*>::value or
+            std::is_same<handle_type, void const*>::value or
             std::is_same<handle_type, memory::region_t>::value or
             std::is_same<handle_type, context::handle_t>::value;
         using unique_handle_type = typename std::conditional<handle_type_is_not_unique,

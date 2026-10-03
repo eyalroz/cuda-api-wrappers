@@ -42,28 +42,28 @@ namespace library { class kernel_t; }
 
 namespace detail {
 std::string identify(memory::region_t region);
-std::string identify(const context_t& context);
-std::string identify(const stream_t& stream);
-std::string identify(const event_t& event);
-std::string identify(const kernel_t& kernel);
+std::string identify(context_t const& context);
+std::string identify(stream_t const& stream);
+std::string identify(event_t const& event);
+std::string identify(kernel_t const& kernel);
 #if CUDA_VERSION >= 12000
-std::string identify(const library::kernel_t& library_kernel);
-std::string identify(const library_t& library);
-#endif
-std::string identify(const module_t &module);
+std::string identify(library_t const& library);
+std::string identify(library::kernel_t const& library_kernel);
+#endif // CUDA_VERSION >= 12000
+std::string identify(module_t const& module);
 #if CUDA_VERSION >= 10000
-std::string identify(const graph::node_t &node);
-std::string identify(const graph::template_t& graph_template);
-#endif
+std::string identify(graph::node_t const& node);
+std::string identify(graph::template_t const& graph_template);
+#endif // CUDA_VERSION >= 12000
 #if CUDA_VERSION >= 11020
-std::string identify(const memory::pool_t &pool);
-#endif
+std::string identify(memory::pool_t const& pool);
+#endif // CUDA_VERSION >= 11020
 #if CUDA_VERSION >= 10020
-std::string identify(const memory::physical_allocation_t& physical_allocation);
+std::string identify(memory::physical_allocation_t const& physical_allocation);
 std::string identify(memory::virtual_::mapping_t const& mapping);
 #endif
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-std::string identify(const kernel::apriori_compiled_t& kernel);
+std::string identify(kernel::apriori_compiled_t const& kernel);
 #endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 } // namespace detail
 
@@ -77,7 +77,7 @@ std::string as_hex(I x)
 	if (x == 0) return "0x0";
 
 	enum { bits_per_hex_digit = 4 }; // = log_2 of 16
-	static const char* digit_characters =
+	static char const* digit_characters =
 		UpperCase ? "0123456789ABCDEF" : "0123456789abcdef" ;
 
 	std::string result(num_hex_digits,'0');
@@ -234,19 +234,19 @@ inline std::string identify(handle_t handle, context::handle_t context_handle, d
 namespace kernel {
 namespace detail {
 
-inline std::string identify(const void* ptr)
+inline std::string identify(void const* ptr)
 {
 	return "kernel " + cuda_::detail::ptr_as_hex(ptr);
 }
-inline std::string identify(const void* ptr, device::id_t device_id)
+inline std::string identify(void const* ptr, device::id_t device_id)
 {
 	return identify(ptr) + " on " + device::detail::identify(device_id);
 }
-inline std::string identify(const void* ptr, context::handle_t context_handle)
+inline std::string identify(void const* ptr, context::handle_t context_handle)
 {
 	return identify(ptr) + " in " + cuda_::detail::identify(context_handle);
 }
-inline std::string identify(const void* ptr, context::handle_t context_handle, device::id_t device_id)
+inline std::string identify(void const* ptr, context::handle_t context_handle, device::id_t device_id)
 {
 	return identify(ptr) + " in " + context::detail::identify(context_handle, device_id);
 }
@@ -297,7 +297,7 @@ inline std::string identify(location_t location)
 namespace ipc {
 namespace detail {
 
-inline std::string identify(const void* ptr)
+inline std::string identify(void const* ptr)
 {
 	return "IPC-imported pointer " + cuda_::detail::ptr_as_hex(ptr);
 }
@@ -384,7 +384,7 @@ namespace library {
 
 namespace detail {
 
-inline std::string identify(const handle_t &handle)
+inline std::string identify(handle_t const& handle)
 {
 	return std::string("library ") + cuda_::detail::ptr_as_hex(handle);
 }
@@ -400,7 +400,7 @@ inline std::string identify(library::handle_t library_handle, kernel::handle_t h
 	return cuda_::detail::identify(handle) + " within " + library::detail::identify(library_handle);
 }
 
-std::string identify(const library::kernel_t &kernel);
+std::string identify(library::kernel_t const& kernel);
 
 } // namespace detail
 

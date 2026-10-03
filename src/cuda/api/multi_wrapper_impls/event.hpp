@@ -22,7 +22,7 @@ namespace cuda_ {
 namespace event {
 
 inline event_t create(
-	const context_t&  context,
+	context_t const&  context,
 	bool              uses_blocking_sync,
 	bool              records_timing,
 	bool              interprocess)
@@ -37,7 +37,7 @@ inline event_t create(
 }
 
 inline event_t create(
-	const device_t&  device,
+	device_t const&  device,
 	bool             uses_blocking_sync,
 	bool             records_timing,
 	bool             interprocess)
@@ -62,12 +62,12 @@ inline event_t create(
 
 namespace ipc {
 
-inline handle_t export_(const event_t& event)
+inline handle_t export_(event_t const& event)
 {
 	return detail::export_(event.handle());
 }
 
-inline event_t import(const context_t& context, const handle_t& event_ipc_handle)
+inline event_t import(context_t const& context, handle_t const& event_ipc_handle)
 {
 	static constexpr bool do_not_take_ownership { false };
 	static constexpr bool do_not_own_pc_refcount_unit { false };
@@ -80,7 +80,7 @@ inline event_t import(const context_t& context, const handle_t& event_ipc_handle
 }
 
 
-inline event_t import(const device_t& device, const handle_t& event_ipc_handle)
+inline event_t import(device_t const& device, handle_t const& event_ipc_handle)
 {
 	auto pc = device.primary_context();
 	device::primary_context::detail::increase_refcount(device.id());
@@ -105,7 +105,7 @@ inline context_t event_t::context() const
 	return context::wrap(device_id(), context_handle_, dont_take_ownership);
 }
 
-inline void event_t::record(const stream_t& stream) const
+inline void event_t::record(stream_t const& stream) const
 {
 #ifndef NDEBUG
 	if (stream.context_handle() != context_handle_) {
@@ -115,7 +115,7 @@ inline void event_t::record(const stream_t& stream) const
 	event::detail::enqueue(context_handle_, stream.handle(), handle_);
 }
 
-inline void event_t::fire(const stream_t& stream) const
+inline void event_t::fire(stream_t const& stream) const
 {
 	record(stream);
 	stream.synchronize();

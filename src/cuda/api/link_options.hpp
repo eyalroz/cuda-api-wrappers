@@ -52,7 +52,7 @@ struct marshalled_options_t {
 
 	/// The CUDA driver's enum for option identification has this many values -
 	/// and thus, there is need for no more than this many marshalled options
-	constexpr static const size_type max_num_options { CU_JIT_NUM_OPTIONS };
+	constexpr static size_type const max_num_options { CU_JIT_NUM_OPTIONS };
 
 protected:
 	std::array<option_t, max_num_options> option_buffer;
@@ -112,8 +112,8 @@ public:
 	/// These three methods yield what the CUDA driver actually expects:
 	/// Two matching raw buffers and their count of elements
 	///@{
-	const option_t* options() const { return option_buffer.data(); }
-	const void * const * values() const { return value_buffer.data(); }
+	option_t const* options() const { return option_buffer.data(); }
+	void const * const * values() const { return value_buffer.data(); }
 	size_type count() const { return count_; }
 	///@}
 };
@@ -164,10 +164,10 @@ namespace detail {
 
 /// Construct a easily-driver-usable link-process options structure from
 /// a more user-friendly `options_t` structure.
-inline marshalled_options_t marshal(const options_t& link_options)
+inline marshalled_options_t marshal(options_t const& link_options)
 {
 	marshalled_options_t marshalled{};
-	const auto& lo = link_options;
+	auto const& lo = link_options;
 
 	if (lo.max_num_registers_per_thread) {
 		marshalled.push_back(CU_JIT_MAX_REGISTERS, lo.max_num_registers_per_thread.value());

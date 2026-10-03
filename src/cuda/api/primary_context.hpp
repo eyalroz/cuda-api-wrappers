@@ -25,14 +25,14 @@ namespace primary_context {
  *
  * @note recall a primary context being active does not mean that it is the _current_ context
  */
-inline bool is_active(const device_t& device);
+inline bool is_active(device_t const& device);
 
 /**
  * @brief Destroy and clean up all resources associated with the specified device's primary context
  *
  * @param device The device whose primary context is to be destroyed
  */
-void destroy(const device_t& device);
+void destroy(device_t const& device);
 
 namespace detail {
 
@@ -118,7 +118,7 @@ namespace primary_context {
  * @param device The device whose primary context is to be proxied
  * @return A proxy object for the specified device
  */
-primary_context_t get(const device_t& device);
+primary_context_t get(device_t const& device);
 
 namespace detail {
 

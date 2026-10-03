@@ -20,7 +20,7 @@ public:
 
 	NonTriviallyCopyable(NonTriviallyCopyable &&) = default;
 
-	NonTriviallyCopyable(const NonTriviallyCopyable &other) {
+	NonTriviallyCopyable(NonTriviallyCopyable const& other) {
 		printf("NonTriviallyCopyable copy constructor called\n");
 		std::strncpy(name_, other.name_, sizeof(name_));
 		name_[sizeof(name_) - 1] = '\0';
@@ -30,7 +30,7 @@ public:
 		printf("NonTriviallyCopyable destructor called\n");
 	}
 
-	NonTriviallyCopyable & operator=(const NonTriviallyCopyable &) = default;
+	NonTriviallyCopyable & operator=(NonTriviallyCopyable const& ) = default;
 	NonTriviallyCopyable & operator=(NonTriviallyCopyable &&) = default;
 	// Non-trivial destructor
 

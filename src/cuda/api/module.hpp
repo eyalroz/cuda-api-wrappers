@@ -78,7 +78,7 @@ template <typename Locus, typename ContiguousContainer,
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
-	const link::options_t&  link_options);
+	link::options_t const&  link_options);
 
 template <typename Locus, typename ContiguousContainer,
 	cuda_::detail::enable_if_t<cuda_::detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true >
@@ -134,16 +134,16 @@ public: // getters
 	 *
 	 * @return An enqueable kernel proxy object for the requested kernel.
 	 */
-	cuda_::kernel_t get_kernel(const char* name) const;
+	cuda_::kernel_t get_kernel(char const* name) const;
 
-	/// @copydoc get_kernel(const char*) const
-	cuda_::kernel_t get_kernel(const std::string& name) const
+	/// @copydoc get_kernel(char const*) const
+	cuda_::kernel_t get_kernel(std::string const& name) const
 	{
 		return get_kernel(name.c_str());
 	}
 
 	/// Get the mapping of a named memory region in this module to actual memory
-	memory::region_t get_global_region(const char* name) const
+	memory::region_t get_global_region(char const* name) const
 	{
 		CUdeviceptr dptr;
 		size_t size;
@@ -176,13 +176,13 @@ public: // getters
 #if CUDA_VERSION < 12000
 	/// A "plug" of a method regarding surfaces, which modules support but our wrappers don't
 	/// really cater to the use of
-	CUsurfref get_surface(const char* name) const;
+	CUsurfref get_surface(char const* name) const;
 
 	/// A "plug" of a method regarding texture references
 	///
 	/// TODO: Beef this up into a proper method and consider relations between texture references,
 	/// texture objects and texture views
-	CUtexref get_texture_reference(const char* name) const;
+	CUtexref get_texture_reference(char const* name) const;
 #endif
 
 protected: // constructors
@@ -199,9 +199,9 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	module_t(const module_t&) = delete;
+	module_t(module_t const&) = delete;
 	module_t(module_t&&) noexcept = default;
-	module_t& operator=(const module_t&) = delete;
+	module_t& operator=(module_t const&) = delete;
 	module_t& operator=(module_t&&) noexcept = default;
 
 public: // friendship
@@ -228,7 +228,7 @@ namespace detail {
 inline module_t load_from_file_in_current_context(
 	device::id_t            current_context_device_id,
 	context::handle_t       current_context_handle,
-	const char *            path,
+	char const *            path,
 	bool                    holds_primary_context_refcount_unit = false)
 {
 	handle_t new_module_handle;
@@ -257,74 +257,74 @@ inline module_t load_from_file_in_current_context(
  * @note this covers cuModuleLoadFatBinary() even though that's not directly used
  *
  * @todo consider adding load_module methods to context_t
- * @todo When switching to the C++17 standard, use string_view's instead of the const char*
+ * @todo When switching to the C++17 standard, use string_view's instead of the char const*
  * and std::string reference
  */
 inline module_t load_from_file(
-	const context_t&        context,
-	const char*             path)
+	context_t const&        context,
+	char const*             path)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	return detail::load_from_file_in_current_context(context.device_id(), context.handle(), path);
 }
 
-/// @copydoc load_from_file(const context_t&, const char*)
+/// @copydoc load_from_file(context_t const&, char const*)
 inline module_t load_from_file(
-	const context_t&        context,
-	const std::string&    path)
+	context_t const&        context,
+	std::string const&    path)
 {
 	return load_from_file(context, path.c_str());
 }
 
 /**
- * @copydoc load_from_file(const context_t&, const char*)
+ * @copydoc load_from_file(context_t const&, char const*)
  *
  * @param device The device in whose primary context to create a module containing
  * the loaded data
  */
 module_t load_from_file(
-	const device_t&         device,
-	const char*             path);
+	device_t const&         device,
+	char const*             path);
 
 /**
- * @copydoc load_from_file(const context_t&, const char*)
+ * @copydoc load_from_file(context_t const&, char const*)
  *
  * @param device The device in whose primary context to create a module containing
  * the loaded data
  */
 inline module_t load_from_file(
-	const device_t&         device,
-	const std::string&    path)
+	device_t const&         device,
+	std::string const&    path)
 {
 	return load_from_file(device, path.c_str());
 }
 
 /**
- * @copydoc load_from_file(const context_t&, const char*)
+ * @copydoc load_from_file(context_t const&, char const*)
  *
  * @note loads the module into the primary context of the device of the current context
  * (although not necessarily in the current context!)
  */
-module_t load_from_file(const char* path);
+module_t load_from_file(char const* path);
 
-/// @copydoc load_from_file(const char*)
-inline module_t load_from_file(const std::string& path)
+/// @copydoc load_from_file(char const*)
+inline module_t load_from_file(std::string const& path)
 {
 	return load_from_file(path.c_str());
 }
 
 #if __cplusplus >= 201703L
-/// @copydoc load_from_file(device_t, const char*)
+/// @copydoc load_from_file(device_t, char const*)
 inline module_t load_from_file(
-	const device_t&                 device,
-	const std::filesystem::path&  path)
+	device_t const&                 device,
+	std::filesystem::path const&  path)
 {
 	return load_from_file(device, path.c_str());
 }
 
-/// @copydoc load_from_file(const char*)
+/// @copydoc load_from_file(char const*)
 inline module_t load_from_file(
-	const std::filesystem::path&  path)
+	std::filesystem::path const&  path)
 {
 	return load_from_file(device::current::get(), path);
 }
@@ -352,10 +352,10 @@ inline module_t wrap(
  * @param link_options Potential options for the PTX compilation and linking of the compiled
  *     device-side code.
  */
-module_t create(const context_t& context, const void* module_data, const link::options_t& link_options);
+module_t create(context_t const& context, void const* module_data, link::options_t const& link_options);
 
-/// @copydoc create(const context_t&, const void*, const link::options_t&)
-module_t create(const context_t& context, const void* module_data);
+/// @copydoc create(context_t const&, void const*, link::options_t const&)
+module_t create(context_t const& context, void const* module_data);
 
 } // namespace detail
 
@@ -364,8 +364,8 @@ module_t create(const context_t& context, const void* module_data);
 
 namespace detail {
 
-inline context_t const& get_context_for(const context_t& locus) { return locus; }
-inline device::primary_context_t get_context_for(const device_t& locus);
+inline context_t const& get_context_for(context_t const& locus) { return locus; }
+inline device::primary_context_t get_context_for(device_t const& locus);
 
 } // namespace detail
 
@@ -404,7 +404,7 @@ template <typename Locus, typename ContiguousContainer,
 module_t create(
 	Locus&&                 locus,
 	ContiguousContainer     module_data,
-	const link::options_t&  link_options)
+	link::options_t const&  link_options)
 {
 	auto&& context = detail::get_context_for(locus);
 	return detail::create(context, module_data.data(), link_options);

@@ -39,7 +39,7 @@ namespace stream {
  * where you need to specify the relevant stream's ID, and want to
  * specify the default, this is what you use.
  */
-const stream::handle_t default_stream_handle = nullptr;
+stream::handle_t const default_stream_handle = nullptr;
 
 /// Convenience named constants for parameters to stream creation functions
 enum : bool {

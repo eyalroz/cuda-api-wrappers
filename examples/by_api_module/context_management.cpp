@@ -6,11 +6,11 @@
  */
 #include "../common.hpp"
 
-void current_context_manipulation(const cuda_::device_t &device, const cuda_::device::primary_context_t &pc,
-	const cuda_::context_t &created_context);
+void current_context_manipulation(cuda_::device_t const& device, cuda_::device::primary_context_t const& pc,
+	cuda_::context_t const& created_context);
 
 void test_context(
-	const cuda_::context_t& context,
+	cuda_::context_t const& context,
 	bool is_primary,
 	cuda_::device::id_t device_id)
 {
@@ -91,9 +91,9 @@ void test_context(
 }
 
 void current_context_manipulation(
-	const cuda_::device_t &device,
-	const cuda_::device::primary_context_t &pc,
-	const cuda_::context_t &created_context)
+	cuda_::device_t const& device,
+	cuda_::device::primary_context_t const& pc,
+	cuda_::context_t const& created_context)
 {
 	auto& context_0 = pc;
 	auto& context_1 = created_context;

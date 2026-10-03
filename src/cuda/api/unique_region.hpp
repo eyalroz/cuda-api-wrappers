@@ -65,7 +65,7 @@ public:
     /// Move constructor.
     unique_region(unique_region&& other) noexcept : unique_region(other.release()) { }
     // Disable copy construction
-    unique_region(const unique_region&) = delete;
+    unique_region(unique_region const&) = delete;
 
     // Note: No conversion from "another type" like with std::unique_pointer, since
     // this class is not variant with the element type; and there's not much sense in
@@ -80,7 +80,7 @@ public:
     }
 
     /// No copy-assignment - that would break our ownership guarantee
-    unique_region& operator=(const unique_region&) = delete;
+    unique_region& operator=(unique_region const&) = delete;
 
     /// A Move-assignment operator, which takes ownership of the other region
     unique_region& operator=(unique_region&& other) noexcept
@@ -154,7 +154,7 @@ using unique_region = memory::unique_region<detail::deleter>;
 
 namespace detail {
 
-inline unique_region make_unique_region(const context::handle_t context_handle, size_t num_bytes)
+inline unique_region make_unique_region(context::handle_t const context_handle, size_t num_bytes)
 {
     CAW_SET_SCOPE_CONTEXT(context_handle);
     return unique_region{ allocate_in_current_context(num_bytes) };
@@ -170,7 +170,7 @@ inline unique_region make_unique_region(const context::handle_t context_handle, 
  * @param num_bytes Size of the region to be allocated, in bytes
  * @returns An owning RAII/CADRe object for the allocated memory region
  */
-unique_region make_unique_region(const context_t& context, size_t num_bytes);
+unique_region make_unique_region(context_t const& context, size_t num_bytes);
 
 /**
  * @brief Allocate a region in device-global memory
@@ -178,7 +178,7 @@ unique_region make_unique_region(const context_t& context, size_t num_bytes);
  * @param device The device in the global memory of which to make the allocation
  * @returns An owning RAII/CADRe object for the allocated memory region
  */
-unique_region make_unique_region(const device_t& device, size_t num_bytes);
+unique_region make_unique_region(device_t const& device, size_t num_bytes);
 
 /**
  * @brief Allocate a region in device-global memory within the primary context
@@ -193,14 +193,14 @@ unique_region make_unique_region(size_t num_bytes);
 } // namespace device
 
 
-/// See @ref device::make_unique_region(const context_t& context, size_t num_bytes)
-inline device::unique_region make_unique_region(const context_t& context, size_t num_bytes)
+/// See @ref device::make_unique_region(context_t const& context, size_t num_bytes)
+inline device::unique_region make_unique_region(context_t const& context, size_t num_bytes)
 {
 	return device::make_unique_region(context, num_bytes);
 }
 
-/// See @ref device::make_unique_region(const device_t& device, size_t num_bytes)
-inline device::unique_region make_unique_region(const device_t& device, size_t num_bytes)
+/// See @ref device::make_unique_region(device_t const& device, size_t num_bytes)
+inline device::unique_region make_unique_region(device_t const& device, size_t num_bytes)
 {
 	return device::make_unique_region(device, num_bytes);
 }
@@ -227,7 +227,7 @@ using unique_region = memory::unique_region<detail::deleter>;
 namespace detail {
 
 inline unique_region make_unique_region(
-    const context::handle_t  context_handle,
+    context::handle_t const  context_handle,
     size_t                   num_bytes,
     initial_visibility_t     initial_visibility = initial_visibility_t::to_all_devices)
 {
@@ -244,7 +244,7 @@ inline unique_region make_unique_region(
  *     association effect that may have.
  */
 inline unique_region make_unique_region(
-    const context_t&      context,
+    context_t const&      context,
     size_t                num_bytes,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
@@ -255,7 +255,7 @@ inline unique_region make_unique_region(
  *     the memory region, for whatever association effect that may have.
  */
 inline unique_region make_unique_region(
-    const device_t&       device,
+    device_t const&       device,
     size_t                num_bytes,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 

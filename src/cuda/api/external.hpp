@@ -44,7 +44,7 @@ inline void destroy(handle_t handle)
 	throw_if_error_lazy(status, std::string("Destroying a memory resource"));
 }
 
-inline handle_t import(const descriptor_t& descriptor)
+inline handle_t import(descriptor_t const& descriptor)
 {
 	handle_t handle;
 	auto status = cuImportExternalMemory(&handle, &descriptor);
@@ -82,9 +82,9 @@ protected: // constructors
 	{}
 
 public: // constructors & operators
-	resource_t(const resource_t&) = delete;
+	resource_t(resource_t const&) = delete;
 	resource_t(resource_t&&) noexcept = default;
-	resource_t& operator=(const resource_t&) = delete;
+	resource_t& operator=(resource_t const&) = delete;
 	resource_t& operator=(resource_t&&) noexcept = default;
 
 protected: // data members
@@ -135,14 +135,14 @@ inline unique_region wrap(region_t mapped_region)
 }
 
 /// Map a sub-region of a memory resource into the CUDA-accessible address space
-inline unique_region map(const resource_t& resource, subregion_spec_t subregion_to_map)
+inline unique_region map(resource_t const& resource, subregion_spec_t subregion_to_map)
 {
 	auto mapped_region = detail::map(resource.handle(), subregion_to_map);
 	return wrap(mapped_region);
 }
 
 /// Map an external memory resource into the CUDA-accessible address space
-inline unique_region map(const resource_t& resource)
+inline unique_region map(resource_t const& resource)
 {
 	auto subregion_spec = subregion_spec_t { 0u, resource.size() };
 	return map(resource, subregion_spec);

@@ -50,9 +50,9 @@ namespace module_ {
 /// Build a contextualized module from the results of a successful compilation
 template <source_kind_t Kind>
 module_t create(
-	const context_t&                        context,
-	const rtc::compilation_output_t<Kind>&  compilation_output,
-	const link::options_t&                  options = {});
+	context_t const&                        context,
+	rtc::compilation_output_t<Kind> const&  compilation_output,
+	link::options_t const&                  options = {});
 
 } // namespace module_
 
@@ -63,23 +63,23 @@ namespace program {
 namespace detail {
 
 template <source_kind_t Kind>
-std::string identify(const char *name)
+std::string identify(char const *name)
 {
 	return std::string{detail::kind_name(Kind)} + " program" +
 		((name == nullptr) ? "" : " '" + std::string{name} + "'");
 }
 
 template <source_kind_t Kind>
-std::string identify(program::handle_t<Kind> handle, const char *name = nullptr)
+std::string identify(program::handle_t<Kind> handle, char const *name = nullptr)
 {
 	return identify<Kind>(name) + " at " + cuda_::detail::ptr_as_hex(handle);
 }
 
 template <source_kind_t Kind>
-size_t get_log_size(program::handle_t<Kind> program_handle, const char* program_name);
+size_t get_log_size(program::handle_t<Kind> program_handle, char const* program_name);
 
 template <>
-inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, const char* program_name)
+inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, char const* program_name)
 {
 	size_t size;
 	auto status = nvrtcGetProgramLogSize(program_handle, &size);
@@ -90,7 +90,7 @@ inline size_t get_log_size<cuda_cpp>(program::handle_t<cuda_cpp> program_handle,
 
 #if CUDA_VERSION >= 11010
 template <>
-inline size_t get_log_size<ptx>(program::handle_t<ptx> program_handle, const char* program_name)
+inline size_t get_log_size<ptx>(program::handle_t<ptx> program_handle, char const* program_name)
 {
 	size_t size;
 	auto status = nvPTXCompilerGetErrorLogSize(program_handle, &size);
@@ -101,11 +101,11 @@ inline size_t get_log_size<ptx>(program::handle_t<ptx> program_handle, const cha
 #endif // CUDA_VERSION >= 11010
 
 template <source_kind_t Kind>
-void get_log(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+void get_log(char* buffer, program::handle_t<Kind> program_handle, char const *program_name = nullptr);
 
 #if CUDA_VERSION >= 11010
 template <>
-inline void get_log<ptx>(char* buffer, program::handle_t<ptx> program_handle, const char *program_name)
+inline void get_log<ptx>(char* buffer, program::handle_t<ptx> program_handle, char const *program_name)
 {
 	auto status = nvPTXCompilerGetErrorLog(program_handle, buffer);
 //			(status_t<Kind>) nvrtcGetProgramLog((handle_t<cuda_cpp>)program_handle, buffer);
@@ -115,7 +115,7 @@ inline void get_log<ptx>(char* buffer, program::handle_t<ptx> program_handle, co
 #endif
 
 template <>
-inline void get_log<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name)
+inline void get_log<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, char const *program_name)
 {
 	auto status = nvrtcGetProgramLog(program_handle, buffer);
 	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation log for "
@@ -124,10 +124,10 @@ inline void get_log<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_
 
 #if CUDA_VERSION >= 11010
 template <source_kind_t Kind>
-size_t get_cubin_size_or_zero(program::handle_t<Kind> program_handle, const char* program_name);
+size_t get_cubin_size_or_zero(program::handle_t<Kind> program_handle, char const* program_name);
 
 template <>
-inline size_t get_cubin_size_or_zero<ptx>(program::handle_t<ptx> program_handle, const char* program_name)
+inline size_t get_cubin_size_or_zero<ptx>(program::handle_t<ptx> program_handle, char const* program_name)
 {
 	size_t size;
 	auto status = nvPTXCompilerGetCompiledProgramSize(program_handle, &size);
@@ -137,7 +137,7 @@ inline size_t get_cubin_size_or_zero<ptx>(program::handle_t<ptx> program_handle,
 }
 
 template <>
-inline size_t get_cubin_size_or_zero<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, const char* program_name)
+inline size_t get_cubin_size_or_zero<cuda_cpp>(program::handle_t<cuda_cpp> program_handle, char const* program_name)
 {
 	size_t size;
 	auto status = nvrtcGetCUBINSize(program_handle, &size);
@@ -147,10 +147,10 @@ inline size_t get_cubin_size_or_zero<cuda_cpp>(program::handle_t<cuda_cpp> progr
 }
 
 template <source_kind_t Kind, bool FailOnMissingCubin = true>
-size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* program_name)
+size_t get_cubin_size(program::handle_t<Kind> program_handle, char const* program_name)
 {
 	auto size = get_cubin_size_or_zero<Kind>(program_handle, program_name);
-	const bool have_failed = (FailOnMissingCubin and size == 0);
+	bool const have_failed = (FailOnMissingCubin and size == 0);
 	if (have_failed) {
 		throw  (Kind == cuda_cpp) ?
 			std::runtime_error("Output CUBIN requested for a compilation for a virtual architecture only of "
@@ -162,10 +162,10 @@ size_t get_cubin_size(program::handle_t<Kind> program_handle, const char* progra
 }
 
 template <source_kind_t Kind>
-void get_cubin(char* buffer, program::handle_t<Kind> program_handle, const char *program_name = nullptr);
+void get_cubin(char* buffer, program::handle_t<Kind> program_handle, char const *program_name = nullptr);
 
 template <>
-inline void get_cubin<ptx>(char* buffer, program::handle_t<ptx> program_handle, const char *program_name)
+inline void get_cubin<ptx>(char* buffer, program::handle_t<ptx> program_handle, char const *program_name)
 {
 	auto status = nvPTXCompilerGetCompiledProgram(program_handle, buffer);
 	throw_if_error<ptx>(status, "Failed obtaining compilation output CUBIN for "
@@ -173,7 +173,7 @@ inline void get_cubin<ptx>(char* buffer, program::handle_t<ptx> program_handle, 
 }
 
 template <>
-inline void get_cubin<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name)
+inline void get_cubin<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> program_handle, char const *program_name)
 {
 	auto status = nvrtcGetCUBIN(program_handle, buffer);
 	throw_if_error<cuda_cpp>(status, "Failed obtaining compilation output CUBIN for "
@@ -181,7 +181,7 @@ inline void get_cubin<cuda_cpp>(char* buffer, program::handle_t<cuda_cpp> progra
 }
 #endif // CUDA_VERSION >= 11010
 
-inline size_t get_ptx_size(program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline size_t get_ptx_size(program::handle_t<cuda_cpp> program_handle, char const *program_name = nullptr)
 {
 	size_t size;
 	auto status = nvrtcGetPTXSize(program_handle, &size);
@@ -190,7 +190,7 @@ inline size_t get_ptx_size(program::handle_t<cuda_cpp> program_handle, const cha
 	return size;
 }
 
-inline void get_ptx(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline void get_ptx(char* buffer, program::handle_t<cuda_cpp> program_handle, char const *program_name = nullptr)
 {
 	auto status = nvrtcGetPTX(program_handle, buffer);
 	throw_if_rtc_error_lazy(cuda_cpp, status, "Failed obtaining compilation output PTX for compilation of "
@@ -199,7 +199,7 @@ inline void get_ptx(char* buffer, program::handle_t<cuda_cpp> program_handle, co
 
 #if CUDA_VERSION >= 11040
 
-inline size_t get_lto_ir_size(program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline size_t get_lto_ir_size(program::handle_t<cuda_cpp> program_handle, char const *program_name = nullptr)
 {
 	size_t size;
 #if CUDA_VERSION >= 12000
@@ -212,7 +212,7 @@ inline size_t get_lto_ir_size(program::handle_t<cuda_cpp> program_handle, const 
 	return size;
 }
 
-inline void get_lto_ir(char* buffer, program::handle_t<cuda_cpp> program_handle, const char *program_name = nullptr)
+inline void get_lto_ir(char* buffer, program::handle_t<cuda_cpp> program_handle, char const *program_name = nullptr)
 {
 #if CUDA_VERSION >= 12000
 	auto status = nvrtcGetLTOIR(program_handle, buffer);
@@ -248,7 +248,7 @@ namespace compilation_output {
 namespace detail {
 
 template <source_kind_t Kind>
-std::string identify(const compilation_output_t<Kind> &compilation_output);
+std::string identify(compilation_output_t<Kind> const& compilation_output);
 
 template <source_kind_t Kind>
 compilation_output_t<Kind> wrap(
@@ -274,7 +274,7 @@ compilation_output_t<Kind> wrap(
 template <source_kind_t Kind>
 class compilation_output_base_t {
 public: // types and constants
-	constexpr static const source_kind_t source_kind { Kind };
+	constexpr static source_kind_t const source_kind { Kind };
 	using handle_type = program::handle_t<source_kind>;
 	using status_type = status_t<source_kind>;
 
@@ -288,7 +288,7 @@ public: // getters
 
 	/// @returns `true` if the compilation resulting in this output had succeeded, `false` otherwise
 	operator bool() const { return succeeded_; }
-	const std::string& program_name() const { return program_name_; }
+	std::string const& program_name() const { return program_name_; }
 	handle_type program_handle() const { return program_handle_; }
 
 public: // non-mutators
@@ -394,7 +394,7 @@ protected: // destructor
 
 public: // operators
 
-	compilation_output_base_t& operator=(const compilation_output_base_t& other) = delete;
+	compilation_output_base_t& operator=(compilation_output_base_t const& other) = delete;
 	compilation_output_base_t& operator=(compilation_output_base_t&& other) = delete;
 
 protected: // data members
@@ -600,17 +600,17 @@ public: // non-mutators
 	 * moving data etc.). The memory is owned by the NVRTC program and will be
 	 * released when it is destroyed.
 	 */
-	const char* get_mangling_of(const char* unmangled_name) const
+	char const* get_mangling_of(char const* unmangled_name) const
 	{
-		const char* result;
+		char const* result;
 		auto status = nvrtcGetLoweredName(program_handle_, unmangled_name, &result);
 		throw_if_error<source_kind>(status, std::string("Failed obtaining the mangled form of name \"")
 			+ unmangled_name + "\" in dynamically-compiled program \"" + program_name_ + '\"');
 		return result;
 	}
 
-	/// @copydoc get_mangling_of(const char*) const
-	const char* get_mangling_of(const std::string& unmangled_name) const
+	/// @copydoc get_mangling_of(char const*) const
+	char const* get_mangling_of(std::string const& unmangled_name) const
 	{
 		return get_mangling_of(unmangled_name.c_str());
 	}
@@ -674,7 +674,7 @@ namespace compilation_output {
 namespace detail {
 
 template <source_kind_t Kind>
-std::string identify(const compilation_output_t<Kind> &compilation_output)
+std::string identify(compilation_output_t<Kind> const& compilation_output)
 {
 	return "Compilation output of " + program::detail::identify<Kind>(
 		compilation_output.program_handle(),
@@ -700,9 +700,9 @@ compilation_output_t<Kind> wrap(
 namespace module_ {
 
 template<> inline module_t create<cuda_cpp>(
-	const context_t&                            context,
-	const rtc::compilation_output_t<cuda_cpp>&  compilation_output,
-	const link::options_t&                      options)
+	context_t const&                            context,
+	rtc::compilation_output_t<cuda_cpp> const&  compilation_output,
+	link::options_t const&                      options)
 {
 	if (not compilation_output.succeeded()) {
 		throw std::invalid_argument("Attempt to create a module after compilation failure of "
@@ -729,9 +729,9 @@ template<> inline module_t create<cuda_cpp>(
 
 #if CUDA_VERSION >= 11010
 template<> inline module_t create<ptx>(
-	const context_t&                       context,
-	const rtc::compilation_output_t<ptx>&  compilation_output,
-	const link::options_t&                 options)
+	context_t const&                       context,
+	rtc::compilation_output_t<ptx> const&  compilation_output,
+	link::options_t const&                 options)
 {
 	if (not compilation_output.succeeded()) {
 		throw std::invalid_argument("Attempt to create a module after compilation failure of "
@@ -748,8 +748,8 @@ template<> inline module_t create<ptx>(
 template <source_kind_t Kind>
 module_t create(
 	device_t&                               device,
-	const rtc::compilation_output_t<Kind>&  compilation_output,
-	const link::options_t&                  options = {})
+	rtc::compilation_output_t<Kind> const&  compilation_output,
+	link::options_t const&                  options = {})
 {
 	return create(device.primary_context(), compilation_output, options);
 }

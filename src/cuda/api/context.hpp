@@ -229,7 +229,7 @@ inline context::flags_t get_flags(handle_t handle)
  * spin or block until all tasks scheduled previously scheduled on streams
  * within this context have concluded.
  */
-inline void synchronize(const context_t& context);
+inline void synchronize(context_t const& context);
 
 /**
  * @brief Wrapper class for a CUDA context
@@ -271,8 +271,8 @@ public: // inner classes
 
 
 	protected: // data members
-		const device::id_t device_id_;
-		const context::handle_t context_handle_;
+		device::id_t const device_id_;
+		context::handle_t const context_handle_;
 
 	public:
 		global_memory_type(device::id_t device_id, context::handle_t context_handle)
@@ -595,7 +595,7 @@ public: // methods which mutate the context, but not its wrapper
 	///@{
 	template <typename ContiguousContainer,
 		cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
-	module_t create_module(ContiguousContainer module_data, const link::options_t& link_options) const;
+	module_t create_module(ContiguousContainer module_data, link::options_t const& link_options) const;
 
 	template <typename ContiguousContainer,
 		cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool> = true>
@@ -606,10 +606,10 @@ public: // Methods which don't mutate the context, but affect the device itself
 
 
 	/// Allow kernels and memory operations within this context to involve memory allocated in a peer context
-	void enable_access_to(const context_t& peer) const;
+	void enable_access_to(context_t const& peer) const;
 
 	/// Prevent kernels and memory operations within this context from involving memory allocated in a peer context
-	void disable_access_to(const context_t& peer) const;
+	void disable_access_to(context_t const& peer) const;
 
 	/// Clear the L2 cache memory which persists between invocations of kernels
 	void reset_persisting_l2_cache() const
@@ -710,9 +710,9 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	context_t(const context_t&) = delete;
+	context_t(context_t const&) = delete;
 	context_t(context_t&&) noexcept = default;
-	context_t& operator=(const context_t&) = delete;
+	context_t& operator=(context_t const&) = delete;
 	context_t& operator=(context_t&&) noexcept = default;
 
 public: // friendship
@@ -738,14 +738,14 @@ protected: // data members
 
 /// @note: The comparison ignores whether or not the wrapper is owning
 ///@{
-inline bool operator==(const context_t& lhs, const context_t& rhs) noexcept
+inline bool operator==(context_t const& lhs, context_t const& rhs) noexcept
 {
 	// Note: Contexts on different devices cannot have the same context handle,
 	// so this is redundant, but let's be extra safe:
 	return lhs.device_id() == rhs.device_id() and lhs.handle() == rhs.handle();
 }
 
-inline bool operator!=(const context_t& lhs, const context_t& rhs) noexcept
+inline bool operator!=(context_t const& lhs, context_t const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -820,7 +820,7 @@ inline handle_t create_and_push(
  * by these wrappers being later than that, so - no sense in keeping it.
  */
 context_t create(
-	const device_t&                        device,
+	device_t const&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
 	bool                                   keep_larger_local_mem_after_resize = false);
 
@@ -835,7 +835,7 @@ context_t create(
  * is a waste.
  */
 context_t create_and_push(
-	const device_t&                        device,
+	device_t const&                        device,
 	host_thread_sync_scheduling_policy_t   sync_scheduling_policy = heuristic,
 	bool                                   keep_larger_local_mem_after_resize = false);
 
@@ -862,14 +862,14 @@ inline context_t get()
  * single element; otherwise, the top item on the stack is _replaced_ with the
  * specified context, with the number of elements on the stack not changing.
  */
-inline void set(const context_t& context)
+inline void set(context_t const& context)
 {
 	return detail::set(context.handle());
 }
 
 /// Push a (reference to a) context onto the top of the context stack - unless
 /// that context is already at the top of the stack, in which case do nothing
-inline bool push_if_not_on_top(const context_t& context)
+inline bool push_if_not_on_top(context_t const& context)
 {
 	return context::current::detail::push_if_not_on_top(context.handle());
 }
@@ -881,7 +881,7 @@ inline bool push_if_not_on_top(const context_t& context)
  * still pushed, i.e. there will now be one additional reference to the context
  * on the stack.
  */
-inline void push(const context_t& context)
+inline void push(context_t const& context)
 {
 	return context::current::detail::push(context.handle());
 }
@@ -927,7 +927,7 @@ inline context_t get_with_fallback_push()
 } // namespace current
 
 /// @return true if the context is the primary context of its device
-bool is_primary(const context_t& context);
+bool is_primary(context_t const& context);
 
 } // namespace context
 
@@ -941,7 +941,7 @@ bool is_primary(const context_t& context);
  * @note There are multiple ways to effect a synchronization - and the choice is
  * the context's host synchronization policy; see @ref context_t::sync_scheduling_policy
  */
-inline void synchronize(const context_t& context)
+inline void synchronize(context_t const& context)
 {
 	context::detail::synchronize(context.device_id(), context.handle());
 }

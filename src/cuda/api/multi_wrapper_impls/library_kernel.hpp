@@ -21,23 +21,23 @@ namespace library {
 namespace kernel {
 
 inline attribute_value_t get_attribute(
-	const library::kernel_t&  library_kernel,
+	library::kernel_t const&  library_kernel,
 	kernel::attribute_t       attribute,
-	const device_t&           device)
+	device_t const&           device)
 {
 	return detail::get_attribute(library_kernel.handle(), device.id(), attribute);
 }
 
 inline void set_attribute(
-	const library::kernel_t&  library_kernel,
+	library::kernel_t const&  library_kernel,
 	kernel::attribute_t       attribute,
-	const device_t&           device,
+	device_t const&           device,
 	attribute_value_t         value)
 {
 	detail::set_attribute(library_kernel.handle(), device.id(), attribute, value);
 }
 
-cuda_::kernel_t contextualize(const kernel_t& kernel, const context_t& context)
+cuda_::kernel_t contextualize(kernel_t const& kernel, context_t const& context)
 {
 	auto new_handle = detail::contextualize(kernel.handle(), context.handle());
 	using cuda_::kernel::wrap;

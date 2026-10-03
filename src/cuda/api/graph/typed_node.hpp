@@ -36,12 +36,12 @@ namespace graph {
  * the execution graph template (or any of its instances) are alive.
  */
 template<typename... Ts>
-std::vector<void*> make_kernel_argument_pointers(const Ts&... kernel_arguments)
+std::vector<void*> make_kernel_argument_pointers(Ts const&... kernel_arguments)
 {
 	// The extra curly brackets mean the vector constructor gets an std::initializer_list<void*>;
 	// Note that we don't add an extern terminating NULLPTR - the Graph API is different than
 	// the traditional kernel launch API in that respect
-	return { { const_cast<void *>(reinterpret_cast<const void*>(&kernel_arguments)) ... } };
+	return { { const_cast<void *>(reinterpret_cast<void const*>(&kernel_arguments)) ... } };
 }
 
 namespace node {
@@ -133,7 +133,7 @@ struct kind_traits<kind_t::empty> {
 	static constexpr auto setter = cuGraphNodeSetParams;
 	static constexpr auto getter = nullptr;
 
-	static raw_parameters_type marshal(const parameters_type&) {
+	static raw_parameters_type marshal(parameters_type const&) {
 		raw_parameters_type raw_params;
 		std::memset(&raw_params, 0, sizeof(raw_parameters_type));
 		raw_params.type = static_cast<CUgraphNodeType>(kind_t::empty);
@@ -148,7 +148,7 @@ struct kind_traits<kind_t::child_graph> {
 	using raw_parameters_type = template_::handle_t;
 	static constexpr bool inserter_takes_params_by_ptr = false;
 	static constexpr bool inserter_takes_context = false;
-	using parameters_type = struct { const template_t& template_; };
+	using parameters_type = struct { template_t const& template_; };
 	static constexpr auto inserter = cuGraphAddChildGraphNode; // 1 extra param
 	// no param setter!
 	static constexpr auto getter = cuGraphChildGraphNodeGetGraph;
@@ -156,7 +156,7 @@ struct kind_traits<kind_t::child_graph> {
 	static constexpr auto instance_setter = cuGraphExecChildGraphNodeSetParams;
 #endif
 
-	static raw_parameters_type marshal(const parameters_type& params);
+	static raw_parameters_type marshal(parameters_type const& params);
 };
 
 #if CUDA_VERSION >= 11010
@@ -172,7 +172,7 @@ struct kind_traits<kind_t::record_event> {
 	static constexpr auto getter = cuGraphEventRecordNodeGetEvent;
 	static constexpr auto instance_setter = cuGraphExecEventRecordNodeSetEvent;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		return params.event.handle();
 	}
@@ -184,13 +184,13 @@ struct kind_traits<kind_t::wait_on_event> {
 	using raw_parameters_type = event::handle_t;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = false;
-	using parameters_type = struct { const event_t& event; };
+	using parameters_type = struct { event_t const& event; };
 	static constexpr auto inserter = cuGraphAddEventWaitNode; // 1 extra param
 	static constexpr auto setter = cuGraphEventWaitNodeSetEvent;
 	static constexpr auto getter = cuGraphEventWaitNodeGetEvent;
 	static constexpr auto instance_setter = cuGraphExecEventWaitNodeSetEvent;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		return params.event.handle();
 	}
@@ -212,7 +212,7 @@ struct kind_traits<kind_t::host_function_call> {
 	static constexpr auto getter = cuGraphHostNodeGetParams;
 	static constexpr auto instance_setter = cuGraphExecHostNodeSetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		return { params.function_ptr, params.user_data };
 	}
@@ -241,7 +241,7 @@ struct kind_traits<kind_t::kernel_launch> {
 	static constexpr auto getter = cuGraphKernelNodeGetParams;
 	static constexpr auto instance_setter = cuGraphExecKernelNodeSetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		// With C++20, use designated initializers
 		raw_parameters_type raw_params;
@@ -273,13 +273,13 @@ struct kind_traits<kind_t::memory_allocation> {
 	using raw_parameters_type = CUDA_MEM_ALLOC_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = std::pair<const device_t&, size_t>; // for now, assuming no peer access
+	using parameters_type = std::pair<device_t const&, size_t>; // for now, assuming no peer access
 	// no setter
 	static constexpr auto inserter = cuGraphAddMemAllocNode; // 1 extra param
 	// static constexpr auto setter;
 	static constexpr auto getter = cuGraphMemAllocNodeGetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		static constexpr auto no_export_handle_kind = memory::pool::shared_handle_kind_t::no_export;
 		raw_parameters_type raw_params;
@@ -312,13 +312,13 @@ struct kind_traits<kind_t::memory_set> {
 	// no setter
 	static constexpr auto getter = cuGraphMemsetNodeGetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		static constexpr size_t max_width = sizeof(parameters_type::value);
 		if (params.width_in_bytes > max_width) {
 			throw std::invalid_argument("Unsupported memset value width (maximum is " + std::to_string(max_width));
 		}
-		const unsigned long min_overwide_value = 1lu << (params.width_in_bytes * CHAR_BIT);
+		unsigned const long min_overwide_value = 1lu << (params.width_in_bytes * CHAR_BIT);
 		if (static_cast<unsigned long>(params.value) >= min_overwide_value) {
 			throw std::invalid_argument("Memset value exceeds specified width");
 		}
@@ -346,7 +346,7 @@ struct kind_traits<kind_t::memory_free> {
 	// static constexpr auto setter = ;
 	static constexpr auto getter = cuGraphMemFreeNodeGetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		return memory::device::address(params);
 	}
@@ -360,12 +360,12 @@ struct kind_traits<kind_t::memory_barrier> {
 	using raw_parameters_type = CUDA_BATCH_MEM_OP_NODE_PARAMS;
 	static constexpr bool inserter_takes_context = false;
 	static constexpr bool inserter_takes_params_by_ptr = true;
-	using parameters_type = std::pair<const context_t&, cuda_::memory::barrier_scope_t>;
+	using parameters_type = std::pair<context_t const&, cuda_::memory::barrier_scope_t>;
 	static constexpr auto inserter = cuGraphAddBatchMemOpNode; // 1 extra param
 	static constexpr auto setter = cuGraphBatchMemOpNodeSetParams;
 	static constexpr auto getter = cuGraphBatchMemOpNodeGetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params)
+	static raw_parameters_type marshal(parameters_type const& params)
 	{
 		auto const & context = params.first;
 		raw_parameters_type raw_params;
@@ -396,7 +396,7 @@ struct kind_traits<kind_t::memory_copy> {
 	static constexpr auto setter = cuGraphMemcpyNodeSetParams;
 	static constexpr auto getter = cuGraphMemcpyNodeGetParams;
 
-	static raw_parameters_type marshal(const parameters_type& params) {
+	static raw_parameters_type marshal(parameters_type const& params) {
 		auto& params_ptr = const_cast<parameters_type&>(params);
 		// This is quite a nasty bit of voodoo. The thing is, CUDA_MEMCPY3D_PEER is
 		// the plain struct serving as the base class of copy_parameters_t<3>; and
@@ -420,7 +420,7 @@ struct kind_traits<kind_t::conditional> {
 	static constexpr auto setter = cuGraphNodeSetParams;
 	static constexpr auto getter = nullptr;
 
-	static raw_parameters_type marshal(const parameters_type& params) {
+	static raw_parameters_type marshal(parameters_type const& params) {
 		raw_parameters_type raw_params;
 		std::memset(&raw_params, 0, sizeof(raw_parameters_type));
 		raw_params.type = static_cast<CUgraphNodeType>(kind_t::conditional);
@@ -444,14 +444,14 @@ struct kind_traits<kind_t::conditional> {
 
 template <kind_t Kind, typename = typename std::enable_if<kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
 typename kind_traits<Kind>::raw_parameters_type *
-maybe_add_ptr(const typename kind_traits<Kind>::raw_parameters_type& raw_params)
+maybe_add_ptr(typename kind_traits<Kind>::raw_parameters_type const& raw_params)
 {
 	return const_cast<typename kind_traits<Kind>::raw_parameters_type *>(&raw_params);
 }
 
 template <kind_t Kind, typename = typename std::enable_if<not kind_traits<Kind>::inserter_takes_params_by_ptr>::type>
-const typename kind_traits<Kind>::raw_parameters_type&
-maybe_add_ptr(const typename kind_traits<Kind>::raw_parameters_type& raw_params) { return raw_params; }
+typename kind_traits<Kind>::raw_parameters_type const&
+maybe_add_ptr(typename kind_traits<Kind>::raw_parameters_type const& raw_params) { return raw_params; }
 
 } // namespace detail
 
@@ -475,7 +475,7 @@ public:
 	/**
 	 * @return The _cached_ node parameters known by this object since its construction.
 	 */
-	const parameters_type& parameters() const noexcept
+	parameters_type const& parameters() const noexcept
 	{
 		static_assert(Kind != kind_t::empty, "Empty CUDA graph nodes don't have parameters");
 		return params_;
@@ -510,7 +510,7 @@ protected: // constructors and destructors
 	: node_t(graph_template_handle, handle), params_(std::move(parameters)) { }
 
 public:  // constructors and destructors
-	typed_node_t(const typed_node_t<Kind>&) = default; // It's a reference type, so copying is not a problem
+	typed_node_t(typed_node_t<Kind> const&) = default; // It's a reference type, so copying is not a problem
 	typed_node_t(typed_node_t<Kind>&&) noexcept = default; // It's a reference type, so copying is not a problem
 
 	typed_node_t<Kind>& operator=(typed_node_t<Kind> other) noexcept
@@ -533,9 +533,9 @@ typed_node_t<Kind> wrap(template_::handle_t graph_handle, handle_t handle, param
 
 inline node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
-	const kernel_t& kernel,
+	kernel_t const& kernel,
 	launch_configuration_t launch_config,
-	const std::vector<void*>& argument_pointers)
+	std::vector<void*> const& argument_pointers)
 {
 	return { kernel, std::move(launch_config), argument_pointers };
 }
@@ -543,9 +543,9 @@ make_launch_primed_kernel(
 template <typename... KernelParameters>
 node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
-	const kernel_t& kernel,
+	kernel_t const& kernel,
 	launch_configuration_t launch_config,
-	const KernelParameters&... kernel_arguments)
+	KernelParameters const&... kernel_arguments)
 {
 	return {
 		kernel,
@@ -558,7 +558,7 @@ inline node::parameters_t<node::kind_t::kernel_launch>
 make_launch_primed_kernel(
 	kernel_t&& kernel,
 	launch_configuration_t launch_config,
-	const std::vector<void*>& argument_pointers)
+	std::vector<void*> const& argument_pointers)
 {
 	return { std::move(kernel), std::move(launch_config), std::move(argument_pointers) };
 }

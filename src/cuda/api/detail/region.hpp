@@ -54,7 +54,7 @@ private:
 	size_type size_in_bytes_ = 0;
 
 	// If we were using C++17 or later, we could forget about this and use `std::byte`
-	using char_type = typename std::conditional<std::is_const<T>::value, const char *, char *>::type;
+	using char_type = typename std::conditional<std::is_const<T>::value, char const *, char *>::type;
 public:
 	constexpr base_region_t() noexcept = default;
 	constexpr base_region_t(pointer start, size_type size_in_bytes) noexcept
@@ -75,7 +75,7 @@ public:
 	: start_(contiguous_container.data()), size_in_bytes_(contiguous_container.size() * sizeof(*(contiguous_container.data())))
 	{
 		static_assert(std::is_const<T>::value or not std::is_const<decltype(*(contiguous_container.data()))>::value,
-			"Attempt to construct a non-const memory region from a container of const data");
+			"Attempt to construct a non-memory const region from a container of data const");
 	}
 
 	template <typename U>
@@ -83,7 +83,7 @@ public:
 	{
 		static_assert(
 			std::is_const<U>::value or not std::is_const<typename std::remove_pointer<T>::type>::value,
-			"Attempt to create a non-const span referencing a const memory region");
+			"Attempt to create a non-span const referencing a memory const region");
 #ifndef NDEBUG
 		if (size() == 0) {
 			throw std::logic_error("Attempt to use a span of size 0 as a sequence of typed elements");
@@ -123,14 +123,14 @@ protected:
 };
 
 template <typename T>
-constexpr bool operator==(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+constexpr bool operator==(base_region_t<T> const& lhs,base_region_t<T> const& rhs)
 {
 	return lhs.start() == rhs.start()
 		and lhs.size() == rhs.size();
 }
 
 template <typename T>
-constexpr bool operator!=(const base_region_t<T>& lhs, const base_region_t<T>& rhs)
+constexpr bool operator!=(base_region_t<T> const& lhs,base_region_t<T> const& rhs)
 {
 	return not (lhs == rhs);
 }

@@ -66,7 +66,7 @@ namespace detail {
  * @return a pointer to the relevant address (which may not have the same value
  * as it would on a different processor.
  */
-inline void* import(const ptr_handle_t& handle)
+inline void* import(ptr_handle_t const& handle)
 {
 	CUdeviceptr device_ptr;
 	auto status = cuIpcOpenMemHandle(&device_ptr, handle, CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
@@ -139,9 +139,9 @@ protected: // constructors & destructor
 	}
 
 public: // constructors & operator
-	imported_ptr_t(const imported_ptr_t&) = delete;
+	imported_ptr_t(imported_ptr_t const&) = delete;
 	imported_ptr_t(imported_ptr_t&&) noexcept = default;
-	imported_ptr_t& operator=(const imported_ptr_t&) = delete;
+	imported_ptr_t& operator=(imported_ptr_t const&) = delete;
 	imported_ptr_t& operator=(imported_ptr_t&&) noexcept = default;
 
 public: // friendship
@@ -154,7 +154,7 @@ public: // getters
 	T* get() const noexcept
 	{
 		// If you're wondering why this cast is necessary - some IDEs/compilers
-		// have the notion that if the method is const, `ptr_` is a const void* within it
+		// have the notion that if the method is const, `ptr_` is a void const* within it
 		return static_cast<T*>(const_cast<void*>(ptr_));
 	}
 
@@ -175,7 +175,7 @@ inline imported_ptr_t wrap(void * ptr, bool owning) noexcept
 }
 
 /// Import memory from another process, given the appropriate handle
-inline imported_ptr_t import(const ptr_handle_t& ptr_handle)
+inline imported_ptr_t import(ptr_handle_t const& ptr_handle)
 {
 	auto raw_ptr = detail::import(ptr_handle);
 	return wrap(raw_ptr, do_take_ownership);
@@ -191,12 +191,12 @@ namespace ipc {
 using handle_t = void *;
 
 template <shared_handle_kind_t Kind>
-shared_handle_t<Kind> export_(const pool_t& pool);
+shared_handle_t<Kind> export_(pool_t const& pool);
 
 namespace detail {
 
 template <shared_handle_kind_t Kind>
-pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
+pool::handle_t import(shared_handle_t<Kind> const& shared_pool_handle)
 {
 	memory::pool::handle_t result;
 	static constexpr unsigned long long flags { 0 };
@@ -210,7 +210,7 @@ pool::handle_t import(const shared_handle_t<Kind>& shared_pool_handle)
 } // namespace detail
 
 template <shared_handle_kind_t Kind>
-pool_t import(const device_t& device, const shared_handle_t<Kind>& shared_pool_handle);
+pool_t import(device_t const& device,shared_handle_t<Kind> const& shared_pool_handle);
 
 inline ptr_handle_t export_ptr(void* pool_allocated) {
 	ptr_handle_t handle;
@@ -223,7 +223,7 @@ inline ptr_handle_t export_ptr(void* pool_allocated) {
 
 namespace detail {
 
-inline void* import_ptr(const pool::handle_t pool_handle, const ptr_handle_t& handle)
+inline void* import_ptr(pool::handle_t const pool_handle, ptr_handle_t const& handle)
 {
 	CUdeviceptr imported;
 	auto status = cuMemPoolImportPointer(&imported, pool_handle, const_cast<ptr_handle_t*>(&handle));
@@ -246,8 +246,8 @@ inline void* import_ptr(const pool::handle_t pool_handle, const ptr_handle_t& ha
  */
 class imported_ptr_t;
 
-imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle);
-imported_ptr_t import_ptr(const pool_t& shared_pool, const ptr_handle_t& ptr_handle, const stream_t& freeing_stream);
+imported_ptr_t import_ptr(pool_t const& shared_pool, ptr_handle_t const& ptr_handle);
+imported_ptr_t import_ptr(pool_t const& shared_pool, ptr_handle_t const& ptr_handle, stream_t const& freeing_stream);
 
 } // namespace ipc
 
@@ -276,7 +276,7 @@ inline handle_t export_(event::handle_t event_handle)
 	return ipc_handle;
 }
 
-inline event::handle_t import(const handle_t& handle)
+inline event::handle_t import(handle_t const& handle)
 {
 	event::handle_t event_handle;
 	auto status = cuIpcOpenEventHandle(&event_handle, handle);
@@ -294,7 +294,7 @@ inline event::handle_t import(const handle_t& handle)
  * may obtain a proper CUDA event
  *
  */
-inline handle_t export_(const event_t& event);
+inline handle_t export_(event_t const& event);
 
 /**
  * Obtain a proper CUDA event, corresponding to an event created by another
@@ -311,14 +311,14 @@ inline handle_t export_(const event_t& event);
  /**
   * @param device the device with which the imported event is associated
   */
-inline event_t import(const device_t& device, const handle_t& event_ipc_handle);
+inline event_t import(device_t const& device, handle_t const& event_ipc_handle);
 
 /**
  * @param context the device-context with which the imported event is associated
  * @param event_ipc_handle The handle created by another process, to be imported
  * @return An event usable in the current process
  */
-inline event_t import(const context_t& context, const handle_t& event_ipc_handle);
+inline event_t import(context_t const& context, handle_t const& event_ipc_handle);
 ///@}
 
 } // namespace ipc

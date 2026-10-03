@@ -111,7 +111,7 @@ inline handle_t create_raw_in_current_context(
 	priority_t    priority = default_priority
 )
 {
-	const unsigned int flags = (synchronizes_with_default_stream == sync) ?
+	unsigned const int flags = (synchronizes_with_default_stream == sync) ?
 		CU_STREAM_DEFAULT : CU_STREAM_NON_BLOCKING;
 	handle_t new_stream_handle;
 	auto status = cuStreamCreateWithPriority(&new_stream_handle, flags, priority);
@@ -160,7 +160,7 @@ inline void record_event_in_current_context(
 	event::handle_t    event_handle);
 
 template <typename Function>
-void enqueue_function_call(const stream_t& stream, Function function, void * argument);
+void enqueue_function_call(stream_t const& stream, Function function, void * argument);
 
 } // namespace detail
 
@@ -209,7 +209,7 @@ CUresult write_value(CUstream stream_handle, CUdeviceptr address, T value, unsig
 #if CUDA_VERSION >= 10000
 namespace capture {
 
-inline state_t state(const stream_t& stream);
+inline state_t state(stream_t const& stream);
 
 /**
  * @brief Have a stream capture operations enqueued from now on, for later generation
@@ -217,12 +217,12 @@ inline state_t state(const stream_t& stream);
  *
  * @note See also @ref graph::template_t
  */
-void begin(const stream_t& stream, mode_t mode = mode_t::global);
-graph::template_t end(const stream_t& stream);
+void begin(stream_t const& stream, mode_t mode = mode_t::global);
+graph::template_t end(stream_t const& stream);
 
 } // namespace capture
 
-inline bool is_capturing(const stream_t& stream)
+inline bool is_capturing(stream_t const& stream)
 {
 	return is_capturing(capture::state(stream));
 }
@@ -230,7 +230,7 @@ inline bool is_capturing(const stream_t& stream)
 #endif // CUDA_VERSION >= 10000
 } // namespace stream
 
-inline void synchronize(const stream_t& stream);
+inline void synchronize(stream_t const& stream);
 
 /**
  * @brief Proxy class for a CUDA stream
@@ -250,7 +250,7 @@ public: // type definitions
 		does_synchronize_with_default_stream     = true,
 	};
 
-public: // const getters
+public: // getters const
 	/// The raw CUDA handle for a stream which this class wraps
 	stream::handle_t   handle() const noexcept  { return handle_; }
 
@@ -352,11 +352,11 @@ public: // mutators
 	 */
 	class enqueue_t {
 	protected:
-		const stream_t& associated_stream;
+		stream_t const& associated_stream;
 
 	public:
 		///@cond
-		enqueue_t(const stream_t& stream) : associated_stream(stream) {}
+		enqueue_t(stream_t const& stream) : associated_stream(stream) {}
 		///@endcond
 
 		/**
@@ -372,7 +372,7 @@ public: // mutators
 		 */
 		template<typename KernelFunction, typename... KernelParameters>
 		void kernel_launch(
-			const KernelFunction&       kernel_function,
+			KernelFunction const&       kernel_function,
 			launch_configuration_t      launch_configuration,
 			KernelParameters &&...      arguments) const
 		{
@@ -397,9 +397,9 @@ public: // mutators
 		 * same schedulign operation.
 		 */
 		void type_erased_kernel_launch(
-			const kernel_t&         kernel,
+			kernel_t const&         kernel,
 			launch_configuration_t  launch_configuration,
-			span<const void*>       marshalled_arguments) const
+			span<void const*>       marshalled_arguments) const
 		{
 			launch_type_erased(kernel, associated_stream, launch_configuration, marshalled_arguments);
 		}
@@ -412,7 +412,7 @@ public: // mutators
 		 * synchronization via this stream only regards the beginning and end of
 		 * the full graph's execution.
 		 */
-		void graph_launch(const graph::instance_t& graph_instance) const;
+		void graph_launch(graph::instance_t const& graph_instance) const;
 #endif // CUDA_VERSION >= 10000
 
 		/**
@@ -424,7 +424,7 @@ public: // mutators
 		 */
 		///@{
 		/// Schedule a copy of one region of memory to another
-		void copy(void *destination, const void *source, size_t num_bytes) const
+		void copy(void *destination, void const *source, size_t num_bytes) const
 		{
 			// CUDA doesn't seem to need us to be in the stream's context to enqueue the copy;
 			// however, unfortunately, it does require us to be in _some_ context.
@@ -432,7 +432,7 @@ public: // mutators
 			memory::detail::copy(destination, source, num_bytes, associated_stream.handle_);
 		}
 
-		/// @copybrief copy(void *, const void *, size_t) const
+		/// @copybrief copy(void *, void const *, size_t) const
 		void copy(void* destination, memory::const_region_t source, size_t num_bytes) const
 		{
 #ifndef NDEBUG
@@ -444,7 +444,7 @@ public: // mutators
 		}
 
 		/**
-		 * @copybrief copy(void *, const void *, size_t) const
+		 * @copybrief copy(void *, void const *, size_t) const
 		 *
 		 * @note @p num_bytes may be smaller than the sizes of any of the regions
 		 */
@@ -453,13 +453,13 @@ public: // mutators
 			copy(destination.start(), source, num_bytes);
 		}
 
-		/// @copybrief copy(void *, const void *, size_t) const
+		/// @copybrief copy(void *, void const *, size_t) const
 		void copy(memory::region_t destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
 		}
 
-		/// @copybrief copy(void *, const void *, size_t) const
+		/// @copybrief copy(void *, void const *, size_t) const
 		void copy(void* destination, memory::const_region_t source) const
 		{
 			copy(destination, source, source.size());
@@ -595,7 +595,7 @@ public: // mutators
 		/**
 		 * @param pool Memory pool to allocate from
 		 */
-		memory::region_t allocate(const memory::pool_t& pool, size_t num_bytes) const;
+		memory::region_t allocate(memory::pool_t const& pool, size_t num_bytes) const;
 		///@}
 
 		/**
@@ -635,7 +635,7 @@ public: // mutators
 		 * concluded.
 		 */
 		void attach_managed_region(
-			const void* managed_region_start,
+			void const* managed_region_start,
 			memory::managed::attachment_t attachment = memory::managed::attachment_t::single_stream) const
 		{
 			CAW_SET_SCOPE_CONTEXT(associated_stream.context_handle_);
@@ -653,7 +653,7 @@ public: // mutators
 		}
 
 		/**
-		 * @copybrief attach_managed_region(const void*, memory::managed::attachment_t) const
+		 * @copybrief attach_managed_region(void const*, memory::managed::attachment_t) const
 		 *
 		 * @param region the entire managed memory region; note this must not be a sub-region;
 		 * you must pass whatever the CUDA memory allocation or construction code provided
@@ -690,7 +690,7 @@ public: // mutators
 		 * would typically be recorded on another stream.
 		 *
 		 */
-		void wait(const event_t& event_) const;
+		void wait(event_t const& event_) const;
 
 		/**
 		 * Schedule writing a single value to global device memory after all
@@ -762,8 +762,8 @@ public: // mutators
 			CUstreamBatchMemOpParams op_params;
 			op_params.flushRemoteWrites.operation = CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES;
 			op_params.flushRemoteWrites.flags = 0;
-			static const unsigned count = 1;
-			static const unsigned flags = 0;
+			static unsigned const count = 1;
+			static unsigned const flags = 0;
 			// Let's cross our fingers and assume nothing else needs to be set here...
 			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
 			throw_if_error_lazy(status, "scheduling a flush-remote-writes memory operation as a 1-op batch");
@@ -775,8 +775,8 @@ public: // mutators
 			CUstreamBatchMemOpParams op_params;
 			op_params.memoryBarrier.operation = CU_STREAM_MEM_OP_BARRIER;
 			op_params.memoryBarrier.flags = static_cast<unsigned>(scope);
-			static const unsigned count = 1;
-			static const unsigned flags = 0;
+			static unsigned const count = 1;
+			static unsigned const flags = 0;
 			// Let's cross our fingers and assume nothing else needs to be set here...
 			auto status = cuStreamBatchMemOp(associated_stream.handle_, count, &op_params, flags);
 			throw_if_error_lazy(status, "scheduling a memory barrier operation as a 1-op batch");
@@ -807,7 +807,7 @@ public: // mutators
 			if (std::is_same<typename std::remove_const<decltype(ops_begin)>::type, CUstreamBatchMemOpParams* >::value,
 				"Only accepting containers of the CUDA-driver-API memory operation descriptor, CUstreamBatchMemOpParams")
 			{
-				auto ops_ptr = reinterpret_cast<const CUstreamBatchMemOpParams*>(ops_begin);
+				auto ops_ptr = reinterpret_cast<CUstreamBatchMemOpParams const*>(ops_begin);
 				cuStreamBatchMemOp(associated_stream.handle_, num_ops, ops_ptr);
 			}
 			else {
@@ -821,7 +821,7 @@ public: // mutators
 		 * @param single_value_ops A sequence of single-value operation specifiers to enqueue together.
 		 */
 		template <typename Container>
-		void single_value_operations_batch(const Container& single_value_ops) const
+		void single_value_operations_batch(Container const& single_value_ops) const
 		{
 			return single_value_operations_batch(single_value_ops.begin(), single_value_ops.end());
 		}
@@ -859,7 +859,7 @@ public: // mutators
 
 	// TODO: Create a dummy capture object, then we could have capture.start(), capture.stop(), capture.status(),
 	// and perhaps a capture_() which takes a lambda. Also offer a
-	// cuda_::stream::capture(const stream_t& stream, F f) template!
+	// cuda_::stream::capture(stream_t const& stream, F f) template!
 
 
 #if CUDA_VERSION >= 10000
@@ -908,8 +908,8 @@ protected: // constructor
 	{ }
 
 public: // constructors & operators
-	stream_t(const stream_t&) = delete;
-	stream_t& operator=(const stream_t&) = delete;
+	stream_t(stream_t const&) = delete;
+	stream_t& operator=(stream_t const&) = delete;
 
 	// We have to be explicit with the move ctor and assignment operator, to avoid
 	// the enqueue member being set wrong
@@ -947,7 +947,7 @@ public: // friendship
 	 * and the other isn't, or if only one holds a primary context reference unit
 	 * and the other doesn't.
 	 */
-	friend bool operator==(const stream_t& lhs, const stream_t& rhs) noexcept
+	friend bool operator==(stream_t const& lhs, stream_t const& rhs) noexcept
 	{
 		return
 			lhs.context_handle_ == rhs.context_handle_
@@ -971,7 +971,7 @@ public: // data members - which only exist in lieu of namespaces
 
 	/// This data member is a gadget for use instead of a "class-local" namespace;
 	/// we do not need it as a distinct object
-	const enqueue_t     enqueue { *this };
+	enqueue_t const     enqueue { *this };
 		// The use of *this here is safe, since enqueue_t doesn't do anything with it
 		// on its own. Any use of enqueue only happens through, well, *this - and
 		// after construction.
@@ -980,7 +980,7 @@ public: // data members - which only exist in lieu of namespaces
 };
 
 ///@cond
-inline bool operator!=(const stream_t& lhs, const stream_t& rhs) noexcept
+inline bool operator!=(stream_t const& lhs, stream_t const& rhs) noexcept
 {
 	return not (lhs == rhs);
 }
@@ -1039,7 +1039,7 @@ inline CUresult write_value<uint64_t>(CUstream stream_handle, CUdeviceptr addres
 }
 
 template <typename Function>
-void enqueue_function_call(const stream_t& stream, Function function, void* argument)
+void enqueue_function_call(stream_t const& stream, Function function, void* argument)
 {
 	CAW_SET_SCOPE_CONTEXT(stream.context_handle());
 
@@ -1075,7 +1075,7 @@ void enqueue_function_call(const stream_t& stream, Function function, void* argu
  * @return The newly-created stream
  */
 stream_t create(
-	const device_t&   device,
+	device_t const&   device,
 	bool              synchronizes_with_default_stream = async,
 	priority_t        priority = stream::default_priority);
 
@@ -1095,7 +1095,7 @@ stream_t create(
  * @return The newly-created stream
  */
 stream_t create(
-	const context_t&  context,
+	context_t const&  context,
 	bool              synchronizes_with_default_stream = async,
 	priority_t        priority = default_priority,
 	bool              hold_pc_refcount_unit = false);
@@ -1104,7 +1104,7 @@ stream_t create(
 #if CUDA_VERSION >= 10000
 namespace capture {
 
-inline state_t state(const stream_t& stream)
+inline state_t state(stream_t const& stream)
 {
 	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	CUstreamCaptureStatus capture_status;
@@ -1113,7 +1113,7 @@ inline state_t state(const stream_t& stream)
 	return static_cast<state_t>(capture_status);
 }
 
-inline void begin(const stream_t& stream, mode_t mode)
+inline void begin(stream_t const& stream, mode_t mode)
 {
 	context::current::detail::scoped_override_t set_context_for_this_scope(stream.context_handle());
 	auto status = cuStreamBeginCapture(stream.handle(), static_cast<CUstreamCaptureMode>(mode));
@@ -1134,7 +1134,7 @@ inline void begin(const stream_t& stream, mode_t mode)
  * spin or block until all tasks scheduled previously scheduled on the
  * stream have concluded.
  */
- inline void synchronize(const stream_t& stream)
+ inline void synchronize(stream_t const& stream)
 {
 	// Note: Unfortunately, even though CUDA should be aware of which context a stream belongs to,
 	// and not have trouble acting on a stream in another context - it balks at doing so under
@@ -1156,7 +1156,7 @@ inline void begin(const stream_t& stream, mode_t mode)
  * settings; see https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#L2_access_policy
  * for details.
  */
-void copy_attributes(const stream_t& dest, const stream_t& src);
+void copy_attributes(stream_t const& dest, stream_t const& src);
 #endif // CUDA_VERSION >= 11000
 
 } // namespace cuda_

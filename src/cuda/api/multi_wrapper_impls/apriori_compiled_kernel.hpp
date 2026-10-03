@@ -145,7 +145,7 @@ apriori_compiled_t get(
 		and std::is_function<typename std::remove_pointer<KernelFunctionPtr>::type>::value,
 		"function must be a bona fide pointer to a kernel (__global__) function");
 
-	auto ptr_ = reinterpret_cast<const void *>(function_ptr);
+	auto ptr_ = reinterpret_cast<void const *>(function_ptr);
 #if CAW_CAN_GET_APRIORI_KERNEL_HANDLE
 	auto handle = detail::get_handle(ptr_);
 #else
@@ -168,7 +168,7 @@ apriori_compiled_t get(
  * context active while the kernel exists.
  */
 template<typename KernelFunctionPtr>
-apriori_compiled_t get(const device_t &device, KernelFunctionPtr function_ptr)
+apriori_compiled_t get(device_t const& device, KernelFunctionPtr function_ptr)
 {
 	auto primary_context_handle = device::primary_context::detail::obtain_and_increase_refcount(device.id());
 	return apriori_compiled::detail::get(device.id(), primary_context_handle, function_ptr);
@@ -180,9 +180,9 @@ namespace detail {
 
 template<>
 inline ::cuda_::device::primary_context_t
-get_implicit_primary_context<kernel::apriori_compiled_t>(const kernel::apriori_compiled_t& kernel)
+get_implicit_primary_context<kernel::apriori_compiled_t>(kernel::apriori_compiled_t const& kernel)
 {
-	const kernel_t &kernel_ = kernel;
+	kernel_t const& kernel_ = kernel;
 	return get_implicit_primary_context(kernel_);
 }
 

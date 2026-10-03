@@ -52,7 +52,7 @@ namespace detail {
 
 // Note: We could theoretically template this, but - there don't seem to be a lot of "clients" for this
 // function right now, and I would rather not drag in <tuple>
-void get_attributes(unsigned num_attributes, pointer::attribute_t* attributes, void** value_ptrs, const void* ptr);
+void get_attributes(unsigned num_attributes, pointer::attribute_t* attributes, void** value_ptrs, void const* ptr);
 
 template <attribute_t attribute> struct attribute_value {};
 template <> struct attribute_value<CU_POINTER_ATTRIBUTE_CONTEXT>                    { using type = context::handle_t;};
@@ -87,17 +87,17 @@ struct status_and_attribute_value {
 };
 
 template<attribute_t attribute>
-status_and_attribute_value<attribute> get_attribute_with_status(const void *ptr);
+status_and_attribute_value<attribute> get_attribute_with_status(void const *ptr);
 
 template <attribute_t attribute>
-attribute_value_t<attribute> get_attribute(const void* ptr);
+attribute_value_t<attribute> get_attribute(void const* ptr);
 
-inline context::handle_t context_handle_of(const void* ptr)
+inline context::handle_t context_handle_of(void const* ptr)
 {
 	return pointer::detail::get_attribute<CU_POINTER_ATTRIBUTE_CONTEXT>(ptr);
 }
 
-inline cuda_::device::id_t device_id_of(const void* ptr);
+inline cuda_::device::id_t device_id_of(void const* ptr);
 
 } // namespace detail
 
@@ -108,7 +108,7 @@ inline cuda_::device::id_t device_id_of(const void* ptr);
  * Was it allocated by the CUDA driver? Does it reside solely on a GPU device'?
  * Solely on the host? Movable between locations? etc.
  */
-inline memory::type_t type_of(const void* ptr)
+inline memory::type_t type_of(void const* ptr)
 {
 	auto result = pointer::detail::get_attribute_with_status<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(ptr);
 	// Note: As of CUDA 12, CUDA treats passing a non-CUDA-allocated pointer to the memory type check
@@ -226,11 +226,11 @@ public: // other non-mutators
 public: // constructors
 	/// Wrap a raw pointer in this class
 	pointer_t(T* ptr) noexcept : ptr_(ptr) { }
-	pointer_t(const pointer_t& other) noexcept = default;
+	pointer_t(pointer_t const& other) noexcept = default;
 	pointer_t(pointer_t&& other) noexcept = default;
 
 protected: // data members
-	T* const ptr_;
+	T*  const ptr_;
 };
 
 namespace pointer {

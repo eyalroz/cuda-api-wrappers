@@ -57,19 +57,19 @@ namespace profiling {
 
 namespace detail {
 
-inline void set_message(nvtxEventAttributes_t &attrs, const char *c_str) noexcept
+inline void set_message(nvtxEventAttributes_t& attrs, char const *c_str) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_ASCII;
 	attrs.message.ascii = c_str;
 }
 
-inline void set_message(nvtxEventAttributes_t &attrs, const wchar_t *wc_str) noexcept
+inline void set_message(nvtxEventAttributes_t& attrs, wchar_t const *wc_str) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_UNICODE;
 	attrs.message.unicode = wc_str;
 }
 
-inline void set_message(nvtxEventAttributes_t &attrs, nvtxStringHandle_t rsh) noexcept
+inline void set_message(nvtxEventAttributes_t& attrs, nvtxStringHandle_t rsh) noexcept
 {
 	attrs.messageType = NVTX_MESSAGE_TYPE_REGISTERED;
 	attrs.message.registered = rsh;
@@ -165,7 +165,7 @@ inline std::mutex& get_mutex() noexcept
 }
 
 template <typename CharT>
-nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
+nvtxEventAttributes_t create_attributes(CharT const* description, color_t color)
 {
 	nvtxEventAttributes_t eventAttrib = {0};
 	eventAttrib.version = NVTX_VERSION;
@@ -181,7 +181,7 @@ nvtxEventAttributes_t create_attributes(const CharT* description, color_t color)
 /// Mark a single point on the profiler timeline, giving
 /// it also a color and some descriptive text
 template <typename CharT>
-void point(const CharT* description, color_t color = color_t::Black())
+void point(CharT const* description, color_t color = color_t::Black())
 {
 	auto attrs = detail::create_attributes(description, color);
 	std::lock_guard<std::mutex> guard{ detail::get_mutex() };
@@ -200,7 +200,7 @@ void point(const CharT* description, color_t color = color_t::Black())
  */
 template <typename CharT>
 range::handle_t range_start(
-	const CharT*   description,
+	CharT const*   description,
 	range::type_t  type = range::type_t::unspecified,
 	color_t        color = color_t::LightRed())
 {
@@ -257,7 +257,7 @@ class scoped_range_marker {
 public:
 	template <typename CharT>
 	explicit scoped_range_marker(
-		const CharT* description,
+		CharT const* description,
 		profiling::range::type_t type = profiling::range::type_t::unspecified)
 	{
 		range = profiling::mark::range_start(description, type);
@@ -301,68 +301,68 @@ protected:
 namespace detail {
 
 template <typename CharT>
-void name_host_thread(uint32_t raw_thread_id, const CharT* name);
+void name_host_thread(uint32_t raw_thread_id, CharT const* name);
 
 template <>
-inline void name_host_thread<char>(uint32_t raw_thread_id, const char* name)
+inline void name_host_thread<char>(uint32_t raw_thread_id, char const* name)
 {
 	nvtxNameOsThreadA(raw_thread_id, name);
 }
 
 template <>
-inline void name_host_thread<wchar_t>(uint32_t raw_thread_id, const wchar_t* name)
+inline void name_host_thread<wchar_t>(uint32_t raw_thread_id, wchar_t const* name)
 {
 	nvtxNameOsThreadW(raw_thread_id, name);
 }
 
 template <typename CharT>
-void name_stream(stream::handle_t stream_handle, const CharT* name);
+void name_stream(stream::handle_t stream_handle, CharT const* name);
 
 template <>
-inline void name_stream<char>(stream::handle_t stream_handle, const char* name)
+inline void name_stream<char>(stream::handle_t stream_handle, char const* name)
 {
 	nvtxNameCuStreamA(stream_handle, name);
 }
 
 template <>
-inline void name_stream<wchar_t>(stream::handle_t stream_handle, const wchar_t* name)
+inline void name_stream<wchar_t>(stream::handle_t stream_handle, wchar_t const* name)
 {
 	nvtxNameCuStreamW(stream_handle, name);
 }
 
 template <typename CharT>
-void name_event(event::handle_t event_handle, const CharT* name);
+void name_event(event::handle_t event_handle, CharT const* name);
 
 template <>
-inline void name_event<char>(event::handle_t event_handle, const char* name)
+inline void name_event<char>(event::handle_t event_handle, char const* name)
 {
 	nvtxNameCuEventA(event_handle, name);
 }
 
 template <>
-inline void name_event<wchar_t>(event::handle_t event_handle, const wchar_t* name)
+inline void name_event<wchar_t>(event::handle_t event_handle, wchar_t const* name)
 {
 	nvtxNameCuEventW(event_handle, name);
 }
 
 template <typename CharT>
-void name_device(device::id_t device_id, const CharT* name);
+void name_device(device::id_t device_id, CharT const* name);
 
 template <>
-inline void name_device<char>(device::id_t device_id, const char* name)
+inline void name_device<char>(device::id_t device_id, char const* name)
 {
 	nvtxNameCuDeviceA(device_id, name);
 }
 
 template <>
-inline void name_device<wchar_t>(device::id_t device_id, const wchar_t* name)
+inline void name_device<wchar_t>(device::id_t device_id, wchar_t const* name)
 {
 	nvtxNameCuDeviceW(device_id, name);
 }
 
-inline void name(std::thread::id host_thread_id, const char* name)
+inline void name(std::thread::id host_thread_id, char const* name)
 {
-    auto native_handle = *(reinterpret_cast<const std::thread::native_handle_type*>(&host_thread_id));
+    auto native_handle = *(reinterpret_cast<std::thread::native_handle_type const*>(&host_thread_id));
 #ifdef _WIN32
     uint32_t thread_id = GetThreadId(native_handle);
 #else
@@ -384,7 +384,7 @@ inline void name(std::thread::id host_thread_id, const char* name)
  * @param[in] name The name to use for the specified thread
  */
 template <typename CharT>
-void name(const std::thread& host_thread, const CharT* name);
+void name(std::thread const& host_thread, CharT const* name);
 
 /**
  * @brief Have the profiler refer to the current thread using a specified string
@@ -394,14 +394,14 @@ void name(const std::thread& host_thread, const CharT* name);
  * @param[in] name The name to use for the specified thread
  */
 template <typename CharT>
-void name_this_thread(const CharT* name)
+void name_this_thread(CharT const* name)
 {
 	detail::name(std::this_thread::get_id(), name);
 }
 
 /// Have the profile assign a name to a certain stream
 template <typename CharT>
-void name(const stream_t& stream, const CharT* name)
+void name(stream_t const& stream, CharT const* name)
 {
 	context::current::detail::scoped_override_t context_setter{stream.context_handle()};
 	detail::name_stream(stream.handle(), name);
@@ -409,7 +409,7 @@ void name(const stream_t& stream, const CharT* name)
 
 /// Have the profile assign a name to a certain event
 template <typename CharT>
-void name(const event_t& event, const CharT* name)
+void name(event_t const& event, CharT const* name)
 {
 	context::current::detail::scoped_override_t context_setter{event.context_handle()};
 	detail::name_stream(event.handle(), name);
@@ -417,7 +417,7 @@ void name(const event_t& event, const CharT* name)
 
 /// Have the profile assign a name to a certain CUDA device
 template <typename CharT>
-void name(const device_t& device, const CharT* name)
+void name(device_t const& device, CharT const* name)
 {
 	detail::name_stream(device.id(), name);
 }

@@ -43,7 +43,7 @@ inline link_t wrap(
 	device::id_t device_id,
 	context::handle_t context_handle,
 	link::handle_t handle,
-	const link::options_t &options,
+	link::options_t const& options,
 	bool take_ownership = false) noexcept;
 
 /// Definitions relating to inputs to CUDA linking-processes
@@ -51,13 +51,13 @@ namespace input {
 
 /// A typed, named, image in memory which can be used as an input to a runtime CUDA linking-process
 struct image_t : memory::region_t {
-	const char *name; /// Link images are attached a name when registered in a linking-process
+	char const *name; /// Link images are attached a name when registered in a linking-process
 	link::input_kind_t type; /// type of contents found in the memory region
 };
 
 /// A typed, named, image in a file which can be used as an input to a runtime CUDA linking-process
 struct file_t {
-	const char *path;
+	char const *path;
 	link::input_kind_t type; /// type of contents found in the file
 };
 
@@ -135,7 +135,7 @@ public:
 	 * @note some types of linkable images are not, in fact, even compiled - but can be compiled
 	 * by the driver with the specified @p options.
 	 */
-	void add(link::input::image_t image, const link::options_t &ptx_compilation_options = {}) const
+	void add(link::input::image_t image, link::options_t const& ptx_compilation_options = {}) const
 	{
 		auto marshalled_options = link::detail::marshal(ptx_compilation_options);
 		auto status = cuLinkAddData(
@@ -164,7 +164,7 @@ public:
 	 * by the driver with the specified @p options.
 	 */
 	///@{
-	void add_file(link::input::file_t file_input, const link::options_t &options = {}) const
+	void add_file(link::input::file_t file_input, link::options_t const& options = {}) const
 	{
 		auto marshalled_options = link::detail::marshal(options);
 		auto status = cuLinkAddFile(
@@ -181,9 +181,9 @@ public:
 	}
 
     void add_file(
-        const char* path,
+        char const* path,
         link::input_kind_t file_contents_type,
-        const link::options_t &options = {}) const
+        link::options_t const& options = {}) const
     {
         auto link_file_spec = link::input::file_t { path, file_contents_type };
         return add_file(link_file_spec, options);
@@ -191,9 +191,9 @@ public:
 
 #if __cplusplus >= 201703L
 	void add_file(
-        const std::filesystem::path& path,
+        std::filesystem::path const& path,
         link::input_kind_t file_contents_type,
-        const link::options_t &options = {}) const
+        link::options_t const& options = {}) const
 	{
         return add_file(path.c_str(), file_contents_type, options);
 	}
@@ -206,7 +206,7 @@ protected: // constructors
 		device::id_t device_id,
 		context::handle_t context_handle,
 		link::handle_t handle,
-		const link::options_t &options,
+		link::options_t const& options,
 		bool take_ownership) noexcept
 	:
 		device_id_(device_id), context_handle_(context_handle), handle_(handle),
@@ -215,13 +215,13 @@ protected: // constructors
 
 public: // friendship
 
-	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, const link::options_t &, bool) noexcept;
+	friend link_t link::wrap(device::id_t, context::handle_t, link::handle_t, link::options_t const &, bool) noexcept;
 
 public: // constructors, operators
 
-	link_t(const link_t&) = delete;
+	link_t(link_t const&) = delete;
 	link_t(link_t&&) noexcept = default;
-	link_t& operator=(const link_t&) = delete;
+	link_t& operator=(link_t const&) = delete;
 	link_t& operator=(link_t&&) noexcept = default;
 
 protected: // data members
@@ -239,7 +239,7 @@ protected: // data members
 namespace link {
 
 /// Create a new link-process (before adding any compiled images or or image-files)
-inline link_t create(const link::options_t &options = link::options_t{})
+inline link_t create(link::options_t const& options = link::options_t{})
 {
 	handle_t new_link_handle;
 	auto marshalled_options = link::detail::marshal(options);
@@ -265,7 +265,7 @@ inline link_t wrap(
 	device::id_t             device_id,
 	context::handle_t        context_handle,
 	link::handle_t           handle,
-	const link::options_t &  options,
+	link::options_t const &  options,
 	bool                     take_ownership) noexcept
 {
 	return link_t{device_id, context_handle, handle, options, take_ownership};

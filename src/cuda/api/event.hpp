@@ -129,7 +129,7 @@ event_t wrap(
  * @param event the event for whose occurrence to wait; must be scheduled
  * to occur on some stream (possibly the different stream)
  */
-inline void wait(const event_t& event);
+inline void wait(event_t const& event);
 
 /**
  * @brief Wrapper class for a CUDA event
@@ -216,7 +216,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void record(const stream_t& stream) const;
+	void record(stream_t const& stream) const;
 
 	/**
 	 * Records the event and ensures it has occurred before returning
@@ -224,7 +224,7 @@ public: // other mutator methods
 	 *
 	 * @note No protection against repeated calls.
 	 */
-	void fire(const stream_t& stream) const;
+	void fire(stream_t const& stream) const;
 
 	/**
 	 * See @see cuda_::wait() .
@@ -251,9 +251,9 @@ protected: // constructors
 
 public: // constructors & operators
 
-	event_t(const event_t&) = delete;
+	event_t(event_t const&) = delete;
 	event_t(event_t&&) noexcept = default;
-	event_t& operator=(const event_t&) = delete;
+	event_t& operator=(event_t const&) = delete;
 	event_t& operator=(event_t&&) noexcept = default;
 
 public: // friendship
@@ -296,7 +296,7 @@ using duration_t = std::chrono::duration<float, std::milli>;
  * @param end second, later, timepoint event
  * @return the difference in the (inaccurately) measured time, in msec
  */
-inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
+inline duration_t time_elapsed_between(event_t const& start, event_t const& end)
 {
 	float elapsed_milliseconds;
 	auto status = cuEventElapsedTime(&elapsed_milliseconds, start.handle(), end.handle());
@@ -304,7 +304,7 @@ inline duration_t time_elapsed_between(const event_t& start, const event_t& end)
 	return duration_t { elapsed_milliseconds };
 }
 
-inline duration_t time_elapsed_between(const std::pair<const event_t&, const event_t&>& event_pair)
+inline duration_t time_elapsed_between(std::pair<event_t const&, event_t const&> const& event_pair)
 {
 	return time_elapsed_between(event_pair.first, event_pair.second);
 }
@@ -382,7 +382,7 @@ inline event_t create(
  * @note The created event will keep the device's primary context active while it exists.
  */
 event_t create(
-	const device_t&  device,
+	device_t const&  device,
 	bool             uses_blocking_sync = sync_by_busy_waiting, // Yes, that's the runtime default
 	bool             records_timing     = do_record_timings,
 	bool             interprocess       = not_interprocess);
@@ -399,14 +399,14 @@ event_t create(
  * @note Even if the context happens to be primary, the created event will _not_ keep this context alive.
  */
 inline event_t create(
-	const context_t&  context,
+	context_t const&  context,
 	bool              uses_blocking_sync = sync_by_busy_waiting,
 	bool              records_timing     = do_record_timings,
 	bool              interprocess       = not_interprocess);
 
 } // namespace event
 
-inline void wait(const event_t& event)
+inline void wait(event_t const& event)
 {
 	auto context_handle = event.context_handle();
 	auto event_handle = event.handle();
@@ -415,7 +415,7 @@ inline void wait(const event_t& event)
 	throw_if_error_lazy(status, "Failed synchronizing " + detail::identify(event));
 }
 
-inline void synchronize(const event_t& event)
+inline void synchronize(event_t const& event)
 {
 	return wait(event);
 }

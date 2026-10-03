@@ -147,7 +147,7 @@ int waitProcess(const Process *process) {
 
 #if defined(__linux__)
 int ipcCreateSocket(ipcHandle *&handle, const char *name,
-                    const std::vector<Process> &) {
+                    std::vector<Process> const& ) {
   int server_fd;
   struct sockaddr_un servaddr;
 
@@ -307,7 +307,7 @@ int ipcSendDataToServer(ipcHandle *handle, const char *serverName,
 }
 
 int ipcSendShareableHandle(ipcHandle *handle,
-                           const std::vector<ShareableHandle> &shareableHandles,
+                           std::vector<ShareableHandle> const& shareableHandles,
                            Process process, int data) {
   struct msghdr msg;
   struct iovec iov[1];
@@ -358,8 +358,8 @@ int ipcSendShareableHandle(ipcHandle *handle,
 }
 
 int ipcSendShareableHandles(
-    ipcHandle *handle, const std::vector<ShareableHandle> &shareableHandles,
-    const std::vector<Process> &processes) {
+    ipcHandle *handle, std::vector<ShareableHandle> const& shareableHandles,
+    std::vector<Process> const& processes) {
   // Send all shareable handles to every single process.
   for (std::size_t i = 0; i < shareableHandles.size(); i++) {
     for (std::size_t j = 0; j < processes.size(); j++) {
@@ -387,7 +387,7 @@ int ipcCloseShareableHandle(ShareableHandle shHandle) {
 LPTSTR SlotName = (LPTSTR)TEXT("\\\\.\\mailslot\\sample_mailslot_");
 
 int ipcCreateSocket(ipcHandle *&handle, const char *,
-                    const std::vector<Process> &processes) {
+                    std::vector<Process> const& processes) {
   handle = new ipcHandle;
   handle->hMailslot.resize(processes.size());
 
@@ -463,8 +463,8 @@ int ipcRecvData(ipcHandle *handle, void *data, size_t sz) {
 }
 
 int ipcSendShareableHandles(
-    ipcHandle *handle, const std::vector<ShareableHandle> &shareableHandles,
-    const std::vector<Process> &processes) {
+    ipcHandle *handle, std::vector<ShareableHandle> const& shareableHandles,
+    std::vector<Process> const& processes) {
   // Send all shareable handles to every single process.
   for (int i = 0; i < processes.size(); i++) {
     HANDLE hProcess =

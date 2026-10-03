@@ -52,10 +52,10 @@ struct pci_location_t {
 	 *
 	 * and any of them can be used.
 	 */
-	static pci_location_t parse(const std::string& id_str);
+	static pci_location_t parse(std::string const& id_str);
 
-	/// @copydoc parse(const std::string& id_str)
-	static pci_location_t parse(const char* id_str);
+	/// @copydoc parse(std::string const& id_str)
+	static pci_location_t parse(char const* id_str);
 };
 
 namespace detail {

@@ -28,13 +28,13 @@ module_t context_t::create_module(ContiguousContainer module_data) const
 
 template <typename ContiguousContainer,
 cuda_::detail::enable_if_t<detail::is_kinda_like_contiguous_container<ContiguousContainer>::value, bool>>
-module_t context_t::create_module(ContiguousContainer module_data, const link::options_t& link_options) const
+module_t context_t::create_module(ContiguousContainer module_data, link::options_t const& link_options) const
 {
 	return module_::create<context_t const &>(*this, module_data, link_options);
 }
 
 // These API calls are not really the way you want to work.
-inline cuda_::kernel_t module_t::get_kernel(const char* name) const
+inline cuda_::kernel_t module_t::get_kernel(char const* name) const
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	kernel::handle_t kernel_function_handle;
@@ -50,7 +50,7 @@ namespace module_ {
 namespace detail {
 
 template <typename Creator>
-module_t create(const context_t& context, const void* module_data, Creator creator_function)
+module_t create(context_t const& context, void const* module_data, Creator creator_function)
 {
 	CAW_SET_SCOPE_CONTEXT(context.handle());
 	handle_t new_module_handle;
@@ -70,10 +70,10 @@ module_t create(const context_t& context, const void* module_data, Creator creat
 }
 
 // TODO: Consider adding create_module() methods to context_t
-inline module_t create(const context_t& context, const void* module_data, const link::options_t& link_options)
+inline module_t create(context_t const& context, void const* module_data, link::options_t const& link_options)
 {
 	auto creator_function =
-		[&link_options](handle_t& new_module_handle, const void* module_data_) {
+		[&link_options](handle_t& new_module_handle, void const* module_data_) {
 			auto marshalled_options = link::detail::marshal(link_options);
 			return cuModuleLoadDataEx(
 				&new_module_handle,
@@ -86,29 +86,29 @@ inline module_t create(const context_t& context, const void* module_data, const 
 	return detail::create(context, module_data, creator_function);
 }
 
-inline module_t create(const context_t& context, const void* module_data)
+inline module_t create(context_t const& context, void const* module_data)
 {
 	auto creator_function =
-		[](handle_t& new_module_handle, const void* module_data_) {
+		[](handle_t& new_module_handle, void const* module_data_) {
 			return cuModuleLoadData(&new_module_handle, module_data_);
 		};
 	return detail::create(context, module_data, creator_function);
 }
 
-inline device::primary_context_t get_context_for(const device_t& locus) { return locus.primary_context(); }
+inline device::primary_context_t get_context_for(device_t const& locus) { return locus.primary_context(); }
 
 } // namespace detail
 
 inline module_t load_from_file(
-	const device_t&         device,
-	const char*             path)
+	device_t const&         device,
+	char const*             path)
 {
 	auto pc = device.primary_context();
 	device::primary_context::detail::increase_refcount(device.id());
 	return load_from_file(pc, path);
 }
 
-inline module_t load_from_file(const char* path)
+inline module_t load_from_file(char const* path)
 {
 	return load_from_file(device::current::get(), path);
 }
@@ -119,7 +119,7 @@ inline context_t module_t::context() const { return context::detail::from_handle
 inline device_t module_t::device() const { return device::get(context::detail::get_device_id(context_handle_)); }
 
 #if CUDA_VERSION < 12000
-inline CUsurfref module_t::get_surface(const char* name) const
+inline CUsurfref module_t::get_surface(char const* name) const
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUsurfref raw_surface_reference;
@@ -129,7 +129,7 @@ inline CUsurfref module_t::get_surface(const char* name) const
 	return raw_surface_reference;
 }
 
-inline CUtexref module_t::get_texture_reference(const char* name) const
+inline CUtexref module_t::get_texture_reference(char const* name) const
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle_);
 	CUtexref raw_texture_reference;

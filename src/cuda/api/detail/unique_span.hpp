@@ -62,11 +62,11 @@ public: // constructors and destructor
 	constexpr unique_span() noexcept : span_type(), deleter_{nullptr} {}
 
 	// Disable copy construction - as this class never allocates;
-	unique_span(const unique_span&) = delete;
+	unique_span(unique_span const&) = delete;
 	// ... and also match other kinds of unique_span's, which may get converted into
 	// a span and thus leak memory on construction!
 	template<typename U>
-	unique_span(const unique_span<U>&) = delete;
+	unique_span(unique_span<U> const&) = delete;
 
 	// Note: This template provides constructibility of unique_span<const T> from unique_span<const T>
 	template<typename U>
@@ -119,7 +119,7 @@ public: // constructors and destructor
 public: // operators
 
 	/// No copy-assignment - that would break our ownership guarantee
-	unique_span& operator=(const unique_span&) = delete;
+	unique_span& operator=(unique_span const&) = delete;
 
 	/// A Move-assignment operator, which takes ownership of the other region
 	unique_span& operator=(unique_span&& other) noexcept

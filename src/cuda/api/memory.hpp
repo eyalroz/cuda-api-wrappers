@@ -266,14 +266,14 @@ inline void free_in_current_context(
 
 /// Free a region of device-side memory (regardless of how it was allocated)
 #if CUDA_VERSION >= 11020
-inline void free(void* region_start, optional_ref<const stream_t> stream = {});
+inline void free(void* region_start, optional_ref<stream_t const> stream = {});
 #else
 inline void free(void* ptr);
 #endif
 
 #if CUDA_VERSION >= 11020
-/// @copydoc free(void*, optional_ref<const stream_t>)
-inline void free(region_t region, optional_ref<const stream_t> stream = {})
+/// @copydoc free(void*, optional_ref<stream_t const>)
+inline void free(region_t region, optional_ref<stream_t const> stream = {})
 {
 	free(region.start(), stream);
 }
@@ -299,7 +299,7 @@ inline void free(region_t region)
  * @return a pointer to the region of memory which will become allocated once the stream
  * completes all previous tasks and proceeds to also complete the allocation.
  */
-region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream);
+region_t allocate(size_t size_in_bytes, optional_ref<stream_t const> stream);
 #endif
 
 /**
@@ -315,7 +315,7 @@ region_t allocate(size_t size_in_bytes, optional_ref<const stream_t> stream);
  * @param size_in_bytes the amount of global device memory to allocate
  * @return a pointer to the allocated stretch of memory (only usable within @p context)
  */
-inline region_t allocate(const context_t& context, size_t size_in_bytes);
+inline region_t allocate(context_t const& context, size_t size_in_bytes);
 
 /**
  * Allocate device-side memory on a CUDA device.
@@ -330,7 +330,7 @@ inline region_t allocate(const context_t& context, size_t size_in_bytes);
  * @param size_in_bytes the amount of global device memory to allocate
  * @return a pointer to the allocated stretch of memory (only usable on @p device)
  */
-inline region_t allocate(const device_t& device, size_t size_in_bytes);
+inline region_t allocate(device_t const& device, size_t size_in_bytes);
 
 namespace detail {
 
@@ -360,7 +360,7 @@ struct deleter {
  * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
-void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream = {});
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<stream_t const> stream = {});
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -384,7 +384,7 @@ void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const
  * @param num_bytes size of the memory region in bytes
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 	return typed_set<unsigned char>(
 		static_cast<unsigned char*>(start),
@@ -402,7 +402,7 @@ inline void set(void* start, int byte_value, size_t num_bytes, optional_ref<cons
  * @param region a region to zero-out, in a CUDA device's global memory
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream = {})
+inline void set(region_t region, int byte_value, optional_ref<stream_t const> stream = {})
 {
 	set(region.start(), byte_value, region.size(), stream);
 }
@@ -415,7 +415,7 @@ inline void set(region_t region, int byte_value, optional_ref<const stream_t> st
  * @param num_bytes the size in bytes of the region of memory to zero-out
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void zero(void* start, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 	set(start, 0, num_bytes, stream);
 }
@@ -427,7 +427,7 @@ inline void zero(void* start, size_t num_bytes, optional_ref<const stream_t> str
  * CUDA device's global memory
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region, optional_ref<const stream_t> stream = {})
+inline void zero(region_t region, optional_ref<stream_t const> stream = {})
 {
 	zero(region.start(), region.size(), stream);
 }
@@ -440,7 +440,7 @@ inline void zero(region_t region, optional_ref<const stream_t> stream = {})
  * @param stream an existing stream on which to schedule this action; may be omitted
  */
 template <typename T>
-void zero(T* ptr, optional_ref<const stream_t> stream = {})
+void zero(T* ptr, optional_ref<stream_t const> stream = {})
 {
 	zero(ptr, sizeof(T), stream);
 }
@@ -463,7 +463,7 @@ namespace detail {
  * @param num_bytes number of bytes to copy from @p source
  * @param stream_handle The handle of a stream on which to schedule the copy operation
 */
-inline void copy(void* destination, const void* source, size_t num_bytes, stream::handle_t stream_handle)
+inline void copy(void* destination, void const* source, size_t num_bytes, stream::handle_t stream_handle)
 {
 	auto result = cuMemcpyAsync(device::address(destination), device::address(source), num_bytes, stream_handle);
 
@@ -545,7 +545,7 @@ status_t multidim_copy(
 // Assumes the array and the stream share the same context, and that the destination is
 // accessible from that context (e.g. allocated within it, or being managed memory, etc.)
 template <typename T, dimensionality_t NumDimensions>
-void copy(T *destination, const array_t<T, NumDimensions>& source, optional<stream::handle_t> stream_handle)
+void copy(T *destination,array_t<T, NumDimensions> const& source, optional<stream::handle_t> stream_handle)
 {
 	using  memory::endpoint_t;
 	auto dims = source.dimensions();
@@ -564,7 +564,7 @@ void copy(T *destination, const array_t<T, NumDimensions>& source, optional<stre
 
 
 template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>&  destination, const T* source, optional<stream::handle_t> stream_handle)
+void copy(array_t<T, NumDimensions> const&  destination, const T* source, optional<stream::handle_t> stream_handle)
 {
 	using memory::endpoint_t;
 	auto dims = destination.dimensions();
@@ -624,7 +624,7 @@ void copy_single(T* destination, const T* source, optional<stream::handle_t> str
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
@@ -644,7 +644,7 @@ void copy(span<T> destination, c_array<const T,N> const& source, optional_ref<co
  *     containing the data to be copied
  */
 template <typename T, size_t N>
-void copy(c_array<T,N>& destination, span<T const> source, optional_ref<const stream_t> stream = {})
+void copy(c_array<T,N>& destination, span<T const> source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (source.size() > N) {
@@ -666,7 +666,7 @@ void copy(c_array<T,N>& destination, span<T const> source, optional_ref<const st
  *     of the first element, there is no array-decay.
  */
 template <typename T, size_t N>
-void copy(void* destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(void* destination, c_array<const T,N> const& source, optional_ref<stream_t const> stream = {})
 {
 	return copy(destination, source, sizeof(T) * N, stream);
 }
@@ -689,7 +689,7 @@ void copy(void* destination, c_array<const T,N> const& source, optional_ref<cons
  * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
-void copy(c_array<T,N>& destination, T* source, optional_ref<const stream_t> stream = {})
+void copy(c_array<T,N>& destination, T* source, optional_ref<stream_t const> stream = {})
 {
 	return copy(destination, source, sizeof(T) * N, stream);
 }
@@ -708,7 +708,7 @@ void copy(c_array<T,N>& destination, T* source, optional_ref<const stream_t> str
  * @param num_bytes The amount of memory to set to @p byte_value
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_t> stream = {});
+void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<stream_t const> stream = {});
 
 /**
  * Sets all bytes in a region of memory to a fixed value
@@ -721,7 +721,7 @@ void set(void* ptr, int byte_value, size_t num_bytes, optional_ref<const stream_
  * @param byte_value value to set the memory region to
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void set(region_t region, int byte_value, optional_ref<const stream_t> stream = {})
+inline void set(region_t region, int byte_value, optional_ref<stream_t const> stream = {})
 {
 	return set(region.start(), byte_value, region.size(), stream);
 }
@@ -733,7 +733,7 @@ inline void set(region_t region, int byte_value, optional_ref<const stream_t> st
  * global CUDA-device-side memory or CUDA-managed memory.
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(region_t region, optional_ref<const stream_t> stream = {})
+inline void zero(region_t region, optional_ref<stream_t const> stream = {})
 {
 	return set(region, 0, stream);
 }
@@ -746,7 +746,7 @@ inline void zero(region_t region, optional_ref<const stream_t> stream = {})
  * @param num_bytes the size in bytes of the region of memory to zero-out
  * @param stream A stream on which to schedule this action; may be omitted.
  */
-inline void zero(void* ptr, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void zero(void* ptr, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 	return set(ptr, 0, num_bytes, stream);
 }
@@ -821,7 +821,7 @@ status_t multidim_copy(copy_parameters_t<NumDimensions> params, stream::handle_t
  * merely pass it on to the CUDA driver
  */
 template<dimensionality_t NumDimensions>
-void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> stream = {});
+void copy(copy_parameters_t<NumDimensions> params, optional_ref<stream_t const> stream = {});
 
 /**
  * Synchronously copies data from a CUDA array into non-array memory.
@@ -836,7 +836,7 @@ void copy(copy_parameters_t<NumDimensions> params, optional_ref<const stream_t> 
  * @param stream A stream on which to schedule the copy action
  */
 template<typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const context_t& source_context, const T *source, optional_ref<const stream_t> stream = {})
+void copy(array_t<T, NumDimensions> const& destination, context_t const& source_context, const T *source, optional_ref<stream_t const> stream = {})
 {
 	auto dims = destination.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -867,7 +867,7 @@ void copy(const array_t<T, NumDimensions>& destination, const context_t& source_
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<const stream_t> stream = {});
+void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<stream_t const> stream = {});
 
 /**
  * Copies a contiguous sequence of elements in memory into a CUDA array
@@ -878,7 +878,7 @@ void copy(array_t<T, NumDimensions>& destination, const T* source, optional_ref<
  * in the source span are ignored
  */
 template<typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, span<T const> source, optional_ref<const stream_t> stream = {})
+void copy(array_t<T, NumDimensions> const& destination, span<T const> source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
@@ -901,7 +901,7 @@ void copy(const array_t<T, NumDimensions>& destination, span<T const> source, op
  * @param source A {@tparam NumDimensions}-dimensional CUDA array
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(const context_t& context, T *destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {})
+void copy(context_t const& context, T *destination,array_t<T, NumDimensions> const& source, optional_ref<stream_t const> stream = {})
 {
 	auto dims = source.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -934,7 +934,7 @@ void copy(const context_t& context, T *destination, const array_t<T, NumDimensio
  * @param stream schedule the copy operation into this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {});
+void copy(T* destination,array_t<T, NumDimensions> const& source, optional_ref<stream_t const> stream = {});
 
 
 /**
@@ -945,7 +945,7 @@ void copy(T* destination, const array_t<T, NumDimensions>& source, optional_ref<
  * @note The @p destination span must be at least as larger as the volume of the array.
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional_ref <const stream_t> stream = {})
+void copy(span<T> destination,array_t<T, NumDimensions> const& source, optional_ref <stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size()) {
@@ -965,7 +965,7 @@ void copy(span<T> destination, const array_t<T, NumDimensions>& source, optional
  * @note The destination array must be at least as large in each dimension as the source array.
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream)
+void copy(array_t<T, NumDimensions> const& destination,array_t<T, NumDimensions> const& source, optional_ref<stream_t const> stream)
 {
 	auto dims = source.dimensions();
 	auto params = copy_parameters_t<NumDimensions> {};
@@ -999,7 +999,7 @@ void copy(const array_t<T, NumDimensions>& destination, const array_t<T, NumDime
  * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(region_t destination, const array_t<T, NumDimensions>& source, optional_ref<const stream_t> stream = {})
+void copy(region_t destination,array_t<T, NumDimensions> const& source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < source.size_bytes()) {
@@ -1025,7 +1025,7 @@ void copy(region_t destination, const array_t<T, NumDimensions>& source, optiona
  * synchronous copy)
  */
 template <typename T, dimensionality_t NumDimensions>
-void copy(array_t<T, NumDimensions>& destination, const_region_t source, optional_ref<const stream_t> stream = {})
+void copy(array_t<T, NumDimensions>& destination, const_region_t source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size_bytes() < source.size()) {
@@ -1054,7 +1054,7 @@ void copy(array_t<T, NumDimensions>& destination, const_region_t source, optiona
  * @param stream The CUDA command queue on which this copying will be enqueued
  */
 template <typename T>
-void copy_single(T* destination, const T* source, optional_ref<const stream_t> stream = {});
+void copy_single(T* destination, const T* source, optional_ref<stream_t const> stream = {});
 
 /**
  * Asynchronously copies data between memory spaces or within a memory space.
@@ -1074,7 +1074,7 @@ void copy_single(T* destination, const T* source, optional_ref<const stream_t> s
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-void copy(void* destination, void const* source, size_t num_bytes, optional_ref<const stream_t> stream = {});
+void copy(void* destination, void const* source, size_t num_bytes, optional_ref<stream_t const> stream = {});
 
 
 /**
@@ -1097,7 +1097,7 @@ void copy(void* destination, void const* source, size_t num_bytes, optional_ref<
  * @param stream schedule the copy operation in this CUDA stream
  */
 template <typename T, size_t N>
-void copy(c_array<T,N>& destination, const_region_t source, optional_ref<const stream_t> stream = {})
+void copy(c_array<T,N>& destination, const_region_t source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	size_t required_size = N * sizeof(T);
@@ -1134,7 +1134,7 @@ void copy(c_array<T,N>& destination, const_region_t source, optional_ref<const s
  * @param stream A stream on which to enqueue the copy operation
  */
 template <typename T, size_t N>
-void copy(region_t destination, c_array<const T,N> const& source, optional_ref<const stream_t> stream = {})
+void copy(region_t destination, c_array<const T,N> const& source, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < N) {
@@ -1156,7 +1156,7 @@ void copy(region_t destination, c_array<const T,N> const& source, optional_ref<c
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void copy(region_t destination, const_region_t source, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1183,7 +1183,7 @@ inline void copy(region_t destination, const_region_t source, size_t num_bytes, 
  *     global memory. Must be defined in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, const_region_t source, optional_ref<const stream_t> stream = {})
+inline void copy(region_t destination, const_region_t source, optional_ref<stream_t const> stream = {})
 {
 	copy(destination, source, source.size(), stream);
 }
@@ -1206,7 +1206,7 @@ inline void copy(region_t destination, const_region_t source, optional_ref<const
  *     in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, optional_ref<const stream_t> stream = {})
+inline void copy(region_t destination, void* source, optional_ref<stream_t const> stream = {})
 {
 	return copy(destination.start(), source, destination.size(), stream);
 }
@@ -1228,7 +1228,7 @@ inline void copy(region_t destination, void* source, optional_ref<const stream_t
  * @param num_bytes Amount of memory to copy
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(region_t destination, void* source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void copy(region_t destination, void* source, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (destination.size() < num_bytes) {
@@ -1257,7 +1257,7 @@ inline void copy(region_t destination, void* source, size_t num_bytes, optional_
  * @param num_bytes The number of bytes to copy from @p source to @p destination
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(void* destination, const_region_t source, size_t num_bytes, optional_ref<const stream_t> stream = {})
+inline void copy(void* destination, const_region_t source, size_t num_bytes, optional_ref<stream_t const> stream = {})
 {
 #ifndef NDEBUG
 	if (source.size() < num_bytes) {
@@ -1281,7 +1281,7 @@ inline void copy(void* destination, const_region_t source, size_t num_bytes, opt
  *     device's global memory. Must be defined in the same context as the stream.
  * @param stream A stream on which to enqueue the copy operation
  */
-inline void copy(void* destination, const_region_t source, optional_ref<const stream_t> stream = {})
+inline void copy(void* destination, const_region_t source, optional_ref<stream_t const> stream = {})
 {
 	copy(destination, source, source.size(), stream);
 }
@@ -1325,9 +1325,9 @@ void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t s
 	// TODO: Consider checking for alignment when compiling without NDEBUG
 	status_t result = static_cast<status_t>(cuda_::status::success);
 	switch(sizeof(T)) {
-		case(1): result = cuMemsetD8Async (address(start), reinterpret_cast<const std::uint8_t& >(value), num_elements, stream_handle); break;
-		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<const std::uint16_t&>(value), num_elements, stream_handle); break;
-		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<const std::uint32_t&>(value), num_elements, stream_handle); break;
+		case(1): result = cuMemsetD8Async (address(start), reinterpret_cast<std::uint8_t const& >(value), num_elements, stream_handle); break;
+		case(2): result = cuMemsetD16Async(address(start), reinterpret_cast<std::uint16_t const&>(value), num_elements, stream_handle); break;
+		case(4): result = cuMemsetD32Async(address(start), reinterpret_cast<std::uint32_t const&>(value), num_elements, stream_handle); break;
 	}
 	throw_if_error_lazy(result, "Setting global device memory bytes");
 }
@@ -1347,7 +1347,7 @@ void typed_set(T* start, const T& value, size_t num_elements, stream::handle_t s
  * @param stream A stream on which to schedule this action; may be omitted.
  */
 template <typename T>
-void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const stream_t> stream);
+void typed_set(T* start, const T& value, size_t num_elements, optional_ref<stream_t const> stream);
 
 /**
  * Asynchronously sets all bytes in a stretch of memory to 0.
@@ -1357,7 +1357,7 @@ void typed_set(T* start, const T& value, size_t num_elements, optional_ref<const
  * @param stream     stream on which to schedule this action
  * @param stream     A stream on which to enqueue the operation; may be omitted.
  */
-void zero(void* start, size_t num_bytes, optional_ref<const stream_t> stream);
+void zero(void* start, size_t num_bytes, optional_ref<stream_t const> stream);
 
 } // namespace device
 
@@ -1365,19 +1365,19 @@ namespace inter_context {
 
 void copy(
 	void *                        destination,
-	const context_t&              destination_context,
-	const void *                  source_address,
-	const context_t&              source_context,
+	context_t const&              destination_context,
+	void const *                  source_address,
+	context_t const&              source_context,
 	size_t                        num_bytes,
-	optional_ref<const stream_t>  stream);
+	optional_ref<stream_t const>  stream);
 
 /*
 inline void copy(
 	region_t           destination,
-	const context_t&   destination_context,
+	context_t const&   destination_context,
 	const_region_t     source,
-	const context_t&   source_context,
-	optional_ref<const stream_t> stream)
+	context_t const&   source_context,
+	optional_ref<stream_t const> stream)
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
@@ -1397,7 +1397,7 @@ template <typename T, dimensionality_t NumDimensions>
 void copy(
 	array_t<T, NumDimensions>  destination,
 	array_t<T, NumDimensions>  source,
-	optional_ref<const stream_t> stream)
+	optional_ref<stream_t const> stream)
 {
 	// for arrays, a single mechanism handles both intra- and inter-context copying
 	return memory::copy(destination, source, stream);
@@ -1434,19 +1434,19 @@ inline void copy(
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 void copy(
 	void *                        destination_address,
-	const context_t&              destination_context,
-	const void *                  source_address,
-	const context_t&              source_context,
+	context_t const&              destination_context,
+	void const *                  source_address,
+	context_t const&              source_context,
 	size_t                        num_bytes,
-	optional_ref<const stream_t> stream);
+	optional_ref<stream_t const> stream);
 
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 inline void copy(
 	void *                        destination,
-	const context_t&              destination_context,
+	context_t const&              destination_context,
 	const_region_t                source,
-	const context_t&              source_context,
-	optional_ref<const stream_t>  stream)
+	context_t const&              source_context,
+	optional_ref<stream_t const>  stream)
 {
 	copy(destination, destination_context, source.start(), source_context, source.size(), stream);
 }
@@ -1454,10 +1454,10 @@ inline void copy(
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 inline void copy(
 	region_t                      destination,
-	const context_t&              destination_context,
-	const void*                   source,
-	const context_t&              source_context,
-	optional_ref<const stream_t>  stream)
+	context_t const&              destination_context,
+	void const*                   source,
+	context_t const&              source_context,
+	optional_ref<stream_t const>  stream)
 {
 	copy(destination.start(), destination_context, source, source_context, destination.size(), stream);
 }
@@ -1465,10 +1465,10 @@ inline void copy(
 /// Asynchronously copy a region of memory defined in one context into a region defined in another
 inline void copy(
 	region_t                      destination,
-	const context_t&              destination_context,
+	context_t const&              destination_context,
 	const_region_t                source,
-	const context_t&              source_context,
-	optional_ref<const stream_t>  stream)
+	context_t const&              source_context,
+	optional_ref<stream_t const>  stream)
 {
 #ifndef NDEBUG
 	if (destination.size() < destination.size()) {
@@ -1485,7 +1485,7 @@ template <typename T, dimensionality_t NumDimensions>
 void copy(
 	array_t<T, NumDimensions>     destination,
 	array_t<T, NumDimensions>     source,
-	optional_ref<const stream_t>  stream)
+	optional_ref<stream_t const>  stream)
 {
 	// for arrays, a single mechanism handles both intra- and inter-context copying
 	return memory::copy(destination, source, stream);
@@ -1598,7 +1598,7 @@ struct deleter {
  * @param size the size in bytes the memory region to register/pin
  * @param flags
  */
-inline void register_(const void *ptr, size_t size, unsigned flags)
+inline void register_(void const *ptr, size_t size, unsigned flags)
 {
 	auto result = cuMemHostRegister(const_cast<void *>(ptr), size, flags);
 	throw_if_error_lazy(result,
@@ -1672,7 +1672,7 @@ enum accessibility_on_all_devices : bool {
  *     (or rather the region it is mapped to and accessible from the device) as
  *     read-only; see @ref CU_MEMHOSTREGISTER_READ_ONLY for more details.
  */
-inline void register_(const void *ptr, size_t size,
+inline void register_(void const *ptr, size_t size,
 	bool register_mapped_io_space,
 	bool map_into_device_space,
 	bool make_device_side_accessible_to_all
@@ -1784,14 +1784,14 @@ inline void register_(const_region_t region)
  * @note the CUDA API calls this action "unregister", but that's semantically inaccurate. The
  * registration is not undone, rolled back, it's just ended
  */
-inline void deregister(const void *ptr)
+inline void deregister(void const *ptr)
 {
 	auto result = cuMemHostUnregister(const_cast<void *>(ptr));
 	throw_if_error_lazy(result,
 		"Could not unregister the memory segment starting at address *a");
 }
 
-/// @copydoc deregister(const void *)
+/// @copydoc deregister(void const *)
 inline void deregister(const_region_t region)
 {
 	deregister(region.start());
@@ -1998,7 +1998,7 @@ void advise_no_access_expected_by(const_region_t region, device_t& device);
 
 /// @return the devices which are marked by attribute as being the accessors of a specified memory region
 template <typename Allocator = std::allocator<cuda_::device_t> >
-std::vector<device_t, Allocator> expected_accessors(const_region_t region, const Allocator& allocator = Allocator() );
+std::vector<device_t, Allocator> expected_accessors(const_region_t region, Allocator const& allocator = Allocator() );
 
 /// Kinds of managed memory region attachments
 enum class attachment_t : unsigned {
@@ -2091,7 +2091,7 @@ inline managed::region_t allocate(
  * this task (= less overhead)?
  */
 inline region_t allocate(
-	const context_t&      context,
+	context_t const&      context,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
@@ -2109,7 +2109,7 @@ inline region_t allocate(
  * this task (= less overhead)?
  */
 inline region_t allocate(
-	const device_t&       device,
+	device_t const&       device,
 	size_t                num_bytes,
 	initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
@@ -2204,8 +2204,8 @@ inline void prefetch(
  */
 void prefetch(
 	const_region_t         region,
-	const cuda_::device_t&  destination,
-	const stream_t&        stream);
+	cuda_::device_t const&  destination,
+	stream_t const&        stream);
 
 /**
  * Prefetches a region of managed memory into host memory. It can
@@ -2213,7 +2213,7 @@ void prefetch(
  */
 void prefetch_to_host(
 	const_region_t   region,
-	const stream_t&  stream);
+	stream_t const&  stream);
 
 } // namespace managed
 
@@ -2319,7 +2319,7 @@ inline void free(void* host_side_pair)
  * @param options see @ref memory::allocation_options
  */
 region_pair_t allocate(
-	const cuda_::context_t&    context,
+	cuda_::context_t const&    context,
 	size_t                    size_in_bytes,
 	allocation_options        options);
 
@@ -2332,7 +2332,7 @@ region_pair_t allocate(
  * @param options see @ref memory::allocation_options
  */
 region_pair_t allocate(
-	const cuda_::device_t&     device,
+	cuda_::device_t const&     device,
 	size_t                    size_in_bytes,
 	allocation_options        options = allocation_options{});
 
@@ -2375,9 +2375,9 @@ inline void free_region_pair_of(void* ptr)
  * @return `true` iff the region was allocated as one side of a mapped
  * memory region pair
  */
-inline bool is_part_of_a_region_pair(const void* ptr)
+inline bool is_part_of_a_region_pair(void const* ptr)
 {
-	auto wrapped_ptr = pointer_t<const void> { ptr };
+	auto wrapped_ptr = pointer_t<void const> { ptr };
 	return wrapped_ptr.other_side_of_region_pair().get() != nullptr;
 }
 
@@ -2420,7 +2420,7 @@ namespace device {
 namespace detail {
 
 template <typename T>
-unique_span<T> make_unique_span(const context::handle_t context_handle, size_t size)
+unique_span<T> make_unique_span(context::handle_t const context_handle, size_t size)
 {
 	auto allocate_in_current_context_ = [](size_t size) { return allocate_in_current_context(size); };
 	CAW_SET_SCOPE_CONTEXT(context_handle);
@@ -2447,18 +2447,18 @@ unique_span<T> make_unique_span(const context::handle_t context_handle, size_t s
  * non-construction of individual elements should not pose a problem. But - let the user beware.
  */
 template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t size);
+unique_span<T> make_unique_span(context_t const& context, size_t size);
 
 /**
- * @copydoc make_unique_span(const context_t&, size_t)
+ * @copydoc make_unique_span(context_t const&, size_t)
  *
  * @param device The CUDA device in whose primary context to make the allocation.
  */
 template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t size);
+unique_span<T> make_unique_span(device_t const& device, size_t size);
 
 /**
- * @copydoc make_unique_span(const context_t&, size_t)
+ * @copydoc make_unique_span(context_t const&, size_t)
  *
  * @note The current device's primary context will be used (_not_ the
  * current context).
@@ -2468,16 +2468,16 @@ unique_span<T> make_unique_span(size_t size);
 
 } // namespace device
 
-/// See @ref `device::make_unique_span(const context_t& context, size_t size)`
+/// See @ref `device::make_unique_span(context_t const& context, size_t size)`
 template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t size)
+unique_span<T> make_unique_span(context_t const& context, size_t size)
 {
 	return device::make_unique_span<T>(context, size);
 }
 
-/// See @ref `device::make_unique_span(const context_t& context, size_t num_elements)`
+/// See @ref `device::make_unique_span(context_t const& context, size_t num_elements)`
 template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t size)
+unique_span<T> make_unique_span(device_t const& device, size_t size)
 {
 	return device::make_unique_span<T>(device, size);
 }
@@ -2520,7 +2520,7 @@ namespace detail {
 
 template <typename T, initial_visibility_t InitialVisibility = initial_visibility_t::to_all_devices>
 unique_span<T> make_unique_span(
-	const context::handle_t  context_handle,
+	context::handle_t const  context_handle,
 	size_t                   size)
 {
 	CAW_SET_SCOPE_CONTEXT(context_handle);
@@ -2556,23 +2556,23 @@ unique_span<T> make_unique_span(
  */
 template <typename T>
 unique_span<T> make_unique_span(
-	const context_t&      context,
+	context_t const&      context,
 	size_t                size,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
- * @copydoc make_unique_span(const context_t&, size_t)
+ * @copydoc make_unique_span(context_t const&, size_t)
  *
  * @param device The CUDA device in whose primary context to make the allocation.
  */
 template <typename T>
 unique_span<T> make_unique_span(
-	const device_t&       device,
+	device_t const&       device,
 	size_t                size,
     initial_visibility_t  initial_visibility = initial_visibility_t::to_all_devices);
 
 /**
- * @copydoc make_unique_span(const context_t&, size_t)
+ * @copydoc make_unique_span(context_t const&, size_t)
  *
  * @note The current device's primary context will be used (_not_ the
  * current context).
@@ -2610,16 +2610,16 @@ memory::region_t locate(T&& symbol)
 
 } // namespace symbol
 
-/// See @ref `memory::device::make_unique_span(const context_t& context, size_t size)`
+/// See @ref `memory::device::make_unique_span(context_t const& context, size_t size)`
 template <typename T>
-unique_span<T> make_unique_span(const context_t& context, size_t size)
+unique_span<T> make_unique_span(context_t const& context, size_t size)
 {
 	return memory::device::make_unique_span<T>(context, size);
 }
 
-/// See @ref `memory::device::make_unique_span(const context_t& context, size_t num_elements)`
+/// See @ref `memory::device::make_unique_span(context_t const& context, size_t num_elements)`
 template <typename T>
-unique_span<T> make_unique_span(const device_t& device, size_t size)
+unique_span<T> make_unique_span(device_t const& device, size_t size)
 {
 	return memory::device::make_unique_span<T>(device, size);
 }

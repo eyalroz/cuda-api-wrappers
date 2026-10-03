@@ -82,7 +82,7 @@ public:
 	}
 
 	properties_t(properties_t&&) = default;
-	properties_t(const properties_t&) = default;
+	properties_t(properties_t const&) = default;
 
 public:
 	CUmemAllocationProp_st raw;
@@ -106,7 +106,7 @@ properties_t create_properties(cuda_::device::id_t device_id)
 } // namespace detail
 
 template<physical_allocation::shared_handle_kind_t SharedHandleKind>
-properties_t create_properties_for(const device_t& device);
+properties_t create_properties_for(device_t const& device);
 
 } // namespace physical_allocation
 
@@ -157,9 +157,9 @@ protected:
 public:
 	friend reserved_address_range_t detail::wrap(region_t, alignment_t, bool) noexcept;
 
-	reserved_address_range_t(const reserved_address_range_t&) = delete;
+	reserved_address_range_t(reserved_address_range_t const&) = delete;
 	reserved_address_range_t(reserved_address_range_t&&) noexcept = default;
-	reserved_address_range_t& operator=(const reserved_address_range_t&) = delete;
+	reserved_address_range_t& operator=(reserved_address_range_t const&) = delete;
 	reserved_address_range_t& operator=(reserved_address_range_t&&) noexcept = default;
 
 public: // getters
@@ -168,8 +168,8 @@ public: // getters
 	alignment_t alignment() const noexcept { return alignment_; }
 
 protected: // data members
-	const region_t     region_;
-	const alignment_t  alignment_;
+	region_t const     region_;
+	alignment_t const  alignment_;
 	cuda_::detail::handle_ownership_t<reserved_address_range_t> ownership_;
 
 	CAW_DEFINE_HANDLE_RELEASE_MEMBERS(cuda_::memory::virtual_::detail::cancel_reservation_nothrow, cuMemAddressFree)
@@ -232,7 +232,7 @@ protected: // constructors
 		: handle_(handle), size_(size), refcount_unit_({ holds_refcount_unit, handle }) { }
 
 public: // constructors & destructor
-	physical_allocation_t(const physical_allocation_t& other) = delete;
+	physical_allocation_t(physical_allocation_t const& other) = delete;
 	physical_allocation_t(physical_allocation_t&& other) noexcept = default;
 
 public: // non-mutators
@@ -361,13 +361,13 @@ inline permissions_t get_permissions(region_t fully_mapped_region, cuda_::device
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-permissions_t get_access_mode(region_t fully_mapped_region, const device_t& device);
+permissions_t get_access_mode(region_t fully_mapped_region, device_t const& device);
 
 /**
  * Determines what kind of access a device has to a the region of memory mapped to a single
  * physical allocation.
  */
-permissions_t get_access_mode(mapping_t mapping, const device_t& device);
+permissions_t get_access_mode(mapping_t mapping, device_t const& device);
 
 /**
  * Set the access mode from a single device to a mapped region in the (universal) address space
@@ -375,13 +375,13 @@ permissions_t get_access_mode(mapping_t mapping, const device_t& device);
  * @param fully_mapped_region a region in the universal (virtual) address space, which must be
  * covered entirely by virtual memory mappings.
  */
-void set_permissions(region_t fully_mapped_region, const device_t& device, permissions_t access_mode);
+void set_permissions(region_t fully_mapped_region, device_t const& device, permissions_t access_mode);
 
 /**
  * Set the access mode from a single device to the region of memory mapped to a single
  * physical allocation.
  */
-void set_permissions(const mapping_t& mapping, const device_t& device, permissions_t access_mode);
+void set_permissions(mapping_t const& mapping, device_t const& device, permissions_t access_mode);
 ///@}
 
 /**
@@ -394,7 +394,7 @@ void set_permissions(const mapping_t& mapping, const device_t& device, permissio
 template <template <typename...> class ContiguousContainer>
 void set_permissions(
 	region_t fully_mapped_region,
-	const ContiguousContainer<device_t>& devices,
+	ContiguousContainer<device_t> const& devices,
 	permissions_t access_mode);
 
 template <template <typename...> class ContiguousContainer>
@@ -412,7 +412,7 @@ void set_permissions(
 template <template <typename...> class ContiguousContainer>
 void set_permissions(
 	mapping_t mapping,
-	const ContiguousContainer<device_t>& devices,
+	ContiguousContainer<device_t> const& devices,
 	permissions_t access_mode);
 
 template <template <typename...> class ContiguousContainer>
@@ -446,9 +446,9 @@ protected:  // constructors
 	: address_range_(address_range), ownership_(owning, { context::detail::none, address_range }) { }
 
 public: // constructors & destructors
-	mapping_t(const mapping_t&) = delete;
+	mapping_t(mapping_t const&) = delete;
 	mapping_t(mapping_t&&) noexcept = default;
-	mapping_t& operator=(const mapping_t&) = delete;
+	mapping_t& operator=(mapping_t const&) = delete;
 	mapping_t& operator=(mapping_t&&) noexcept = default;
 
 	friend mapping_t mapping::detail::wrap(region_t address_range, bool owning) noexcept;
@@ -457,12 +457,12 @@ public: // constructors & destructors
 	region_t address_range() const noexcept { return address_range_; }
 	bool is_owning() const noexcept { return ownership_.has_token(); }
 
-	permissions_t get_permissions(const device_t& device) const;
-	void set_permissions(const device_t& device, permissions_t access_mode) const;
+	permissions_t get_permissions(device_t const& device) const;
+	void set_permissions(device_t const& device, permissions_t access_mode) const;
 
 	template <template <typename...> class ContiguousContainer>
 	inline void set_permissions(
-		const ContiguousContainer<device_t>& devices,
+		ContiguousContainer<device_t> const& devices,
 		permissions_t access_mode) const;
 
 	template <template <typename...> class ContiguousContainer>
@@ -505,7 +505,7 @@ mapping_t wrap(region_t address_range, bool owning) noexcept
 
 } // namespace mapping
 
-inline mapping_t map(region_t region, const physical_allocation_t& physical_allocation)
+inline mapping_t map(region_t region, physical_allocation_t const& physical_allocation)
 {
 	size_t offset_into_allocation { 0 }; // not yet supported, but in the API
 	constexpr unsigned long long flags { 0 };

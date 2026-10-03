@@ -61,44 +61,44 @@ inline std::ostream& operator<<(std::ostream& os, version_t v)
 
 // Note: All of comparison operators in this can be made constexpr in C++14
 
-inline bool operator==(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator==(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() == rhs.operator std::pair<int, int>();
 }
 
-inline bool operator!=(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator!=(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() != rhs.operator std::pair<int, int>();
 }
 
-inline bool operator<(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator<(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() < rhs.operator std::pair<int, int>();
 }
 
-inline bool operator<=(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator<=(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() <= rhs.operator std::pair<int, int>();
 }
 
-inline bool operator>(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator>(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() > rhs.operator std::pair<int, int>();
 }
 
-inline bool operator>=(const version_t& lhs, const version_t& rhs) noexcept
+inline bool operator>=(version_t const& lhs, version_t const& rhs) noexcept
 {
 	return lhs.operator std::pair<int, int>() >= rhs.operator std::pair<int, int>();
 }
 
 // comparison with single integers - as major versions
 
-inline bool operator==(const version_t& lhs, int rhs)  noexcept { return lhs == version_t::from_single_number(rhs); }
-inline bool operator!=(const version_t& lhs, int rhs)  noexcept { return lhs != version_t::from_single_number(rhs); }
-inline bool operator< (const version_t& lhs, int rhs)  noexcept { return lhs  < version_t::from_single_number(rhs); }
-inline bool operator> (const version_t& lhs, int rhs)  noexcept { return lhs  > version_t::from_single_number(rhs); }
-inline bool operator<=(const version_t& lhs, int rhs)  noexcept { return lhs <= version_t::from_single_number(rhs); }
-inline bool operator>=(const version_t& lhs, int rhs)  noexcept { return lhs >= version_t::from_single_number(rhs); }
+inline bool operator==(version_t const& lhs, int rhs)  noexcept { return lhs == version_t::from_single_number(rhs); }
+inline bool operator!=(version_t const& lhs, int rhs)  noexcept { return lhs != version_t::from_single_number(rhs); }
+inline bool operator< (version_t const& lhs, int rhs)  noexcept { return lhs  < version_t::from_single_number(rhs); }
+inline bool operator> (version_t const& lhs, int rhs)  noexcept { return lhs  > version_t::from_single_number(rhs); }
+inline bool operator<=(version_t const& lhs, int rhs)  noexcept { return lhs <= version_t::from_single_number(rhs); }
+inline bool operator>=(version_t const& lhs, int rhs)  noexcept { return lhs >= version_t::from_single_number(rhs); }
 
 ///@endcond
 

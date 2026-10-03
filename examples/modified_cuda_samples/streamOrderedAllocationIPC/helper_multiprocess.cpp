@@ -147,7 +147,7 @@ int waitProcess(const Process *process) {
 
 #if defined(__linux__)
 int ipcCreateSocket(ipcHandle *&handle, const char *name,
-                    const std::vector<Process> &) {
+                    std::vector<Process> const& ) {
   int server_fd;
   struct sockaddr_un servaddr;
 
@@ -275,7 +275,7 @@ int ipcRecvShareableHandle(ipcHandle *handle, shared_allocation_handle_t *shHand
 }
 
 int ipcSendShareableHandle(ipcHandle *handle,
-						   const std::vector<ShareableHandle> &shareableHandles,
+						   std::vector<ShareableHandle> const& shareableHandles,
 						   Process process, int data) {
 	struct msghdr msg;
 	struct iovec iov[1];
@@ -355,7 +355,7 @@ int ipcCloseShareableHandle(shared_pool_handle_t shared_pool_handle) {
 LPTSTR SlotName = (LPTSTR)TEXT("\\\\.\\mailslot\\sample_mailslot_");
 
 int ipcCreateSocket(ipcHandle *&handle, const char *,
-                    const std::vector<Process> &processes) {
+                    std::vector<Process> const& processes) {
   handle = new ipcHandle;
   handle->hMailslot.resize(processes.size());
 
@@ -431,8 +431,8 @@ int ipcRecvData(ipcHandle *handle, void *data, size_t sz) {
 }
 
 int ipcSendShareableHandles(
-    ipcHandle *handle, const std::vector<shared_allocation_handle_t> &ShareableHandles,
-    const std::vector<Process> &processes) {
+    ipcHandle *handle, std::vector<shared_allocation_handle_t> const& ShareableHandles,
+    std::vector<Process> const& processes) {
   // Send all shareable handles to every single process.
   for (int i = 0; i < processes.size(); i++) {
     HANDLE hProcess =

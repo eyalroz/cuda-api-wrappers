@@ -25,7 +25,7 @@ class fatbin_builder_t;
 namespace detail {
 
 inline std::string identify(fatbin_builder::handle_t handle) { return "Fatbin builder at " + ptr_as_hex(handle); }
-std::string identify(const fatbin_builder_t&);
+std::string identify(fatbin_builder_t const&);
 
 } // namespace detail
 
@@ -33,7 +33,7 @@ namespace fatbin_builder {
 
 inline fatbin_builder_t wrap(handle_t handle, bool take_ownership = false) noexcept;
 
-inline fatbin_builder_t create(const options_t & options);
+inline fatbin_builder_t create(options_t const & options);
 
 } // namespace fatbin_builder
 
@@ -105,7 +105,7 @@ public:
 	}
 
 	void add_ptx_source(
-		const char* identifier,
+		char const* identifier,
 		span<char> nul_terminated_ptx_source,
 		device::compute_capability_t target_compute_capability) const  // no support for options, for now
 	{
@@ -131,7 +131,7 @@ public:
 	}
 
 	void add_lto_ir(
-		const char* identifier,
+		char const* identifier,
 		memory::region_t lto_ir,
 		device::compute_capability_t target_compute_capability) const
 	{
@@ -145,7 +145,7 @@ public:
 	}
 
 	void add_cubin(
-		const char* identifier,
+		char const* identifier,
 		memory::region_t cubin,
 		device::compute_capability_t target_compute_capability) const
 	{
@@ -173,7 +173,7 @@ public:
 	}
 
 	// TODO: WTF is an index?
-	void add_index(const char* identifier, memory::region_t index) const
+	void add_index(char const* identifier, memory::region_t index) const
 	{
 		auto status = nvFatbinAddIndex(handle_, index.data(), index.size(), identifier);
 		throw_if_error_lazy(status, "Failed adding index  " + std::string(identifier) + " at "
@@ -195,10 +195,10 @@ public: // friendship
 	friend fatbin_builder_t fatbin_builder::wrap(fatbin_builder::handle_t, bool) noexcept;
 
 public: // constructors and operators
-	fatbin_builder_t(const fatbin_builder_t &) = delete;
-	fatbin_builder_t(fatbin_builder_t &&other) noexcept = default;
-	fatbin_builder_t &operator=(const fatbin_builder_t &) = delete;
-	fatbin_builder_t &operator=(fatbin_builder_t &&other) noexcept = default;
+	fatbin_builder_t(fatbin_builder_t const &) = delete;
+	fatbin_builder_t(fatbin_builder_t&& other) noexcept = default;
+	fatbin_builder_t& operator=(fatbin_builder_t const &) = delete;
+	fatbin_builder_t& operator=(fatbin_builder_t&& other) noexcept = default;
 
 protected: // data members
 	fatbin_builder::handle_t handle_;
@@ -211,7 +211,7 @@ protected: // data members
 namespace fatbin_builder {
 
 /// Create a new link-process (before adding any compiled images or or image-files)
-inline fatbin_builder_t create(const options_t & options)
+inline fatbin_builder_t create(options_t const & options)
 {
 	handle_t new_handle;
 	auto marshalled_options = marshalling::marshal(options);
@@ -231,7 +231,7 @@ inline fatbin_builder_t wrap(handle_t handle, bool take_ownership) noexcept
 
 namespace detail {
 
-inline std::string identify(const fatbin_builder_t& builder)
+inline std::string identify(fatbin_builder_t const& builder)
 {
 	return identify(builder.handle());
 }

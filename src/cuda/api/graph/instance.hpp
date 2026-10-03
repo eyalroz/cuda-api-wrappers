@@ -48,14 +48,14 @@ enum named_t : std::underlying_type<update_status_t>::type {
 #endif // CUDA_VERSION >= 11020
 };
 
-constexpr bool operator==(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs == static_cast<update_status_t>(rhs); }
-constexpr bool operator!=(const update_status_t &lhs, const named_t &rhs) noexcept { return lhs != static_cast<update_status_t>(rhs); }
-constexpr bool operator==(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) == rhs; }
-constexpr bool operator!=(const named_t &lhs, const update_status_t &rhs) noexcept { return static_cast<update_status_t>(lhs) != rhs; }
+constexpr bool operator==(update_status_t const& lhs, named_t const& rhs) noexcept { return lhs == static_cast<update_status_t>(rhs); }
+constexpr bool operator!=(update_status_t const& lhs, named_t const& rhs) noexcept { return lhs != static_cast<update_status_t>(rhs); }
+constexpr bool operator==(named_t const& lhs, update_status_t const& rhs) noexcept { return static_cast<update_status_t>(lhs) == rhs; }
+constexpr bool operator!=(named_t const& lhs, update_status_t const& rhs) noexcept { return static_cast<update_status_t>(lhs) != rhs; }
 
 namespace detail {
 
-constexpr const char * const descriptions[] = {
+constexpr char const * const descriptions[] = {
 	"success",
 	"failure for an unexpected reason described in the return value of the function",
 	"topology has changed",
@@ -84,7 +84,7 @@ namespace detail {
 
 using flags_t = cuuint64_t;
 
-inline const char *describe(instance::update_status_t update_status)
+inline char const *describe(instance::update_status_t update_status)
 {
 	return instance::update_status::detail::descriptions[update_status];
 }
@@ -129,7 +129,7 @@ inline id_t get_id(handle_t handle)
  * explicitly with @ref instance::upload, calling this function will first upload it, then schedule
  * it.
  */
- void launch(const instance_t& instance, const stream_t& stream);
+ void launch(instance_t const& instance, stream_t const& stream);
 
 } // namespace graph
 
@@ -164,7 +164,7 @@ instance_t wrap(template_::handle_t template_handle, handle_t handle, bool  is_o
 
 namespace detail {
 
-std::string identify(const instance_t &instance);
+std::string identify(instance_t const& instance);
 
 } // namespace detail
 
@@ -206,15 +206,15 @@ private:
  * was instantiated, or one that is "topologically identical" to the instance, i.e. has the
  * same types of nodes with the same edges (and no others).
  */
-void update(const instance_t& destination, const template_t& source);
+void update(instance_t const& destination, template_t const& source);
 
 namespace detail {
 
 template <node::kind_t Kind>
 status_t set_node_parameters_nothrow(
-	const instance::handle_t instance_handle,
-	const node::handle_t node_handle,
-	const typename node::detail::kind_traits<Kind>::raw_parameters_type raw_params)
+	instance::handle_t const& instance_handle,
+	node::handle_t const& node_handle,
+	typename node::detail::kind_traits<Kind>::raw_parameters_type const& raw_params)
 {
 	auto raw_params_maybe_ptr = node::detail::maybe_add_ptr<Kind>(raw_params);
 	return node::detail::kind_traits<Kind>::instance_setter(instance_handle, node_handle, raw_params_maybe_ptr);
@@ -225,9 +225,9 @@ status_t set_node_parameters_nothrow(
 
 template <node::kind_t Kind>
 void set_node_parameters(
-	const instance_t& instance,
-	const node_t& node,
-	const node::parameters_t<Kind> parameters);
+	instance_t const& instance,
+	node_t const&node,
+	node::parameters_t<Kind> const parameters);
 
 } // namespace instance
 
@@ -263,26 +263,26 @@ protected: // constructors
 	{ }
 
 public: // constructors & operators
-	instance_t(const instance_t& other) = delete;
+	instance_t(instance_t const& other) = delete;
 	instance_t(instance_t&& other) noexcept = default;
-	instance_t& operator=(const instance_t&) = delete;
+	instance_t& operator=(instance_t const&) = delete;
 	instance_t& operator=(instance_t&& other) noexcept = default;
 
 public: // friends
 	friend instance_t instance::wrap(template_::handle_t template_handle, handle_type handle, bool  is_owning) noexcept;
 
 public: // non-mutators
-	void update(const template_t& update_source) const
+	void update(template_t const& update_source) const
 	{
 		instance::update(*this, update_source);
 	}
 
-	void launch(const stream_t& stream) const
+	void launch(stream_t const& stream) const
 	{
 		graph::launch(*this, stream);
 	}
 #if CUDA_VERSION >= 11010
-	void upload(const stream_t& stream) const;
+	void upload(stream_t const& stream) const;
 #endif // CUDA_VERSION >= 11010
 
 #if CUDA_VERSION >= 12000
@@ -314,13 +314,13 @@ public: // non-mutators
 #endif // CUDA_VERSION >= 13010
 
 	template <node::kind_t Kind>
-	void set_node_parameters(const node_t& node, node::parameters_t<Kind> new_parameters)
+	void set_node_parameters(node_t const& node, node::parameters_t<Kind> new_parameters)
 	{
 		instance::set_node_parameters<Kind>(*this, node, std::move(new_parameters));
 	}
 
 	template <node::kind_t Kind>
-	void set_node_parameters(const node::typed_node_t<Kind>& node)
+	void set_node_parameters(node::typed_node_t<Kind> const& node)
 	{
 		instance::set_node_parameters<Kind>(*this, node);
 	}
@@ -345,7 +345,7 @@ protected:
  *      before the actual scheduling of the instance for execution via the stream
  *
  */
-void upload(const instance_t& instance, const stream_t& stream);
+void upload(instance_t const& instance, stream_t const& stream);
 
 namespace instance {
 
@@ -409,13 +409,13 @@ inline flags_t build_flags(
 }
 #endif // CUDA_VERSION >= 11040
 
-inline std::string identify(const instance_t& instance)
+inline std::string identify(instance_t const& instance)
 {
 	return cuda_::detail::identify(instance.handle()) + " instantiated from "
 		+ cuda_::detail::identify(instance.template_handle());
 }
 
-inline std::string identify(const instance_t& instance, const template_t& template_)
+inline std::string identify(instance_t const& instance, template_t const& template_)
 {
 	return cuda_::detail::identify(instance.handle()) + " instantiated from "
 	   + template_::detail::identify(template_);
@@ -425,8 +425,8 @@ inline std::string identify(const instance_t& instance, const template_t& templa
 
 template <node::kind_t Kind>
 void set_node_parameters(
-	const instance_t&          instance,
-	const node_t&              node,
+	instance_t const&          instance,
+	node_t const&              node,
 	node::parameters_t<Kind>   parameters)
 {
 	auto status = detail::set_node_parameters_nothrow<Kind>(
@@ -438,8 +438,8 @@ void set_node_parameters(
 
 template <node::kind_t Kind>
 void set_node_parameters(
-	const instance_t&                instance,
-	const node::typed_node_t<Kind>&  node_with_new_params)
+	instance_t const&                instance,
+	node::typed_node_t<Kind> const&  node_with_new_params)
 {
 	return set_node_parameters<Kind>(
 		instance, static_cast<node_t&>(node_with_new_params), node_with_new_params.parameters());
@@ -449,7 +449,7 @@ void set_node_parameters(
 } // namespace instance
 
 inline instance_t instantiate(
-	const template_t& template_
+	template_t const& template_
 #if CUDA_VERSION >= 11040
 	, bool free_previous_allocations_before_relaunch = false
 #endif
@@ -488,7 +488,7 @@ inline instance_t instantiate(
 	return instance::wrap(template_.handle(), instance_handle, is_owning);
 }
 
-void launch(const cuda_::stream_t& stream, const instance_t& instance);
+void launch(cuda_::stream_t const& stream, instance_t const& instance);
 
 } // namespace graph
 

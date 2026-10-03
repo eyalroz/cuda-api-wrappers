@@ -40,13 +40,13 @@ using named_t = typename rtc::detail::types<Kind>::named_status;
 
 ///@cond
 template <source_kind_t Kind>
-constexpr bool operator==(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs == static_cast<status_t<Kind> >(rhs); }
+constexpr bool operator==(status_t<Kind> const& lhs,named_t<Kind> const& rhs) { return lhs == static_cast<status_t<Kind> >(rhs); }
 template <source_kind_t Kind>
-constexpr bool operator!=(const status_t<Kind>& lhs, const named_t<Kind>& rhs) { return lhs != static_cast<status_t<Kind> >(rhs); }
+constexpr bool operator!=(status_t<Kind> const& lhs,named_t<Kind> const& rhs) { return lhs != static_cast<status_t<Kind> >(rhs); }
 template <source_kind_t Kind>
-constexpr bool operator==(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return static_cast<status_t<Kind> >(lhs) == rhs; }
+constexpr bool operator==(named_t<Kind> const& lhs,status_t<Kind> const& rhs) { return static_cast<status_t<Kind> >(lhs) == rhs; }
 template <source_kind_t Kind>
-constexpr bool operator!=(const named_t<Kind>& lhs, const status_t<Kind>& rhs) { return static_cast<status_t<Kind> >(lhs) != rhs; }
+constexpr bool operator!=(named_t<Kind> const& lhs,status_t<Kind> const& rhs) { return static_cast<status_t<Kind> >(lhs) != rhs; }
 ///@endcond
 
 } // namespace status
@@ -131,7 +131,7 @@ public:
 	{ }
 	runtime_error(status::named_t<Kind> error_code) :
 		runtime_error(static_cast<status_t<Kind>>(error_code)) { }
-	runtime_error(status::named_t<Kind> error_code, const std::string& what_arg) :
+	runtime_error(status::named_t<Kind> error_code, std::string const& what_arg) :
 		runtime_error(static_cast<status_t<Kind>>(error_code), what_arg) { }
 
 protected:
@@ -169,7 +169,7 @@ private:
  * @param message An extra description message to add to the exception
  */
 template <source_kind_t Kind>
-void throw_if_error(rtc::status_t<Kind> status, const std::string& message) noexcept(false)
+void throw_if_error(rtc::status_t<Kind> status, std::string const& message) noexcept(false)
 {
 	if (is_failure<Kind>(status)) { throw rtc::runtime_error<Kind>(status, message); }
 }

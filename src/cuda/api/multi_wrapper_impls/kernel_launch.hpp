@@ -24,7 +24,7 @@ namespace cuda_ {
 template<typename Kernel, typename... KernelParameters>
 void enqueue_launch(
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments)
 {
@@ -58,7 +58,7 @@ void enqueue_launch(
 namespace detail {
 
 inline void validate_shared_mem_compatibility(
-	const device_t &device,
+	device_t const& device,
 	memory::shared::size_t shared_mem_size) noexcept(false)
 {
 	if (shared_mem_size == 0) { return; }
@@ -113,13 +113,13 @@ inline void validate_compatibility(
 
 template <typename Dims>
 void validate_any_dimensions_compatibility(
-	const device_t &device, Dims dims,
+	device_t const& device, Dims dims,
 	Dims maxima,
-	const char* kind) noexcept(false)
+	char const* kind) noexcept(false)
 {
 	auto device_id = device.id();
 	auto check =
-		[device_id, kind](grid::dimension_t dim, grid::dimension_t max, const char *axis) {
+		[device_id, kind](grid::dimension_t dim, grid::dimension_t max, char const *axis) {
 			if (max < dim) {
 				throw std::invalid_argument(
 					std::string("specified ") + kind + " " + axis + "-axis dimension " + std::to_string(dim)
@@ -133,7 +133,7 @@ void validate_any_dimensions_compatibility(
 }
 
 inline void validate_block_dimension_compatibility(
-	const device_t &device,
+	device_t const& device,
 	grid::block_dimensions_t block_dims) noexcept(false)
 {
 	auto max_block_size = device.maximum_threads_per_block();
@@ -153,7 +153,7 @@ inline void validate_block_dimension_compatibility(
 }
 
 inline void validate_grid_dimension_compatibility(
-	const device_t &device,
+	device_t const& device,
 	grid::block_dimensions_t block_dims) noexcept(false)
 {
 	auto maxima = grid::dimensions_t{
@@ -166,7 +166,7 @@ inline void validate_grid_dimension_compatibility(
 
 
 inline void validate_shared_mem_size_compatibility(
-	const kernel_t& kernel_ptr,
+	kernel_t const& kernel_ptr,
 	memory::shared::size_t shared_mem_size)
 {
 	if (shared_mem_size == 0) { return; }
@@ -180,7 +180,7 @@ inline void validate_shared_mem_size_compatibility(
 }
 
 inline void validate_block_dimension_compatibility(
-	const kernel_t&          kernel,
+	kernel_t const&          kernel,
 	grid::block_dimensions_t block_dims)
 {
 	auto max_block_size = kernel.maximum_threads_per_block();
@@ -194,7 +194,7 @@ inline void validate_block_dimension_compatibility(
 }
 
 inline void validate_dyanmic_shared_memory_size(
-	const kernel_t&          kernel,
+	kernel_t const&          kernel,
 	memory::shared::size_t   dynamic_shared_memory_size)
 {
 	memory::shared::size_t max_dyn_shmem = kernel.get_attribute(
@@ -209,15 +209,15 @@ inline void validate_dyanmic_shared_memory_size(
 
 template<typename... KernelParameters>
 void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::operator()(
-	const kernel::apriori_compiled_t&  wrapped_kernel,
-	const stream_t &                  stream,
+	kernel::apriori_compiled_t const&  wrapped_kernel,
+	stream_t const &                  stream,
 	launch_configuration_t            launch_configuration,
 	KernelParameters &&...            arguments) const
 {
 	using raw_kernel_t = typename kernel::detail::raw_kernel_typegen<KernelParameters ...>::type;
 	auto unwrapped_kernel_function = reinterpret_cast<raw_kernel_t>(const_cast<void *>(wrapped_kernel.ptr()));
 	// Notes:
-	// 1. The inner cast here is because we store the pointer as const void* - as an extra
+	// 1. The inner cast here is because we store the pointer as void const* - as an extra
 	//    precaution against anybody trying to write through it. Now, function pointers
 	//    can't get written through, but are still for some reason not considered const.
 	// 2. We rely on the caller providing us with more-or-less the correct parameters -
@@ -237,10 +237,10 @@ void enqueue_launch_helper<kernel::apriori_compiled_t, KernelParameters...>::ope
 }
 
 template<typename... KernelParameters>
-std::array<const void*, sizeof...(KernelParameters)>
+std::array<void const*, sizeof...(KernelParameters)>
 marshal_dynamic_kernel_arguments(KernelParameters&&... arguments)
 {
-	return std::array<const void*, sizeof...(KernelParameters)> { &arguments... };
+	return std::array<void const*, sizeof...(KernelParameters)> { &arguments... };
 }
 
 // Note: The last (valid) element of marshalled_arguments must be null
@@ -250,12 +250,12 @@ inline void enqueue_kernel_launch_by_handle_in_current_context(
 	context::handle_t       context_handle,
 	stream::handle_t        stream_handle,
 	launch_configuration_t  launch_config,
-	const void**            marshalled_arguments)
+	void const**            marshalled_arguments)
 {
 	// It is assumed arguments were already been validated
 
 	status_t status;
-	const auto&lc = launch_config; // alias for brevity
+	auto const&lc = launch_config; // alias for brevity
 #if CUDA_VERSION >= 12000
 	CUlaunchAttribute launch_attributes[detail::maximum_possible_kernel_launch_attributes+1];
 	auto launch_attributes_span = span<CUlaunchAttribute>{
@@ -301,8 +301,8 @@ template<typename... KernelParameters>
 struct enqueue_launch_helper<kernel_t, KernelParameters...> {
 
 	void operator()(
-	const kernel_t&                       wrapped_kernel,
-	const stream_t&                       stream,
+	kernel_t const&                       wrapped_kernel,
+	stream_t const&                       stream,
 	launch_configuration_t                launch_config,
 	KernelParameters&&...                 arguments) const
 	{
@@ -330,7 +330,7 @@ void enqueue_launch(
 	bool_constant<false>, // Not a wrapped contextual kernel,
 	bool_constant<false>, // and not a library kernel, so it must be a raw kernel function
 	RawKernelFunction&&       kernel_function,
-	const stream_t&           stream,
+	stream_t const&           stream,
 	launch_configuration_t    launch_configuration,
 	KernelParameters&&...     arguments)
 {
@@ -350,7 +350,7 @@ void enqueue_launch(
 	bool_constant<true>,  // a kernel wrapped in a kernel_t (sub)class
 	bool_constant<false>, // Not a library kernel
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments)
 {
@@ -377,7 +377,7 @@ void enqueue_launch(
 	bool_constant<false>, // Not a wrapped contextual kernel,
 	bool_constant<true>,  // but a library kernel
 	Kernel&&                kernel,
-	const stream_t&         stream,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments)
 {
@@ -414,7 +414,7 @@ void launch(
 template<typename Kernel, typename... KernelParameters>
 void launch(
 	Kernel&&                kernel,
-	const device_t&         device,
+	device_t const&         device,
 	launch_configuration_t  launch_configuration,
 	KernelParameters&&...   arguments)
 {
@@ -428,16 +428,16 @@ void launch(
 
 template <typename SpanOfConstVoidPtrLike>
 void launch_type_erased(
-	const kernel_t&         kernel,
-	const stream_t&         stream,
+	kernel_t const&         kernel,
+	stream_t const&         stream,
 	launch_configuration_t  launch_configuration,
 	SpanOfConstVoidPtrLike  marshalled_arguments)
 {
 	// Note: We assume that kernel, stream and launch_configuration have already been validated.
 	static_assert(
 		std::is_same<typename SpanOfConstVoidPtrLike::value_type, void*>::value or
-		std::is_same<typename SpanOfConstVoidPtrLike::value_type, const void*>::value,
-		"The element type of the marshalled arguments container type must be either void* or const void*");
+		std::is_same<typename SpanOfConstVoidPtrLike::value_type, void const*>::value,
+		"The element type of the marshalled arguments container type must be either void* or void const*");
 #ifndef NDEBUG
 	if (kernel.context() != stream.context()) {
 		throw std::invalid_argument{"Attempt to launch " + detail::identify(kernel)
@@ -456,14 +456,14 @@ void launch_type_erased(
 		stream.context_handle(),
 		stream.handle(),
 		launch_configuration,
-		static_cast<const void**>(marshalled_arguments.data()));
+		static_cast<void const**>(marshalled_arguments.data()));
 }
 
 #if CUDA_VERSION >= 12000
 template <typename SpanOfConstVoidPtrLike>
 void launch_type_erased(
-	const library::kernel_t&  kernel,
-	const stream_t&           stream,
+	library::kernel_t const&  kernel,
+	stream_t const&           stream,
 	launch_configuration_t    launch_configuration,
 	SpanOfConstVoidPtrLike    marshalled_arguments)
 {
@@ -485,7 +485,7 @@ namespace detail {
 
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const void *             ptr,
+	void const *             ptr,
 	device::id_t             device_id,
 	UnaryFunction            block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t  block_size_limit,
@@ -509,7 +509,7 @@ grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 }
 
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const void *             ptr,
+	void const *             ptr,
 	device::id_t             device_id,
 	memory::shared::size_t   dynamic_shared_mem_size,
 	grid::block_dimension_t  block_size_limit,
@@ -524,7 +524,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 } // namespace detail
 
 inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const kernel::apriori_compiled_t&  kernel,
+	kernel::apriori_compiled_t const&  kernel,
 	memory::shared::size_t            dynamic_shared_memory_size,
 	grid::block_dimension_t           block_size_limit,
 	bool                              disable_caching_override)
@@ -535,7 +535,7 @@ inline grid::composite_dimensions_t min_grid_params_for_max_occupancy(
 
 template <typename UnaryFunction>
 grid::composite_dimensions_t min_grid_params_for_max_occupancy(
-	const kernel::apriori_compiled_t&  kernel,
+	kernel::apriori_compiled_t const&  kernel,
 	UnaryFunction                     block_size_to_dynamic_shared_mem_size,
 	grid::block_dimension_t           block_size_limit,
 	bool                              disable_caching_override)
