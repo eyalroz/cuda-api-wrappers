@@ -17,6 +17,22 @@
 
 namespace cuda {
 
+#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
+namespace detail_ {
+template <typename Narrow, typename Wide>
+Narrow safe_narrow_cast(Wide const& x)
+{
+	static_assert(std::is_arithmetic<Narrow>::value and std::is_arithmetic<Wide>::value, "Types must be numeric");
+	auto narrowed = static_cast<Narrow>(x);
+	if (static_cast<Wide>(narrowed) != x) {
+		throw std::runtime_error("narrowing cast alters value");
+	}
+	return narrowed;
+}
+} // namespace detail_
+#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
+
+
 namespace kernel {
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
@@ -81,11 +97,11 @@ inline attribute_value_t apriori_compiled_t::get_attribute(attribute_t attribute
 		case CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
 			return attrs.maxThreadsPerBlock;
 		case CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES:
-			return attrs.sharedSizeBytes;
+			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.sharedSizeBytes);
 		case CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES:
-			return attrs.constSizeBytes;
+			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.constSizeBytes);
 		case CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES:
-			return attrs.localSizeBytes;
+			return cuda::detail_::safe_narrow_cast<attribute_value_t>(attrs.localSizeBytes);
 		case CU_FUNC_ATTRIBUTE_NUM_REGS:
 			return attrs.numRegs;
 		case CU_FUNC_ATTRIBUTE_PTX_VERSION:
