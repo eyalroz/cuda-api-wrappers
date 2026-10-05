@@ -42,29 +42,31 @@ include(CompileWithWarnings)
 
 if(MSVC)
 	# MSVC is very problematic! ... lets go easy on it
-
 	set(CAW_WITH_COOPERATIVE_GROUPS OFF)
-	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
-	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /NODEFAULTLIB:nvptxcompiler_static.lib")
 	set(CMAKE_CXX_STANDARD 17)
+	set(CMAKE_CUDA_STANDARD 17)
 	add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX,CUDA>:CUDA_NO_HALF>")
 	add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:_CRT_SECURE_NO_DEPRECATE>")
 	add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:_CRT_SECURE_NO_WARNINGS>")
-	add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
-	add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>")
+	# CCCL is spoiled and doesn't want to run for C++ versions earlier than 17 - even if
+	# nobody asked to include any CCCL to begin with!
+	# add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX,CUDA>:CCCL_IGNORE_DEPRECATED_CPP_DIALECT>")
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>")
 	# TODO: We should check separately for MSVC being the CUDA host compiler and
 	# for it being the C++ compiler; for now we assume that these are either both
 	# true or both false
-	add_compile_definitions("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>")
+	add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>")
+
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 else()
 	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CUDA_STANDARD 11)
 endif()
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 

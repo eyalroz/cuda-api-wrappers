@@ -39,7 +39,16 @@
 #include <cuda/api.hpp>
 #include <cuda/rtc.hpp>
 
+#if __cplusplus >= 201703L
+#include <string_view>
+using std::string_view;
+#define CONSTEXPR_SINCE_2014 constexpr
+#else
 #include "../../string_view.hpp"
+using nonstd::string_view;
+#define CONSTEXPR_SINCE_2014 nssv_constexpr14
+#endif
+
 #include "../../type_name.hpp"
 
 #include <cassert>

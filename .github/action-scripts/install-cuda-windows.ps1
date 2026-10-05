@@ -65,11 +65,12 @@ $CUDA_KNOWN_URLS = @{
     "13.2.1" = "https://developer.download.nvidia.com/compute/cuda/13.2.1/network_installers/cuda_13.2.1_windows_network.exe";
     "13.3.0" = "https://developer.download.nvidia.com/compute/cuda/13.3.0/network_installers/cuda_13.3.0_windows_network.exe";
     "13.3.1" = "https://developer.download.nvidia.com/compute/cuda/13.3.1/network_installers/cuda_13.3.1_windows_network.exe";
+    "13.4.2" = "https://developer.download.nvidia.com/compute/cuda/13.4.2/network_installers/cuda_13.4.2_windows_x86_64_network.exe";
 }
 
 # @todo - change this to be based on _MSC_VER intead, or invert it to be CUDA keyed instead?
 $VISUAL_STUDIO_MIN_CUDA = @{
-    "2026" = "11.6.0";
+    "2026" = "13.2.0";
     "2022" = "11.6.0";
     "2019" = "10.1";
     "2017" = "10.0"; # Depends on which version of 2017! 9.0 to 10.0 depending on  version
@@ -80,7 +81,6 @@ $VISUAL_STUDIO_MIN_CUDA = @{
 # @todo - make this easier to vary per CUDA version.
 $CUDA_PACKAGES_IN = @(
     "nvcc";
-    "visual_studio_integration";
     "curand_dev";
     "nvrtc_dev";
     "nsight_nvtx";
@@ -135,6 +135,13 @@ $CUDA_PACKAGES = ""
 
 if([version]$CUDA_VERSION_FULL -ge [version]"12.4") {
     $CUDA_PACKAGES_IN += "nvfatbin"
+}
+
+if([version]$CUDA_VERSION_FULL -ge [version]"13.0") {
+    $CUDA_PACKAGES_IN += "crt"
+    $CUDA_PACKAGES_IN += "nvvm"
+    $CUDA_PACKAGES_IN += "nvptxcompiler"
+    $CUDA_PACKAGES_IN += "cuxxfilt"
 }
 
 Foreach ($package in $CUDA_PACKAGES_IN) {
