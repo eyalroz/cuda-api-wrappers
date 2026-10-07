@@ -40,7 +40,7 @@ struct optional_ref {
 	T& value() const
 	{ return *ptr_; }
 
-	T& value_or(T& fallback_ref) const
+	T& value_or(T& fallback_ref) const noexcept
 	{
 		return has_value() ? value() : fallback_ref;
 	}
