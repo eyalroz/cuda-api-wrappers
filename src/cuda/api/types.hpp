@@ -1033,7 +1033,10 @@ using attribute_t = CUfunction_attribute;
 /// appropriate types.
 using attribute_value_t = int;
 
-// A raw CUDA driver handle for a kernel; prefer using the @ref cuda_::kernel_t type.
+/// Type for specifying integral percetange value - between 0% and 100%
+using percentage_t = unsigned int;
+
+// A raw CUDA driver handle for a kernel; prefer using the @ref cuda::kernel_t type.
 using handle_t = CUfunction;
 
 } // namespace kernel

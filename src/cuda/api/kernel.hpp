@@ -316,7 +316,14 @@ public: // non-mutators
 		memory::shared::size_t  dynamic_shared_memory_per_block,
 		bool                    disable_caching_override = false) const;
 
-
+    /**
+     * @brief The percentage of the L1-like memory on a symmetric multiprocessors allocated
+     * for use as shared memory rather than actual L1 cache.
+     */
+    kernel::percentage_t get_shared_memory_carveout() const
+    {
+        return get_attribute(CU_FUNC_ATTRIBUTE_PREFERRED_SHARED_MEMORY_CARVEOUT);
+    }
 
 public: // methods mutating the kernel-in-context, but not this reference object
 
@@ -376,6 +383,17 @@ public: // methods mutating the kernel-in-context, but not this reference object
 			"Setting the multiprocessor L1/Shared Memory cache distribution preference for a "
 			"CUDA device function");
 	}
+
+    void set_shared_memory_carveout(kernel::percentage_t carveout_percentage) const
+    {
+#ifndef NDEBUG
+        if (carveout_percentage < 0 or carveout_percentage > 100) {
+            throw std::invalid_attribute("The shared memory carveout percentage must be in the range 0..100");
+        }
+#endif
+        set_attribute(CU_FUNC_ATTRIBUTE_PREFERRED_SHARED_MEMORY_CARVEOUT, carveout_percentage);
+    }
+
 
 #if CUDA_VERSION < 12030
 	/**
