@@ -1541,8 +1541,8 @@ region_t allocate(size_t size_in_bytes, allocation_options options);
  */
 inline region_t allocate(
 	size_t                       size_in_bytes,
-	portability_across_contexts  portability = portability_across_contexts(false),
-	cpu_write_combining          cpu_wc = cpu_write_combining(false))
+	portability_across_contexts  portability = portability_across_contexts(true),
+	cpu_write_combining          cpu_wc = cpu_write_combining(true))
 {
 	return allocate(size_in_bytes, allocation_options{ portability, cpu_wc } );
 }
@@ -1550,7 +1550,7 @@ inline region_t allocate(
 /// @copydoc allocate(size_t, portability_across_contexts, cpu_write_combining)
 inline region_t allocate(size_t size_in_bytes, cpu_write_combining cpu_wc)
 {
-	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(false), cpu_write_combining(cpu_wc)} );
+	return allocate(size_in_bytes, allocation_options{ portability_across_contexts(true), cpu_write_combining(cpu_wc)} );
 }
 
 /**
