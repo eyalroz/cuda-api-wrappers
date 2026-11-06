@@ -52,7 +52,8 @@ int main()
 		static std::uniform_real_distribution<float> distribution { 0.0, 1.0 };
 		return distribution(randomness_generator);
 	};
-	std::generate(a.host_side.begin(), b.host_side.end(), generator);
+	std::generate(a.host_side.begin(), a.host_side.end(), generator);
+	std::generate(b.host_side.begin(), b.host_side.end(), generator);
 
 	// Launch the Vector Add CUDA Kernel
 
