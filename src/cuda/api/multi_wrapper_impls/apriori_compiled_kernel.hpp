@@ -17,22 +17,6 @@
 
 namespace cuda_ {
 
-#if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-namespace detail {
-template <typename Narrow, typename Wide>
-Narrow safe_narrow_cast(Wide const& x)
-{
-	static_assert(std::is_arithmetic<Narrow>::value and std::is_arithmetic<Wide>::value, "Types must be numeric");
-	auto narrowed = static_cast<Narrow>(x);
-	if (static_cast<Wide>(narrowed) != x) {
-		throw std::runtime_error("narrowing cast alters value");
-	}
-	return narrowed;
-}
-} // namespace detail
-#endif // ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE
-
-
 namespace kernel {
 
 #if ! CAW_CAN_GET_APRIORI_KERNEL_HANDLE

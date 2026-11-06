@@ -12,6 +12,7 @@
 #define CUDA_API_WRAPPERS_LAUNCH_CONFIGURATION_CUH_
 
 #include "types.hpp"
+#include "detail/safe_arithmetic_cast.hpp"
 
 namespace cuda_ {
 
@@ -200,14 +201,16 @@ public: // non-mutators
 		memory::shared::size_t dynamic_shared_mem = 0u
 	) : launch_configuration_t( {grid_dims, block_dims}, dynamic_shared_mem) { }
 
-	// A "convenience" delegating ctor to avoid narrowing-conversion warnings
-	constexpr launch_configuration_t(
-		int grid_dims,
-		int block_dims,
+	// A "convenience" delegating ctor to avoid narrowing-conversion warnings when specifying
+	// launch configurations as pairs or triplets of numbers
+	template <typename I1, typename I2>
+	launch_configuration_t(
+		I1 grid_size_in_blocks,
+		I2 block_size_in_threads,
 		memory::shared::size_t dynamic_shared_mem = 0u
 	) : launch_configuration_t(
-		grid::dimensions_t(grid_dims),
-		grid::block_dimensions_t(block_dims),
+		grid::dimensions_t{detail::safe_arithmetic_cast<grid::dimension_t>(grid_size_in_blocks)},
+		grid::dimensions_t{detail::safe_arithmetic_cast<grid::dimension_t>(block_size_in_threads)},
 		dynamic_shared_mem)
 	{ }
 	///@}
