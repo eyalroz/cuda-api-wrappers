@@ -350,9 +350,10 @@ bool test_constant_2()
 	int inval[] = {3, 5, 9};
 	cuda_::memory::copy(anon_b_a, inval);
 	auto launch_config = cuda_::launch_configuration_t(cuda_::grid::composite_dimensions_t::point());
-	auto outdata = cuda_::make_unique_span<int>(device, n_const);
+	// the kernel writes both b::a and b::d, 2 * n_const values
+	auto outdata = cuda_::make_unique_span<int>(device, 2 * n_const);
 	cuda_::launch(kernel, launch_config, outdata.data());
-	int outval[n_const];
+	int outval[2 * n_const];
 	auto ptr = outdata.get();
 	cuda_::memory::copy(outval, ptr);
 	return std::equal(inval, inval + n_const, outval);

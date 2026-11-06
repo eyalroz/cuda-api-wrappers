@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	constexpr auto buffer_size = 12345678;
+	constexpr size_t buffer_size = 12345678;
 	auto buffer = cuda_::memory::managed::make_unique_span<char>(
 		buffer_size,
 		device.supports_concurrent_managed_access() ?
