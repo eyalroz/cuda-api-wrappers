@@ -1,0 +1,110 @@
+name: GPU examples (simulated)
+
+# The GitHub runners have no GPU, so this runs the example programs on a simulated
+# NVIDIA H100 (https://github.com/pantheongpu/pantheonsim). A simulator cannot
+# reproduce hardware-specific behaviour or timing, so this workflow can only
+# _complement_ testing with a real GPU rather than _replace_ it.
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [ master, development ]
+    paths:
+      - "src/**"
+      - "examples/**"
+      - "cmake/**"
+      - ".github/workflows/gpu-sim.yml"
+
+  pull_request:
+    branches: [ master, development ]
+
+    pull_request:
+    paths:
+      - "src/**"
+      - "examples/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/gpu-sim.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpu-sim-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  examples:
+    name: examples on a simulated H100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the simulated GPU and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@dda0c8df8d72627c295edbae525354ba2bcb1687 # v0.1.4
+        with:
+          gpu: nvidia/h100
+          cuda-toolkit: "13.0"
+
+      - name: Install the CUDA libraries the examples link against
+        # The toolkit set up above has the compiler and runtime only.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libnvfatbin-dev-13-0 cuda-nvrtc-dev-13-0 libnvptxcompiler-13-0 \
+            libcublas-dev-13-0 cuda-nvtx-13-0 cuda-cuxxfilt-13-0 cuda-profiler-api-13-0
+
+      - name: Configure
+        # The simulator needs the shared CUDA runtime, and PTX-only device code
+        # (it JIT-compiles PTX and does not run SASS), hence compute_90 only.
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCAW_BUILD_EXAMPLES=ON \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -DCUDA_ARCH_FLAGS_STR="-gencode arch=compute_90,code=compute_90"
+
+      - name: Build
+        run: vgpu run --preload cmake --build build --parallel 3
+
+      # The examples are not unit tests: each one checks its own results and exits
+      # non-zero on failure. Run from the output directory, since some of them read
+      # files next to the binary. The ones below are left out because the simulator
+      # does not support what they do, or that need a fix in the example itself.
+      # (the ones with an issue number work on a real GPU):
+      #   array_management, memory_pools, vectorAddMMAP, vectorAddManaged,
+      #   vectorAddMapped: driver calls made with no current context fail
+      #     (pantheongpu/pantheonsim#518)
+      #   device_management: cuMemGetInfo with a null pointer (#519)
+      #   module_management: cuModuleGetFunction returns a new handle each call (#520)
+      #   unified_addressing: CU_POINTER_ATTRIBUTE_CONTEXT returns the current
+      #     context (#521)
+      #   inlinePTX: "mov.u32%r1" without a space is rejected (#522)
+      #   event_management: kernels finish inside the launch call, so an event
+      #     is never "not ready" (#523, #487)
+      #   isfinite_microbenchmark: only prints timings and takes about 3 minutes
+      #     locally and over 10 on a hosted runner, since the simulator has no
+      #     timing model
+      #   io_compute_overlap_with_streams: not a hang, but about 10+ minutes for
+      #     the same reason
+      # Only one simulated GPU is present, so the multi-GPU examples
+      # (simpleIPC, p2pBandwidthLatencyTest, memMapIPCDrv, streamOrderedAllocationIPC,
+      # streamOrderedAllocationP2P) exercise only their single-device paths.
+      - name: Run examples
+        working-directory: build/examples/bin
+        run: |
+          skip=" array_management device_management event_management inlinePTX
+            io_compute_overlap_with_streams isfinite_microbenchmark memory_pools 
+            module_management unified_addressing vectorAddMMAP vectorAddManaged 
+            vectorAddMapped "
+          skip=$(echo "$skip" | tr '\n' ' ')
+          failed=""
+          for f in $(find . -maxdepth 1 -type f -executable -printf '%f\n' | sort); do
+            case "$skip" in *" $f "*) echo "skipping $f"; continue;; esac
+            echo "::group::$f"
+            if timeout 300 vgpu run ./$f; then echo "PASS $f"; else echo "FAIL $f"; failed="$failed $f"; fi
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
