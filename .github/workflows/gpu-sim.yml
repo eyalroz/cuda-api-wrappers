@@ -72,12 +72,14 @@ jobs:
       #   inlinePTX: "mov.u32%r1" without a space is rejected (#522)
       #   event_management: kernels finish inside the launch call, so an event
       #     is never "not ready" (#523, #487)
-      # Needs a fix in the example (small ones, not in this PR):
-      #   stream_management: an int is passed for a size_t kernel argument
-      #   jitify: test_constant_2 writes 6 ints into a 3-int buffer
-      #   vectorAddMapped: std::generate over two different allocations
-      #   io_compute_overlap_with_streams: not a hang, but about 10+ minutes
-      #     because the simulator has no timing model
+      # Not simulator problems:
+      #   simpleCudaGraphs: the kernel-node arguments are pointers to temporaries
+      #     (eyalroz/cuda-api-wrappers#837); it crashes on a real GPU too
+      #   isfinite_microbenchmark: only prints timings and takes about 3 minutes
+      #     locally and over 10 on a hosted runner, since the simulator has no
+      #     timing model
+      #   io_compute_overlap_with_streams: not a hang, but about 10+ minutes for
+      #     the same reason
       # Only one simulated GPU is present, so the multi-GPU examples
       # (simpleIPC, p2pBandwidthLatencyTest, memMapIPCDrv, streamOrderedAllocationIPC,
       # streamOrderedAllocationP2P) exercise only their single-device paths.
@@ -85,9 +87,9 @@ jobs:
         working-directory: build/examples/bin
         run: |
           skip=" array_management device_management event_management inlinePTX
-            io_compute_overlap_with_streams jitify memory_pools module_management
-            stream_management unified_addressing vectorAddMMAP vectorAddManaged
-            vectorAddMapped "
+            io_compute_overlap_with_streams isfinite_microbenchmark memory_pools
+            module_management simpleCudaGraphs unified_addressing vectorAddMMAP
+            vectorAddManaged vectorAddMapped "
           skip=$(echo "$skip" | tr '\n' ' ')
           failed=""
           for f in $(find . -maxdepth 1 -type f -executable -printf '%f\n' | sort); do
