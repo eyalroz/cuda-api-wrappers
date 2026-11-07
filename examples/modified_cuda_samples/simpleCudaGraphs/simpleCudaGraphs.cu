@@ -44,6 +44,15 @@ namespace cg = cooperative_groups;
 #define THREADS_PER_BLOCK 512
 #define GRAPH_LAUNCH_ITERATIONS 3
 
+// A span-like class with access to the span's _actual_ members - by reference.
+template <typename T>
+struct span_like : span<T> {
+	using span<T>::span;
+	T* const& data_ref() const noexcept { return span<T>::data_; }
+	size_t const& size_ref() const noexcept { return span<T>::size_; }
+	span_like(span<T> sp) noexcept : span<T>(std::move(sp)) {}
+};
+
 __global__ void reduce(const float *inputVec, double *outputVec, size_t inputSize, size_t outputSize)
 {
 	__shared__ double tmp[THREADS_PER_BLOCK];
@@ -195,11 +204,12 @@ void use(cuda_::device_t const& device, cuda_::graph::template_t const& graph, c
 
 void cudaGraphsManual(
 	const cuda_::device_t& device,
-	span<float>  inputVec_h,
-	span<float>  inputVec_d,
-	span<double> outputVec_d,
-	span<double> result_d)
+	span_like<float>  inputVec_h,
+	span_like<float>  inputVec_d,
+	span_like<double> outputVec_d,
+	span_like<double> result_d)
 {
+
 	const char* graph_construction_mode = "explicit node and edge insertion calls";
 	report_mode(graph_construction_mode);
 	report_attempt("construction", graph_construction_mode);
@@ -218,11 +228,11 @@ void cudaGraphsManual(
 		cuda_::memory::copy_parameters_t<3> copy_params;
 		// TODO: Have the copy_parameters_t class be more like a builder.
 		// And - accept sizes with dimensionality upto the copy params dimensionality
-		copy_params.set_source<float>(inputVec_h);
-		copy_params.set_destination<float>(inputVec_d);
+		copy_params.set_source(inputVec_h);
+		copy_params.set_destination(inputVec_d);
 		// TODO: Need to tweak the copy parameters class so that these next few lines are not necessary;
 		// and to make sure we don't use the params without everything necessary being set
-		copy_params.set_extent<float>(inputVec_h.size());
+		copy_params.set_extent<float>(inputVec_h.size_ref());
 		copy_params.clear_offsets();
 		copy_params.clear_rest();
 		auto current_context = cuda_::context::current::get();
@@ -240,11 +250,11 @@ void cudaGraphsManual(
 	auto reduce_node = [&] {
 		auto reduce_kernel = cuda_::kernel::get(device, reduce);
 		auto launch_config = cuda_::launch_config_builder()
-			.grid_size(outputVec_d.size())
+			.grid_size(outputVec_d.size_ref())
 			.block_size(THREADS_PER_BLOCK)
 			.build();
 		argument_ptr_sequences.emplace_back(cuda_::graph::make_kernel_argument_pointers(
-			inputVec_d.data(), outputVec_d.data(), inputVec_d.size(), outputVec_d.size()));
+			inputVec_d.data_ref(), outputVec_d.data_ref(), inputVec_d.size_ref(), outputVec_d.size_ref()));
 		auto kernel_node_args = cuda_::graph::make_launch_primed_kernel(reduce_kernel, launch_config, argument_ptr_sequences.back());
 		return graph.insert.node<node_kind_t::kernel_launch>(kernel_node_args);
 	}();
@@ -266,7 +276,8 @@ void cudaGraphsManual(
 			.grid_size(1)
 			.block_size(THREADS_PER_BLOCK)
 			.build();
-		argument_ptr_sequences.emplace_back(cuda_::graph::make_kernel_argument_pointers(outputVec_d.data(), result_d.data(), outputVec_d.size()));
+		argument_ptr_sequences.emplace_back(cuda_::graph::make_kernel_argument_pointers(
+			outputVec_d.data_ref(), result_d.data_ref(), outputVec_d.size_ref()));
 		return graph.insert.node<node_kind_t::kernel_launch>(kernel, launch_config, argument_ptr_sequences.back());
 	}();
 
@@ -277,7 +288,7 @@ void cudaGraphsManual(
 		cuda_::memory::copy_parameters_t<3> copy_params;
 		// TODO: Have the copy_parameters_t class be more like a builder.
 		// And - accept sizes with dimensionality upto the copy params dimensionality
-		copy_params.set_source<double>(result_d);
+		copy_params.set_source(result_d);
 		copy_params.set_destination<double>(&result_h, 1);
 		copy_params.set_extent<double>(1);
 		copy_params.clear_offsets();
@@ -299,10 +310,10 @@ void cudaGraphsManual(
 
 void cudaGraphsManualWithBuilders(
 	const cuda_::device_t& device,
-	span<float>  inputVec_h,
-	span<float>  inputVec_d,
-	span<double> outputVec_d,
-	span<double> result_d)
+	span_like<float>  inputVec_h,
+	span_like<float>  inputVec_d,
+	span_like<double> outputVec_d,
+	span_like<double> result_d)
 {
 	const char* graph_construction_mode = "use of node builders and explicit edge insertions";
 	report_mode(graph_construction_mode);
@@ -343,14 +354,14 @@ void cudaGraphsManualWithBuilders(
 	auto wrapped_reduce_kernel = cuda_::kernel::get(device, reduce);
 	auto reduce_node = [&]{
 		auto launch_config = cuda_::launch_config_builder()
-			.grid_size(outputVec_d.size())
+			.grid_size(outputVec_d.size_ref())
 			.block_size(THREADS_PER_BLOCK)
 			.build();
 
 		return builder.kind<node_kind_t::kernel_launch>()
 			.kernel(wrapped_reduce_kernel)
 			.launch_configuration(launch_config)
-			.arguments(inputVec_d.data(), outputVec_d.data(), inputVec_d.size(), outputVec_d.size())
+			.arguments(inputVec_d.data_ref(), outputVec_d.data_ref(), inputVec_d.size_ref(), outputVec_d.size_ref())
 				// Also need to support add_argument called multiple times
 			.build_within(graph);
 	}();
@@ -377,7 +388,7 @@ void cudaGraphsManualWithBuilders(
 	auto reduce_final_node = builder.kind<node_kind_t::kernel_launch>()
 		.kernel(wrapped_reduce_final_kernel)
 		.launch_configuration(final_reduce_launch_config)
-		.arguments(outputVec_d.data(), result_d.data(), outputVec_d.size())
+		.arguments(outputVec_d.data_ref(), result_d.data_ref(), outputVec_d.size_ref())
 		// Also need to support add_argument called multiple times
 		.build_within(graph);
 
@@ -513,7 +524,7 @@ int main(int argc, char **argv)
 	std::cout << "Expected result = " << result_verification << '\n';
 
 	device.synchronize();
-	cudaGraphsManual(device, inputVec_h, inputVec_d, outputVec_d, result_d);
+	cudaGraphsManual            (device, inputVec_h, inputVec_d, outputVec_d, result_d);
 	cudaGraphsUsingStreamCapture(device, inputVec_h, inputVec_d, outputVec_d, result_d);
 	device.synchronize();
 	cudaGraphsManualWithBuilders(device, inputVec_h, inputVec_d, outputVec_d, result_d);

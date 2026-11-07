@@ -31,13 +31,18 @@ namespace graph {
 /**
  * Creates a raw structure of pointers to kernel arguments, which may then be used with a
  * @ref kernel_t and @ref launch_config_t to define a CUDA execution graph kernel node
- * @param kernel_arguments references - not pointers - to the kernel arguments.
+ * @param kernel_arguments references - not pointers - to the kernel arguments. Note the
+ *     arguments _must_ be lvalues, not temporaries - as their lifespan must continue
+ *     not just until the return from this function, but rather until their use in graph
+ *     instantiation and execution is complete.
  * @return A value-type structure containing the pointers; it must be kept alive while
  * the execution graph template (or any of its instances) are alive.
  */
 template<typename... Ts>
-std::vector<void*> make_kernel_argument_pointers(Ts const&... kernel_arguments)
+std::vector<void*> make_kernel_argument_pointers(Ts &&... kernel_arguments)
 {
+	static_assert(cuda_::detail::all_true<std::is_lvalue_reference<Ts &&>::value...>::value,
+		"Attempt to pass rvalue references as kernel parameters");
 	// The extra curly brackets mean the vector constructor gets an std::initializer_list<void*>;
 	// Note that we don't add an extern terminating NULLPTR - the Graph API is different than
 	// the traditional kernel launch API in that respect
