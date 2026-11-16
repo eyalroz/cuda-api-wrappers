@@ -36,6 +36,14 @@
 #endif
 #endif
 
+#ifndef CONSTEXPR_CPP20
+#if __cplusplus >= 202002L
+#define CONSTEXPR_CPP20 constexpr
+#else
+#define CONSTEXPR_CPP20
+#endif
+#endif
+
 #ifndef CAW_MAYBE_UNUSED
 #if __cplusplus >= 201703L
 #define CAW_MAYBE_UNUSED [[maybe_unused]]
