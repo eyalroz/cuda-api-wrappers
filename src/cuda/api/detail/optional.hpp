@@ -16,6 +16,9 @@ using std::optional;
 using std::nullopt_t;
 using std::nullopt;
 using std::make_optional;
+using std::in_place;
+using std::in_place_t;
+using std::bad_optional_access;
 } // namespace cuda_
 #else
 #include "optional_lite.hpp"
@@ -24,6 +27,9 @@ using nonstd::optional;
 using nonstd::nullopt_t;
 using nonstd::nullopt;
 using nonstd::make_optional;
+using nonstd::in_place;
+using nonstd::in_place_t;
+using nonstd::bad_optional_access;
 } // namespace cuda_
 #endif // __cplusplus >= 201703L
 
